@@ -119,8 +119,17 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
+        let addr = self.addr.clone();
+        // When we have websocket proxy in place, this won't be needed.
+        #[cfg(target_arch = "wasm32")]
+        let addr = if addr == "localhost:9010" {
+            String::from("ws://localhost:3001")
+        } else {
+            addr
+        };
+        debug!("Connecting to {:?}", addr);
         let socket =
-            FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+            FluvioSocket::connect_with_connector(&addr, self.connector.as_ref()).await?;
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 

@@ -590,7 +590,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        wasm-crate: [spu-schema, sc-schema, dataplane-protocol, types, protocol, socket]
+        wasm-crate: [spu-schema, sc-schema, dataplane-protocol, types, protocol, socket, client]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
