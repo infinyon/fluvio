@@ -5,8 +5,8 @@ use std::io::ErrorKind;
 use std::io::Read;
 use std::path::Path;
 
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufMut;

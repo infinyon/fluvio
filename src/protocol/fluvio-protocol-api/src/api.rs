@@ -9,8 +9,8 @@ use std::fmt::Debug;
 use std::fmt;
 use std::convert::TryFrom;
 
-use log::debug;
-use log::trace;
+use tracing::debug;
+use tracing::trace;
 
 use crate::core::Decoder;
 use crate::core::Encoder;

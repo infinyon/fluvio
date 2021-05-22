@@ -5,7 +5,7 @@ use std::io::Write;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use log::{info, debug};
+use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;

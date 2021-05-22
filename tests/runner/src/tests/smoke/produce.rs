@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use log::info;
+use tracing::info;
 
 use super::SmokeTestCase;
 use super::message::*;

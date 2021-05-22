@@ -2,7 +2,7 @@ use std::io::Error;
 use std::mem::size_of;
 use std::fmt::Debug;
 
-use log::trace;
+use tracing::trace;
 
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufMut;

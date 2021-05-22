@@ -51,7 +51,6 @@ dependencies = [
  "fluvio-protocol",
  "flv-util",
  "futures-util",
- "log",
  "once_cell",
  "semver",
  "tracing",
@@ -76,6 +75,7 @@ dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
+ "tracing",
 ]
 
 [[package]]
@@ -85,7 +85,7 @@ dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
  "flv-util",
- "log",
+ "tracing",
 ]
 
 [[package]]
@@ -98,12 +98,12 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
- "log",
  "proc-macro2",
  "quote",
  "syn",
+ "tracing",
 ]
 
 [[package]]

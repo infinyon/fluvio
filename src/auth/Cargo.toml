@@ -14,11 +14,10 @@ path = "src/lib.rs"
 
 [dependencies]
 async-trait = "0.1.41"
-log = "0.4.11"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_json = "1.0.59"
 thiserror = "1.0.21"
-tracing = "0.1.21"
+tracing = "0.1"
 tracing-futures = "0.2.4"
 x509-parser = "0.9.1"
 

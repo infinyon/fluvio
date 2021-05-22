@@ -5,7 +5,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 
 use content_inspector::{inspect, ContentType};
-use log::{trace, warn};
+use tracing::{trace, warn};
 use once_cell::sync::Lazy;
 
 use bytes::Buf;
@@ -633,7 +633,7 @@ mod file {
     use std::io::Error as IoError;
     use std::io::ErrorKind;
 
-    use log::trace;
+    use tracing::trace;
     use bytes::BufMut;
     use bytes::BytesMut;
 
