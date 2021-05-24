@@ -36,6 +36,7 @@ impl FluvioSink {
     }
 
     pub fn id(&self) -> ConnectionFd {
+        #[allow(clippy::clone_on_copy)]
         self.fd.clone()
     }
 
@@ -210,12 +211,14 @@ impl ExclusiveFlvSink {
     }
 
     pub fn id(&self) -> ConnectionFd {
+        #[allow(clippy::clone_on_copy)]
         self.fd.clone()
     }
 }
 
 impl Clone for ExclusiveFlvSink {
     fn clone(&self) -> Self {
+        #[allow(clippy::clone_on_copy)]
         Self {
             inner: self.inner.clone(),
             fd: self.fd.clone(),
