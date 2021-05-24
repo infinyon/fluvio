@@ -15,7 +15,14 @@ use std::fs::create_dir_all;
 use thiserror::Error;
 
 use tracing::debug;
+#[cfg(not(target_arch = "wasm32"))]
 use dirs::home_dir;
+
+#[cfg(target_arch = "wasm32")]
+fn home_dir() -> Option<PathBuf> {
+    None
+}
+
 use serde::Deserialize;
 use serde::Serialize;
 

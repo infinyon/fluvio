@@ -10,7 +10,7 @@ use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
-use fluvio_future::net::{DomainConnector, DefaultTcpDomainConnector};
+use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
 
 use crate::FluvioError;
 
@@ -97,7 +97,7 @@ impl ClientConfig {
     }
 
     pub fn with_addr(addr: String) -> Self {
-        Self::new(addr, Box::new(DefaultTcpDomainConnector::default()))
+        Self::new(addr, Box::new(DefaultDomainConnector::default()))
     }
 
     pub fn addr(&self) -> &str {
@@ -119,6 +119,7 @@ impl ClientConfig {
     }
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
+        debug!(add = %self.addr, "Connection to");
         let socket =
             FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
         VersionedSocket::connect(socket, Arc::new(self)).await
@@ -184,6 +185,7 @@ impl fmt::Display for VersionedSerialSocket {
         write!(f, "config {}", self.config)
     }
 }
+unsafe impl Send for VersionedSerialSocket {}
 
 impl VersionedSerialSocket {
     pub fn new(
