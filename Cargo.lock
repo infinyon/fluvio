@@ -1560,7 +1560,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.3"
-source = "git+https://github.com/infinyon/future-aio.git?branch=master#36c0beb42b0d96906d1e9f05180aadc163415a05"
+source = "git+https://github.com/infinyon/future-aio.git?branch=master#3dbdab9f64213de0d7960b6503be53eea1e65ae3"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1945,7 +1945,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "git+https://github.com/infinyon/future-aio.git?branch=master#36c0beb42b0d96906d1e9f05180aadc163415a05"
+source = "git+https://github.com/infinyon/future-aio.git?branch=master#3dbdab9f64213de0d7960b6503be53eea1e65ae3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3343,9 +3343,9 @@ dependencies = [
 
 [[package]]
 name = "psm"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3abf49e5417290756acfd26501536358560c4a5cc4a0934d390939acb3e7083a"
+checksum = "21ff0279b4a85e576b97e4a21d13e437ebcd56612706cde5d3f0d5c9399490c0"
 dependencies = [
  "cc",
 ]
