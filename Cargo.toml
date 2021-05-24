@@ -34,7 +34,11 @@ members = [
 ]
 resolver = "2"
 
-
+[patch.crates-io]
+fluvio-future = { git = "https://github.com/infinyon/future-aio.git", branch = "master"}
+#fluvio-future = { path = "../future-aio" }
+k8-types = { path = "../k8-api/src/k8-types" }
+#k8-types = { git = "https://github.com/tjtelan/k8-api.git", branch = "add-node" }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

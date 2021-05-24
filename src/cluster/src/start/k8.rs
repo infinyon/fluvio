@@ -21,6 +21,7 @@ use k8_client::K8Client;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
+use k8_types::core::node::{NodeSpec, NodeAddress};
 
 use crate::helm::{HelmClient, Chart};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
@@ -955,9 +956,30 @@ impl ClusterInstaller {
                                             let node_port = node_port.expect("Expecting a NodePort port");
                                             // FIXME: How do we get the IP of a master node?
 
-                                            //let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
-                                            let external_addr="192.168.49.2";
-                                            return Ok(Some((format!("{}:{}",external_addr,node_port),node_port)))
+                                            debug!("k8 node query");
+                                            let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
+                                            debug!("Output from k8 node query: {:?}", &nodes);
+                                            //debug!("Output from k8 node status: {:?}", &nodes.items);
+                                            //let external_addr = nodes.items.into_iter().map(|x| x.status.addresses.clone() ).into_iter().find(|a| a.address == "InternalIP").and_then(|i| i);
+
+                                            // This works
+                                            //let external_addr = nodes.items.into_iter().map(|x| x.status.addresses.clone() ).into_iter();
+                                            //for outside in external_addr {
+                                            //    for ip in outside {
+                                            //        debug!("One IP?: {:?}", ip)
+                                            //    }
+                                            //}
+
+                                            let mut node_addr : Vec<NodeAddress> = Vec::new();
+                                            for n in nodes.items.into_iter().map(|x| x.status.addresses.to_owned() ) {
+                                                node_addr.extend(n)
+                                            }
+
+                                            let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP").expect("No nodes with InternalIP set");
+
+                                            // Return the first node with type "InternalIP"
+                                            //let external_addr="192.168.49.2";
+                                            return Ok(Some((format!("{}:{}",external_addr.address,node_port),node_port)))
                                         },
                                         LoadBalancerType::LoadBalancer => {
                                             let ingress_addr = service

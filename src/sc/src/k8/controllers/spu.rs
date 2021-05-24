@@ -7,7 +7,9 @@ use fluvio_controlplane_metadata::{
 };
 use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_types::SpuId;
-use k8_client::{ClientError};
+use k8_client::{ClientError, SharedK8Client};
+use k8_metadata_client::MetadataClient;
+use k8_types::core::node::{NodeAddress, NodeSpec};
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
@@ -28,6 +30,7 @@ use crate::stores::spg::{SpuGroupSpec};
 /// Maintain Managed SPU
 /// sync from spu services and statefulset
 pub struct SpuController {
+    client: SharedK8Client,
     services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
@@ -47,11 +50,13 @@ impl fmt::Debug for SpuController {
 
 impl SpuController {
     pub fn start(
+        client: SharedK8Client,
         spus: StoreContext<SpuSpec>,
         services: StoreContext<SpuServiceSpec>,
         groups: StoreContext<SpuGroupSpec>,
     ) {
         let controller = Self {
+            client,
             services,
             groups,
             spus,
@@ -222,12 +227,41 @@ impl SpuController {
         let mut computed_spu_ingressport = match lb_type {
             Some(LoadBalancerType::NodePort) => {
                 // Assuming only one node
+                debug!("Trying to create K8Client");
+                let kube_client = &self.client;
+
+                debug!("Trying to query for Nodes");
+                // This NodeSpec does not rely on namespace
+                let nodes = kube_client
+                    .retrieve_items::<NodeSpec, _>("default")
+                    .await
+                    .expect("Node query failed");
+
+                debug!("Results from Node query: {:?}", &nodes);
+
+                let mut node_addr: Vec<NodeAddress> = Vec::new();
+                for n in nodes
+                    .items
+                    .into_iter()
+                    .map(|x| x.status.addresses.to_owned())
+                {
+                    node_addr.extend(n)
+                }
+
+                debug!("Node Addresses: {:?}", node_addr);
+
+                let external_addr = node_addr
+                    .into_iter()
+                    .find(|a| a.r#type == "InternalIP")
+                    .expect("No nodes with InternalIP set");
+                //debug!("External addr from query: {:?}", external_addr);
 
                 IngressPort {
                     port: svc_nodeport.expect("Expected a node port"),
                     ingress: vec![IngressAddr {
                         hostname: None,
-                        ip: Some("192.168.49.2".to_string()),
+                        //ip: Some("192.168.49.2".to_string()),
+                        ip: Some(external_addr.address.to_string()),
                     }],
                     ..Default::default()
                 }

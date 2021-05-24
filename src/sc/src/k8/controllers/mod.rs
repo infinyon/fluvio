@@ -62,6 +62,7 @@ mod k8_operator {
         );
 
         SpuController::start(
+            k8_client.clone(),
             global_ctx.spus().clone(),
             spu_service_ctx.clone(),
             global_ctx.spgs().clone(),

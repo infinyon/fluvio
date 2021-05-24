@@ -1572,8 +1572,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6b30d60058b7a8530be4307c4effe2868484faa643d9fe5b8b4ad9ea64e03a2"
+source = "git+https://github.com/infinyon/future-aio.git?branch=master#4694e5db71783cf23aeb6b66806c08205582d3ec"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1963,8 +1962,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
+source = "git+https://github.com/infinyon/future-aio.git?branch=master#4694e5db71783cf23aeb6b66806c08205582d3ec"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2727,9 +2725,7 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf4398c021446513c306633ae67ae6dfd7166e3d733f0ff19fe20c358446e71a"
+version = "0.2.3"
 dependencies = [
  "serde",
  "serde_json",
