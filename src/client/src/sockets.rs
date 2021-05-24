@@ -120,7 +120,8 @@ impl ClientConfig {
 
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
         debug!(add = %self.addr, "Connection to");
-        let socket = FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+        let socket =
+            FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 
