@@ -18,7 +18,7 @@ path = "src/bin/main.rs"
 doc = false
 
 [features]
-default = ["telemetry"]
+default = []
 telemetry = [
     "tracing-opentelemetry",
     "opentelemetry",

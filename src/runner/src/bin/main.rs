@@ -1,15 +1,15 @@
 use structopt::StructOpt;
 use fluvio_run::RunCmd;
 
-use tracing::Level;
-use tracing_subscriber::{Registry, prelude::*};
-use tracing_subscriber::filter::Directive;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cmd: RunCmd = RunCmd::from_args();
 
     #[cfg(feature = "telemetry")]
     let _jaeger_guard = {
+        use tracing::Level;
+        use tracing_subscriber::{Registry, prelude::*};
+        use tracing_subscriber::filter::Directive;
+
         let service_name = match cmd {
             RunCmd::SC(_) => "fluvio-sc",
             RunCmd::SPU(_) => "fluvio-spu",
