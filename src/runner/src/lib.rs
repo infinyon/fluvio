@@ -25,7 +25,7 @@ pub enum RunCmd {
 }
 
 impl RunCmd {
-    pub async fn process(self) -> Result<()> {
+    pub fn process(self) -> Result<()> {
         match self {
             Self::SPU(opt) => {
                 fluvio_spu::main_loop(opt);
