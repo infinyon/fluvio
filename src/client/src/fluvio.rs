@@ -219,10 +219,7 @@ mod wasm_tests {
     use std::io::Error as IoError;
     use fluvio_future::{
         net::{
-            BoxReadConnection,
-            BoxWriteConnection,
-            DomainConnector,
-            TcpDomainConnector,
+            BoxReadConnection, BoxWriteConnection, DomainConnector, TcpDomainConnector,
             ConnectionFd,
         },
     };
@@ -239,7 +236,6 @@ mod wasm_tests {
             &self,
             addr: &str,
         ) -> Result<(BoxWriteConnection, BoxReadConnection, ConnectionFd), IoError> {
-
             let addr = if addr == "localhost:9010" {
                 "ws://localhost:3001"
             } else {
@@ -274,10 +270,9 @@ mod wasm_tests {
     #[wasm_bindgen_test]
     async fn my_test() {
         let config = FluvioConfig::new("ws://localhost:3000");
-        let client = Fluvio::connect_with_connector(
-            Box::new(FluvioWebsocketConnector::new()),
-            &config,
-        ).await;
+        let client =
+            Fluvio::connect_with_connector(Box::new(FluvioWebsocketConnector::new()), &config)
+                .await;
         assert!(client.is_ok());
         let client = client.unwrap();
         let mut admin = client.admin().await;
@@ -312,7 +307,10 @@ mod wasm_tests {
             let next = next.unwrap();
             assert!(next.is_ok());
             let next = next.unwrap();
-            assert_eq!(String::from_utf8_lossy(next.key().unwrap()).to_string(), key);
+            assert_eq!(
+                String::from_utf8_lossy(next.key().unwrap()).to_string(),
+                key
+            );
             assert_eq!(String::from_utf8_lossy(next.value()).to_string(), value);
         }
     }
