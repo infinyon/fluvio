@@ -2,7 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
 use fluvio_future::net::DomainConnector;
-use tracing::debug;
+use tracing::{debug, instrument};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
@@ -77,6 +77,7 @@ impl FluvioAdmin {
     /// ```
     ///
     /// [`connect_with_config`]: ./struct.FluvioAdmin.html#method.connect_with_config
+    #[instrument]
     pub async fn connect() -> Result<Self, FluvioError> {
         let config_file = ConfigFile::load_default_or_new()?;
         let cluster_config = config_file.config().current_cluster()?;
@@ -101,6 +102,7 @@ impl FluvioAdmin {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         let config = ClientConfig::new(&config.endpoint, connector);
@@ -114,6 +116,7 @@ impl FluvioAdmin {
         Ok(Self(versioned_socket))
     }
 
+    #[instrument(skip(self, request))]
     async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: AdminRequest + Send + Sync,
@@ -122,6 +125,7 @@ impl FluvioAdmin {
     }
 
     /// create new object
+    #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(
         &mut self,
         name: String,
@@ -144,6 +148,7 @@ impl FluvioAdmin {
 
     /// delete object by key
     /// key is depend on spec, most are string but some allow multiple types
+    #[instrument(skip(self, key))]
     pub async fn delete<S, K>(&mut self, key: K) -> Result<(), FluvioError>
     where
         S: DeleteSpec,
@@ -154,6 +159,7 @@ impl FluvioAdmin {
         Ok(())
     }
 
+    #[instrument(skip(self, filters))]
     pub async fn list<S, F>(&mut self, filters: F) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: ListSpec + Encoder + Decoder,

@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use tracing::debug;
+use tracing::{debug, instrument};
 use tokio::sync::OnceCell;
 //use once_cell::sync::OnceCell;
 
@@ -63,6 +63,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         Self::connect_with_connector(connector, config).await

@@ -93,6 +93,7 @@ mod spu;
 
 pub mod config;
 
+use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{TopicProducer, RecordKey};
@@ -147,6 +148,7 @@ const MINIMUM_PLATFORM_VERSION: &str = "0.8.0";
 /// ```
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
+#[instrument(skip(topic))]
 pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, FluvioError> {
     let fluvio = Fluvio::connect().await?;
     let producer = fluvio.topic_producer(topic).await?;
@@ -180,6 +182,7 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 /// ```
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
+#[instrument(skip(topic, partition))]
 pub async fn consumer<S: Into<String>>(
     topic: S,
     partition: i32,

@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::Display;
 use std::sync::Arc;
 
-use tracing::{debug, trace};
+use tracing::{debug, trace, instrument};
 
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
@@ -42,6 +42,7 @@ impl SerialFrame for VersionedSocket {
 
 impl VersionedSocket {
     /// connect to end point and retrieve versions
+    #[instrument(skip(socket, config))]
     pub async fn connect(
         mut socket: FluvioSocket,
         config: Arc<ClientConfig>,
@@ -118,6 +119,7 @@ impl ClientConfig {
         self.addr = domain
     }
 
+    #[instrument(skip(self))]
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
         debug!(add = %self.addr, "Connection to");
         let socket =
@@ -126,6 +128,7 @@ impl ClientConfig {
     }
 
     /// create new config with prefix add to domain, this is useful for SNI
+    #[instrument(skip(self))]
     pub fn with_prefix_sni_domain(&self, prefix: &str) -> Self {
         let new_domain = format!("{}.{}", prefix, self.connector.domain());
         debug!(sni_domain = %new_domain);
@@ -205,6 +208,7 @@ impl VersionedSerialSocket {
     }
 
     /// send and wait for reply serially
+    #[instrument(skip(self, request))]
     pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
@@ -214,7 +218,9 @@ impl VersionedSerialSocket {
         // send request & save response
         self.socket.send_and_receive(req_msg).await
     }
+
     /// create new request based on version
+    #[instrument(skip(self, request, version))]
     fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
     where
         R: Request + Send,
