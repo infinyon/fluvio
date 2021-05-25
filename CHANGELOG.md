@@ -12,6 +12,7 @@
 * Remove async trait for more wasm support to client ([#1108](https://github.com/infinyon/fluvio/pull/1108))
 * Better logging for SPU health check ([#1109](https://github.com/infinyon/fluvio/issues/1109))
 * fluvio-socket build for wasm32 ([#1111](https://github.com/infinyon/fluvio/issues/1111))
+* Add Fluvio::connect_with_connector to support custom connectors. ([#1120](https://github.com/infinyon/fluvio/issues/1120))
 
 ## Platform Version 0.8.2 - 2020-05-06
 * Fix Replication fail over with duplication ([#1052](https://github.com/infinyon/fluvio/pull/1052))
