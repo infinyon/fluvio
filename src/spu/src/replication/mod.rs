@@ -499,7 +499,7 @@ mod replica_test {
         let builder = TestConfig::builder()
             .followers(1_u16)
             .base_port(13050_u16)
-            .generate("replication2_new");
+            .generate("replication2_promote");
 
         let (leader_gctx, leader_replica) = builder.leader_replica().await;
         assert_eq!(leader_replica.leo(), 0);
