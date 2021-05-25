@@ -1319,7 +1319,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1669,7 +1669,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-core"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "bytes",
  "log",
@@ -1861,7 +1861,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bytes",
  "fluvio-dataplane-protocol",
