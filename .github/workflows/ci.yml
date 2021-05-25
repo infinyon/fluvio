@@ -365,7 +365,6 @@ jobs:
         timeout-minutes: 1
         run: examples/tests/run.sh --release
 
-      - name: wasm-setup
       - name: Install ${{ matrix.rust }} for Wasm32-unknown-unknown
         uses: actions-rs/toolchain@v1
         with:
