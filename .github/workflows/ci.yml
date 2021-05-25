@@ -364,6 +364,33 @@ jobs:
       - name: Test examples
         timeout-minutes: 1
         run: examples/tests/run.sh --release
+
+      - name: wasm-setup
+      - name: Install ${{ matrix.rust }} for Wasm32-unknown-unknown
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+          target: wasm32-unknown-unknown
+
+      - name: install wasm-pack
+        run: |
+           curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: install websocat
+        run: |
+          cargo install websocat
+
+      - name: setup websocket and test
+        run: |
+          websocat -v --binary ws-l:127.0.0.1:3000 tcp:127.0.0.1:9003 &
+          websocat -v --binary ws-l:127.0.0.1:3001 tcp:127.0.0.1:9010 &
+
+          cargo run --release --bin fluvio -- topic create wasm-test-produce-consume
+          wasm-pack test ./src/client/ --firefox --headless
+          wasm-pack test ./src/client/ --chrome --headless
+
       - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
