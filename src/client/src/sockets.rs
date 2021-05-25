@@ -208,7 +208,7 @@ impl VersionedSerialSocket {
     }
 
     /// send and wait for reply serially
-    #[instrument(skip(self, request))]
+    #[instrument(level = "trace", skip(self, request))]
     pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
@@ -220,7 +220,7 @@ impl VersionedSerialSocket {
     }
 
     /// create new request based on version
-    #[instrument(skip(self, request, version))]
+    #[instrument(level = "trace", skip(self, request, version))]
     fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
     where
         R: Request + Send,
