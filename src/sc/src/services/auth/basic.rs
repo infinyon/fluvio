@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use tracing::instrument;
 use async_trait::async_trait;
 pub use policy::BasicRbacPolicy;
 
@@ -24,6 +25,7 @@ impl BasicAuthorization {
 impl Authorization for BasicAuthorization {
     type Context = BasicAuthContext;
 
+    #[instrument(skip(self, socket))]
     async fn create_auth_context(
         &self,
         socket: &mut fluvio_socket::FluvioSocket,

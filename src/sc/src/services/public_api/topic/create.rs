@@ -11,7 +11,7 @@
 
 use std::io::{Error as IoError, ErrorKind};
 
-use tracing::{debug, trace};
+use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
 
@@ -28,6 +28,7 @@ use crate::controllers::topics::validate_assigned_topic_parameters;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
+#[instrument(skip(name, dry_run, topic_spec, auth_ctx))]
 pub async fn handle_create_topics_request<AC: AuthContext>(
     name: String,
     dry_run: bool,

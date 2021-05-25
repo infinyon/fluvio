@@ -3,7 +3,7 @@
 //!
 //! Converts Custom Spu API request into KV request and sends to KV store for processing.
 //!
-use tracing::{debug, trace};
+use tracing::{debug, trace, instrument};
 use std::io::{Error as IoError};
 
 use dataplane::ErrorCode;
@@ -25,6 +25,7 @@ pub struct RegisterCustomSpu {
 
 impl RegisterCustomSpu {
     /// Handler for create spus request
+    #[instrument(skip(name, spec, dry_run, auth_ctx))]
     pub async fn handle_register_custom_spu_request<AC: AuthContext>(
         name: String,
         spec: CustomSpuSpec,

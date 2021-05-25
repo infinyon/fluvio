@@ -4,7 +4,7 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use tracing::trace;
+use tracing::{trace, instrument};
 use std::io::Error;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
@@ -15,6 +15,7 @@ use fluvio_auth::{AuthContext};
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete topic request
+#[instrument(skip(request, auth_ctx))]
 pub async fn handle_delete_request<AC: AuthContext>(
     request: RequestMessage<DeleteRequest>,
     auth_ctx: &AuthServiceContext<AC>,

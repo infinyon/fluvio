@@ -1,4 +1,4 @@
-use tracing::{trace, debug};
+use tracing::{trace, debug, instrument};
 use std::io::{Error, ErrorKind};
 
 use fluvio_controlplane_metadata::store::KeyFilter;
@@ -9,6 +9,7 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
+#[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_topics_request<AC: AuthContext>(
     filters: Vec<String>,
     auth_ctx: &AuthServiceContext<AC>,

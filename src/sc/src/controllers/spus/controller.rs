@@ -105,6 +105,7 @@ impl SpuController {
     }
 
     /// sync spu status with store
+    #[instrument(skip(self), name = "spu_controller_sync")]
     async fn sync_store(&mut self) {
         use std::collections::HashSet;
 

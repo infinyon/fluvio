@@ -4,7 +4,7 @@
 //! Lookup custom-spu in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use tracing::{debug, trace};
+use tracing::{debug, trace, instrument};
 use std::io::{Error, ErrorKind};
 
 use dataplane::ErrorCode;
@@ -19,6 +19,7 @@ use crate::stores::spu::{SpuAdminMd};
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete custom spu request
+#[instrument(skip(key, auth_ctx))]
 pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
     key: CustomSpuKey,
     auth_ctx: &AuthServiceContext<AC>,

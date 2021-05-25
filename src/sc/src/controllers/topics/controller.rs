@@ -72,6 +72,7 @@ impl TopicController {
         }
     }
 
+    #[instrument(skip(self, listener), name = "topic_controller_sync")]
     async fn sync_topics(&mut self, listener: &mut K8ChangeListener<TopicSpec>) {
         if !listener.has_change() {
             debug!("no change");

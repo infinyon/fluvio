@@ -1,11 +1,12 @@
 use std::io::Error;
-use tracing::trace;
+use tracing::{trace, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::versions::{ApiVersionKey, ApiVersionsRequest, ApiVersionsResponse, PlatformVersion};
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::AdminPublicApiKey;
 
+#[instrument(skip(request))]
 pub async fn handle_api_versions_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {

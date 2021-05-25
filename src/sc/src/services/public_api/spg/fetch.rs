@@ -1,7 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use tracing::debug;
-use tracing::trace;
+use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
 use fluvio_sc_schema::spg::SpuGroupSpec;
@@ -11,6 +10,7 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
+#[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_spu_groups_request<AC: AuthContext>(
     filters: Vec<NameFilter>,
     auth_ctx: &AuthServiceContext<AC>,

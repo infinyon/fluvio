@@ -70,6 +70,7 @@ impl PartitionController {
         // info!("spu controller is terminated");
     }
 
+    #[instrument(skip(self, listener), name = "partition_controller_sync")]
     async fn sync_partition_changes(&mut self, listener: &mut K8ChangeListener<PartitionSpec>) {
         if !listener.has_change() {
             trace!("no partitions change");
