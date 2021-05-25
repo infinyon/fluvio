@@ -1,6 +1,6 @@
 # Release Notes
 
-## Unreleased
+## Platform Version 0.8.3 - 2020-05-25
 * Added builder for fluvio_storage::config::ConfigOption. ([#1076](https://github.com/infinyon/fluvio/pull/1076))
 * Use batch record sending in CLI producer ([#915](https://github.com/infinyon/fluvio/issues/915))
 * Now ResponseApi and RequestApi encoder-decoders are symmetric ([#1075](https://github.com/infinyon/fluvio/issues/1075))
