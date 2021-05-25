@@ -1,6 +1,6 @@
 use std::fmt;
 
-use tracing::debug;
+use tracing::{debug, instrument};
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
@@ -85,6 +85,7 @@ impl FluvioSocket {
     }
 
     /// connect to target address with connector
+    #[instrument(skip(connector))]
     pub async fn connect_with_connector(
         addr: &str,
         connector: &dyn TcpDomainConnector,

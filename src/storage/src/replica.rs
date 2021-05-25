@@ -1,7 +1,7 @@
 use std::mem;
 
 use fluvio_protocol::Encoder;
-use tracing::{debug, trace, error, warn};
+use tracing::{debug, trace, error, warn, instrument};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
@@ -62,6 +62,7 @@ impl ReplicaStorage for FileReplica {
 
     /// read partition slice
     /// return leo, hw
+    #[instrument(skip(self, offset, max_len, isolation, partition_response))]
     async fn read_partition_slice<P>(
         &self,
         offset: Offset,
@@ -87,6 +88,7 @@ impl ReplicaStorage for FileReplica {
     /// write records to this replica
     /// if update_highwatermark is set, set high watermark is end
     //  this is used when LSR = 1
+    #[instrument(skip(self, records, update_highwatermark))]
     async fn write_recordset(
         &mut self,
         records: &mut RecordSet,
@@ -112,6 +114,7 @@ impl ReplicaStorage for FileReplica {
 
     /// update committed offset (high watermark)
     /// if true, hw is updated
+    #[instrument(skip(self, offset))]
     async fn update_high_watermark(&mut self, offset: Offset) -> Result<bool, StorageError> {
         let old_offset = self.get_hw();
         if old_offset == offset {
@@ -131,6 +134,7 @@ impl ReplicaStorage for FileReplica {
         }
     }
 
+    #[instrument(skip(self))]
     async fn remove(&self) -> Result<(), StorageError> {
         remove_dir_all(&self.option.base_dir)
             .await
@@ -154,6 +158,7 @@ impl FileReplica {
     /// If there is existing directory then it will load existing logs.
     /// The logs will be validated to ensure it's safe to use it.
     /// It is possible logs can't be used because they may be corrupted.
+    #[instrument(skip(topic, partition, base_offset, option))]
     pub async fn create<S>(
         topic: S,
         partition: Size,
@@ -204,6 +209,7 @@ impl FileReplica {
     }
 
     /// clear the any holding directory for replica
+    #[instrument(skip(replica, option))]
     pub async fn clear(replica: &ReplicaKey, option: &ConfigOption) {
         let replica_dir = option
             .base_dir
@@ -216,6 +222,7 @@ impl FileReplica {
     }
 
     /// update high watermark to end
+    #[instrument(skip(self))]
     pub async fn update_high_watermark_to_end(&mut self) -> Result<bool, StorageError> {
         self.update_high_watermark(self.get_leo()).await
     }
@@ -223,6 +230,7 @@ impl FileReplica {
     /// find the segment that contains offsets
     /// segment could be active segment which can be written
     /// or read only segment.
+    #[instrument(skip(self, offset))]
     pub(crate) fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
         trace!("finding segment for: {}", offset);
         if offset >= self.active_segment.get_base_offset() {
@@ -238,6 +246,7 @@ impl FileReplica {
 
     /// read all uncommitted records
     #[allow(unused)]
+    #[instrument(skip(self, max_len, response))]
     pub async fn read_all_uncommitted_records<P>(
         &self,
         max_len: u32,
@@ -256,6 +265,7 @@ impl FileReplica {
     /// * `responsive`:  output
     /// * `max_len`:  max length of the slice
     //  return leo, hw
+    #[instrument(skip(self, start_offset, max_offset, max_len, response))]
     async fn read_records<P>(
         &self,
         start_offset: Offset,
@@ -352,6 +362,7 @@ impl FileReplica {
         OffsetInfo { hw, leo }
     }
 
+    #[instrument(skip(self, item))]
     async fn write_batch(&mut self, item: &mut Batch) -> Result<(), StorageError> {
         trace!("start_send");
         if !(self.active_segment.write_batch(item).await?) {

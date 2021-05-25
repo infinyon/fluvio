@@ -2007,6 +2007,7 @@ dependencies = [
  "fluvio-future 0.3.5",
  "tokio",
  "tracing",
+ "tracing-futures",
 ]
 
 [[package]]
