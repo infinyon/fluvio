@@ -1,5 +1,5 @@
 use std::io::Error;
-use tracing::debug;
+use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::produce::DefaultProduceRequest;
@@ -11,6 +11,7 @@ use fluvio_spu_schema::server::stream_fetch::DefaultStreamFetchRequest;
 use fluvio_spu_schema::server::update_offset::UpdateOffsetsRequest;
 use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 
+#[instrument(skip(request))]
 pub async fn handle_kf_lookup_version_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {

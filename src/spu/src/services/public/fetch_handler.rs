@@ -1,5 +1,4 @@
-use tracing::trace;
-use tracing::debug;
+use tracing::{debug, trace, instrument};
 
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_socket::FlvSocketError;
@@ -10,6 +9,7 @@ use fluvio_controlplane_metadata::partition::ReplicaKey;
 use crate::core::DefaultSharedGlobalContext;
 
 /// perform log fetch request using zero copy write
+#[instrument(skip(request, ctx, sink))]
 pub async fn handle_fetch_request(
     request: RequestMessage<FileFetchRequest>,
     ctx: DefaultSharedGlobalContext,

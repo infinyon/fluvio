@@ -3,8 +3,7 @@ use std::time::{Instant};
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use tracing::{debug, trace, error};
-use tracing::instrument;
+use tracing::{debug, trace, error, instrument};
 use tokio::select;
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
@@ -47,6 +46,7 @@ pub struct StreamFetchHandler {
 
 impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
+    #[instrument(skip(request, ctx, sink, end_event))]
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,

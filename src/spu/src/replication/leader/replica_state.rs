@@ -274,6 +274,7 @@ where
     }
 
     /// convert myself as
+    #[instrument(skip(self))]
     async fn as_lrs_request(&self) -> LrsRequest {
         let leader = (self.leader(), self.hw(), self.leo()).into();
         let replicas = self
@@ -298,6 +299,7 @@ where
 
     /// write records to storage
     /// then update our follower's leo
+    #[instrument(skip(self, records, notifiers))]
     pub async fn write_record_set(
         &self,
         records: &mut RecordSet,

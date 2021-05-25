@@ -1,13 +1,12 @@
-use std::{sync::Arc};
+use std::sync::Arc;
 
-use tracing::debug;
-use tracing::trace;
+use tracing::{debug, trace, instrument};
 use async_trait::async_trait;
 use futures_util::stream::StreamExt;
 use tokio::select;
 
 use fluvio_types::event::SimpleEvent;
-use fluvio_socket::{FluvioSocket};
+use fluvio_socket::FluvioSocket;
 use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
@@ -34,6 +33,7 @@ impl FlvService for PublicService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuServerRequest;
 
+    #[instrument(skip(self, context, socket))]
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
@@ -130,7 +130,7 @@ mod offset {
 
     use std::{io::Error as IoError};
 
-    use tracing::{debug, error};
+    use tracing::{debug, error, instrument};
     use fluvio_spu_schema::server::update_offset::{
         OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
     };
@@ -138,6 +138,7 @@ mod offset {
 
     use super::{DefaultSharedGlobalContext, RequestMessage, ErrorCode};
 
+    #[instrument(skip(ctx, request))]
     pub async fn handle_offset_update(
         ctx: &DefaultSharedGlobalContext,
         request: RequestMessage<UpdateOffsetsRequest>,

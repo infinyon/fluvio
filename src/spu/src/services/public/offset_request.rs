@@ -1,6 +1,6 @@
 use std::io::Error as IoError;
 
-use tracing::trace;
+use tracing::{trace, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
@@ -12,6 +12,7 @@ use dataplane::ErrorCode;
 
 use crate::core::DefaultSharedGlobalContext;
 
+#[instrument(skip(req_msg, ctx))]
 pub async fn handle_offset_request(
     req_msg: RequestMessage<FetchOffsetsRequest>,
     ctx: DefaultSharedGlobalContext,
