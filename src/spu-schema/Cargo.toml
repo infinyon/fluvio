@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-spu-schema"
-version = "0.6.0"
+version = "0.6.1"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"
@@ -13,7 +13,6 @@ path = "src/lib.rs"
 
 [features]
 file = ["dataplane/file"]
-
 
 [dependencies]
 log = "0.4.8"
