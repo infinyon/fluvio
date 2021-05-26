@@ -40,7 +40,6 @@ impl PartitionController {
         spawn(controller.dispatch_loop());
     }
 
-    #[instrument(skip(self), name = "PartitionController")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
@@ -70,7 +69,7 @@ impl PartitionController {
         // info!("spu controller is terminated");
     }
 
-    #[instrument(skip(self, listener), name = "partition_controller_sync")]
+    #[instrument(skip(self, listener))]
     async fn sync_partition_changes(&mut self, listener: &mut K8ChangeListener<PartitionSpec>) {
         if !listener.has_change() {
             trace!("no partitions change");

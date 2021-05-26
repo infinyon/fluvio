@@ -44,7 +44,6 @@ impl TopicController {
         spawn(controller.dispatch_loop());
     }
 
-    #[instrument(skip(self), name = "TopicLoop")]
     async fn dispatch_loop(mut self) {
         use std::time::Duration;
 
@@ -72,7 +71,7 @@ impl TopicController {
         }
     }
 
-    #[instrument(skip(self, listener), name = "topic_controller_sync")]
+    #[instrument(skip(self, listener))]
     async fn sync_topics(&mut self, listener: &mut K8ChangeListener<TopicSpec>) {
         if !listener.has_change() {
             debug!("no change");
