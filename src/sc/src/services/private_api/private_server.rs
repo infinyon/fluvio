@@ -80,10 +80,7 @@ impl FlvService for ScInternalService {
             }
         );
 
-        
-        info!(
-            spu_id,
-            "SPU connected");
+        info!(spu_id, "SPU connected");
 
         let health_sender = context.health().sender();
 
@@ -103,10 +100,8 @@ impl FlvService for ScInternalService {
             error!("error with SPU <{}>, error: {}", spu_id, err);
         }
 
-        info!(
-            spu_id,
-            "SPU connection will terminate");
-            
+        info!(spu_id, "SPU connection will terminate");
+
         health_sender
             .send(SpuAction::down(spu_id))
             .await

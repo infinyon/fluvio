@@ -458,7 +458,7 @@ impl LocalInstaller {
                 .launcher_path()
                 .ok_or(LocalInstallError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
-            cmd.arg("run").arg("sc");
+            cmd.arg("run").arg("sc").arg("--local");
             cmd
         };
         if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {

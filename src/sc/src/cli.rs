@@ -33,6 +33,10 @@ type Config = (ScConfig, Option<BasicRbacPolicy>);
 #[structopt(name = "sc-server", about = "Streaming Controller")]
 pub struct ScOpt {
     #[structopt(long)]
+    /// running in local mode only
+    local: bool,
+
+    #[structopt(long)]
     /// Address for external service
     bind_public: Option<String>,
 
@@ -63,6 +67,15 @@ pub struct ScOpt {
 }
 
 impl ScOpt {
+    /// override local flag
+    pub fn set_local(&mut self) {
+        self.local = true;
+    }
+
+    pub fn is_local(&self) -> bool {
+        self.local
+    }
+
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,

@@ -5,6 +5,9 @@ pub mod spu;
 pub use k8_operator::run_k8_operators;
 
 mod k8_operator {
+
+    use tracing::info;
+
     use k8_client::SharedK8Client;
 
     use crate::cli::TlsConfig;
@@ -27,6 +30,8 @@ mod k8_operator {
         let spu_service_ctx: StoreContext<SpuServiceSpec> = StoreContext::new();
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
+
+        info!("starting k8 cluster operators");
 
         K8ClusterStateDispatcher::<_, _>::start(
             namespace.clone(),
