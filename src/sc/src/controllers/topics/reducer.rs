@@ -94,7 +94,7 @@ impl TopicReducer {
     /// Compute next state for topic
     /// if state is different, apply actions
     ///
-    #[instrument(skip(self, topic, actions))]
+    #[instrument(level = "trace", skip(self, topic, actions))]
     async fn update_actions_next_state(&self, topic: &TopicAdminMd, actions: &mut TopicActions) {
         use fluvio_controlplane_metadata::core::MetadataItem;
 

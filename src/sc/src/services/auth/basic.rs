@@ -25,7 +25,7 @@ impl BasicAuthorization {
 impl Authorization for BasicAuthorization {
     type Context = BasicAuthContext;
 
-    #[instrument(skip(self, socket))]
+    #[instrument(level = "trace", skip(self, socket))]
     async fn create_auth_context(
         &self,
         socket: &mut fluvio_socket::FluvioSocket,
