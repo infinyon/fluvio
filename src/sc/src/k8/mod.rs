@@ -24,6 +24,7 @@ pub fn main_k8_loop(opt: ScOpt) {
     use controllers::run_k8_operators;
 
     // parse configuration (program exits on error)
+    let is_local = opt.is_local();
     let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
 
     println!("starting sc server with k8: {}", VERSION);
@@ -34,13 +35,15 @@ pub fn main_k8_loop(opt: ScOpt) {
         let namespace = sc_config.namespace.clone();
         let ctx = start_main_loop((sc_config.clone(), auth_policy), k8_client.clone()).await;
 
-        run_k8_operators(
-            namespace.clone(),
-            k8_client,
-            ctx,
-            tls_option.clone().map(|(_, config)| config),
-        )
-        .await;
+        if !is_local {
+            run_k8_operators(
+                namespace.clone(),
+                k8_client,
+                ctx,
+                tls_option.clone().map(|(_, config)| config),
+            )
+            .await;
+        }
 
         if let Some((proxy_port, tls_config)) = tls_option {
             let tls_acceptor = tls_config

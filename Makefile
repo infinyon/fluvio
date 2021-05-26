@@ -87,7 +87,7 @@ k8-setup:
 # Kubernetes Tests
 
 smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	smoke --spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
+	$(TEST_BIN)	smoke --spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
 
 smoke-test-k8-tls:	test-clean-up minikube_image
 	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}

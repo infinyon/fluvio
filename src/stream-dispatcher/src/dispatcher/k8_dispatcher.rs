@@ -97,7 +97,7 @@ where
     )]
     async fn outer_loop(mut self) {
         loop {
-            debug!("starting concilation loop");
+            debug!("starting rconcilation loop");
             self.reconcillation_loop().await;
         }
     }

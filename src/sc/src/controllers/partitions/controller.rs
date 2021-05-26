@@ -40,7 +40,7 @@ impl PartitionController {
         spawn(controller.dispatch_loop());
     }
 
-    #[instrument(skip(self), name = "PartitionLoop")]
+    #[instrument(skip(self), name = "PartitionController")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
 

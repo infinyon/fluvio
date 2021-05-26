@@ -6,7 +6,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use tracing::error;
-use tracing::{debug, trace};
+use tracing::{debug, info, trace};
 use tracing::instrument;
 use async_trait::async_trait;
 use async_channel::Sender;
@@ -59,15 +59,13 @@ impl FlvService for ScInternalService {
             InternalScRequest::RegisterSpuRequest(req_msg) => {
                 let spu_id = req_msg.request.spu();
                 let mut status = true;
-                debug!("registration req from spu '{}'", spu_id);
-
+                debug!(spu_id,"registration req");
 
                 let register_res = if context.spus().store().validate_spu_for_registered(spu_id).await {
-                    debug!("SPU: {} validation succeed",spu_id);
                     RegisterSpuResponse::ok()
                 } else {
                     status = false;
-                    debug!("SPU: {} validation failed",spu_id);
+                    debug!(spu_id,"spu validation failed");
                     RegisterSpuResponse::failed_registeration()
                 };
 
@@ -82,7 +80,8 @@ impl FlvService for ScInternalService {
             }
         );
 
-        debug!("beginning SPU loop: {}", spu_id);
+        info!(spu_id, "SPU connected");
+
         let health_sender = context.health().sender();
 
         health_sender
@@ -101,7 +100,8 @@ impl FlvService for ScInternalService {
             error!("error with SPU <{}>, error: {}", spu_id, err);
         }
 
-        debug!("connection to SPU is terminated, send off");
+        info!(spu_id, "SPU connection will terminate");
+
         health_sender
             .send(SpuAction::down(spu_id))
             .await
