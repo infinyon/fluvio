@@ -68,6 +68,9 @@ impl ProduceOpt {
             }
             None => {
                 let mut lines = BufReader::new(std::io::stdin()).lines();
+                if self.interactive_mode() {
+                    eprint!("> ");
+                }
                 while let Some(Ok(line)) = lines.next() {
                     self.produce_lines(&mut producer, &[&line]).await?;
                 }
@@ -86,10 +89,6 @@ impl ProduceOpt {
         producer: &mut TopicProducer,
         lines: &[&str],
     ) -> Result<(), ConsumerError> {
-        if self.interactive_mode() {
-            eprint!("> ");
-        }
-
         self.produce_strs(producer, lines).await?;
         if self.interactive_mode() {
             print_cli_ok!();
