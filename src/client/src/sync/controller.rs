@@ -22,6 +22,8 @@ use crate::metadata::core::Spec;
 
 use super::StoreContext;
 use super::CacheMetadataStoreObject;
+use crate::metadata::store::actions::LSUpdate;
+use fluvio_sc_schema::message::MsgType;
 
 pub struct SimpleEvent {
     flag: AtomicBool,
@@ -81,11 +83,6 @@ where
         spawn(controller.dispatch_loop(watch_response));
     }
 
-    #[instrument(
-        skip(self, response),
-        name = "Metadata",
-        fields(spec = &*S::LABEL)
-    )]
     async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest>) {
         use tokio::select;
 
@@ -111,7 +108,7 @@ where
                             let update_result: Result<MetadataUpdate<S>,_> = watch_response.try_into();
                             match update_result {
                                 Ok(update) => {
-                                    if let Err(err) = self.process_updates(update).await {
+                                    if let Err(err) = self.sync_metadata(update).await {
                                         error!("Processing updates: {}", err);
                                     }
                                 },
@@ -139,32 +136,68 @@ where
     // process updates from sc
     #[instrument(
         skip(self, updates),
-        fields(epoch = updates.epoch)
+        fields(
+            epoch = updates.epoch,
+            spec = %S::LABEL,
+        ),
     )]
-    async fn process_updates(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {
-        if updates.all.is_empty() {
-            debug!("Received no updates: skipping");
+    async fn sync_metadata(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {
+        // Full sync
+        if !updates.all.is_empty() {
+            debug!(
+                count = updates.all.len(),
+                "Received full sync, setting store objects:"
+            );
+            let mut objects: Vec<CacheMetadataStoreObject<S>> = vec![];
+            for meta in updates.all.into_iter() {
+                let store_obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
+                match store_obj {
+                    Ok(obj) => {
+                        objects.push(obj);
+                    }
+                    Err(err) => {
+                        return Err(IoError::new(
+                            ErrorKind::InvalidData,
+                            format!("problem converting: {}", err),
+                        ));
+                    }
+                }
+            }
+            self.store.store().sync_all(objects).await;
             return Ok(());
         }
 
-        debug!(count = updates.all.len(), "Syncing updates:");
-        let mut objects: Vec<CacheMetadataStoreObject<S>> = vec![];
-        for meta in updates.all.into_iter() {
-            let store_obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
-            match store_obj {
-                Ok(obj) => {
-                    objects.push(obj);
-                }
-                Err(err) => {
-                    return Err(IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("problem converting: {}", err),
-                    ));
-                }
-            }
-        }
-        self.store.store().sync_all(objects).await;
+        // Partial sync
+        if !updates.changes.is_empty() {
+            debug!(
+                count = updates.changes.len(),
+                "Received partial sync, updating store objects:"
+            );
+            let changes = updates
+                .changes
+                .into_iter()
+                .map(|msg| {
+                    let (meta, typ) = (msg.content, msg.header);
+                    let obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
+                    obj.map(|it| (typ, it))
+                })
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| {
+                    IoError::new(ErrorKind::InvalidData, format!("problem converting: {}", e))
+                })?
+                .into_iter()
+                // .map(|it| LSUpdate::Mod(it))
+                .map(|(typ, obj)| match typ {
+                    MsgType::UPDATE => LSUpdate::Mod(obj),
+                    MsgType::DELETE => LSUpdate::Delete(obj.key),
+                })
+                .collect::<Vec<_>>();
 
+            self.store.store().apply_changes(changes).await;
+            return Ok(());
+        }
+
+        debug!("No metadata updates received. Not syncing store");
         Ok(())
     }
 }

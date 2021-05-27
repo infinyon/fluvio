@@ -3,11 +3,9 @@ use std::sync::Arc;
 
 use tracing::{debug, instrument};
 use tokio::sync::OnceCell;
-//use once_cell::sync::OnceCell;
 
 use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
 use fluvio_future::net::DomainConnector;
-//use fluvio_future::native_tls::AllDomainConnector;
 use semver::Version;
 
 use crate::config::ConfigFile;
@@ -18,6 +16,7 @@ use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::spu::SpuPool;
 use crate::sockets::{ClientConfig, Versions, SerialFrame, VersionedSerialSocket};
+use crate::sync::MetadataStores;
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
@@ -25,6 +24,7 @@ pub struct Fluvio {
     config: Arc<ClientConfig>,
     versions: Versions,
     spu_pool: OnceCell<Arc<SpuPool>>,
+    metadata: MetadataStores,
 }
 
 impl Fluvio {
@@ -79,6 +79,7 @@ impl Fluvio {
         let (socket, config, versions) = inner_client.split();
         check_platform_compatible(versions.platform_version())?;
         let socket = MultiplexerSocket::shared(socket);
+        let metadata = MetadataStores::start(socket.clone()).await?;
 
         let spu_pool = OnceCell::new();
         Ok(Self {
@@ -86,6 +87,7 @@ impl Fluvio {
             config,
             versions,
             spu_pool,
+            metadata,
         })
     }
 
@@ -93,7 +95,8 @@ impl Fluvio {
     async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
         self.spu_pool
             .get_or_try_init(|| async {
-                let pool = SpuPool::start(self.config.clone(), self.socket.clone()).await;
+                let metadata = MetadataStores::start(self.socket.clone()).await?;
+                let pool = SpuPool::start(self.config.clone(), metadata);
                 Ok(Arc::new(pool?))
             })
             .await
@@ -178,7 +181,9 @@ impl Fluvio {
     /// # }
     /// ```
     pub async fn admin(&self) -> FluvioAdmin {
-        FluvioAdmin::new(self.create_serial_client().await)
+        let socket = self.create_serial_client().await;
+        let metadata = self.metadata.clone();
+        FluvioAdmin::new(socket, metadata)
     }
 
     /// Reports the Platform Version of the connected cluster.

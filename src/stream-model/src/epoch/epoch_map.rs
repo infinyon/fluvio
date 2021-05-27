@@ -281,21 +281,12 @@ mod old_map {
         changes: EpochDeltaChanges<V>,
     }
 
-    impl<V> fmt::Debug for EpochChanges<V> {
+    impl<V: fmt::Debug> fmt::Debug for EpochChanges<V> {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            match &self.changes {
-                EpochDeltaChanges::SyncAll(all) => {
-                    write!(f, "epoch {}, sync_all: {}", self.epoch, all.len())
-                }
-
-                EpochDeltaChanges::Changes(changes) => write!(
-                    f,
-                    "epoch {}, delta updates: {}, deletes: {}",
-                    self.epoch,
-                    changes.0.len(),
-                    changes.1.len()
-                ),
-            }
+            f.debug_struct("EpochChanges")
+                .field("epoch", &self.epoch)
+                .field("changes", &self.changes)
+                .finish()
         }
     }
 
@@ -333,6 +324,7 @@ mod old_map {
             }
         }
     }
+
     pub enum EpochDeltaChanges<V> {
         SyncAll(Vec<V>),
         Changes((Vec<V>, Vec<V>)),
@@ -341,6 +333,17 @@ mod old_map {
     impl<V> EpochDeltaChanges<V> {
         pub fn empty() -> Self {
             Self::Changes((vec![], vec![]))
+        }
+    }
+
+    impl<V: fmt::Debug> fmt::Debug for EpochDeltaChanges<V> {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                Self::SyncAll(all) => f.debug_tuple("SyncAll").field(all).finish(),
+                Self::Changes((add, del)) => {
+                    f.debug_tuple("Changes").field(add).field(del).finish()
+                }
+            }
         }
     }
 }

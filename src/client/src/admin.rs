@@ -9,12 +9,17 @@ use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::MultiplexerSocket;
-//use fluvio_future::native_tls::AllDomainConnector;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
 use crate::metadata::objects::{ListResponse, ListSpec, DeleteSpec, CreateRequest};
 use crate::config::ConfigFile;
+use futures_util::Stream;
+use crate::sync::{MetadataStores, AlwaysNewContext};
+use crate::metadata::store::MetadataChanges;
+use crate::metadata::topic::TopicSpec;
+use crate::metadata::partition::PartitionSpec;
+use crate::metadata::spu::SpuSpec;
 
 /// An interface for managing a Fluvio cluster
 ///
@@ -48,11 +53,14 @@ use crate::config::ConfigFile;
 /// [`Fluvio`]: ./struct.Fluvio.html
 /// [`connect`]: ./struct.FluvioAdmin.html#method.connect
 /// [`connect_with_config`]: ./struct.FluvioAdmin.html#method.connect_with_config
-pub struct FluvioAdmin(VersionedSerialSocket);
+pub struct FluvioAdmin {
+    socket: VersionedSerialSocket,
+    metadata: MetadataStores,
+}
 
 impl FluvioAdmin {
-    pub(crate) fn new(client: VersionedSerialSocket) -> Self {
-        Self(client)
+    pub(crate) fn new(socket: VersionedSerialSocket, metadata: MetadataStores) -> Self {
+        Self { socket, metadata }
     }
 
     /// Creates a new admin connection using the current profile from `~/.fluvio/config`
@@ -111,9 +119,13 @@ impl FluvioAdmin {
 
         let (socket, config, versions) = inner_client.split();
         let socket = MultiplexerSocket::shared(socket);
-
+        let metadata = MetadataStores::start(socket.clone()).await?;
         let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
-        Ok(Self(versioned_socket))
+
+        Ok(Self {
+            socket: versioned_socket,
+            metadata,
+        })
     }
 
     #[instrument(skip(self, request))]
@@ -121,7 +133,7 @@ impl FluvioAdmin {
     where
         R: AdminRequest + Send + Sync,
     {
-        self.0.send_receive(request).await
+        self.socket.send_receive(request).await
     }
 
     /// create new object
@@ -178,6 +190,24 @@ impl FluvioAdmin {
         response
             .try_into()
             .map_err(|err| Error::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
+    }
+
+    pub fn watch_topics(
+        &self,
+    ) -> impl Stream<Item = MetadataChanges<TopicSpec, AlwaysNewContext>> + '_ {
+        self.metadata.topics().watch()
+    }
+
+    pub fn watch_partitions(
+        &self,
+    ) -> impl Stream<Item = MetadataChanges<PartitionSpec, AlwaysNewContext>> + '_ {
+        self.metadata.partitions().watch()
+    }
+
+    pub fn watch_spus(
+        &self,
+    ) -> impl Stream<Item = MetadataChanges<SpuSpec, AlwaysNewContext>> + '_ {
+        self.metadata.spus().watch()
     }
 
     /*
