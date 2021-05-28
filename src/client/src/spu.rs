@@ -177,13 +177,11 @@ impl SpuPool {
         Ok(stream)
     }
 
-    pub async fn topic_exists<S: Into<String>>(&self, topic: S) -> bool {
+    pub async fn topic_exists<S: Into<String>>(&self, topic: S) -> Result<bool,FluvioError> {
         let replica = ReplicaKey::new(topic, 0);
-        self.metadata
+        Ok(self.metadata
             .partitions()
-            .store()
-            .contains_key(&replica)
-            .await
+            .lookup_by_key(&replica).await?.is_some())
     }
 
     pub fn shutdown(&mut self) {

@@ -124,7 +124,7 @@ impl Fluvio {
         debug!(topic = &*topic, "Creating producer");
 
         let spu_pool = self.spu_pool().await?;
-        if !spu_pool.topic_exists(&topic).await {
+        if !spu_pool.topic_exists(&topic).await? {
             return Err(FluvioError::TopicNotFound(topic));
         }
 
