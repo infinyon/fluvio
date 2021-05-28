@@ -104,6 +104,7 @@ impl PartitionConsumer {
     ///
     /// [`Offset`]: struct.Offset.html
     /// [`fetch_with_config`]: struct.PartitionConsumer.html#method.fetch_with_config
+    #[instrument(skip(self, offset))]
     pub async fn fetch(
         &self,
         offset: Offset,
@@ -149,6 +150,7 @@ impl PartitionConsumer {
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`fetch`]: struct.PartitionConsumer.html#method.fetch
     /// [`Offset`]: struct.Offset.html
+    #[instrument(skip(self, offset, option))]
     pub async fn fetch_with_config(
         &self,
         offset: Offset,
@@ -240,6 +242,7 @@ impl PartitionConsumer {
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`stream_with_config`]: struct.ConsumerConfig.html#method.stream_with_config
+    #[instrument(skip(self, offset))]
     pub async fn stream(
         &self,
         offset: Offset,
@@ -288,6 +291,7 @@ impl PartitionConsumer {
     ///
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
+    #[instrument(skip(self, offset, config))]
     pub async fn stream_with_config(
         &self,
         offset: Offset,
@@ -338,6 +342,7 @@ impl PartitionConsumer {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(self, offset, config))]
     pub async fn stream_batches_with_config(
         &self,
         offset: Offset,

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 
-use tracing::{debug, trace};
+use tracing::{debug, trace, instrument};
 use async_lock::Mutex;
 
 use dataplane::ReplicaKey;
@@ -76,6 +76,7 @@ impl SpuPool {
     }
 
     /// create new spu socket
+    #[instrument(skip(self))]
     async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
@@ -98,6 +99,7 @@ impl SpuPool {
     /// All sockets to same SPU use a single TCP connection.
     /// First this looks up SPU address in SPU metadata and try to see if there is an existing TCP connection.
     /// If not, it will create a new connection and creates socket to it
+    #[instrument(skip(self, replica))]
     pub async fn create_serial_socket(
         &self,
         replica: &ReplicaKey,
@@ -117,6 +119,7 @@ impl SpuPool {
         Ok(socket)
     }
 
+    #[instrument(skip(self))]
     pub async fn create_serial_socket_from_leader(
         &self,
         leader_id: SpuId,
@@ -136,6 +139,7 @@ impl SpuPool {
     }
 
     /// create stream to leader replica
+    #[instrument(skip(self, replica, request, version))]
     pub async fn create_stream_with_version<R: Request>(
         &self,
         replica: &ReplicaKey,
