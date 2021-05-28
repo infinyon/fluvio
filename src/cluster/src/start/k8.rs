@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
@@ -10,6 +11,7 @@ use std::env;
 use derive_builder::Builder;
 use tracing::{info, warn, debug, error, instrument};
 use once_cell::sync::Lazy;
+use tempfile::NamedTempFile;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
@@ -41,6 +43,7 @@ const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_DEV_CHART: &str = "./k8-util/helm";
+const DEFAULT_SERVICE_TYPE: &str = "NodePort";
 
 const FLUVIO_SC_SERVICE: &str = "fluvio-sc-public";
 /// maximum time waiting for sc service to come up
@@ -334,6 +337,10 @@ pub struct ClusterConfig {
     /// This is is useful inside k8 cluster
     #[builder(default = "false")]
     use_cluster_ip: bool,
+    /// Use NodePort instead of load balancer for SC and SPU
+    ///
+    #[builder(setter(into), default = "DEFAULT_SERVICE_TYPE.to_string()")]
+    service_type: String,
     /// If set, skip spu liveness check
     #[builder(default = "false")]
     skip_spu_liveness_check: bool,
@@ -724,7 +731,7 @@ impl ClusterInstaller {
             }
         };
 
-        self.install_app()?;
+        self.install_app().await?;
         let namespace = &self.config.namespace;
         let (address, port) = self
             .wait_for_sc_service(namespace)
@@ -769,7 +776,7 @@ impl ClusterInstaller {
 
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
-    fn install_app(&self) -> Result<(), K8InstallError> {
+    async fn install_app(&self) -> Result<(), K8InstallError> {
         debug!(
             "Installing fluvio with the following configuration: {:#?}",
             &self.config
@@ -792,6 +799,65 @@ impl ClusterInstaller {
             ("image.tag", Cow::Borrowed(&fluvio_tag)),
             ("cloud", Cow::Borrowed(&self.config.cloud)),
         ];
+
+        // NodePort services need to provide SPU with an external address
+        // We're going to provide it via annotation on the SPU's K8 service
+
+        // We're going to write the annotation to a temp file so Helm can use it
+        // This is a workaround. More on this later in the function.
+        let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
+        println!("Look at path: {:#?}", &np_conf_path);
+        let np_pathbuf = vec![np_conf_path.to_path_buf()];
+
+        if self.config.service_type == "NodePort" {
+            debug!("Trying to create K8Client");
+            let kube_client = &self.kube_client;
+
+            debug!("Trying to query for Nodes");
+
+            let nodes = kube_client
+                .retrieve_items::<NodeSpec, _>("")
+                .await
+                .expect("Node query failed");
+
+            debug!("Results from Node query: {:#?}", &nodes);
+
+            let mut node_addr: Vec<NodeAddress> = Vec::new();
+            for n in nodes
+                .items
+                .into_iter()
+                .map(|x| x.status.addresses.to_owned())
+            {
+                node_addr.extend(n)
+            }
+
+            debug!("Node Addresses: {:#?}", node_addr);
+
+            let external_addr = node_addr
+                .into_iter()
+                .find(|a| a.r#type == "InternalIP")
+                .expect("No nodes with InternalIP set");
+
+            // The following is a workaround for https://github.com/infinyon/fluvio-helm/issues/16
+            // Defining this annotation via `install_settings` var would be preference
+
+            // Set this annotation w/ the external address by overriding this Helm chart value:
+            let mut ingress_address = BTreeMap::new();
+            ingress_address.insert("fluvio.io/ingress-address", external_addr.address);
+
+            let mut service_annotation = BTreeMap::new();
+            service_annotation.insert("serviceAnnotations", ingress_address);
+
+            let mut helm_lb_config = BTreeMap::new();
+            helm_lb_config.insert("loadBalancer", service_annotation);
+
+            debug!("Using NodePort service type");
+
+            serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
+                .expect("Failed to write ingress-addr to file");
+        }
+
+        // }
 
         // If TLS is enabled, set it as a helm variable
         if let TlsPolicy::Anonymous | TlsPolicy::Verified(_) = self.config.server_tls_policy {
@@ -817,6 +883,8 @@ impl ClusterInstaller {
             .map(|(k, v)| (k.to_owned(), v.to_string()))
             .collect();
 
+        debug!("Using helm install settings: {:#?}", &install_settings);
+
         match &self.config.chart_location {
             // For remote, we add a repo pointing to the chart location.
             ChartLocation::Remote(chart_location) => {
@@ -840,8 +908,11 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
-                    .values(self.config.chart_values.clone())
+                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
                     .version(&self.config.chart_version.to_string());
+
+                debug!("Using helm install args: {:#?}", &args);
+
                 if self.config.upgrade {
                     self.helm_client.upgrade(&args)?;
                 } else {
@@ -860,8 +931,11 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
-                    .values(self.config.chart_values.clone())
+                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
                     .version(&self.config.chart_version.to_string());
+
+                debug!("Using helm install args: {:#?}", &args);
+
                 if self.config.upgrade {
                     self.helm_client.upgrade(&args)?;
                 } else {
@@ -954,31 +1028,19 @@ impl ClusterInstaller {
                                         },
                                         LoadBalancerType::NodePort => {
                                             let node_port = node_port.expect("Expecting a NodePort port");
-                                            // FIXME: How do we get the IP of a master node?
 
                                             debug!("k8 node query");
                                             let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
-                                            debug!("Output from k8 node query: {:?}", &nodes);
-                                            //debug!("Output from k8 node status: {:?}", &nodes.items);
-                                            //let external_addr = nodes.items.into_iter().map(|x| x.status.addresses.clone() ).into_iter().find(|a| a.address == "InternalIP").and_then(|i| i);
-
-                                            // This works
-                                            //let external_addr = nodes.items.into_iter().map(|x| x.status.addresses.clone() ).into_iter();
-                                            //for outside in external_addr {
-                                            //    for ip in outside {
-                                            //        debug!("One IP?: {:?}", ip)
-                                            //    }
-                                            //}
+                                            debug!("Output from k8 node query: {:#?}", &nodes);
 
                                             let mut node_addr : Vec<NodeAddress> = Vec::new();
                                             for n in nodes.items.into_iter().map(|x| x.status.addresses.to_owned() ) {
                                                 node_addr.extend(n)
                                             }
 
+                                            // Return the first node with type "InternalIP"
                                             let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP").expect("No nodes with InternalIP set");
 
-                                            // Return the first node with type "InternalIP"
-                                            //let external_addr="192.168.49.2";
                                             return Ok(Some((format!("{}:{}",external_addr.address,node_port),node_port)))
                                         },
                                         LoadBalancerType::LoadBalancer => {

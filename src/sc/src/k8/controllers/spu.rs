@@ -7,9 +7,7 @@ use fluvio_controlplane_metadata::{
 };
 use fluvio_stream_dispatcher::actions::WSAction;
 use fluvio_types::SpuId;
-use k8_client::{ClientError, SharedK8Client};
-use k8_metadata_client::MetadataClient;
-use k8_types::core::node::{NodeAddress, NodeSpec};
+use k8_client::ClientError;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
@@ -30,7 +28,6 @@ use crate::stores::spg::{SpuGroupSpec};
 /// Maintain Managed SPU
 /// sync from spu services and statefulset
 pub struct SpuController {
-    client: SharedK8Client,
     services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
@@ -50,13 +47,11 @@ impl fmt::Debug for SpuController {
 
 impl SpuController {
     pub fn start(
-        client: SharedK8Client,
         spus: StoreContext<SpuSpec>,
         services: StoreContext<SpuServiceSpec>,
         groups: StoreContext<SpuGroupSpec>,
     ) {
         let controller = Self {
-            client,
             services,
             groups,
             spus,
@@ -219,72 +214,34 @@ impl SpuController {
         // Get the external ingress from the service
         // Look at svc_md to identify if LoadBalancer
         let lb_type = svc_md.spec().inner().r#type.as_ref();
-        let svc_port = svc_md.spec().inner().ports[0].port;
-        let svc_nodeport = svc_md.spec().inner().ports[0].node_port;
+        let spu_svc_port = svc_md.spec().inner().ports[0].port;
+        let spu_svc_nodeport = svc_md.spec().inner().ports[0].node_port;
 
-        // Declare the external IP based on the service type
-        // Let's build an IngressPort
+        // This will either have a value from External-IP, or will be empty
+        // If empty, the use `fluvio.io/ingress-address` annotation to set an external address for SPU
+        let svc_lb_ingresses = svc_md.status.ingress();
+
+        // Choose the external port based on the service type
         let mut computed_spu_ingressport = match lb_type {
-            Some(LoadBalancerType::NodePort) => {
-                // Assuming only one node
-                debug!("Trying to create K8Client");
-                let kube_client = &self.client;
-
-                debug!("Trying to query for Nodes");
-                // This NodeSpec does not rely on namespace
-                let nodes = kube_client
-                    .retrieve_items::<NodeSpec, _>("default")
-                    .await
-                    .expect("Node query failed");
-
-                debug!("Results from Node query: {:?}", &nodes);
-
-                let mut node_addr: Vec<NodeAddress> = Vec::new();
-                for n in nodes
-                    .items
-                    .into_iter()
-                    .map(|x| x.status.addresses.to_owned())
-                {
-                    node_addr.extend(n)
-                }
-
-                debug!("Node Addresses: {:?}", node_addr);
-
-                let external_addr = node_addr
-                    .into_iter()
-                    .find(|a| a.r#type == "InternalIP")
-                    .expect("No nodes with InternalIP set");
-                //debug!("External addr from query: {:?}", external_addr);
-
-                IngressPort {
-                    port: svc_nodeport.expect("Expected a node port"),
-                    ingress: vec![IngressAddr {
-                        hostname: None,
-                        //ip: Some("192.168.49.2".to_string()),
-                        ip: Some(external_addr.address.to_string()),
-                    }],
-                    ..Default::default()
-                }
-            }
-            _ => {
-                let svc_lb_ingresses = svc_md.status.ingress();
-
-                IngressPort {
-                    port: svc_port,
-                    ingress: svc_lb_ingresses.iter().map(convert).collect(),
-                    ..Default::default()
-                }
-            }
+            Some(LoadBalancerType::NodePort) => IngressPort {
+                port: spu_svc_nodeport.expect("Expected a node port"),
+                ingress: svc_lb_ingresses.iter().map(convert).collect(),
+                ..Default::default()
+            },
+            _ => IngressPort {
+                port: spu_svc_port,
+                ingress: svc_lb_ingresses.iter().map(convert).collect(),
+                ..Default::default()
+            },
         };
-
-        //let svc_lb_ingresses = svc_md.status.ingress();
-        //let mut computed_spu_ingress: Vec<IngressAddr> =
-        //    svc_lb_ingresses.iter().map(convert).collect();
-
-        debug!("Computed SPU ingress: {:?}", &computed_spu_ingressport);
 
         // Add additional ingress via annotation value
         add_ingress_from_svc_annotation(&svc_md, &mut computed_spu_ingressport.ingress);
+
+        debug!(
+            "Computed SPU ingress after applying any svc annotation: {:?}",
+            &computed_spu_ingressport
+        );
 
         // We're going to come in with a fully built IngressPort
         if computed_spu_ingressport != spu_ingressport {
@@ -391,6 +348,7 @@ fn add_ingress_from_svc_annotation(
     svc_md: &MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
     computed_spu_ingress: &mut Vec<IngressAddr>,
 ) {
+    debug!("Checking ingress for annotations: {:?}", &svc_md);
     if let Some(address) = SpuServiceSpec::ingress_annotation(svc_md.ctx().item()) {
         if let Ok(ip_addr) = address.parse::<IpAddr>() {
             computed_spu_ingress.push(IngressAddr {
