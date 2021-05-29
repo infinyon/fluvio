@@ -823,11 +823,7 @@ impl ClusterInstaller {
             debug!("Results from Node query: {:#?}", &nodes);
 
             let mut node_addr: Vec<NodeAddress> = Vec::new();
-            for n in nodes
-                .items
-                .into_iter()
-                .map(|x| x.status.addresses)
-            {
+            for n in nodes.items.into_iter().map(|x| x.status.addresses) {
                 node_addr.extend(n)
             }
 
@@ -1009,12 +1005,7 @@ impl ClusterInstaller {
                                     let node_port =  service.spec
                                         .ports
                                         .iter()
-                                        .filter_map(|port| {
-                                            match port.node_port {
-                                                Some(value) => Some(value),
-                                                None => None
-                                            }
-                                        })
+                                        .filter_map(|port| port.node_port)
                                         .next();
 
 
