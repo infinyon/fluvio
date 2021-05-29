@@ -74,7 +74,7 @@ smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1
 SC_HOST=localhost
 test-permission-user1:
 	rm -f /tmp/topic.err
-	- $(FLUVIO_BIN) --cluster ${SC_HOST}:9003 \
+	- $(FLUVIO_BIN) \
 		--tls --enable-client-cert --domain fluvio.local \
 		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
 		 topic create test3 2> /tmp/topic.err
