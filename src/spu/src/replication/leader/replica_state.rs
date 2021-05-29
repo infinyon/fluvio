@@ -274,7 +274,6 @@ where
     }
 
     /// convert myself as
-    #[instrument(skip(self))]
     async fn as_lrs_request(&self) -> LrsRequest {
         let leader = (self.leader(), self.hw(), self.leo()).into();
         let replicas = self
