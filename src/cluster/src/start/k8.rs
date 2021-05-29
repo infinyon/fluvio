@@ -826,7 +826,7 @@ impl ClusterInstaller {
             for n in nodes
                 .items
                 .into_iter()
-                .map(|x| x.status.addresses.to_owned())
+                .map(|x| x.status.addresses)
             {
                 node_addr.extend(n)
             }
@@ -1034,7 +1034,7 @@ impl ClusterInstaller {
                                             debug!("Output from k8 node query: {:#?}", &nodes);
 
                                             let mut node_addr : Vec<NodeAddress> = Vec::new();
-                                            for n in nodes.items.into_iter().map(|x| x.status.addresses.to_owned() ) {
+                                            for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
                                                 node_addr.extend(n)
                                             }
 
