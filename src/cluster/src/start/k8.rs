@@ -806,11 +806,11 @@ impl ClusterInstaller {
         // We're going to write the annotation to a temp file so Helm can use it
         // This is a workaround. More on this later in the function.
         let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
-        println!("Look at path: {:#?}", &np_conf_path);
         let np_pathbuf = vec![np_conf_path.to_path_buf()];
 
         if self.config.service_type == "NodePort" {
-            debug!("Trying to create K8Client");
+            debug!("Using NodePort service type");
+            debug!("Getting external IP from K8s node");
             let kube_client = &self.kube_client;
 
             debug!("Trying to query for Nodes");
@@ -847,13 +847,9 @@ impl ClusterInstaller {
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);
 
-            debug!("Using NodePort service type");
-
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .expect("Failed to write ingress-addr to file");
         }
-
-        // }
 
         // If TLS is enabled, set it as a helm variable
         if let TlsPolicy::Anonymous | TlsPolicy::Verified(_) = self.config.server_tls_policy {

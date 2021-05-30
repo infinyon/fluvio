@@ -225,7 +225,6 @@ impl SpuController {
         let mut computed_spu_ingressport = match lb_type {
             Some(LoadBalancerType::NodePort) => IngressPort {
                 port: spu_svc_nodeport.expect("Expected a node port"),
-                ingress: svc_lb_ingresses.iter().map(convert).collect(),
                 ..Default::default()
             },
             _ => IngressPort {
@@ -348,7 +347,7 @@ fn add_ingress_from_svc_annotation(
     svc_md: &MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
     computed_spu_ingress: &mut Vec<IngressAddr>,
 ) {
-    debug!("Checking ingress for annotations: {:?}", &svc_md);
+    debug!("Checking ingress for annotations: {:#?}", &svc_md);
     if let Some(address) = SpuServiceSpec::ingress_annotation(svc_md.ctx().item()) {
         if let Ok(ip_addr) = address.parse::<IpAddr>() {
             computed_spu_ingress.push(IngressAddr {
