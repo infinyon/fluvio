@@ -397,10 +397,8 @@ jobs:
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
-          pkill -f "minikube tunnel" || true
           minikube delete
           minikube start --driver=docker --kubernetes-version 1.19.6
-          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
       - name: Test minikube
         run: |
           minikube profile list
@@ -429,7 +427,6 @@ jobs:
       - name: Clean minikube
         run: |
           minikube delete
-          pkill -f "minikube tunnel" || true
       - name: Save logs
         if: failure()
         run: |
