@@ -338,7 +338,6 @@ pub struct ClusterConfig {
     #[builder(default = "false")]
     use_cluster_ip: bool,
     /// Use NodePort instead of load balancer for SC and SPU
-    ///
     #[builder(setter(into), default = "DEFAULT_SERVICE_TYPE.to_string()")]
     service_type: String,
     /// If set, skip spu liveness check
@@ -1050,7 +1049,6 @@ impl ClusterInstaller {
 
                                     }
 
-
                                 }
                             }
                         }
@@ -1159,7 +1157,6 @@ impl ClusterInstaller {
         Err(K8InstallError::SCDNSTimeout)
     }
 
-    // FIXME: Add support for NodePort SPUs
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
@@ -1186,11 +1183,6 @@ impl ClusterInstaller {
                 Some(LoadBalancerType::LoadBalancer)
             };
 
-            //for lb_type in service.items.into_iter().filter(|sc_lb| sc_lb.metadata.name == "fluvio-sc-public") {
-            //    debug!("Svc name: {:?} -- type: {:?}", lb_type.metadata.name, lb_type.spec.r#type);
-            //}
-
-            // FIXME: How do we update the ingress list when we're using NodePort?
             // Check that all items have ingress
             let ready_spu = items
                 .items

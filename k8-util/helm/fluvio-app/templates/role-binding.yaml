@@ -5,7 +5,6 @@ metadata:
 subjects:
 - kind: ServiceAccount
   name: {{ .Values.serviceAccount.name }}
-  apiGroup: ""
 roleRef:
   kind: Role
   name: {{ .Values.serviceAccount.name }}

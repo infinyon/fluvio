@@ -606,7 +606,6 @@ impl ClusterChecker {
             Box::new(CreateServicePermission),
             Box::new(CreateCrdPermission),
             Box::new(CreateServiceAccountPermission),
-            //Box::new(LoadBalancer),
         ];
         self.checks.extend(checks);
         self
@@ -621,11 +620,8 @@ impl ClusterChecker {
     /// - [`run_with_progress`](ClusterChecker::run_with_progress)
     /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_k8_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
-            Box::new(LoadableConfig),
-            Box::new(HelmVersion),
-            //Box::new(LoadBalancer),
-        ];
+        let checks: Vec<Box<(dyn ClusterCheck)>> =
+            vec![Box::new(LoadableConfig), Box::new(HelmVersion)];
         self.checks.extend(checks);
         self
     }
