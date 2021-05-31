@@ -1429,7 +1429,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.9.2"
+version = "0.9.3"
 dependencies = [
  "async-channel",
  "async-trait",
@@ -1451,7 +1451,6 @@ dependencies = [
  "k8-types",
  "once_cell",
  "prettytable-rs",
- "proclist",
  "remoteprocess",
  "semver 0.11.0",
  "serde",
@@ -3403,17 +3402,6 @@ dependencies = [
  "libc",
  "libproc",
  "mach",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "proclist"
-version = "0.9.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "275bfe319f16502d8fab42ff8bac075e747a188d1b2cbc223d94aaf8f877b41a"
-dependencies = [
- "errno",
- "libc",
  "winapi 0.3.9",
 ]
 
