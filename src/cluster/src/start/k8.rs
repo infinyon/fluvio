@@ -814,10 +814,7 @@ impl ClusterInstaller {
 
             debug!("Trying to query for Nodes");
 
-            let nodes = kube_client
-                .retrieve_items::<NodeSpec, _>("")
-                .await
-                .expect("Node query failed");
+            let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
 
             debug!("Results from Node query: {:#?}", &nodes);
 
@@ -831,7 +828,7 @@ impl ClusterInstaller {
             let external_addr = node_addr
                 .into_iter()
                 .find(|a| a.r#type == "InternalIP")
-                .expect("No nodes with InternalIP set");
+                .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
 
             // The following is a workaround for https://github.com/infinyon/fluvio-helm/issues/16
             // Defining this annotation via `install_settings` var would be preference
@@ -847,7 +844,7 @@ impl ClusterInstaller {
             helm_lb_config.insert("loadBalancer", service_annotation);
 
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
-                .expect("Failed to write ingress-addr to file");
+                .map_err(|err| K8InstallError::Other(err.to_string()))?;
         }
 
         // If TLS is enabled, set it as a helm variable
@@ -995,7 +992,7 @@ impl ClusterInstaller {
                                             }
                                         })
                                         .next()
-                                        .expect("target port should be there");
+                                        .ok_or_else(|| K8InstallError::Other("target port should be there".into()))?;
 
                                     let node_port =  service.spec
                                         .ports
@@ -1008,12 +1005,14 @@ impl ClusterInstaller {
                                         return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
                                     };
 
-                                    match service.spec.r#type.expect("Load Balancer Type") {
+                                    let k8_load_balancer_type = service.spec.r#type.ok_or_else(|| K8InstallError::Other("Load Balancer Type".into()))?;
+
+                                    match k8_load_balancer_type {
                                         LoadBalancerType::ClusterIP => {
                                             return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
                                         },
                                         LoadBalancerType::NodePort => {
-                                            let node_port = node_port.expect("Expecting a NodePort port");
+                                            let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
                                             debug!("k8 node query");
                                             let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
@@ -1025,7 +1024,8 @@ impl ClusterInstaller {
                                             }
 
                                             // Return the first node with type "InternalIP"
-                                            let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP").expect("No nodes with InternalIP set");
+                                            let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP")
+                                            .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
 
                                             return Ok(Some((format!("{}:{}",external_addr.address,node_port),node_port)))
                                         },
