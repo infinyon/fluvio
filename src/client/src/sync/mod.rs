@@ -143,7 +143,7 @@ mod context {
         <S as Spec>::Status: Send + Sync,
         S::IndexKey: Send + Sync,
     {
-        pub fn watch(&self) -> impl Stream<Item = MetadataChanges<S, AlwaysNewContext>> + '_ {
+        pub fn watch(&self) -> impl Stream<Item = MetadataChanges<S, AlwaysNewContext>> {
             let mut listener = self.store.change_listener();
             let (sender, receiver) = async_channel::unbounded();
 
