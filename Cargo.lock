@@ -1572,7 +1572,8 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.3"
-source = "git+https://github.com/infinyon/future-aio.git?branch=master#3dbdab9f64213de0d7960b6503be53eea1e65ae3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6b30d60058b7a8530be4307c4effe2868484faa643d9fe5b8b4ad9ea64e03a2"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1583,6 +1584,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "fluvio-test-derive",
  "fluvio-wasm-timer",
+ "fluvio_ws_stream_wasm",
  "futures-lite",
  "futures-util",
  "log",
@@ -1596,7 +1598,6 @@ dependencies = [
  "thiserror",
  "tracing",
  "tracing-subscriber",
- "ws_stream_wasm",
 ]
 
 [[package]]
@@ -1962,7 +1963,8 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "git+https://github.com/infinyon/future-aio.git?branch=master#3dbdab9f64213de0d7960b6503be53eea1e65ae3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -5081,23 +5083,6 @@ name = "winapi-x86_64-pc-windows-gnu"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "712e227841d057c1ee1cd2fb22fa7e5a5461ae8e48fa2ca79ec42cfc1931183f"
-
-[[package]]
-name = "ws_stream_wasm"
-version = "0.7.0"
-source = "git+https://github.com/infinyon/ws_stream_wasm?branch=add-clone-to-wsstream-again#74e6512b5040ab96e1c5739ad7d420e8f9d39c52"
-dependencies = [
- "async_io_stream",
- "futures",
- "js-sys",
- "pharos",
- "rustc_version 0.3.3",
- "send_wrapper",
- "thiserror",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
 
 [[package]]
 name = "wyz"
