@@ -6,5 +6,4 @@ ARG1=${1:-docker}
 sudo pkill -f "minikube tunnel"
 minikube delete
 minikube start --driver $ARG1 --kubernetes-version 1.19.6
-sudo nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
 fluvio cluster start --sys

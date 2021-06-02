@@ -2,6 +2,7 @@
 
 ## Platform Version 0.8.4 - 2020-05-29
 * Don't hang when check for non exist topic. ([#697](https://github.com/infinyon/fluvio/pull/697))
+* `fluvio cluster start` uses Kubernetes NodePort by default ([#1083](https://github.com/infinyon/fluvio/pull/1083))
   
 ## Platform Version 0.8.3 - 2020-05-25
 * Added builder for fluvio_storage::config::ConfigOption. ([#1076](https://github.com/infinyon/fluvio/pull/1076))

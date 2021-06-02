@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
@@ -10,6 +11,7 @@ use std::env;
 use derive_builder::Builder;
 use tracing::{info, warn, debug, error, instrument};
 use once_cell::sync::Lazy;
+use tempfile::NamedTempFile;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
@@ -20,7 +22,8 @@ use fluvio_future::net::{TcpStream, resolve};
 use k8_client::K8Client;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
-use k8_types::core::service::{ServiceSpec, TargetPort};
+use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
+use k8_types::core::node::{NodeSpec, NodeAddress};
 
 use crate::helm::{HelmClient, Chart};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
@@ -40,6 +43,7 @@ const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_DEV_CHART: &str = "./k8-util/helm";
+const DEFAULT_SERVICE_TYPE: &str = "NodePort";
 
 const FLUVIO_SC_SERVICE: &str = "fluvio-sc-public";
 /// maximum time waiting for sc service to come up
@@ -333,6 +337,9 @@ pub struct ClusterConfig {
     /// This is is useful inside k8 cluster
     #[builder(default = "false")]
     use_cluster_ip: bool,
+    /// Use NodePort instead of load balancer for SC and SPU
+    #[builder(setter(into), default = "DEFAULT_SERVICE_TYPE.to_string()")]
+    service_type: String,
     /// If set, skip spu liveness check
     #[builder(default = "false")]
     skip_spu_liveness_check: bool,
@@ -723,7 +730,7 @@ impl ClusterInstaller {
             }
         };
 
-        self.install_app()?;
+        self.install_app().await?;
         let namespace = &self.config.namespace;
         let (address, port) = self
             .wait_for_sc_service(namespace)
@@ -768,7 +775,7 @@ impl ClusterInstaller {
 
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
-    fn install_app(&self) -> Result<(), K8InstallError> {
+    async fn install_app(&self) -> Result<(), K8InstallError> {
         debug!(
             "Installing fluvio with the following configuration: {:#?}",
             &self.config
@@ -791,6 +798,54 @@ impl ClusterInstaller {
             ("image.tag", Cow::Borrowed(&fluvio_tag)),
             ("cloud", Cow::Borrowed(&self.config.cloud)),
         ];
+
+        // NodePort services need to provide SPU with an external address
+        // We're going to provide it via annotation on the SPU's K8 service
+
+        // We're going to write the annotation to a temp file so Helm can use it
+        // This is a workaround. More on this later in the function.
+        let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
+        let np_pathbuf = vec![np_conf_path.to_path_buf()];
+
+        if self.config.service_type == "NodePort" {
+            debug!("Using NodePort service type");
+            debug!("Getting external IP from K8s node");
+            let kube_client = &self.kube_client;
+
+            debug!("Trying to query for Nodes");
+
+            let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
+
+            debug!("Results from Node query: {:#?}", &nodes);
+
+            let mut node_addr: Vec<NodeAddress> = Vec::new();
+            for n in nodes.items.into_iter().map(|x| x.status.addresses) {
+                node_addr.extend(n)
+            }
+
+            debug!("Node Addresses: {:#?}", node_addr);
+
+            let external_addr = node_addr
+                .into_iter()
+                .find(|a| a.r#type == "InternalIP")
+                .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+
+            // The following is a workaround for https://github.com/infinyon/fluvio-helm/issues/16
+            // Defining this annotation via `install_settings` var would be preference
+
+            // Set this annotation w/ the external address by overriding this Helm chart value:
+            let mut ingress_address = BTreeMap::new();
+            ingress_address.insert("fluvio.io/ingress-address", external_addr.address);
+
+            let mut service_annotation = BTreeMap::new();
+            service_annotation.insert("serviceAnnotations", ingress_address);
+
+            let mut helm_lb_config = BTreeMap::new();
+            helm_lb_config.insert("loadBalancer", service_annotation);
+
+            serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
+                .map_err(|err| K8InstallError::Other(err.to_string()))?;
+        }
 
         // If TLS is enabled, set it as a helm variable
         if let TlsPolicy::Anonymous | TlsPolicy::Verified(_) = self.config.server_tls_policy {
@@ -816,6 +871,8 @@ impl ClusterInstaller {
             .map(|(k, v)| (k.to_owned(), v.to_string()))
             .collect();
 
+        debug!("Using helm install settings: {:#?}", &install_settings);
+
         match &self.config.chart_location {
             // For remote, we add a repo pointing to the chart location.
             ChartLocation::Remote(chart_location) => {
@@ -839,8 +896,11 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
-                    .values(self.config.chart_values.clone())
+                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
                     .version(&self.config.chart_version.to_string());
+
+                debug!("Using helm install args: {:#?}", &args);
+
                 if self.config.upgrade {
                     self.helm_client.upgrade(&args)?;
                 } else {
@@ -859,8 +919,11 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
-                    .values(self.config.chart_values.clone())
+                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
                     .version(&self.config.chart_version.to_string());
+
+                debug!("Using helm install args: {:#?}", &args);
+
                 if self.config.upgrade {
                     self.helm_client.upgrade(&args)?;
                 } else {
@@ -929,25 +992,61 @@ impl ClusterInstaller {
                                             }
                                         })
                                         .next()
-                                        .expect("target port should be there");
+                                        .ok_or_else(|| K8InstallError::Other("target port should be there".into()))?;
+
+                                    let node_port =  service.spec
+                                        .ports
+                                        .iter()
+                                        .filter_map(|port| port.node_port)
+                                        .next();
+
 
                                     if self.config.use_cluster_ip  {
                                         return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
                                     };
 
-                                    let ingress_addr = service
-                                        .status
-                                        .load_balancer
-                                        .ingress
-                                        .iter()
-                                        .find(|_| true)
-                                        .and_then(|ingress| ingress.host_or_ip().to_owned());
+                                    let k8_load_balancer_type = service.spec.r#type.ok_or_else(|| K8InstallError::Other("Load Balancer Type".into()))?;
 
-                                    if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
+                                    match k8_load_balancer_type {
+                                        LoadBalancerType::ClusterIP => {
+                                            return Ok(Some((format!("{}:{}",service.spec.cluster_ip,target_port),target_port)))
+                                        },
+                                        LoadBalancerType::NodePort => {
+                                            let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
+                                            debug!("k8 node query");
+                                            let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
+                                            debug!("Output from k8 node query: {:#?}", &nodes);
 
-                                            debug!(%sock_addr,"found lb address");
-                                            return Ok(Some((sock_addr,target_port)))
+                                            let mut node_addr : Vec<NodeAddress> = Vec::new();
+                                            for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
+                                                node_addr.extend(n)
+                                            }
+
+                                            // Return the first node with type "InternalIP"
+                                            let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP")
+                                            .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+
+                                            return Ok(Some((format!("{}:{}",external_addr.address,node_port),node_port)))
+                                        },
+                                        LoadBalancerType::LoadBalancer => {
+                                            let ingress_addr = service
+                                                .status
+                                                .load_balancer
+                                                .ingress
+                                                .iter()
+                                                .find(|_| true)
+                                                .and_then(|ingress| ingress.host_or_ip().to_owned());
+
+                                            if let Some(sock_addr) = ingress_addr.map(|addr| {format!("{}:{}", addr, target_port)}) {
+                                                    debug!(%sock_addr,"found lb address");
+                                                    return Ok(Some((sock_addr,target_port)))
+                                            }
+                                        },
+                                        LoadBalancerType::ExternalName => {
+                                            unimplemented!("ExternalName Load Balancer support not implemented");
+                                        },
+
                                     }
 
                                 }
@@ -1067,14 +1166,37 @@ impl ClusterInstaller {
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
 
+            // We want to know what kind of load balancing we're using, for liveness checks
+            let service = self
+                .kube_client
+                .retrieve_items::<ServiceSpec, _>(ns)
+                .await?;
+
+            let sc_public_svc = service
+                .items
+                .into_iter()
+                .find(|sc_lb| sc_lb.metadata.name == "fluvio-sc-public");
+
+            let lb_type = if let Some(k8svc) = sc_public_svc {
+                k8svc.spec.r#type
+            } else {
+                Some(LoadBalancerType::LoadBalancer)
+            };
+
             // Check that all items have ingress
             let ready_spu = items
                 .items
                 .iter()
                 .filter(|spu_obj| {
-                    // if cluster ip is used then we skip checkking ingress
-                    (self.config.use_cluster_ip || !spu_obj.spec.public_endpoint.ingress.is_empty())
-                        && spu_obj.status.is_online()
+                    match lb_type {
+                        Some(LoadBalancerType::NodePort) => spu_obj.status.is_online(),
+                        _ => {
+                            // if cluster ip is used then we skip checking ingress
+                            (self.config.use_cluster_ip
+                                || !spu_obj.spec.public_endpoint.ingress.is_empty())
+                                && spu_obj.status.is_online()
+                        }
+                    }
                 })
                 .count();
 

@@ -6,7 +6,7 @@ cloud: minikube
 loadBalancer:
   serviceAnnotations: {}
 service:
-  type: LoadBalancer
+  type: NodePort
 scLog: info
 tls: false
 imagePullSecrets: []

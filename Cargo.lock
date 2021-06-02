@@ -542,9 +542,9 @@ checksum = "631ae5198c9be5e753e5cc215e1bd73c2b466a3565173db433f52bb9d3e66dba"
 
 [[package]]
 name = "cc"
-version = "1.0.67"
+version = "1.0.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e3c69b077ad434294d3ce9f1f6143a2a4b89a8a2d54ef813d85003a4fd1137fd"
+checksum = "4a72c244c1ff497a746a7e1fb3d14bd08420ecda70c8f25c7112f2781652d787"
 dependencies = [
  "jobserver",
 ]
@@ -1455,7 +1455,9 @@ dependencies = [
  "semver 0.11.0",
  "serde",
  "serde_json",
+ "serde_yaml",
  "structopt",
+ "tempfile",
  "thiserror",
  "tokio",
  "tracing",
@@ -1572,8 +1574,7 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6b30d60058b7a8530be4307c4effe2868484faa643d9fe5b8b4ad9ea64e03a2"
+source = "git+https://github.com/infinyon/future-aio.git?branch=master#4694e5db71783cf23aeb6b66806c08205582d3ec"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1963,8 +1964,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
+source = "git+https://github.com/infinyon/future-aio.git?branch=master#4694e5db71783cf23aeb6b66806c08205582d3ec"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2500,9 +2500,9 @@ checksum = "f3a87b616e37e93c22fb19bcd386f02f3af5ea98a25670ad0fce773de23c5e68"
 
 [[package]]
 name = "httpdate"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05842d0d43232b23ccb7060ecb0f0626922c21f30012e97b767b30afd4a5d4b9"
+checksum = "6456b8a6c8f33fee7d958fcd1b60d55b11940a79e63ae87013e6d22e26034440"
 
 [[package]]
 name = "humantime"
@@ -2515,9 +2515,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.7"
+version = "0.14.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e5f105c494081baa3bf9e200b279e27ec1623895cd504c7dbef8d0b080fcf54"
+checksum = "d3f71a7eea53a3f8257a7b4795373ff886397178cd634430ea94e12d7fe4fe34"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -2727,9 +2727,9 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf4398c021446513c306633ae67ae6dfd7166e3d733f0ff19fe20c358446e71a"
+checksum = "566d91afa57a8c78b08c1435690921bc2f0c3d88a58059eb0993267da851be43"
 dependencies = [
  "serde",
  "serde_json",
@@ -2782,9 +2782,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.94"
+version = "0.2.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18794a8ad5b29321f790b55d93dfba91e125cb1a9edbd4f8e3150acc771c1a5e"
+checksum = "789da6d93f1b866ffe175afc5322a4d76c038605a1c3319bb57b06967ca98a36"
 
 [[package]]
 name = "libproc"
@@ -3041,9 +3041,9 @@ checksum = "1a5b3dd1c072ee7963717671d1ca129f1048fda25edea6b752bfc71ac8854170"
 
 [[package]]
 name = "oid-registry"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2508c8f170e55be68508b1113956a760a82684f42022f8834fb16ca198621211"
+checksum = "b2434841326d1f18c2eb9e4857729ef88f0d5ce4b71c9b989eda17d9e3d6456d"
 dependencies = [
  "der-parser",
 ]
