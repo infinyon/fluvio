@@ -38,6 +38,10 @@ pub struct ProduceOpt {
     #[structopt(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
+    /// Send all input as one record. Use this when producing binary files.
+    #[structopt(long)]
+    pub raw: bool,
+
     /// Path to a file to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub file: Option<PathBuf>,
@@ -54,8 +58,32 @@ fn validate_key_separator(separator: String) -> std::result::Result<(), String> 
 
 impl ProduceOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
-        let mut producer = fluvio.topic_producer(&self.topic).await?;
+        let producer = fluvio.topic_producer(&self.topic).await?;
 
+        if self.raw {
+            // Read all input and send as one record
+            let buffer = match &self.file {
+                Some(path) => std::fs::read(&path)?,
+                None => {
+                    let mut buffer = Vec::new();
+                    std::io::Read::read_to_end(&mut std::io::stdin(), &mut buffer)?;
+                    buffer
+                }
+            };
+            producer.send(RecordKey::NULL, buffer).await?;
+        } else {
+            // Read input line-by-line and send as individual records
+            self.produce_lines(&producer).await?;
+        }
+
+        if self.interactive_mode() {
+            print_cli_ok!();
+        }
+
+        Ok(())
+    }
+
+    async fn produce_lines(&self, producer: &TopicProducer) -> Result<(), ConsumerError> {
         match &self.file {
             Some(path) => {
                 let reader = BufReader::new(File::open(path)?);
@@ -63,7 +91,7 @@ impl ProduceOpt {
                 let batches: Vec<_> = lines.chunks(DEFAULT_BATCH_SIZE).collect();
                 for batch in batches {
                     let batch: Vec<_> = batch.iter().map(|it| &**it).collect();
-                    self.produce_lines(&mut producer, &batch).await?;
+                    self.produce_strs(&producer, &batch).await?;
                 }
             }
             None => {
@@ -72,34 +100,21 @@ impl ProduceOpt {
                     eprint!("> ");
                 }
                 while let Some(Ok(line)) = lines.next() {
-                    self.produce_lines(&mut producer, &[&line]).await?;
+                    self.produce_strs(&producer, &[&line]).await?;
+                    if self.interactive_mode() {
+                        print_cli_ok!();
+                        eprint!("> ");
+                    }
                 }
             }
         };
 
-        if !self.interactive_mode() {
-            print_cli_ok!();
-        }
-
-        Ok(())
-    }
-
-    async fn produce_lines(
-        &self,
-        producer: &mut TopicProducer,
-        lines: &[&str],
-    ) -> Result<(), ConsumerError> {
-        self.produce_strs(producer, lines).await?;
-        if self.interactive_mode() {
-            print_cli_ok!();
-            eprint!("> ");
-        }
         Ok(())
     }
 
     async fn produce_strs(
         &self,
-        producer: &mut TopicProducer,
+        producer: &TopicProducer,
         strings: &[&str],
     ) -> Result<(), ConsumerError> {
         if self.kv_mode() {
@@ -126,7 +141,7 @@ impl ProduceOpt {
 
     async fn produce_key_values(
         &self,
-        producer: &mut TopicProducer,
+        producer: &TopicProducer,
         strings: &[&str],
     ) -> Result<(), ConsumerError> {
         if let Some(separator) = &self.key_separator {
@@ -142,7 +157,7 @@ impl ProduceOpt {
 
     async fn produce_key_value_via_separator(
         &self,
-        producer: &mut TopicProducer,
+        producer: &TopicProducer,
         strings: &[&str],
         separator: &str,
     ) -> Result<(), ConsumerError> {
