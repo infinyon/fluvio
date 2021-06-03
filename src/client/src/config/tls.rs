@@ -275,6 +275,8 @@ cfg_if::cfg_if! {
                                 .build()?
                             )
                             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
+                            //.with_certificate_vertification_disabled()
+                            //.map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
 
 
                         Ok(Box::new(TlsDomainConnector::new(
