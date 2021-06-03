@@ -5,7 +5,7 @@
 //!
 use std::sync::Arc;
 
-use tracing::{debug, warn, info};
+use tracing::{debug, warn, info, instrument};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 
@@ -79,6 +79,7 @@ impl PartitionReducer {
         }
     }
 
+    #[instrument(skip(self, updates))]
     pub async fn process_partition_update(
         &self,
         updates: Vec<PartitionAdminMd>,
@@ -103,6 +104,7 @@ impl PartitionReducer {
     ///
     /// based on spu change, update election
     ///
+    #[instrument(skip(self, spus))]
     pub async fn update_election_from_spu_changes(
         &self,
         spus: Vec<SpuAdminMd>,
@@ -127,6 +129,7 @@ impl PartitionReducer {
     }
 
     /// perform election when spu goes offline
+    #[instrument(skip(self, offline_spu, actions))]
     async fn force_election_spu_off(
         &self,
         offline_spu: SpuAdminMd,
@@ -179,6 +182,7 @@ impl PartitionReducer {
     }
 
     /// perform election when spu become online
+    #[instrument(skip(self, online_spu, actions))]
     async fn force_election_spu_on(
         &self,
         online_spu: SpuAdminMd,

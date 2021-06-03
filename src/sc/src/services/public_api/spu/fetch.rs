@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use tracing::{trace, debug};
+use tracing::{trace, debug, instrument};
 
 use fluvio_sc_schema::objects::{ListResponse, Metadata};
 use fluvio_sc_schema::spu::SpuSpec;
@@ -11,6 +11,7 @@ use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
+#[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
     filters: Vec<String>,
     auth_ctx: &AuthServiceContext<AC>,
@@ -62,6 +63,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
     Ok(ListResponse::CustomSpu(custom_spus))
 }
 
+#[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_spus_request<AC: AuthContext>(
     filters: Vec<String>,
     auth_ctx: &AuthServiceContext<AC>,

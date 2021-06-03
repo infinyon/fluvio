@@ -56,7 +56,6 @@ impl SpuController {
         });
     }
 
-    #[instrument(skip(self), name = "SpuController")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
         use fluvio_future::timer::sleep;
@@ -105,6 +104,7 @@ impl SpuController {
     }
 
     /// sync spu status with store
+    #[instrument(skip(self))]
     async fn sync_store(&mut self) {
         use std::collections::HashSet;
 

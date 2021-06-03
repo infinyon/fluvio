@@ -1,8 +1,7 @@
 use std::fmt;
 use std::collections::BTreeMap;
 
-use tracing::debug;
-use tracing::trace;
+use tracing::{debug, trace, instrument};
 use rand::thread_rng;
 use rand::Rng;
 
@@ -44,6 +43,7 @@ pub fn validate_computed_topic_parameters(param: &TopicReplicaParam) -> TopicNex
 ///  * returns a replica map or a reason for the failure
 ///  * fatal error  configuration errors and are not recoverable
 ///
+#[instrument(level = "trace", skip(spus, param))]
 pub async fn generate_replica_map(
     spus: &SpuAdminStore,
     param: &TopicReplicaParam,
@@ -73,6 +73,7 @@ pub async fn generate_replica_map(
 /// Compare assigned SPUs versus local SPUs. If all assigned SPUs are live,
 /// update topic status to ok. otherwise, mark as waiting for live SPUs
 ///
+#[instrument(skip(partition_maps, spu_store))]
 pub async fn update_replica_map_for_assigned_topic(
     partition_maps: &PartitionMaps,
     spu_store: &SpuAdminStore,
@@ -241,6 +242,7 @@ impl TopicNextState {
 ///
 /// Generate replica map for a specific topic
 ///
+#[instrument(level = "trace", skip(spus, param, from_index))]
 pub async fn generate_replica_map_for_topic(
     spus: &SpuAdminStore,
     param: &TopicReplicaParam,

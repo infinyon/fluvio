@@ -1,9 +1,7 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use tracing::{debug, trace};
-use tracing::error;
-use tracing::instrument;
+use tracing::{debug, trace, error, instrument};
 
 use fluvio_types::event::SimpleEvent;
 use fluvio_socket::ExclusiveFlvSink;
@@ -21,6 +19,7 @@ use crate::stores::{StoreContext, K8ChangeListener};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 /// handle watch request by spawning watch controller for each store
+#[instrument(skip(request, auth_ctx, sink, end_event))]
 pub fn handle_watch_request<AC>(
     request: RequestMessage<WatchRequest>,
     auth_ctx: &AuthServiceContext<AC>,
@@ -132,6 +131,7 @@ where
 
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
+    #[instrument(skip(self, listener))]
     async fn sync_and_send_changes(&mut self, listener: &mut K8ChangeListener<S>) -> bool {
         use fluvio_controlplane_metadata::message::*;
 

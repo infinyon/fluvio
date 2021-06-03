@@ -1,5 +1,7 @@
 use std::io::Error as IoError;
 
+use tracing::instrument;
+
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::{CreateRequest, AllCreatableSpec};
@@ -8,6 +10,7 @@ use fluvio_auth::AuthContext;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
+#[instrument(skip(request, auth_context))]
 pub async fn handle_create_request<AC: AuthContext>(
     request: RequestMessage<CreateRequest>,
     auth_context: &AuthServiceContext<AC>,
