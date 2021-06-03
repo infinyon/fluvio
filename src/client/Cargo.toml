@@ -15,6 +15,7 @@ path = "src/lib.rs"
 
 [features]
 admin = ["fluvio-sc-schema/use_serde"]
+unstable = []
 
 [dependencies]
 tracing = "0.1.19"

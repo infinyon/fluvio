@@ -192,16 +192,22 @@ impl FluvioAdmin {
             .map_err(|err| Error::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
     }
 
+    /// Create a stream that yields updates to Topic metadata
+    #[cfg(feature = "unstable")]
     pub fn watch_topics(&self) -> impl Stream<Item = MetadataChanges<TopicSpec, AlwaysNewContext>> {
         self.metadata.topics().watch()
     }
 
+    /// Create a stream that yields updates to Partition metadata
+    #[cfg(feature = "unstable")]
     pub fn watch_partitions(
         &self,
     ) -> impl Stream<Item = MetadataChanges<PartitionSpec, AlwaysNewContext>> {
         self.metadata.partitions().watch()
     }
 
+    /// Create a stream that yields updates to SPU metadata
+    #[cfg(feature = "unstable")]
     pub fn watch_spus(&self) -> impl Stream<Item = MetadataChanges<SpuSpec, AlwaysNewContext>> {
         self.metadata.spus().watch()
     }
