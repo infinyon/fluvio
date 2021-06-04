@@ -210,12 +210,7 @@ cfg_if::cfg_if! {
             fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
                 use std::io::ErrorKind as IoErrorKind;
 
-                /*
-                use fluvio_future::native_tls::{
-                    TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
-                    PrivateKeyBuilder, CertBuilder, TlsAnonymousConnector,
-                };
-                */
+
                 use fluvio_future::net::certs::CertBuilder;
                 use fluvio_future::openssl:: {TlsDomainConnector,TlsConnector,TlsAnonymousConnector};
                 use fluvio_future::openssl::certs::{IdentityBuilder,X509PemBuilder,PrivateKeyBuilder};
@@ -280,10 +275,8 @@ cfg_if::cfg_if! {
                                 .build()?
                             )
                             .map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
-                            //.with_certificate_vertification_disabled()
-                            //.map_err(|err| IoError::new(IoErrorKind::InvalidData, err))?;
 
-                        
+
                         Ok(Box::new(TlsDomainConnector::new(
                             builder.build(),
                             tls.domain,
@@ -293,75 +286,5 @@ cfg_if::cfg_if! {
             }
         }
     }
-
-        /*
-
-        impl TryFrom<TlsPolicy> for DomainConnector {
-            type Error = IoError;
-
-            fn try_from(config: TlsPolicy) -> Result<Self, Self::Error> {
-                use fluvio_future::native_tls::{
-                    TlsDomainConnector, ConnectorBuilder, IdentityBuilder, X509PemBuilder,
-                    PrivateKeyBuilder, CertBuilder, TlsAnonymousConnector,
-                };
-                match config {
-                    TlsPolicy::Disabled => Ok(Box::new(DefaultDomainConnector::new())),
-                    TlsPolicy::Anonymous => {
-                        info!("Using anonymous TLS");
-                        let connector: TlsAnonymousConnector = ConnectorBuilder::anonymous().build().into();
-                        Ok(Box::new(connector))
-                    }
-                    TlsPolicy::Verified(TlsConfig::Files(tls)) => {
-                        info!(
-                            domain = &*tls.domain,
-                            "Using verified TLS with certificates from paths"
-                        );
-
-                        let builder = ConnectorBuilder::identity(IdentityBuilder::from_x509(
-                            X509PemBuilder::from_path(&tls.cert)?,
-                            PrivateKeyBuilder::from_path(&tls.key)?,
-                        )?)?
-                        .add_root_certificate(X509PemBuilder::from_path(&tls.ca_cert)?)?;
-
-                        // disable certificate verification for mac only!
-                        let builder = if cfg!(target_os = "macos") {
-                            builder.no_cert_verification()
-                        } else {
-                            builder
-                        };
-                        Ok(Box::new(TlsDomainConnector::new(
-                            builder.build(),
-                            tls.domain,
-                        )))
-                    }
-                    TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
-                        info!(
-                            domain = &*tls.domain,
-                            "Using verified TLS with inline certificates"
-                        );
-
-                        let builder = ConnectorBuilder::identity(IdentityBuilder::from_x509(
-                            X509PemBuilder::from_reader(&mut tls.cert.as_bytes())?,
-                            PrivateKeyBuilder::from_reader(&mut tls.key.as_bytes())?,
-                        )?)?
-                        .add_root_certificate(X509PemBuilder::from_reader(&mut tls.ca_cert.as_bytes())?)?;
-
-                        // disable certificate verification for mac only!
-                        let builder = if cfg!(target_os = "macos") {
-                            builder.no_cert_verification()
-                        } else {
-                            builder
-                        };
-
-                        Ok(Box::new(TlsDomainConnector::new(
-                            builder.build(),
-                            tls.domain,
-                        )))
-                    }
-                }
-            }
-            */
-
-
 
 }

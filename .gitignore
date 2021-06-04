@@ -3,8 +3,8 @@ target/
 .DS_Store
 .docker-cargo
 target-docker
-.vscode/tasks.json
 .idea/
 VERSION
 .scripts
 .env
+.vscode/
