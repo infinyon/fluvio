@@ -1594,7 +1594,6 @@ dependencies = [
  "native-tls",
  "nix 0.20.0",
  "openssl",
- "openssl-probe",
  "openssl-sys",
  "pin-project 1.0.7",
  "pin-utils",
