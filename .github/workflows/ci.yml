@@ -318,7 +318,7 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [build, local_cluster_test, k8_cluster_test]
+    needs: [rustfmt, build, local_cluster_test, k8_cluster_test]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
