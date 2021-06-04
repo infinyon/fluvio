@@ -389,16 +389,16 @@ checksum = "cdb031dd78e28731d87d56cc8ffef4a8f36ca26c38fe2de700543e627f8a464a"
 
 [[package]]
 name = "backtrace"
-version = "0.3.59"
+version = "0.3.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4717cfcbfaa661a0fd48f8453951837ae7e8f81e481fbb136e3202d72805a744"
+checksum = "b7815ea54e4d821e791162e078acbebfd6d8c8939cd559c9335dceb1c8ca7282"
 dependencies = [
  "addr2line 0.15.1",
  "cc",
  "cfg-if 1.0.0",
  "libc",
  "miniz_oxide",
- "object 0.24.0",
+ "object 0.25.1",
  "rustc-demangle",
 ]
 
@@ -508,9 +508,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.6.1"
+version = "3.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63396b8a4b9de3f4fdfb320ab6080762242f66a8ef174c49d8e19b674db4cdbe"
+checksum = "9c59e7af012c713f529e7a3ee57ce9b31ddd858d4b512923602f74608b009631"
 
 [[package]]
 name = "byte-pool"
@@ -874,9 +874,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-epoch"
-version = "0.9.4"
+version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "52fb27eab85b17fbb9f6fd667089e07d6a2eb8743d02639ee7f6a7a7729c9c94"
+checksum = "4ec02e091aa634e2c3ada4a392989e7c3116673ef0ac5b72232439094d73b7fd"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils",
@@ -887,9 +887,9 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-queue"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0f6cb3c7f5b8e51bc3ebb73a2327ad4abdbd119dc13223f14f961d2f38486756"
+checksum = "9b10ddc024425c88c2ad148c1b0fd53f4c6d38db9697c9f1588381212fa657c9"
 dependencies = [
  "cfg-if 1.0.0",
  "crossbeam-utils",
@@ -897,11 +897,10 @@ dependencies = [
 
 [[package]]
 name = "crossbeam-utils"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4feb231f0d4d6af81aed15928e58ecf5816aa62a2393e2c82f46973e92a9a278"
+checksum = "d82cfc11ce7f2c3faef78d8a684447b40d503d9681acebed6cb728d45940c4db"
 dependencies = [
- "autocfg",
  "cfg-if 1.0.0",
  "lazy_static",
 ]
@@ -1329,7 +1328,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.8.2"
+version = "0.8.3"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1338,10 +1337,11 @@ dependencies = [
  "async-trait",
  "base64",
  "bytes",
+ "cfg-if 1.0.0",
  "dirs 1.0.5",
  "event-listener",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-socket",
@@ -1370,7 +1370,7 @@ dependencies = [
  "async-trait",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-types",
@@ -1400,7 +1400,7 @@ dependencies = [
  "fluvio-command 0.2.0",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-package-index",
  "fluvio-sc-schema",
  "fluvio-types",
@@ -1441,7 +1441,7 @@ dependencies = [
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-helm",
  "flv-util",
  "futures-lite",
@@ -1503,7 +1503,7 @@ version = "0.9.1"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-stream-model",
  "fluvio-types",
@@ -1522,7 +1522,7 @@ dependencies = [
  "content_inspector",
  "crc32c",
  "derive_builder 0.9.0",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-socket",
  "flv-util",
@@ -1573,8 +1573,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.3"
-source = "git+https://github.com/infinyon/future-aio.git?branch=master#4694e5db71783cf23aeb6b66806c08205582d3ec"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa9feaa68147ceb5174f7fbead7779d64085605818bd911d7ef2cbfae1604f84"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1619,7 +1620,7 @@ name = "fluvio-integration-derive"
 version = "0.1.0"
 dependencies = [
  "fluvio",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-test-util",
  "inflections",
  "proc-macro2",
@@ -1649,7 +1650,7 @@ name = "fluvio-protocol"
 version = "0.5.1"
 dependencies = [
  "bytes",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol-api",
  "fluvio-protocol-codec",
  "fluvio-protocol-core",
@@ -1673,7 +1674,7 @@ name = "fluvio-protocol-codec"
 version = "0.3.1"
 dependencies = [
  "bytes",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol-core",
  "flv-util",
  "futures",
@@ -1705,7 +1706,7 @@ name = "fluvio-run"
 version = "0.2.1"
 dependencies = [
  "fluvio-extension-common",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-sc",
  "fluvio-spu",
  "opentelemetry",
@@ -1734,7 +1735,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-sc-schema",
  "fluvio-service",
@@ -1780,7 +1781,7 @@ name = "fluvio-service"
 version = "0.6.0"
 dependencies = [
  "async-trait",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-types",
@@ -1822,7 +1823,7 @@ dependencies = [
  "bytes",
  "cfg-if 1.0.0",
  "event-listener",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "flv-util",
  "futures-util",
@@ -1853,7 +1854,7 @@ dependencies = [
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-service",
  "fluvio-socket",
@@ -1901,7 +1902,7 @@ dependencies = [
  "bytes",
  "derive_builder 0.10.2",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-protocol",
  "fluvio-socket",
  "fluvio-storage",
@@ -1923,7 +1924,7 @@ dependencies = [
  "async-rwlock",
  "async-trait",
  "event-listener",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1944,7 +1945,7 @@ version = "0.5.1"
 dependencies = [
  "async-rwlock",
  "event-listener",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "k8-types",
  "once_cell",
  "serde",
@@ -1964,7 +1965,8 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "git+https://github.com/infinyon/future-aio.git?branch=master#4694e5db71783cf23aeb6b66806c08205582d3ec"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1982,7 +1984,7 @@ dependencies = [
  "fluvio-cluster",
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "futures-lite",
  "inventory",
  "once_cell",
@@ -2002,7 +2004,7 @@ name = "fluvio-types"
 version = "0.2.4"
 dependencies = [
  "event-listener",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "tokio",
  "tracing",
 ]
@@ -2052,7 +2054,7 @@ dependencies = [
  "fluvio-command 0.2.1",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "fluvio-integration-derive",
  "fluvio-system-util",
  "fluvio-test-util",
@@ -2079,7 +2081,7 @@ dependencies = [
  "async-trait",
  "cfg-if 1.0.0",
  "event-listener",
- "fluvio-future 0.3.3",
+ "fluvio-future 0.3.5",
  "futures-lite",
  "futures-util",
  "log",
@@ -2193,9 +2195,9 @@ checksum = "acc499defb3b348f8d8f3f66415835a9131856ff7714bf10dadfc4ec4bdb29a1"
 
 [[package]]
 name = "futures-lite"
-version = "1.11.3"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4481d0cd0de1d204a4fa55e7d45f07b1d958abcb06714b3446438e2eff695fb"
+checksum = "7694489acd39452c77daa48516b894c153f192c3578d5a839b62c58099fcbf48"
 dependencies = [
  "fastrand",
  "futures-core",
@@ -2385,9 +2387,9 @@ checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
 
 [[package]]
 name = "heck"
-version = "0.3.2"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87cbf45460356b7deeb5e3415b5563308c0a9b057c85e12b06ad551f98d0a6ac"
+checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -2886,9 +2888,9 @@ dependencies = [
 
 [[package]]
 name = "memoffset"
-version = "0.6.3"
+version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f83fb6581e8ed1f85fd45c116db8405483899489e38406156c25eb743554361d"
+checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
 dependencies = [
  "autocfg",
 ]
@@ -3035,15 +3037,18 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.24.0"
+version = "0.25.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a5b3dd1c072ee7963717671d1ca129f1048fda25edea6b752bfc71ac8854170"
+checksum = "9023c1c0973b327f073c7f2fceb9bcc049862f93a7d14c6feb46c8a56460a0d5"
+dependencies = [
+ "memchr",
+]
 
 [[package]]
 name = "oid-registry"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b2434841326d1f18c2eb9e4857729ef88f0d5ce4b71c9b989eda17d9e3d6456d"
+checksum = "b26c042283b4ecc71edde70de2d6d0ab7e8743b8e7a7cb8467e4d153dfc7ad43"
 dependencies = [
  "der-parser",
 ]
@@ -3666,11 +3671,10 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ae1ded71d66a4a97f5e961fd0cb25a5f366a42a41570d16a763a69c092c26ae4"
+checksum = "6c230d73fb8d8c1b9c0b3135c5142a8acee3a0558fb8db5cf1cb65f8d7862132"
 dependencies = [
- "byteorder",
  "regex-syntax",
 ]
 
@@ -4000,9 +4004,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook"
-version = "0.3.8"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef33d6d0cd06e0840fba9985aab098c147e67e05cee14d412d3345ed14ff30ac"
+checksum = "470c5a6397076fae0094aaf06a08e6ba6f37acb77d3b1b91ea92b4d6c8650c39"
 dependencies = [
  "libc",
  "signal-hook-registry",
@@ -4010,9 +4014,9 @@ dependencies = [
 
 [[package]]
 name = "signal-hook-registry"
-version = "1.3.0"
+version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16f1d0fef1604ba8f7a073c7e701f213e056707210e9020af4528e0101ce11a6"
+checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
 dependencies = [
  "libc",
 ]
@@ -4389,9 +4393,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.6.0"
+version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd3076b5c8cc18138b8f8814895c11eb4de37114a5d127bafdc5e55798ceef37"
+checksum = "0a38d31d7831c6ed7aad00aa4c12d9375fd225a6dd77da1d25b707346319a975"
 dependencies = [
  "autocfg",
  "bytes",
@@ -4581,9 +4585,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-normalization"
-version = "0.1.17"
+version = "0.1.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07fbfce1c8a97d547e8b5334978438d9d6ec8c20e38f56d4a4374d181493eaef"
+checksum = "d54590932941a9e9266f0832deed84ebe1bf2e4c9e4a3554d393d18f5e854bf9"
 dependencies = [
  "tinyvec",
 ]
