@@ -1,0 +1,260 @@
+name: Unstable CI
+
+permissions:
+  contents: read
+
+on:
+  push:
+  pull_request:
+    branches: [master]
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: "Set --verbose to get verbose build output"
+        required: false
+        default: ''
+
+env:
+  VERBOSE: ${{ github.events.input.verbose }}
+
+jobs:
+  cancel_previous_runs:
+    name: Cancel Previous Runs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: styfle/cancel-workflow-action@0.4.1
+        with:
+          access_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # Since this runs on custom runner, no need to control sc-cache
+  integration_test_linux:
+    name: Integration test Linux
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [infinyon-ubuntu-bionic]
+        rust: [stable]
+    env:
+      FLV_SOCKET_WAIT: 600
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Run integration tests
+        run:  make run-unstable-test
+        timeout-minutes: 10
+
+  unstable_test_mac:
+      name: Unstable Integration test Mac
+      runs-on: ${{ matrix.os }}
+      strategy:
+        fail-fast: false
+        matrix:
+          os: [macos-latest]
+          rust: [stable]
+          include:
+            - os: macos-latest
+              sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
+              target: x86_64-apple-darwin
+          task:
+            - name: Run integration tests
+              run: make run-unstable-test
+              timeout-minutes: 20
+      env:
+        RUST_BACKTRACE: full
+        RUSTC_WRAPPER: sccache
+        RUSTV: ${{ matrix.rust }}
+        SCCACHE_CACHE_SIZE: 2G
+        SCCACHE_DIR: ${{ matrix.sccache-path }}
+        # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+      steps:
+        - uses: actions/checkout@v2
+        - name: Install sccache (macos-latest)
+          run: |
+            brew update
+            brew install sccache
+        - name: Install Rust ${{ matrix.rust }}
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: ${{ matrix.rust }}
+            profile: minimal
+            override: true
+        - name: Cache cargo registry
+          uses: actions/cache@v2
+          continue-on-error: false
+          with:
+            path: |
+              ~/.cargo/registry
+              ~/.cargo/git
+            key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            restore-keys: |
+              ${{ runner.os }}-cargo-
+        - name: Save sccache
+          uses: actions/cache@v2
+          continue-on-error: false
+          with:
+            path: ${{ matrix.sccache-path }}
+            key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
+            restore-keys: |
+              ${{ runner.os }}-sccache-
+        - name: Start sccache server
+          run: sccache --start-server
+        - name: ${{ matrix.task.name }}
+          run: ${{ matrix.task.run }}
+        - name: Stop sccache server
+          run: sccache --stop-server || true
+
+  k8_cluster_upgrade:
+    name: Kubernetes cluster upgrade test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        include:
+          - os: ubuntu-latest
+            sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
+    env:
+      FLV_SOCKET_WAIT: 600
+      FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
+      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
+      FLV_TEST_CONSUMER_WAIT: 300000
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.target }}
+      SCCACHE_CACHE_SIZE: 2G
+      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install sccache (ubuntu-latest)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" | tee -a $GITHUB_PATH
+
+      - run: helm version
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Install Musl Tools
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
+          rustup target add x86_64-unknown-linux-musl
+      - name: Cache cargo registry
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+      - name: Save sccache
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-sccache-
+
+      - name: Install Minikube for Github runner
+        if: matrix.os == 'ubuntu-latest'
+        uses: manusa/actions-setup-minikube@v2.3.1
+        with:
+          minikube version: 'v1.18.1'
+          kubernetes version: 'v1.19.6'
+
+      - name: Open tunnel for Github runner
+        if: matrix.os != 'infinyon-ubuntu-bionic'
+        run: |
+          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
+
+      - name: Setup Minikube for Linux
+        if: startsWith(matrix.os, 'infinyon-ubuntu')
+        run: |
+          pkill -f "minikube tunnel" || true
+          minikube delete
+          minikube start --driver=docker --kubernetes-version 1.19.6
+          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
+      - name: Test minikube
+        run: |
+          minikube profile list
+          minikube status
+
+      - name: Setup for upgrade test
+        run: |
+          gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+      - name: Start sccache server
+        run: sccache --start-server
+
+      - name: Run upgrade test
+        env:
+          TEST_DATA_BYTES: 10000
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 45
+          max_attempts: 3
+          command: |
+            export PATH=~/.fluvio/bin:$PATH
+            cd tests
+            # Use gh cli to collect the last and current release version numbers
+            ./upgrade-test.sh $(gh api repos/infinyon/fluvio/releases -q '.[2,1].tag_name' | sed 's/v//')
+
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+
+      - name: Clean minikube
+        run: |
+          minikube delete
+          pkill -f "minikube tunnel" || true
+
+  wasm:
+    name: Check wasm support (${{ matrix.wasm-crate }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        wasm-crate: [spu-schema, sc-schema, dataplane-protocol, types, protocol, socket, client]
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+          target: wasm32-unknown-unknown
+
+      - name: Check wasm for ${{ matrix.wasm-crate }}
+        run:
+          cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
