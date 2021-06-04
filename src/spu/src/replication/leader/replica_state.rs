@@ -298,6 +298,7 @@ where
 
     /// write records to storage
     /// then update our follower's leo
+    #[instrument(skip(self, records, notifiers))]
     pub async fn write_record_set(
         &self,
         records: &mut RecordSet,

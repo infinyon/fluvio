@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::fmt::Debug;
 use std::time::Instant;
 
-use tracing::{debug};
+use tracing::{debug, instrument};
 use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use fluvio_controlplane_metadata::partition::{ReplicaKey};
@@ -101,6 +101,7 @@ where
 
     /// read records into partition response
     /// return leo and hw
+    #[instrument(skip(self, offset, max_len, isolation, partition_response))]
     pub async fn read_records<P>(
         &self,
         offset: Offset,
@@ -128,6 +129,7 @@ where
         }
     }
 
+    #[instrument(skip(self, records, hw_update))]
     pub async fn write_record_set(
         &self,
         records: &mut RecordSet,

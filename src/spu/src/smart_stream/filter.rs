@@ -7,7 +7,7 @@ use std::os::unix::io::RawFd;
 use anyhow::{Result, Error, anyhow};
 
 // use bytes::{Bytes, BytesMut};
-use tracing::{debug, warn};
+use tracing::{debug, warn, instrument};
 use nix::sys::uio::pread;
 use wasmtime::{Caller, Engine, Extern, Func, Instance, Module, Store, Trap, TypedFunc, Memory};
 
@@ -30,10 +30,12 @@ impl SmartStreamEngine {
     }
 
     #[allow(unused)]
+    #[instrument(skip(self, path))]
     pub fn create_module_from_path(&self, path: impl AsRef<Path>) -> Result<SmartStreamModule> {
         SmartStreamModule::from_path(&self.0, path)
     }
 
+    #[instrument(skip(self, binary))]
     pub fn create_module_from_binary(&self, binary: &[u8]) -> Result<SmartStreamModule> {
         SmartStreamModule::from_binary(&self.0, binary)
     }
