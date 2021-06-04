@@ -232,28 +232,3 @@ jobs:
         run: |
           minikube delete
           pkill -f "minikube tunnel" || true
-
-  wasm:
-    name: Check wasm support (${{ matrix.wasm-crate }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-        wasm-crate: [spu-schema, sc-schema, dataplane-protocol, types, protocol, socket, client]
-    env:
-      RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          target: wasm32-unknown-unknown
-
-      - name: Check wasm for ${{ matrix.wasm-crate }}
-        run:
-          cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown

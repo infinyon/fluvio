@@ -178,6 +178,38 @@ jobs:
           name: fluvio-run-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/fluvio-run
 
+  build_wasm:
+    name: Build WASM crates (${{ matrix.wasm-crate }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        wasm-crate:
+          - client
+          - socket
+          - protocol
+          - spu-schema
+          - sc-schema
+          - dataplane-protocol
+          - types
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+          target: wasm32-unknown-unknown
+
+      - name: Build WASM for ${{ matrix.wasm-crate }}
+        run:
+          cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
+
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
@@ -318,7 +350,7 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [rustfmt, build, local_cluster_test, k8_cluster_test]
+    needs: [rustfmt, build, build_wasm, local_cluster_test, k8_cluster_test]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
