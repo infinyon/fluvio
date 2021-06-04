@@ -1,12 +1,4 @@
 status = [
-    "Rustfmt (ubuntu-latest)",
-    "Clippy (macos-latest)",
-    "Unit tests (ubuntu-latest)",
-    "Doc tests (ubuntu-latest)",
-    "Unit tests (macos-latest)",
-    "Doc tests (macos-latest)",
-    "Local cluster test (infinyon-ubuntu-bionic, stable)",
-    "Kubernetes cluster test (infinyon-ubuntu-bionic, stable)",
     "Done",
 ]
 use_squash_merge = true
