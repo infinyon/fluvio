@@ -17,7 +17,7 @@ use event_listener::Event;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
-use tracing::{debug, error, instrument, trace};
+use tracing::{debug, error, trace, instrument};
 
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
@@ -100,6 +100,7 @@ impl MultiplexerSocket {
     }
 
     /// create socket to perform request and response
+    #[instrument(skip(self, req_msg))]
     pub async fn send_and_receive<R>(
         &self,
         mut req_msg: RequestMessage<R>,
@@ -185,6 +186,7 @@ impl MultiplexerSocket {
     }
 
     /// create stream response
+    #[instrument(skip(self, req_msg, queue_len))]
     pub async fn create_stream<R>(
         &self,
         mut req_msg: RequestMessage<R>,
@@ -369,6 +371,7 @@ impl MultiPlexingResponseDispatcher {
     }
 
     /// send message to correct receiver
+    #[instrument(skip(self, msg))]
     pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), FlvSocketError> {
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
