@@ -214,10 +214,6 @@ impl SpuController {
         // Get the external ingress from the service
         // Look at svc_md to identify if LoadBalancer
         let lb_type = svc_md.spec().inner().r#type.as_ref();
-        let spu_svc_port = svc_md.spec().inner().ports[0].port;
-        let spu_svc_nodeport = svc_md.spec().inner().ports[0]
-            .node_port
-            .ok_or_else(|| ClientError::Other("SPU service missing NodePort".into()))?;
 
         // This will either have a value from External-IP, or will be empty
         // If empty, the use `fluvio.io/ingress-address` annotation to set an external address for SPU
@@ -225,15 +221,23 @@ impl SpuController {
 
         // Choose the external port based on the service type
         let mut computed_spu_ingressport = match lb_type {
-            Some(LoadBalancerType::NodePort) => IngressPort {
-                port: spu_svc_nodeport,
-                ..Default::default()
-            },
-            _ => IngressPort {
-                port: spu_svc_port,
-                ingress: svc_lb_ingresses.iter().map(convert).collect(),
-                ..Default::default()
-            },
+            Some(LoadBalancerType::NodePort) => {
+                let port = svc_md.spec().inner().ports[0]
+                    .node_port
+                    .ok_or_else(|| ClientError::Other("SPU service missing NodePort".into()))?;
+                IngressPort {
+                    port,
+                    ..Default::default()
+                }
+            }
+            _ => {
+                let port = svc_md.spec().inner().ports[0].port;
+                IngressPort {
+                    port,
+                    ingress: svc_lb_ingresses.iter().map(convert).collect(),
+                    ..Default::default()
+                }
+            }
         };
 
         // Add additional ingress via annotation value
