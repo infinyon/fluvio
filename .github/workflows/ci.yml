@@ -178,146 +178,37 @@ jobs:
           name: fluvio-run-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/fluvio-run
 
-  # Since this runs on custom runner, no need to control sc-cache
-  integration_test_linux:
-    name: Integration test Linux
+  build_wasm:
+    name: Build WASM crates (${{ matrix.wasm-crate }})
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        os: [infinyon-ubuntu-bionic]
+        os: [ubuntu-latest]
         rust: [stable]
+        wasm-crate:
+          - client
+          - socket
+          - protocol
+          - spu-schema
+          - sc-schema
+          - dataplane-protocol
+          - types
     env:
-      FLV_SOCKET_WAIT: 600
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
     steps:
       - uses: actions/checkout@v2
-      - name: Install ${{ matrix.rust }}
+      - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Run integration tests
-        run:  make run-unstable-test
-        timeout-minutes: 10
+          target: wasm32-unknown-unknown
 
-
-  unstable_test_mac:
-      name: Unstable Integration test Mac
-      runs-on: ${{ matrix.os }}
-      strategy:
-        fail-fast: false
-        matrix:
-          os: [macos-latest]
-          rust: [stable]
-          include:
-            - os: macos-latest
-              sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-              target: x86_64-apple-darwin
-          task:
-            - name: Run integration tests
-              run: make run-unstable-test
-              timeout-minutes: 20
-      env:
-        RUST_BACKTRACE: full
-        RUSTC_WRAPPER: sccache
-        RUSTV: ${{ matrix.rust }}
-        SCCACHE_CACHE_SIZE: 2G
-        SCCACHE_DIR: ${{ matrix.sccache-path }}
-        # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
-      steps:
-        - uses: actions/checkout@v2
-        - name: Install sccache (macos-latest)
-          run: |
-            brew update
-            brew install sccache
-        - name: Install Rust ${{ matrix.rust }}
-          uses: actions-rs/toolchain@v1
-          with:
-            toolchain: ${{ matrix.rust }}
-            profile: minimal
-            override: true
-        - name: Cache cargo registry
-          uses: actions/cache@v2
-          continue-on-error: false
-          with:
-            path: |
-              ~/.cargo/registry
-              ~/.cargo/git
-            key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-            restore-keys: |
-              ${{ runner.os }}-cargo-
-        - name: Save sccache
-          uses: actions/cache@v2
-          continue-on-error: false
-          with:
-            path: ${{ matrix.sccache-path }}
-            key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-            restore-keys: |
-              ${{ runner.os }}-sccache-
-        - name: Start sccache server
-          run: sccache --start-server
-        - name: ${{ matrix.task.name }}
-          run: ${{ matrix.task.run }}
-        - name: Stop sccache server
-          run: sccache --stop-server || true
-
-
-
-  # When all required jobs pass, bump the `dev` GH prerelease to this commit
-  bump_github_release:
-    name: Bump dev tag
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [build, local_cluster_test, k8_cluster_test]
-    runs-on: ubuntu-latest
-    permissions: write-all
-    steps:
-      - uses: actions/checkout@v2
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
-      - name: Delete old release
-        run: gh release delete -R infinyon/fluvio dev -y || true
-      - name: Bump dev tag
-        run: |
-          git tag -f dev
-          git push -f origin dev
-      - name: Create new release
-        run: gh release create -R infinyon/fluvio dev -p --notes "Published artifacts from the latest build"
-
-  # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
-  github_release:
-    name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.target }})
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: bump_github_release
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        artifact: [fluvio, fluvio-run]
-        target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
-    permissions: write-all
-    steps:
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
-      - name: Download artifact
-        uses: actions/download-artifact@v2
-        with:
-          name: ${{ matrix.artifact }}-${{ matrix.target }}
-      - name: Publish artifact
-        run: |
-          ls -la
-          mv "${{ matrix.artifact }}" "${{ matrix.artifact }}-${{ matrix.target }}"
-          gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.target }}"
-
-  # Job that follows the success of all required jobs in this workflow.
-  # Used by Bors to detect that all required jobs have completed successfully
-  done:
-    name: Done
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: github_release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Done
-        run: echo "Done!"
+      - name: Build WASM for ${{ matrix.wasm-crate }}
+        run:
+          cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
   local_cluster_test:
     name: Local cluster test
@@ -580,27 +471,57 @@ jobs:
           minikube delete
           pkill -f "minikube tunnel" || true
 
-  wasm:
-    name: Check wasm support (${{ matrix.wasm-crate }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-        wasm-crate: [spu-schema, sc-schema, dataplane-protocol, types, protocol, socket, client]
-    env:
-      RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
+  # When all required jobs pass, bump the `dev` GH prerelease to this commit
+  bump_github_release:
+    name: Bump dev tag
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: [rustfmt, build, build_wasm, local_cluster_test, k8_cluster_test, k8_cluster_upgrade]
+    runs-on: ubuntu-latest
+    permissions: write-all
     steps:
       - uses: actions/checkout@v2
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-          target: wasm32-unknown-unknown
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Delete old release
+        run: gh release delete -R infinyon/fluvio dev -y || true
+      - name: Bump dev tag
+        run: |
+          git tag -f dev
+          git push -f origin dev
+      - name: Create new release
+        run: gh release create -R infinyon/fluvio dev -p --notes "Published artifacts from the latest build"
 
-      - name: Check wasm for ${{ matrix.wasm-crate }}
-        run:
-          cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
+  # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
+  github_release:
+    name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.target }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: bump_github_release
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        artifact: [fluvio, fluvio-run]
+        target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
+    permissions: write-all
+    steps:
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: ${{ matrix.artifact }}-${{ matrix.target }}
+      - name: Publish artifact
+        run: |
+          ls -la
+          mv "${{ matrix.artifact }}" "${{ matrix.artifact }}-${{ matrix.target }}"
+          gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.target }}"
+
+  # Job that follows the success of all required jobs in this workflow.
+  # Used by Bors to detect that all required jobs have completed successfully
+  done:
+    name: Done
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: github_release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Done
+        run: echo "Done!"
