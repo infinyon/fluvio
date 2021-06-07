@@ -29,33 +29,7 @@ jobs:
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
 
-  rustfmt:
-    name: Rustfmt (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-    env:
-      RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
-      SCCACHE_CACHE_SIZE: 300M
-      SCCACHE_DIR: /home/runner/.cache/sccache
-      SCCACHE_IDLE_TIMEOUT: 0
-      FLV_SOCKET_WAIT: 600
-      RUSTV: ${{ matrix.rust }}
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-      - name: Check rustfmt
-        run: make check-fmt
-
-  build:
+  build_checks:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -64,27 +38,29 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         rust: [stable]
         task:
-          - name: Clippy
-            run: make check-clippy
-            publish: false
           - name: Doc tests
             run: make run-all-doc-test
-            publish: false
-          - name: Unit tests
-            run: make run-all-unit-test
-            publish: true
         include:
+          - os: ubuntu-latest
+            rust: stable
+            sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
+            task:
+              name: Rustfmt
+              run: make check-fmt
+          - os: macos-latest
+            rust: stable
+            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
+            target: x86_64-apple-darwin
+            task:
+              name: Clippy
+              run: make check-clippy
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
             target: x86_64-unknown-linux-musl
           - os: macos-latest
             sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
             target: x86_64-apple-darwin
-        exclude:
-          - os: ubuntu-latest
-            rust: stable
-            task:
-              name: Clippy
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
@@ -95,6 +71,7 @@ jobs:
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
+
       - name: Install sccache (ubuntu-latest)
         if: matrix.os == 'ubuntu-latest'
         env:
@@ -111,6 +88,7 @@ jobs:
         run: |
           brew update
           brew install sccache
+
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -124,59 +102,156 @@ jobs:
           sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
           echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
           rustup target add x86_64-unknown-linux-musl
-      - name: Cache cargo registry
+
+      - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
-      - name: Save sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-sccache-
-
-      # If this job is being run by Bors (it was pushed to staging),
-      # then build and run in release mode and set the version suffix
-      - name: Set RELEASE and FLUVIO_VERSION_SUFFIX
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        run: |
-          echo "RELEASE=true" | tee -a $GITHUB_ENV
-          echo "FLUVIO_VERSION_SUFFIX=$(git rev-parse HEAD)" | tee -a $GITHUB_ENV
+            ${{ runner.os }}-cargo-sccache-
 
       - name: Start sccache server
         run: sccache --start-server
 
+      # Main run step: Run task from matrix
       - name: ${{ matrix.task.name }}
         run: ${{ matrix.task.run }}
-
-      - name: Build release artifacts
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        run: make build_cli build_cluster
 
       - name: Stop sccache server
         run: sccache --stop-server || true
 
-      - name: Upload fluvio artifact
-        if: ${{ matrix.task.publish }}
+  build:
+    name: Build and Test artifacts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        rust: [stable]
+        include:
+          - os: ubuntu-latest
+            sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
+          - os: macos-latest
+            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
+            target: x86_64-apple-darwin
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.target }}
+      SCCACHE_CACHE_SIZE: 2G
+      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+    steps:
+      - uses: actions/checkout@v2
+
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode
+      - name: Set RELEASE mode
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+
+      - name: Install sccache (ubuntu-latest)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install sccache (macos-latest)
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew update
+          brew install sccache
+
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install Musl Tools
+        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
+        run: |
+          sudo apt install -y musl-tools
+          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
+          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
+          rustup target add x86_64-unknown-linux-musl
+
+      - name: Cache cargo registry and sccache
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-sccache-
+
+      - name: Start sccache server
+        run: sccache --start-server
+
+      - name: Build artifacts
+        run: make build_cli build_cluster build_test
+
+      - name: Unit tests
+        run: make run-all-unit-test
+
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+
+      # DEBUG MODE: Upload artifacts
+      - name: Upload artifact - fluvio (DEBUG)
+        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-${{ matrix.target }}
+          path: target/${{ matrix.target }}/debug/fluvio
+      - name: Upload artifact - fluvio-run (DEBUG)
+        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.target }}
+          path: target/${{ matrix.target }}/debug/fluvio-run
+      - name: Upload atrifact - flv-test (DEBUG)
+        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: flv-test-${{ matrix.target }}
+          path: target/${{ matrix.target }}/debug/flv-test
+
+      # RELEASE MODE: Upload artifacts
+      - name: Upload artifact - fluvio (RELEASE)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/fluvio
-
-      - name: Upload fluvio-run artifact
-        if: ${{ matrix.task.publish }}
+      - name: Upload artifact - fluvio-run (RELEASE)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-run-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/fluvio-run
+      - name: Upload atrifact - flv-test (RELEASE)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        uses: actions/upload-artifact@v2
+        with:
+          name: flv-test-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/flv-test
 
   build_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
@@ -264,8 +339,42 @@ jobs:
           name: fluvio-sc-logs
           path: /tmp/flv_sc.log
 
+  build_image:
+    name: Build Fluvio Docker image
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    steps:
+      # Needed for k8-util/docker/build.sh
+      - uses: actions/checkout@v2
+
+      # Download artifacts
+      - name: Download fluvio-run
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-x86_64-unknown-linux-musl
+          path: .
+
+      - name: Print fluvio-run path
+        run: pwd && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h || true
+
+      # Build and upload docker image
+      - name: Build Docker image
+        run: k8-util/docker/build.sh ${{ github.sha }} "$(pwd)/fluvio-run"
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: infinyon-fluvio
+          path: /tmp/infinyon-fluvio.tar
+
   k8_cluster_test:
     name: Kubernetes cluster test
+    needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -279,12 +388,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - run: helm version
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
+
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
@@ -294,20 +398,54 @@ jobs:
         run: |
           minikube profile list
           minikube status
-      - name: Build
+
+      # Download artifacts
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+      - name: Download artifact - flv-test
+        uses: actions/download-artifact@v2
+        with:
+          name: flv-test-x86_64-unknown-linux-musl
+          path: .
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio
+          path: /tmp
+      - name: Load Fluvio Docker Image
         run: |
-          make RELEASE=release TARGET=x86_64-unknown-linux-musl build_test
+          ls -la /tmp
+          eval $(minikube -p minikube docker-env)
+          docker image load --input /tmp/infinyon-fluvio.tar
+          docker image ls -a
+
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+
       - name: Setup installation pre-requisites
         run: |
-          make RELEASE=true TARGET=x86_64-unknown-linux-musl  k8-setup
-      - name: Make image
-        run: make RELEASE=true minikube_image
+          make FLUVIO_BIN=./fluvio RELEASE=true TARGET=x86_64-unknown-linux-musl k8-setup
+
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          make RELEASE=true TARGET=x86_64-unknown-linux-musl UNINSTALL=noclean smoke-test-k8-tls-root
+          kubectl create configmap authorization --from-file=POLICY=./src/sc/test-data/auth_config/policy.json --from-file=SCOPES=./src/sc/test-data/auth_config/scopes.json
+          FLV_SPU_DELAY=5 ./flv-test \
+            smoke \
+            --spu 2 \
+            --tls \
+            --develop \
+            --client-log warn --server-log fluvio=debug \
+            --authorization-config-map authorization \
+            --keep-cluster \
+            -- \
+            --producer-iteration=1000
+
       - name: Publish image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        if: ${{ env.RELEASE }} == 'true'
         run: |
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           eval $(minikube -p minikube docker-env)
@@ -348,6 +486,7 @@ jobs:
 
   k8_cluster_upgrade:
     name: Kubernetes cluster upgrade test
+    needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -371,52 +510,7 @@ jobs:
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
-
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.13
-        run: |
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
-          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" | tee -a $GITHUB_PATH
-
       - run: helm version
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-
-      - name: Install Musl Tools
-        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
-          rustup target add x86_64-unknown-linux-musl
-      - name: Cache cargo registry
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-
-      - name: Save sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-sccache-
 
       - name: Install Minikube for Github runner
         if: matrix.os == 'ubuntu-latest'
@@ -424,12 +518,10 @@ jobs:
         with:
           minikube version: 'v1.18.1'
           kubernetes version: 'v1.19.6'
-
       - name: Open tunnel for Github runner
         if: matrix.os != 'infinyon-ubuntu-bionic'
         run: |
           nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
-
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
@@ -441,14 +533,35 @@ jobs:
         run: |
           minikube profile list
           minikube status
-
       - name: Setup for upgrade test
         run: |
           gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
 
-      - name: Start sccache server
-        run: sccache --start-server
+      # Download artifacts
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+      - name: Download artifact - flv-test
+        uses: actions/download-artifact@v2
+        with:
+          name: flv-test-x86_64-unknown-linux-musl
+          path: .
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio
+          path: /tmp
+      - name: Load Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio.tar
+          docker image ls -a
+
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
 
       - name: Run upgrade test
         env:
@@ -463,9 +576,6 @@ jobs:
             # Use gh cli to collect the last and current release version numbers
             ./upgrade-test.sh $(gh api repos/infinyon/fluvio/releases -q '.[].tag_name' | grep -v dev | sed 's/v//' | head -2 | tac | xargs)
 
-      - name: Stop sccache server
-        run: sccache --stop-server || true
-
       - name: Clean minikube
         run: |
           minikube delete
@@ -475,7 +585,7 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [rustfmt, build, build_wasm, local_cluster_test, k8_cluster_test, k8_cluster_upgrade]
+    needs: [build_checks, build, build_wasm, local_cluster_test, k8_cluster_test, k8_cluster_upgrade]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
