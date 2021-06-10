@@ -17,13 +17,28 @@ CLIENT_LOG=warn
 SERVER_LOG=fluvio=debug
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/flv-test,./target/$(BUILD_PROFILE)/flv-test)
 TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
-DEFAULT_SPU=2
-REPL=2
 DEFAULT_ITERATION=1000
 SPU_DELAY=5
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
-SKIP_CHECK=--skip-checks
 EXTRA_ARG=
+
+# Test env
+TEST_ENV_AUTH_POLICY=
+TEST_ENV_FLV_SPU_DELAY=
+
+# Test args
+TEST_ARG_SPU=--spu 2
+TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
+TEST_ARG_REPLICATION=-r 2
+TEST_ARG_LOCAL=
+TEST_ARG_DEVELOP=
+TEST_ARG_TLS=
+TEST_ARG_KEEP_CLUSTER=
+TEST_ARG_AUTH_CONFIG_MAP=
+TEST_ARG_SKIP_CHECKS=
+TEST_ARG_EXTRA=
+TEST_ARG_CONSUMER_WAIT=
+TEST_ARG_PRODUCER_ITERATION=--producer-iteration=1000
 
 export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
 
@@ -52,22 +67,50 @@ endif
 # List of smoke test steps.  This is used by CI
 #
 
-smoke-test:	test-clean-up	build_test
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} -r ${REPL} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-base: test-setup smoke-test-base-nobuild
+smoke-test-base-nobuild: test-setup-nobuild
+	# Set ENV
+	AUTH_POLICY=$(TEST_ENV_AUTH_POLICY) \
+	FLV_SPU_DELAY=$(TEST_ENV_FLV_SPU_DELAY) \
+		$(TEST_BIN) smoke \
+			${TEST_ARG_SPU} \
+			${TEST_ARG_LOG} \
+			${TEST_ARG_TLS} \
+			${TEST_ARG_LOCAL} \
+			${TEST_ARG_REPLICATION} \
+			${TEST_ARG_SKIP_CHECKS} \
+			${TEST_ARG_EXTRA} \
+			-- \
+			${TEST_ARG_CONSUMER_WAIT} \
+			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test-stream:	test-clean-up	build_test
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} -- --consumer-wait=true --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-nobuild: TEST_ARG_LOCAL=--local
+smoke-test-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-nobuild: smoke-test-base-nobuild
+smoke-test: test-setup smoke-test-nobuild
 
-smoke-test-tls:	test-clean-up build_test
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-stream-nobuild: TEST_ARG_SKIP_CHECKS+=--skip-checks
+smoke-test-stream-nobuild: TEST_ARG_CONSUMER_WAIT+=--consumer-wait=true
+smoke-test-stream-nobuild: smoke-test-base-nobuild
+smoke-test-stream: test-setup smoke-test-stream-nobuild
 
-smoke-test-tls-policy:	test-clean-up build_test
-	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
-	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} --keep-cluster -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-tls-nobuild: TEST_ARG_TLS=--tls
+smoke-test-tls-nobuild: TEST_ARG_LOCAL=--local
+smoke-test-tls-nobuild: smoke-test-base-nobuild
+smoke-test-tls: test-setup smoke-test-tls-nobuild
+
+smoke-test-tls-policy-nobuild: TEST_ENV_AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
+smoke-test-tls-policy-nobuild: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-tls-policy-nobuild: TEST_ARG_TLS=--tls
+smoke-test-tls-policy-nobuild: TEST_ARG_LOCAL=--local
+smoke-test-tls-policy-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-tls-policy-nobuild: TEST_ARG_KEEP_CLUSTER=--keep-cluster
+smoke-test-tls-policy-nobuild: smoke-test-base-nobuild
+smoke-test-tls-policy: test-setup smoke-test-tls-policy-nobuild
 
 # test rbac with ROOT user
-smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1
+smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
+smoke-test-tls-root-nobuild: smoke-test-tls-policy-nobuild test-permission-user1
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
@@ -77,42 +120,46 @@ test-permission-user1:
 	rm -f /tmp/topic.err
 	- $(FLUVIO_BIN) --cluster ${SC_HOST}:${SC_PORT} \
 		--tls --enable-client-cert --domain fluvio.local \
-		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
+		--ca-cert tls/certs/ca.crt \
+		--client-cert tls/certs/client-user1.crt \
+		--client-key tls/certs/client-user1.key \
 		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
 
 k8-setup:
 	$(FLUVIO_BIN) cluster start --setup --develop
-#	$(FLUVIO_BIN) cluster check --pre-install
 
 # Kubernetes Tests
 
-smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	smoke --spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-k8-nobuild: TEST_ARG_DEVELOP=--develop
+smoke-test-k8-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-k8-nobuild: smoke-test-base-nobuild
+smoke-test-k8: test-setup smoke-test-k8-nobuild
 
-smoke-test-k8-tls:	test-clean-up minikube_image
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-k8-tls-nobuild: TEST_ARG_TLS=--tls
+smoke-test-k8-tls-nobuild: TEST_ARG_DEVELOP=--develop
+smoke-test-k8-tls-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-k8-tls-nobuild: smoke-test-base-nobuild
+smoke-test-k8-tls: test-setup smoke-test-k8-tls-nobuild
 
-smoke-test-k8-tls-policy:	test-clean-up minikube_image
+smoke-test-k8-tls-policy-nobuild-setup:
+	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
-	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) \
-		smoke \
-		--spu ${DEFAULT_SPU} \
-		--tls \
-		--develop \
-		${TEST_LOG} \
-		--authorization-config-map authorization \
-		${SKIP_CHECK} \
-		--keep-cluster \
-		-- \
-		--producer-iteration=${DEFAULT_ITERATION}
+smoke-test-k8-tls-policy-nobuild: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-k8-tls-policy-nobuild: TEST_ARG_TLS=--tls
+smoke-test-k8-tls-policy-nobuild: TEST_ARG_DEVELOP=--develop
+smoke-test-k8-tls-policy-nobuild: TEST_ARG_AUTH_CONFIG_MAP=--authorization-config-map authorization
+smoke-test-k8-tls-policy-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-k8-tls-policy-nobuild: TEST_ARG_KEEP_CLUSTER=--keep-cluster
+smoke-test-k8-tls-policy-nobuild: smoke-test-k8-tls-policy-nobuild-setup smoke-test-base-nobuild
+smoke-test-k8-tls-policy: test-setup minikube_image smoke-test-k8-tls-policy-nobuild
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
 test-permission-k8:	SC_PORT=$(shell kubectl get svc fluvio-sc-public -o json | jq '.spec.ports[0].nodePort' )
 test-permission-k8:	test-permission-user1
 
-smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-k8
+smoke-test-k8-tls-root: smoke-test-k8-tls-policy test-permission-k8
+smoke-test-k8-tls-root-nobuild: smoke-test-k8-tls-policy-nobuild test-permission-k8
 
 # test rbac
 #
@@ -122,15 +169,14 @@ smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-k8
 test-rbac:
 	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
 
-
-test-clean-up:	build_test
+test-setup: build_test test-setup-nobuild
+test-setup-nobuild:
 ifeq ($(UNINSTALL),noclean)
 	echo "no clean"
 else
 	echo "clean up previous installation"
 	$(FLUVIO_BIN) cluster delete
 	$(FLUVIO_BIN) cluster delete --local
-	kubectl delete configmap authorization --ignore-not-found
 endif
 
 # Test multiplexor
