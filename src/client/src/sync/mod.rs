@@ -10,18 +10,17 @@ mod context {
     use std::fmt::Display;
     use std::io::Error as IoError;
 
-    use tracing::{error, debug, trace, instrument};
+    use tracing::{debug, trace, instrument};
     use async_rwlock::RwLockReadGuard;
     use once_cell::sync::Lazy;
 
     use crate::FluvioError;
     use crate::metadata::core::Spec;
-    use crate::metadata::store::{LocalStore, MetadataChanges};
+    use crate::metadata::store::LocalStore;
     use crate::metadata::store::DualEpochMap;
     use crate::metadata::store::MetadataStoreObject;
     use crate::metadata::spu::SpuSpec;
     use crate::metadata::core::MetadataItem;
-    use futures_util::Stream;
 
     pub(crate) type CacheMetadataStoreObject<S> = MetadataStoreObject<S, AlwaysNewContext>;
 
@@ -137,32 +136,6 @@ mod context {
         }
     }
 
-    impl<S> StoreContext<S>
-    where
-        S: Spec + Send + Sync + 'static,
-        <S as Spec>::Status: Send + Sync,
-        S::IndexKey: Send + Sync,
-    {
-        #[cfg(feature = "unstable")]
-        pub fn watch(&self) -> impl Stream<Item = MetadataChanges<S, AlwaysNewContext>> {
-            let mut listener = self.store.change_listener();
-            let (sender, receiver) = async_channel::unbounded();
-
-            fluvio_future::task::spawn_local(async move {
-                loop {
-                    listener.listen().await;
-                    let changes = listener.sync_changes().await;
-                    if let Err(e) = sender.send(changes).await {
-                        error!("Failed to send Metadata update: {:?}", e);
-                        break;
-                    }
-                }
-            });
-
-            receiver
-        }
-    }
-
     impl<S> Default for StoreContext<S>
     where
         S: Spec,
@@ -187,6 +160,38 @@ mod context {
             })
             .await?
             .ok_or(FluvioError::SPUNotFound(id))
+        }
+    }
+
+    #[cfg(feature = "unstable")]
+    mod unstable {
+        use super::*;
+        use crate::metadata::store::MetadataChanges;
+        use futures_util::Stream;
+
+        impl<S> StoreContext<S>
+        where
+            S: Spec + Send + Sync + 'static,
+            <S as Spec>::Status: Send + Sync,
+            S::IndexKey: Send + Sync,
+        {
+            pub fn watch(&self) -> impl Stream<Item = MetadataChanges<S, AlwaysNewContext>> {
+                let mut listener = self.store.change_listener();
+                let (sender, receiver) = async_channel::unbounded();
+
+                fluvio_future::task::spawn_local(async move {
+                    loop {
+                        listener.listen().await;
+                        let changes = listener.sync_changes().await;
+                        if let Err(e) = sender.send(changes).await {
+                            tracing::error!("Failed to send Metadata update: {:?}", e);
+                            break;
+                        }
+                    }
+                });
+
+                receiver
+            }
         }
     }
 }
