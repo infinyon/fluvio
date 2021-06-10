@@ -77,7 +77,10 @@ smoke-test-base-nobuild: test-setup-nobuild
 			${TEST_ARG_LOG} \
 			${TEST_ARG_TLS} \
 			${TEST_ARG_LOCAL} \
+			${TEST_ARG_DEVELOP} \
 			${TEST_ARG_REPLICATION} \
+			${TEST_ARG_KEEP_CLUSTER} \
+			${TEST_ARG_AUTH_CONFIG_MAP} \
 			${TEST_ARG_SKIP_CHECKS} \
 			${TEST_ARG_EXTRA} \
 			-- \
@@ -150,6 +153,7 @@ smoke-test-k8-tls-policy-nobuild: TEST_ARG_TLS=--tls
 smoke-test-k8-tls-policy-nobuild: TEST_ARG_DEVELOP=--develop
 smoke-test-k8-tls-policy-nobuild: TEST_ARG_AUTH_CONFIG_MAP=--authorization-config-map authorization
 smoke-test-k8-tls-policy-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-k8-tls-policy-nobuild: TEST_ARG_AUTH_CONFIG_MAP=--authorization-config-map authorization
 smoke-test-k8-tls-policy-nobuild: TEST_ARG_KEEP_CLUSTER=--keep-cluster
 smoke-test-k8-tls-policy-nobuild: smoke-test-k8-tls-policy-nobuild-setup smoke-test-base-nobuild
 smoke-test-k8-tls-policy: test-setup minikube_image smoke-test-k8-tls-policy-nobuild
