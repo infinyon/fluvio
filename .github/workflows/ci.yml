@@ -432,17 +432,7 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          kubectl create configmap authorization --from-file=POLICY=./src/sc/test-data/auth_config/policy.json --from-file=SCOPES=./src/sc/test-data/auth_config/scopes.json
-          FLV_SPU_DELAY=5 ./flv-test \
-            smoke \
-            --spu 2 \
-            --tls \
-            --develop \
-            --client-log warn --server-log fluvio=debug \
-            --authorization-config-map authorization \
-            --keep-cluster \
-            -- \
-            --producer-iteration=1000
+          make UNINSTALL=noclean smoke-test-k8-tls-root-nobuild
 
       - name: Publish image
         if: ${{ env.RELEASE }} == 'true'
