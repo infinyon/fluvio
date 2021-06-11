@@ -432,7 +432,7 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          make UNINSTALL=noclean smoke-test-k8-tls-root-nobuild
+          make TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-k8-tls-root-nobuild
 
       - name: Publish image
         if: ${{ env.RELEASE }} == 'true'
