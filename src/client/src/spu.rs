@@ -62,11 +62,10 @@ impl Drop for SpuPool {
 
 impl SpuPool {
     /// start synchronize based on pool
-    pub async fn start(
+    pub fn start(
         config: Arc<ClientConfig>,
-        sc_socket: SharedMultiplexerSocket,
+        metadata: MetadataStores,
     ) -> Result<Self, FlvSocketError> {
-        let metadata = MetadataStores::start(sc_socket).await?;
         debug!("starting spu pool");
         Ok(Self {
             metadata,

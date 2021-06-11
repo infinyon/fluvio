@@ -5,6 +5,7 @@ members = [
     "examples/01-produce-batch",
     "examples/02-consume",
     "examples/03-echo",
+    "examples/04-admin-watch",
     "src/auth",
     "src/cli",
     "src/client",

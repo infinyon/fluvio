@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.8.4"
+version = "0.8.5"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -15,6 +15,7 @@ path = "src/lib.rs"
 
 [features]
 admin = ["fluvio-sc-schema/use_serde"]
+unstable = []
 
 [dependencies]
 tracing = "0.1.19"
@@ -38,7 +39,7 @@ siphasher = "0.3.5"
 cfg-if = "1.0.0"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.3.5", features = ["task", "openssl_tls"] }
+fluvio-future = { version = "0.3.5", features = ["task", "openssl_tls", "task_unstable"] }
 fluvio-types = { version = "0.2.1", features = ["events"], path = "../types" }
 fluvio-sc-schema = { version = "0.8.1", path = "../sc-schema", default-features = false }
 fluvio-socket = { path = "../socket", version = "0.8.1" }

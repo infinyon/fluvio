@@ -90,6 +90,7 @@ mod context {
                 .await
         }
 
+        #[instrument(skip(self, search))]
         async fn lookup_and_wait<'a, F>(
             &'a self,
             search: F,
@@ -159,6 +160,38 @@ mod context {
             })
             .await?
             .ok_or(FluvioError::SPUNotFound(id))
+        }
+    }
+
+    #[cfg(feature = "unstable")]
+    mod unstable {
+        use super::*;
+        use crate::metadata::store::MetadataChanges;
+        use futures_util::Stream;
+
+        impl<S> StoreContext<S>
+        where
+            S: Spec + Send + Sync + 'static,
+            <S as Spec>::Status: Send + Sync,
+            S::IndexKey: Send + Sync,
+        {
+            pub fn watch(&self) -> impl Stream<Item = MetadataChanges<S, AlwaysNewContext>> {
+                let mut listener = self.store.change_listener();
+                let (sender, receiver) = async_channel::unbounded();
+
+                fluvio_future::task::spawn_local(async move {
+                    loop {
+                        listener.listen().await;
+                        let changes = listener.sync_changes().await;
+                        if let Err(e) = sender.send(changes).await {
+                            tracing::error!("Failed to send Metadata update: {:?}", e);
+                            break;
+                        }
+                    }
+                });
+
+                receiver
+            }
         }
     }
 }
