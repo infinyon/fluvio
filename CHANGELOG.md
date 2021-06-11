@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.8.5 - UNRELEASED
+* Add unstable Admin Watch API for topics, partitions, and SPUs
  
 ## Platform Version 0.8.4 - 2020-05-29
 * Don't hang when check for non exist topic. ([#697](https://github.com/infinyon/fluvio/pull/697))
