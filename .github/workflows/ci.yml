@@ -435,7 +435,7 @@ jobs:
           make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-k8-tls-root
 
       - name: Publish image
-        if: ${{ env.RELEASE }} == 'true'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           eval $(minikube -p minikube docker-env)
