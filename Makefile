@@ -32,7 +32,7 @@ TEST_ENV_FLV_SPU_DELAY=
 TEST_ARG_SPU=--spu ${DEFAULT_SPU}
 TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 TEST_ARG_REPLICATION=-r ${REPL}
-TEST_ARG_DEVELOP=--develop
+TEST_ARG_DEVELOP=
 TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
@@ -67,8 +67,8 @@ endif
 
 smoke-test: test-setup
 	# Set ENV
-	AUTH_POLICY=$(TEST_ENV_AUTH_POLICY) \
-	FLV_SPU_DELAY=$(TEST_ENV_FLV_SPU_DELAY) \
+	$(TEST_ENV_AUTH_POLICY) \
+	$(TEST_ENV_FLV_SPU_DELAY) \
 		$(TEST_BIN) smoke \
 			${TEST_ARG_SPU} \
 			${TEST_ARG_LOG} \
@@ -89,8 +89,8 @@ smoke-test-stream: smoke-test
 smoke-test-tls: TEST_ARG_EXTRA=--tls --local
 smoke-test-tls: smoke-test
 
-smoke-test-tls-policy: TEST_ENV_AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
-smoke-test-tls-policy: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-tls-policy: TEST_ENV_AUTH_POLICY=AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
+smoke-test-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks --keep-cluster
 smoke-test-tls-policy: smoke-test
 
@@ -125,7 +125,7 @@ smoke-test-k8-tls: smoke-test
 smoke-test-k8-tls-policy-setup:
 	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
-smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization --skip-checks --keep-cluster
 smoke-test-k8-tls-policy: smoke-test-k8-tls-policy-setup smoke-test
 
