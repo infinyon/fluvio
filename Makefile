@@ -32,11 +32,6 @@ TEST_ENV_FLV_SPU_DELAY=
 TEST_ARG_SPU=--spu ${DEFAULT_SPU}
 TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 TEST_ARG_REPLICATION=-r ${REPL}
-TEST_ARG_LOCAL=
-TEST_ARG_DEVELOP=
-TEST_ARG_TLS=
-TEST_ARG_KEEP_CLUSTER=
-TEST_ARG_AUTH_CONFIG_MAP=
 TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
@@ -77,39 +72,29 @@ smoke-test-base-nobuild: test-setup-nobuild
 		$(TEST_BIN) smoke \
 			${TEST_ARG_SPU} \
 			${TEST_ARG_LOG} \
-			${TEST_ARG_TLS} \
-			${TEST_ARG_LOCAL} \
-			${TEST_ARG_DEVELOP} \
 			${TEST_ARG_REPLICATION} \
-			${TEST_ARG_KEEP_CLUSTER} \
-			${TEST_ARG_AUTH_CONFIG_MAP} \
-			${TEST_ARG_SKIP_CHECKS} \
 			${TEST_ARG_EXTRA} \
 			-- \
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test-nobuild: TEST_ARG_LOCAL=--local
-smoke-test-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-nobuild: TEST_ARG_EXTRA=--local --skip-checks
 smoke-test-nobuild: smoke-test-base-nobuild
 smoke-test: test-setup smoke-test-nobuild
 
-smoke-test-stream-nobuild: TEST_ARG_SKIP_CHECKS+=--skip-checks
-smoke-test-stream-nobuild: TEST_ARG_CONSUMER_WAIT+=--consumer-wait=true
+smoke-test-stream-nobuild: TEST_ARG_EXTRA=--skip-checks
+smoke-test-stream-nobuild: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
 smoke-test-stream-nobuild: smoke-test-base-nobuild
 smoke-test-stream: test-setup smoke-test-stream-nobuild
 
-smoke-test-tls-nobuild: TEST_ARG_TLS=--tls
-smoke-test-tls-nobuild: TEST_ARG_LOCAL=--local
+smoke-test-tls-nobuild: TEST_ARG_EXTRA=--tls --local
 smoke-test-tls-nobuild: smoke-test-base-nobuild
 smoke-test-tls: test-setup smoke-test-tls-nobuild
 
 smoke-test-tls-policy-nobuild: TEST_ENV_AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
 smoke-test-tls-policy-nobuild: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
-smoke-test-tls-policy-nobuild: TEST_ARG_TLS=--tls
-smoke-test-tls-policy-nobuild: TEST_ARG_LOCAL=--local
-smoke-test-tls-policy-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
-smoke-test-tls-policy-nobuild: TEST_ARG_KEEP_CLUSTER=--keep-cluster
+
+smoke-test-tls-policy-nobuild: TEST_ARG_EXTRA=--tls --local --skip-checks --keep-cluster
 smoke-test-tls-policy-nobuild: smoke-test-base-nobuild
 smoke-test-tls-policy: test-setup smoke-test-tls-policy-nobuild
 
@@ -136,14 +121,11 @@ k8-setup:
 
 # Kubernetes Tests
 
-smoke-test-k8-nobuild: TEST_ARG_DEVELOP=--develop
-smoke-test-k8-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-k8-nobuild: TEST_ARG_EXTRA=--devleop --skip-checks
 smoke-test-k8-nobuild: smoke-test-base-nobuild
 smoke-test-k8: test-setup smoke-test-k8-nobuild
 
-smoke-test-k8-tls-nobuild: TEST_ARG_TLS=--tls
-smoke-test-k8-tls-nobuild: TEST_ARG_DEVELOP=--develop
-smoke-test-k8-tls-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
+smoke-test-k8-tls-nobuild: TEST_ARG_EXTRA=--tls --develop --skip-checks
 smoke-test-k8-tls-nobuild: smoke-test-base-nobuild
 smoke-test-k8-tls: test-setup smoke-test-k8-tls-nobuild
 
@@ -151,12 +133,7 @@ smoke-test-k8-tls-policy-nobuild-setup:
 	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy-nobuild: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
-smoke-test-k8-tls-policy-nobuild: TEST_ARG_TLS=--tls
-smoke-test-k8-tls-policy-nobuild: TEST_ARG_DEVELOP=--develop
-smoke-test-k8-tls-policy-nobuild: TEST_ARG_AUTH_CONFIG_MAP=--authorization-config-map authorization
-smoke-test-k8-tls-policy-nobuild: TEST_ARG_SKIP_CHECKS=--skip-checks
-smoke-test-k8-tls-policy-nobuild: TEST_ARG_AUTH_CONFIG_MAP=--authorization-config-map authorization
-smoke-test-k8-tls-policy-nobuild: TEST_ARG_KEEP_CLUSTER=--keep-cluster
+smoke-test-k8-tls-policy-nobuild: TEST_ARG_EXTRA=--tls --develop --authorization-config-map authorization --skip-checks --keep-cluster
 smoke-test-k8-tls-policy-nobuild: smoke-test-k8-tls-policy-nobuild-setup smoke-test-base-nobuild
 smoke-test-k8-tls-policy: test-setup minikube_image smoke-test-k8-tls-policy-nobuild
 
