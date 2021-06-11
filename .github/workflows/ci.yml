@@ -432,7 +432,7 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          make TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-k8-tls-root
+          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-k8-tls-root
 
       - name: Publish image
         if: ${{ env.RELEASE }} == 'true'
