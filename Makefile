@@ -64,7 +64,7 @@ endif
 # List of smoke test steps.  This is used by CI
 #
 
-smoke-test-base: test-setup
+smoke-test: test-setup
 	# Set ENV
 	AUTH_POLICY=$(TEST_ENV_AUTH_POLICY) \
 	FLV_SPU_DELAY=$(TEST_ENV_FLV_SPU_DELAY) \
@@ -77,20 +77,20 @@ smoke-test-base: test-setup
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test: TEST_ARG_EXTRA=--local --skip-checks
-smoke-test: smoke-test-base
+smoke-test-local: TEST_ARG_EXTRA=--local --skip-checks
+smoke-test-local: smoke-test
 
 smoke-test-stream: TEST_ARG_EXTRA=--skip-checks
 smoke-test-stream: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
-smoke-test-stream: smoke-test-base
+smoke-test-stream: smoke-test
 
 smoke-test-tls: TEST_ARG_EXTRA=--tls --local
-smoke-test-tls: smoke-test-base
+smoke-test-tls: smoke-test
 
 smoke-test-tls-policy: TEST_ENV_AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
 smoke-test-tls-policy: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks --keep-cluster
-smoke-test-tls-policy: smoke-test-base
+smoke-test-tls-policy: smoke-test
 
 # test rbac with ROOT user
 smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
@@ -115,17 +115,17 @@ k8-setup:
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=--devleop --skip-checks
-smoke-test-k8: smoke-test-base
+smoke-test-k8: smoke-test
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls --develop --skip-checks
-smoke-test-k8-tls: smoke-test-base
+smoke-test-k8-tls: smoke-test
 
 smoke-test-k8-tls-policy-setup:
 	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --develop --authorization-config-map authorization --skip-checks --keep-cluster
-smoke-test-k8-tls-policy: smoke-test-k8-tls-policy-setup smoke-test-base
+smoke-test-k8-tls-policy: smoke-test-k8-tls-policy-setup smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
 test-permission-k8:	SC_PORT=$(shell kubectl get svc fluvio-sc-public -o json | jq '.spec.ports[0].nodePort' )
