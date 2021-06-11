@@ -147,10 +147,8 @@ function validate_upgrade_cluster_to_prerelease() {
     then
         echo "[CI MODE] Build and test the dev image v${PRERELEASE}"
         pushd ..
-        make RELEASE=release TARGET=x86_64-unknown-linux-musl build_test
-        make RELEASE=release minikube_image
-        
-        local FLUVIO_BIN="$(pwd)/target/x86_64-unknown-linux-musl/release/fluvio"
+
+        local FLUVIO_BIN="$(pwd)/fluvio"
         $FLUVIO_BIN cluster upgrade --chart-version=${PRERELEASE} --develop
         popd
     else 
