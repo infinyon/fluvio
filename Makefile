@@ -22,8 +22,21 @@ REPL=2
 DEFAULT_ITERATION=1000
 SPU_DELAY=5
 SC_AUTH_CONFIG=./src/sc/test-data/auth_config
-SKIP_CHECK=--skip-checks
 EXTRA_ARG=
+
+# Test env
+TEST_ENV_AUTH_POLICY=
+TEST_ENV_FLV_SPU_DELAY=
+
+# Test args
+TEST_ARG_SPU=--spu ${DEFAULT_SPU}
+TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
+TEST_ARG_REPLICATION=-r ${REPL}
+TEST_ARG_DEVELOP=
+TEST_ARG_SKIP_CHECKS=
+TEST_ARG_EXTRA=
+TEST_ARG_CONSUMER_WAIT=
+TEST_ARG_PRODUCER_ITERATION=--producer-iteration=${DEFAULT_ITERATION}
 
 export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
 
@@ -52,22 +65,37 @@ endif
 # List of smoke test steps.  This is used by CI
 #
 
-smoke-test:	test-clean-up	build_test
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} -r ${REPL} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test: test-setup
+	# Set ENV
+	$(TEST_ENV_AUTH_POLICY) \
+	$(TEST_ENV_FLV_SPU_DELAY) \
+		$(TEST_BIN) smoke \
+			${TEST_ARG_SPU} \
+			${TEST_ARG_LOG} \
+			${TEST_ARG_REPLICATION} \
+			${TEST_ARG_DEVELOP} \
+			${TEST_ARG_EXTRA} \
+			-- \
+			${TEST_ARG_CONSUMER_WAIT} \
+			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test-stream:	test-clean-up	build_test
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --local ${TEST_LOG} ${SKIP_CHECK} -- --consumer-wait=true --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-local: TEST_ARG_EXTRA=--local --skip-checks
+smoke-test-local: smoke-test
 
-smoke-test-tls:	test-clean-up build_test
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-stream: TEST_ARG_EXTRA=--skip-checks
+smoke-test-stream: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
+smoke-test-stream: smoke-test
 
-smoke-test-tls-policy:	test-clean-up build_test
-	AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json  \
-	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --local ${TEST_LOG} ${SKIP_CHECK} --keep-cluster -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-tls: TEST_ARG_EXTRA=--tls --local
+smoke-test-tls: smoke-test
+
+smoke-test-tls-policy: TEST_ENV_AUTH_POLICY=AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
+smoke-test-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks --keep-cluster
+smoke-test-tls-policy: smoke-test
 
 # test rbac with ROOT user
-smoke-test-tls-root:	smoke-test-tls-policy test-permission-user1
+smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
@@ -77,42 +105,35 @@ test-permission-user1:
 	rm -f /tmp/topic.err
 	- $(FLUVIO_BIN) --cluster ${SC_HOST}:${SC_PORT} \
 		--tls --enable-client-cert --domain fluvio.local \
-		--ca-cert tls/certs/ca.crt --client-cert tls/certs/client-user1.crt --client-key tls/certs/client-user1.key \
+		--ca-cert tls/certs/ca.crt \
+		--client-cert tls/certs/client-user1.crt \
+		--client-key tls/certs/client-user1.key \
 		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
 
 k8-setup:
 	$(FLUVIO_BIN) cluster start --setup --develop
-#	$(FLUVIO_BIN) cluster check --pre-install
 
 # Kubernetes Tests
 
-smoke-test-k8:	test-clean-up minikube_image
-	$(TEST_BIN)	smoke --spu ${DEFAULT_SPU} --develop ${TEST_LOG} ${SKIP_CHECK} ${EXTRA_ARG} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-k8: TEST_ARG_EXTRA=--skip-checks
+smoke-test-k8: smoke-test
 
-smoke-test-k8-tls:	test-clean-up minikube_image
-	$(TEST_BIN) smoke --spu ${DEFAULT_SPU} --tls --develop ${TEST_LOG} ${SKIP_CHECK} -- --producer-iteration=${DEFAULT_ITERATION}
+smoke-test-k8-tls: TEST_ARG_EXTRA=--tls --skip-checks
+smoke-test-k8-tls: smoke-test
 
-smoke-test-k8-tls-policy:	test-clean-up minikube_image
+smoke-test-k8-tls-policy-setup:
+	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
-	FLV_SPU_DELAY=$(SPU_DELAY) \
-	$(TEST_BIN) \
-		smoke \
-		--spu ${DEFAULT_SPU} \
-		--tls \
-		--develop \
-		${TEST_LOG} \
-		--authorization-config-map authorization \
-		${SKIP_CHECK} \
-		--keep-cluster \
-		-- \
-		--producer-iteration=${DEFAULT_ITERATION}
+smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization --skip-checks --keep-cluster
+smoke-test-k8-tls-policy: smoke-test-k8-tls-policy-setup smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
 test-permission-k8:	SC_PORT=$(shell kubectl get svc fluvio-sc-public -o json | jq '.spec.ports[0].nodePort' )
 test-permission-k8:	test-permission-user1
 
-smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-k8
+smoke-test-k8-tls-root: smoke-test-k8-tls-policy test-permission-k8
 
 # test rbac
 #
@@ -122,15 +143,13 @@ smoke-test-k8-tls-root:	smoke-test-k8-tls-policy test-permission-k8
 test-rbac:
 	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
 
-
-test-clean-up:	build_test
+test-setup:
 ifeq ($(UNINSTALL),noclean)
 	echo "no clean"
 else
 	echo "clean up previous installation"
 	$(FLUVIO_BIN) cluster delete
 	$(FLUVIO_BIN) cluster delete --local
-	kubectl delete configmap authorization --ignore-not-found
 endif
 
 # Test multiplexor
