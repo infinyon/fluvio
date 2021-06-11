@@ -64,8 +64,7 @@ endif
 # List of smoke test steps.  This is used by CI
 #
 
-smoke-test-base: test-setup smoke-test-base-nobuild
-smoke-test-base-nobuild: test-setup-nobuild
+smoke-test-base: test-setup
 	# Set ENV
 	AUTH_POLICY=$(TEST_ENV_AUTH_POLICY) \
 	FLV_SPU_DELAY=$(TEST_ENV_FLV_SPU_DELAY) \
@@ -78,29 +77,23 @@ smoke-test-base-nobuild: test-setup-nobuild
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test-nobuild: TEST_ARG_EXTRA=--local --skip-checks
-smoke-test-nobuild: smoke-test-base-nobuild
-smoke-test: test-setup smoke-test-nobuild
+smoke-test: TEST_ARG_EXTRA=--local --skip-checks
+smoke-test: smoke-test-base
 
-smoke-test-stream-nobuild: TEST_ARG_EXTRA=--skip-checks
-smoke-test-stream-nobuild: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
-smoke-test-stream-nobuild: smoke-test-base-nobuild
-smoke-test-stream: test-setup smoke-test-stream-nobuild
+smoke-test-stream: TEST_ARG_EXTRA=--skip-checks
+smoke-test-stream: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
+smoke-test-stream: smoke-test-base
 
-smoke-test-tls-nobuild: TEST_ARG_EXTRA=--tls --local
-smoke-test-tls-nobuild: smoke-test-base-nobuild
-smoke-test-tls: test-setup smoke-test-tls-nobuild
+smoke-test-tls: TEST_ARG_EXTRA=--tls --local
+smoke-test-tls: smoke-test-base
 
-smoke-test-tls-policy-nobuild: TEST_ENV_AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
-smoke-test-tls-policy-nobuild: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
-
-smoke-test-tls-policy-nobuild: TEST_ARG_EXTRA=--tls --local --skip-checks --keep-cluster
-smoke-test-tls-policy-nobuild: smoke-test-base-nobuild
-smoke-test-tls-policy: test-setup smoke-test-tls-policy-nobuild
+smoke-test-tls-policy: TEST_ENV_AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
+smoke-test-tls-policy: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks --keep-cluster
+smoke-test-tls-policy: smoke-test-base
 
 # test rbac with ROOT user
 smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
-smoke-test-tls-root-nobuild: smoke-test-tls-policy-nobuild test-permission-user1
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
@@ -121,28 +114,24 @@ k8-setup:
 
 # Kubernetes Tests
 
-smoke-test-k8-nobuild: TEST_ARG_EXTRA=--devleop --skip-checks
-smoke-test-k8-nobuild: smoke-test-base-nobuild
-smoke-test-k8: test-setup smoke-test-k8-nobuild
+smoke-test-k8: TEST_ARG_EXTRA=--devleop --skip-checks
+smoke-test-k8: smoke-test-base
 
-smoke-test-k8-tls-nobuild: TEST_ARG_EXTRA=--tls --develop --skip-checks
-smoke-test-k8-tls-nobuild: smoke-test-base-nobuild
-smoke-test-k8-tls: test-setup smoke-test-k8-tls-nobuild
+smoke-test-k8-tls: TEST_ARG_EXTRA=--tls --develop --skip-checks
+smoke-test-k8-tls: smoke-test-base
 
-smoke-test-k8-tls-policy-nobuild-setup:
+smoke-test-k8-tls-policy-setup:
 	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
-smoke-test-k8-tls-policy-nobuild: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
-smoke-test-k8-tls-policy-nobuild: TEST_ARG_EXTRA=--tls --develop --authorization-config-map authorization --skip-checks --keep-cluster
-smoke-test-k8-tls-policy-nobuild: smoke-test-k8-tls-policy-nobuild-setup smoke-test-base-nobuild
-smoke-test-k8-tls-policy: test-setup minikube_image smoke-test-k8-tls-policy-nobuild
+smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=$(SPU_DELAY)
+smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --develop --authorization-config-map authorization --skip-checks --keep-cluster
+smoke-test-k8-tls-policy: smoke-test-k8-tls-policy-setup smoke-test-base
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
 test-permission-k8:	SC_PORT=$(shell kubectl get svc fluvio-sc-public -o json | jq '.spec.ports[0].nodePort' )
 test-permission-k8:	test-permission-user1
 
 smoke-test-k8-tls-root: smoke-test-k8-tls-policy test-permission-k8
-smoke-test-k8-tls-root-nobuild: smoke-test-k8-tls-policy-nobuild test-permission-k8
 
 # test rbac
 #
@@ -152,8 +141,7 @@ smoke-test-k8-tls-root-nobuild: smoke-test-k8-tls-policy-nobuild test-permission
 test-rbac:
 	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
 
-test-setup: build_test test-setup-nobuild
-test-setup-nobuild:
+test-setup:
 ifeq ($(UNINSTALL),noclean)
 	echo "no clean"
 else
