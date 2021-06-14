@@ -46,13 +46,13 @@ install_tools_mac:
 	brew install yq
 	brew install helm
 
-build_cli:
+build-cli:
 	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-build_cluster: install_test_target
+build-cluster: install_test_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-build_test:	build_cluster build_cli
+build-test:	build-cluster build-cli
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_test_target:
@@ -65,6 +65,12 @@ endif
 # List of smoke test steps.  This is used by CI
 #
 
+# In CI mode, do not run any build steps
+ifeq (${CI},true)
+else
+# When not in CI (i.e. development), build before testing
+smoke-test: build-test
+endif
 smoke-test: test-setup
 	# Set ENV
 	$(TEST_ENV_AUTH_POLICY) \
