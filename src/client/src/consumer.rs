@@ -133,8 +133,10 @@ impl PartitionConsumer {
     /// # use fluvio::{PartitionConsumer, FluvioError, Offset, ConsumerConfig};
     /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// // Use custom fetching configurations
-    /// let fetch_config = ConsumerConfig::default()
-    ///     .with_max_bytes(1000);
+    /// let config = ConsumerConfig::builder()
+    ///     .max_bytes(1000)
+    ///     .build()
+    ///     .unwrap();
     ///
     /// let response = consumer.fetch_with_config(Offset::beginning(), fetch_config).await?;
     /// for batch in response.records.batches {
@@ -277,9 +279,11 @@ impl PartitionConsumer {
     /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
-    /// let fetch_config = ConsumerConfig::default()
-    ///     .with_max_bytes(1000);
-    /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
+    /// let config = ConsumerConfig::builder()
+    ///     .max_bytes(1000)
+    ///     .build()
+    ///     .unwrap();
+    /// let mut stream = consumer.stream_with_config(Offset::beginning(), config).await?;
     /// while let Some(Ok(record)) = stream.next().await {
     ///     let key: Option<String> = record.key().map(|key| String::from_utf8_lossy(key).to_string());
     ///     let value = String::from_utf8_lossy(record.value());
@@ -329,9 +333,11 @@ impl PartitionConsumer {
     /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
     /// use futures::StreamExt;
     /// // Use a custom max_bytes value in the config
-    /// let fetch_config = ConsumerConfig::default()
-    ///     .with_max_bytes(1000);
-    /// let mut stream = consumer.stream_batches_with_config(Offset::beginning(), fetch_config).await?;
+    /// let config = ConsumerConfig::builder()
+    ///     .max_bytes(1000)
+    ///     .build()
+    ///     .unwrap();
+    /// let mut stream = consumer.stream_batches_with_config(Offset::beginning(), config).await?;
     /// while let Some(Ok(batch)) = stream.next().await {
     ///     for record in batch.records() {
     ///         let key = record.key.as_ref().map(|key| String::from_utf8_lossy(key.as_ref()).to_string());
@@ -410,12 +416,12 @@ impl PartitionConsumer {
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
-        if !config.wasm_module.is_empty() {
-            if stream_fetch_version >= WASM_MODULE_API as i16 {
-                stream_request.wasm_module = config.wasm_module;
-            } else {
+        if let Some(wasm) = config.wasm_filter {
+            if stream_fetch_version < WASM_MODULE_API as i16 {
                 return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
             }
+
+            stream_request.wasm_module = wasm;
         }
 
         let mut stream = self
@@ -565,11 +571,16 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
 });
 
 /// Configures the behavior of consumer fetching and streaming
-#[derive(Debug)]
+#[derive(derive_builder::Builder, Debug)]
 pub struct ConsumerConfig {
+    /// Maximum number of bytes to be fetched at a time.
+    #[builder(default = "*MAX_FETCH_BYTES")]
     pub(crate) max_bytes: i32,
+    #[builder(setter(skip))]
     pub(crate) isolation: Isolation,
-    wasm_module: Vec<u8>,
+    /// A WASM module to use as a SmartStream filter
+    #[builder(setter(into, strip_option), default)]
+    wasm_filter: Option<Vec<u8>>,
 }
 
 impl Default for ConsumerConfig {
@@ -577,22 +588,14 @@ impl Default for ConsumerConfig {
         Self {
             max_bytes: *MAX_FETCH_BYTES,
             isolation: Isolation::default(),
-            wasm_module: vec![],
+            wasm_filter: None,
         }
     }
 }
 
 impl ConsumerConfig {
-    /// Maximum number of bytes to be fetched at a time.
-    pub fn with_max_bytes(mut self, max_bytes: i32) -> Self {
-        self.max_bytes = max_bytes;
-        self
-    }
-
-    /// set wasm filter
-    pub fn with_wasm_filter(mut self, bytes: Vec<u8>) -> Self {
-        self.wasm_module = bytes;
-        self
+    pub fn builder() -> ConsumerConfigBuilder {
+        ConsumerConfigBuilder::default()
     }
 }
 
@@ -629,5 +632,27 @@ impl Record {
 impl AsRef<[u8]> for Record {
     fn as_ref(&self) -> &[u8] {
         self.value()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_consumer_config_unwrap() {
+        let _config: ConsumerConfig = ConsumerConfig::builder().build().unwrap();
+    }
+
+    #[test]
+    fn test_consumer_config() {
+        let config: ConsumerConfig = ConsumerConfig::builder()
+            .max_bytes(1024)
+            .wasm_module(vec![1, 2, 3, 4])
+            .build()
+            .unwrap();
+
+        assert_eq!(config.max_bytes, 1024);
+        assert_eq!(&config.wasm_module.unwrap(), &[1, 2, 3, 4]);
     }
 }

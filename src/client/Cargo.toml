@@ -20,6 +20,7 @@ unstable = []
 [dependencies]
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
+derive_builder = "0.10.2"
 futures-util = "0.3.6"
 bytes = "1.0.1"
 toml = "0.5.5"
