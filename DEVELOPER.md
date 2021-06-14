@@ -160,44 +160,19 @@ $ cargo run --bin fluvio-run -- spu -i 5001 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 ```
 
 
-# Compiling for K8
+# Deploying to minikube
 
-In order to deploy to minikube.  Docker image version must be built.
+## Building the image 
 
-Fluvio uses [musl](https://musl.libc.org) for deploying on a docker image.  
+In order to deploy to minikube, the Docker image version must be built and loaded into minikube.
 
-
-## Setting up target
-First, install Rust target:
-
-```
-rustup target add x86_64-unknown-linux-musl
-```
-
-For mac:
-
-```
-brew install filosottile/musl-cross/musl-cross
-export TARGET_CC=x86_64-linux-musl-gcc
-```
-
-For Linux, please see [musl wiki](https://wiki.musl-libc.org) for the installation of musl-gcc.
-
-For ubuntu:
-
-```
-sudo apt install -y musl-tools
-export TARGET_CC=musl-gcc
-sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-```
-
-## To build docker image
-
-Run following command to build image
+Run following command to build the image
 
 ```
 $ make minikube_image
 ```
+
+## Cleanup
 
 Make sure you uninstall previous clusters for local and k8:
 
@@ -205,6 +180,8 @@ Make sure you uninstall previous clusters for local and k8:
 $ flvd cluster delete --local
 $ flvd cluster delete
 ```
+
+## Install in minikube
 
 Run command below now to run install with image just built
 
@@ -247,59 +224,10 @@ cargo run --bin fluvio-sc-k8
 
 This guide helps users to solve issues they might face during the setup process. 
 
-###### Cross-compilation errors
-
-If you face cross-compilation errors while creating minikube image, for example
-
-```
-cargo build --bin fluvio-spu --target x86_64-unknown-linux-musl
-error: linker `x86_64-linux-musl-gcc` not found
- |
- = note: No such file or directory (os error 2)
-error: aborting due to previous error
-error: could not compile `fluvio-spu`.
-```
-
-This is indicative that you need to add standard library for the target platform:
-
-```
-rustup target add x86_64-unknown-linux-musl
-```
-
-If it still doesn't work
-
-```
-brew install filosottile/musl-cross/musl-cross
-```
-
-Make sure you set the following environment variable
-
-```
-export TARGET_CC=x86_64-linux-musl-gcc
-```
-
 ###### Connection issues
 
-If you face issues while connecting to the registry
+If you face connection issues while creating minikube image
 
-```
-Get http://localhost:5000/v2/: dial tcp [::1]:5000: connect: connection refused
-```
-
-It means your docker registry is not running
-
-```
-docker run -d -p 5000:5000 --restart=always --name registry registry:2
-```
-
-If you face connection issues while creating minikube image while your docker registry is up running
-
-```
-$ make minikube_image
-Error response from daemon: Get http://localhost:5000/v2/: dial tcp 127.0.0.1:5000: connect: connection refused
-make[1]: *** [minikube] Error 1
-make: *** [spu_image] Error 2
-```
 Re-build i.e.delete and restart minikube cluster
 
 ```
