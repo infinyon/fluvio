@@ -205,7 +205,7 @@ jobs:
         run: sccache --start-server
 
       - name: Build artifacts
-        run: make build_cli build_cluster build_test
+        run: make build-cli build-cluster build-test
 
       - name: Unit tests
         run: make run-all-unit-test
@@ -314,7 +314,7 @@ jobs:
           minikube status
       - name: Build Test
         run: |
-          make RELEASE=release build_test
+          make RELEASE=release build-test
       - name: Setup installation pre-requisites
         run: |
           cargo run --release --bin fluvio -- cluster start --setup --local --develop
