@@ -3,6 +3,7 @@
 ## Platform Version 0.8.5 - UNRELEASED
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
 * Make recipes for smoke tests no longer build by default, helps caching. ([#1165](https://github.com/infinyon/fluvio/pull/1165))
+* Add SmartStreamModule in ConsumerConfig for loading WASM using binary or base64. ([#32](https://github.com/infinyon/fluvio-client-wasm/issues/32))
  
 ## Platform Version 0.8.4 - 2020-05-29
 * Don't hang when check for non exist topic. ([#697](https://github.com/infinyon/fluvio/pull/697))

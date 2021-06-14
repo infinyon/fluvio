@@ -44,7 +44,7 @@ directories = "3.0.2"
 tempfile = "3.2"
 
 # Fluvio dependencies
-fluvio = { version = "0.8.0", path = "../client", default-features = false }
+fluvio = { version = "0.9.0", path = "../client", default-features = false }
 fluvio-helm = "0.4.1"
 fluvio-future = { version = "0.3.0" }
 fluvio-command = { version = "0.2.0", path = "../command" }
