@@ -416,12 +416,13 @@ impl PartitionConsumer {
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
-        if let Some(wasm) = config.wasm_filter {
+        if let Some(wasm) = config.smartstream_filter {
+            println!("USING SMARTSTREAM WITH WASM SIZE: {}", wasm.binary.len());
             if stream_fetch_version < WASM_MODULE_API as i16 {
                 return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
             }
 
-            stream_request.wasm_module = wasm;
+            stream_request.wasm_module = wasm.binary;
         }
 
         let mut stream = self
@@ -570,6 +571,28 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     max_bytes
 });
 
+#[derive(Debug, Clone)]
+pub struct SmartStreamModule {
+    binary: Vec<u8>,
+}
+
+impl SmartStreamModule {
+    /// Instantiate a SmartStream from raw WASM binary
+    pub fn from_binary<T: Into<Vec<u8>>>(binary: T) -> Self {
+        Self {
+            binary: binary.into(),
+        }
+    }
+
+    /// Instantiate a SmartStream from a base64-encoded string
+    pub fn from_base64<S: Into<String>>(string: S) -> Result<Self, FluvioError> {
+        let binary = base64::decode(string.into()).map_err(|e| {
+            FluvioError::Other(format!("Failed to decode WASM from base64: {:?}", e))
+        })?;
+        Ok(Self { binary })
+    }
+}
+
 /// Configures the behavior of consumer fetching and streaming
 #[derive(derive_builder::Builder, Debug)]
 pub struct ConsumerConfig {
@@ -579,8 +602,8 @@ pub struct ConsumerConfig {
     #[builder(setter(skip))]
     pub(crate) isolation: Isolation,
     /// A WASM module to use as a SmartStream filter
-    #[builder(setter(into, strip_option), default)]
-    wasm_filter: Option<Vec<u8>>,
+    #[builder(private, default, setter(strip_option))]
+    smartstream_filter: Option<SmartStreamModule>,
 }
 
 impl Default for ConsumerConfig {
@@ -588,7 +611,7 @@ impl Default for ConsumerConfig {
         Self {
             max_bytes: *MAX_FETCH_BYTES,
             isolation: Isolation::default(),
-            wasm_filter: None,
+            smartstream_filter: None,
         }
     }
 }
@@ -596,6 +619,21 @@ impl Default for ConsumerConfig {
 impl ConsumerConfig {
     pub fn builder() -> ConsumerConfigBuilder {
         ConsumerConfigBuilder::default()
+    }
+}
+
+impl ConsumerConfigBuilder {
+    pub fn smartstream_binary<T: Into<Vec<u8>>>(&mut self, binary: T) -> &mut Self {
+        self.smartstream_filter(SmartStreamModule::from_binary(binary.into()));
+        self
+    }
+
+    pub fn smartstream_base64<S: Into<String>>(
+        &mut self,
+        base64: S,
+    ) -> Result<&mut Self, FluvioError> {
+        self.smartstream_filter(SmartStreamModule::from_base64(base64.into())?);
+        Ok(self)
     }
 }
 
