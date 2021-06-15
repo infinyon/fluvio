@@ -583,14 +583,6 @@ impl SmartStreamModule {
             binary: binary.into(),
         }
     }
-
-    /// Instantiate a SmartStream from a base64-encoded string
-    pub fn from_base64<S: Into<String>>(string: S) -> Result<Self, FluvioError> {
-        let binary = base64::decode(string.into()).map_err(|e| {
-            FluvioError::Other(format!("Failed to decode WASM from base64: {:?}", e))
-        })?;
-        Ok(Self { binary })
-    }
 }
 
 /// Configures the behavior of consumer fetching and streaming
@@ -719,7 +711,10 @@ impl ConsumerConfigBuilder {
         &mut self,
         base64: S,
     ) -> Result<&mut Self, FluvioError> {
-        self.smartstream_filter(SmartStreamModule::from_base64(base64.into())?);
+        let binary = base64::decode(base64.into()).map_err(|e| {
+            FluvioError::Other(format!("Failed to decode WASM from base64: {:?}", e))
+        })?;
+        self.smartstream_filter(SmartStreamModule::from_binary(binary));
         Ok(self)
     }
 }
