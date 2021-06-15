@@ -293,6 +293,7 @@ impl PartitionConsumer {
     /// # }
     /// ```
     ///
+    /// [`stream`]: PartitionConsumer::stream
     /// [`Offset`]: struct.Offset.html
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     #[instrument(skip(self, offset, config))]
