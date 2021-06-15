@@ -138,7 +138,7 @@ impl PartitionConsumer {
     ///     .build()
     ///     .unwrap();
     ///
-    /// let response = consumer.fetch_with_config(Offset::beginning(), fetch_config).await?;
+    /// let response = consumer.fetch_with_config(Offset::beginning(), config).await?;
     /// for batch in response.records.batches {
     ///     for record in batch.records() {
     ///         let string = String::from_utf8_lossy(record.value.as_ref());
@@ -686,11 +686,11 @@ mod tests {
     fn test_consumer_config() {
         let config: ConsumerConfig = ConsumerConfig::builder()
             .max_bytes(1024)
-            .wasm_module(vec![1, 2, 3, 4])
+            .smartstream_binary(vec![1, 2, 3, 4])
             .build()
             .unwrap();
 
         assert_eq!(config.max_bytes, 1024);
-        assert_eq!(&config.wasm_module.unwrap(), &[1, 2, 3, 4]);
+        assert_eq!(&config.smartstream_filter.unwrap().binary, &[1, 2, 3, 4]);
     }
 }
