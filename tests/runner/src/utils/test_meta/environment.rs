@@ -1,5 +1,5 @@
 use crate::setup::environment::{EnvironmentType};
-use crate::test_runner::FluvioTest;
+use crate::test_runner::FluvioTestMeta;
 use structopt::StructOpt;
 use std::fmt::Debug;
 use std::num::ParseIntError;
@@ -114,7 +114,7 @@ impl EnvDetail for EnvironmentSetup {
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 pub struct EnvironmentSetup {
     /// Name of the test
-    #[structopt(possible_values=&FluvioTest::all_test_names())]
+    #[structopt(possible_values=&FluvioTestMeta::all_test_names())]
     pub test_name: String,
 
     /// (Experimental) Run the test in benchmark mode. Tests must opt-in.

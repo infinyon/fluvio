@@ -82,10 +82,16 @@ impl TestTimer {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct TestResult {
     pub success: bool,
     pub duration: Duration,
+    // stats
+    // # producers
+    // # consumers
+    // # topics
+    // message throughput
+    // latency
 }
 
 impl TestResult {

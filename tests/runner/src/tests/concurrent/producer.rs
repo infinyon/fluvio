@@ -1,12 +1,17 @@
-use std::sync::Arc;
 use std::sync::mpsc::Sender;
-use fluvio::{Fluvio, RecordKey};
+use fluvio::RecordKey;
+use fluvio_test_util::test_runner::FluvioTestDriver;
 
 use super::ConcurrentTestCase;
 use super::util::*;
 
-pub async fn producer(fluvio: Arc<Fluvio>, option: ConcurrentTestCase, digests: Sender<String>) {
-    let producer = fluvio
+pub async fn producer(
+    test_driver: FluvioTestDriver,
+    option: ConcurrentTestCase,
+    digests: Sender<String>,
+) {
+    let producer = test_driver
+        .client
         .topic_producer(option.environment.topic_name.clone())
         .await
         .unwrap();

@@ -6,31 +6,55 @@ use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::Fluvio;
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
+use hdrhistogram::Histogram;
 
-#[derive(Debug)]
-pub struct FluvioTest {
-    pub name: String,
-    pub test_fn: fn(Arc<Fluvio>, TestCase) -> Result<TestResult, TestResult>,
-    pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
-    pub requirements: fn() -> TestRequirements,
+#[derive(Clone)]
+pub struct FluvioTestDriver {
+    pub client: Arc<Fluvio>,
+    pub num_topics: usize,
+    pub num_producers: usize,
+    pub num_consumers: usize,
+    pub stats: Histogram<u64>,
 }
 
-inventory::collect!(FluvioTest);
+impl FluvioTestDriver {
+    pub fn get_results(&self) -> TestResult {
+        TestResult::default()
+    }
+}
 
-impl FluvioTest {
+#[derive(Debug)]
+pub struct FluvioTestMeta {
+    pub name: String,
+    pub test_fn: fn(FluvioTestDriver, TestCase) -> Result<TestResult, TestResult>,
+    pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
+    pub requirements: fn() -> TestRequirements,
+    // Can't store Arc<Fluvio> bc of how we collect tests. Just too early to have a connection
+    //// Can I hold onto Arc<Fluvio> so I can control producer and consumer creation?
+    //pub client: Option<Arc<Fluvio>>,
+
+    // TestResult?
+    // producer count
+    // consumer count
+}
+
+inventory::collect!(FluvioTestMeta);
+
+impl FluvioTestMeta {
     pub fn all_test_names() -> Vec<&'static str> {
-        inventory::iter::<FluvioTest>
+        inventory::iter::<Self>
             .into_iter()
             .map(|x| x.name.as_str())
             .collect::<Vec<&str>>()
     }
 
-    pub fn from_name<S: AsRef<str>>(test_name: S) -> Option<&'static FluvioTest> {
-        inventory::iter::<FluvioTest>
+    pub fn from_name<S: AsRef<str>>(test_name: S) -> Option<&'static Self> {
+        inventory::iter::<Self>
             .into_iter()
             .find(|t| t.name == test_name.as_ref())
     }
 
+    // TODO: Expose # partition selection
     pub async fn create_topic(client: Arc<Fluvio>, option: &EnvironmentSetup) -> Result<(), ()> {
         if !option.is_benchmark() {
             println!("Creating the topic: {}", &option.topic_name);

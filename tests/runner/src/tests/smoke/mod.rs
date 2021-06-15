@@ -2,17 +2,15 @@ pub mod consume;
 pub mod produce;
 pub mod message;
 
-use std::sync::Arc;
 use std::any::Any;
 use structopt::StructOpt;
 
-use fluvio::Fluvio;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
-use fluvio_test_util::test_runner::FluvioTest;
+use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -67,9 +65,9 @@ impl TestOption for SmokeTestOption {
 //}
 
 #[fluvio_test(topic = "test")]
-pub async fn smoke(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
+pub async fn smoke(test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
     let smoke_test_case = test_case.into();
 
-    let start_offsets = produce::produce_message(client.clone(), &smoke_test_case).await;
-    consume::validate_consume_message(client, &smoke_test_case, start_offsets).await;
+    let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
+    consume::validate_consume_message(test_driver, &smoke_test_case, start_offsets).await;
 }

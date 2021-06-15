@@ -8,15 +8,17 @@ use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
-use fluvio_test_util::test_runner::FluvioTest;
+use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
 use fluvio_test_util::test_meta::TestTimer;
 use bencher::bench;
 use prettytable::{table, row, cell};
+use hdrhistogram::Histogram;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use flv_test::tests as _;
 
+// How can I create multiple clients so I can scale the producer count per-process?
 fn main() {
     run_block_on(async {
         let option = BaseCli::from_args();
@@ -25,8 +27,8 @@ fn main() {
         let test_name = option.environment.test_name.clone();
 
         // Get test from inventory
-        let test =
-            FluvioTest::from_name(&test_name).expect("StructOpt should have caught this error");
+        let test_meta =
+            FluvioTestMeta::from_name(&test_name).expect("StructOpt should have caught this error");
 
         let mut subcommand = vec![test_name.clone()];
 
@@ -37,27 +39,28 @@ fn main() {
             subcommand.extend(args);
 
             // Parse the subcommand
-            (test.validate_fn)(subcommand)
+            (test_meta.validate_fn)(subcommand)
         } else {
             // No args
-            (test.validate_fn)(subcommand)
+            (test_meta.validate_fn)(subcommand)
         };
 
         println!("Start running fluvio test runner");
         fluvio_future::subscriber::init_logger();
 
+        // Can I get a FluvioConfig anywhere
         // Deploy a cluster
         let fluvio_client = cluster_setup(&option.environment).await;
 
-        // Select test
-        let test = inventory::iter::<FluvioTest>
-            .into_iter()
-            .find(|t| t.name == test_name.as_str())
-            .expect("Test not found");
+        //// Select test
+        //let test = inventory::iter::<FluvioTestMeta>
+        //    .into_iter()
+        //    .find(|t| t.name == test_name.as_str())
+        //    .expect("Test not found");
 
         // Check on test requirements before running the test
-        if !FluvioTest::is_env_acceptable(
-            &(test.requirements)(),
+        if !FluvioTestMeta::is_env_acceptable(
+            &(test_meta.requirements)(),
             &TestCase::new(option.environment.clone(), test_opt.clone()),
         ) {
             exit(-1);
@@ -78,10 +81,20 @@ fn main() {
         }));
 
         if option.environment.benchmark {
-            run_benchmark(test, fluvio_client, option.environment.clone(), test_opt)
+            run_benchmark(
+                test_meta,
+                fluvio_client,
+                option.environment.clone(),
+                test_opt,
+            )
         } else {
-            let test_result =
-                run_test(option.environment.clone(), test_opt, test, fluvio_client).await;
+            let test_result = run_test(
+                option.environment.clone(),
+                test_opt,
+                test_meta,
+                fluvio_client,
+            )
+            .await;
             cluster_cleanup(option.environment).await;
 
             println!("{}", test_result)
@@ -92,12 +105,12 @@ fn main() {
 async fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
-    test: &FluvioTest,
-    fluvio_client: Arc<Fluvio>,
+    test_meta: &FluvioTestMeta,
+    test_driver: FluvioTestDriver,
 ) -> TestResult {
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
-        (test.test_fn)(fluvio_client.clone(), test_case)
+        (test_meta.test_fn)(test_driver.clone(), test_case)
     }))
     .expect("Panic hook should have caught this");
 
@@ -105,8 +118,8 @@ async fn run_test(
 }
 
 fn run_benchmark(
-    test_fn: &FluvioTest,
-    client: Arc<Fluvio>,
+    test_fn: &FluvioTestMeta,
+    test_driver: FluvioTestDriver,
     env: EnvironmentSetup,
     opts: Box<dyn TestOption>,
 ) {
@@ -115,7 +128,7 @@ fn run_benchmark(
     bench::run_once(move |b| {
         let summary = b.auto_bench(move |inner_b| {
             let test_case = TestCase::new(env.clone(), opts.clone());
-            inner_b.iter(|| (test_fn.test_fn)(client.clone(), test_case.clone()))
+            inner_b.iter(|| (test_fn.test_fn)(test_driver.clone(), test_case.clone()))
         });
 
         let elapsed_duration = format!("{:?}", Duration::from_nanos(b.ns_elapsed()));
@@ -155,7 +168,7 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
     }
 }
 
-async fn cluster_setup(option: &EnvironmentSetup) -> Arc<Fluvio> {
+async fn cluster_setup(option: &EnvironmentSetup) -> FluvioTestDriver {
     let fluvio_client = if option.skip_cluster_start() {
         println!("skipping cluster start");
         // Connect to cluster in profile
@@ -174,7 +187,13 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<Fluvio> {
         )
     };
 
-    fluvio_client
+    FluvioTestDriver {
+        client: fluvio_client,
+        num_topics: 0,
+        num_producers: 0,
+        num_consumers: 0,
+        stats: Histogram::<u64>::new(3).unwrap(),
+    }
 }
 
 #[cfg(test)]

@@ -78,17 +78,17 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
-        pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #out_fn_iden(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             //println!("Inside the function");
             let future = async move {
                 //println!("Inside the async wrapper function");
-                #async_inner_fn_iden(client, test_case).await
+                #async_inner_fn_iden(test_driver, test_case).await
             };
             fluvio_future::task::run_block_on(future)
         }
 
         inventory::submit!{
-            FluvioTest {
+            FluvioTestMeta {
                 name: #test_name.to_string(),
                 test_fn: #out_fn_iden,
                 validate_fn: validate_subcommand,
@@ -96,13 +96,13 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
-        pub async fn #async_inner_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub async fn #async_inner_fn_iden(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::{TestCase, TestResult};
             use fluvio_test_util::test_meta::environment::{EnvDetail};
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
             use fluvio_test_util::test_meta::TestTimer;
-            use fluvio_test_util::test_runner::FluvioTest;
+            use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
             use fluvio_test_util::setup::environment::EnvironmentType;
             use fluvio_future::task::run;
             use fluvio_future::timer::sleep;
@@ -115,19 +115,20 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
             // Customize test environment if it meets minimum requirements
-            if FluvioTest::is_env_acceptable(&test_reqs, &test_case) {
+            if FluvioTestMeta::is_env_acceptable(&test_reqs, &test_case) {
 
                 // Test-level environment customizations from macro attrs
-                FluvioTest::customize_test(&test_reqs, &mut test_case);
+                FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
+                // TODO: FluvioTestDriver should create the topic
                 // Create topic before starting test
-                FluvioTest::create_topic(client.clone(), &test_case.environment)
+                FluvioTestMeta::create_topic(test_driver.client.clone(), &test_case.environment)
                     .await
                     .expect("Unable to create default topic");
 
                 // Wrap the user test in a closure
                 // If the test is a benchmark, we want to build this in a specific way
-                let test_fn = |client: Arc<Fluvio>, test_case: TestCase| async {
+                let test_fn = |test_driver: FluvioTestDriver, test_case: TestCase| async {
                     #test_body
                 };
 
@@ -149,7 +150,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         })
                     },
 
-                    _ = test_fn(client, test_case) => {
+                    _ = test_fn(test_driver, test_case) => {
                         test_timer.stop();
 
                         Ok(TestResult {

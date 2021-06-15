@@ -1,14 +1,13 @@
-use std::sync::Arc;
 use std::any::Any;
 use std::env;
 use structopt::StructOpt;
 
-use fluvio::{Fluvio, TopicProducer, RecordKey};
+use fluvio::{TopicProducer, RecordKey};
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
-use fluvio_test_util::test_runner::FluvioTest;
+use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
 
 #[derive(Debug, Clone)]
 pub struct ProducerStressTestCase {
@@ -46,15 +45,18 @@ impl TestOption for ProducerStressTestOption {
     }
 }
 
-async fn get_producer(client: Arc<Fluvio>, topic_name: String) -> TopicProducer {
-    client
+async fn get_producer(test_driver: FluvioTestDriver, topic_name: String) -> TopicProducer {
+    // TODO: Increase producer count
+
+    test_driver
+        .client
         .topic_producer(topic_name.clone())
         .await
         .expect("Couldn't get producer")
 }
 
 #[fluvio_test(name = "producer_stress", topic = "test", benchmark = true)]
-pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
+pub async fn run(test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
     let test_case: ProducerStressTestCase = test_case.into();
 
     if !test_case.environment.is_benchmark() {
@@ -75,7 +77,7 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
 
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
-        let producer = get_producer(client.clone(), topic_name.clone()).await;
+        let producer = get_producer(test_driver.clone(), topic_name.clone()).await;
         producers.push(producer);
     }
 
@@ -107,5 +109,5 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
 
     // Make the compiler happy
     drop(producers);
-    drop(client);
+    drop(test_driver.client);
 }

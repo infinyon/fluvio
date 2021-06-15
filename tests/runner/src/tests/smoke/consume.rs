@@ -3,13 +3,13 @@
 use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio::{Fluvio, Offset, PartitionConsumer};
+use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio::{Offset, PartitionConsumer};
 use fluvio_command::CommandExt;
 
 use super::SmokeTestCase;
@@ -25,7 +25,7 @@ fn consume_wait_timeout() -> u64 {
 
 /// verify consumers
 pub async fn validate_consume_message(
-    client: Arc<Fluvio>,
+    client: FluvioTestDriver,
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
@@ -64,11 +64,15 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         println!("topic: {}, consume message validated!", topic_name);
     }
 }
-async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
+async fn get_consumer(test_driver: &FluvioTestDriver, topic: &str) -> PartitionConsumer {
     use fluvio_future::timer::sleep;
 
     for _ in 0..10 {
-        match client.partition_consumer(topic.to_string(), 0).await {
+        match test_driver
+            .client
+            .partition_consumer(topic.to_string(), 0)
+            .await
+        {
             Ok(client) => return client,
             Err(err) => {
                 println!(
@@ -84,7 +88,7 @@ async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
 }
 
 async fn validate_consume_message_api(
-    client: Arc<Fluvio>,
+    test_driver: FluvioTestDriver,
     offsets: Offsets,
     test_case: &SmokeTestCase,
 ) {
@@ -104,7 +108,7 @@ async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let consumer = get_consumer(&client, &topic_name).await;
+        let consumer = get_consumer(&test_driver, &topic_name).await;
 
         let mut stream = consumer
             .stream(
@@ -171,7 +175,7 @@ async fn validate_consume_message_api(
     // wait 500m second and ensure partition list
     sleep(Duration::from_millis(500)).await;
 
-    let admin = client.admin().await;
+    let mut admin = test_driver.client.admin().await;
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await

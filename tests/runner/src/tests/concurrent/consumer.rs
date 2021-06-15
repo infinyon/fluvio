@@ -1,17 +1,18 @@
-use std::sync::Arc;
 use std::sync::mpsc::Receiver;
+use fluvio_test_util::test_runner::FluvioTestDriver;
 use futures_lite::StreamExt;
-use fluvio::{Fluvio, Offset};
+use fluvio::Offset;
 
 use super::{ConcurrentTestCase, PARTITION};
 use super::util::*;
 
 pub async fn consumer_stream(
-    fluvio: Arc<Fluvio>,
+    test_driver: FluvioTestDriver,
     option: ConcurrentTestCase,
     digests: Receiver<String>,
 ) {
-    let consumer = fluvio
+    let consumer = test_driver
+        .client
         .partition_consumer(option.environment.topic_name.clone(), PARTITION)
         .await
         .unwrap();

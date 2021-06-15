@@ -1,16 +1,16 @@
 use std::collections::HashMap;
 
+use fluvio_test_util::test_runner::FluvioTestDriver;
 use tracing::info;
 
 use super::SmokeTestCase;
 use super::message::*;
-use fluvio::{Fluvio, TopicProducer, RecordKey};
+use fluvio::{TopicProducer, RecordKey};
 use fluvio_command::CommandExt;
-use std::sync::Arc;
 
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(client: Arc<Fluvio>, test_case: &SmokeTestCase) -> Offsets {
+pub async fn produce_message(test_driver: FluvioTestDriver, test_case: &SmokeTestCase) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&test_case).await;
 
@@ -20,10 +20,10 @@ pub async fn produce_message(client: Arc<Fluvio>, test_case: &SmokeTestCase) -> 
     if use_cli {
         cli::produce_message_with_cli(test_case, offsets.clone()).await;
     } else if consumer_wait {
-        produce_message_with_api(client, offsets.clone(), test_case.clone()).await;
+        produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
     } else {
         spawn(produce_message_with_api(
-            client,
+            test_driver,
             offsets.clone(),
             test_case.clone(),
         ));
@@ -88,12 +88,12 @@ mod offsets {
     }
 }
 
-async fn get_producer(client: &Fluvio, topic: &str) -> TopicProducer {
+async fn get_producer(test_driver: &FluvioTestDriver, topic: &str) -> TopicProducer {
     use std::time::Duration;
     use fluvio_future::timer::sleep;
 
     for _ in 0..10 {
-        match client.topic_producer(topic).await {
+        match test_driver.client.topic_producer(topic).await {
             Ok(client) => return client,
             Err(err) => {
                 println!(
@@ -109,7 +109,7 @@ async fn get_producer(client: &Fluvio, topic: &str) -> TopicProducer {
 }
 
 pub async fn produce_message_with_api(
-    client: Arc<Fluvio>,
+    test_driver: FluvioTestDriver,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {
@@ -124,7 +124,7 @@ pub async fn produce_message_with_api(
 
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
-        let producer = get_producer(&client, &topic_name).await;
+        let producer = get_producer(&test_driver, &topic_name).await;
 
         for i in 0..produce_iteration {
             let offset = base_offset + i as i64;
