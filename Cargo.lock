@@ -1402,6 +1402,7 @@ dependencies = [
  "async-h1",
  "atty",
  "color-eyre",
+ "colored",
  "content_inspector",
  "ctrlc",
  "dirs 1.0.5",

@@ -163,6 +163,7 @@ impl ConsumeOpt {
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<(), ConsumerError> {
+        self.print_status();
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
         while let Some(result) = stream.next().await {
@@ -212,6 +213,60 @@ impl ConsumeOpt {
             // (Some(_), None) only if JSON cannot be printed, so skip.
             _ => debug!("Skipping record that cannot be formatted"),
         }
+    }
+
+    fn print_status(&self) {
+        use colored::*;
+        if !atty::is(atty::Stream::Stdout) {
+            return;
+        }
+
+        // If -B or --beginning
+        if self.from_beginning {
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records from the beginning of topic '{}'",
+                    &self.topic
+                )
+                .bold()
+            );
+            return;
+        }
+
+        // If -o or --offset was given
+        if let Some(offset) = &self.offset {
+            if *offset > 0 {
+                eprintln!(
+                    "{}",
+                    format!(
+                        "Consuming records from offset {} in topic '{}'",
+                        offset, &self.topic
+                    )
+                    .bold()
+                );
+            } else {
+                eprintln!(
+                    "{}",
+                    format!(
+                        "Consuming records {} from the end of topic '{}'",
+                        -offset, &self.topic
+                    )
+                    .bold()
+                );
+            }
+            return;
+        }
+
+        // If no offset config is given, read from the end
+        eprintln!(
+            "{}",
+            format!(
+                "Consuming records from the end of topic '{}'. This will wait for new records",
+                &self.topic
+            )
+            .bold()
+        )
     }
 
     /// Initialize Ctrl-C event handler
