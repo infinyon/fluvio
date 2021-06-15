@@ -422,7 +422,7 @@ impl PartitionConsumer {
                 return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
             }
 
-            stream_request.wasm_module = wasm.binary;
+            stream_request.wasm_module = wasm;
         }
 
         let mut stream = self
@@ -571,20 +571,6 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     max_bytes
 });
 
-#[derive(Debug, Clone)]
-pub struct SmartStreamModule {
-    binary: Vec<u8>,
-}
-
-impl SmartStreamModule {
-    /// Instantiate a SmartStream from raw WASM binary
-    pub fn from_binary<T: Into<Vec<u8>>>(binary: T) -> Self {
-        Self {
-            binary: binary.into(),
-        }
-    }
-}
-
 /// Configures the behavior of consumer fetching and streaming
 #[derive(derive_builder::Builder, Debug)]
 pub struct ConsumerConfig {
@@ -604,14 +590,8 @@ pub struct ConsumerConfig {
     #[builder(setter(skip))]
     pub(crate) isolation: Isolation,
     /// A WASM module to use as a SmartStream filter
-    ///
-    /// Use the [`smartstream_binary`] or [`smartstream_base64`]
-    /// constructors to configure the SmartStream.
-    ///
-    /// [`smartstream_binary`]: ConsumerConfigBuilder::smartstream_binary
-    /// [`smartstream_base64`]: ConsumerConfigBuilder::smartstream_base64
-    #[builder(private, default, setter(strip_option))]
-    smartstream_filter: Option<SmartStreamModule>,
+    #[builder(setter(into, strip_option), default)]
+    smartstream_filter: Option<Vec<u8>>,
 }
 
 impl Default for ConsumerConfig {
@@ -627,22 +607,14 @@ impl Default for ConsumerConfig {
 impl ConsumerConfig {
     /// Create a builder for collecting Consumer configuration options.
     ///
-    /// # Kitchen Sink Example
+    /// # Example
     ///
-    /// The full set of configurations available are shown below.
-    /// See [ConsumerConfigBuilder] for more details.
-    ///
-    /// ```
+    /// ```no_run
     /// # use fluvio::ConsumerConfig;
+    /// let wasm = std::fs::read("./smartstream.wasm").unwrap();
     /// let consumer = ConsumerConfig::builder()
     ///     .max_bytes(1000)
-    ///
-    ///      // Don't actually use fake data, pass real WASM
-    ///     .smartstream_binary(vec![0x48, 0x65, 0x6c, 0x6c, 0x6f])
-    ///
-    ///      // Also use real WASM. Don't use smartstream_binary and smartstream_base64 together
-    ///     .smartstream_base64("SGVsbG8K").unwrap()
-    ///
+    ///     .smartstream_filter(wasm)
     ///     .build()
     ///     .unwrap();
     /// ```
@@ -660,62 +632,8 @@ impl ConsumerConfig {
     /// set wasm filter
     #[deprecated(since = "0.8.6", note = "Use 'ConsumerConfig::builder()' instead")]
     pub fn with_wasm_filter(mut self, bytes: Vec<u8>) -> Self {
-        self.smartstream_filter = Some(SmartStreamModule::from_binary(bytes));
+        self.smartstream_filter = Some(bytes);
         self
-    }
-}
-
-impl ConsumerConfigBuilder {
-    /// Configure this Consumer to use a SmartStream filter from a WASM binary.
-    ///
-    /// The contents of the given buffer are read as if they were taken directly
-    /// from a `.wasm` file. Prefer this to [`smartstream_base64`] whenever possible.
-    ///
-    /// [`smartstream_base64`]: ConsumerConfigBuilder::smartstream_base64
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio::ConsumerConfig;
-    /// let wasm = std::fs::read("./smartstream.wasm").unwrap();
-    /// let config = ConsumerConfig::builder()
-    ///     .smartstream_binary(wasm)
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn smartstream_binary<T: Into<Vec<u8>>>(&mut self, binary: T) -> &mut Self {
-        self.smartstream_filter(SmartStreamModule::from_binary(binary.into()));
-        self
-    }
-
-    /// Configure the Consumer to use a SmartStream filter from a base64-encoded WASM binary.
-    ///
-    /// This is a convenience method for special use-cases such as loading a WASM
-    /// module from a wrapper like JS where it is easier to deal with base64-encoded strings
-    /// than to pass actual binary buffers. When possible, prefer to use [`smartstream_binary`].
-    ///
-    /// [`smartstream_binary`]: ConsumerConfigBuilder::smartstream_binary
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio::ConsumerConfig;
-    /// let wasm = std::fs::read("./smartstream.wasm").unwrap();
-    /// let wasm_base64 = base64::encode(wasm);
-    /// let config = ConsumerConfig::builder()
-    ///     .smartstream_base64(wasm_base64).unwrap()
-    ///     .build()
-    ///     .unwrap();
-    /// ```
-    pub fn smartstream_base64<S: Into<String>>(
-        &mut self,
-        base64: S,
-    ) -> Result<&mut Self, FluvioError> {
-        let binary = base64::decode(base64.into()).map_err(|e| {
-            FluvioError::Other(format!("Failed to decode WASM from base64: {:?}", e))
-        })?;
-        self.smartstream_filter(SmartStreamModule::from_binary(binary));
-        Ok(self)
     }
 }
 
@@ -768,11 +686,11 @@ mod tests {
     fn test_consumer_config() {
         let config: ConsumerConfig = ConsumerConfig::builder()
             .max_bytes(1024)
-            .smartstream_binary(vec![1, 2, 3, 4])
+            .smartstream_filter(vec![1, 2, 3, 4])
             .build()
             .unwrap();
 
         assert_eq!(config.max_bytes, 1024);
-        assert_eq!(&config.smartstream_filter.unwrap().binary, &[1, 2, 3, 4]);
+        assert_eq!(&config.smartstream_filter.unwrap(), &[1, 2, 3, 4]);
     }
 }

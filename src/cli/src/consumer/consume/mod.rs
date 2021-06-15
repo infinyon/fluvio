@@ -115,7 +115,7 @@ impl ConsumeOpt {
         if let Some(filter_path) = &self.smart_stream {
             let buffer = std::fs::read(filter_path)?;
             debug!(len = buffer.len(), "read filter bytes");
-            builder.smartstream_binary(buffer);
+            builder.smartstream_filter(buffer);
         }
 
         let consume_config: ConsumerConfig = builder.build().unwrap();
