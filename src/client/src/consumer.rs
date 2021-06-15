@@ -620,6 +620,20 @@ impl ConsumerConfig {
     pub fn builder() -> ConsumerConfigBuilder {
         ConsumerConfigBuilder::default()
     }
+
+    /// Maximum number of bytes to be fetched at a time.
+    #[deprecated(since = "0.8.6", note = "Use 'ConsumerConfig::builder()' instead")]
+    pub fn with_max_bytes(mut self, max_bytes: i32) -> Self {
+        self.max_bytes = max_bytes;
+        self
+    }
+
+    /// set wasm filter
+    #[deprecated(since = "0.8.6", note = "Use 'ConsumerConfig::builder()' instead")]
+    pub fn with_wasm_filter(mut self, bytes: Vec<u8>) -> Self {
+        self.wasm_module = bytes;
+        self
+    }
 }
 
 impl ConsumerConfigBuilder {
