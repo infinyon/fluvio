@@ -56,7 +56,7 @@ fn generate_map(func: &SmartStreamFn) -> TokenStream {
     let user_fn = &func.name;
     quote! {
         let mut processed: Vec<_> = records.into_iter()
-            .map(|record| #user_fn(record))
+            .map(|record| super:: #user_fn(record))
             .collect();
     }
 }
