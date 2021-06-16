@@ -249,7 +249,7 @@ impl ConsumeOpt {
                 eprintln!(
                     "{}",
                     format!(
-                        "Consuming records {} from the end of topic '{}'",
+                        "Consuming records starting {} from the end of topic '{}'",
                         -offset, &self.topic
                     )
                     .bold()
