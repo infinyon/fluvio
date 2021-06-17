@@ -46,16 +46,16 @@ install_tools_mac:
 	brew install yq
 	brew install helm
 
-build-cli:
+build-cli: install_rustup_target
 	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-build-cluster: install_test_target
+build-cluster: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-test:	build-cluster build-cli
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-install_test_target:
+install_rustup_target:
 ifdef TARGET
 	rustup target add $(TARGET)
 endif
@@ -190,19 +190,16 @@ check-clippy: install-clippy
 build_smartstreams:
 	make -C src/smartstream/examples build
 
-run-all-unit-test: build_smartstreams
+run-all-unit-test: build_smartstreams install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C src/protocol	
 
-run-unstable-test:	build_smartstreams
+run-unstable-test:build_smartstreams install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
 
-run-all-doc-test:
+run-all-doc-test: install_rustup_target
 	cargo test --all-features --doc $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
-
-install_musl:
-	rustup target add ${TARGET_LINUX}
 
 clean_build:
 	rm -rf /tmp/cli-*
@@ -243,7 +240,8 @@ fluvio_image: fluvio_bin_linux
 	echo "Building Fluvio musl image with tag: $(GIT_COMMIT)"
 	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
 
-fluvio_bin_linux: install_musl
+fluvio_bin_linux:
+	rustup target add $(TARGET_LINUX)
 	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_LINUX)
 
 make publish_fluvio_image:
@@ -334,4 +332,4 @@ delete-gh-release:
 FLUVIO_BUILD_ZIG ?= zig
 FLUVIO_BUILD_LLD ?= lld
 CC_x86_64_unknown_linux_musl=$(PWD)/build-scripts/x86_64-linux-musl-zig-cc
-RUSTFLAGS=-C linker=$(PWD)/build-scripts/lld
+CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=$(PWD)/build-scripts/ld.lld

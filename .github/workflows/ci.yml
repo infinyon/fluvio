@@ -95,9 +95,18 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install LLD
+      - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install lld
+        run: | 
+          sudo snap install --beta --classic zig && \
+          sudo apt-get install lld-11 && \
+          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
+      - name: Install zig & lld for MacOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install zig && \
+          brew install llvm@11 && \
+          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
@@ -176,10 +185,18 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install LLD
+      - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: sudo apt-get install lld
-
+        run: | 
+          sudo snap install --beta --classic zig && \
+          sudo apt-get install lld-11 && \
+          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
+      - name: Install zig & lld for MacOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install zig && \
+          brew install llvm@11 && \
+          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
@@ -294,6 +311,18 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+      - name: Install zig & lld for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: | 
+          sudo snap install --beta --classic zig && \
+          sudo apt-get install lld-11 && \
+          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
+      - name: Install zig & lld for MacOS
+        if: matrix.os == 'macos-latest'
+        run: |
+          brew install zig && \
+          brew install llvm@11 && \
+          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
       - name: Setup Minikube for Linux
         run: |
           ./k8-util/minikube/reset-minikube.sh 
