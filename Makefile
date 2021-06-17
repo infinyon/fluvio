@@ -244,8 +244,6 @@ fluvio_image: fluvio_bin_linux
 	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
 
 fluvio_bin_linux: install_musl
-	export CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER="$(PWD)/build/x86_64-linux-musl/ld.lld" && \
-	export CC_x86_64_unknown_linux_musl="$(PWD)/build/x86_64-linux-musl/zig-cc" && \
 	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_LINUX)
 
 make publish_fluvio_image:
@@ -331,3 +329,9 @@ delete-gh-release:
 	--user ${GITHUB_USER} \
 	--repo ${GITHUB_REPO} \
 	--tag ${GITHUB_TAG}
+
+.EXPORT_ALL_VARIABLES:
+FLUVIO_BUILD_ZIG ?= zig
+FLUVIO_BUILD_LLD ?= lld
+CC_x86_64_unknown_linux_musl=$(PWD)/build-scripts/x86_64-linux-musl-zig-cc
+RUSTFLAGS=-C linker=$(PWD)/build-scripts/lld

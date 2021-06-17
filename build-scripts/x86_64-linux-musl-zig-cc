@@ -1,0 +1,3 @@
+#!/bin/sh
+
+$FLUVIO_BUILD_ZIG cc -target x86_64-linux-musl $@

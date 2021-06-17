@@ -95,14 +95,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install Musl Tools
-        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
-          rustup target add x86_64-unknown-linux-musl
-
+      - name: Install LLD
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install lld
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
@@ -181,13 +176,9 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install Musl Tools
-        if: ${{ matrix.target == 'x86_64-unknown-linux-musl' }}
-        run: |
-          sudo apt install -y musl-tools
-          sudo ln -s /usr/bin/musl-gcc /usr/local/bin/x86_64-linux-musl-gcc
-          echo "TARGET_CC=musl-gcc" | tee -a $GITHUB_ENV
-          rustup target add x86_64-unknown-linux-musl
+      - name: Install LLD
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get install lld
 
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
