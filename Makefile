@@ -65,12 +65,6 @@ endif
 # List of smoke test steps.  This is used by CI
 #
 
-# In CI mode, do not run any build steps
-ifeq (${CI},true)
-else
-# When not in CI (i.e. development), build before testing
-smoke-test: build-test
-endif
 smoke-test: test-setup
 	# Set ENV
 	$(TEST_ENV_AUTH_POLICY) \
@@ -149,7 +143,16 @@ smoke-test-k8-tls-root: smoke-test-k8-tls-policy test-permission-k8
 test-rbac:
 	AUTH_POLICY=$(POLICY_FILE) X509_AUTH_SCOPES=$(SCOPE) make smoke-test-tls DEFAULT_LOG=fluvio=debug
 
-test-setup:
+# In CI mode, do not run any build steps
+ifeq (${CI},true)
+build-test-ci:
+else
+# When not in CI (i.e. development), build before testing
+build-test-ci: build-test
+endif
+
+
+test-setup:	build-test-ci
 ifeq ($(UNINSTALL),noclean)
 	echo "no clean"
 else
