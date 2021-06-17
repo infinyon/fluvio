@@ -3,10 +3,11 @@ use fluvio_command::CommandExt;
 use crate::test_meta::{TestCase, TestOption, TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
-use fluvio::Fluvio;
+use fluvio::{Fluvio, FluvioError};
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
+use fluvio::{TopicProducer, RecordKey};
 
 #[derive(Clone)]
 pub struct FluvioTestDriver {
@@ -15,11 +16,54 @@ pub struct FluvioTestDriver {
     pub num_producers: usize,
     pub num_consumers: usize,
     pub stats: Histogram<u64>,
+    pub produce_latency: Histogram<u64>,
 }
 
 impl FluvioTestDriver {
     pub fn get_results(&self) -> TestResult {
         TestResult::default()
+    }
+
+    pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
+        use std::time::Duration;
+        use fluvio_future::timer::sleep;
+
+        match self.client.topic_producer(topic).await {
+            Ok(client) => {
+                self.num_producers += 1;
+                return client
+            },
+            Err(err) => {
+                println!(
+                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
+
+        panic!("can't get producer");
+    }
+
+    pub async fn send_count(
+        &mut self,
+        p: &TopicProducer,
+        key: RecordKey,
+        message: String,
+    ) -> Result<(), FluvioError> {
+
+        use std::time::SystemTime;
+        let now = SystemTime::now();
+
+        let result = p.send(key, message).await;
+
+        let produce_time = now.elapsed().clone().unwrap().as_nanos();
+
+        println!("(#{}) Produce latency (ns): {:?}", self.produce_latency.len() + 1, produce_time as u64);
+
+        self.produce_latency.record(produce_time as u64).unwrap();
+
+        result
     }
 }
 

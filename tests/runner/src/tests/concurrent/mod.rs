@@ -47,7 +47,7 @@ impl TestOption for ConcurrentTestOption {
 }
 
 #[fluvio_test(topic = "test-bug")]
-pub async fn concurrent(test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
+pub async fn concurrent(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
     test_concurrent_consume_produce(test_driver, test_case.into()).await
 }
 

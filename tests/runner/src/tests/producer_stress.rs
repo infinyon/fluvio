@@ -2,7 +2,7 @@ use std::any::Any;
 use std::env;
 use structopt::StructOpt;
 
-use fluvio::{TopicProducer, RecordKey};
+use fluvio::RecordKey;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -45,18 +45,8 @@ impl TestOption for ProducerStressTestOption {
     }
 }
 
-async fn get_producer(test_driver: FluvioTestDriver, topic_name: String) -> TopicProducer {
-    // TODO: Increase producer count
-
-    test_driver
-        .client
-        .topic_producer(topic_name.clone())
-        .await
-        .expect("Couldn't get producer")
-}
-
 #[fluvio_test(name = "producer_stress", topic = "test", benchmark = true)]
-pub async fn run(test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
+pub async fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
     let test_case: ProducerStressTestCase = test_case.into();
 
     if !test_case.environment.is_benchmark() {
@@ -77,7 +67,7 @@ pub async fn run(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
 
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
-        let producer = get_producer(test_driver.clone(), topic_name.clone()).await;
+        let producer = test_driver.get_producer(&topic_name).await;
         producers.push(producer);
     }
 
@@ -88,7 +78,8 @@ pub async fn run(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
-                    p.send(RecordKey::NULL, message.clone())
+                    test_driver
+                        .send_count(p, RecordKey::NULL, message)
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -98,7 +89,8 @@ pub async fn run(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
                         });
                 }
             } else {
-                p.send(RecordKey::NULL, message.clone())
+                test_driver
+                    .send_count(p, RecordKey::NULL, message)
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)
@@ -106,6 +98,8 @@ pub async fn run(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
             }
         }
     }
+
+    println!("Producer latency 99%: {:?}", test_driver.produce_latency.value_at_percentile(99.0));
 
     // Make the compiler happy
     drop(producers);

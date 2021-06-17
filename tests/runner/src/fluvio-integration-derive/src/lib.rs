@@ -78,7 +78,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
-        pub fn #out_fn_iden(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #out_fn_iden(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             //println!("Inside the function");
             let future = async move {
                 //println!("Inside the async wrapper function");
@@ -96,7 +96,18 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
-        pub async fn #async_inner_fn_iden(test_driver: FluvioTestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub async fn ext_test_fn(mut test_driver: FluvioTestDriver, test_case: TestCase) -> TestResult {
+            use fluvio_test_util::test_meta::environment::EnvDetail;
+            #test_body;
+
+
+            TestResult {
+                produce_latency: test_driver.produce_latency.value_at_percentile(99.0),
+                ..Default::default()
+            }
+        }
+
+        pub async fn #async_inner_fn_iden(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::{TestCase, TestResult};
             use fluvio_test_util::test_meta::environment::{EnvDetail};
@@ -109,6 +120,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use std::{io, time::Duration};
             use tokio::select;
             use std::panic::panic_any;
+            use std::default::Default;
             use bencher::bench;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
@@ -126,11 +138,11 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     .await
                     .expect("Unable to create default topic");
 
-                // Wrap the user test in a closure
-                // If the test is a benchmark, we want to build this in a specific way
-                let test_fn = |test_driver: FluvioTestDriver, test_case: TestCase| async {
-                    #test_body
-                };
+                //// Wrap the user test in a closure
+                //// If the test is a benchmark, we want to build this in a specific way
+                //let test_fn = |mut test_driver: FluvioTestDriver, test_case: TestCase| async {
+                //    #test_body
+                //};
 
                 // start a timeout timer
                 let timeout_duration = test_case.environment.timeout();
@@ -138,6 +150,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
+                let test_driver_clone = test_driver.clone();
 
                 select! {
                     _ = &mut timeout_timer => {
@@ -147,15 +160,19 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         Err(TestResult {
                             success: false,
                             duration: test_timer.duration(),
+                            ..Default::default()
                         })
                     },
 
-                    _ = test_fn(test_driver, test_case) => {
+                    // Change this to use the return value
+                    test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
                         test_timer.stop();
 
                         Ok(TestResult {
                             success: true,
                             duration: test_timer.duration(),
+                            produce_latency: test_result_tmp.produce_latency,
+                            ..Default::default()
                         })
                     }
                 }
@@ -166,6 +183,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 Ok(TestResult {
                     success: true,
                     duration: Duration::new(0, 0),
+                    ..Default::default()
                 })
             }
         }

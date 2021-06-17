@@ -87,6 +87,8 @@ pub struct TestResult {
     pub success: bool,
     pub duration: Duration,
     // stats
+    pub bytes_sent: u64,
+    pub produce_latency: u64,
     // # producers
     // # consumers
     // # topics
@@ -108,7 +110,10 @@ impl Display for TestResult {
         let table = table!(
             [b->"Test Results"],
             ["Pass?", b->success_str],
-            ["Duration", duration_str]
+            ["Duration", duration_str],
+            //
+            ["bytes sent", self.bytes_sent],
+            ["producer latency 99%", self.produce_latency]
         );
 
         write!(f, "{}", table)

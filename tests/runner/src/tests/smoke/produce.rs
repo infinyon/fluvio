@@ -5,14 +5,14 @@ use tracing::info;
 
 use super::SmokeTestCase;
 use super::message::*;
-use fluvio::{TopicProducer, RecordKey};
+use fluvio::RecordKey;
 use fluvio_command::CommandExt;
 
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(test_driver: FluvioTestDriver, test_case: &SmokeTestCase) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
-    let offsets = offsets::find_offsets(&test_case).await;
+    let offsets = offsets::find_offsets(&test_driver, &test_case).await;
 
     let use_cli = test_case.option.use_cli;
     let consumer_wait = test_case.option.consumer_wait;
@@ -36,21 +36,25 @@ mod offsets {
 
     use std::collections::HashMap;
 
-    use fluvio::{Fluvio, FluvioAdmin};
+    use fluvio::FluvioAdmin;
 
     use fluvio_controlplane_metadata::partition::PartitionSpec;
     use fluvio_controlplane_metadata::partition::ReplicaKey;
 
     use super::SmokeTestCase;
+    use super::FluvioTestDriver;
 
-    pub async fn find_offsets(test_case: &SmokeTestCase) -> HashMap<String, i64> {
+    pub async fn find_offsets(
+        test_driver: &FluvioTestDriver,
+        test_case: &SmokeTestCase,
+    ) -> HashMap<String, i64> {
         let partition = test_case.environment.partition;
 
         let _consumer_wait = test_case.option.consumer_wait;
 
         let mut offsets = HashMap::new();
 
-        let client = Fluvio::connect().await.expect("should connect");
+        let client = test_driver.client.clone();
         let mut admin = client.admin().await;
 
         for _i in 0..partition {
@@ -88,28 +92,8 @@ mod offsets {
     }
 }
 
-async fn get_producer(test_driver: &FluvioTestDriver, topic: &str) -> TopicProducer {
-    use std::time::Duration;
-    use fluvio_future::timer::sleep;
-
-    for _ in 0..10 {
-        match test_driver.client.topic_producer(topic).await {
-            Ok(client) => return client,
-            Err(err) => {
-                println!(
-                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
-            }
-        }
-    }
-
-    panic!("can't get producer");
-}
-
 pub async fn produce_message_with_api(
-    test_driver: FluvioTestDriver,
+    mut test_driver: FluvioTestDriver,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {
@@ -124,7 +108,8 @@ pub async fn produce_message_with_api(
 
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
-        let producer = get_producer(&test_driver, &topic_name).await;
+
+        let producer = test_driver.get_producer(&topic_name).await;
 
         for i in 0..produce_iteration {
             let offset = base_offset + i as i64;

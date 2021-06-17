@@ -52,12 +52,6 @@ fn main() {
         // Deploy a cluster
         let fluvio_client = cluster_setup(&option.environment).await;
 
-        //// Select test
-        //let test = inventory::iter::<FluvioTestMeta>
-        //    .into_iter()
-        //    .find(|t| t.name == test_name.as_str())
-        //    .expect("Test not found");
-
         // Check on test requirements before running the test
         if !FluvioTestMeta::is_env_acceptable(
             &(test_meta.requirements)(),
@@ -74,6 +68,7 @@ fn main() {
             let test_result = TestResult {
                 success: false,
                 duration: panic_timer.duration(),
+                ..Default::default()
             };
             //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
             eprintln!("Test panicked:\n");
@@ -192,7 +187,8 @@ async fn cluster_setup(option: &EnvironmentSetup) -> FluvioTestDriver {
         num_topics: 0,
         num_producers: 0,
         num_consumers: 0,
-        stats: Histogram::<u64>::new(3).unwrap(),
+        stats: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
     }
 }
 
