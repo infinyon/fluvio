@@ -613,7 +613,7 @@ mod test {
         let mut value: bool = false;
         let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
-        assert_eq!(value, true);
+        assert!(value);
     }
 
     #[test]
