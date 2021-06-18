@@ -87,13 +87,13 @@ pub struct TestResult {
     pub success: bool,
     pub duration: Duration,
     // stats
-    pub bytes_sent: u64,
+    pub bytes_produced: u64,
     pub produce_latency: u64,
-    // # producers
-    // # consumers
-    // # topics
-    // message throughput
-    // latency
+    pub num_producers: u64,
+    pub bytes_consumed: u64,
+    pub consume_latency: u64,
+    pub num_consumers: u64,
+    pub num_topics: u64,
 }
 
 impl TestResult {
@@ -102,18 +102,27 @@ impl TestResult {
     }
 }
 
+// TODO: Parse the time scalars into Duration
 impl Display for TestResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let success_str = format!("{}", self.success);
         let duration_str = format!("{:?}", self.duration);
+        let producer_latency_str = format!("{:?}", Duration::from_nanos(self.produce_latency));
+        let consumer_latency_str = format!("{:?}", Duration::from_nanos(self.consume_latency));
 
         let table = table!(
             [b->"Test Results"],
             ["Pass?", b->success_str],
             ["Duration", duration_str],
             //
-            ["bytes sent", self.bytes_sent],
-            ["producer latency 99%", self.produce_latency]
+
+            ["# topics created", self.num_topics],
+            ["# producers created", self.num_producers],
+            ["bytes produced", self.bytes_produced],
+            ["producer latency 99.9%", producer_latency_str],
+            ["# consumers created", self.num_consumers],
+            ["bytes consumed", self.bytes_consumed],
+            ["consumer latency 99.9%", consumer_latency_str]
         );
 
         write!(f, "{}", table)

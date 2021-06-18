@@ -7,16 +7,21 @@ use fluvio::{Fluvio, FluvioError};
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
-use fluvio::{TopicProducer, RecordKey};
+use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
+use std::time::Duration;
 
+// Rename: *_latency, *_num, *_bytes
 #[derive(Clone)]
 pub struct FluvioTestDriver {
     pub client: Arc<Fluvio>,
     pub num_topics: usize,
     pub num_producers: usize,
     pub num_consumers: usize,
-    pub stats: Histogram<u64>,
+    pub bytes_produced: usize,
+    pub bytes_consumed: usize,
     pub produce_latency: Histogram<u64>,
+    pub consume_latency: Histogram<u64>,
+    //pub topic_create_latency: Histogram<u64>,
 }
 
 impl FluvioTestDriver {
@@ -24,8 +29,8 @@ impl FluvioTestDriver {
         TestResult::default()
     }
 
+    // Wrapper to getting a producer. We keep track of the number of producers we create
     pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
-        use std::time::Duration;
         use fluvio_future::timer::sleep;
 
         match self.client.topic_producer(topic).await {
@@ -45,6 +50,7 @@ impl FluvioTestDriver {
         panic!("can't get producer");
     }
 
+    // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
     pub async fn send_count(
         &mut self,
         p: &TopicProducer,
@@ -55,7 +61,7 @@ impl FluvioTestDriver {
         use std::time::SystemTime;
         let now = SystemTime::now();
 
-        let result = p.send(key, message).await;
+        let result = p.send(key, message.clone()).await;
 
         let produce_time = now.elapsed().clone().unwrap().as_nanos();
 
@@ -63,9 +69,39 @@ impl FluvioTestDriver {
 
         self.produce_latency.record(produce_time as u64).unwrap();
 
+        self.bytes_produced += message.len();
+
         result
     }
+
+    pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
+        use fluvio_future::timer::sleep;
+
+        match self 
+            .client
+            .partition_consumer(topic.to_string(), 0)
+            .await
+        {
+            Ok(client) => {
+                self.num_consumers += 1;
+                return client
+            },
+            Err(err) => {
+                println!(
+                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
+
+        panic!("can't get consumer");
+    }
+
+    // Might need to impl Stream so I can meter the consumer stream
+
 }
+
 
 #[derive(Debug)]
 pub struct FluvioTestMeta {

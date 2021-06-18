@@ -187,8 +187,10 @@ async fn cluster_setup(option: &EnvironmentSetup) -> FluvioTestDriver {
         num_topics: 0,
         num_producers: 0,
         num_consumers: 0,
-        stats: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        bytes_produced: 0,
+        bytes_consumed: 0,
         produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
     }
 }
 

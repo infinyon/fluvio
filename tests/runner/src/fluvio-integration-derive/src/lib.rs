@@ -102,7 +102,12 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
 
             TestResult {
-                produce_latency: test_driver.produce_latency.value_at_percentile(99.0),
+                num_producers: test_driver.num_producers as u64,
+                num_consumers: test_driver.num_consumers as u64,
+                bytes_produced: test_driver.bytes_produced as u64,
+                bytes_consumed: test_driver.bytes_consumed as u64,
+                produce_latency: test_driver.produce_latency.value_at_quantile(0.999),
+                consume_latency: test_driver.consume_latency.value_at_quantile(0.999),
                 ..Default::default()
             }
         }
@@ -171,6 +176,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         Ok(TestResult {
                             success: true,
                             duration: test_timer.duration(),
+                            bytes_produced: test_result_tmp.bytes_produced,
                             produce_latency: test_result_tmp.produce_latency,
                             ..Default::default()
                         })

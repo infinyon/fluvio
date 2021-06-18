@@ -10,7 +10,10 @@ use fluvio_command::CommandExt;
 
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(test_driver: FluvioTestDriver, test_case: &SmokeTestCase) -> Offsets {
+pub async fn produce_message(
+    test_driver: &mut FluvioTestDriver,
+    test_case: &SmokeTestCase,
+) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&test_driver, &test_case).await;
 
@@ -22,11 +25,13 @@ pub async fn produce_message(test_driver: FluvioTestDriver, test_case: &SmokeTes
     } else if consumer_wait {
         produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
     } else {
-        spawn(produce_message_with_api(
-            test_driver,
-            offsets.clone(),
-            test_case.clone(),
-        ));
+        eprintln!("TODO: Commented out block bc of static lifetime reqs. Use --consumer_wait flag");
+        unimplemented!();
+        //spawn(produce_message_with_api(
+        //    &mut test_driver,
+        //    offsets.clone(),
+        //    test_case.clone(),
+        //));
     }
 
     offsets
@@ -93,7 +98,7 @@ mod offsets {
 }
 
 pub async fn produce_message_with_api(
-    mut test_driver: FluvioTestDriver,
+    test_driver: &mut FluvioTestDriver,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {
@@ -116,8 +121,12 @@ pub async fn produce_message_with_api(
             let message = generate_message(offset, &test_case);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
-            producer
-                .send(RecordKey::NULL, message)
+            test_driver
+                .send_count(
+                    &producer,
+                    RecordKey::NULL,
+                    String::from_utf8(message.clone()).unwrap(),
+                )
                 .await
                 .unwrap_or_else(|_| {
                     panic!("send record failed for replication: {} iteration: {}", r, i)

@@ -99,7 +99,10 @@ pub async fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
         }
     }
 
-    println!("Producer latency 99%: {:?}", test_driver.produce_latency.value_at_percentile(99.0));
+    println!(
+        "Producer latency 99%: {:?}",
+        test_driver.produce_latency.value_at_quantile(0.999)
+    );
 
     // Make the compiler happy
     drop(producers);
