@@ -21,7 +21,7 @@ pub struct DeleteTopicOpt {
 impl DeleteTopicOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         debug!("deleting topic: {}", &self.topic);
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
         admin.delete::<TopicSpec, _>(&self.topic).await?;
         println!("topic \"{}\" deleted", &self.topic);
         Ok(())

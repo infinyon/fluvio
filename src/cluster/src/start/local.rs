@@ -661,7 +661,7 @@ impl LocalInstaller {
         sleep(Duration::from_secs(delay)).await;
 
         let client = Fluvio::connect().await?;
-        let mut admin = client.admin().await;
+        let admin = client.admin().await;
 
         // wait for list of spu
         for _ in 0..30u16 {

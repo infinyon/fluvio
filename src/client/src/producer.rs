@@ -122,7 +122,7 @@ impl TopicProducer {
         let requests = assemble_requests(&self.topic, partitions_by_spu);
 
         for (leader, request) in requests {
-            let mut spu_client = self.pool.create_serial_socket_from_leader(leader).await?;
+            let spu_client = self.pool.create_serial_socket_from_leader(leader).await?;
             spu_client.send_receive(request).await?;
         }
 

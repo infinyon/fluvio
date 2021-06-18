@@ -171,7 +171,7 @@ async fn validate_consume_message_api(
     // wait 500m second and ensure partition list
     sleep(Duration::from_millis(500)).await;
 
-    let mut admin = client.admin().await;
+    let admin = client.admin().await;
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await

@@ -23,7 +23,7 @@ pub struct DeleteManagedSpuGroupOpt {
 
 impl DeleteManagedSpuGroupOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
         admin.delete::<SpuGroupSpec, _>(&self.name).await?;
         Ok(())
     }

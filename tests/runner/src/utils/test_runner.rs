@@ -36,7 +36,7 @@ impl FluvioTest {
             println!("Creating the topic: {}", &option.topic_name);
         }
 
-        let mut admin = client.admin().await;
+        let admin = client.admin().await;
         let topic_spec = TopicSpec::new_computed(1, option.replication() as i32, None);
 
         let topic_create = admin

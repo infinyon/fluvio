@@ -35,7 +35,7 @@ impl DescribeTopicsOpt {
         let output_type = self.output.format;
         debug!("describe topic: {}, {}", topic, output_type);
 
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
         let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;
 
         display::describe_topics(topics, output_type, out).await?;

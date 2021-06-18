@@ -38,7 +38,7 @@ pub struct RegisterCustomSpuOpt {
 impl RegisterCustomSpuOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
         let (name, spec) = self.validate()?;
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
         admin.create(name, false, spec).await?;
         Ok(())
     }

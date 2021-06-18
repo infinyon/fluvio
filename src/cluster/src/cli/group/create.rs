@@ -44,7 +44,7 @@ impl CreateManagedSpuGroupOpt {
         let (name, spec) = self.validate();
         debug!("creating spg: {}, spec: {:#?}", name, spec);
 
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
         admin.create(name, false, spec).await?;
 
         Ok(())

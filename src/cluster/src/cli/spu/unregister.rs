@@ -35,7 +35,7 @@ pub struct UnregisterCustomSpuOpt {
 impl UnregisterCustomSpuOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
         let delete_key = self.validate()?;
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
         admin.delete::<CustomSpuSpec, _>(delete_key).await?;
         Ok(())
     }
