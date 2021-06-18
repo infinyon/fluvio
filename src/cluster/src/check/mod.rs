@@ -507,11 +507,10 @@ impl ClusterCheck for LoadBalancer {
 
         // create dummy service
         create_dummy_service()?;
-        if wait_for_service_exist(DEFAULT_NAMESPACE).await?.is_some() {
-            // IP found, everything good
-            delete_service()?;
-        } else {
-            delete_service()?;
+        let service_exists = wait_for_service_exist(DEFAULT_NAMESPACE).await?.is_some();
+        delete_service()?;
+
+        if !service_exists {
             if username == MINIKUBE_USERNAME {
                 // In case of macos we need to run tunnel with elevated context of sudo
                 // hence handle both separately

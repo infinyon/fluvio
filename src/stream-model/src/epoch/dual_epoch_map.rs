@@ -17,8 +17,7 @@ pub trait DualDiff {
     fn diff(&self, new_value: &Self) -> ChangeFlag;
 }
 
-#[allow(clippy::clippy::redundant_closure)]
-pub static FULL_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag::all());
+pub static FULL_FILTER: Lazy<ChangeFlag> = Lazy::new(ChangeFlag::all);
 
 pub static SPEC_FILTER: Lazy<ChangeFlag> = Lazy::new(|| ChangeFlag {
     spec: true,
@@ -239,9 +238,7 @@ where
         // check each spec and status
         if let Some(existing_value) = self.values.get_mut(&key) {
             let diff = existing_value.diff(new_value.inner());
-            if diff.has_no_changes() {
-                Some(diff)
-            } else {
+            if !diff.has_no_changes() {
                 new_value.copy_epoch(existing_value);
                 if diff.spec {
                     new_value.set_spec_epoch(current_epoch);
@@ -254,8 +251,9 @@ where
                 }
 
                 *existing_value = new_value;
-                Some(diff)
             }
+
+            Some(diff)
         } else {
             // doesn't exist, so everything is new
             new_value.set_epoch(current_epoch);

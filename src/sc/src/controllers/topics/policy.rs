@@ -186,10 +186,8 @@ impl TopicNextState {
                             topic.key()
                         );
                         next_state.partitions = topic.create_new_partitions(partition_store).await;
-                        next_state
-                    } else {
-                        next_state
                     }
+                    next_state
                 }
                 _ => {
                     debug!(
@@ -199,10 +197,8 @@ impl TopicNextState {
                     let mut next_state = TopicNextState::same_next_state(topic);
                     if next_state.resolution == TopicResolution::Provisioned {
                         next_state.partitions = topic.create_new_partitions(partition_store).await;
-                        next_state
-                    } else {
-                        next_state
                     }
+                    next_state
                 }
             },
 
@@ -216,10 +212,8 @@ impl TopicNextState {
                         update_replica_map_for_assigned_topic(partition_map, spu_store).await;
                     if next_state.resolution == TopicResolution::Provisioned {
                         next_state.partitions = topic.create_new_partitions(partition_store).await;
-                        next_state
-                    } else {
-                        next_state
                     }
+                    next_state
                 }
                 _ => {
                     debug!(
@@ -229,10 +223,8 @@ impl TopicNextState {
                     let mut next_state = TopicNextState::same_next_state(&topic);
                     if next_state.resolution == TopicResolution::Provisioned {
                         next_state.partitions = topic.create_new_partitions(partition_store).await;
-                        next_state
-                    } else {
-                        next_state
                     }
+                    next_state
                 }
             },
         }

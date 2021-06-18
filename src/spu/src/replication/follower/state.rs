@@ -1,6 +1,6 @@
 use std::{fmt::Display, sync::Arc};
 use std::fmt::Debug;
-use std::collections::{HashMap};
+use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
 use tracing::{debug, warn, instrument};
@@ -78,24 +78,25 @@ impl FollowersState<FileReplica> {
         let leader = replica.leader;
 
         let mut writer = self.write().await;
-        if writer.contains_key(&replica.id) {
-            // follower exists, nothing to do
-            warn!(%replica,"replica already exists");
-            Ok(None)
-        } else {
-            debug!(
-                replica = %replica.id,
-                "creating new follower state"
-            );
+        match writer.entry(replica.id.clone()) {
+            Entry::Occupied(_) => {
+                // follower exists, nothing to do
+                warn!(%replica, "replica already exists");
+                Ok(None)
+            }
+            Entry::Vacant(entry) => {
+                debug!(
+                    replica = %replica.id,
+                    "creating new follower state"
+                );
 
-            let replica_state =
-                FollowerReplicaState::create(leader, replica.id.clone(), ctx.config().into())
-                    .await?;
-            writer.insert(replica.id, replica_state.clone());
+                let replica_state =
+                    FollowerReplicaState::create(leader, replica.id, ctx.config().into()).await?;
 
-            self.groups.check_new(&ctx, leader).await;
-
-            Ok(Some(replica_state))
+                entry.insert(replica_state.clone());
+                self.groups.check_new(&ctx, leader).await;
+                Ok(Some(replica_state))
+            }
         }
     }
 
