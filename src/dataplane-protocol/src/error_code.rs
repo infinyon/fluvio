@@ -61,7 +61,7 @@ impl ErrorCode {
         matches!(self, ErrorCode::None)
     }
 
-    pub fn to_sentence(&self) -> String {
+    pub fn to_sentence(self) -> String {
         match self {
             ErrorCode::None => "".to_owned(),
             _ => upper_cammel_case_to_sentence(format!("{:?}", self), true),

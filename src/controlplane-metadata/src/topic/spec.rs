@@ -538,10 +538,10 @@ pub mod test {
     fn test_is_computed_topic() {
         let p1: PartitionMaps = vec![(1, vec![0]), (2, vec![2])].into();
         let t1 = TopicSpec::new_assigned(p1);
-        assert_eq!(t1.is_computed(), false);
+        assert!(!t1.is_computed());
 
         let t2 = TopicSpec::new_computed(0, 0, None);
-        assert_eq!(t2.is_computed(), true);
+        assert!(t2.is_computed());
     }
 
     #[test]
@@ -771,7 +771,7 @@ pub mod test {
             TopicSpec::Computed(param) => {
                 assert_eq!(param.partitions, 2);
                 assert_eq!(param.replication_factor, 3);
-                assert_eq!(param.ignore_rack_assignment, true);
+                assert!(param.ignore_rack_assignment);
             }
             _ => panic!("expect computed topic spec, found {:?}", topic_spec_decoded),
         }

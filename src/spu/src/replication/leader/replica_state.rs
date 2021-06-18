@@ -248,10 +248,6 @@ where
                         len = partition_response.records.len(),
                         "read records"
                     );
-
-                    // ensure leo and hw are set correctly. storage might have update last stable offset
-                    partition_response.leo = leader_offset.leo;
-                    partition_response.hw = leader_offset.hw;
                 } else {
                     // only hw need to be updated
                     debug!(
@@ -259,10 +255,12 @@ where
                         leo = leader_offset.leo,
                         replica = %self.id(),
                         "sending hw only");
-                    // ensure leo and hw are set correctly. storage might have update last stable offset
-                    partition_response.leo = leader_offset.leo;
-                    partition_response.hw = leader_offset.hw;
                 }
+
+                // ensure leo and hw are set correctly. storage might have update last stable offset
+                partition_response.leo = leader_offset.leo;
+                partition_response.hw = leader_offset.hw;
+
                 topic_response.partitions.push(partition_response);
                 Some(topic_response)
             } else {
@@ -925,40 +923,36 @@ mod test_leader {
         assert!(f2.drain_replicas().await.is_empty());
 
         // handle invalidate offset update from follower
-        assert_eq!(
-            leader
+        assert!(
+            !leader
                 .update_states_from_followers(5001, OffsetInfo { leo: 5, hw: 20 }, &notifier)
-                .await,
-            false
+                .await
         );
         assert_eq!(leader.hw(), 0);
         assert!(f1.drain_replicas().await.is_empty());
 
         // update from invalid follower
-        assert_eq!(
-            leader
+        assert!(
+            !leader
                 .update_states_from_followers(5004, OffsetInfo { leo: 6, hw: 11 }, &notifier)
-                .await,
-            false
+                .await
         );
         assert_eq!(leader.hw(), 0);
 
         // handle newer leo
-        assert_eq!(
-            leader
+        assert!(
+            !leader
                 .update_states_from_followers(5001, OffsetInfo { leo: 20, hw: 0 }, &notifier)
-                .await,
-            false
+                .await
         );
         assert_eq!(leader.hw(), 0);
         assert!(!f1.has_replica(&replica).await); // no update to follower required
 
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=0,hw=0");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5001, OffsetInfo { leo: 0, hw: 0 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 0); // no change on hw since we just updated the update true follower's state
         assert!(f1.drain_replicas().await.contains(&replica));
@@ -967,22 +961,20 @@ mod test_leader {
 
         // 5001 partial update, follower still need to sync up with leader
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=6,hw=0");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 0);
         assert!(f1.drain_replicas().await.contains(&replica));
 
         // 5001 has fully caught up with leader, nothing to update followers until 5002 has update
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=10,hw=0");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 0 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 0);
         assert!(f1.drain_replicas().await.is_empty());
@@ -993,22 +985,20 @@ mod test_leader {
 
         // init 5002
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=0,hw=0");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5002, OffsetInfo { leo: 0, hw: 0 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 0);
         assert!(f2.drain_replicas().await.contains(&replica));
 
         // partial update of 5002, this lead hw to 6, both followers will be updated
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=6,hw=0");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5002, OffsetInfo { leo: 6, hw: 0 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 6);
         assert!(f1.drain_replicas().await.contains(&replica));
@@ -1016,11 +1006,10 @@ mod test_leader {
 
         // 5002 full update, both followers will be updated
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=10,hw=0");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 0 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 10);
         assert!(f1.drain_replicas().await.contains(&replica));
@@ -1028,11 +1017,10 @@ mod test_leader {
 
         // 5002 same update, 5001 still need update
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=10,hw=10");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 10 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 10);
         assert!(f1.drain_replicas().await.contains(&replica));
@@ -1040,11 +1028,10 @@ mod test_leader {
 
         // 5001 is now same as both leader and 5002
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=10,hw=10");
-        assert_eq!(
+        assert!(
             leader
                 .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 10 }, &notifier)
-                .await,
-            true
+                .await
         );
         assert_eq!(leader.hw(), 10);
         assert!(f1.drain_replicas().await.is_empty());

@@ -351,9 +351,9 @@ pub mod test {
         let offline_spu = DefaultSpuMd::quick(("spu-1", 1, false, None));
         let no_status_spu = DefaultSpuMd::quick(("spu-2", 5001, false, None));
 
-        assert_eq!(online_spu.status.is_online(), true);
-        assert_eq!(offline_spu.status.is_online(), false);
-        assert_eq!(no_status_spu.status.is_online(), false);
+        assert!(online_spu.status.is_online());
+        assert!(!offline_spu.status.is_online());
+        assert!(!no_status_spu.status.is_online());
 
         let spus = DefaultSpuStore::bulk_new(vec![online_spu, offline_spu, no_status_spu]);
 
@@ -368,10 +368,10 @@ pub mod test {
         assert_eq!(test_spu.spec.id, 10);
 
         test_spu.status.set_online();
-        assert_eq!(test_spu.status.is_online(), true);
+        assert!(test_spu.status.is_online());
 
         test_spu.status.set_offline();
-        assert_eq!(test_spu.status.is_online(), false);
+        assert!(!test_spu.status.is_online());
     }
 
     #[test_async]
@@ -438,8 +438,8 @@ pub mod test {
         let offline = DefaultSpuMd::quick(("spu-1", 1, false, None));
         let offline2 = DefaultSpuMd::quick(("spu-3", 2, false, None));
 
-        assert_eq!(online.status.is_online(), true);
-        assert_eq!(offline.status.is_online(), false);
+        assert!(online.status.is_online());
+        assert!(!offline.status.is_online());
 
         let spus =
             DefaultSpuStore::bulk_new(vec![online.clone(), offline.clone(), offline2.clone()]);
@@ -460,7 +460,7 @@ pub mod test {
         assert_eq!(status.delete, 0);
         assert_eq!(spus.count().await, 3);
         assert_eq!(spus.online_spu_count().await, 0);
-        assert_eq!(spu.status.is_online(), false);
+        assert!(!spu.status.is_online());
 
         // [offline] -> [online]
         let mut offline_update = offline2.clone();
@@ -475,7 +475,7 @@ pub mod test {
         let spu = spus.value("spu-3").await.expect("spu");
         assert_eq!(spus.count().await, 3);
         assert_eq!(spus.online_spu_count().await, 1);
-        assert_eq!(spu.status.is_online(), true);
+        assert!(spu.status.is_online());
         Ok(())
     }
 

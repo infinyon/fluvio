@@ -55,7 +55,7 @@ fn test_metadata() {
 #[test]
 fn test_type() {
     let r = RandomStruct {};
-    assert_eq!(r._type(), true);
+    assert!(r._type());
 }
 
 #[test]

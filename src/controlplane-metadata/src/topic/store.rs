@@ -157,7 +157,7 @@ mod test {
 
         // resolution: Init
         let topic1 = DefaultTopicMd::new("Topic-1", (1, 1, false).into(), TopicStatus::default());
-        assert_eq!(topic1.status.is_resolution_initializing(), true);
+        assert!(topic1.status.is_resolution_initializing());
 
         // resolution: Pending
         let topic2 = DefaultTopicMd::new(
@@ -169,7 +169,7 @@ mod test {
                 "waiting for live spus".to_owned(),
             ),
         );
-        assert_eq!(topic2.status.is_resolution_pending(), true);
+        assert!(topic2.status.is_resolution_pending());
 
         // resolution: Ok
         let topic3 = DefaultTopicMd::new(
@@ -181,7 +181,7 @@ mod test {
                 "".to_owned(),
             ),
         );
-        assert_eq!(topic3.status.is_resolution_provisioned(), true);
+        assert!(topic3.status.is_resolution_provisioned());
 
         // resolution: Inconsistent
         let topic4 = DefaultTopicMd::new(
