@@ -27,7 +27,7 @@ impl ListPartitionOpt {
         O: Terminal,
     {
         let output = self.output.format;
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
 
         let partitions = admin.list::<PartitionSpec, _>(vec![]).await?;
 

@@ -34,7 +34,7 @@ impl ListSpusOpt {
         out: Arc<O>,
         fluvio: &Fluvio,
     ) -> Result<(), ClusterCliError> {
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
 
         let spus = if self.custom {
             // List custom SPUs only

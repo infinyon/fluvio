@@ -125,7 +125,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    async fn send_receive<R>(&self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: AdminRequest + Send + Sync,
     {
@@ -134,12 +134,7 @@ impl FluvioAdmin {
 
     /// create new object
     #[instrument(skip(self, name, dry_run, spec))]
-    pub async fn create<S>(
-        &mut self,
-        name: String,
-        dry_run: bool,
-        spec: S,
-    ) -> Result<(), FluvioError>
+    pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
         S: Into<AllCreatableSpec>,
     {
@@ -157,7 +152,7 @@ impl FluvioAdmin {
     /// delete object by key
     /// key is depend on spec, most are string but some allow multiple types
     #[instrument(skip(self, key))]
-    pub async fn delete<S, K>(&mut self, key: K) -> Result<(), FluvioError>
+    pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
     where
         S: DeleteSpec,
         K: Into<S::DeleteKey>,
@@ -168,7 +163,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&mut self, filters: F) -> Result<Vec<Metadata<S>>, FluvioError>
+    pub async fn list<S, F>(&self, filters: F) -> Result<Vec<Metadata<S>>, FluvioError>
     where
         S: ListSpec + Encoder + Decoder,
         S::Status: Encoder + Decoder,

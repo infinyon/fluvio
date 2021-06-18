@@ -30,7 +30,7 @@ impl ListTopicsOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let output_type = self.output.format;
         debug!("list topics {:#?} ", output_type);
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
 
         let topics = admin.list::<TopicSpec, _>(vec![]).await?;
         display::format_response_output(out, topics, output_type)?;

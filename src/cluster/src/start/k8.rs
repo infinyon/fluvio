@@ -1334,7 +1334,7 @@ impl ClusterInstaller {
         debug!("trying to create managed spu: {:#?}", cluster);
         let name = self.config.group_name.clone();
         let fluvio = Fluvio::connect_with_config(cluster).await?;
-        let mut admin = fluvio.admin().await;
+        let admin = fluvio.admin().await;
 
         let spu_spec = SpuGroupSpec {
             replicas: self.config.spu_replicas,

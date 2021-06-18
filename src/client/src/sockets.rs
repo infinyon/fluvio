@@ -209,7 +209,7 @@ impl VersionedSerialSocket {
 
     /// send and wait for reply serially
     #[instrument(level = "trace", skip(self, request))]
-    pub async fn send_receive<R>(&mut self, request: R) -> Result<R::Response, FlvSocketError>
+    pub async fn send_receive<R>(&self, request: R) -> Result<R::Response, FlvSocketError>
     where
         R: Request + Send + Sync,
     {
