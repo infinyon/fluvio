@@ -7,6 +7,7 @@ members = [
     "map",
     "map_double",
     "map_json",
+    "map_regex",
 ]
 
 # lto is need to reduce wasm binary size
