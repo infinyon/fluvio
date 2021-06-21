@@ -6,5 +6,5 @@ pub fn map(record: &Record) -> (Option<RecordData>, RecordData) {
     let mut value = Vec::from(record.value.as_ref());
 
     value.make_ascii_uppercase();
-    (key, RecordData::from(value))
+    (key, value.into())
 }
