@@ -96,7 +96,7 @@ mod display {
                 "RESOLUTION",
                 "HW",
                 "LEO",
-                "LSR",
+                "LRS",
                 "FOLLOWER OFFSETS"
             ]
         }
@@ -107,7 +107,9 @@ mod display {
         }
 
         fn content(&self) -> Vec<Row> {
-            self.0
+            let mut metadata = self.0.clone();
+            metadata.sort_by(|a, b| a.name.cmp(&b.name));
+            metadata
                 .iter()
                 .map(|metadata| {
                     let spec = &metadata.spec;

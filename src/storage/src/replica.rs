@@ -87,7 +87,7 @@ impl ReplicaStorage for FileReplica {
 
     /// write records to this replica
     /// if update_highwatermark is set, set high watermark is end
-    //  this is used when LSR = 1
+    //  this is used when LRS = 1
     #[instrument(skip(self, records, update_highwatermark))]
     async fn write_recordset(
         &mut self,
