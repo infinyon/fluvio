@@ -29,6 +29,8 @@ use super::ElectionScoring;
 pub struct PartitionStatus {
     pub resolution: PartitionResolution,
     pub leader: ReplicaStatus,
+    // TODO: Next time we make a breaking protocol change, rename this to `lrs`
+    // TODO: There is no such thing as `lsr`, it is a typo
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
     pub is_being_deleted: bool,
@@ -83,6 +85,7 @@ impl PartitionStatus {
         self.resolution != PartitionResolution::Online
     }
 
+    // TODO: At next breaking change, deprecate this and replace with `fn lrs` to fix typo
     pub fn lsr(&self) -> u32 {
         self.lsr
     }

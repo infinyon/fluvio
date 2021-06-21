@@ -96,7 +96,7 @@ mod display {
                 "RESOLUTION",
                 "HW",
                 "LEO",
-                "LSR",
+                "LRS",
                 "FOLLOWER OFFSETS"
             ]
         }

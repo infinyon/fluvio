@@ -361,9 +361,9 @@ where
 /// //          Input:  leo: 2, hw: 2,
 /// //          Expect, status change, follower sync  
 ///
-///  Simple HW mark calculation (assume LSR = 2) which is find minimum offset values that satisfy
+///  Simple HW mark calculation (assume LRS = 2) which is find minimum offset values that satisfy
 ///     Assume: Leader leo = 10, hw = 2,
-///         follower: leo(2,4)  =>   no change, since it doesn't satisfy minim LSR
+///         follower: leo(2,4)  =>   no change, since it doesn't satisfy minim LRS
 ///         follower: leo(3,4)  =>   hw = 3  that is smallest leo that satisfy
 ///         follower: leo(4,4)  =>   hw = 4
 ///         follower: leo(6,7,9) =>  hw = 7,
@@ -374,7 +374,7 @@ fn compute_hw(
 ) -> Option<Offset> {
     // assert!(min_replica > 0);
     //  assert!((min_replica - 1) <= followers.len() as u16);
-    let min_lsr = min(min_replica - 1, followers.len() as u16);
+    let min_lrs = min(min_replica - 1, followers.len() as u16);
 
     // compute unique offsets that is greater than min leader's HW
     let qualified_leos: Vec<Offset> = followers
@@ -403,12 +403,12 @@ fn compute_hw(
     let mut hw_list: Vec<Offset> = unique_leos
         .iter()
         .filter_map(|unique_offset| {
-            // leo must have at least must have replicated min_lsr
+            // leo must have at least must have replicated min_lrs
             if (qualified_leos
                 .iter()
                 .filter(|leo| unique_offset <= leo)
                 .count() as u16)
-                >= min_lsr
+                >= min_lrs
             {
                 Some(*unique_offset)
             } else {
@@ -434,20 +434,20 @@ mod test_hw_updates {
         offsets.into_iter().collect()
     }
 
-    /// test min lsr check
+    /// test min lrs check
     /*
     #[test]
     #[should_panic]
-    fn test_hw_min_lsr_invalid_hw() {
+    fn test_hw_min_lrs_invalid_hw() {
         compute_hw(&OffsetInfo { hw: 0, leo: 10 }, 0, &offsets_maps(vec![]));
     }
     */
 
     /*
-    TODO: Revisit check of min lsr
+    TODO: Revisit check of min lrs
     #[test]
     #[should_panic]
-    fn test_hw_min_lsr_too_much() {
+    fn test_hw_min_lrs_too_much() {
         compute_hw(
             &OffsetInfo { hw: 0, leo: 10 },
             3,
@@ -554,7 +554,7 @@ mod test_hw_updates {
             Some(4)
         );
 
-        // we take maximum leo since min lsr = 2
+        // we take maximum leo since min lrs = 2
         assert_eq!(
             compute_hw(
                 &OffsetInfo { leo: 10, hw: 0 },
