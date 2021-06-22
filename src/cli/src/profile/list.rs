@@ -9,12 +9,12 @@ use fluvio_extension_common::{Terminal, OutputFormat};
 use fluvio_extension_common::output::{TableOutputHandler, OutputType};
 
 #[derive(Debug, StructOpt)]
-pub struct ViewOpt {
+pub struct ListOpt {
     #[structopt(flatten)]
     output: OutputFormat,
 }
 
-impl ViewOpt {
+impl ListOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
         let config_file = match ConfigFile::load(None) {
             Ok(config) => config,

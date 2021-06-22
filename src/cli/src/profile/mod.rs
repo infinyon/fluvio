@@ -13,7 +13,7 @@ mod switch;
 mod rename;
 mod delete_profile;
 mod delete_cluster;
-mod view;
+mod list;
 
 use crate::Result;
 use crate::common::output::Terminal;
@@ -22,8 +22,25 @@ use crate::profile::delete_cluster::DeleteClusterOpt;
 use crate::profile::delete_profile::DeleteProfileOpt;
 use crate::profile::switch::SwitchOpt;
 use crate::profile::sync::SyncCmd;
-use crate::profile::view::ViewOpt;
+use crate::profile::list::ListOpt;
 use crate::profile::rename::RenameOpt;
+
+#[derive(Debug, StructOpt)]
+pub struct ProfileOpt {
+    #[structopt(subcommand)]
+    cmd: Option<ProfileCmd>,
+}
+
+impl ProfileOpt {
+    pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
+        match self.cmd {
+            Some(cmd) => cmd.process(out).await?,
+            None => CurrentOpt {}.process()?,
+        }
+
+        Ok(())
+    }
+}
 
 #[derive(Debug, StructOpt)]
 #[structopt(about = "Available Commands")]
@@ -40,6 +57,10 @@ pub enum ProfileCmd {
     #[structopt(name = "delete-cluster")]
     DeleteCluster(DeleteClusterOpt),
 
+    /// Display the entire Fluvio configuration
+    #[structopt(name = "list")]
+    List(ListOpt),
+
     /// Rename a profile
     #[structopt(name = "rename")]
     Rename(RenameOpt),
@@ -51,32 +72,28 @@ pub enum ProfileCmd {
     /// Sync a profile from a cluster
     #[structopt(name = "sync")]
     Sync(SyncCmd),
-
-    /// Display the entire Fluvio configuration
-    #[structopt(name = "view")]
-    View(ViewOpt),
 }
 
 impl ProfileCmd {
     pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
         match self {
-            Self::View(view) => {
-                view.process(out).await?;
-            }
             Self::DisplayCurrent(current) => {
-                current.process().await?;
-            }
-            Self::Rename(rename) => {
-                rename.process()?;
-            }
-            Self::Switch(switch) => {
-                switch.process(out).await?;
+                current.process()?;
             }
             Self::DeleteProfile(delete_profile) => {
                 delete_profile.process(out).await?;
             }
             Self::DeleteCluster(delete_cluster) => {
                 delete_cluster.process().await?;
+            }
+            Self::List(list) => {
+                list.process(out).await?;
+            }
+            Self::Rename(rename) => {
+                rename.process()?;
+            }
+            Self::Switch(switch) => {
+                switch.process(out).await?;
             }
             Self::Sync(sync) => {
                 sync.process().await?;

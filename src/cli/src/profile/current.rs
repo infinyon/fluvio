@@ -6,7 +6,7 @@ use crate::Result;
 pub struct CurrentOpt {}
 
 impl CurrentOpt {
-    pub async fn process(self) -> Result<()> {
+    pub fn process(self) -> Result<()> {
         match ConfigFile::load(None) {
             Ok(config_file) => {
                 if let Some(profile) = config_file.config().current_profile_name() {
