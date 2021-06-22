@@ -162,6 +162,26 @@ $ cargo run --bin fluvio-run -- spu -i 5001 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 
 # Deploying to minikube
 
+## Pre-requisites
+
+Zig and LLD(version 11) is required to build the image.
+
+For mac:
+
+```
+brew install zig
+brew install llvm@11
+export FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld
+```
+
+For ubuntu:
+
+```
+sudo snap install zig --beta --classic
+sudo apt-get install -y lld-11
+export FLUVIO_BUILD_LLD=lld-11
+```
+
 ## Building the image 
 
 In order to deploy to minikube, the Docker image version must be built and loaded into minikube.
