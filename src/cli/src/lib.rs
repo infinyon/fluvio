@@ -20,7 +20,7 @@ mod metadata;
 mod consumer;
 use consumer::FluvioCmd;
 
-use profile::ProfileCmd;
+use profile::ProfileOpt;
 use install::update::UpdateOpt;
 use install::plugins::InstallOpt;
 use metadata::{MetadataOpt, subcommand_metadata};
@@ -84,7 +84,7 @@ enum RootCmd {
     /// There is one "active" profile, which determines which cluster all of the
     /// Fluvio CLI commands interact with.
     #[structopt(name = "profile")]
-    Profile(ProfileCmd),
+    Profile(ProfileOpt),
 
     /// Install or uninstall Fluvio clusters
     ///
