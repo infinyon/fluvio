@@ -6,6 +6,7 @@
 * Relax requirement of `FluvioAdmin` methods from `&mut self` to `&self`. ([#1178](https://github.com/infinyon/fluvio/pull/1178))
 * Sort output of `fluvio partition list` by Topic then Partition. ([#1181](https://github.com/infinyon/fluvio/issues/1181))
 * Add SmartStream Map (`#[smartstream(map)]`) API for transforming records. ([#1174](https://github.com/infinyon/fluvio/pull/1174))
+* Change C compiler to `zig` and linker to `lld`. Resolves segaults when cross compiling to musl. ([#464](https://github.com/infinyon/fluvio/pull/464))
  
 ## Platform Version 0.8.4 - 2020-05-29
 * Don't hang when check for non exist topic. ([#697](https://github.com/infinyon/fluvio/pull/697))
