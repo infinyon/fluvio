@@ -82,7 +82,7 @@ pub type DefaultAsyncBuffer = RecordData;
 /// [the Producer API] as an example.
 ///
 /// [the Producer API]: https://docs.rs/fluvio/producer/TopicProducer::send
-#[derive(Default)]
+#[derive(Clone, Default)]
 pub struct RecordData(Bytes);
 
 impl RecordData {

@@ -9,6 +9,7 @@ pub fn generate_smartstream(config: &SmartStreamConfig, func: &SmartStreamFn) ->
     let user_code = &func.func;
     let stream_section = match config.kind {
         SmartStreamKind::Filter => generate_filter(func),
+        SmartStreamKind::Map => generate_map(func),
     };
 
     quote! {
@@ -47,6 +48,20 @@ fn generate_filter(func: &SmartStreamFn) -> TokenStream {
     quote! {
         let mut processed: Vec<_> = records.into_iter()
             .filter(|record| super:: #user_fn(record))
+            .collect();
+    }
+}
+
+fn generate_map(func: &SmartStreamFn) -> TokenStream {
+    let user_fn = &func.name;
+    quote! {
+        let mut processed: Vec<_> = records.into_iter()
+            .map(|mut record| {
+                let (key, value) = super:: #user_fn(&record);
+                record.key = key;
+                record.value = value;
+                record
+            })
             .collect();
     }
 }

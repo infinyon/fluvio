@@ -21,6 +21,7 @@ impl SmartStreamConfig {
 #[derive(Debug)]
 pub enum SmartStreamKind {
     Filter,
+    Map,
 }
 
 impl SmartStreamKind {
@@ -33,6 +34,7 @@ impl SmartStreamKind {
                         it.segments.iter().rev().next().and_then(|it| {
                             match &*it.ident.to_string() {
                                 "filter" => Some(SmartStreamKind::Filter),
+                                "map" => Some(SmartStreamKind::Map),
                                 _ => None,
                             }
                         })
