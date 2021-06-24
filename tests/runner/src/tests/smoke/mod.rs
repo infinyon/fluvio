@@ -3,7 +3,7 @@ pub mod produce;
 pub mod message;
 
 use std::any::Any;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use structopt::StructOpt;
 
 use fluvio_integration_derive::fluvio_test;
@@ -12,6 +12,7 @@ use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
 use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {

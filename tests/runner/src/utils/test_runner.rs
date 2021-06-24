@@ -4,11 +4,12 @@ use crate::test_meta::{TestCase, TestOption, TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::{Fluvio, FluvioError};
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
 use std::time::Duration;
+use async_lock::RwLock;
 
 // Rename: *_latency, *_num, *_bytes
 #[derive(Clone)]

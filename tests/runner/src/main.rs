@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::process::exit;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -17,6 +17,7 @@ use hdrhistogram::Histogram;
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use flv_test::tests as _;
+use async_lock::RwLock;
 
 // How can I create multiple clients so I can scale the producer count per-process?
 fn main() {

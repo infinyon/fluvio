@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::env;
 use structopt::StructOpt;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use fluvio::RecordKey;
 use fluvio_integration_derive::fluvio_test;
@@ -9,6 +9,7 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct ProducerStressTestCase {
@@ -71,7 +72,7 @@ pub async fn run(
 
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
-        let mut lock = test_driver.write().unwrap();
+        let mut lock = test_driver.write().await;
         let producer = lock.get_producer(&topic_name).await;
         producers.push(producer);
     }
@@ -83,7 +84,7 @@ pub async fn run(
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
-                    let mut lock = test_driver.write().unwrap();
+                    let mut lock = test_driver.write().await;
                     lock.send_count(p, RecordKey::NULL, message)
                         .await
                         .unwrap_or_else(|_| {
@@ -94,7 +95,7 @@ pub async fn run(
                         });
                 }
             } else {
-                let mut lock = test_driver.write().unwrap();
+                let mut lock = test_driver.write().await;
                 lock.send_count(p, RecordKey::NULL, message)
                     .await
                     .unwrap_or_else(|_| {
@@ -104,7 +105,7 @@ pub async fn run(
         }
     }
 
-    let lock = test_driver.read().unwrap();
+    let lock = test_driver.read().await;
     println!(
         "Producer latency 99%: {:?}",
         lock.produce_latency.value_at_quantile(0.999)

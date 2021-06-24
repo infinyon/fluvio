@@ -101,7 +101,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             #test_body;
 
 
-            let lock = test_driver.read().unwrap();
+            let lock = test_driver.read().await;
 
             TestResult {
                 num_producers: lock.num_producers as u64,
@@ -141,7 +141,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 // TODO: FluvioTestDriver should create the topic
                 // Create topic before starting test
-                let lock = test_driver.write().unwrap();
+                let lock = test_driver.write().await;
                 FluvioTestMeta::create_topic(lock.client.clone(), &test_case.environment)
                     .await
                     .expect("Unable to create default topic");

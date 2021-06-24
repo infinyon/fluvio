@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 use std::collections::HashMap;
 
 use fluvio_test_util::test_runner::FluvioTestDriver;
@@ -8,6 +8,7 @@ use super::SmokeTestCase;
 use super::message::*;
 use fluvio::RecordKey;
 use fluvio_command::CommandExt;
+use async_lock::RwLock;
 
 type Offsets = HashMap<String, i64>;
 
@@ -16,7 +17,7 @@ pub async fn produce_message(
     test_case: &SmokeTestCase,
 ) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
-    let lock = test_driver.read().unwrap();
+    let lock = test_driver.read().await;
     let offsets = offsets::find_offsets(&*lock, &test_case).await;
     drop(lock);
 
@@ -117,7 +118,7 @@ pub async fn produce_message_with_api(
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
-        let mut lock = test_driver.write().unwrap();
+        let mut lock = test_driver.write().await;
         let producer = lock.get_producer(&topic_name).await;
         drop(lock);
 
@@ -126,7 +127,7 @@ pub async fn produce_message_with_api(
             let message = generate_message(offset, &test_case);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
-            let mut lock = test_driver.write().unwrap();
+            let mut lock = test_driver.write().await;
             lock.send_count(
                 &producer,
                 RecordKey::NULL,

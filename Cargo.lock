@@ -1989,6 +1989,7 @@ dependencies = [
 name = "fluvio-test-util"
 version = "0.1.0"
 dependencies = [
+ "async-lock",
  "async-trait",
  "bytes",
  "dyn-clone",
@@ -2060,6 +2061,7 @@ dependencies = [
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
+ "async-lock",
  "async-trait",
  "bencher",
  "bytes",
