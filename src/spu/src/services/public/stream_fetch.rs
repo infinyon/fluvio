@@ -169,96 +169,86 @@ impl StreamFetchHandler {
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
 
         let mut counter: i32 = 0;
-        let mut consumer_offset: Option<Offset> = if !consumer_wait {
-            // since we don't need to wait for consumer, can move consumer to same offset as last read
-            Some(last_read_offset)
-        } else {
-            None // offset for consumer
-        };
+        // since we don't need to wait for consumer, can move consumer to same offset as last read
+        let mut consumer_offset: Option<Offset> = (!consumer_wait).then(|| last_read_offset);
 
         loop {
             counter += 1;
-
             debug!(counter, ?consumer_offset, last_read_offset, "waiting");
 
             select! {
-
                 _ = self.end_event.listen() => {
                     debug!("end event has been received, terminating");
                     break;
                 },
 
-
                 changed_consumer_offset = self.consumer_offset_listener.listen() => {
+                    if changed_consumer_offset == INIT_OFFSET {
+                        continue;
+                    }
 
+                    if changed_consumer_offset >= last_read_offset {
+                        debug!(
+                            changed_consumer_offset,
+                            last_read_offset,
+                            "consume caught up"
+                        );
+                        consumer_offset = Some(changed_consumer_offset);
+                        continue;
+                    }
 
-                    if changed_consumer_offset != INIT_OFFSET  {
-
-                        // consume hasn't read all offsets, need to send back gaps
-                        if changed_consumer_offset < last_read_offset {
-                            debug!(
-                                changed_consumer_offset,
-                                last_read_offset,
-                                "need send back"
-                            );
-                            let (offset,wait) = self.send_back_records(changed_consumer_offset,module.as_ref()).await?;
-                            last_read_offset = offset;
-                            if wait {
-                                consumer_offset = None;
-                                debug!(
-                                    last_read_offset,
-                                    "wait for consumer"
-                                );
-                            } else {
-                                consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
-                            }
-
-                        } else {
-                            debug!(
-                                changed_consumer_offset,
-                                last_read_offset,
-                                "consume caught up"
-                            );
-                            consumer_offset = Some(changed_consumer_offset);
-                        }
+                    // consume hasn't read all offsets, need to send back gaps
+                    debug!(
+                        changed_consumer_offset,
+                        last_read_offset,
+                        "need send back"
+                    );
+                    let (offset, wait) = self.send_back_records(changed_consumer_offset, module.as_ref()).await?;
+                    last_read_offset = offset;
+                    if wait {
+                        consumer_offset = None;
+                        debug!(
+                            last_read_offset,
+                            "wait for consumer"
+                        );
+                    } else {
+                        consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
                     }
                 },
 
                 // received new offset from leader
                 leader_offset_update = leader_offset_receiver.listen() => {
-
                     debug!(leader_offset_update);
 
-                    if let Some(last_consumer_offset) = consumer_offset {
-                        // we know what consumer offset is
-                        if leader_offset_update > last_consumer_offset {
-                            debug!(leader_offset_update,
-                                consumer_offset = last_consumer_offset,
-                                "reading offset event");
-                            let (offset,wait) = self.send_back_records(last_consumer_offset,module.as_ref()).await?;
-                            last_read_offset = offset;
-                            if wait {
-                                consumer_offset = None;
-                                debug!(
-                                    last_read_offset,
-                                    "wait for consumer"
-                                );
-                            } else {
-                                consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
-                            }
-
-
-                        } else {
-                            debug!(ignored_update_offset = leader_offset_update);
+                    let last_consumer_offset = match consumer_offset {
+                        Some(last_consumer_offset) => last_consumer_offset,
+                        None => {
+                            // we don't know consumer offset, so we delay
+                            debug!(delay_consumer_offset = leader_offset_update);
                             last_read_offset = leader_offset_update;
-                        }
-                    } else {
-                        // we don't know consumer offset, so we delay
-                        debug!(delay_consumer_offset = leader_offset_update);
-                        last_read_offset = leader_offset_update;
+                            continue;
+                        },
+                    };
 
+                    if leader_offset_update <= last_consumer_offset {
+                        debug!(ignored_update_offset = leader_offset_update);
+                        last_read_offset = leader_offset_update;
+                        continue;
                     }
 
+                    // we know what consumer offset is
+                    debug!(leader_offset_update, consumer_offset = last_consumer_offset, "reading offset event");
+                    let (offset,wait) = self.send_back_records(last_consumer_offset, module.as_ref()).await?;
+                    last_read_offset = offset;
+                    if wait {
+                        consumer_offset = None;
+                        debug!(
+                            last_read_offset,
+                            "wait for consumer"
+                        );
+                    } else {
+                        consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
+                    }
                 },
             }
         }
@@ -312,104 +302,97 @@ impl StreamFetchHandler {
 
         let mut next_offset = offset.isolation(&self.isolation);
 
-        if file_partition_response.records.len() > 0 {
-            if let Some(module) = module_option {
-                type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+        if file_partition_response.records.len() == 0 {
+            debug!("empty records, skipping");
+            return Ok((offset.isolation(&self.isolation), false));
+        }
 
-                debug!("creating smart filter");
-                let filter_batch = {
-                    let filter = module.create_filter().map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("creating filter {}", err))
-                    })?;
+        if let Some(module) = module_option {
+            type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
 
-                    let records = &file_partition_response.records;
+            debug!("creating smart filter");
+            let filter_batch = {
+                let filter = module.create_filter().map_err(|err| {
+                    IoError::new(ErrorKind::Other, format!("creating filter {}", err))
+                })?;
 
-                    filter
-                        .filter(records.raw_slice(), self.max_bytes as usize)
-                        .map_err(|err| {
-                            IoError::new(ErrorKind::Other, format!("filter err {}", err))
-                        })?
-                };
+                let records = &file_partition_response.records;
 
-                let consumer_wait = if !filter_batch.records().is_empty() {
-                    trace!("filter batch: {:#?}", filter_batch);
+                filter
+                    .filter(records.raw_slice(), self.max_bytes as usize)
+                    .map_err(|err| IoError::new(ErrorKind::Other, format!("filter err {}", err)))?
+            };
 
-                    next_offset = filter_batch.get_last_offset() + 1;
+            let consumer_wait = !filter_batch.records().is_empty();
+            if !consumer_wait {
+                debug!(next_offset, "filter, no records send back, skipping");
+                return Ok((next_offset, false));
+            }
 
-                    debug!(
-                        next_offset,
-                        records = filter_batch.records().len(),
-                        "sending back to consumer"
-                    );
-                    let records = RecordSet::default().add(filter_batch);
-                    let filter_partition_response = DefaultPartitionResponse {
-                        partition_index: self.replica.partition,
-                        error_code: file_partition_response.error_code,
-                        high_watermark: file_partition_response.high_watermark,
-                        log_start_offset: file_partition_response.log_start_offset,
-                        records,
-                        next_filter_offset: next_offset,
-                        // we mark last offset in the response that we should sync up
-                        ..Default::default()
-                    };
+            trace!("filter batch: {:#?}", filter_batch);
+            next_offset = filter_batch.get_last_offset() + 1;
 
-                    let filter_response = StreamFetchResponse {
-                        topic: self.replica.topic.clone(),
-                        stream_id: self.stream_id,
-                        partition: filter_partition_response,
-                    };
+            debug!(
+                next_offset,
+                records = filter_batch.records().len(),
+                "sending back to consumer"
+            );
+            let records = RecordSet::default().add(filter_batch);
+            let filter_partition_response = DefaultPartitionResponse {
+                partition_index: self.replica.partition,
+                error_code: file_partition_response.error_code,
+                high_watermark: file_partition_response.high_watermark,
+                log_start_offset: file_partition_response.log_start_offset,
+                records,
+                next_filter_offset: next_offset,
+                // we mark last offset in the response that we should sync up
+                ..Default::default()
+            };
 
-                    let filter_response_msg =
-                        RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
-                            &self.header,
-                            filter_response,
-                        );
+            let filter_response = StreamFetchResponse {
+                topic: self.replica.topic.clone(),
+                stream_id: self.stream_id,
+                partition: filter_partition_response,
+            };
 
-                    trace!("sending back filter respone: {:#?}", filter_response_msg);
-
-                    let mut inner_sink = self.sink.lock().await;
-                    inner_sink
-                        .send_response(&filter_response_msg, self.header.api_version())
-                        .await?;
-                    true
-                } else {
-                    debug!(next_offset, "filter, no records send back, skipping");
-                    false
-                };
-
-                Ok((next_offset, consumer_wait))
-            } else {
-                debug!("no filter, sending back entire");
-
-                let response = StreamFetchResponse {
-                    topic: self.replica.topic.clone(),
-                    stream_id: self.stream_id,
-                    partition: file_partition_response,
-                };
-
-                let response_msg = RequestMessage::<FileStreamFetchRequest>::response_with_header(
+            let filter_response_msg =
+                RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
                     &self.header,
-                    response,
+                    filter_response,
                 );
 
-                trace!("sending back file fetch response msg: {:#?}", response_msg);
+            trace!("sending back filter respone: {:#?}", filter_response_msg);
 
-                let mut inner_sink = self.sink.lock().await;
-                inner_sink
-                    .encode_file_slices(&response_msg, self.header.api_version())
-                    .await?;
+            let mut inner_sink = self.sink.lock().await;
+            inner_sink
+                .send_response(&filter_response_msg, self.header.api_version())
+                .await?;
 
-                drop(inner_sink);
-
-                debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
-
-                Ok((offset.isolation(&self.isolation), true))
-            }
-        } else {
-            debug!("empty records, skipping");
-
-            Ok((offset.isolation(&self.isolation), false))
+            return Ok((next_offset, true));
         }
+
+        debug!("no filter, sending back entire");
+        let response = StreamFetchResponse {
+            topic: self.replica.topic.clone(),
+            stream_id: self.stream_id,
+            partition: file_partition_response,
+        };
+
+        let response_msg =
+            RequestMessage::<FileStreamFetchRequest>::response_with_header(&self.header, response);
+
+        trace!("sending back file fetch response msg: {:#?}", response_msg);
+
+        let mut inner_sink = self.sink.lock().await;
+        inner_sink
+            .encode_file_slices(&response_msg, self.header.api_version())
+            .await?;
+
+        drop(inner_sink);
+
+        debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
+
+        Ok((offset.isolation(&self.isolation), true))
     }
 }
 
