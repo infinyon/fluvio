@@ -4,7 +4,7 @@ use crate::test_meta::{TestCase, TestOption, TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::{Fluvio, FluvioError};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
@@ -36,8 +36,8 @@ impl FluvioTestDriver {
         match self.client.topic_producer(topic).await {
             Ok(client) => {
                 self.num_producers += 1;
-                return client
-            },
+                return client;
+            }
             Err(err) => {
                 println!(
                     "unable to get producer to topic: {}, error: {} sleeping 10 second ",
@@ -57,7 +57,6 @@ impl FluvioTestDriver {
         key: RecordKey,
         message: String,
     ) -> Result<(), FluvioError> {
-
         use std::time::SystemTime;
         let now = SystemTime::now();
 
@@ -65,7 +64,11 @@ impl FluvioTestDriver {
 
         let produce_time = now.elapsed().clone().unwrap().as_nanos();
 
-        println!("(#{}) Produce latency (ns): {:?}", self.produce_latency.len() + 1, produce_time as u64);
+        println!(
+            "(#{}) Produce latency (ns): {:?}",
+            self.produce_latency.len() + 1,
+            produce_time as u64
+        );
 
         self.produce_latency.record(produce_time as u64).unwrap();
 
@@ -77,15 +80,11 @@ impl FluvioTestDriver {
     pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
         use fluvio_future::timer::sleep;
 
-        match self 
-            .client
-            .partition_consumer(topic.to_string(), 0)
-            .await
-        {
+        match self.client.partition_consumer(topic.to_string(), 0).await {
             Ok(client) => {
                 self.num_consumers += 1;
-                return client
-            },
+                return client;
+            }
             Err(err) => {
                 println!(
                     "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
@@ -99,14 +98,12 @@ impl FluvioTestDriver {
     }
 
     // Might need to impl Stream so I can meter the consumer stream
-
 }
-
 
 #[derive(Debug)]
 pub struct FluvioTestMeta {
     pub name: String,
-    pub test_fn: fn(FluvioTestDriver, TestCase) -> Result<TestResult, TestResult>,
+    pub test_fn: fn(Arc<RwLock<FluvioTestDriver>>, TestCase) -> Result<TestResult, TestResult>,
     pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
     pub requirements: fn() -> TestRequirements,
     // Can't store Arc<Fluvio> bc of how we collect tests. Just too early to have a connection

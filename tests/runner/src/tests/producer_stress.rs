@@ -1,6 +1,7 @@
 use std::any::Any;
 use std::env;
 use structopt::StructOpt;
+use std::sync::{Arc, RwLock};
 
 use fluvio::RecordKey;
 use fluvio_integration_derive::fluvio_test;
@@ -46,7 +47,10 @@ impl TestOption for ProducerStressTestOption {
 }
 
 #[fluvio_test(name = "producer_stress", topic = "test", benchmark = true)]
-pub async fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
+pub async fn run(
+    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_case: TestCase,
+) -> TestResult {
     let test_case: ProducerStressTestCase = test_case.into();
 
     if !test_case.environment.is_benchmark() {
@@ -67,7 +71,8 @@ pub async fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
 
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
-        let producer = test_driver.get_producer(&topic_name).await;
+        let mut lock = test_driver.write().unwrap();
+        let producer = lock.get_producer(&topic_name).await;
         producers.push(producer);
     }
 
@@ -78,8 +83,8 @@ pub async fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
-                    test_driver
-                        .send_count(p, RecordKey::NULL, message)
+                    let mut lock = test_driver.write().unwrap();
+                    lock.send_count(p, RecordKey::NULL, message)
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -89,8 +94,8 @@ pub async fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
                         });
                 }
             } else {
-                test_driver
-                    .send_count(p, RecordKey::NULL, message)
+                let mut lock = test_driver.write().unwrap();
+                lock.send_count(p, RecordKey::NULL, message)
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)
@@ -99,12 +104,16 @@ pub async fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
         }
     }
 
+    let lock = test_driver.read().unwrap();
     println!(
         "Producer latency 99%: {:?}",
-        test_driver.produce_latency.value_at_quantile(0.999)
+        lock.produce_latency.value_at_quantile(0.999)
     );
+    drop(lock);
 
+    //let lock = test_driver.write().unwrap();
     // Make the compiler happy
     drop(producers);
-    drop(test_driver.client);
+    //drop(lock.client);
+    //drop(lock);
 }

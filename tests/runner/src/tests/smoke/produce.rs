@@ -1,3 +1,4 @@
+use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
 
 use fluvio_test_util::test_runner::FluvioTestDriver;
@@ -11,11 +12,13 @@ use fluvio_command::CommandExt;
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(
-    test_driver: &mut FluvioTestDriver,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     test_case: &SmokeTestCase,
 ) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
-    let offsets = offsets::find_offsets(&test_driver, &test_case).await;
+    let lock = test_driver.read().unwrap();
+    let offsets = offsets::find_offsets(&*lock, &test_case).await;
+    drop(lock);
 
     let use_cli = test_case.option.use_cli;
     let consumer_wait = test_case.option.consumer_wait;
@@ -25,13 +28,13 @@ pub async fn produce_message(
     } else if consumer_wait {
         produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
     } else {
-        eprintln!("TODO: Commented out block bc of static lifetime reqs. Use --consumer_wait flag");
-        unimplemented!();
-        //spawn(produce_message_with_api(
-        //    &mut test_driver,
-        //    offsets.clone(),
-        //    test_case.clone(),
-        //));
+        //eprintln!("TODO: Commented out block bc of static lifetime reqs. Use --consumer_wait flag");
+        //unimplemented!();
+        spawn(produce_message_with_api(
+            test_driver.clone(),
+            offsets.clone(),
+            test_case.clone(),
+        ));
     }
 
     offsets
@@ -98,7 +101,7 @@ mod offsets {
 }
 
 pub async fn produce_message_with_api(
-    test_driver: &mut FluvioTestDriver,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {
@@ -114,24 +117,26 @@ pub async fn produce_message_with_api(
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
-        let producer = test_driver.get_producer(&topic_name).await;
+        let mut lock = test_driver.write().unwrap();
+        let producer = lock.get_producer(&topic_name).await;
+        drop(lock);
 
         for i in 0..produce_iteration {
             let offset = base_offset + i as i64;
             let message = generate_message(offset, &test_case);
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
-            test_driver
-                .send_count(
-                    &producer,
-                    RecordKey::NULL,
-                    String::from_utf8(message.clone()).unwrap(),
-                )
-                .await
-                .unwrap_or_else(|_| {
-                    panic!("send record failed for replication: {} iteration: {}", r, i)
-                });
-
+            let mut lock = test_driver.write().unwrap();
+            lock.send_count(
+                &producer,
+                RecordKey::NULL,
+                String::from_utf8(message.clone()).unwrap(),
+            )
+            .await
+            .unwrap_or_else(|_| {
+                panic!("send record failed for replication: {} iteration: {}", r, i)
+            });
+            drop(lock);
             info!(
                 "completed send iter: {}, offset: {},len: {}",
                 topic_name, offset, len

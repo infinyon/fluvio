@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::process::exit;
 use std::time::Duration;
 use structopt::StructOpt;
@@ -76,12 +76,12 @@ fn main() {
         }));
 
         if option.environment.benchmark {
-            run_benchmark(
-                test_meta,
-                fluvio_client,
-                option.environment.clone(),
-                test_opt,
-            )
+            //run_benchmark(
+            //    test_meta,
+            //    fluvio_client,
+            //    option.environment.clone(),
+            //    test_opt,
+            //)
         } else {
             let test_result = run_test(
                 option.environment.clone(),
@@ -101,58 +101,58 @@ async fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
-    test_driver: FluvioTestDriver,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
 ) -> TestResult {
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
-        (test_meta.test_fn)(test_driver.clone(), test_case)
+        (test_meta.test_fn)(test_driver, test_case)
     }))
     .expect("Panic hook should have caught this");
 
     test_result.expect("Test Result")
 }
 
-fn run_benchmark(
-    test_fn: &FluvioTestMeta,
-    test_driver: FluvioTestDriver,
-    env: EnvironmentSetup,
-    opts: Box<dyn TestOption>,
-) {
-    println!("Starting benchmark test (Usual test output may be silenced)");
-
-    bench::run_once(move |b| {
-        let summary = b.auto_bench(move |inner_b| {
-            let test_case = TestCase::new(env.clone(), opts.clone());
-            inner_b.iter(|| (test_fn.test_fn)(test_driver.clone(), test_case.clone()))
-        });
-
-        let elapsed_duration = format!("{:?}", Duration::from_nanos(b.ns_elapsed()));
-        let iter_duration = format!("{:?}", Duration::from_nanos(b.ns_per_iter()));
-
-        let table = table!(
-            [b->"Perf Test Summary", "Measurement"],
-            ["Total time elapsed", elapsed_duration],
-            ["Total time elapsed (ns)", b.ns_elapsed()],
-            ["Time per iteration", iter_duration],
-            ["Time per iteration (ns)", b.ns_per_iter()],
-            ["# of iteration", (b.ns_elapsed() / b.ns_per_iter())],
-            ["Sum (ns)", summary.sum],
-            ["Min (ns)", summary.min],
-            ["Max (ns)", summary.max],
-            ["Mean (ns)", summary.mean],
-            ["Median (ns)", summary.median],
-            ["Variance", summary.var],
-            ["Standard Deviation", summary.std_dev],
-            ["Standard Deviation (%)", summary.std_dev_pct],
-            ["Median Absolute Deviation", summary.median_abs_dev],
-            ["Median Absolute Deviation (%)", summary.median_abs_dev_pct],
-            ["Quartiles", format!("{:?}",summary.quartiles)],
-            ["Interquartile Range", summary.iqr]
-        );
-
-        println!("{}", table)
-    })
-}
+//fn run_benchmark(
+//    test_fn: &FluvioTestMeta,
+//    test_driver: Arc<RwLock<FluvioTestDriver>>,
+//    env: EnvironmentSetup,
+//    opts: Box<dyn TestOption>,
+//) {
+//    println!("Starting benchmark test (Usual test output may be silenced)");
+//
+//    bench::run_once(move |b| {
+//        let summary = b.auto_bench(move |inner_b| {
+//            let test_case = TestCase::new(env.clone(), opts.clone());
+//            inner_b.iter(move || (test_fn.test_fn)(test_driver, test_case.clone()))
+//        });
+//
+//        let elapsed_duration = format!("{:?}", Duration::from_nanos(b.ns_elapsed()));
+//        let iter_duration = format!("{:?}", Duration::from_nanos(b.ns_per_iter()));
+//
+//        let table = table!(
+//            [b->"Perf Test Summary", "Measurement"],
+//            ["Total time elapsed", elapsed_duration],
+//            ["Total time elapsed (ns)", b.ns_elapsed()],
+//            ["Time per iteration", iter_duration],
+//            ["Time per iteration (ns)", b.ns_per_iter()],
+//            ["# of iteration", (b.ns_elapsed() / b.ns_per_iter())],
+//            ["Sum (ns)", summary.sum],
+//            ["Min (ns)", summary.min],
+//            ["Max (ns)", summary.max],
+//            ["Mean (ns)", summary.mean],
+//            ["Median (ns)", summary.median],
+//            ["Variance", summary.var],
+//            ["Standard Deviation", summary.std_dev],
+//            ["Standard Deviation (%)", summary.std_dev_pct],
+//            ["Median Absolute Deviation", summary.median_abs_dev],
+//            ["Median Absolute Deviation (%)", summary.median_abs_dev_pct],
+//            ["Quartiles", format!("{:?}",summary.quartiles)],
+//            ["Interquartile Range", summary.iqr]
+//        );
+//
+//        println!("{}", table)
+//    })
+//}
 
 async fn cluster_cleanup(option: EnvironmentSetup) {
     if option.skip_cluster_delete() {
@@ -163,7 +163,7 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
     }
 }
 
-async fn cluster_setup(option: &EnvironmentSetup) -> FluvioTestDriver {
+async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<FluvioTestDriver>> {
     let fluvio_client = if option.skip_cluster_start() {
         println!("skipping cluster start");
         // Connect to cluster in profile
@@ -182,7 +182,7 @@ async fn cluster_setup(option: &EnvironmentSetup) -> FluvioTestDriver {
         )
     };
 
-    FluvioTestDriver {
+    Arc::new(RwLock::new(FluvioTestDriver {
         client: fluvio_client,
         num_topics: 0,
         num_producers: 0,
@@ -191,7 +191,7 @@ async fn cluster_setup(option: &EnvironmentSetup) -> FluvioTestDriver {
         bytes_consumed: 0,
         produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    }
+    }))
 }
 
 #[cfg(test)]

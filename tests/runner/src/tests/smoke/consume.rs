@@ -3,6 +3,7 @@
 use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 
 use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
@@ -25,7 +26,7 @@ fn consume_wait_timeout() -> u64 {
 
 /// verify consumers
 pub async fn validate_consume_message(
-    client: &mut FluvioTestDriver,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
@@ -34,7 +35,7 @@ pub async fn validate_consume_message(
     if use_cli {
         validate_consume_message_cli(test_case, offsets);
     } else {
-        validate_consume_message_api(client, offsets, test_case).await;
+        validate_consume_message_api(test_driver, offsets, test_case).await;
     }
 }
 
@@ -66,7 +67,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
 }
 
 async fn validate_consume_message_api(
-    test_driver: &mut FluvioTestDriver,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     offsets: Offsets,
     test_case: &SmokeTestCase,
 ) {
@@ -86,7 +87,10 @@ async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let consumer = test_driver.get_consumer(&topic_name).await;
+        let mut lock = test_driver.write().unwrap();
+
+        let consumer = lock.get_consumer(&topic_name).await;
+        drop(lock);
 
         let mut stream = consumer
             .stream(
@@ -139,7 +143,9 @@ async fn validate_consume_message_api(
                         total_records += 1;
 
                         //record the consumer metadata
-                        test_driver.bytes_consumed += bytes.len();
+                        let mut lock = test_driver.write().unwrap();
+                        lock.bytes_consumed += bytes.len();
+                        drop(lock);
                         // How can I measure latency?
 
 
@@ -162,11 +168,13 @@ async fn validate_consume_message_api(
     // wait 500m second and ensure partition list
     sleep(Duration::from_millis(500)).await;
 
-    let mut admin = test_driver.client.admin().await;
+    let lock = test_driver.write().unwrap();
+    let admin = lock.client.admin().await;
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await
         .expect("partitions");
+    drop(lock);
 
     println!("About check partition length is 1");
     assert_eq!(partitions.len(), 1);
