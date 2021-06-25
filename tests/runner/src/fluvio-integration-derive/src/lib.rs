@@ -135,9 +135,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
-            let lock = test_driver.read().await;
-            let is_env_acceptable = lock.is_env_acceptable(&test_reqs, &test_case);
-            drop(lock);
+            let is_env_acceptable = FluvioTestDriver::is_env_acceptable(&test_reqs, &test_case);
 
             // Customize test environment if it meets minimum requirements
             if is_env_acceptable {
@@ -194,7 +192,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                             num_consumers: test_result_tmp.num_consumers,
                             bytes_consumed: test_result_tmp.bytes_consumed,
                             consume_latency: test_result_tmp.consume_latency,
-                            ..Default::default()
                         })
                     }
                 }

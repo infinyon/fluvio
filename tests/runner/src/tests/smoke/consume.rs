@@ -11,7 +11,7 @@ use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
 use fluvio_test_util::test_runner::FluvioTestDriver;
-use fluvio::{Offset, PartitionConsumer};
+use fluvio::Offset;
 use fluvio_command::CommandExt;
 
 use super::SmokeTestCase;

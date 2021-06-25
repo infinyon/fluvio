@@ -11,10 +11,9 @@ use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
 use std::time::Duration;
 use async_lock::RwLock;
 use futures_lite::stream::StreamExt;
-use tracing::{info, debug};
+use tracing::debug;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
-use tokio::select;
 
 // Rename: *_latency, *_num, *_bytes
 #[derive(Clone)]
@@ -29,8 +28,6 @@ pub struct FluvioTestDriver {
     pub consume_latency: Histogram<u64>,
     pub topic_create_latency: Histogram<u64>,
 }
-
-type Record = Vec<u8>;
 
 impl FluvioTestDriver {
     pub fn get_results(&self) -> TestResult {
@@ -68,7 +65,7 @@ impl FluvioTestDriver {
 
         let result = p.send(key, message.clone()).await;
 
-        let produce_time = now.elapsed().clone().unwrap().as_nanos();
+        let produce_time = now.elapsed().unwrap().as_nanos();
 
         debug!(
             "(#{}) Produce latency (ns): {:?}",
@@ -84,8 +81,6 @@ impl FluvioTestDriver {
     }
 
     pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
-        use fluvio_future::timer::sleep;
-
         match self.client.partition_consumer(topic.to_string(), 0).await {
             Ok(client) => {
                 self.num_consumers += 1;
@@ -107,7 +102,7 @@ impl FluvioTestDriver {
         use std::time::SystemTime;
         let mut stream = consumer.stream(offset).await.expect("stream");
 
-        let mut index: i32 = 0;
+        //let mut index: i32 = 0;
         //while let Some(Ok(record)) = stream.next().await {
         loop {
             // Take a timestamp
@@ -121,7 +116,7 @@ impl FluvioTestDriver {
                 // Record bytes consumed
                 self.bytes_consumed += record.as_ref().len();
 
-                index += 1;
+                //index += 1;
             } else {
                 debug!("No more bytes left to consume");
                 break;
@@ -169,7 +164,7 @@ impl FluvioTestDriver {
             .await;
 
         // Record the time it took to create topic
-        let topic_time = now.elapsed().clone().unwrap().as_nanos();
+        let topic_time = now.elapsed().unwrap().as_nanos();
 
         if topic_create.is_ok() {
             if !option.is_benchmark() {
@@ -184,7 +179,7 @@ impl FluvioTestDriver {
         Ok(())
     }
 
-    pub fn is_env_acceptable(&self, test_reqs: &TestRequirements, test_case: &TestCase) -> bool {
+    pub fn is_env_acceptable(test_reqs: &TestRequirements, test_case: &TestCase) -> bool {
         // if `min_spu` undefined, min 1
         if let Some(min_spu) = test_reqs.min_spu {
             if min_spu > test_case.environment.spu() {

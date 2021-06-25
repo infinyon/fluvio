@@ -14,9 +14,6 @@ use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
 use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
-
-const PARTITION: i32 = 0;
-
 #[derive(Debug, Clone)]
 pub struct ConcurrentTestCase {
     pub environment: EnvironmentSetup,

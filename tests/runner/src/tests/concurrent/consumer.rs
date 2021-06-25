@@ -5,7 +5,7 @@ use fluvio_test_util::test_runner::FluvioTestDriver;
 use futures_lite::StreamExt;
 use fluvio::Offset;
 
-use super::{ConcurrentTestCase, PARTITION};
+use super::ConcurrentTestCase;
 use super::util::*;
 
 pub async fn consumer_stream(

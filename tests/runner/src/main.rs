@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use std::process::exit;
-use std::time::Duration;
 use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption, TestResult};
@@ -10,8 +9,6 @@ use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
 use fluvio_test_util::test_meta::TestTimer;
-use bencher::bench;
-use prettytable::{table, row, cell};
 use hdrhistogram::Histogram;
 
 // This is important for `inventory` crate
@@ -54,7 +51,7 @@ fn main() {
         let fluvio_client = cluster_setup(&option.environment).await;
 
         // Check on test requirements before running the test
-        if !FluvioTestMeta::is_env_acceptable(
+        if !FluvioTestDriver::is_env_acceptable(
             &(test_meta.requirements)(),
             &TestCase::new(option.environment.clone(), test_opt.clone()),
         ) {
