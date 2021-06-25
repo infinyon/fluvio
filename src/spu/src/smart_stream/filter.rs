@@ -1,20 +1,19 @@
 use std::{io::Error as IoError, sync::Arc, time::Instant};
 use std::io::{ErrorKind, Cursor};
-use std::sync::Mutex;
 use std::os::unix::io::RawFd;
 
 use anyhow::{Result, Error, anyhow};
 
 use tracing::{debug, warn};
 use nix::sys::uio::pread;
-use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Memory};
+use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc};
 
 use fluvio_future::file_slice::AsyncFileSlice;
 use dataplane::core::{Decoder, Encoder};
 use dataplane::Offset;
 use dataplane::batch::{BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE, Batch};
 use dataplane::batch::MemoryRecords;
-use crate::smart_stream::SmartStreamModuleInner;
+use crate::smart_stream::{SmartStreamModuleInner, RecordsCallBack, RecordsMemory, SmartStreamInstance};
 
 const FILTER_FN_NAME: &str = "filter";
 
@@ -48,69 +47,6 @@ impl SmartStreamModuleInner {
             SmartStreamInstance::new(instance),
             callback2,
         ))
-    }
-}
-
-pub struct SmartStreamInstance(Instance);
-
-impl SmartStreamInstance {
-    fn new(instance: Instance) -> Self {
-        Self(instance)
-    }
-
-    pub fn copy_memory_to(&self, bytes: &[u8]) -> Result<isize, Error> {
-        use super::memory::copy_memory_to_instance;
-        copy_memory_to_instance(bytes, &self.0)
-    }
-}
-
-#[derive(Clone)]
-pub struct RecordsMemory {
-    ptr: i32,
-    len: i32,
-    memory: Memory,
-}
-
-impl RecordsMemory {
-    fn copy_memory_from(&self) -> Vec<u8> {
-        unsafe {
-            if let Some(data) = self
-                .memory
-                .data_unchecked()
-                .get(self.ptr as u32 as usize..)
-                .and_then(|arr| arr.get(..self.len as u32 as usize))
-            {
-                debug!(wasm_mem_len = self.len, "copying from wasm");
-                let mut bytes = vec![0u8; self.len as u32 as usize];
-                bytes.copy_from_slice(data);
-                bytes
-            } else {
-                vec![]
-            }
-        }
-    }
-}
-
-pub struct RecordsCallBack(Mutex<Option<RecordsMemory>>);
-
-impl RecordsCallBack {
-    fn new() -> Self {
-        Self(Mutex::new(None))
-    }
-
-    fn set(&self, records: RecordsMemory) {
-        let mut write_inner = self.0.lock().unwrap();
-        write_inner.replace(records);
-    }
-
-    fn clear(&self) {
-        let mut write_inner = self.0.lock().unwrap();
-        write_inner.take();
-    }
-
-    fn get(&self) -> Option<RecordsMemory> {
-        let reader = self.0.lock().unwrap();
-        reader.clone()
     }
 }
 
