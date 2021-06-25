@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 bytes = "1.0"
+tracing = "0.1"
 futures-lite = "1.11.0"
 structopt = "0.3.5"
 async-trait = "0.1.21"

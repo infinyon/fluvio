@@ -192,6 +192,7 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<FluvioTestDriver
         bytes_consumed: 0,
         produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
     }))
 }
 

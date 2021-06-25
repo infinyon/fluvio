@@ -74,5 +74,5 @@ pub async fn smoke(
     let smoke_test_case = test_case.into();
 
     let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
-    //consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;
+    consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;
 }

@@ -3,7 +3,8 @@
 use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use async_lock::RwLock;
 
 use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
@@ -73,6 +74,7 @@ async fn validate_consume_message_api(
 ) {
     use tokio::select;
     use fluvio_future::timer::sleep;
+    use std::time::SystemTime;
 
     use fluvio_controlplane_metadata::partition::PartitionSpec;
 
@@ -87,7 +89,7 @@ async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let mut lock = test_driver.write().unwrap();
+        let mut lock = test_driver.write().await;
 
         let consumer = lock.get_consumer(&topic_name).await;
         drop(lock);
@@ -109,6 +111,7 @@ async fn validate_consume_message_api(
         let mut timer = sleep(Duration::from_millis(timer_wait));
 
         loop {
+            let now = SystemTime::now();
             select! {
 
                 _ = &mut timer => {
@@ -142,11 +145,19 @@ async fn validate_consume_message_api(
                         );
                         total_records += 1;
 
+                        let mut lock = test_driver.write().await;
+                        // record latency
+                        let consume_time = now.elapsed().clone().unwrap().as_nanos();
+                        //lock.consume_latency.record(consume_time as u64).unwrap();
+                        lock.consume_latency_record(consume_time as u64).await;
+
                         //record the consumer metadata
-                        let mut lock = test_driver.write().unwrap();
-                        lock.bytes_consumed += bytes.len();
+                        //lock.bytes_consumed += bytes.len();
+                        lock.consume_bytes_record(bytes.len()).await;
+
+                        //debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
+
                         drop(lock);
-                        // How can I measure latency?
 
 
                         if total_records == producer_iteration {
@@ -168,7 +179,7 @@ async fn validate_consume_message_api(
     // wait 500m second and ensure partition list
     sleep(Duration::from_millis(500)).await;
 
-    let lock = test_driver.write().unwrap();
+    let lock = test_driver.write().await;
     let admin = lock.client.admin().await;
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])

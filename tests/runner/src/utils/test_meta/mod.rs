@@ -94,6 +94,7 @@ pub struct TestResult {
     pub consume_latency: u64,
     pub num_consumers: u64,
     pub num_topics: u64,
+    pub topic_create_latency: u64,
 }
 
 impl TestResult {
@@ -109,6 +110,8 @@ impl Display for TestResult {
         let duration_str = format!("{:?}", self.duration);
         let producer_latency_str = format!("{:?}", Duration::from_nanos(self.produce_latency));
         let consumer_latency_str = format!("{:?}", Duration::from_nanos(self.consume_latency));
+        let topic_create_latency_str =
+            format!("{:?}", Duration::from_nanos(self.topic_create_latency));
 
         let table = table!(
             [b->"Test Results"],
@@ -117,6 +120,7 @@ impl Display for TestResult {
             //
 
             ["# topics created", self.num_topics],
+            ["topic create latency 99.9%", topic_create_latency_str],
             ["# producers created", self.num_producers],
             ["bytes produced", self.bytes_produced],
             ["producer latency 99.9%", producer_latency_str],

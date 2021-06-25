@@ -104,10 +104,12 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             let lock = test_driver.read().await;
 
             TestResult {
+                num_topics: lock.num_topics as u64,
                 num_producers: lock.num_producers as u64,
                 num_consumers: lock.num_consumers as u64,
                 bytes_produced: lock.bytes_produced as u64,
                 bytes_consumed: lock.bytes_consumed as u64,
+                topic_create_latency: lock.topic_create_latency.value_at_quantile(0.999),
                 produce_latency: lock.produce_latency.value_at_quantile(0.999),
                 consume_latency: lock.consume_latency.value_at_quantile(0.999),
                 ..Default::default()
@@ -133,16 +135,19 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
+            let lock = test_driver.read().await;
+            let is_env_acceptable = lock.is_env_acceptable(&test_reqs, &test_case);
+            drop(lock);
+
             // Customize test environment if it meets minimum requirements
-            if FluvioTestMeta::is_env_acceptable(&test_reqs, &test_case) {
+            if is_env_acceptable {
 
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
-                // TODO: FluvioTestDriver should create the topic
                 // Create topic before starting test
-                let lock = test_driver.write().await;
-                FluvioTestMeta::create_topic(lock.client.clone(), &test_case.environment)
+                let mut lock = test_driver.write().await;
+                lock.create_topic(&test_case.environment)
                     .await
                     .expect("Unable to create default topic");
                 drop(lock);
@@ -177,11 +182,18 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
                         test_timer.stop();
 
+                        // This is the final version of TestResult before it renders to stdout
                         Ok(TestResult {
                             success: true,
                             duration: test_timer.duration(),
+                            num_topics: test_result_tmp.num_topics,
+                            topic_create_latency: test_result_tmp.topic_create_latency,
+                            num_producers: test_result_tmp.num_producers,
                             bytes_produced: test_result_tmp.bytes_produced,
                             produce_latency: test_result_tmp.produce_latency,
+                            num_consumers: test_result_tmp.num_consumers,
+                            bytes_consumed: test_result_tmp.bytes_consumed,
+                            consume_latency: test_result_tmp.consume_latency,
                             ..Default::default()
                         })
                     }

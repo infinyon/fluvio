@@ -3,7 +3,8 @@ pub mod consumer;
 pub mod util;
 
 use std::any::Any;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
+use async_lock::RwLock;
 use structopt::StructOpt;
 
 use fluvio_future::task::spawn;
@@ -48,12 +49,15 @@ impl TestOption for ConcurrentTestOption {
 }
 
 #[fluvio_test(topic = "test-bug")]
-pub async fn concurrent(mut test_driver: RwLock<FluvioTestDriver>, mut test_case: TestCase) -> TestResult {
-    test_concurrent_consume_produce(test_driver, test_case.into()).await
+pub async fn concurrent(
+    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_case: TestCase,
+) -> TestResult {
+    test_concurrent_consume_produce(test_driver.clone(), test_case.into()).await
 }
 
 pub async fn test_concurrent_consume_produce(
-    test_driver: FluvioTestDriver,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     option: ConcurrentTestCase,
 ) {
     println!("Testing concurrent consumer and producer");

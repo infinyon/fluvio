@@ -2011,6 +2011,7 @@ dependencies = [
  "structopt",
  "syn",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

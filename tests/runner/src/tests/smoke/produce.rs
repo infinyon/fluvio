@@ -29,8 +29,6 @@ pub async fn produce_message(
     } else if consumer_wait {
         produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
     } else {
-        //eprintln!("TODO: Commented out block bc of static lifetime reqs. Use --consumer_wait flag");
-        //unimplemented!();
         spawn(produce_message_with_api(
             test_driver.clone(),
             offsets.clone(),

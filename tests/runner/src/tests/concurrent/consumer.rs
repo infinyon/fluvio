@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use async_lock::RwLock;
 use std::sync::mpsc::Receiver;
 use fluvio_test_util::test_runner::FluvioTestDriver;
 use futures_lite::StreamExt;
@@ -7,15 +9,15 @@ use super::{ConcurrentTestCase, PARTITION};
 use super::util::*;
 
 pub async fn consumer_stream(
-    test_driver: FluvioTestDriver,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     option: ConcurrentTestCase,
     digests: Receiver<String>,
 ) {
-    let consumer = test_driver
-        .client
-        .partition_consumer(option.environment.topic_name.clone(), PARTITION)
-        .await
-        .unwrap();
+    let mut lock = test_driver.write().await;
+
+    let consumer = lock
+        .get_consumer(option.environment.topic_name.as_str())
+        .await;
     let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 
     let mut index: i32 = 0;
