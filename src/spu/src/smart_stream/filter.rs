@@ -1,90 +1,24 @@
 use std::{io::Error as IoError, sync::Arc, time::Instant};
 use std::io::{ErrorKind, Cursor};
-use std::path::Path;
-use std::sync::{RwLock, Mutex};
+use std::sync::Mutex;
 use std::os::unix::io::RawFd;
 
 use anyhow::{Result, Error, anyhow};
 
-// use bytes::{Bytes, BytesMut};
-use tracing::{debug, warn, instrument};
+use tracing::{debug, warn};
 use nix::sys::uio::pread;
-use wasmtime::{Caller, Engine, Extern, Func, Instance, Module, Store, Trap, TypedFunc, Memory};
+use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Memory};
 
 use fluvio_future::file_slice::AsyncFileSlice;
 use dataplane::core::{Decoder, Encoder};
 use dataplane::Offset;
 use dataplane::batch::{BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE, Batch};
 use dataplane::batch::MemoryRecords;
-// use fluvio_future::task::spawn_blocking;
-
-// use fluvio_storage::config::DEFAULT_MAX_BATCH_SIZE;
+use crate::smart_stream::SmartStreamModuleInner;
 
 const FILTER_FN_NAME: &str = "filter";
 
-pub struct SmartStreamEngine(Engine);
-
-impl SmartStreamEngine {
-    pub fn new() -> Self {
-        Self(Engine::default())
-    }
-
-    #[allow(unused)]
-    #[instrument(skip(self, path))]
-    pub fn create_module_from_path(&self, path: impl AsRef<Path>) -> Result<SmartStreamModule> {
-        SmartStreamModule::from_path(&self.0, path)
-    }
-
-    #[instrument(skip(self, binary))]
-    pub fn create_module_from_binary(&self, binary: &[u8]) -> Result<SmartStreamModule> {
-        SmartStreamModule::from_binary(&self.0, binary)
-    }
-}
-
-pub struct SmartStreamModule(RwLock<SmartStreamModuleInner>);
-
-impl SmartStreamModule {
-    #[allow(unused)]
-    fn from_path(engine: &Engine, path: impl AsRef<Path>) -> Result<Self> {
-        Ok(Self(RwLock::new(SmartStreamModuleInner::create_from_path(
-            engine, path,
-        )?)))
-    }
-
-    fn from_binary(engine: &Engine, binary: &[u8]) -> Result<Self> {
-        Ok(Self(RwLock::new(
-            SmartStreamModuleInner::create_from_binary(engine, binary)?,
-        )))
-    }
-
-    pub fn create_filter(&self) -> Result<SmartFilter> {
-        let write_inner = self.0.write().unwrap();
-        write_inner.create_filter()
-    }
-}
-
-unsafe impl Send for SmartStreamModuleInner {}
-unsafe impl Sync for SmartStreamModuleInner {}
-
-pub struct SmartStreamModuleInner {
-    module: Module,
-    store: Store,
-}
-
 impl SmartStreamModuleInner {
-    #[allow(unused)]
-    pub fn create_from_path(engine: &Engine, path: impl AsRef<Path>) -> Result<Self> {
-        let store = Store::new(&engine);
-        let module = Module::from_file(store.engine(), path)?;
-        Ok(Self { module, store })
-    }
-
-    pub fn create_from_binary(engine: &Engine, binary: &[u8]) -> Result<Self> {
-        let store = Store::new(&engine);
-        let module = Module::from_binary(store.engine(), binary)?;
-        Ok(Self { module, store })
-    }
-
     pub fn create_filter(&self) -> Result<SmartFilter> {
         let callback = Arc::new(RecordsCallBack::new());
         let callback2 = callback.clone();
