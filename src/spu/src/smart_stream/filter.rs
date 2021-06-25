@@ -1,90 +1,24 @@
 use std::{io::Error as IoError, sync::Arc, time::Instant};
 use std::io::{ErrorKind, Cursor};
-use std::path::Path;
-use std::sync::{RwLock, Mutex};
 use std::os::unix::io::RawFd;
 
 use anyhow::{Result, Error, anyhow};
 
-// use bytes::{Bytes, BytesMut};
-use tracing::{debug, warn, instrument};
+use tracing::{debug, warn};
 use nix::sys::uio::pread;
-use wasmtime::{Caller, Engine, Extern, Func, Instance, Module, Store, Trap, TypedFunc, Memory};
+use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc};
 
 use fluvio_future::file_slice::AsyncFileSlice;
 use dataplane::core::{Decoder, Encoder};
 use dataplane::Offset;
 use dataplane::batch::{BATCH_FILE_HEADER_SIZE, BATCH_HEADER_SIZE, Batch};
 use dataplane::batch::MemoryRecords;
-// use fluvio_future::task::spawn_blocking;
-
-// use fluvio_storage::config::DEFAULT_MAX_BATCH_SIZE;
+use crate::smart_stream::{SmartStreamModuleInner, RecordsCallBack, RecordsMemory, SmartStreamInstance};
 
 const FILTER_FN_NAME: &str = "filter";
-
-pub struct SmartStreamEngine(Engine);
-
-impl SmartStreamEngine {
-    pub fn new() -> Self {
-        Self(Engine::default())
-    }
-
-    #[allow(unused)]
-    #[instrument(skip(self, path))]
-    pub fn create_module_from_path(&self, path: impl AsRef<Path>) -> Result<SmartStreamModule> {
-        SmartStreamModule::from_path(&self.0, path)
-    }
-
-    #[instrument(skip(self, binary))]
-    pub fn create_module_from_binary(&self, binary: &[u8]) -> Result<SmartStreamModule> {
-        SmartStreamModule::from_binary(&self.0, binary)
-    }
-}
-
-pub struct SmartStreamModule(RwLock<SmartStreamModuleInner>);
-
-impl SmartStreamModule {
-    #[allow(unused)]
-    fn from_path(engine: &Engine, path: impl AsRef<Path>) -> Result<Self> {
-        Ok(Self(RwLock::new(SmartStreamModuleInner::create_from_path(
-            engine, path,
-        )?)))
-    }
-
-    fn from_binary(engine: &Engine, binary: &[u8]) -> Result<Self> {
-        Ok(Self(RwLock::new(
-            SmartStreamModuleInner::create_from_binary(engine, binary)?,
-        )))
-    }
-
-    pub fn create_filter(&self) -> Result<SmartFilter> {
-        let write_inner = self.0.write().unwrap();
-        write_inner.create_filter()
-    }
-}
-
-unsafe impl Send for SmartStreamModuleInner {}
-unsafe impl Sync for SmartStreamModuleInner {}
-
-pub struct SmartStreamModuleInner {
-    module: Module,
-    store: Store,
-}
+type FilterFn = TypedFunc<(i32, i32), i32>;
 
 impl SmartStreamModuleInner {
-    #[allow(unused)]
-    pub fn create_from_path(engine: &Engine, path: impl AsRef<Path>) -> Result<Self> {
-        let store = Store::new(&engine);
-        let module = Module::from_file(store.engine(), path)?;
-        Ok(Self { module, store })
-    }
-
-    pub fn create_from_binary(engine: &Engine, binary: &[u8]) -> Result<Self> {
-        let store = Store::new(&engine);
-        let module = Module::from_binary(store.engine(), binary)?;
-        Ok(Self { module, store })
-    }
-
     pub fn create_filter(&self) -> Result<SmartFilter> {
         let callback = Arc::new(RecordsCallBack::new());
         let callback2 = callback.clone();
@@ -107,7 +41,7 @@ impl SmartStreamModuleInner {
 
         let instance = Instance::new(&self.store, &self.module, &[copy_records.into()])?;
 
-        let filter_fn = instance.get_typed_func::<(i32, i32), i32>(FILTER_FN_NAME)?;
+        let filter_fn: FilterFn = instance.get_typed_func(FILTER_FN_NAME)?;
 
         Ok(SmartFilter::new(
             filter_fn,
@@ -117,81 +51,18 @@ impl SmartStreamModuleInner {
     }
 }
 
-pub struct SmartStreamInstance(Instance);
-
-impl SmartStreamInstance {
-    fn new(instance: Instance) -> Self {
-        Self(instance)
-    }
-
-    pub fn copy_memory_to(&self, bytes: &[u8]) -> Result<isize, Error> {
-        use super::memory::copy_memory_to_instance;
-        copy_memory_to_instance(bytes, &self.0)
-    }
-}
-
-#[derive(Clone)]
-pub struct RecordsMemory {
-    ptr: i32,
-    len: i32,
-    memory: Memory,
-}
-
-impl RecordsMemory {
-    fn copy_memory_from(&self) -> Vec<u8> {
-        unsafe {
-            if let Some(data) = self
-                .memory
-                .data_unchecked()
-                .get(self.ptr as u32 as usize..)
-                .and_then(|arr| arr.get(..self.len as u32 as usize))
-            {
-                debug!(wasm_mem_len = self.len, "copying from wasm");
-                let mut bytes = vec![0u8; self.len as u32 as usize];
-                bytes.copy_from_slice(data);
-                bytes
-            } else {
-                vec![]
-            }
-        }
-    }
-}
-
-pub struct RecordsCallBack(Mutex<Option<RecordsMemory>>);
-
-impl RecordsCallBack {
-    fn new() -> Self {
-        Self(Mutex::new(None))
-    }
-
-    fn set(&self, records: RecordsMemory) {
-        let mut write_inner = self.0.lock().unwrap();
-        write_inner.replace(records);
-    }
-
-    fn clear(&self) {
-        let mut write_inner = self.0.lock().unwrap();
-        write_inner.take();
-    }
-
-    fn get(&self) -> Option<RecordsMemory> {
-        let reader = self.0.lock().unwrap();
-        reader.clone()
-    }
-}
-
 /// Instance are not thread safe, we need to take care to ensure access to instance are thread safe
 
 /// Instance must be hold in thread safe lock to ensure only one thread can access at time
 pub struct SmartFilter {
-    filter_fn: TypedFunc<(i32, i32), i32>,
+    filter_fn: FilterFn,
     instance: SmartStreamInstance,
     records_cb: Arc<RecordsCallBack>,
 }
 
 impl SmartFilter {
     pub fn new(
-        filter_fn: TypedFunc<(i32, i32), i32>,
+        filter_fn: FilterFn,
         instance: SmartStreamInstance,
         records_cb: Arc<RecordsCallBack>,
     ) -> Self {
@@ -313,21 +184,6 @@ impl SmartFilter {
         }
     }
 }
-
-/*
-async fn read<'a>(fd: RawFd, bytes: &'a mut [u8], position: i64) -> Result<usize, IoError> {
-
-
-
-    spawn_blocking(  || {
-        pread(fd, &mut bytes,position)
-    }).await.map_err(|err| IoError::new(
-        ErrorKind::Other,
-        format!("pread error {}",err)
-    ))
-
-}
-*/
 
 // only encode information necessary to decode batches efficiently
 struct FileBatch {

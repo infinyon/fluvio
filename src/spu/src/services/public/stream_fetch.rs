@@ -24,7 +24,7 @@ use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
-use crate::smart_stream::filter::{SmartStreamModule, SmartStreamEngine};
+use crate::smart_stream::{SmartStreamModule, SmartStreamEngine};
 use publishers::INIT_OFFSET;
 
 /// Fetch records as stream
@@ -479,7 +479,6 @@ pub mod publishers {
 }
 
 #[cfg(test)]
-#[cfg(target_os = "linux")]
 mod test {
 
     use std::{
