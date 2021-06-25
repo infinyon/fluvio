@@ -16,6 +16,7 @@ use dataplane::batch::MemoryRecords;
 use crate::smart_stream::{SmartStreamModuleInner, RecordsCallBack, RecordsMemory, SmartStreamInstance};
 
 const FILTER_FN_NAME: &str = "filter";
+type FilterFn = TypedFunc<(i32, i32), i32>;
 
 impl SmartStreamModuleInner {
     pub fn create_filter(&self) -> Result<SmartFilter> {
@@ -40,7 +41,7 @@ impl SmartStreamModuleInner {
 
         let instance = Instance::new(&self.store, &self.module, &[copy_records.into()])?;
 
-        let filter_fn = instance.get_typed_func::<(i32, i32), i32>(FILTER_FN_NAME)?;
+        let filter_fn: FilterFn = instance.get_typed_func(FILTER_FN_NAME)?;
 
         Ok(SmartFilter::new(
             filter_fn,
@@ -54,14 +55,14 @@ impl SmartStreamModuleInner {
 
 /// Instance must be hold in thread safe lock to ensure only one thread can access at time
 pub struct SmartFilter {
-    filter_fn: TypedFunc<(i32, i32), i32>,
+    filter_fn: FilterFn,
     instance: SmartStreamInstance,
     records_cb: Arc<RecordsCallBack>,
 }
 
 impl SmartFilter {
     pub fn new(
-        filter_fn: TypedFunc<(i32, i32), i32>,
+        filter_fn: FilterFn,
         instance: SmartStreamInstance,
         records_cb: Arc<RecordsCallBack>,
     ) -> Self {
@@ -183,21 +184,6 @@ impl SmartFilter {
         }
     }
 }
-
-/*
-async fn read<'a>(fd: RawFd, bytes: &'a mut [u8], position: i64) -> Result<usize, IoError> {
-
-
-
-    spawn_blocking(  || {
-        pread(fd, &mut bytes,position)
-    }).await.map_err(|err| IoError::new(
-        ErrorKind::Other,
-        format!("pread error {}",err)
-    ))
-
-}
-*/
 
 // only encode information necessary to decode batches efficiently
 struct FileBatch {
