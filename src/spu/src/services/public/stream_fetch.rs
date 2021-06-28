@@ -187,32 +187,31 @@ impl StreamFetchHandler {
                         continue;
                     }
 
-                    if changed_consumer_offset >= last_read_offset {
+                    if changed_consumer_offset < last_read_offset {
+                        // consume hasn't read all offsets, need to send back gaps
+                        debug!(
+                            changed_consumer_offset,
+                            last_read_offset,
+                            "need send back"
+                        );
+                        let (offset, wait) = self.send_back_records(changed_consumer_offset, module.as_ref()).await?;
+                        last_read_offset = offset;
+                        if wait {
+                            consumer_offset = None;
+                            debug!(
+                                last_read_offset,
+                                "wait for consumer"
+                            );
+                        } else {
+                            consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
+                        }
+                    } else {
                         debug!(
                             changed_consumer_offset,
                             last_read_offset,
                             "consume caught up"
                         );
                         consumer_offset = Some(changed_consumer_offset);
-                        continue;
-                    }
-
-                    // consume hasn't read all offsets, need to send back gaps
-                    debug!(
-                        changed_consumer_offset,
-                        last_read_offset,
-                        "need send back"
-                    );
-                    let (offset, wait) = self.send_back_records(changed_consumer_offset, module.as_ref()).await?;
-                    last_read_offset = offset;
-                    if wait {
-                        consumer_offset = None;
-                        debug!(
-                            last_read_offset,
-                            "wait for consumer"
-                        );
-                    } else {
-                        consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
                     }
                 },
 
