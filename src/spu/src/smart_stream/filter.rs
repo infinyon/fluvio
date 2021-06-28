@@ -177,31 +177,3 @@ impl SmartFilter {
         }
     }
 }
-
-#[cfg(test)]
-mod test {
-    use std::{fs::File, io::Write};
-    use std::env::temp_dir;
-    use std::os::unix::io::AsRawFd;
-
-    use fluvio_storage::config::DEFAULT_MAX_BATCH_SIZE;
-
-    use super::*;
-
-    #[test]
-    fn test_file() {
-        let path = temp_dir().join("pread.txt");
-        let mut file = File::create(&path).expect("create");
-        file.write_all(b"Hello, world!").expect("write");
-        file.sync_all().expect("flush");
-        drop(file);
-
-        let read_only = File::open(path).expect("open");
-        let fd = read_only.as_raw_fd();
-        let mut buf = vec![0; DEFAULT_MAX_BATCH_SIZE as usize];
-        // let mut buf = BytesMut::with_capacity(64);
-        let bytes_read = pread(fd, &mut buf, 1).expect("");
-        println!("bytes read: {}", bytes_read);
-        assert!(bytes_read > 2);
-    }
-}
