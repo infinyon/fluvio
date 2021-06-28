@@ -30,6 +30,7 @@ pub struct FileBatchIterator {
 }
 
 impl FileBatchIterator {
+    #[allow(unused)]
     pub fn new(fd: RawFd, offset: i64, len: i64) -> Self {
         Self {
             fd,
