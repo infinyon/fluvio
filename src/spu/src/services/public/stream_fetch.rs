@@ -395,7 +395,7 @@ impl StreamFetchHandler {
             }
         } else {
             debug!("empty records, skipping");
-            return Ok((offset.isolation(&self.isolation), false));
+            Ok((offset.isolation(&self.isolation), false))
         }
     }
 }
