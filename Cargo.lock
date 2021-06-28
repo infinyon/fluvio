@@ -1402,6 +1402,7 @@ dependencies = [
  "async-h1",
  "atty",
  "color-eyre",
+ "colored",
  "content_inspector",
  "ctrlc",
  "dirs 1.0.5",
@@ -1615,9 +1616,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-helm"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b05916eebbf6759f6d28c4be42b9b637563b7dba178ad66251f28ab02502a07"
+checksum = "e925a69b64cb86b021e697a087053c07eca04a5207bb116326d44c0c675e61ed"
 dependencies = [
  "fluvio-command 0.2.0",
  "serde",
