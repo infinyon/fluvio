@@ -302,97 +302,102 @@ impl StreamFetchHandler {
 
         let mut next_offset = offset.isolation(&self.isolation);
 
-        if file_partition_response.records.len() == 0 {
+        if file_partition_response.records.len() > 0 {
+            if let Some(module) = module_option {
+                type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+
+                debug!("creating smart filter");
+                let filter_batch = {
+                    let filter = module.create_filter().map_err(|err| {
+                        IoError::new(ErrorKind::Other, format!("creating filter {}", err))
+                    })?;
+
+                    let records = &file_partition_response.records;
+
+                    filter
+                        .filter(records.raw_slice(), self.max_bytes as usize)
+                        .map_err(|err| {
+                            IoError::new(ErrorKind::Other, format!("filter err {}", err))
+                        })?
+                };
+
+                let consumer_wait = !filter_batch.records().is_empty();
+                if !consumer_wait {
+                    debug!(next_offset, "filter, no records send back, skipping");
+                    return Ok((next_offset, false));
+                }
+
+                trace!("filter batch: {:#?}", filter_batch);
+                next_offset = filter_batch.get_last_offset() + 1;
+
+                debug!(
+                    next_offset,
+                    records = filter_batch.records().len(),
+                    "sending back to consumer"
+                );
+                let records = RecordSet::default().add(filter_batch);
+                let filter_partition_response = DefaultPartitionResponse {
+                    partition_index: self.replica.partition,
+                    error_code: file_partition_response.error_code,
+                    high_watermark: file_partition_response.high_watermark,
+                    log_start_offset: file_partition_response.log_start_offset,
+                    records,
+                    next_filter_offset: next_offset,
+                    // we mark last offset in the response that we should sync up
+                    ..Default::default()
+                };
+
+                let filter_response = StreamFetchResponse {
+                    topic: self.replica.topic.clone(),
+                    stream_id: self.stream_id,
+                    partition: filter_partition_response,
+                };
+
+                let filter_response_msg =
+                    RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
+                        &self.header,
+                        filter_response,
+                    );
+
+                trace!("sending back filter respone: {:#?}", filter_response_msg);
+
+                let mut inner_sink = self.sink.lock().await;
+                inner_sink
+                    .send_response(&filter_response_msg, self.header.api_version())
+                    .await?;
+
+                Ok((next_offset, true))
+            } else {
+                debug!("no filter, sending back entire");
+
+                let response = StreamFetchResponse {
+                    topic: self.replica.topic.clone(),
+                    stream_id: self.stream_id,
+                    partition: file_partition_response,
+                };
+
+                let response_msg = RequestMessage::<FileStreamFetchRequest>::response_with_header(
+                    &self.header,
+                    response,
+                );
+
+                trace!("sending back file fetch response msg: {:#?}", response_msg);
+
+                let mut inner_sink = self.sink.lock().await;
+                inner_sink
+                    .encode_file_slices(&response_msg, self.header.api_version())
+                    .await?;
+
+                drop(inner_sink);
+
+                debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
+
+                Ok((offset.isolation(&self.isolation), true))
+            }
+        } else {
             debug!("empty records, skipping");
             return Ok((offset.isolation(&self.isolation), false));
         }
-
-        if let Some(module) = module_option {
-            type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
-
-            debug!("creating smart filter");
-            let filter_batch = {
-                let filter = module.create_filter().map_err(|err| {
-                    IoError::new(ErrorKind::Other, format!("creating filter {}", err))
-                })?;
-
-                let records = &file_partition_response.records;
-
-                filter
-                    .filter(records.raw_slice(), self.max_bytes as usize)
-                    .map_err(|err| IoError::new(ErrorKind::Other, format!("filter err {}", err)))?
-            };
-
-            let consumer_wait = !filter_batch.records().is_empty();
-            if !consumer_wait {
-                debug!(next_offset, "filter, no records send back, skipping");
-                return Ok((next_offset, false));
-            }
-
-            trace!("filter batch: {:#?}", filter_batch);
-            next_offset = filter_batch.get_last_offset() + 1;
-
-            debug!(
-                next_offset,
-                records = filter_batch.records().len(),
-                "sending back to consumer"
-            );
-            let records = RecordSet::default().add(filter_batch);
-            let filter_partition_response = DefaultPartitionResponse {
-                partition_index: self.replica.partition,
-                error_code: file_partition_response.error_code,
-                high_watermark: file_partition_response.high_watermark,
-                log_start_offset: file_partition_response.log_start_offset,
-                records,
-                next_filter_offset: next_offset,
-                // we mark last offset in the response that we should sync up
-                ..Default::default()
-            };
-
-            let filter_response = StreamFetchResponse {
-                topic: self.replica.topic.clone(),
-                stream_id: self.stream_id,
-                partition: filter_partition_response,
-            };
-
-            let filter_response_msg =
-                RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
-                    &self.header,
-                    filter_response,
-                );
-
-            trace!("sending back filter respone: {:#?}", filter_response_msg);
-
-            let mut inner_sink = self.sink.lock().await;
-            inner_sink
-                .send_response(&filter_response_msg, self.header.api_version())
-                .await?;
-
-            return Ok((next_offset, true));
-        }
-
-        debug!("no filter, sending back entire");
-        let response = StreamFetchResponse {
-            topic: self.replica.topic.clone(),
-            stream_id: self.stream_id,
-            partition: file_partition_response,
-        };
-
-        let response_msg =
-            RequestMessage::<FileStreamFetchRequest>::response_with_header(&self.header, response);
-
-        trace!("sending back file fetch response msg: {:#?}", response_msg);
-
-        let mut inner_sink = self.sink.lock().await;
-        inner_sink
-            .encode_file_slices(&response_msg, self.header.api_version())
-            .await?;
-
-        drop(inner_sink);
-
-        debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
-
-        Ok((offset.isolation(&self.isolation), true))
     }
 }
 
