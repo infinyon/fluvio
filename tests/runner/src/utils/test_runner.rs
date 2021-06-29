@@ -102,8 +102,6 @@ impl FluvioTestDriver {
         use std::time::SystemTime;
         let mut stream = consumer.stream(offset).await.expect("stream");
 
-        //let mut index: i32 = 0;
-        //while let Some(Ok(record)) = stream.next().await {
         loop {
             // Take a timestamp
             let now = SystemTime::now();
@@ -116,7 +114,6 @@ impl FluvioTestDriver {
                 // Record bytes consumed
                 self.bytes_consumed += record.as_ref().len();
 
-                //index += 1;
             } else {
                 debug!("No more bytes left to consume");
                 break;
@@ -143,25 +140,23 @@ impl FluvioTestDriver {
         );
     }
 
-    // TODO: Expose # partition selection
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
         use std::time::SystemTime;
 
-            println!("Creating the topic: {}", &option.topic_name);
+        println!("Creating the topic: {}", &option.topic_name);
 
         let admin = self.client.admin().await;
 
         let topic_spec =
             TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
 
-        // Create topic and measure latency
+        // Create topic and record how long it takes 
         let now = SystemTime::now();
 
         let topic_create = admin
             .create(option.topic_name.clone(), false, topic_spec)
             .await;
 
-        // Record the time it took to create topic
         let topic_time = now.elapsed().unwrap().as_nanos();
 
         if topic_create.is_ok() {
@@ -240,26 +235,4 @@ impl FluvioTestMeta {
         Self::set_timeout(test_reqs, test_case);
     }
 
-    // TODO: Remove this duplicated impl
-    pub fn is_env_acceptable(test_reqs: &TestRequirements, test_case: &TestCase) -> bool {
-        // if `min_spu` undefined, min 1
-        if let Some(min_spu) = test_reqs.min_spu {
-            if min_spu > test_case.environment.spu() {
-                println!("Test requires {} spu", min_spu);
-                return false;
-            }
-        }
-
-        // if `cluster_type` undefined, no cluster restrictions
-        // if `cluster_type = local` is defined, then environment must be local or skip
-        // if `cluster_type = k8`, then environment must be k8 or skip
-        if let Some(cluster_type) = &test_reqs.cluster_type {
-            if &test_case.environment.cluster_type() != cluster_type {
-                println!("Test requires cluster type {:?} ", cluster_type);
-                return false;
-            }
-        }
-
-        true
-    }
 }

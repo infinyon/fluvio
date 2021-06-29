@@ -146,16 +146,13 @@ async fn validate_consume_message_api(
                         total_records += 1;
 
                         let mut lock = test_driver.write().await;
+
                         // record latency
                         let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                        //lock.consume_latency.record(consume_time as u64).unwrap();
                         lock.consume_latency_record(consume_time as u64).await;
-
-                        //record the consumer metadata
-                        //lock.bytes_consumed += bytes.len();
                         lock.consume_bytes_record(bytes.len()).await;
 
-                        //debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
+                        debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
 
                         drop(lock);
 

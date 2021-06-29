@@ -16,7 +16,6 @@ use hdrhistogram::Histogram;
 use flv_test::tests as _;
 use async_lock::RwLock;
 
-// How can I create multiple clients so I can scale the producer count per-process?
 fn main() {
     run_block_on(async {
         let option = BaseCli::from_args();

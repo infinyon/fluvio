@@ -110,9 +110,4 @@ pub async fn run(
     );
     drop(lock);
 
-    //let lock = test_driver.write().unwrap();
-    // Make the compiler happy
-    drop(producers);
-    //drop(lock.client);
-    //drop(lock);
 }

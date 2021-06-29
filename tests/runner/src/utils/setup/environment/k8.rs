@@ -54,7 +54,5 @@ impl TestEnvironmentDriver for K8EnvironmentDriver {
             .install_fluvio()
             .await
             .expect("Failed to install k8 cluster")
-
-        // Can I return a FluvioConfig instead of a Fluvio
     }
 }
