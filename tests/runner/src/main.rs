@@ -220,13 +220,6 @@ mod tests {
         assert_eq!(args.environment.timeout(), Duration::from_secs(9000));
     }
 
-    #[test]
-    fn benchmark() {
-        let args = BaseCli::from_iter(vec!["flv-test", "smoke", "--benchmark"]);
-
-        assert!(args.environment.is_benchmark());
-    }
-
     //// We validate that the behavior of cluster_setup and cluster_cleanup work as expected
     //// The clusters are the same if cluster addr from the first run is the same as the second run
     ////

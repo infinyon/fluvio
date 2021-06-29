@@ -96,6 +96,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
+        #[allow(clippy::unnecessary_operation)]
         pub async fn ext_test_fn(mut test_driver: Arc<RwLock<FluvioTestDriver>>, test_case: TestCase) -> TestResult {
             use fluvio_test_util::test_meta::environment::EnvDetail;
             #test_body;
@@ -130,7 +131,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use tokio::select;
             use std::panic::panic_any;
             use std::default::Default;
-            use bencher::bench;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;

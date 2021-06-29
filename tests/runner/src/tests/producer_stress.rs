@@ -109,5 +109,4 @@ pub async fn run(
         lock.produce_latency.value_at_quantile(0.999)
     );
     drop(lock);
-
 }

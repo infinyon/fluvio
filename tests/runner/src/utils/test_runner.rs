@@ -113,7 +113,6 @@ impl FluvioTestDriver {
 
                 // Record bytes consumed
                 self.bytes_consumed += record.as_ref().len();
-
             } else {
                 debug!("No more bytes left to consume");
                 break;
@@ -150,7 +149,7 @@ impl FluvioTestDriver {
         let topic_spec =
             TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
 
-        // Create topic and record how long it takes 
+        // Create topic and record how long it takes
         let now = SystemTime::now();
 
         let topic_create = admin
@@ -234,5 +233,4 @@ impl FluvioTestMeta {
         Self::set_topic(test_reqs, test_case);
         Self::set_timeout(test_reqs, test_case);
     }
-
 }
