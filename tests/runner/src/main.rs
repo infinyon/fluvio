@@ -73,25 +73,16 @@ fn main() {
             eprintln!("{}", test_result);
         }));
 
-        if option.environment.benchmark {
-            //run_benchmark(
-            //    test_meta,
-            //    fluvio_client,
-            //    option.environment.clone(),
-            //    test_opt,
-            //)
-        } else {
-            let test_result = run_test(
-                option.environment.clone(),
-                test_opt,
-                test_meta,
-                fluvio_client,
-            )
-            .await;
-            cluster_cleanup(option.environment).await;
+        let test_result = run_test(
+            option.environment.clone(),
+            test_opt,
+            test_meta,
+            fluvio_client,
+        )
+        .await;
+        cluster_cleanup(option.environment).await;
 
-            println!("{}", test_result)
-        }
+        println!("{}", test_result)
     });
 }
 

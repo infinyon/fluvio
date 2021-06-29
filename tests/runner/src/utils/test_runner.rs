@@ -147,9 +147,7 @@ impl FluvioTestDriver {
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
         use std::time::SystemTime;
 
-        if !option.is_benchmark() {
             println!("Creating the topic: {}", &option.topic_name);
-        }
 
         let admin = self.client.admin().await;
 
@@ -167,12 +165,10 @@ impl FluvioTestDriver {
         let topic_time = now.elapsed().unwrap().as_nanos();
 
         if topic_create.is_ok() {
-            if !option.is_benchmark() {
-                println!("topic \"{}\" created", option.topic_name);
-                self.topic_create_latency.record(topic_time as u64).unwrap();
-                self.num_topics += 1;
-            }
-        } else if !option.is_benchmark() {
+            println!("topic \"{}\" created", option.topic_name);
+            self.topic_create_latency.record(topic_time as u64).unwrap();
+            self.num_topics += 1;
+        } else {
             println!("topic \"{}\" already exists", option.topic_name);
         }
 
@@ -198,24 +194,6 @@ impl FluvioTestDriver {
             }
         }
 
-        // Benchmark support is experimental!
-        // Tests must opt-in to be run with the benchmark flag
-        if test_case.environment.is_benchmark() {
-            if let Some(opt_in) = test_reqs.benchmark {
-                if !opt_in {
-                    // Explicit opt-out
-                    println!("Test `{}` opted out of benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name);
-                    return false;
-                }
-            } else {
-                // Test is not opted into benchmark with attribute
-                println!(
-                    "Test `{}` must opt into benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name
-                );
-                return false;
-            }
-        }
-
         true
     }
 }
@@ -226,13 +204,6 @@ pub struct FluvioTestMeta {
     pub test_fn: fn(Arc<RwLock<FluvioTestDriver>>, TestCase) -> Result<TestResult, TestResult>,
     pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
     pub requirements: fn() -> TestRequirements,
-    // Can't store Arc<Fluvio> bc of how we collect tests. Just too early to have a connection
-    //// Can I hold onto Arc<Fluvio> so I can control producer and consumer creation?
-    //pub client: Option<Arc<Fluvio>>,
-
-    // TestResult?
-    // producer count
-    // consumer count
 }
 
 inventory::collect!(FluvioTestMeta);
@@ -285,24 +256,6 @@ impl FluvioTestMeta {
         if let Some(cluster_type) = &test_reqs.cluster_type {
             if &test_case.environment.cluster_type() != cluster_type {
                 println!("Test requires cluster type {:?} ", cluster_type);
-                return false;
-            }
-        }
-
-        // Benchmark support is experimental!
-        // Tests must opt-in to be run with the benchmark flag
-        if test_case.environment.is_benchmark() {
-            if let Some(opt_in) = test_reqs.benchmark {
-                if !opt_in {
-                    // Explicit opt-out
-                    println!("Test `{}` opted out of benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name);
-                    return false;
-                }
-            } else {
-                // Test is not opted into benchmark with attribute
-                println!(
-                    "Test `{}` must opt into benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name
-                );
                 return false;
             }
         }

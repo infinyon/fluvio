@@ -47,25 +47,23 @@ impl TestOption for ProducerStressTestOption {
     }
 }
 
-#[fluvio_test(name = "producer_stress", topic = "test", benchmark = true)]
+#[fluvio_test(name = "producer_stress", topic = "test")]
 pub async fn run(
     mut test_driver: Arc<RwLock<FluvioTestDriver>>,
     mut test_case: TestCase,
 ) -> TestResult {
     let test_case: ProducerStressTestCase = test_case.into();
 
-    if !test_case.environment.is_benchmark() {
-        println!("\nStarting single-process producer stress");
+    println!("\nStarting single-process producer stress");
 
-        println!(
-            "Producers              : {}",
-            test_case.option.producers.clone()
-        );
-        println!(
-            "# messages per producer: {}",
-            test_case.option.iteration.clone()
-        );
-    }
+    println!(
+        "Producers              : {}",
+        test_case.option.producers.clone()
+    );
+    println!(
+        "# messages per producer: {}",
+        test_case.option.iteration.clone()
+    );
 
     let long_str = String::from("aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccdddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffggggggggggggggggg");
     let topic_name = test_case.environment.topic_name();

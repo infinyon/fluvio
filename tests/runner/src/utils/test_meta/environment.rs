@@ -23,7 +23,6 @@ pub trait EnvDetail: Debug + Clone {
     fn timeout(&self) -> Duration;
     fn set_timeout(&mut self, timeout: Duration);
     fn cluster_type(&self) -> EnvironmentType;
-    fn is_benchmark(&self) -> bool;
 }
 
 impl EnvDetail for EnvironmentSetup {
@@ -104,10 +103,6 @@ impl EnvDetail for EnvironmentSetup {
             EnvironmentType::K8
         }
     }
-
-    fn is_benchmark(&self) -> bool {
-        self.benchmark
-    }
 }
 
 /// cli options
@@ -116,10 +111,6 @@ pub struct EnvironmentSetup {
     /// Name of the test
     #[structopt(possible_values=&FluvioTestMeta::all_test_names())]
     pub test_name: String,
-
-    /// (Experimental) Run the test in benchmark mode. Tests must opt-in.
-    #[structopt(long)]
-    pub benchmark: bool,
 
     /// don't attempt to delete cluster or start a new cluster before test
     /// topic creation will be skipped

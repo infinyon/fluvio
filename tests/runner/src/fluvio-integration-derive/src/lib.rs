@@ -150,12 +150,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     .expect("Unable to create default topic");
                 drop(lock);
 
-                //// Wrap the user test in a closure
-                //// If the test is a benchmark, we want to build this in a specific way
-                //let test_fn = |mut test_driver: FluvioTestDriver, test_case: TestCase| async {
-                //    #test_body
-                //};
-
                 // start a timeout timer
                 let timeout_duration = test_case.environment.timeout();
                 let mut timeout_timer = sleep(timeout_duration.clone());
