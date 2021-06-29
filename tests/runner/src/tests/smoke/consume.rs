@@ -184,13 +184,9 @@ async fn validate_consume_message_api(
         .expect("partitions");
     drop(lock);
 
-    println!("About check partition length is 1");
     assert_eq!(partitions.len(), 1);
     let test_topic = &partitions[0];
     let leader = &test_topic.status.leader;
 
-    println!("About to test leader.leo");
-    println!("leader.leo: {:?}", leader.leo);
-    println!("producer_iteration: {:?}", producer_iteration);
     assert_eq!(leader.leo, base_offset + producer_iteration as i64);
 }
