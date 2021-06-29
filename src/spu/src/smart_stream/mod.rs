@@ -6,8 +6,9 @@ use tracing::{debug, instrument};
 use wasmtime::{Engine, Module, Store, Instance, Memory};
 use crate::smart_stream::filter::SmartFilter;
 
-pub mod filter;
 mod memory;
+pub mod filter;
+pub mod file_batch;
 
 pub struct SmartStreamEngine(Engine);
 

@@ -313,8 +313,11 @@ impl StreamFetchHandler {
         let mut next_offset = offset.isolation(&self.isolation);
 
         if file_partition_response.records.len() > 0 {
+            // If a smartstream module is provided, we need to read records from file to memory
+            // In-memory records are then processed by smartstream and returned to consumer
             if let Some(module) = module_option {
                 type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+                use crate::smart_stream::file_batch::FileBatchIterator;
 
                 debug!("creating smart filter");
                 let filter_batch = {
@@ -324,8 +327,12 @@ impl StreamFetchHandler {
 
                     let records = &file_partition_response.records;
 
+                    let slice = records.raw_slice();
+                    let mut file_batch_iterator = FileBatchIterator::from_raw_slice(slice);
+
+                    // Input: FileBatch, Output: MemoryBatch post-filter
                     filter
-                        .filter(records.raw_slice(), self.max_bytes as usize)
+                        .filter(&mut file_batch_iterator, self.max_bytes as usize)
                         .map_err(|err| {
                             IoError::new(ErrorKind::Other, format!("filter err {}", err))
                         })?
@@ -379,6 +386,7 @@ impl StreamFetchHandler {
 
                 Ok((next_offset, consumer_wait))
             } else {
+                // If no smartstream is provided, respond using raw file records
                 debug!("no filter, sending back entire");
 
                 let response = StreamFetchResponse {
