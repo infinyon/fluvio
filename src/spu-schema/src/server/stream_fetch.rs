@@ -22,6 +22,9 @@ use super::SpuServerApiKey;
 pub const WASM_MODULE_API: i16 = 11;
 pub const WASM_MODULE_V2_API: i16 = 12;
 
+// version for aggregator smartstream
+pub const AGGREGATOR_API: i16 = 13;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -46,7 +49,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = WASM_MODULE_V2_API;
+    const DEFAULT_API_VERSION: i16 = AGGREGATOR_API;
     type Response = StreamFetchResponse<R>;
 }
 
@@ -65,6 +68,7 @@ pub struct SmartStreamPayload {
 pub enum SmartStreamKind {
     Filter,
     Map,
+    Aggregate { accumulator: Vec<u8> },
 }
 
 impl Default for SmartStreamKind {

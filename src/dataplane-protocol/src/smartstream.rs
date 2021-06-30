@@ -106,4 +106,11 @@ mod encoding {
             fmt::Debug::fmt(self, f)
         }
     }
+
+    /// Used to pass both the accumulator and records to an Aggregate smartstream
+    #[derive(Debug, Default, Encoder, Decoder)]
+    pub struct Aggregate {
+        pub accumulator: Vec<u8>,
+        pub records: Vec<u8>,
+    }
 }

@@ -3,10 +3,12 @@ use anyhow::Result;
 use wasmtime::{Memory, Store, Engine, Module};
 use crate::smart_stream::filter::SmartStreamFilter;
 use crate::smart_stream::map::SmartStreamMap;
+use crate::smart_stream::aggregate::SmartStreamAggregate;
 
 mod memory;
 pub mod filter;
 pub mod map;
+pub mod aggregate;
 pub mod file_batch;
 
 #[derive(Default)]
@@ -31,11 +33,21 @@ impl SmartStreamModule {
         let map = SmartStreamMap::new(engine, self)?;
         Ok(map)
     }
+
+    pub fn create_aggregate(
+        &self,
+        engine: &SmartStreamEngine,
+        accumulator: Vec<u8>,
+    ) -> Result<SmartStreamAggregate> {
+        let aggregate = SmartStreamAggregate::new(engine, self, accumulator)?;
+        Ok(aggregate)
+    }
 }
 
 pub enum SmartStream {
     Filter(SmartStreamFilter),
     Map(SmartStreamMap),
+    Aggregate(SmartStreamAggregate),
 }
 
 #[derive(Clone)]
