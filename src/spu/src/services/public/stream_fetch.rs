@@ -323,7 +323,7 @@ impl StreamFetchHandler {
                 let consumer_wait = !filter_batch.records().is_empty();
                 if !consumer_wait {
                     debug!(next_offset, "filter, no records send back, skipping");
-                    return Ok((next_offset, false));
+                    return Ok((next_offset, consumer_wait));
                 }
 
                 trace!("filter batch: {:#?}", filter_batch);
@@ -365,7 +365,7 @@ impl StreamFetchHandler {
                     .send_response(&filter_response_msg, self.header.api_version())
                     .await?;
 
-                Ok((next_offset, true))
+                Ok((next_offset, consumer_wait))
             } else {
                 debug!("no filter, sending back entire");
 
