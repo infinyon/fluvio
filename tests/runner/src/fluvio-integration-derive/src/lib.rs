@@ -78,17 +78,17 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
-        pub fn #out_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #out_fn_iden(mut test_driver: Arc<RwLock<FluvioTestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             //println!("Inside the function");
             let future = async move {
                 //println!("Inside the async wrapper function");
-                #async_inner_fn_iden(client, test_case).await
+                #async_inner_fn_iden(test_driver, test_case).await
             };
             fluvio_future::task::run_block_on(future)
         }
 
         inventory::submit!{
-            FluvioTest {
+            FluvioTestMeta {
                 name: #test_name.to_string(),
                 test_fn: #out_fn_iden,
                 validate_fn: validate_subcommand,
@@ -96,40 +96,59 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
-        pub async fn #async_inner_fn_iden(client: Arc<Fluvio>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        #[allow(clippy::unnecessary_operation)]
+        pub async fn ext_test_fn(mut test_driver: Arc<RwLock<FluvioTestDriver>>, test_case: TestCase) -> TestResult {
+            use fluvio_test_util::test_meta::environment::EnvDetail;
+            #test_body;
+
+
+            let lock = test_driver.read().await;
+
+            TestResult {
+                num_topics: lock.num_topics as u64,
+                num_producers: lock.num_producers as u64,
+                num_consumers: lock.num_consumers as u64,
+                bytes_produced: lock.bytes_produced as u64,
+                bytes_consumed: lock.bytes_consumed as u64,
+                topic_create_latency: lock.topic_create_latency.value_at_quantile(0.999),
+                produce_latency: lock.produce_latency.value_at_quantile(0.999),
+                consume_latency: lock.consume_latency.value_at_quantile(0.999),
+                ..Default::default()
+            }
+        }
+
+        pub async fn #async_inner_fn_iden(mut test_driver: Arc<RwLock<FluvioTestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::{TestCase, TestResult};
             use fluvio_test_util::test_meta::environment::{EnvDetail};
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
             use fluvio_test_util::test_meta::TestTimer;
-            use fluvio_test_util::test_runner::FluvioTest;
+            use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
             use fluvio_test_util::setup::environment::EnvironmentType;
             use fluvio_future::task::run;
             use fluvio_future::timer::sleep;
             use std::{io, time::Duration};
             use tokio::select;
             use std::panic::panic_any;
-            use bencher::bench;
+            use std::default::Default;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
+            let is_env_acceptable = FluvioTestDriver::is_env_acceptable(&test_reqs, &test_case);
+
             // Customize test environment if it meets minimum requirements
-            if FluvioTest::is_env_acceptable(&test_reqs, &test_case) {
+            if is_env_acceptable {
 
                 // Test-level environment customizations from macro attrs
-                FluvioTest::customize_test(&test_reqs, &mut test_case);
+                FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
                 // Create topic before starting test
-                FluvioTest::create_topic(client.clone(), &test_case.environment)
+                let mut lock = test_driver.write().await;
+                lock.create_topic(&test_case.environment)
                     .await
                     .expect("Unable to create default topic");
-
-                // Wrap the user test in a closure
-                // If the test is a benchmark, we want to build this in a specific way
-                let test_fn = |client: Arc<Fluvio>, test_case: TestCase| async {
-                    #test_body
-                };
+                drop(lock);
 
                 // start a timeout timer
                 let timeout_duration = test_case.environment.timeout();
@@ -137,6 +156,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
+                let test_driver_clone = test_driver.clone();
 
                 select! {
                     _ = &mut timeout_timer => {
@@ -146,15 +166,26 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         Err(TestResult {
                             success: false,
                             duration: test_timer.duration(),
+                            ..Default::default()
                         })
                     },
 
-                    _ = test_fn(client, test_case) => {
+                    // Change this to use the return value
+                    test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
                         test_timer.stop();
 
+                        // This is the final version of TestResult before it renders to stdout
                         Ok(TestResult {
                             success: true,
                             duration: test_timer.duration(),
+                            num_topics: test_result_tmp.num_topics,
+                            topic_create_latency: test_result_tmp.topic_create_latency,
+                            num_producers: test_result_tmp.num_producers,
+                            bytes_produced: test_result_tmp.bytes_produced,
+                            produce_latency: test_result_tmp.produce_latency,
+                            num_consumers: test_result_tmp.num_consumers,
+                            bytes_consumed: test_result_tmp.bytes_consumed,
+                            consume_latency: test_result_tmp.consume_latency,
                         })
                     }
                 }
@@ -165,6 +196,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 Ok(TestResult {
                     success: true,
                     duration: Duration::new(0, 0),
+                    ..Default::default()
                 })
             }
         }

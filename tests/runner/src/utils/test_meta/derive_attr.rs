@@ -11,7 +11,6 @@ pub enum TestRequirementAttribute {
     Timeout(Duration),
     ClusterType(EnvironmentType),
     TestName(String),
-    Benchmark(bool),
 }
 
 impl TestRequirementAttribute {
@@ -23,7 +22,6 @@ impl TestRequirementAttribute {
                 "timeout" => Self::timeout(&name_value),
                 "cluster_type" => Self::cluster_type(&name_value),
                 "name" => Self::name(&name_value),
-                "benchmark" => Self::benchmark(&name_value),
                 _ => Err(SynError::new(name_value.span(), "Unsupported key")),
             },
             _ => Err(SynError::new(meta.span(), "Unsupported attribute:")),
@@ -38,17 +36,6 @@ impl TestRequirementAttribute {
             .collect();
 
         key.pop().expect("Key expected")
-    }
-
-    fn benchmark(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Bool(b) = &name_value.lit {
-            Ok(Self::Benchmark(b.value()))
-        } else {
-            Err(SynError::new(
-                name_value.span(),
-                "Benchmark must be a LitBool",
-            ))
-        }
     }
 
     fn name(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
@@ -124,7 +111,6 @@ pub struct TestRequirements {
     pub timeout: Option<Duration>,
     pub cluster_type: Option<EnvironmentType>,
     pub test_name: Option<String>,
-    pub benchmark: Option<bool>,
 }
 
 impl TestRequirements {
@@ -160,9 +146,6 @@ impl TestRequirements {
                 }
                 TestRequirementAttribute::TestName(name) => {
                     test_requirements.test_name = Some(name)
-                }
-                TestRequirementAttribute::Benchmark(is_benchmark) => {
-                    test_requirements.benchmark = Some(is_benchmark)
                 }
             }
         }

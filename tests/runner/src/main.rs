@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use std::process::exit;
-use std::time::Duration;
 use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption, TestResult};
@@ -8,14 +7,14 @@ use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
-use fluvio_test_util::test_runner::FluvioTest;
+use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
 use fluvio_test_util::test_meta::TestTimer;
-use bencher::bench;
-use prettytable::{table, row, cell};
+use hdrhistogram::Histogram;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use flv_test::tests as _;
+use async_lock::RwLock;
 
 fn main() {
     run_block_on(async {
@@ -25,8 +24,8 @@ fn main() {
         let test_name = option.environment.test_name.clone();
 
         // Get test from inventory
-        let test =
-            FluvioTest::from_name(&test_name).expect("StructOpt should have caught this error");
+        let test_meta =
+            FluvioTestMeta::from_name(&test_name).expect("StructOpt should have caught this error");
 
         let mut subcommand = vec![test_name.clone()];
 
@@ -37,27 +36,22 @@ fn main() {
             subcommand.extend(args);
 
             // Parse the subcommand
-            (test.validate_fn)(subcommand)
+            (test_meta.validate_fn)(subcommand)
         } else {
             // No args
-            (test.validate_fn)(subcommand)
+            (test_meta.validate_fn)(subcommand)
         };
 
         println!("Start running fluvio test runner");
         fluvio_future::subscriber::init_logger();
 
+        // Can I get a FluvioConfig anywhere
         // Deploy a cluster
         let fluvio_client = cluster_setup(&option.environment).await;
 
-        // Select test
-        let test = inventory::iter::<FluvioTest>
-            .into_iter()
-            .find(|t| t.name == test_name.as_str())
-            .expect("Test not found");
-
         // Check on test requirements before running the test
-        if !FluvioTest::is_env_acceptable(
-            &(test.requirements)(),
+        if !FluvioTestDriver::is_env_acceptable(
+            &(test_meta.requirements)(),
             &TestCase::new(option.environment.clone(), test_opt.clone()),
         ) {
             exit(-1);
@@ -71,79 +65,39 @@ fn main() {
             let test_result = TestResult {
                 success: false,
                 duration: panic_timer.duration(),
+                ..Default::default()
             };
             //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
             eprintln!("Test panicked:\n");
             eprintln!("{}", test_result);
         }));
 
-        if option.environment.benchmark {
-            run_benchmark(test, fluvio_client, option.environment.clone(), test_opt)
-        } else {
-            let test_result =
-                run_test(option.environment.clone(), test_opt, test, fluvio_client).await;
-            cluster_cleanup(option.environment).await;
+        let test_result = run_test(
+            option.environment.clone(),
+            test_opt,
+            test_meta,
+            fluvio_client,
+        )
+        .await;
+        cluster_cleanup(option.environment).await;
 
-            println!("{}", test_result)
-        }
+        println!("{}", test_result)
     });
 }
 
 async fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
-    test: &FluvioTest,
-    fluvio_client: Arc<Fluvio>,
+    test_meta: &FluvioTestMeta,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
 ) -> TestResult {
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
-        (test.test_fn)(fluvio_client.clone(), test_case)
+        (test_meta.test_fn)(test_driver, test_case)
     }))
     .expect("Panic hook should have caught this");
 
     test_result.expect("Test Result")
-}
-
-fn run_benchmark(
-    test_fn: &FluvioTest,
-    client: Arc<Fluvio>,
-    env: EnvironmentSetup,
-    opts: Box<dyn TestOption>,
-) {
-    println!("Starting benchmark test (Usual test output may be silenced)");
-
-    bench::run_once(move |b| {
-        let summary = b.auto_bench(move |inner_b| {
-            let test_case = TestCase::new(env.clone(), opts.clone());
-            inner_b.iter(|| (test_fn.test_fn)(client.clone(), test_case.clone()))
-        });
-
-        let elapsed_duration = format!("{:?}", Duration::from_nanos(b.ns_elapsed()));
-        let iter_duration = format!("{:?}", Duration::from_nanos(b.ns_per_iter()));
-
-        let table = table!(
-            [b->"Perf Test Summary", "Measurement"],
-            ["Total time elapsed", elapsed_duration],
-            ["Total time elapsed (ns)", b.ns_elapsed()],
-            ["Time per iteration", iter_duration],
-            ["Time per iteration (ns)", b.ns_per_iter()],
-            ["# of iteration", (b.ns_elapsed() / b.ns_per_iter())],
-            ["Sum (ns)", summary.sum],
-            ["Min (ns)", summary.min],
-            ["Max (ns)", summary.max],
-            ["Mean (ns)", summary.mean],
-            ["Median (ns)", summary.median],
-            ["Variance", summary.var],
-            ["Standard Deviation", summary.std_dev],
-            ["Standard Deviation (%)", summary.std_dev_pct],
-            ["Median Absolute Deviation", summary.median_abs_dev],
-            ["Median Absolute Deviation (%)", summary.median_abs_dev_pct],
-            ["Quartiles", format!("{:?}",summary.quartiles)],
-            ["Interquartile Range", summary.iqr]
-        );
-
-        println!("{}", table)
-    })
 }
 
 async fn cluster_cleanup(option: EnvironmentSetup) {
@@ -155,7 +109,7 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
     }
 }
 
-async fn cluster_setup(option: &EnvironmentSetup) -> Arc<Fluvio> {
+async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<FluvioTestDriver>> {
     let fluvio_client = if option.skip_cluster_start() {
         println!("skipping cluster start");
         // Connect to cluster in profile
@@ -174,7 +128,17 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<Fluvio> {
         )
     };
 
-    fluvio_client
+    Arc::new(RwLock::new(FluvioTestDriver {
+        client: fluvio_client,
+        num_topics: 0,
+        num_producers: 0,
+        num_consumers: 0,
+        bytes_produced: 0,
+        bytes_consumed: 0,
+        produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+    }))
 }
 
 #[cfg(test)]
@@ -254,13 +218,6 @@ mod tests {
         let args = BaseCli::from_iter(vec!["flv-test", "smoke", "--timeout", "9000"]);
 
         assert_eq!(args.environment.timeout(), Duration::from_secs(9000));
-    }
-
-    #[test]
-    fn benchmark() {
-        let args = BaseCli::from_iter(vec!["flv-test", "smoke", "--benchmark"]);
-
-        assert!(args.environment.is_benchmark());
     }
 
     //// We validate that the behavior of cluster_setup and cluster_cleanup work as expected

@@ -4,12 +4,14 @@ use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
 use std::sync::Arc;
+use async_lock::RwLock;
 
 use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio::{Fluvio, Offset, PartitionConsumer};
+use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio::Offset;
 use fluvio_command::CommandExt;
 
 use super::SmokeTestCase;
@@ -25,7 +27,7 @@ fn consume_wait_timeout() -> u64 {
 
 /// verify consumers
 pub async fn validate_consume_message(
-    client: Arc<Fluvio>,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
@@ -34,7 +36,7 @@ pub async fn validate_consume_message(
     if use_cli {
         validate_consume_message_cli(test_case, offsets);
     } else {
-        validate_consume_message_api(client, offsets, test_case).await;
+        validate_consume_message_api(test_driver, offsets, test_case).await;
     }
 }
 
@@ -64,47 +66,33 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         println!("topic: {}, consume message validated!", topic_name);
     }
 }
-async fn get_consumer(client: &Fluvio, topic: &str) -> PartitionConsumer {
-    use fluvio_future::timer::sleep;
-
-    for _ in 0..10 {
-        match client.partition_consumer(topic.to_string(), 0).await {
-            Ok(client) => return client,
-            Err(err) => {
-                println!(
-                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
-            }
-        }
-    }
-
-    panic!("can't get consumer");
-}
 
 async fn validate_consume_message_api(
-    client: Arc<Fluvio>,
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
     offsets: Offsets,
     test_case: &SmokeTestCase,
 ) {
     use tokio::select;
     use fluvio_future::timer::sleep;
+    use std::time::SystemTime;
 
     use fluvio_controlplane_metadata::partition::PartitionSpec;
 
     let producer_iteration = test_case.option.producer_iteration;
     let partition = test_case.environment.partition;
     let topic_name = test_case.environment.topic_name.clone();
+    let base_offset = offsets.get(&topic_name).expect("offsets");
 
     for i in 0..partition {
-        let base_offset = offsets.get(&topic_name).expect("offsets");
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
             topic_name, base_offset, producer_iteration
         );
 
-        let consumer = get_consumer(&client, &topic_name).await;
+        let mut lock = test_driver.write().await;
+
+        let consumer = lock.get_consumer(&topic_name).await;
+        drop(lock);
 
         let mut stream = consumer
             .stream(
@@ -123,15 +111,18 @@ async fn validate_consume_message_api(
         let mut timer = sleep(Duration::from_millis(timer_wait));
 
         loop {
+            let now = SystemTime::now();
             select! {
 
                 _ = &mut timer => {
+                    println!("Timeout in timer");
                     debug!("timer expired");
                     panic!("timer expired");
                 },
 
                 // max time for each read
                 _ = sleep(Duration::from_millis(5000)) => {
+                    println!("Timeout in read");
                     panic!("no consumer read iter: current {}",producer_iteration);
                 },
 
@@ -153,6 +144,19 @@ async fn validate_consume_message_api(
                             total_records, offset
                         );
                         total_records += 1;
+
+                        let mut lock = test_driver.write().await;
+
+                        // record latency
+                        let consume_time = now.elapsed().clone().unwrap().as_nanos();
+                        lock.consume_latency_record(consume_time as u64).await;
+                        lock.consume_bytes_record(bytes.len()).await;
+
+                        debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
+
+                        drop(lock);
+
+
                         if total_records == producer_iteration {
                             println!("<<consume test done for: {} >>>>", topic_name);
                             println!("consume message validated!, records: {}",total_records);
@@ -160,6 +164,7 @@ async fn validate_consume_message_api(
                         }
 
                     } else {
+                        println!("I panicked bc of no stream");
                         panic!("no more stream");
                     }
                 }
@@ -171,13 +176,17 @@ async fn validate_consume_message_api(
     // wait 500m second and ensure partition list
     sleep(Duration::from_millis(500)).await;
 
-    let admin = client.admin().await;
+    let lock = test_driver.write().await;
+    let admin = lock.client.admin().await;
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await
         .expect("partitions");
+    drop(lock);
+
     assert_eq!(partitions.len(), 1);
     let test_topic = &partitions[0];
     let leader = &test_topic.status.leader;
-    assert_eq!(leader.leo, producer_iteration as i64);
+
+    assert_eq!(leader.leo, base_offset + producer_iteration as i64);
 }

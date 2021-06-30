@@ -1,14 +1,15 @@
-use std::sync::Arc;
 use std::any::Any;
 use std::env;
 use structopt::StructOpt;
+use std::sync::Arc;
 
-use fluvio::{Fluvio, TopicProducer, RecordKey};
+use fluvio::RecordKey;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
-use fluvio_test_util::test_runner::FluvioTest;
+use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct ProducerStressTestCase {
@@ -46,36 +47,31 @@ impl TestOption for ProducerStressTestOption {
     }
 }
 
-async fn get_producer(client: Arc<Fluvio>, topic_name: String) -> TopicProducer {
-    client
-        .topic_producer(topic_name.clone())
-        .await
-        .expect("Couldn't get producer")
-}
-
-#[fluvio_test(name = "producer_stress", topic = "test", benchmark = true)]
-pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
+#[fluvio_test(name = "producer_stress", topic = "test")]
+pub async fn run(
+    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_case: TestCase,
+) -> TestResult {
     let test_case: ProducerStressTestCase = test_case.into();
 
-    if !test_case.environment.is_benchmark() {
-        println!("\nStarting single-process producer stress");
+    println!("\nStarting single-process producer stress");
 
-        println!(
-            "Producers              : {}",
-            test_case.option.producers.clone()
-        );
-        println!(
-            "# messages per producer: {}",
-            test_case.option.iteration.clone()
-        );
-    }
+    println!(
+        "Producers              : {}",
+        test_case.option.producers.clone()
+    );
+    println!(
+        "# messages per producer: {}",
+        test_case.option.iteration.clone()
+    );
 
     let long_str = String::from("aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccdddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffggggggggggggggggg");
     let topic_name = test_case.environment.topic_name();
 
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
-        let producer = get_producer(client.clone(), topic_name.clone()).await;
+        let mut lock = test_driver.write().await;
+        let producer = lock.get_producer(&topic_name).await;
         producers.push(producer);
     }
 
@@ -86,7 +82,8 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
-                    p.send(RecordKey::NULL, message.clone())
+                    let mut lock = test_driver.write().await;
+                    lock.send_count(p, RecordKey::NULL, message)
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -96,7 +93,8 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
                         });
                 }
             } else {
-                p.send(RecordKey::NULL, message.clone())
+                let mut lock = test_driver.write().await;
+                lock.send_count(p, RecordKey::NULL, message)
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)
@@ -105,7 +103,10 @@ pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
         }
     }
 
-    // Make the compiler happy
-    drop(producers);
-    drop(client);
+    let lock = test_driver.read().await;
+    println!(
+        "Producer latency 99%: {:?}",
+        lock.produce_latency.value_at_quantile(0.999)
+    );
+    drop(lock);
 }

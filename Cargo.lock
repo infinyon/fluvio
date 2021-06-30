@@ -1989,6 +1989,7 @@ dependencies = [
 name = "fluvio-test-util"
 version = "0.1.0"
 dependencies = [
+ "async-lock",
  "async-trait",
  "bytes",
  "dyn-clone",
@@ -1998,6 +1999,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-future 0.3.5",
  "futures-lite",
+ "hdrhistogram",
  "inventory",
  "once_cell",
  "prettytable-rs",
@@ -2009,6 +2011,7 @@ dependencies = [
  "structopt",
  "syn",
  "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -2059,6 +2062,7 @@ dependencies = [
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
+ "async-lock",
  "async-trait",
  "bencher",
  "bytes",
@@ -2073,6 +2077,7 @@ dependencies = [
  "fluvio-test-util",
  "fluvio-types",
  "futures-lite",
+ "hdrhistogram",
  "inventory",
  "md-5",
  "prettytable-rs",
@@ -2397,6 +2402,20 @@ name = "hashbrown"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
+
+[[package]]
+name = "hdrhistogram"
+version = "7.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "faa51471caf8069812385974ce947bf4b71a806d7e5a0d1f710af57d6a9a45ad"
+dependencies = [
+ "base64",
+ "byteorder",
+ "crossbeam-channel",
+ "flate2",
+ "nom",
+ "num-traits",
+]
 
 [[package]]
 name = "heck"

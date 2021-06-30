@@ -3,51 +3,166 @@ use fluvio_command::CommandExt;
 use crate::test_meta::{TestCase, TestOption, TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
-use fluvio::Fluvio;
+use fluvio::{Fluvio, FluvioError};
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
+use hdrhistogram::Histogram;
+use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
+use std::time::Duration;
+use async_lock::RwLock;
+use futures_lite::stream::StreamExt;
+use tracing::debug;
+use fluvio::Offset;
+use fluvio_future::timer::sleep;
 
-#[derive(Debug)]
-pub struct FluvioTest {
-    pub name: String,
-    pub test_fn: fn(Arc<Fluvio>, TestCase) -> Result<TestResult, TestResult>,
-    pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
-    pub requirements: fn() -> TestRequirements,
+// Rename: *_latency, *_num, *_bytes
+#[derive(Clone)]
+pub struct FluvioTestDriver {
+    pub client: Arc<Fluvio>,
+    pub num_topics: usize,
+    pub num_producers: usize,
+    pub num_consumers: usize,
+    pub bytes_produced: usize,
+    pub bytes_consumed: usize,
+    pub produce_latency: Histogram<u64>,
+    pub consume_latency: Histogram<u64>,
+    pub topic_create_latency: Histogram<u64>,
 }
 
-inventory::collect!(FluvioTest);
-
-impl FluvioTest {
-    pub fn all_test_names() -> Vec<&'static str> {
-        inventory::iter::<FluvioTest>
-            .into_iter()
-            .map(|x| x.name.as_str())
-            .collect::<Vec<&str>>()
+impl FluvioTestDriver {
+    pub fn get_results(&self) -> TestResult {
+        TestResult::default()
     }
 
-    pub fn from_name<S: AsRef<str>>(test_name: S) -> Option<&'static FluvioTest> {
-        inventory::iter::<FluvioTest>
-            .into_iter()
-            .find(|t| t.name == test_name.as_ref())
-    }
-
-    pub async fn create_topic(client: Arc<Fluvio>, option: &EnvironmentSetup) -> Result<(), ()> {
-        if !option.is_benchmark() {
-            println!("Creating the topic: {}", &option.topic_name);
+    // Wrapper to getting a producer. We keep track of the number of producers we create
+    pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
+        match self.client.topic_producer(topic).await {
+            Ok(client) => {
+                self.num_producers += 1;
+                return client;
+            }
+            Err(err) => {
+                println!(
+                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
+            }
         }
 
-        let admin = client.admin().await;
-        let topic_spec = TopicSpec::new_computed(1, option.replication() as i32, None);
+        panic!("can't get producer");
+    }
+
+    // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
+    pub async fn send_count(
+        &mut self,
+        p: &TopicProducer,
+        key: RecordKey,
+        message: String,
+    ) -> Result<(), FluvioError> {
+        use std::time::SystemTime;
+        let now = SystemTime::now();
+
+        let result = p.send(key, message.clone()).await;
+
+        let produce_time = now.elapsed().unwrap().as_nanos();
+
+        debug!(
+            "(#{}) Produce latency (ns): {:?}",
+            self.produce_latency.len() + 1,
+            produce_time as u64
+        );
+
+        self.produce_latency.record(produce_time as u64).unwrap();
+
+        self.bytes_produced += message.len();
+
+        result
+    }
+
+    pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
+        match self.client.partition_consumer(topic.to_string(), 0).await {
+            Ok(client) => {
+                self.num_consumers += 1;
+                return client;
+            }
+            Err(err) => {
+                println!(
+                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
+
+        panic!("can't get consumer");
+    }
+
+    pub async fn stream_count(&mut self, consumer: PartitionConsumer, offset: Offset) {
+        use std::time::SystemTime;
+        let mut stream = consumer.stream(offset).await.expect("stream");
+
+        loop {
+            // Take a timestamp
+            let now = SystemTime::now();
+
+            if let Some(Ok(record)) = stream.next().await {
+                // Record latency
+                let consume_time = now.elapsed().clone().unwrap().as_nanos();
+                self.consume_latency.record(consume_time as u64).unwrap();
+
+                // Record bytes consumed
+                self.bytes_consumed += record.as_ref().len();
+            } else {
+                debug!("No more bytes left to consume");
+                break;
+            }
+        }
+    }
+
+    // TODO: This is a workaround. Handle stream inside impl
+    pub async fn consume_latency_record(&mut self, latency: u64) {
+        self.consume_latency.record(latency).unwrap();
+        debug!(
+            "(#{}) Recording consumer latency (ns): {:?}",
+            self.consume_latency.len(),
+            latency
+        );
+    }
+
+    // TODO: This is a workaround. Handle stream inside impl
+    pub async fn consume_bytes_record(&mut self, bytes_len: usize) {
+        self.bytes_consumed += bytes_len;
+        debug!(
+            "Recording consumer bytes len: {:?} (total: {})",
+            bytes_len, self.bytes_consumed
+        );
+    }
+
+    pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
+        use std::time::SystemTime;
+
+        println!("Creating the topic: {}", &option.topic_name);
+
+        let admin = self.client.admin().await;
+
+        let topic_spec =
+            TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
+
+        // Create topic and record how long it takes
+        let now = SystemTime::now();
 
         let topic_create = admin
             .create(option.topic_name.clone(), false, topic_spec)
             .await;
 
+        let topic_time = now.elapsed().unwrap().as_nanos();
+
         if topic_create.is_ok() {
-            if !option.is_benchmark() {
-                println!("topic \"{}\" created", option.topic_name);
-            }
-        } else if !option.is_benchmark() {
+            println!("topic \"{}\" created", option.topic_name);
+            self.topic_create_latency.record(topic_time as u64).unwrap();
+            self.num_topics += 1;
+        } else {
             println!("topic \"{}\" already exists", option.topic_name);
         }
 
@@ -73,25 +188,32 @@ impl FluvioTest {
             }
         }
 
-        // Benchmark support is experimental!
-        // Tests must opt-in to be run with the benchmark flag
-        if test_case.environment.is_benchmark() {
-            if let Some(opt_in) = test_reqs.benchmark {
-                if !opt_in {
-                    // Explicit opt-out
-                    println!("Test `{}` opted out of benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name);
-                    return false;
-                }
-            } else {
-                // Test is not opted into benchmark with attribute
-                println!(
-                    "Test `{}` must opt into benchmarks. Add `#[fluvio_test(benchmark=true)]` to test", test_case.environment.test_name
-                );
-                return false;
-            }
-        }
-
         true
+    }
+}
+
+#[derive(Debug)]
+pub struct FluvioTestMeta {
+    pub name: String,
+    pub test_fn: fn(Arc<RwLock<FluvioTestDriver>>, TestCase) -> Result<TestResult, TestResult>,
+    pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
+    pub requirements: fn() -> TestRequirements,
+}
+
+inventory::collect!(FluvioTestMeta);
+
+impl FluvioTestMeta {
+    pub fn all_test_names() -> Vec<&'static str> {
+        inventory::iter::<Self>
+            .into_iter()
+            .map(|x| x.name.as_str())
+            .collect::<Vec<&str>>()
+    }
+
+    pub fn from_name<S: AsRef<str>>(test_name: S) -> Option<&'static Self> {
+        inventory::iter::<Self>
+            .into_iter()
+            .find(|t| t.name == test_name.as_ref())
     }
 
     pub fn set_topic(test_reqs: &TestRequirements, test_case: &mut TestCase) {

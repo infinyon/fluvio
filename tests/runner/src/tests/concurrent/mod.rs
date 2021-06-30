@@ -2,21 +2,18 @@ pub mod producer;
 pub mod consumer;
 pub mod util;
 
-use std::sync::Arc;
 use std::any::Any;
+use std::sync::Arc;
+use async_lock::RwLock;
 use structopt::StructOpt;
 
-use fluvio::Fluvio;
 use fluvio_future::task::spawn;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
 
-use fluvio_test_util::test_runner::FluvioTest;
-
-const PARTITION: i32 = 0;
-
+use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
 #[derive(Debug, Clone)]
 pub struct ConcurrentTestCase {
     pub environment: EnvironmentSetup,
@@ -49,17 +46,23 @@ impl TestOption for ConcurrentTestOption {
 }
 
 #[fluvio_test(topic = "test-bug")]
-pub async fn concurrent(client: Arc<Fluvio>, mut test_case: TestCase) -> TestResult {
-    test_concurrent_consume_produce(client, test_case.into()).await
+pub async fn concurrent(
+    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_case: TestCase,
+) -> TestResult {
+    test_concurrent_consume_produce(test_driver.clone(), test_case.into()).await
 }
 
-pub async fn test_concurrent_consume_produce(client: Arc<Fluvio>, option: ConcurrentTestCase) {
+pub async fn test_concurrent_consume_produce(
+    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    option: ConcurrentTestCase,
+) {
     println!("Testing concurrent consumer and producer");
     let (sender, receiver) = std::sync::mpsc::channel();
     spawn(consumer::consumer_stream(
-        client.clone(),
+        test_driver.clone(),
         option.clone(),
         receiver,
     ));
-    producer::producer(client, option, sender).await;
+    producer::producer(test_driver, option, sender).await;
 }
