@@ -1406,7 +1406,7 @@ dependencies = [
  "eyre",
  "fluvio",
  "fluvio-cluster",
- "fluvio-command 0.2.0",
+ "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
@@ -1447,7 +1447,7 @@ dependencies = [
  "derive_builder 0.9.0",
  "directories",
  "fluvio",
- "fluvio-command 0.2.1",
+ "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
@@ -1482,14 +1482,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3b587d6cc4c0901a6766e133c64f727fc976c0a8bfa4518b22dfc7abed676b38"
 dependencies = [
  "once_cell",
- "thiserror",
- "tracing",
-]
-
-[[package]]
-name = "fluvio-command"
-version = "0.2.1"
-dependencies = [
  "thiserror",
  "tracing",
 ]
@@ -1597,7 +1589,7 @@ version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e925a69b64cb86b021e697a087053c07eca04a5207bb116326d44c0c675e61ed"
 dependencies = [
- "fluvio-command 0.2.0",
+ "fluvio-command",
  "serde",
  "serde_json",
  "thiserror",
@@ -1972,7 +1964,7 @@ dependencies = [
  "dyn-clone",
  "fluvio",
  "fluvio-cluster",
- "fluvio-command 0.2.1",
+ "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-future",
  "futures-lite",
@@ -2045,7 +2037,7 @@ dependencies = [
  "bytes",
  "fluvio",
  "fluvio-cluster",
- "fluvio-command 0.2.1",
+ "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",

@@ -10,7 +10,6 @@ members = [
     "src/cli",
     "src/client",
     "src/cluster",
-    "src/command",
     "src/controlplane",
     "src/controlplane-metadata",
     "src/dataplane-protocol",
