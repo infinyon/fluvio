@@ -62,6 +62,12 @@ The next step is to set up a Fluvio Cluster, which can be done by
 [MacOS]: https://fluvio.io/docs/getting-started/mac
 [Linux]: https://fluvio.io/docs/getting-started/linux
 
+Spoiler: After installing system dependencies, launching a cluster is as easy as
+
+```
+fluvio cluster start
+```
+
 ## Quick start
 
 Once we have Fluvio installed, we can create a new Topic where we'll
@@ -95,7 +101,7 @@ Ok!
 These records will appear in the consumer window as they're sent!
 
 See the [Producer] and [Consumer] documentation for more details on
-sending and receiving records with Fluvio!
+sending and receiving records with Fluvio.
 
 [Producer]: https://www.fluvio.io/cli/commands/produce/
 [Consumer]: https://www.fluvio.io/cli/commands/consume/
