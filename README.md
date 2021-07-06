@@ -54,19 +54,21 @@ The [Fluvio CLI] is available for MacOS and Linux, and can be installed with the
 curl -fsS https://packages.fluvio.io/v1/install.sh | bash
 ```
 
-The next step is to set up a Fluvio Cluster, which can be done by
-
-- [Creating a free Fluvio Cloud account](https://cloud.fluvio.io), or
-- Launching your own cluster on [MacOS] or [Linux]
+The next step is to set up a Fluvio Cluster. See our setup guides for
+[MacOS] and [Linux] to install dependencies such as `Minikube` and `Helm`,
+then launching the cluster should be as simple as
 
 [MacOS]: https://fluvio.io/docs/getting-started/mac
 [Linux]: https://fluvio.io/docs/getting-started/linux
 
-Spoiler: After installing system dependencies, launching a cluster is as easy as
-
 ```
 fluvio cluster start
 ```
+
+Alternatively, you can [create a free Fluvio Cloud account] and we'll take care of
+all the cluster setup for you.
+
+[create a free Fluvio Cloud account]: https://cloud.fluvio.io
 
 ## Quick start
 
