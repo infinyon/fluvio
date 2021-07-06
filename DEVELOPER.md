@@ -182,7 +182,9 @@ sudo apt-get install -y lld-11
 export FLUVIO_BUILD_LLD=lld-11
 ```
 
-For previous version of ubuntu.  Please see: https://apt.llvm.org.
+### Problem installing lld-11
+
+If you have problem installing `lld-11`, please see: https://apt.llvm.org.
 
 For ubuntu LTS 18.04:
 
