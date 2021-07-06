@@ -239,7 +239,7 @@ ifeq (${CI},true)
 build_k8_image:
 else
 # When not in CI (i.e. development), build image before testing
-build_k8_image: fluvio-image
+build_k8_image: fluvio_image
 endif
 
 
