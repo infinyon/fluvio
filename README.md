@@ -27,11 +27,11 @@
 </a>
 </div>
 
-Fluvio is a distributed, programmable streaming platform written in Rust.
+<br>
 </div>
 
-## Fluvio is
+Fluvio is a distributed, programmable streaming platform written in Rust.
 
-- **High-performance and scalable**, written in Rust leveraging asynchronous code
-- **Cloud-Native**, integrated with Kubernetes for declarative, self-healing ops
-- **Programmable**, able to deploy WASM modules for arbitrary inline data processing
+- **High-performance and scalable**: written in Rust leveraging asynchronous code
+- **Cloud-Native**: integrated with Kubernetes for declarative, self-healing ops
+- **Programmable**: able to deploy WASM modules for arbitrary inline data processing
