@@ -27,6 +27,11 @@
 </a>
 </div>
 
+<a href="https://fluvio.io">
+<img src=".github/assets/fluvio-oss-large.svg" alt="A visual of a data pipeline with filter, map, and other streaming operations" />
+</a>
+
+<br>
 <br>
 </div>
 
