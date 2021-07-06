@@ -1477,11 +1477,10 @@ dependencies = [
 
 [[package]]
 name = "fluvio-command"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b587d6cc4c0901a6766e133c64f727fc976c0a8bfa4518b22dfc7abed676b38"
+checksum = "82a1ae36b98e5a130177feb586ca70a2a9741d912200dd28fe1c5a89cdadba87"
 dependencies = [
- "once_cell",
  "thiserror",
  "tracing",
 ]
