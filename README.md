@@ -30,6 +30,8 @@
 </a>
 </div>
 
+<br>
+
 <a href="https://fluvio.io">
 <img src=".github/assets/fluvio-overview.svg" alt="A visual of a data pipeline with filter, map, and other streaming operations" />
 </a>
