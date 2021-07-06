@@ -105,3 +105,132 @@ sending and receiving records with Fluvio.
 
 [Producer]: https://www.fluvio.io/cli/commands/produce/
 [Consumer]: https://www.fluvio.io/cli/commands/consume/
+
+## Programmatic SmartStreams for inline data processing
+
+One of Fluvio's unique features is the ability to compile WebAssembly
+modules to perform inline data processing such as filtering. These
+"SmartStreams" allow us to write arbitrary logic to manipulate data
+inside of Fluvio's streaming engine itself, reducing data traffic
+by eliminating the need to pipe data out of the system for computation.
+
+### SmartStreams quick start
+
+We can get started with our very first SmartStream in just a few steps.
+We're going to write a filter that accepts some records and rejects
+others, just like a `.filter` iterator method.
+
+To start, we're going to use the `cargo-generate` tool to set up our
+SmartStream's project template. The template we're using has taken care
+of setting up the WASM compilation for our SmartStream. We can install
+`cargo-generate` with the following command:
+
+```
+cargo install cargo-generate
+```
+
+Then, we'll use `cargo-generate` to set up our project. Be sure to
+select the `filter` option:
+
+```
+$ cargo generate --git https://github.com/infinyon/fluvio-smartstream-template
+🤷   Project Name : filter-example
+🔧   Creating project called `filter-example`...
+🤷   Which type of SmartStream would you like? [filter] [default: filter]: filter
+✨   Done! New project created /home/user/filter-example
+```
+
+If we move into the new project directory, we can see that there is a starter
+`src/lib.rs` with a simple SmartStream already written!
+
+```rust
+// src/lib.rs
+use fluvio_smartstream::{smartstream, Record};
+
+#[smartstream(filter)]
+pub fn filter(record: &Record) -> bool {
+    let str_result = std::str::from_utf8(record.value.as_ref());
+    let string = match str_result {
+        Ok(s) => s,
+        _ => return false,
+    };
+
+    string.contains('a')
+}
+```
+
+> Filter SmartStreams take a `Record` as input and must return `true` or `false`
+> to keep or discard the record from the stream, respectively.
+
+This particular SmartStream reads the `Record`'s value as a UTF-8 string,
+and checks whether that string contains a lower-case `a`. This will make it easy to check
+whether the filter is working.
+
+Let's compile our SmartStream and try it out:
+
+```
+$ cargo build --release
+```
+
+We'll need a Topic to test out the filter, so let's make one of those:
+
+```
+fluvio topic create filter-example
+```
+
+Now we'll set up our SmartStream. SmartStreams are applied at consume-time, so we
+need to pass our WASM module to the `fluvio consume` command, like so:
+
+```
+$ fluvio consume filter-example -B --smart-stream=target/wasm32-unknown-unknown/release/filter-example.wasm
+Consuming records from the beginning of topic 'hello-fluvio'
+```
+
+The consumer will wait here until some Records come along that pass the filter's test.
+We can produce some records to test it out:
+
+```
+$ fluvio produce filter-example
+> apple
+Ok!
+> APPLE
+Ok!
+> banana
+Ok!
+> BANANA
+Ok!
+> ^C
+```
+
+In the consumer window, we should see only records containing `a` come through:
+
+```
+apple
+banana
+```
+
+For a deeper dive into SmartStreams, [see our blog on SmartStream filtering for server logs]!
+
+[see our blog on SmartStream filtering for server logs]: https://www.infinyon.com/blog/2021/06/smartstream-filters/
+
+## Release Status
+
+Fluvio is currently in **Alpha** and is not ready to be used in production.
+Our CLI and API interfaces are still in rapid development and may experience
+breaking changes at any time. We do our best to adhere to semantic versioning
+but until our R1 release we cannot guarantee it.
+
+## Contributing
+
+If you're interested in contributing to Fluvio, [check out our Contributing guide]
+to see how to get started, and feel free to [join our community Discord] to ask us
+any questions you may have!
+
+[check out our Contributing guide]: ./CONTRIBUTING.md
+[join our Community Discord]: https://discordapp.com/invite/bBG2dTz
+
+## License
+
+Fluvio is licensed under the [Apache 2.0 License].
+
+[Apache 2.0 License]: ./LICENSE
