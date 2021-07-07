@@ -485,15 +485,6 @@ jobs:
         run: |
           make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-k8-tls-root
 
-      - name: Publish image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        run: |
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-          eval $(minikube -p minikube docker-env)
-          export VERSION="$(cat VERSION)"
-          export TAG="${VERSION}-${{ github.sha }}"
-          docker tag "infinyon/fluvio:${{ github.sha }}" "infinyon/fluvio:${TAG}"
-          docker push "infinyon/fluvio:${TAG}"
       - name: Clean minikube
         run: |
           minikube delete
@@ -622,19 +613,45 @@ jobs:
           minikube delete
           pkill -f "minikube tunnel" || true
 
+  # After all tests have passed, push docker images
+  docker_push:
+    name: Publish Docker Image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs:
+      - build_checks
+      - build_platform_binaries
+      - build_wasm
+      - local_cluster_test
+      - k8_cluster_test
+      - k8_cluster_upgrade
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio
+          path: /tmp
+      - name: Publish Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          eval $(minikube -p minikube docker-env)
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+
+          # Load image infinyon/fluvio:SHA
+          docker image load --input /tmp/infinyon-fluvio.tar
+          docker image ls -a
+
+          # Tag image as infinyon/fluvio:VERSION-SHA
+          export TAG="$(cat VERSION)-${{ github.sha }}"
+          docker tag "infinyon/fluvio:${{ github.sha }}" "infinyon/fluvio:${TAG}"
+          docker push "infinyon/fluvio:${TAG}"
+
   # When all required jobs pass, bump the `dev` GH prerelease to this commit
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs:
-      [
-        build_checks,
-        build_platform_binaries,
-        build_wasm,
-        local_cluster_test,
-        k8_cluster_test,
-        k8_cluster_upgrade,
-      ]
+    needs: docker_push
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
