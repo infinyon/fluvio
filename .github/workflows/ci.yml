@@ -15,7 +15,7 @@ on:
       verbose:
         description: "Set --verbose to get verbose build output"
         required: false
-        default: ''
+        default: ""
 
 env:
   VERBOSE: ${{ github.events.input.verbose }}
@@ -82,7 +82,7 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: | 
+        run: |
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
@@ -157,7 +157,7 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: | 
+        run: |
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
@@ -228,7 +228,6 @@ jobs:
           name: flv-test-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/flv-test
 
-
   run_platform_unit_test:
     name: Run unit tests for Platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -252,7 +251,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-
       - name: Install sccache (ubuntu-latest)
         if: matrix.os == 'ubuntu-latest'
         env:
@@ -272,7 +270,7 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: | 
+        run: |
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
@@ -296,8 +294,6 @@ jobs:
 
       - name: Stop sccache server
         run: sccache --stop-server || true
-
-      
 
   build_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
@@ -328,8 +324,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Build WASM for ${{ matrix.wasm-crate }}
-        run:
-          cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
+        run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
   local_cluster_test:
     name: Local cluster test
@@ -351,7 +346,7 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: | 
+        run: |
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
@@ -562,8 +557,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: manusa/actions-setup-minikube@v2.3.1
         with:
-          minikube version: 'v1.18.1'
-          kubernetes version: 'v1.19.6'
+          minikube version: "v1.18.1"
+          kubernetes version: "v1.19.6"
       - name: Open tunnel for Github runner
         if: matrix.os != 'infinyon-ubuntu-bionic'
         run: |
@@ -631,7 +626,15 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [build_checks, build_platform_binaries, build_wasm, local_cluster_test, k8_cluster_test, k8_cluster_upgrade]
+    needs:
+      [
+        build_checks,
+        build_platform_binaries,
+        build_wasm,
+        local_cluster_test,
+        k8_cluster_test,
+        k8_cluster_upgrade,
+      ]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -656,7 +659,7 @@ jobs:
     strategy:
       matrix:
         artifact: [fluvio, fluvio-run]
-        target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
+        target: [x86_64-unknown-linux-musl]
     permissions: write-all
     steps:
       - name: Login GH CLI
