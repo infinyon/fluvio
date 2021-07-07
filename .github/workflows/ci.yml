@@ -129,7 +129,7 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
-  build_binaries_platform:
+  build_platform_binaries:
     name: Build binaries for Platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -345,7 +345,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
-    needs: build
+    needs: build_platform_binaries
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
