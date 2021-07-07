@@ -88,13 +88,13 @@ jobs:
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           ${HOME}/.fluvio/bin/fluvio package publish \
             --version="${VERSION}+${{ github.sha }}" \
-            target/x86_64-unknown-linux-musl/release/fluvio \
-            target/x86_64-apple-darwin/release/fluvio
+            target/x86_64-unknown-linux-musl/release/fluvio
+     #       target/x86_64-apple-darwin/release/fluvio
 
           ${HOME}/.fluvio/bin/fluvio package publish \
             --version="${VERSION}+${{ github.sha }}" \
-            target/x86_64-unknown-linux-musl/release/fluvio-run \
-         #   target/x86_64-apple-darwin/release/fluvio-run
+            target/x86_64-unknown-linux-musl/release/fluvio-run
+      #   target/x86_64-apple-darwin/release/fluvio-run
 
   # Bump the latest version of the Fluvio CLI on the package registry
   # This serves as the final step in the publishing process, and therefore
