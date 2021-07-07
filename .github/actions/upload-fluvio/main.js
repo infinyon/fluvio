@@ -3,14 +3,23 @@ const github = require("@actions/github");
 
 const runOnce = async () => {
   // Load input and environment variables
-  const artifacts = core.getInput('artifacts', { required: true });
+  const artifact = core.getInput('artifact', { required: true });
+  const target = core.getInput('target');
   const sha = process.env.GITHUB_SHA;
   const ref = process.env.GITHUB_REF;
   const context = github.context;
+  const releaseMode = context.eventName === "push" && ref === "refs/heads/staging";
 
-  core.info(`artifacts: ${artifacts}`);
+  const buildPrefix = (!!target) ? `target/${target}/` : "target/";
+  const buildRelease = (releaseMode) ? "release" : "debug";
+
+  core.info(`artifact: ${artifact}`);
+  core.info(`target: ${target}`);
   core.info(`sha: ${sha}`);
   core.info(`ref: ${ref}`);
+  core.info(`release: ${releaseMode}`);
+  core.info(`buildPrefix: ${buildPrefix}`);
+  core.info(`buildRelease: ${buildRelease}`);
   core.info(`context: ${JSON.stringify(context)}`);
 };
 
