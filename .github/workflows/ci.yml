@@ -15,7 +15,7 @@ on:
       verbose:
         description: "Set --verbose to get verbose build output"
         required: false
-        default: ''
+        default: ""
 
 env:
   VERBOSE: ${{ github.events.input.verbose }}
@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         rust: [stable]
         task:
           - name: Doc tests
@@ -48,19 +48,10 @@ jobs:
             task:
               name: Rustfmt
               run: make check-fmt
-          - os: macos-latest
-            rust: stable
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
-            task:
-              name: Clippy
-              run: make check-clippy
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
             target: x86_64-unknown-linux-musl
-          - os: macos-latest
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
+
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
@@ -83,12 +74,6 @@ jobs:
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
           mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install sccache
-
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -97,16 +82,10 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: | 
+        run: |
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
-      - name: Install zig & lld for MacOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install zig && \
-          brew install llvm@11 && \
-          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
@@ -129,21 +108,18 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
-  build:
-    name: Build and Test artifacts (${{ matrix.os }})
+  build_platform_binaries:
+    name: Build binaries for Platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         rust: [stable]
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
             target: x86_64-unknown-linux-musl
-          - os: macos-latest
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
@@ -173,12 +149,6 @@ jobs:
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
           mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install sccache
-
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -187,16 +157,10 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: | 
+        run: |
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
-      - name: Install zig & lld for MacOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install zig && \
-          brew install llvm@11 && \
-          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
@@ -212,11 +176,14 @@ jobs:
       - name: Start sccache server
         run: sccache --start-server
 
-      - name: Build artifacts
-        run: make build-cli build-cluster build-test
+      - name: Build CLI
+        run: make build-cli
 
-      - name: Unit tests
-        run: make run-all-unit-test
+      - name: Build Cluster CLI
+        run: make build-cluster
+
+      - name: Build Test CLI
+        run: make build-test
 
       - name: Stop sccache server
         run: sccache --stop-server || true
@@ -261,6 +228,73 @@ jobs:
           name: flv-test-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/flv-test
 
+  run_platform_unit_test:
+    name: Run unit tests for Platform (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        include:
+          - os: ubuntu-latest
+            sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.target }}
+      SCCACHE_CACHE_SIZE: 2G
+      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install sccache (ubuntu-latest)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install zig & lld for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo snap install --beta --classic zig && \
+          sudo apt-get install lld-11 && \
+          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
+      - name: Cache cargo registry and sccache
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-sccache-
+
+      - name: Start sccache server
+        run: sccache --start-server
+
+      - name: Unit tests
+        run: make run-all-unit-test
+
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+
   build_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
     runs-on: ${{ matrix.os }}
@@ -290,8 +324,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Build WASM for ${{ matrix.wasm-crate }}
-        run:
-          cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
+        run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
   local_cluster_test:
     name: Local cluster test
@@ -313,7 +346,7 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         if: matrix.os == 'ubuntu-latest'
-        run: | 
+        run: |
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
@@ -360,7 +393,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
-    needs: build
+    needs: build_platform_binaries
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -524,8 +557,8 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: manusa/actions-setup-minikube@v2.3.1
         with:
-          minikube version: 'v1.18.1'
-          kubernetes version: 'v1.19.6'
+          minikube version: "v1.18.1"
+          kubernetes version: "v1.19.6"
       - name: Open tunnel for Github runner
         if: matrix.os != 'infinyon-ubuntu-bionic'
         run: |
@@ -593,7 +626,15 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [build_checks, build, build_wasm, local_cluster_test, k8_cluster_test, k8_cluster_upgrade]
+    needs:
+      [
+        build_checks,
+        build_platform_binaries,
+        build_wasm,
+        local_cluster_test,
+        k8_cluster_test,
+        k8_cluster_upgrade,
+      ]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -618,7 +659,7 @@ jobs:
     strategy:
       matrix:
         artifact: [fluvio, fluvio-run]
-        target: [x86_64-unknown-linux-musl, x86_64-apple-darwin]
+        target: [x86_64-unknown-linux-musl]
     permissions: write-all
     steps:
       - name: Login GH CLI

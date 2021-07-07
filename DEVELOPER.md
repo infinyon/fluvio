@@ -174,13 +174,25 @@ brew install llvm@11
 export FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld
 ```
 
-For ubuntu:
+For ubuntu LTS 20.04 or greater:
 
 ```
 sudo snap install zig --beta --classic
 sudo apt-get install -y lld-11
 export FLUVIO_BUILD_LLD=lld-11
 ```
+
+### Problem installing lld-11
+
+If you have problem installing `lld-11`, please see: https://apt.llvm.org.
+
+For ubuntu LTS 18.04:
+
+```
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+sudo apt-get install clang-11 lldb-11 lld-11
+```
+
 
 ## Building the image 
 

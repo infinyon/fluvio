@@ -79,9 +79,9 @@ jobs:
           mv fluvio-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio
           mv fluvio-run-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio-run
 
-          mkdir -p target/x86_64-apple-darwin/release/
-          mv fluvio-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio
-          mv fluvio-run-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio-run
+       #   mkdir -p target/x86_64-apple-darwin/release/
+       #   mv fluvio-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio
+       #   mv fluvio-run-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio-run
 
       - name: Publish to Fluvio Packages
         run: |
@@ -94,7 +94,7 @@ jobs:
           ${HOME}/.fluvio/bin/fluvio package publish \
             --version="${VERSION}+${{ github.sha }}" \
             target/x86_64-unknown-linux-musl/release/fluvio-run \
-            target/x86_64-apple-darwin/release/fluvio-run
+         #   target/x86_64-apple-darwin/release/fluvio-run
 
   # Bump the latest version of the Fluvio CLI on the package registry
   # This serves as the final step in the publishing process, and therefore
