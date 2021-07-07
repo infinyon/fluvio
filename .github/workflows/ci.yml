@@ -130,12 +130,12 @@ jobs:
         run: sccache --stop-server || true
 
   build:
-    name: Build and Test artifacts (${{ matrix.os }})
+    name: Build and Test Platform (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest]
         rust: [stable]
         include:
           - os: ubuntu-latest
