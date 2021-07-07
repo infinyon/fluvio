@@ -32,7 +32,7 @@ TEST_ENV_FLV_SPU_DELAY=
 TEST_ARG_SPU=--spu ${DEFAULT_SPU}
 TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 TEST_ARG_REPLICATION=-r ${REPL}
-TEST_ARG_DEVELOP=
+TEST_ARG_DEVELOP=--develop
 TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
@@ -117,17 +117,17 @@ k8-setup:
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=--skip-checks $(EXTRA_ARG)
-smoke-test-k8: smoke-test
+smoke-test-k8: build_k8_image smoke-test
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls --skip-checks $(EXTRA_ARG)
-smoke-test-k8-tls: smoke-test
+smoke-test-k8-tls: build_k8_image smoke-test
 
 smoke-test-k8-tls-policy-setup:
 	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization --skip-checks --keep-cluster
-smoke-test-k8-tls-policy: smoke-test-k8-tls-policy-setup smoke-test
+smoke-test-k8-tls-policy: build_k8_image smoke-test-k8-tls-policy-setup smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
 test-permission-k8:	SC_PORT=$(shell kubectl get svc fluvio-sc-public -o json | jq '.spec.ports[0].nodePort' )
@@ -232,6 +232,16 @@ latest_image: fluvio_image
 # Build docker image in minikube environment
 minikube_image: MINIKUBE_FLAG=minikube
 minikube_image: fluvio_image
+
+
+# In CI mode, do not build k8 image
+ifeq (${CI},true)
+build_k8_image:
+else
+# When not in CI (i.e. development), build image before testing
+build_k8_image: minikube_image
+endif
+
 
 # Build docker image for Fluvio.
 # In development, we tag the image with just the git commit.
