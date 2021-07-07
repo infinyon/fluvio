@@ -48,19 +48,10 @@ jobs:
             task:
               name: Rustfmt
               run: make check-fmt
-          - os: macos-latest
-            rust: stable
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
-            task:
-              name: Clippy
-              run: make check-clippy
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
             target: x86_64-unknown-linux-musl
-          - os: macos-latest
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
+
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
@@ -83,12 +74,6 @@ jobs:
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
           mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
           echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install sccache
-
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -101,12 +86,6 @@ jobs:
           sudo snap install --beta --classic zig && \
           sudo apt-get install lld-11 && \
           echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
-      - name: Install zig & lld for MacOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install zig && \
-          brew install llvm@11 && \
-          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
