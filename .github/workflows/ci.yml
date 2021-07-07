@@ -270,6 +270,12 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+      - name: Install zig & lld for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: | 
+          sudo snap install --beta --classic zig && \
+          sudo apt-get install lld-11 && \
+          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
