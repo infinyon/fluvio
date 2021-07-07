@@ -1,0 +1,20 @@
+name: Test Action
+
+permissions:
+  contents: read
+
+on:
+  push:
+
+jobs:
+  test_thingy:
+    name: Test thingy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/actions/upload-fluvio
+        with:
+          artifacts: |
+            Hello
+            This is artifact 2
+            This is 3

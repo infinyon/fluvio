@@ -1,0 +1,9 @@
+name: "Upload Fluvio artifacts"
+description: "Upload Fluvio artifacts"
+inputs:
+  artifacts:
+    description: ''
+    required: true
+runs:
+  using: 'node12'
+  main: 'main.js'

@@ -188,6 +188,14 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
+      - name: Upload Fluvio Artifacts
+        uses: ./actions/upload-fluvio
+        with:
+          artifacts: |
+            fluvio
+            fluvio-run
+            flv-test
+
       # DEBUG MODE: Upload artifacts
       - name: Upload artifact - fluvio (DEBUG)
         if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
