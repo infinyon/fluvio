@@ -578,7 +578,7 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [build_checks, build, build_wasm, local_cluster_test, k8_cluster_test, k8_cluster_upgrade]
+    needs: [build_checks, build_platform_binaries, build_wasm, local_cluster_test, k8_cluster_test, k8_cluster_upgrade]
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
