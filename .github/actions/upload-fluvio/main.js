@@ -1,14 +1,17 @@
 const core = require("@actions/core");
+const github = require("@actions/github");
 
 const runOnce = async () => {
   // Load input and environment variables
   const artifacts = core.getInput('artifacts', { required: true });
   const sha = process.env.GITHUB_SHA;
   const ref = process.env.GITHUB_REF;
+  const context = github.context;
 
   core.info(`artifacts: ${artifacts}`);
   core.info(`sha: ${sha}`);
   core.info(`ref: ${ref}`);
+  core.info(`context: ${JSON.stringify(context)}`);
 };
 
 const run = async () => {
