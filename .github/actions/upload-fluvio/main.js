@@ -1,3 +1,4 @@
+const path = require("path");
 const core = require("@actions/core");
 const github = require("@actions/github");
 const artifact = require("@actions/artifact");
@@ -10,6 +11,7 @@ const runOnce = async () => {
   const target = core.getInput('target').trim();
   const sha = process.env.GITHUB_SHA;
   const ref = process.env.GITHUB_REF;
+  const repoDir = path.normalize(`${__dirname}/../../..`);
   const context = github.context;
   const releaseMode = context.eventName === "push" && ref === "refs/heads/staging";
 
@@ -29,6 +31,7 @@ const runOnce = async () => {
   core.info(`buildPrefix: ${buildPrefix}`);
   core.info(`buildRelease: ${buildRelease}`);
   core.info(`__dirname: ${__dirname}`);
+  core.info(`repoDir: ${repoDir}`);
   core.info(`context: ${JSON.stringify(context)}`);
 
   for (let i = 0; i < artifactNames.length; i++) {
@@ -39,7 +42,7 @@ const runOnce = async () => {
     const artifactKey = `${artifactName}-${target}`;
 
     const uploadOptions = { continueOnError: false };
-    await artifactClient.uploadArtifact(artifactKey, [artifactPath], ".", uploadOptions);
+    await artifactClient.uploadArtifact(artifactKey, [artifactPath], repoDir, uploadOptions);
   }
 };
 
