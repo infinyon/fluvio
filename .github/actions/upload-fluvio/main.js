@@ -12,18 +12,17 @@ const runOnce = async () => {
   const sha = process.env.GITHUB_SHA;
   const ref = process.env.GITHUB_REF;
   const repoDir = path.normalize(`${__dirname}/../../..`);
-  const context = github.context;
-  const releaseMode = context.eventName === "push" && ref === "refs/heads/staging";
+  const releaseMode = github.context.eventName === "push" && ref === "refs/heads/staging";
 
+  // Assemble path into `target/` directory for each artifact based on target and release
   const buildPrefix = (!!target) ? `target/${target}` : "target";
   const buildRelease = (releaseMode) ? "release" : "debug";
-
   const artifactNames = artifactInput.split("\n");
   const artifactPaths = artifactNames.map(artifact => `${buildPrefix}/${buildRelease}/${artifact}`);
 
   core.info(`artifact: ${artifact}`);
   core.info(`artifacts: ${JSON.stringify(artifactNames)}`);
-  core.info(`paths: ${artifactPaths}`);
+  core.info(`paths: ${JSON.stringify(artifactPaths)}`);
   core.info(`target: ${target}`);
   core.info(`sha: ${sha}`);
   core.info(`ref: ${ref}`);
@@ -32,7 +31,6 @@ const runOnce = async () => {
   core.info(`buildRelease: ${buildRelease}`);
   core.info(`__dirname: ${__dirname}`);
   core.info(`repoDir: ${repoDir}`);
-  core.info(`context: ${JSON.stringify(context)}`);
 
   for (let i = 0; i < artifactNames.length; i++) {
     const artifactName = artifactNames[i];
@@ -41,8 +39,9 @@ const runOnce = async () => {
     // E.g. fluvio-x86_64-unknown-linux-musl
     const artifactKey = `${artifactName}-${target}`;
 
-    const uploadOptions = { continueOnError: false };
-    await artifactClient.uploadArtifact(artifactKey, [artifactPath], repoDir, uploadOptions);
+    const options = { continueOnError: false };
+    await artifactClient.uploadArtifact(artifactKey, [artifactPath], repoDir, options);
+    core.info(`Uploaded ${artifactKey} from ${artifactPath}`);
   }
 };
 
