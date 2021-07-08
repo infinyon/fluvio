@@ -31,17 +31,17 @@ jobs:
 
 
   build_checks_client:
-    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    name: Build Client Checks for (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
+        target: [x86_64-unknown-linux-musl]
         include:
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
-            target: x86_64-unknown-linux-musl
 
     env:
       RUST_BACKTRACE: full
