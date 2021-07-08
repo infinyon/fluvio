@@ -1452,6 +1452,7 @@ dependencies = [
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-helm",
+ "fluvio-sc-schema",
  "flv-util",
  "futures-lite",
  "k8-client",

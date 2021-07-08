@@ -176,6 +176,7 @@ install-fmt:
 check-fmt:
 	cargo +$(RUSTV) fmt -- --check
 
+
 check_version:
 	make check_version -C k8-util/helm
 
@@ -199,11 +200,16 @@ run-unstable-test:build_smartstreams install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
 
 run-all-doc-test: install_rustup_target
-	cargo test --all-features --doc $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+
+run-client-doc-test: install_rustup_target
+	cargo test --all-features --doc -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc -p fluvio-cluster $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)	
+
 
 clean_build:
 	rm -rf /tmp/cli-*
-
 
 
 release:	update_version release_image helm_publish_app publish_cli

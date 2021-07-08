@@ -29,7 +29,8 @@ jobs:
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
 
-  build_checks:
+
+  build_checks_client:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -37,17 +38,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        task:
-          - name: Doc tests
-            run: make run-all-doc-test
         include:
-          - os: ubuntu-latest
-            rust: stable
-            sccache-path: /home/runner/.cache/sccache
-            target: x86_64-unknown-linux-musl
-            task:
-              name: Rustfmt
-              run: make check-fmt
           - os: ubuntu-latest
             sccache-path: /home/runner/.cache/sccache
             target: x86_64-unknown-linux-musl
@@ -101,9 +92,84 @@ jobs:
       - name: Start sccache server
         run: sccache --start-server
 
-      # Main run step: Run task from matrix
-      - name: ${{ matrix.task.name }}
-        run: ${{ matrix.task.run }}
+      # start of inner tasks
+      - name: Doc tests
+        run: make run-client-doc-test
+      - name: Rustfmt
+        run: make check-fmt
+
+      - name: Stop sccache server
+        run: sccache --stop-server || true
+
+
+  build_checks_platform:
+    name: ${{ matrix.task.name }} (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            sccache-path: /home/runner/.cache/sccache
+            target: x86_64-unknown-linux-musl
+
+    env:
+      RUST_BACKTRACE: full
+      RUSTC_WRAPPER: sccache
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.target }}
+      SCCACHE_CACHE_SIZE: 2G
+      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install sccache (ubuntu-latest)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          LINK: https://github.com/mozilla/sccache/releases/download
+          SCCACHE_VERSION: 0.2.13
+        run: |
+          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
+          mkdir -p $HOME/.local/bin
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install zig & lld for Ubuntu
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo snap install --beta --classic zig && \
+          sudo apt-get install lld-11 && \
+          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
+      - name: Cache cargo registry and sccache
+        uses: actions/cache@v2
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ${{ matrix.sccache-path }}
+          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-sccache-
+
+      - name: Start sccache server
+        run: sccache --start-server
+
+      # main tasks
+      - name: Doc tests
+        run: make run-all-doc-test
+      - name: Rustfmt
+        run: make check-fmt
 
       - name: Stop sccache server
         run: sccache --stop-server || true
