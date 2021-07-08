@@ -632,17 +632,21 @@ jobs:
         with:
           name: infinyon-fluvio
           path: /tmp
-      - name: Publish Fluvio Docker Image
+
+        # Load image infinyon/fluvio:SHA
+      - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
           eval $(minikube -p minikube docker-env)
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-
-          # Load image infinyon/fluvio:SHA
           docker image load --input /tmp/infinyon-fluvio.tar
+          echo "Successfully loaded image"
           docker image ls -a
 
-          # Tag image as infinyon/fluvio:VERSION-SHA
+        # Tag image as infinyon/fluvio:VERSION-SHA and push
+      - name: Publish Fluvio Docker Image
+        run: |
+          eval $(minikube -p minikube docker-env)
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           export TAG="$(cat VERSION)-${{ github.sha }}"
           docker tag "infinyon/fluvio:${{ github.sha }}" "infinyon/fluvio:${TAG}"
           docker push "infinyon/fluvio:${TAG}"
