@@ -1,10 +1,13 @@
 const core = require("@actions/core");
 const github = require("@actions/github");
+const artifact = require("@actions/artifact");
 
 const runOnce = async () => {
+  const artifactClient = artifact.create();
+
   // Load input and environment variables
-  const artifact = core.getInput('artifact', { required: true });
-  const target = core.getInput('target');
+  const artifactInput = core.getInput('artifact', { required: true }).trim();
+  const target = core.getInput('target').trim();
   const sha = process.env.GITHUB_SHA;
   const ref = process.env.GITHUB_REF;
   const context = github.context;
@@ -13,19 +16,31 @@ const runOnce = async () => {
   const buildPrefix = (!!target) ? `target/${target}` : "target";
   const buildRelease = (releaseMode) ? "release" : "debug";
 
-  const artifacts = artifact.trim().split("\n");
-  const paths = artifacts.map(artifact => `${buildPrefix}/${buildRelease}/${artifact}`);
+  const artifactNames = artifactInput.split("\n");
+  const artifactPaths = artifactNames.map(artifact => `${buildPrefix}/${buildRelease}/${artifact}`);
 
   core.info(`artifact: ${artifact}`);
-  core.info(`artifacts: ${JSON.stringify(artifacts)}`);
-  core.info(`paths: ${paths}`);
+  core.info(`artifacts: ${JSON.stringify(artifactNames)}`);
+  core.info(`paths: ${artifactPaths}`);
   core.info(`target: ${target}`);
   core.info(`sha: ${sha}`);
   core.info(`ref: ${ref}`);
   core.info(`release: ${releaseMode}`);
   core.info(`buildPrefix: ${buildPrefix}`);
   core.info(`buildRelease: ${buildRelease}`);
+  core.info(`__dirname: ${__dirname}`);
   core.info(`context: ${JSON.stringify(context)}`);
+
+  for (let i = 0; i < artifactNames.length; i++) {
+    const artifactName = artifactNames[i];
+    const artifactPath = artifactPaths[i];
+
+    // E.g. fluvio-x86_64-unknown-linux-musl
+    const artifactKey = `${artifactName}-${target}`;
+
+    const uploadOptions = { continueOnError: false };
+    await artifactClient.uploadArtifact(artifactKey, [artifactPath], ".", uploadOptions);
+  }
 };
 
 const run = async () => {
