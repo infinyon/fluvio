@@ -38,10 +38,11 @@ const runOnce = async () => {
     const artifactKey = `${artifactName}-${target}`;
 
     // E.g. /home/user/fluvio/fluvio/target/x86_64-unknown-linux-musl/release
-    const artifactPath = path.resolve(repoPath, targetPath);
+    const artifactRoot = path.resolve(repoPath, targetPath);
+    const artifactPath = `${artifactRoot}/${artifactName}`;
     const options = { continueOnError: false };
-    await artifactClient.uploadArtifact(artifactKey, [artifactName], artifactPath, options);
-    core.info(`Uploaded ${artifactKey} from ${artifactPath}`);
+    await artifactClient.uploadArtifact(artifactKey, [artifactPath], artifactRoot, options);
+    core.info(`Uploaded ${artifactKey} from ${artifactRoot}`);
   }
 };
 
