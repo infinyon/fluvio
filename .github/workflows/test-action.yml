@@ -17,6 +17,6 @@ jobs:
         with:
           target: x86_64-unknown-linux-musl
           artifact: |
-            Hello
-            This is artifact 2
-            This is 3
+            fluvio
+            fluvio-run
+            flv-test
