@@ -189,7 +189,7 @@ jobs:
         run: sccache --stop-server || true
 
       - name: Upload Fluvio Artifacts
-        uses: ./actions/upload-fluvio
+        uses: ./.github/actions/upload-fluvio
         with:
           target: ${{ matrix.target }}
           artifact: |
