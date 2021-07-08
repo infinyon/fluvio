@@ -10,10 +10,15 @@ const runOnce = async () => {
   const context = github.context;
   const releaseMode = context.eventName === "push" && ref === "refs/heads/staging";
 
-  const buildPrefix = (!!target) ? `target/${target}/` : "target/";
+  const buildPrefix = (!!target) ? `target/${target}` : "target";
   const buildRelease = (releaseMode) ? "release" : "debug";
 
+  const artifacts = artifact.trim().split("\n");
+  const paths = artifacts.map(artifact => `${buildPrefix}/${buildRelease}/${artifact}`);
+
   core.info(`artifact: ${artifact}`);
+  core.info(`artifacts: ${JSON.stringify(artifacts)}`);
+  core.info(`paths: ${paths}`);
   core.info(`target: ${target}`);
   core.info(`sha: ${sha}`);
   core.info(`ref: ${ref}`);
