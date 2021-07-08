@@ -191,50 +191,11 @@ jobs:
       - name: Upload Fluvio Artifacts
         uses: ./actions/upload-fluvio
         with:
-          artifacts: |
+          target: ${{ matrix.target }}
+          artifact: |
             fluvio
             fluvio-run
             flv-test
-
-      # DEBUG MODE: Upload artifacts
-      - name: Upload artifact - fluvio (DEBUG)
-        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-${{ matrix.target }}
-          path: target/${{ matrix.target }}/debug/fluvio
-      - name: Upload artifact - fluvio-run (DEBUG)
-        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-run-${{ matrix.target }}
-          path: target/${{ matrix.target }}/debug/fluvio-run
-      - name: Upload atrifact - flv-test (DEBUG)
-        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: flv-test-${{ matrix.target }}
-          path: target/${{ matrix.target }}/debug/flv-test
-
-      # RELEASE MODE: Upload artifacts
-      - name: Upload artifact - fluvio (RELEASE)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/fluvio
-      - name: Upload artifact - fluvio-run (RELEASE)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-run-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/fluvio-run
-      - name: Upload atrifact - flv-test (RELEASE)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        uses: actions/upload-artifact@v2
-        with:
-          name: flv-test-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/flv-test
 
   run_platform_unit_test:
     name: Run unit tests for Platform (${{ matrix.os }})
