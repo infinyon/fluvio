@@ -188,6 +188,8 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
+      - name: Install action dependencies
+        run: cd .github/actions/upload-fluvio && npm install --production
       - name: Upload Fluvio Artifacts
         uses: ./.github/actions/upload-fluvio
         with:
