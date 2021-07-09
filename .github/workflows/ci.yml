@@ -58,7 +58,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
           echo "RELEASE_FLAG=true" | tee -a $GITHUB_ENV
-          echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release"
+          echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
 
       - name: Install sccache (ubuntu-latest)
         if: matrix.os == 'ubuntu-latest'
