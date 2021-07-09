@@ -66,6 +66,7 @@ jobs:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: 0.2.13
         run: |
+          ./actions/sccache.sh ${{ matrix.os }}
           SCCACHE_PATH=/home/runner/.cache/sccache
           echo "SCCACHE_PATH=$SCCACHE_PATH" | tee -a $GITHUB_ENV
           SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
