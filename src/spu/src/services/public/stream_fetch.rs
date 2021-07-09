@@ -24,8 +24,9 @@ use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
-use crate::smart_stream::{SmartStreamModule, SmartStreamEngine};
 use publishers::INIT_OFFSET;
+use wasmtime::{Engine, Module};
+use crate::smart_stream::filter::SmartFilter;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -40,7 +41,7 @@ pub struct StreamFetchHandler {
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
-    sm_engine: SmartStreamEngine,
+    sm_engine: Engine,
     sm_bytes: Vec<u8>,
 }
 
@@ -96,7 +97,7 @@ impl StreamFetchHandler {
                 consumer_offset_listener: offset_listener,
                 stream_id,
                 leader_state: leader_state.clone(),
-                sm_engine: SmartStreamEngine::new(),
+                sm_engine: Engine::default(),
                 sm_bytes,
                 max_fetch_bytes,
             };
@@ -149,14 +150,14 @@ impl StreamFetchHandler {
         // and can't be send across Send
         let module = if !self.sm_bytes.is_empty() {
             Some(
-                self.sm_engine
-                    .create_module_from_binary(&self.sm_bytes)
-                    .map_err(|err| -> FlvSocketError {
+                Module::from_binary(&self.sm_engine, &self.sm_bytes).map_err(
+                    |err| -> FlvSocketError {
                         FlvSocketError::IoError(IoError::new(
                             ErrorKind::Other,
                             format!("module loading error {}", err),
                         ))
-                    })?,
+                    },
+                )?,
             )
         } else {
             None
@@ -273,7 +274,7 @@ impl StreamFetchHandler {
     async fn send_back_records(
         &mut self,
         offset: Offset,
-        module_option: Option<&SmartStreamModule>,
+        module_option: Option<&Module>,
     ) -> Result<(Offset, bool), FlvSocketError> {
         let now = Instant::now();
         let mut file_partition_response = FilePartitionResponse {
@@ -310,7 +311,7 @@ impl StreamFetchHandler {
 
                 debug!("creating smart filter");
                 let filter_batch = {
-                    let filter = module.create_filter().map_err(|err| {
+                    let mut filter = SmartFilter::new(&self.sm_engine, module).map_err(|err| {
                         IoError::new(ErrorKind::Other, format!("creating filter {}", err))
                     })?;
 
