@@ -60,19 +60,8 @@ jobs:
           echo "RELEASE_FLAG=true" | tee -a $GITHUB_ENV
           echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
 
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.13
-        run: |
-          SCCACHE_PATH=/home/runner/.cache/sccache
-          echo "SCCACHE_PATH=$SCCACHE_PATH" | tee -a $GITHUB_ENV
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
-          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Install sccache
+        run: ./actions/sccache-install.sh ${{ matrix.os }}
       - name: Print env
         run:
           echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
@@ -84,11 +73,7 @@ jobs:
           profile: minimal
           override: true
       - name: Install zig & lld for Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo snap install --beta --classic zig && \
-          sudo apt-get install lld-11 && \
-          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
+        run: ./actions/zig-install.sh ${{ matrix.os }}
       - name: Cache cargo registry and sccache
         uses: actions/cache@v2
         continue-on-error: false
@@ -101,7 +86,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-sccache-
       - name: Start sccache server
-        run: sccache --start-server
+        run: ./actions/sccache-start.sh ${{ matrix.os }}
 
       - name: Build CLI
         run: make build-cli
@@ -113,7 +98,7 @@ jobs:
         run: make build-test
 
       - name: Stop sccache server
-        run: sccache --stop-server || true
+        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
       # RELEASE MODE: Upload artifacts
       - name: Upload artifact - fluvio (${{ env.RELEASE_FLAG }})
@@ -149,7 +134,6 @@ jobs:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.target }}
       SCCACHE_CACHE_SIZE: 2G
       SCCACHE_DIR: dummy
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
@@ -183,7 +167,6 @@ jobs:
 
       - name: Start sccache server
         run: ./actions/sccache-start.sh ${{ matrix.os }}
-
 
       - name: Rustfmt
         run: make check-fmt
