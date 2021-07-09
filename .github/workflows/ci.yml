@@ -151,7 +151,7 @@ jobs:
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.target }}
       SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      SCCACHE_DIR: dummy
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
@@ -169,6 +169,10 @@ jobs:
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
           mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Print env
+        run:
+          echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
