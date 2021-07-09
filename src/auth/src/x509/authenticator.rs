@@ -1,6 +1,9 @@
 use std::{collections::HashMap, path::Path};
 use std::io::{Error as IoError, ErrorKind as IoErrorKind};
+#[cfg(unix)]
 use std::os::unix::io::AsRawFd;
+#[cfg(windows)]
+use std::os::windows::io::AsRawSocket;
 
 use tracing::{debug, trace};
 use x509_parser::{certificate::X509Certificate, parse_x509_certificate};
@@ -51,10 +54,15 @@ impl X509Authenticator {
         tcp_stream: &TcpStream,
         authorization_request: AuthRequest,
     ) -> Result<bool, IoError> {
+        #[cfg(unix)]
+        let fd = tcp_stream.as_raw_fd();
+        #[cfg(windows)]
+        let fd = tcp_stream.as_raw_socket();
+
         let mut socket = fluvio_socket::FluvioSocket::from_stream(
             Box::new(tcp_stream.clone()),
             Box::new(tcp_stream.clone()),
-            tcp_stream.as_raw_fd(),
+            fd,
         );
 
         let request_message = RequestMessage::new_request(authorization_request);
