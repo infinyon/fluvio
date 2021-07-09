@@ -1,5 +1,5 @@
 # CI for Tier2 platforms
-# This should not block CI or Release 
+# This should not block CI or Release
 
 name: CI-Tier2
 
@@ -14,7 +14,7 @@ on:
       verbose:
         description: "Set --verbose to get verbose build output"
         required: false
-        default: ''
+        default: ""
 
 env:
   VERBOSE: ${{ github.events.input.verbose }}
@@ -24,10 +24,9 @@ jobs:
     name: Cancel Previous Runs
     runs-on: ubuntu-latest
     steps:
-      - uses: styfle/cancel-workflow-action@0.4.1
+      - uses: styfle/cancel-workflow-action@0.9.0
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
-
 
   build_checks:
     name: ${{ matrix.task.name }} (${{ matrix.os }})
@@ -100,7 +99,6 @@ jobs:
 
       - name: Stop sccache server
         run: sccache --stop-server || true
-
 
   build_platform:
     name: Build Platform (${{ matrix.os }})
