@@ -66,7 +66,6 @@ jobs:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: 0.2.13
         run: |
-          ./actions/sccache.sh ${{ matrix.os }}
           SCCACHE_PATH=/home/runner/.cache/sccache
           echo "SCCACHE_PATH=$SCCACHE_PATH" | tee -a $GITHUB_ENV
           SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
@@ -163,11 +162,12 @@ jobs:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: v0.2.15
         run: |
+          ./actions/sccache.sh ${{ matrix.os }}
           SCCACHE_DIR=/home/runner/.cache/sccache
           echo "SCCACHE_DIR=$SCCACHE_DIR" | tee -a $GITHUB_ENV
           SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
-          curl --verbose -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
+          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
           chmod +x $SCCACHE_FILE/sccache
           mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
           echo "$HOME/.local/bin" >> $GITHUB_PATH
