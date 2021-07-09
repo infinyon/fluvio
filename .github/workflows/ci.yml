@@ -162,8 +162,8 @@ jobs:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: 0.2.13
         run: |
-          SCCACHE_PATH=/home/runner/.cache/sccache
-          echo "SCCACHE_PATH=$SCCACHE_PATH" | tee -a $GITHUB_ENV
+          SCCACHE_DIR=/home/runner/.cache/sccache
+          echo "SCCACHE_DIR=$SCCACHE_DIR" | tee -a $GITHUB_ENV
           SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
@@ -171,7 +171,7 @@ jobs:
           echo "$HOME/.local/bin" >> $GITHUB_PATH
       - name: Print env
         run:
-          echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
+          echo "SCCACHE_DIR = ${{ env.SCCACHE_DIR }} "
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -192,7 +192,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ env.SCCACHE_PATH  }}
+            ${{ env.SCCACHE_DIR  }}
           key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-sccache-
@@ -249,6 +249,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
+    needs: check_and_test_platform
     strategy:
       matrix:
         os: [infinyon-ubuntu-bionic]
