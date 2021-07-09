@@ -150,7 +150,6 @@ jobs:
     name: check and unit tests for Platform target (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
