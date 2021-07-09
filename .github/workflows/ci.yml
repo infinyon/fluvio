@@ -47,7 +47,7 @@ jobs:
       RUSTV: ${{ matrix.rust }}
       SCCACHE_CACHE_SIZE: 2G
       RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
-      SCCACHE_PATH: dummy
+      RELEASE_NAME: debug
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
@@ -57,7 +57,8 @@ jobs:
       - name: Set RELEASE mode
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
-          echo "RELEASE_FLAG=true" | tee -a $GITHUB_ENV
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
           echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
 
       - name: Install sccache
@@ -100,21 +101,18 @@ jobs:
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
-      # RELEASE MODE: Upload artifacts
-      - name: Upload artifact - fluvio (${{ env.RELEASE_FLAG }})
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+      # Upload artifacts
+      - name: Upload artifact - fluvio
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio
-      - name: Upload artifact - fluvio-run (${{ env.RELEASE_FLAG }})
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+      - name: Upload artifact - fluvio-run (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-run-${{ matrix.target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio-run
-      - name: Upload atrifact - flv-test (${{ env.RELEASE_FLAG }})
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+      - name: Upload atrifact - flv-test (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
           name: flv-test-${{ matrix.target }}
