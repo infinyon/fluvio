@@ -160,7 +160,7 @@ jobs:
       - name: Install sccache (ubuntu-latest)
         if: matrix.os == 'ubuntu-latest'
         env:
-          LINK: https://github.com/mozilla/sccache/releases/download/{{ $env.SCCACHE_VERSION }}
+          LINK: https://github.com/mozilla/sccache/releases/download/${{ env.SCCACHE_VERSION }}
         run: |
           SCCACHE_DIR=/home/runner/.cache/sccache
           echo "SCCACHE_DIR=$SCCACHE_DIR" | tee -a $GITHUB_ENV
