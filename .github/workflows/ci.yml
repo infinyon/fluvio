@@ -188,7 +188,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ SCCACHE_PATH  }}
+            ${{ env.SCCACHE_PATH  }}
           key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-sccache-
