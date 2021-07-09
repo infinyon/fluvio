@@ -95,8 +95,6 @@ jobs:
       # start of inner tasks
       - name: Doc tests
         run: make run-client-doc-test
-      - name: Rustfmt
-        run: make check-fmt
 
       - name: Stop sccache server
         run: sccache --stop-server || true
@@ -684,7 +682,8 @@ jobs:
     name: Publish Docker Image
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
-      - build_checks
+      - build_checks_client
+      - build_checks_platform
       - build_platform_binaries
       - build_wasm
       - local_cluster_test
