@@ -29,20 +29,6 @@ jobs:
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
 
-
-  check_and_test_client:
-    name: Build Client Checks for (${{ matrix.target }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-        target: [x86_64-unknown-linux-musl]
-
-
-  
-
   # build binaries. use release for staging
   # this requires check and test
   build_platform_binaries:
@@ -124,7 +110,6 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
-
       # RELEASE MODE: Upload artifacts
       - name: Upload artifact - fluvio (${{ RELEASE_FLAG }})
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
@@ -145,7 +130,7 @@ jobs:
           name: flv-test-${{ matrix.target }}
           path: ${{ RUST_BIN_DIR }}/flv-test
 
-# Run all checks and unit test. This always run on debug mode
+  # Run all checks and unit test. This always run on debug mode
   check_and_test_platform:
     name: check and unit tests for Platform target (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
@@ -220,7 +205,6 @@ jobs:
 
       - name: Stop sccache server
         run: sccache --stop-server || true
-
 
   build_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
