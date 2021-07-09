@@ -29,6 +29,7 @@ pub async fn produce_message(
     } else if consumer_wait {
         produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
     } else {
+        // TODO: Support multiple producer
         spawn(produce_message_with_api(
             test_driver.clone(),
             offsets.clone(),
@@ -64,6 +65,7 @@ mod offsets {
         let client = test_driver.client.clone();
         let mut admin = client.admin().await;
 
+        // TODO: Support partition
         for _i in 0..partition {
             let topic_name = test_case.environment.topic_name.clone();
             // find last offset

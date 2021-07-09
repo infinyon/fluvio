@@ -2,14 +2,15 @@ use std::sync::Arc;
 use std::process::exit;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption, TestResult};
+use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
-use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
-use fluvio_test_util::test_meta::TestTimer;
-use hdrhistogram::Histogram;
+use fluvio_test_util::test_runner::{FluvioTestDriver};
+use fluvio_test_util::test_runner::fluvio_test_meta::FluvioTestMeta;
+use fluvio_test_util::test_meta::test_timer::TestTimer;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -130,17 +131,7 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<FluvioTestDriver
         )
     };
 
-    Arc::new(RwLock::new(FluvioTestDriver {
-        client: fluvio_client,
-        num_topics: 0,
-        num_producers: 0,
-        num_consumers: 0,
-        bytes_produced: 0,
-        bytes_consumed: 0,
-        produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    }))
+    Arc::new(RwLock::new(FluvioTestDriver::new(fluvio_client)))
 }
 
 #[cfg(test)]

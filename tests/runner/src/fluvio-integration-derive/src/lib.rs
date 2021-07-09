@@ -104,26 +104,18 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
             let lock = test_driver.read().await;
 
-            TestResult {
-                num_topics: lock.num_topics as u64,
-                num_producers: lock.num_producers as u64,
-                num_consumers: lock.num_consumers as u64,
-                bytes_produced: lock.bytes_produced as u64,
-                bytes_consumed: lock.bytes_consumed as u64,
-                topic_create_latency: lock.topic_create_latency.value_at_quantile(0.999),
-                produce_latency: lock.produce_latency.value_at_quantile(0.999),
-                consume_latency: lock.consume_latency.value_at_quantile(0.999),
-                ..Default::default()
-            }
+            lock.get_results()
         }
 
         pub async fn #async_inner_fn_iden(mut test_driver: Arc<RwLock<FluvioTestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
-            use fluvio_test_util::test_meta::{TestCase, TestResult};
-            use fluvio_test_util::test_meta::environment::{EnvDetail};
+            use fluvio_test_util::test_meta::TestCase;
+            use fluvio_test_util::test_meta::test_result::TestResult;
+            use fluvio_test_util::test_meta::environment::EnvDetail;
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
-            use fluvio_test_util::test_meta::TestTimer;
-            use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+            use fluvio_test_util::test_meta::test_timer::TestTimer;
+            use fluvio_test_util::test_runner::FluvioTestDriver;
+            use fluvio_test_util::test_runner::fluvio_test_meta::FluvioTestMeta;
             use fluvio_test_util::setup::environment::EnvironmentType;
             use fluvio_future::task::run;
             use fluvio_future::timer::sleep;
@@ -175,18 +167,11 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         test_timer.stop();
 
                         // This is the final version of TestResult before it renders to stdout
-                        Ok(TestResult {
-                            success: true,
-                            duration: test_timer.duration(),
-                            num_topics: test_result_tmp.num_topics,
-                            topic_create_latency: test_result_tmp.topic_create_latency,
-                            num_producers: test_result_tmp.num_producers,
-                            bytes_produced: test_result_tmp.bytes_produced,
-                            produce_latency: test_result_tmp.produce_latency,
-                            num_consumers: test_result_tmp.num_consumers,
-                            bytes_consumed: test_result_tmp.bytes_consumed,
-                            consume_latency: test_result_tmp.consume_latency,
-                        })
+                        Ok(test_result_tmp
+                            .success(true)
+                            .duration(test_timer.duration())
+                        )
+
                     }
                 }
 

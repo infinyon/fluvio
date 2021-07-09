@@ -7,8 +7,10 @@ use fluvio::RecordKey;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
-use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_util::test_meta::test_result::TestResult;
+use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::fluvio_test_meta::FluvioTestMeta;
 use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
@@ -65,7 +67,9 @@ pub async fn run(
         test_case.option.iteration.clone()
     );
 
+    // Support test data or random gen
     let long_str = String::from("aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccdddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffggggggggggggggggg");
+
     let topic_name = test_case.environment.topic_name();
 
     let mut producers = Vec::new();
@@ -75,6 +79,7 @@ pub async fn run(
         producers.push(producer);
     }
 
+    // TODO: Refactor this into a function so we can call spawn()
     for n in 1..test_case.option.iteration + 1 {
         for (i, p) in producers.iter().enumerate() {
             let message = format!("producer-{} line-{} {}", i, n, long_str.clone());
@@ -106,7 +111,7 @@ pub async fn run(
     let lock = test_driver.read().await;
     println!(
         "Producer latency 99%: {:?}",
-        lock.produce_latency.value_at_quantile(0.999)
+        lock.produce_latency.value_at_percentile(99.0)
     );
     drop(lock);
 }

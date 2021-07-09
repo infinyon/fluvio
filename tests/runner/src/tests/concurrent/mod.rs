@@ -11,9 +11,10 @@ use fluvio_future::task::spawn;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
-
-use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_util::test_meta::test_result::TestResult;
+use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::fluvio_test_meta::FluvioTestMeta;
 #[derive(Debug, Clone)]
 pub struct ConcurrentTestCase {
     pub environment: EnvironmentSetup,
@@ -53,6 +54,8 @@ pub async fn concurrent(
     test_concurrent_consume_produce(test_driver.clone(), test_case.into()).await
 }
 
+// TODO: This needs to support a max size, or a file input.
+// TODO: This needs to support some way to allow producer to send 50% of some max size before starting consumer to play catch-up
 pub async fn test_concurrent_consume_produce(
     test_driver: Arc<RwLock<FluvioTestDriver>>,
     option: ConcurrentTestCase,
