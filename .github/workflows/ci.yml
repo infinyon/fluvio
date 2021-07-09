@@ -182,7 +182,7 @@ jobs:
             ${{ runner.os }}-cargo-sccache-
 
       - name: Start sccache server
-        run: ./sccache-start.sh ${{ matrix.os }}
+        run: ./actions/sccache-start.sh ${{ matrix.os }}
 
 
       - name: Rustfmt
@@ -198,7 +198,7 @@ jobs:
         run: make run-all-unit-test
 
       - name: Stop sccache server
-        run: ./sccache-terminate.sh ${{ matrix.os }}
+        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
   build_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
