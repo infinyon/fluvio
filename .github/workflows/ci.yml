@@ -193,6 +193,32 @@ jobs:
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
+  check_windows:
+    name: Build Windows crates (${{ matrix.wasm-crate }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        rust: [stable]
+        wasm-crate:
+          - cli
+          - client
+          - socket
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Windows check for ${{ matrix.wasm-crate }}
+        run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml
+
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
@@ -216,7 +242,7 @@ jobs:
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - name: Setup Minikube for Linux
         run: |
-          ./k8-util/minikube/reset-minikube.sh 
+          ./k8-util/minikube/reset-minikube.sh
           sleep 30
       - name: Test minikube
         run: |

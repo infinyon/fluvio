@@ -55,3 +55,6 @@ debug-assertions = true
 overflow-checks = true
 incremental = false
 codegen-units = 256
+[patch.crates-io]
+#fluvio-future = { path = "../future-aio/" }
+fluvio-future = { git = "https://github.com/simlay/future-aio", branch = "add-windows-to-ci" }

@@ -121,5 +121,15 @@ cfg_if::cfg_if! {
                 Self::from_stream(Box::new(tcp_stream.clone()),Box::new(tcp_stream), fd)
             }
         }
+    } else if #[cfg(windows)] {
+        use std::os::windows::io::AsRawSocket;
+
+        use fluvio_future::net::TcpStream;
+        impl From<TcpStream> for FluvioSocket {
+            fn from(tcp_stream: TcpStream) -> Self {
+                let fd = tcp_stream.as_raw_socket();
+                Self::from_stream(Box::new(tcp_stream.clone()),Box::new(tcp_stream), fd)
+            }
+        }
     }
 }
