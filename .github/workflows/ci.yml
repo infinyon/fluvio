@@ -32,7 +32,7 @@ jobs:
   # build binaries. use release for staging
   # this requires check and test
   build_platform_binaries:
-    name: Build binaries for Platform Target (${{ matrix.rust_target }})
+    name: Build binaries for Platform Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     needs: check_and_test_platform
     strategy:
@@ -137,7 +137,7 @@ jobs:
 
   # Run all checks and unit test. This always run on debug mode
   check_and_test_platform:
-    name: check and unit tests for Platform target (${{ matrix.target }})
+    name: check and unit tests for Platform target (${{ matrix.target }}) on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
