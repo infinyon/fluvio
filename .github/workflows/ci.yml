@@ -47,6 +47,7 @@ jobs:
       RUSTV: ${{ matrix.rust }}
       SCCACHE_CACHE_SIZE: 2G
       RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
+      SCCACHE_PATH: dummy
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
@@ -72,6 +73,10 @@ jobs:
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
           mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
           echo "$HOME/.local/bin" >> $GITHUB_PATH
+      - name: Print env
+        run:
+          echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -91,7 +96,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ SCCACHE_PATH }}
+            ${{ env.SCCACHE_PATH }}
           key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-sccache-
@@ -111,24 +116,24 @@ jobs:
         run: sccache --stop-server || true
 
       # RELEASE MODE: Upload artifacts
-      - name: Upload artifact - fluvio (${{ RELEASE_FLAG }})
+      - name: Upload artifact - fluvio (${{ env.RELEASE_FLAG }})
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.target }}
-          path: ${{ RUST_BIN_DIR }}/fluvio
-      - name: Upload artifact - fluvio-run (${{ RELEASE_FLAG }})
+          path: ${{ env.RUST_BIN_DIR }}/fluvio
+      - name: Upload artifact - fluvio-run (${{ env.RELEASE_FLAG }})
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-run-${{ matrix.target }}
-          path: ${{ RUST_BIN_DIR }}/fluvio-run
-      - name: Upload atrifact - flv-test (${{ RELEASE_FLAG }})
+          path: ${{ env.RUST_BIN_DIR }}/fluvio-run
+      - name: Upload atrifact - flv-test (${{ env.RELEASE_FLAG }})
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: flv-test-${{ matrix.target }}
-          path: ${{ RUST_BIN_DIR }}/flv-test
+          path: ${{ env.RUST_BIN_DIR }}/flv-test
 
   # Run all checks and unit test. This always run on debug mode
   check_and_test_platform:
