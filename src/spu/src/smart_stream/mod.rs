@@ -1,10 +1,13 @@
 use std::sync::Mutex;
 use anyhow::Result;
-use wasmtime::{Memory, Store};
+use wasmtime::{Memory, Store, Engine};
 
 mod memory;
 pub mod filter;
 pub mod file_batch;
+
+#[derive(Default)]
+pub struct SmartStreamEngine(pub(crate) Engine);
 
 #[derive(Clone)]
 pub struct RecordsMemory {

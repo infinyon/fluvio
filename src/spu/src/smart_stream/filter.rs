@@ -16,14 +16,14 @@ use crate::smart_stream::file_batch::FileBatchIterator;
 const FILTER_FN_NAME: &str = "filter";
 type FilterFn = TypedFunc<(i32, i32), i32>;
 
-pub struct SmartFilter {
+pub struct SmartStreamFilter {
     store: Store<()>,
     instance: Instance,
     filter_fn: FilterFn,
     records_cb: Arc<RecordsCallBack>,
 }
 
-impl SmartFilter {
+impl SmartStreamFilter {
     pub fn new(engine: &Engine, module: &Module) -> Result<Self> {
         let mut store = Store::new(engine, ());
         let cb = Arc::new(RecordsCallBack::new());

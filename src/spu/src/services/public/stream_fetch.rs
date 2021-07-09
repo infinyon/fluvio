@@ -25,8 +25,9 @@ use fluvio_types::event::offsets::OffsetChangeListener;
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use publishers::INIT_OFFSET;
-use wasmtime::{Engine, Module};
-use crate::smart_stream::filter::SmartFilter;
+use wasmtime::Module;
+use crate::smart_stream::filter::SmartStreamFilter;
+use crate::smart_stream::SmartStreamEngine;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -41,7 +42,7 @@ pub struct StreamFetchHandler {
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
-    sm_engine: Engine,
+    sm_engine: SmartStreamEngine,
     sm_bytes: Vec<u8>,
 }
 
@@ -97,7 +98,7 @@ impl StreamFetchHandler {
                 consumer_offset_listener: offset_listener,
                 stream_id,
                 leader_state: leader_state.clone(),
-                sm_engine: Engine::default(),
+                sm_engine: SmartStreamEngine::default(),
                 sm_bytes,
                 max_fetch_bytes,
             };
@@ -150,7 +151,7 @@ impl StreamFetchHandler {
         // and can't be send across Send
         let module = if !self.sm_bytes.is_empty() {
             Some(
-                Module::from_binary(&self.sm_engine, &self.sm_bytes).map_err(
+                Module::from_binary(&self.sm_engine.0, &self.sm_bytes).map_err(
                     |err| -> FlvSocketError {
                         FlvSocketError::IoError(IoError::new(
                             ErrorKind::Other,
@@ -311,9 +312,10 @@ impl StreamFetchHandler {
 
                 debug!("creating smart filter");
                 let filter_batch = {
-                    let mut filter = SmartFilter::new(&self.sm_engine, module).map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("creating filter {}", err))
-                    })?;
+                    let mut filter =
+                        SmartStreamFilter::new(&self.sm_engine.0, module).map_err(|err| {
+                            IoError::new(ErrorKind::Other, format!("creating filter {}", err))
+                        })?;
 
                     let records = &file_partition_response.records;
 
