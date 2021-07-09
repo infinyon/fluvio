@@ -105,17 +105,17 @@ jobs:
       - name: Upload artifact - fluvio
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-${{ matrix.target }}
+          name: fluvio-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio
       - name: Upload artifact - fluvio-run (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-run-${{ matrix.target }}
+          name: fluvio-run-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio-run
       - name: Upload atrifact - flv-test (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
-          name: flv-test-${{ matrix.target }}
+          name: flv-test-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/flv-test
 
   # Run all checks and unit test. This always run on debug mode
