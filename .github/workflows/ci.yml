@@ -30,8 +30,8 @@ jobs:
           access_token: ${{ secrets.GITHUB_TOKEN }}
 
 
-  build_checks_client:
-    name: Build Client Checks for (${{ matrix.os }})
+  check_and_test_client:
+    name: Build Client Checks for (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -39,158 +39,28 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         target: [x86_64-unknown-linux-musl]
-        include:
-          - os: ubuntu-latest
-            sccache-path: /home/runner/.cache/sccache
-
-    env:
-      RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
-      RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.target }}
-      SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.13
-        run: |
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
-          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-      - name: Install zig & lld for Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo snap install --beta --classic zig && \
-          sudo apt-get install lld-11 && \
-          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
-      - name: Cache cargo registry and sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-sccache-
-
-      - name: Start sccache server
-        run: sccache --start-server
-
-      # start of inner tasks
-      - name: Doc tests
-        run: make run-client-doc-test
-
-      - name: Stop sccache server
-        run: sccache --stop-server || true
 
 
-  build_checks_platform:
-    name: ${{ matrix.task.name }} (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        rust: [stable]
-        include:
-          - os: ubuntu-latest
-            rust: stable
-            sccache-path: /home/runner/.cache/sccache
-            target: x86_64-unknown-linux-musl
+  
 
-    env:
-      RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
-      RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.target }}
-      SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install sccache (ubuntu-latest)
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          LINK: https://github.com/mozilla/sccache/releases/download
-          SCCACHE_VERSION: 0.2.13
-        run: |
-          SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
-          mkdir -p $HOME/.local/bin
-          curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
-          mv -f $SCCACHE_FILE/sccache $HOME/.local/bin/sccache
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-      - name: Install zig & lld for Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo snap install --beta --classic zig && \
-          sudo apt-get install lld-11 && \
-          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
-      - name: Cache cargo registry and sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-sccache-
-
-      - name: Start sccache server
-        run: sccache --start-server
-
-      # main tasks
-      - name: Doc tests
-        run: make run-all-doc-test
-      - name: Rustfmt
-        run: make check-fmt
-
-      - name: Stop sccache server
-        run: sccache --stop-server || true
-
+  # build binaries. use release for staging
+  # this requires check and test
   build_platform_binaries:
-    name: Build binaries for Platform (${{ matrix.os }})
+    name: Build binaries for Platform Target (${{ matrix.rust_target }})
     runs-on: ${{ matrix.os }}
+    needs: check_and_test_platform
     strategy:
-      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        include:
-          - os: ubuntu-latest
-            sccache-path: /home/runner/.cache/sccache
-            target: x86_64-unknown-linux-musl
+        rust_target: [x86_64-unknown-linux-musl]
+
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.target }}
       SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
@@ -200,7 +70,8 @@ jobs:
       - name: Set RELEASE mode
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
-          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_FLAG=true" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release"
 
       - name: Install sccache (ubuntu-latest)
         if: matrix.os == 'ubuntu-latest'
@@ -208,6 +79,8 @@ jobs:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: 0.2.13
         run: |
+          SCCACHE_PATH=/home/runner/.cache/sccache
+          echo "SCCACHE_PATH=$SCCACHE_PATH" | tee -a $GITHUB_ENV
           SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
@@ -232,11 +105,10 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ matrix.sccache-path }}
+            ${{ SCCACHE_PATH }}
           key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-sccache-
-
       - name: Start sccache server
         run: sccache --start-server
 
@@ -252,58 +124,38 @@ jobs:
       - name: Stop sccache server
         run: sccache --stop-server || true
 
-      # DEBUG MODE: Upload artifacts
-      - name: Upload artifact - fluvio (DEBUG)
-        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-${{ matrix.target }}
-          path: target/${{ matrix.target }}/debug/fluvio
-      - name: Upload artifact - fluvio-run (DEBUG)
-        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-run-${{ matrix.target }}
-          path: target/${{ matrix.target }}/debug/fluvio-run
-      - name: Upload atrifact - flv-test (DEBUG)
-        if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: flv-test-${{ matrix.target }}
-          path: target/${{ matrix.target }}/debug/flv-test
 
       # RELEASE MODE: Upload artifacts
-      - name: Upload artifact - fluvio (RELEASE)
+      - name: Upload artifact - fluvio (${{ RELEASE_FLAG }})
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/fluvio
-      - name: Upload artifact - fluvio-run (RELEASE)
+          path: ${{ RUST_BIN_DIR }}/fluvio
+      - name: Upload artifact - fluvio-run (${{ RELEASE_FLAG }})
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-run-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/fluvio-run
-      - name: Upload atrifact - flv-test (RELEASE)
+          path: ${{ RUST_BIN_DIR }}/fluvio-run
+      - name: Upload atrifact - flv-test (${{ RELEASE_FLAG }})
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         uses: actions/upload-artifact@v2
         with:
           name: flv-test-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/flv-test
+          path: ${{ RUST_BIN_DIR }}/flv-test
 
-  run_platform_unit_test:
-    name: Run unit tests for Platform (${{ matrix.os }})
+# Run all checks and unit test. This always run on debug mode
+  check_and_test_platform:
+    name: check and unit tests for Platform target (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        include:
-          - os: ubuntu-latest
-            sccache-path: /home/runner/.cache/sccache
-            target: x86_64-unknown-linux-musl
+        target: [x86_64-unknown-linux-musl]
+
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
@@ -321,6 +173,8 @@ jobs:
           LINK: https://github.com/mozilla/sccache/releases/download
           SCCACHE_VERSION: 0.2.13
         run: |
+          SCCACHE_PATH=/home/runner/.cache/sccache
+          echo "SCCACHE_PATH=$SCCACHE_PATH" | tee -a $GITHUB_ENV
           SCCACHE_FILE=sccache-$SCCACHE_VERSION-x86_64-unknown-linux-musl
           mkdir -p $HOME/.local/bin
           curl -L "$LINK/$SCCACHE_VERSION/$SCCACHE_FILE.tar.gz" | tar xz
@@ -345,7 +199,7 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            ${{ matrix.sccache-path }}
+            ${{ SCCACHE_PATH  }}
           key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-sccache-
@@ -353,11 +207,21 @@ jobs:
       - name: Start sccache server
         run: sccache --start-server
 
+      - name: Rustfmt
+        run: make check-fmt
+
+      - name: Clippy
+        run: make check-clippy
+
+      - name: Doc tests
+        run: make run-all-doc-test
+
       - name: Unit tests
         run: make run-all-unit-test
 
       - name: Stop sccache server
         run: sccache --stop-server || true
+
 
   build_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
@@ -683,7 +547,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - build_checks_client
-      - build_checks_platform
       - build_platform_binaries
       - build_wasm
       - local_cluster_test
