@@ -14,6 +14,7 @@ use tracing::debug;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
 
+// Add a chart type for plotting rates over time
 // Rename: *_latency, *_num, *_bytes
 #[derive(Clone)]
 pub struct FluvioTestDriver {
@@ -26,6 +27,7 @@ pub struct FluvioTestDriver {
     pub produce_latency: Histogram<u64>,
     pub consume_latency: Histogram<u64>,
     pub topic_create_latency: Histogram<u64>,
+    pub producer_data_rate: Histogram<u64>,
 }
 
 impl FluvioTestDriver {
@@ -40,6 +42,7 @@ impl FluvioTestDriver {
             produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_data_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
     }
 
@@ -53,6 +56,7 @@ impl FluvioTestDriver {
             produce_latency_histogram: self.produce_latency.clone(),
             consume_latency_histogram: self.consume_latency.clone(),
             topic_create_latency_histogram: self.topic_create_latency.clone(),
+            produce_rate_histogram: self.producer_data_rate.clone(),
             ..Default::default()
         }
     }
@@ -88,17 +92,25 @@ impl FluvioTestDriver {
 
         let result = p.send(key, message.clone()).await;
 
-        let produce_time = now.elapsed().unwrap().as_nanos();
+        let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
+        let bytes_sent = message.len() as u64;
 
         debug!(
             "(#{}) Produce latency (ns): {:?}",
             self.produce_latency.len() + 1,
-            produce_time as u64
+            produce_time_ns,
         );
 
-        self.produce_latency.record(produce_time as u64).unwrap();
+        self.produce_latency.record(produce_time_ns).unwrap();
 
-        self.bytes_produced += message.len();
+        self.bytes_produced += bytes_sent as usize;
+
+        // Convert Bytes/ns to Bytes/s
+        // 1_000_000_000 ns in 1 second
+        const NS_IN_SECOND: f64 = 1_000_000_000.0;
+        let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
+        debug!("Producer throughput Bytes/s: {:?}", rate);
+        self.producer_data_rate.record(rate as u64).unwrap();
 
         result
     }

@@ -21,6 +21,7 @@ pub struct TestResult {
     pub topic_create_latency_histogram: Histogram<u64>,
     pub produce_latency_histogram: Histogram<u64>,
     pub consume_latency_histogram: Histogram<u64>,
+    pub produce_rate_histogram: Histogram<u64>,
 }
 
 impl Default for TestResult {
@@ -44,6 +45,7 @@ impl Default for TestResult {
             consume_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
                 .unwrap(),
+            produce_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
     }
 }
@@ -121,6 +123,10 @@ impl Display for TestResult {
             Duration::from_nanos(self.produce_latency_histogram.value_at_percentile(99.9))
         );
 
+        const BYTES_IN_MBYTE: f64 = 1_000_000.0;
+        let producer_rate_mbps =
+            format!("{:.2?}", self.produce_rate_histogram.max() as f64 / BYTES_IN_MBYTE);
+
         let consumer_latency_avg = format!(
             "{:.2?}",
             Duration::from_nanos(self.consume_latency_histogram.mean() as u64)
@@ -147,8 +153,8 @@ impl Display for TestResult {
             ["Consumer", self.num_consumers],
 
             [b->""],
-            [b->"Throughput", b->"Bytes"],
-            ["Producer", self.bytes_produced],
+            [b->"Throughput", b->"Bytes", b->"Max rate (MBytes/s)"],
+            ["Producer", self.bytes_produced, producer_rate_mbps],
             ["Consumer", self.bytes_consumed],
 
             [b->""],
