@@ -34,7 +34,6 @@ jobs:
   build_platform_binaries:
     name: Build binaries for Platform Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    needs: check_and_test_platform
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -101,8 +100,12 @@ jobs:
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
+      - name: Stop sccache server
+        run: ls target/${{ matrix.rust_target }}
+
+
       # Upload artifacts
-      - name: Upload artifact - fluvio
+      - name: Upload artifact - fluvio (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.rust_target }}
@@ -505,6 +508,7 @@ jobs:
     name: Publish Docker Image
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
+      - check_and_test_platform
       - build_platform_binaries
       - build_wasm
       - local_cluster_test
