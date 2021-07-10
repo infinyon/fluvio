@@ -82,7 +82,7 @@ jobs:
       - name: Build CLI
         run: make build-cli
 
-      #- name: Build Cluster CLI
+      #- name: Build Cluster CLI 
       #  run: make build-cluster
 
       #- name: Build Test CLI
