@@ -24,6 +24,9 @@ use super::SpuServerApiKey;
 // version for WASM_MODULE
 pub const WASM_MODULE_API: i16 = 11;
 
+// version for aggregator smartstream
+pub const AGGREGATOR_API: i16 = 12;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[derive(Decode, Encode, Default, Debug)]
@@ -38,6 +41,9 @@ where
     pub isolation: Isolation,
     #[fluvio(min_version = 11)]
     pub wasm_module: Vec<u8>,
+    /// The initial value of the accumulator during aggregation
+    #[fluvio(min_version = 12)]
+    pub accumulator: Option<Vec<u8>>,
     pub data: PhantomData<R>,
 }
 
@@ -46,7 +52,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = WASM_MODULE_API;
+    const DEFAULT_API_VERSION: i16 = AGGREGATOR_API;
     type Response = StreamFetchResponse<R>;
 }
 

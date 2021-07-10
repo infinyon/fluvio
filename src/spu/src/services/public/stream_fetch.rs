@@ -3,7 +3,7 @@ use std::time::{Instant};
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use tracing::{debug, trace, error, instrument};
+use tracing::{info, error, debug, trace, instrument};
 use tokio::select;
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
@@ -41,7 +41,8 @@ pub struct StreamFetchHandler {
     leader_state: SharedFileLeaderState,
     stream_id: u32,
     sm_engine: SmartStreamEngine,
-    sm_bytes: Vec<u8>,
+    sm_wasm: Option<Vec<u8>>,
+    sm_accumulator: Option<Vec<u8>>,
 }
 
 impl StreamFetchHandler {
@@ -54,14 +55,18 @@ impl StreamFetchHandler {
         end_event: Arc<SimpleEvent>,
     ) -> Result<(), FlvSocketError> {
         // first get receiver to offset update channel to we don't missed events
-
         let (header, msg) = request.get_header_request();
 
         let current_offset = msg.fetch_offset;
         let isolation = msg.isolation;
         let replica = ReplicaKey::new(msg.topic, msg.partition);
         let max_bytes = msg.max_bytes as u32;
-        let sm_bytes = msg.wasm_module;
+        let sm_wasm = if msg.wasm_module.is_empty() {
+            None
+        } else {
+            Some(msg.wasm_module)
+        };
+        let sm_accumulator = msg.accumulator;
 
         if let Some(leader_state) = ctx.leaders_state().get(&replica) {
             let (stream_id, offset_publisher) =
@@ -69,17 +74,16 @@ impl StreamFetchHandler {
             let offset_listener = offset_publisher.change_listner();
 
             debug!(
-
                 sink = sink.id(),
                 %replica,
                 current_offset,
                 max_bytes,
-                sm_bytes = sm_bytes.len(),
+                sm_bytes = ?sm_wasm.as_ref().map(|b| b.len()),
                 "start stream fetch"
             );
 
             // if we are filtered we should scan all batches instead of just limit to max bytes
-            let max_fetch_bytes = if sm_bytes.is_empty() {
+            let max_fetch_bytes = if sm_wasm.is_none() {
                 max_bytes
             } else {
                 u32::MAX
@@ -91,14 +95,15 @@ impl StreamFetchHandler {
                 replica,
                 header,
                 max_bytes,
+                max_fetch_bytes,
                 sink,
                 end_event,
                 consumer_offset_listener: offset_listener,
                 stream_id,
                 leader_state: leader_state.clone(),
                 sm_engine: SmartStreamEngine::new(),
-                sm_bytes,
-                max_fetch_bytes,
+                sm_wasm,
+                sm_accumulator,
             };
 
             spawn(async move { handler.process(current_offset).await });
@@ -147,22 +152,23 @@ impl StreamFetchHandler {
     async fn inner_process(&mut self, starting_offset: Offset) -> Result<(), FlvSocketError> {
         // initialize smart stream module here instead of beginning because WASM module is not thread safe
         // and can't be send across Send
-        let module = if !self.sm_bytes.is_empty() {
-            Some(
+        let module = self
+            .sm_wasm
+            .as_deref()
+            .map(|wasm| {
                 self.sm_engine
-                    .create_module_from_binary(&self.sm_bytes)
+                    .create_module_from_binary(wasm)
                     .map_err(|err| -> FlvSocketError {
                         FlvSocketError::IoError(IoError::new(
                             ErrorKind::Other,
                             format!("module loading error {}", err),
                         ))
-                    })?,
-            )
-        } else {
-            None
-        };
+                    })
+            })
+            .transpose()?;
 
-        let (mut last_read_offset, consumer_wait) = self
+        // Last offset read by the consumer, Whether to wait for consumer to catch up
+        let (mut last_read_consumer_offset, consumer_wait) = self
             .send_back_records(starting_offset, module.as_ref())
             .await?;
 
@@ -170,11 +176,17 @@ impl StreamFetchHandler {
 
         let mut counter: i32 = 0;
         // since we don't need to wait for consumer, can move consumer to same offset as last read
-        let mut consumer_offset: Option<Offset> = (!consumer_wait).then(|| last_read_offset);
+        let mut consumer_offset: Option<Offset> =
+            (!consumer_wait).then(|| last_read_consumer_offset);
 
         loop {
             counter += 1;
-            debug!(counter, ?consumer_offset, last_read_offset, "waiting");
+            debug!(
+                counter,
+                ?consumer_offset,
+                last_read_consumer_offset,
+                "waiting"
+            );
 
             select! {
                 _ = self.end_event.listen() => {
@@ -182,33 +194,34 @@ impl StreamFetchHandler {
                     break;
                 },
 
+                // Consumer has read up to `changed_consumer_offset`, see if we can send more records
                 changed_consumer_offset = self.consumer_offset_listener.listen() => {
                     if changed_consumer_offset == INIT_OFFSET {
                         continue;
                     }
 
-                    if changed_consumer_offset < last_read_offset {
+                    if changed_consumer_offset < last_read_consumer_offset {
                         // consume hasn't read all offsets, need to send back gaps
                         debug!(
                             changed_consumer_offset,
-                            last_read_offset,
+                            last_read_consumer_offset,
                             "need send back"
                         );
                         let (offset, wait) = self.send_back_records(changed_consumer_offset, module.as_ref()).await?;
-                        last_read_offset = offset;
+                        last_read_consumer_offset = offset;
                         if wait {
                             consumer_offset = None;
                             debug!(
-                                last_read_offset,
+                                last_read_consumer_offset,
                                 "wait for consumer"
                             );
                         } else {
-                            consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
+                            consumer_offset = Some(last_read_consumer_offset);   // no need wait for consumer, skip it
                         }
                     } else {
                         debug!(
                             changed_consumer_offset,
-                            last_read_offset,
+                            last_read_consumer_offset,
                             "consume caught up"
                         );
                         consumer_offset = Some(changed_consumer_offset);
@@ -224,29 +237,30 @@ impl StreamFetchHandler {
                         None => {
                             // we don't know consumer offset, so we delay
                             debug!(delay_consumer_offset = leader_offset_update);
-                            last_read_offset = leader_offset_update;
+                            last_read_consumer_offset = leader_offset_update;
                             continue;
                         },
                     };
 
                     if leader_offset_update <= last_consumer_offset {
+                        // If the consumer is all caught up with the latest records from leader, there is nothing to do
                         debug!(ignored_update_offset = leader_offset_update);
-                        last_read_offset = leader_offset_update;
+                        last_read_consumer_offset = leader_offset_update;
                         continue;
                     }
 
                     // we know what consumer offset is
                     debug!(leader_offset_update, consumer_offset = last_consumer_offset, "reading offset event");
                     let (offset,wait) = self.send_back_records(last_consumer_offset, module.as_ref()).await?;
-                    last_read_offset = offset;
+                    last_read_consumer_offset = offset;
                     if wait {
                         consumer_offset = None;
                         debug!(
-                            last_read_offset,
+                            last_read_consumer_offset,
                             "wait for consumer"
                         );
                     } else {
-                        consumer_offset = Some(last_read_offset);   // no need wait for consumer, skip it
+                        consumer_offset = Some(last_read_consumer_offset);   // no need wait for consumer, skip it
                     }
                 },
             }
@@ -272,7 +286,7 @@ impl StreamFetchHandler {
     )]
     async fn send_back_records(
         &mut self,
-        offset: Offset,
+        start_offset: Offset,
         module_option: Option<&SmartStreamModule>,
     ) -> Result<(Offset, bool), FlvSocketError> {
         let now = Instant::now();
@@ -281,10 +295,13 @@ impl StreamFetchHandler {
             ..Default::default()
         };
 
-        let offset = self
+        // Read records from the leader starting from `offset`
+        // Returns with the HW/LEO of the latest records available in the leader
+        // This describes the range of records that can be read in this request
+        let read_end_offset = self
             .leader_state
             .read_records(
-                offset,
+                start_offset,
                 self.max_fetch_bytes,
                 self.isolation.clone(),
                 &mut file_partition_response,
@@ -292,14 +309,14 @@ impl StreamFetchHandler {
             .await;
 
         debug!(
-            hw = offset.hw,
-            leo = offset.leo,
+            hw = read_end_offset.hw,
+            leo = read_end_offset.leo,
             slice_start = file_partition_response.records.position(),
             slice_end = file_partition_response.records.len(),
             read_records_ms = %now.elapsed().as_millis()
         );
 
-        let mut next_offset = offset.isolation(&self.isolation);
+        let mut next_offset = read_end_offset.isolation(&self.isolation);
 
         if file_partition_response.records.len() > 0 {
             // If a smartstream module is provided, we need to read records from file to memory
@@ -308,40 +325,74 @@ impl StreamFetchHandler {
                 type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
                 use crate::smart_stream::file_batch::FileBatchIterator;
 
-                debug!("creating smart filter");
-                let filter_batch = {
-                    let filter = module.create_filter().map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("creating filter {}", err))
-                    })?;
+                let memory_batch = match &mut self.sm_accumulator {
+                    // If an accumulator value was provided, use `aggregate` function.
+                    Some(accumulator) => {
+                        info!("Creating Smart Aggregator");
+                        let aggregator = module.create_aggregator().map_err(|err| {
+                            IoError::new(ErrorKind::Other, format!("creating aggregator {}", err))
+                        })?;
 
-                    let records = &file_partition_response.records;
+                        let records = &file_partition_response.records;
+                        let slice = records.raw_slice();
+                        let mut file_batch_iterator = FileBatchIterator::from_raw_slice(slice);
 
-                    let slice = records.raw_slice();
-                    let mut file_batch_iterator = FileBatchIterator::from_raw_slice(slice);
+                        let aggregate_batch = aggregator
+                            .aggregate(
+                                &accumulator,
+                                &mut file_batch_iterator,
+                                self.max_bytes as usize,
+                            )
+                            .map_err(|err| {
+                                IoError::new(ErrorKind::Other, format!("aggregate err: {}", err))
+                            })?;
 
-                    // Input: FileBatch, Output: MemoryBatch post-filter
-                    filter
-                        .filter(&mut file_batch_iterator, self.max_bytes as usize)
-                        .map_err(|err| {
-                            IoError::new(ErrorKind::Other, format!("filter err {}", err))
-                        })?
+                        // Take the last accumulated value from this batch and save it for next batch
+                        let latest_accumulator = aggregate_batch.records().iter().last();
+                        if let Some(latest) = latest_accumulator {
+                            debug!(?latest, "Got most recent accumulator:");
+                            let acc_data = Vec::from(latest.value.as_ref());
+                            *accumulator = acc_data;
+                        }
+
+                        aggregate_batch
+                    }
+                    // If no accumulator was provided, use `filter` function
+                    None => {
+                        info!("Creating smart filter");
+                        let filter = module.create_filter().map_err(|err| {
+                            IoError::new(ErrorKind::Other, format!("creating filter {}", err))
+                        })?;
+
+                        let records = &file_partition_response.records;
+
+                        let slice = records.raw_slice();
+                        let mut file_batch_iterator = FileBatchIterator::from_raw_slice(slice);
+
+                        // Input: FileBatch, Output: MemoryBatch post-filter
+                        filter
+                            .filter(&mut file_batch_iterator, self.max_bytes as usize)
+                            .map_err(|err| {
+                                IoError::new(ErrorKind::Other, format!("filter err {}", err))
+                            })?
+                    }
                 };
 
-                let consumer_wait = !filter_batch.records().is_empty();
+                let consumer_wait = !memory_batch.records().is_empty();
                 if !consumer_wait {
                     debug!(next_offset, "filter, no records send back, skipping");
                     return Ok((next_offset, consumer_wait));
                 }
 
-                trace!("filter batch: {:#?}", filter_batch);
-                next_offset = filter_batch.get_last_offset() + 1;
+                trace!("filter batch: {:#?}", memory_batch);
+                next_offset = memory_batch.get_last_offset() + 1;
 
                 debug!(
                     next_offset,
-                    records = filter_batch.records().len(),
+                    records = memory_batch.records().len(),
                     "sending back to consumer"
                 );
-                let records = RecordSet::default().add(filter_batch);
+                let records = RecordSet::default().add(memory_batch);
                 let filter_partition_response = DefaultPartitionResponse {
                     partition_index: self.replica.partition,
                     error_code: file_partition_response.error_code,
@@ -399,11 +450,11 @@ impl StreamFetchHandler {
 
                 debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
 
-                Ok((offset.isolation(&self.isolation), true))
+                Ok((read_end_offset.isolation(&self.isolation), true))
             }
         } else {
             debug!("empty records, skipping");
-            Ok((offset.isolation(&self.isolation), false))
+            Ok((read_end_offset.isolation(&self.isolation), false))
         }
     }
 }
@@ -952,6 +1003,109 @@ mod test {
         }
 
         drop(response);
+
+        server_end_event.notify();
+    }
+
+    fn generate_aggregate_record(record_index: usize, _producer: &BatchProducer) -> Record {
+        let msg = record_index.to_string().repeat(100);
+        Record::new(RecordData::from(msg))
+    }
+
+    fn create_aggregate_records(records: u16) -> RecordSet {
+        BatchProducer::builder()
+            .records(records)
+            .record_generator(Arc::new(generate_aggregate_record))
+            .build()
+            .expect("batch")
+            .records()
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_aggregate_fetch() {
+        let test_path = temp_dir().join("aggregate_stream_fetch");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12003";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::new(FluvioSocket::connect(addr).await.expect("connect"));
+
+        // perform for two versions
+
+        let topic = "testaggregate";
+
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        let wasm_module = load_wasm_module("fluvio_wasm_aggregate");
+
+        // Providing an accumulator causes SPU to run aggregator
+        let accumulator = Vec::new();
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module,
+            accumulator: Some(accumulator),
+            ..Default::default()
+        };
+
+        // 1 out of 2 are filtered
+        let mut records = create_aggregate_records(10);
+        debug!("records: {:#?}", records);
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        debug!("first filter fetch");
+        let response = stream.next().await.expect("first").expect("response");
+        let _stream_id = response.stream_id;
+
+        {
+            debug!("received first message");
+            assert_eq!(response.topic, topic);
+
+            let partition = &response.partition;
+            assert_eq!(partition.error_code, ErrorCode::None);
+            assert_eq!(partition.high_watermark, 10);
+            assert_eq!(partition.next_offset_for_fetch(), Some(10)); // shoule be same as HW
+
+            assert_eq!(partition.records.batches.len(), 1);
+            let batch = &partition.records.batches[0];
+            assert_eq!(batch.base_offset, 0);
+            assert_eq!(batch.records().len(), 10);
+
+            let mut accumulator = "0".repeat(100);
+
+            for i in 0..10 {
+                assert_eq!(batch.records()[i].value().as_ref(), accumulator.as_bytes());
+                assert_eq!(batch.records()[i].get_offset_delta(), i as i64);
+
+                accumulator.push_str(&(i + 1).to_string().repeat(100));
+            }
+        }
 
         server_end_event.notify();
     }

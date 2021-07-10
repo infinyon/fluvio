@@ -1,0 +1,13 @@
+[package]
+name = "fluvio-wasm-aggregate-json"
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2018"
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fluvio-smartstream = { path = "../../" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"

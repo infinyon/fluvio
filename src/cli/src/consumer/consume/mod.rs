@@ -77,6 +77,13 @@ pub struct ConsumeOpt {
     /// Path to a WASM binary file
     #[structopt(short, long)]
     pub smart_stream: Option<PathBuf>,
+
+    /// Path to a WASM file for aggregation
+    #[structopt(long)]
+    pub smart_aggregate: Option<PathBuf>,
+
+    #[structopt(long)]
+    pub accumulator: Option<PathBuf>,
 }
 
 impl ConsumeOpt {
@@ -119,6 +126,16 @@ impl ConsumeOpt {
             let buffer = std::fs::read(filter_path)?;
             debug!(len = buffer.len(), "read filter bytes");
             consume_config = consume_config.with_wasm_filter(buffer);
+        }
+
+        match (&self.smart_aggregate, &self.accumulator) {
+            (Some(wasm_path), Some(acc_path)) => {
+                let wasm = std::fs::read(wasm_path)?;
+                let acc = std::fs::read(acc_path)?;
+                consume_config = consume_config.with_aggregation(wasm, acc);
+            }
+            (None, None) => (),
+            _ => println!("Need both aggregator WASM and Accumulator"),
         }
 
         if self.disable_continuous {

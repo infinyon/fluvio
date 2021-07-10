@@ -20,6 +20,7 @@ impl SmartStreamConfig {
 
 #[derive(Debug)]
 pub enum SmartStreamKind {
+    Aggregate,
     Filter,
     Map,
 }
@@ -33,8 +34,9 @@ impl SmartStreamKind {
                     NestedMeta::Meta(Meta::Path(it)) => {
                         it.segments.iter().rev().next().and_then(|it| {
                             match &*it.ident.to_string() {
-                                "filter" => Some(SmartStreamKind::Filter),
-                                "map" => Some(SmartStreamKind::Map),
+                                "aggregate" => Some(Self::Aggregate),
+                                "filter" => Some(Self::Filter),
+                                "map" => Some(Self::Map),
                                 _ => None,
                             }
                         })

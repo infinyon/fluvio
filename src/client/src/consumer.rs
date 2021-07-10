@@ -6,7 +6,9 @@ use once_cell::sync::Lazy;
 use futures_util::future::{Either, err};
 use futures_util::stream::{StreamExt, once, iter};
 
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
+use fluvio_spu_schema::server::stream_fetch::{
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, AGGREGATOR_API,
+};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
@@ -410,12 +412,24 @@ impl PartitionConsumer {
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
+        // Verify that the SPU supports smartstreams
         if !config.wasm_module.is_empty() {
-            if stream_fetch_version >= WASM_MODULE_API as i16 {
-                stream_request.wasm_module = config.wasm_module;
-            } else {
+            if stream_fetch_version < WASM_MODULE_API as i16 {
                 return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
             }
+
+            stream_request.wasm_module = config.wasm_module;
+        }
+
+        // Verify that the SPU supports aggregation smartstream
+        if let Some(accumulator) = config.accumulator {
+            if stream_fetch_version < AGGREGATOR_API {
+                return Err(FluvioError::Other(
+                    "SPU does not support WASM aggregator".to_owned(),
+                ));
+            }
+
+            stream_request.accumulator = Some(accumulator);
         }
 
         let mut stream = self
@@ -570,6 +584,7 @@ pub struct ConsumerConfig {
     pub(crate) max_bytes: i32,
     pub(crate) isolation: Isolation,
     wasm_module: Vec<u8>,
+    accumulator: Option<Vec<u8>>,
 }
 
 impl Default for ConsumerConfig {
@@ -578,6 +593,7 @@ impl Default for ConsumerConfig {
             max_bytes: *MAX_FETCH_BYTES,
             isolation: Isolation::default(),
             wasm_module: vec![],
+            accumulator: None,
         }
     }
 }
@@ -592,6 +608,13 @@ impl ConsumerConfig {
     /// set wasm filter
     pub fn with_wasm_filter(mut self, bytes: Vec<u8>) -> Self {
         self.wasm_module = bytes;
+        self
+    }
+
+    /// Set a WASM aggregator function and initial accumulator value
+    pub fn with_aggregation(mut self, wasm: Vec<u8>, accumulator: Vec<u8>) -> Self {
+        self.wasm_module = wasm;
+        self.accumulator = Some(accumulator);
         self
     }
 }

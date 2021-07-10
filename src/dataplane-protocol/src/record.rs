@@ -327,7 +327,7 @@ impl Encoder for RecordSet {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decode, Encode, Debug, Default, Clone)]
 pub struct RecordHeader {
     attributes: i8,
     #[varint]
@@ -346,7 +346,7 @@ impl RecordHeader {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Record<B = RecordData> {
     pub preamble: RecordHeader,
     pub key: Option<B>,
@@ -422,10 +422,12 @@ where
 
 impl<B: Debug> Debug for Record<B> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "{:?}", &self.preamble)?;
-        writeln!(f, "{:?}", &self.key)?;
-        writeln!(f, "{:?}", &self.value)?;
-        write!(f, "{:?}", &self.headers)
+        f.debug_struct("Record")
+            .field("preamble", &self.preamble)
+            .field("key", &self.key)
+            .field("value", &self.value)
+            .field("headers", &self.headers)
+            .finish()
     }
 }
 

@@ -5,9 +5,11 @@ use anyhow::{Result, Error};
 use tracing::{debug, instrument};
 use wasmtime::{Engine, Module, Store, Instance, Memory};
 use crate::smart_stream::filter::SmartFilter;
+use crate::smart_stream::aggregate::SmartAggregate;
 
 mod memory;
 pub mod filter;
+pub mod aggregate;
 pub mod file_batch;
 
 pub struct SmartStreamEngine(Engine);
@@ -48,6 +50,11 @@ impl SmartStreamModule {
     pub fn create_filter(&self) -> Result<SmartFilter> {
         let write_inner = self.0.write().unwrap();
         write_inner.create_filter()
+    }
+
+    pub fn create_aggregator(&self) -> Result<SmartAggregate> {
+        let write_inner = self.0.write().unwrap();
+        write_inner.create_aggregator()
     }
 }
 
@@ -96,6 +103,7 @@ pub struct RecordsMemory {
 
 impl RecordsMemory {
     fn copy_memory_from(&self) -> Vec<u8> {
+        // TODO see if we can replace with Memory::read
         unsafe {
             if let Some(data) = self
                 .memory
