@@ -82,13 +82,6 @@ jobs:
       - name: Rustfmt
         run: make check-fmt
 
-
-      - name: Doc tests
-        run: make run-all-doc-test
-
-      - name: Unit tests
-        run: make run-all-unit-test
-
       - name: Build CLI
         run: make build-cli
 
@@ -103,25 +96,26 @@ jobs:
 
 
       # Upload artifacts
-      - name: Upload artifact - fluvio ${{ env.RELEASE_NAME }}
+      - name: Upload artifact - fluvio (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio
-      - name: Upload artifact - fluvio-run ${{ env.RELEASE_NAME }}
+      - name: Upload artifact - fluvio-run (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-run-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio-run
-      - name: Upload atrifact - flv-test ${{ env.RELEASE_NAME }}
+      - name: Upload atrifact - flv-test (${{ env.RELEASE_NAME }})
         uses: actions/upload-artifact@v2
         with:
           name: flv-test-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/flv-test
 
+
   # Run all checks and unit test. This always run on debug mode
-  clippy:
-    name: Clippy (${{ matrix.target }}) on ${{ matrix.os }}
+  check:
+    name: Check (${{ matrix.target }}) (${{ matrix.check }})
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -129,6 +123,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         target: [x86_64-unknown-linux-musl]
+        check: [clippy,test]
 
     env:
       RUST_BACKTRACE: full
@@ -156,7 +151,14 @@ jobs:
         run: ./actions/sccache-start.sh ${{ matrix.os }}
 
       - name: Clippy
+        if: ${{ matrix.check }} == "clippy" 
         run: make check-clippy
+
+      - name: Test
+        if: ${{ matrix.check }} == "test" 
+        run: |
+          make run-all-doc-test
+          make run-all-unit-test
       
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
