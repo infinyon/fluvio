@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
 use tracing::info;
 
 use super::SmokeTestCase;

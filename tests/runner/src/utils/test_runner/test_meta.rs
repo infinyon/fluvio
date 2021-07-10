@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use async_lock::RwLock;
-use crate::test_runner::FluvioTestDriver;
+use crate::test_runner::test_driver::FluvioTestDriver;
 use crate::test_meta::{TestCase, TestOption, test_result::TestResult};
 use crate::test_meta::derive_attr::TestRequirements;
 use crate::test_meta::environment::EnvDetail;

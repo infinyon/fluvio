@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use async_lock::RwLock;
 use std::sync::mpsc::Receiver;
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
 use futures_lite::StreamExt;
 use fluvio::Offset;
 

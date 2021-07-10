@@ -8,8 +8,8 @@ use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
-use fluvio_test_util::test_runner::{FluvioTestDriver};
-use fluvio_test_util::test_runner::fluvio_test_meta::FluvioTestMeta;
+use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
 
 // This is important for `inventory` crate

@@ -2,7 +2,7 @@ use std::sync::Arc;
 use async_lock::RwLock;
 use std::sync::mpsc::Sender;
 use fluvio::RecordKey;
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
 
 use super::ConcurrentTestCase;
 use super::util::*;

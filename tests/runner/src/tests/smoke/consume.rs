@@ -10,7 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
 use fluvio::Offset;
 use fluvio_command::CommandExt;
 

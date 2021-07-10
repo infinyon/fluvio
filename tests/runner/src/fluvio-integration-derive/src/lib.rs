@@ -114,8 +114,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use fluvio_test_util::test_meta::environment::EnvDetail;
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
             use fluvio_test_util::test_meta::test_timer::TestTimer;
-            use fluvio_test_util::test_runner::FluvioTestDriver;
-            use fluvio_test_util::test_runner::fluvio_test_meta::FluvioTestMeta;
+            use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+            use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
             use fluvio_test_util::setup::environment::EnvironmentType;
             use fluvio_future::task::run;
             use fluvio_future::timer::sleep;

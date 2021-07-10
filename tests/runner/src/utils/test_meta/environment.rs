@@ -1,5 +1,5 @@
 use crate::setup::environment::{EnvironmentType};
-use crate::test_runner::fluvio_test_meta::FluvioTestMeta;
+use crate::test_runner::test_meta::FluvioTestMeta;
 use structopt::StructOpt;
 use std::fmt::Debug;
 use std::num::ParseIntError;
