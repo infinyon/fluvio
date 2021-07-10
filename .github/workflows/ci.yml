@@ -487,7 +487,7 @@ jobs:
     name: Publish Docker Image
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
-      - clippy
+      - check
       - build_platform_binaries
       - build_wasm
       - local_cluster_test
