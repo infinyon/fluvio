@@ -96,17 +96,17 @@ jobs:
 
 
       # Upload artifacts
-      - name: Upload artifact - fluvio (${{ env.RELEASE_NAME }})
+      - name: Upload artifact - fluvio
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio
-      - name: Upload artifact - fluvio-run (${{ env.RELEASE_NAME }})
+      - name: Upload artifact - fluvio-run
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-run-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio-run
-      - name: Upload atrifact - flv-test (${{ env.RELEASE_NAME }})
+      - name: Upload atrifact - flv-test
         uses: actions/upload-artifact@v2
         with:
           name: flv-test-${{ matrix.rust_target }}
@@ -151,11 +151,11 @@ jobs:
         run: ./actions/sccache-start.sh ${{ matrix.os }}
 
       - name: Clippy
-        if: ${{ matrix.check }} == "clippy" 
+        if: ${{ matrix.check == "clippy" }}
         run: make check-clippy
 
       - name: Test
-        if: ${{ matrix.check }} == "test" 
+        if: ${{ matrix.check == "test" }} 
         run: |
           make run-all-doc-test
           make run-all-unit-test
