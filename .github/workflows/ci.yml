@@ -101,7 +101,7 @@ jobs:
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
       - name: Stop sccache server
-        run: ls target/${{ matrix.rust_target }}
+        run: ls target/${{ matrix.rust_target }}/debug
 
 
       # Upload artifacts
