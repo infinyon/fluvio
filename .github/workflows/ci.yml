@@ -195,7 +195,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
-    needs: check_and_test_platform
+    needs: build_platform_binaries
     strategy:
       matrix:
         os: [infinyon-ubuntu-bionic]
@@ -485,7 +485,7 @@ jobs:
     name: Publish Docker Image
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
-      - check_and_test_platform
+      - clippy
       - build_platform_binaries
       - build_wasm
       - local_cluster_test
