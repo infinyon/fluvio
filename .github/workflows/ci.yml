@@ -75,17 +75,7 @@ jobs:
           override: true
       - name: Install zig & lld for Ubuntu
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - name: Cache cargo registry and sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ${{ env.SCCACHE_PATH }}
-          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-sccache-
+      - uses: Swatinem/rust-cache@v1
       - name: Start sccache server
         run: ./actions/sccache-start.sh ${{ matrix.os }}
 
@@ -126,6 +116,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check_and_test_platform:
     name: Check and unit tests for Platform target (${{ matrix.target }}) on ${{ matrix.os }}
+    if: ${{ false }} 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
