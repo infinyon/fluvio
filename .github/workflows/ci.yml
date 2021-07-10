@@ -151,11 +151,11 @@ jobs:
         run: ./actions/sccache-start.sh ${{ matrix.os }}
 
       - name: Clippy
-        if: ${{ matrix.check == "clippy" }}
+        if: ${{ matrix.check == 'clippy' }}
         run: make check-clippy
 
       - name: Test
-        if: ${{ matrix.check == "test" }} 
+        if: ${{ matrix.check == 'test' }} 
         run: |
           make run-all-doc-test
           make run-all-unit-test
