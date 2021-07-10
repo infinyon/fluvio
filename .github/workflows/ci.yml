@@ -91,18 +91,18 @@ jobs:
       - name: Build CLI
         run: make build-cli
 
-      - name: Build Cluster CLI
-        run: make build-cluster
+      #- name: Build Cluster CLI
+      #  run: make build-cluster
 
-      - name: Build Test CLI
-        run: make build-test
+      #- name: Build Test CLI
+      #  run: make build-test
 
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
       - name: Print target
         run: |
-          ls target
+          ls target/debug/${{ matrix.rust_target }}
 
 
       # Upload artifacts
