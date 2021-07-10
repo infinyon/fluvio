@@ -44,6 +44,7 @@ jobs:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust_target }}
       SCCACHE_CACHE_SIZE: 2G
       RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
       RELEASE_NAME: debug
@@ -102,7 +103,7 @@ jobs:
 
       - name: Print target
         run: |
-          ls target/debug/${{ matrix.rust_target }}
+          ls target
 
 
       # Upload artifacts
