@@ -5,7 +5,7 @@ permissions:
 
 on:
   pull_request:
-    branches: [master2]
+    branches: [master]
   workflow_dispatch:
     inputs:
       verbose:
