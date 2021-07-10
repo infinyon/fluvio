@@ -28,6 +28,7 @@ pub struct FluvioTestDriver {
     pub consume_latency: Histogram<u64>,
     pub topic_create_latency: Histogram<u64>,
     pub producer_data_rate: Histogram<u64>,
+    pub consumer_data_rate: Histogram<u64>,
 }
 
 impl FluvioTestDriver {
@@ -43,6 +44,7 @@ impl FluvioTestDriver {
             consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             producer_data_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_data_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
     }
 
@@ -57,6 +59,7 @@ impl FluvioTestDriver {
             consume_latency_histogram: self.consume_latency.clone(),
             topic_create_latency_histogram: self.topic_create_latency.clone(),
             produce_rate_histogram: self.producer_data_rate.clone(),
+            consume_rate_histogram: self.consumer_data_rate.clone(),
             ..Default::default()
         }
     }
@@ -156,22 +159,28 @@ impl FluvioTestDriver {
     }
 
     // TODO: This is a workaround. Handle stream inside impl
-    pub async fn consume_latency_record(&mut self, latency: u64) {
+    pub async fn consume_record(&mut self, bytes_len: usize, latency: u64) {
         self.consume_latency.record(latency).unwrap();
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
             self.consume_latency.len(),
             latency
         );
-    }
 
-    // TODO: This is a workaround. Handle stream inside impl
-    pub async fn consume_bytes_record(&mut self, bytes_len: usize) {
         self.bytes_consumed += bytes_len;
         debug!(
             "Recording consumer bytes len: {:?} (total: {})",
             bytes_len, self.bytes_consumed
         );
+
+        // Convert Bytes/ns to Bytes/s
+        // 1_000_000_000 ns in 1 second
+        const NS_IN_SECOND: f64 = 1_000_000_000.0;
+        let rate = (bytes_len as f64 / latency as f64) * NS_IN_SECOND;
+        debug!("Consumer throughput Bytes/s: {:?}", rate);
+        self.consumer_data_rate.record(rate as u64).unwrap();
+
+
     }
 
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {

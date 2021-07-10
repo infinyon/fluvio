@@ -149,8 +149,7 @@ async fn validate_consume_message_api(
 
                         // record latency
                         let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                        lock.consume_latency_record(consume_time as u64).await;
-                        lock.consume_bytes_record(bytes.len()).await;
+                        lock.consume_record(bytes.len(), consume_time as u64).await;
 
                         debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
 
