@@ -82,8 +82,6 @@ jobs:
       - name: Rustfmt
         run: make check-fmt
 
-      - name: Clippy
-        run: make check-clippy
 
       - name: Doc tests
         run: make run-all-doc-test
@@ -122,9 +120,9 @@ jobs:
           path: ${{ env.RUST_BIN_DIR }}/flv-test
 
   # Run all checks and unit test. This always run on debug mode
-  check_and_test_platform:
-    name: Check and unit tests for Platform target (${{ matrix.target }}) on ${{ matrix.os }}
-    if: ${{ false }} 
+  clippy:
+    name: Clippy (${{ matrix.target }}) on ${{ matrix.os }}
+
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -136,6 +134,7 @@ jobs:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust_target }}
       SCCACHE_CACHE_SIZE: 2G
       SCCACHE_DIR: dummy
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
@@ -144,9 +143,6 @@ jobs:
 
       - name: Install sccache
         run: ./actions/sccache-install.sh ${{ matrix.os }}
-      - name: Print env
-        run:
-          echo "SCCACHE_DIR = ${{ env.SCCACHE_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -155,33 +151,13 @@ jobs:
           override: true
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
-      - name: Cache cargo registry and sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ${{ env.SCCACHE_DIR  }}
-          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-sccache-
-
+      - uses: Swatinem/rust-cache@v1
       - name: Start sccache server
         run: ./actions/sccache-start.sh ${{ matrix.os }}
 
-      - name: Rustfmt
-        run: make check-fmt
-
       - name: Clippy
         run: make check-clippy
-
-      - name: Doc tests
-        run: make run-all-doc-test
-
-      - name: Unit tests
-        run: make run-all-unit-test
-
+      
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
