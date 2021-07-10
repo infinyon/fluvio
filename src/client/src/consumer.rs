@@ -6,8 +6,11 @@ use once_cell::sync::Lazy;
 use futures_util::future::{Either, err};
 use futures_util::stream::{StreamExt, once, iter};
 
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
-use dataplane::Isolation;
+use fluvio_spu_schema::server::stream_fetch::{
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, SmartStreamPayload, SmartStreamWasm,
+    SmartStreamKind, WASM_MODULE_V2_API,
+};
+use dataplane::{Isolation, SmartStreamError};
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
 use dataplane::fetch::DefaultFetchRequest;
@@ -352,21 +355,31 @@ impl PartitionConsumer {
     ) -> Result<impl Stream<Item = Result<Batch, FluvioError>>, FluvioError> {
         let stream = self.request_stream(offset, config).await?;
         let flattened = stream.flat_map(|batch_result: Result<DefaultStreamFetchResponse, _>| {
-            let response: DefaultStreamFetchResponse = match batch_result {
-                // If error code is None, continue
-                Ok(response) if response.partition.error_code == ErrorCode::None => response,
-                // If error code is anything else, wrap it in an error
-                Ok(response) => {
-                    let code = response.partition.error_code;
-                    return Either::Right(once(err(FluvioError::AdminApi(
-                        fluvio_sc_schema::ApiError::Code(code, None),
-                    ))));
-                }
+            let response = match batch_result {
+                Ok(response) => response,
                 Err(e) => return Either::Right(once(err(e))),
             };
 
+            // If we ever get an error_code AND batches of records, we want to first send
+            // the records down the consumer stream, THEN an Err with the error inside.
+            // This way the consumer always gets to read all records that were properly
+            // processed before hitting an error, so that the error does not obscure those records.
             let batches = response.partition.records.batches.into_iter().map(Ok);
-            Either::Left(iter(batches))
+            let error = {
+                let code = response.partition.error_code;
+                match code {
+                    ErrorCode::None => None,
+                    ErrorCode::SmartStreamError(SmartStreamError::UserError(error)) => {
+                        Some(Err(FluvioError::SmartStreamUserError(format!("{}", error))))
+                    }
+                    _ => Some(Err(FluvioError::AdminApi(
+                        fluvio_sc_schema::ApiError::Code(code, None),
+                    ))),
+                }
+            };
+
+            let items = batches.chain(error.into_iter());
+            Either::Left(iter(items))
         });
 
         Ok(flattened)
@@ -412,11 +425,20 @@ impl PartitionConsumer {
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
-        if let Some(wasm) = config.wasm_module {
-            if stream_fetch_version >= WASM_MODULE_API as i16 {
+        if let Some(module) = config.wasm_module {
+            if stream_fetch_version < WASM_MODULE_API as i16 {
+                return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
+            }
+
+            if stream_fetch_version < WASM_MODULE_V2_API as i16 {
+                // SmartStream V1
+                debug!("Using WASM V1 API");
+                let SmartStreamWasm::Raw(wasm) = module.wasm;
                 stream_request.wasm_module = wasm;
             } else {
-                return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
+                // SmartStream V2
+                debug!("Using WASM V2 API");
+                stream_request.wasm_payload = Some(module);
             }
         }
 
@@ -454,14 +476,14 @@ impl PartitionConsumer {
                             session_id = stream_id,
                             "sending back offset to spu"
                         );
-                        let response = serial_socket
-                            .send_receive(UpdateOffsetsRequest {
-                                offsets: vec![OffsetUpdate {
-                                    offset: fetch_last_value,
-                                    session_id: stream_id,
-                                }],
-                            })
-                            .await;
+                        let request = UpdateOffsetsRequest {
+                            offsets: vec![OffsetUpdate {
+                                offset: fetch_last_value,
+                                session_id: stream_id,
+                            }],
+                        };
+                        debug!(?request, "Sending offset update request:");
+                        let response = serial_socket.send_receive(request).await;
                         if let Err(err) = response {
                             error!("error sending offset: {:#?}", err);
                             break;
@@ -575,7 +597,7 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) isolation: Isolation,
     #[builder(private, default, setter(into, strip_option))]
-    pub(crate) wasm_module: Option<Vec<u8>>,
+    pub(crate) wasm_module: Option<SmartStreamPayload>,
 }
 
 impl ConsumerConfig {
@@ -594,7 +616,19 @@ impl ConsumerConfigBuilder {
 
     /// Adds a SmartStream filter to this ConsumerConfig
     pub fn wasm_filter<T: Into<Vec<u8>>>(&mut self, filter: T) -> &mut Self {
-        self.wasm_module(filter.into());
+        self.wasm_module(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(filter.into()),
+            kind: SmartStreamKind::Filter,
+        });
+        self
+    }
+
+    /// Adds a SmartStream map to this ConsumerConfig
+    pub fn wasm_map<T: Into<Vec<u8>>>(&mut self, map: T) -> &mut Self {
+        self.wasm_module(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(map.into()),
+            kind: SmartStreamKind::Map,
+        });
         self
     }
 }

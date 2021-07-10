@@ -1,9 +1,11 @@
 [workspace]
 members = [
     "filter",
+    "filter_odd",
     "filter_json",
     "filter_regex",
     "map",
+    "map_double",
     "map_json",
 ]
 

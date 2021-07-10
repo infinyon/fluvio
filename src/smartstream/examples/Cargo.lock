@@ -74,6 +74,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
 
 [[package]]
+name = "eyre"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "221239d1d5ea86bf5d6f91c9d6bc3646ffe471b08ff9b0f91c44f115ac969d2b"
+dependencies = [
+ "indenter",
+ "once_cell",
+]
+
+[[package]]
 name = "fluvio-dataplane-protocol"
 version = "0.6.0"
 dependencies = [
@@ -81,6 +91,7 @@ dependencies = [
  "cfg-if",
  "content_inspector",
  "crc32c",
+ "eyre",
  "fluvio-future",
  "fluvio-protocol",
  "flv-util",
@@ -92,9 +103,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa9feaa68147ceb5174f7fbead7779d64085605818bd911d7ef2cbfae1604f84"
+checksum = "b0212c5fab32e362715ed8f08424e57aaf764a4ce206d6b6bf61fe23bd819371"
 dependencies = [
  "fluvio-wasm-timer",
  "fluvio_ws_stream_wasm",
@@ -145,6 +156,7 @@ dependencies = [
 name = "fluvio-smartstream"
 version = "0.2.0"
 dependencies = [
+ "eyre",
  "fluvio-dataplane-protocol",
  "fluvio-smartstream-derive",
 ]
@@ -175,6 +187,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-wasm-filter-odd"
+version = "0.1.0"
+dependencies = [
+ "fluvio-smartstream",
+ "thiserror",
+]
+
+[[package]]
 name = "fluvio-wasm-filter-regex"
 version = "0.1.0"
 dependencies = [
@@ -184,6 +204,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-wasm-map"
+version = "0.1.0"
+dependencies = [
+ "fluvio-smartstream",
+]
+
+[[package]]
+name = "fluvio-wasm-map-double"
 version = "0.1.0"
 dependencies = [
  "fluvio-smartstream",
@@ -335,6 +362,12 @@ dependencies = [
  "proc-macro-nested",
  "slab",
 ]
+
+[[package]]
+name = "indenter"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "instant"

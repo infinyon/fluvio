@@ -3,8 +3,10 @@ use fluvio_smartstream::{smartstream, Record, RecordData, Result};
 #[smartstream(map)]
 pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
     let key = record.key.clone();
-    let mut value = Vec::from(record.value.as_ref());
 
-    value.make_ascii_uppercase();
+    let string = std::str::from_utf8(record.value.as_ref())?;
+    let int = string.parse::<i32>()?;
+    let value = (int * 2).to_string();
+
     Ok((key, value.into()))
 }

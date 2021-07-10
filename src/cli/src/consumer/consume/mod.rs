@@ -74,9 +74,13 @@ pub struct ConsumeOpt {
     )]
     pub output: ConsumeOutputType,
 
-    /// Path to a WASM binary file
-    #[structopt(short, long)]
-    pub smart_stream: Option<PathBuf>,
+    /// Path to a SmartStream filter wasm file
+    #[structopt(long, group("smartstream"))]
+    pub filter: Option<PathBuf>,
+
+    /// Path to a SmartStream map wasm file
+    #[structopt(long, group("smartstream"))]
+    pub map: Option<PathBuf>,
 }
 
 impl ConsumeOpt {
@@ -112,10 +116,16 @@ impl ConsumeOpt {
             builder.max_bytes(max_bytes);
         }
 
-        if let Some(filter_path) = &self.smart_stream {
+        if let Some(filter_path) = &self.filter {
             let buffer = std::fs::read(filter_path)?;
             debug!(len = buffer.len(), "read filter bytes");
             builder.wasm_filter(buffer);
+        }
+
+        if let Some(map_path) = &self.map {
+            let buffer = std::fs::read(map_path)?;
+            debug!(len = buffer.len(), "read filter bytes");
+            builder.wasm_map(buffer);
         }
 
         let consume_config = builder.build()?;

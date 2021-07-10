@@ -403,10 +403,12 @@ where
 
 impl<B: Debug> Debug for Record<B> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "{:?}", &self.preamble)?;
-        writeln!(f, "{:?}", &self.key)?;
-        writeln!(f, "{:?}", &self.value)?;
-        write!(f, "{:?}", &self.headers)
+        f.debug_struct("Record")
+            .field("preamble", &self.preamble)
+            .field("key", &self.key)
+            .field("value", &self.value)
+            .field("headers", &self.headers)
+            .finish()
     }
 }
 

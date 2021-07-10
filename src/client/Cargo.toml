@@ -45,7 +45,7 @@ fluvio-types = { version = "0.2.1", features = ["events"], path = "../types" }
 fluvio-sc-schema = { version = "0.9.0", path = "../sc-schema", default-features = false }
 fluvio-socket = { path = "../socket", version = "0.9" }
 fluvio-protocol = { path = "../protocol", version = "0.6" }
-dataplane = { version = "0.6.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.6", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "3.0.0"

@@ -31,6 +31,8 @@ pub enum FluvioError {
     },
     #[error("Consumer config error: {0}")]
     ConsumerConfig(String),
+    #[error("User's SmartStream failed with the following error: {0}")]
+    SmartStreamUserError(String),
     #[error("Unknown error: {0}")]
     Other(String),
 }

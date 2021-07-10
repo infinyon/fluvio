@@ -25,4 +25,4 @@ static_assertions = "1.1.0"
 fluvio-types = { version = "0.2.0", path = "../types" }
 fluvio-controlplane-metadata = { version = "0.10.0", default-features = false, path = "../controlplane-metadata" }
 fluvio-protocol = { path = "../protocol", version = "0.6" }
-dataplane = { version = "0.6.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.6", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }

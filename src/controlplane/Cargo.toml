@@ -20,4 +20,4 @@ tracing = "0.1.19"
 fluvio-types = { path = "../types", version = "0.2.0" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", version = "0.10.0" }
 fluvio-protocol = { path = "../protocol", version = "0.6" }
-dataplane = { version = "0.6.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.6", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
