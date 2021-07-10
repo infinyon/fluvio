@@ -97,7 +97,7 @@ jobs:
       - name: Build Cluster CLI 
         run: make build-cluster
 
-      - name: Build Test CLI
+      - name: Build Test CLI 
         run: make build-test
 
       - name: Stop sccache server
