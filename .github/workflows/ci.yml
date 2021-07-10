@@ -79,6 +79,18 @@ jobs:
       - name: Start sccache server
         run: ./actions/sccache-start.sh ${{ matrix.os }}
 
+      - name: Rustfmt
+        run: make check-fmt
+
+      - name: Clippy
+        run: make check-clippy
+
+      - name: Doc tests
+        run: make run-all-doc-test
+
+      - name: Unit tests
+        run: make run-all-unit-test
+
       - name: Build CLI
         run: make build-cli
 
