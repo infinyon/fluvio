@@ -73,7 +73,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install zig & lld for Ubuntu
+      - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
       - name: Start sccache server
@@ -213,18 +213,8 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install zig & lld for Ubuntu
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo snap install --beta --classic zig && \
-          sudo apt-get install lld-11 && \
-          echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
-      - name: Install zig & lld for MacOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install zig && \
-          brew install llvm@11 && \
-          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
       - name: Setup Minikube for Linux
         run: |
           ./k8-util/minikube/reset-minikube.sh 
@@ -393,21 +383,14 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        include:
-          - os: ubuntu-latest
-            sccache-path: /home/runner/.cache/sccache
-            target: x86_64-unknown-linux-musl
+
     env:
       FLV_SOCKET_WAIT: 600
       FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
       FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
       FLV_TEST_CONSUMER_WAIT: 300000
-      RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.target }}
-      SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      TARGET: x86_64-unknown-linux-musl
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
@@ -419,17 +402,11 @@ jobs:
         with:
           minikube version: "v1.18.1"
           kubernetes version: "v1.19.6"
-      - name: Open tunnel for Github runner
-        if: matrix.os != 'infinyon-ubuntu-bionic'
-        run: |
-          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
-          pkill -f "minikube tunnel" || true
           minikube delete
           minikube start --driver=docker --kubernetes-version 1.19.6
-          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
       - name: Test minikube
         run: |
           minikube profile list
@@ -480,7 +457,7 @@ jobs:
       - name: Clean minikube
         run: |
           minikube delete
-          pkill -f "minikube tunnel" || true
+
 
   # After all tests have passed, push docker images
   docker_push:
