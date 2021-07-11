@@ -384,7 +384,7 @@ jobs:
     name: Kubernetes cluster upgrade test
 # only run if this is run in staging or upgrad test was requested    
 #    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-    if: ${{ env.UPGRADE == 'upgrade' }}
+    if: ${{ UPGRADE == 'upgrade' }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
