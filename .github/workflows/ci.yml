@@ -234,6 +234,8 @@ jobs:
         with:
           name: flv-test-x86_64-unknown-linux-musl
           path: .
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
       - name: Run smoke-test
         timeout-minutes: 3
         run: |
