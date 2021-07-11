@@ -1,18 +1,19 @@
 RUSTV = stable
+TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 
 build:
-	cargo build --all-features 
+	cargo build --all-features $(TARGET_FLAG)
 
 test-all:	test-crates test-codec
 
 test-crates:
-	cargo test
-	cargo test -p fluvio-protocol-api
-	cargo test -p fluvio-protocol-core
+	cargo test $(TARGET_FLAG)
+	cargo test -p fluvio-protocol-api $(TARGET_FLAG)
+	cargo test -p fluvio-protocol-core $(TARGET_FLAG)
 
 # can't test codec as package due to dev-dependencies
 test-codec:
-	cd fluvio-protocol-codec;cargo test
+	cd fluvio-protocol-codec;cargo test $(TARGET_FLAG)
 
 
 install-fmt:

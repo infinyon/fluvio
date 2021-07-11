@@ -176,6 +176,7 @@ install-fmt:
 check-fmt:
 	cargo +$(RUSTV) fmt -- --check
 
+
 check_version:
 	make check_version -C k8-util/helm
 
@@ -184,8 +185,8 @@ install-clippy:
 
 # Use check first to leverage sccache, the clippy piggybacks
 check-clippy: install-clippy
-	cargo +$(RUSTV) check --all --all-targets --all-features --tests $(VERBOSE_FLAG)
-	cargo +$(RUSTV) clippy --all --all-targets --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms
+	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
+	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
 build_smartstreams:
 	make -C src/smartstream/examples build
@@ -199,11 +200,16 @@ run-unstable-test:build_smartstreams install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
 
 run-all-doc-test: install_rustup_target
-	cargo test --all-features --doc $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+
+run-client-doc-test: install_rustup_target
+	cargo test --all-features --doc -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc -p fluvio-cluster $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)	
+
 
 clean_build:
 	rm -rf /tmp/cli-*
-
 
 
 release:	update_version release_image helm_publish_app publish_cli
