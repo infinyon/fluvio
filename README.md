@@ -1,7 +1,8 @@
 <div align="center">
 <h1>Fluvio</h1>
-<strong>Data streaming for real-time applications</strong>
-
+<a href="https://fluvio.io" target="_blank">
+ <strong>The programmable streaming platform for data in motion</strong>
+ </a>
 <br>
 <br>
 
@@ -22,18 +23,28 @@
 <img src="https://img.shields.io/discord/695712741381636168.svg?logo=discord&style=flat" alt="chat" />
 </a>
 </div>
+
+<br>
+<a href="https://fluvio.io">
+<img src=".github/assets/fluvio-overview.svg" alt="A visual of a data pipeline with filter, map, and other streaming operations" />
+</a>
+
+
+<br>
+<br>
 </div>
+
 
 Fluvio is a high-performance distributed streaming platform that's written
 in Rust, built to make it easy to develop real-time applications.
 
 ## Quick Links
 
-- [Getting Started with Fluvio](https://www.fluvio.io/docs/getting-started/)
+- [Download](https://www.fluvio.io/download/)
 - [Rust API docs](https://docs.rs/fluvio)
 - [Node API docs](https://infinyon.github.io/fluvio-client-node/)
-- [Fluvio CLI docs](https://www.fluvio.io/docs/cli-reference/)
-- [Fluvio Architecture](https://www.fluvio.io/docs/architecture/)
+- [Fluvio CLI docs](https://www.fluvio.io/cli/)
+- [Fluvio Architecture](https://www.fluvio.io/docs/architecture/overview/)
 
 ## Release Status
 
