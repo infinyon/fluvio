@@ -16,9 +16,14 @@ on:
         description: "Set --verbose to get verbose build output"
         required: false
         default: ""
+      upgrade:
+        description: "Set --upgrade to test upgrade"
+        required: false
+        default: ""
 
 env:
   VERBOSE: ${{ github.events.input.verbose }}
+  UPGRADE: ${{ github.events.inputs.upgrade }}
 
 jobs:
   cancel_previous_runs:
@@ -377,6 +382,8 @@ jobs:
 
   k8_cluster_upgrade:
     name: Kubernetes cluster upgrade test
+# only run if this is run in staging or upgrad test was requested    
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging' || env.UPGRADE != null
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
