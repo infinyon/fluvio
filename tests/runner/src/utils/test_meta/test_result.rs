@@ -152,20 +152,24 @@ impl Display for TestResult {
             self.consume_rate_histogram.max() as f64 / BYTES_IN_MBYTE
         );
 
-        let perf_results_table = table!(
-            [b->"Perf Results"],
+        let perf_results_header = table!(
+            [b->"Perf Results"]
+        );
 
+        let perf_created_table = table!(
             [b->"Created", "#"],
             ["Topic", self.num_topics],
             ["Producer", self.num_producers],
-            ["Consumer", self.num_consumers],
+            ["Consumer", self.num_consumers]
+        );
 
-            [b->""],
+        let perf_throughput_table = table!(
             [b->"Throughput", b->"Bytes", b->"Max rate (MBytes/s)"],
             ["Producer", self.bytes_produced, producer_rate_mbps],
-            ["Consumer", self.bytes_consumed, consumer_rate_mbps],
+            ["Consumer", self.bytes_consumed, consumer_rate_mbps]
+        );
 
-            [b->""],
+        let perf_latency_table = table!(
             [b->"Latency", b->"Average", b->"P50", b->"P99", b->"P999"],
             ["Topic create", topic_create_latency_avg, topic_create_latency_p50, topic_create_latency_p99, topic_create_latency_p999],
             ["Producer", producer_latency_avg, producer_latency_p50, producer_latency_p99, producer_latency_p999],
@@ -173,6 +177,9 @@ impl Display for TestResult {
         );
 
         write!(f, "{}", basic_results_table)?;
-        write!(f, "\n{}", perf_results_table)
+        write!(f, "\n{}", perf_results_header)?;
+        write!(f, "\n{}", perf_created_table)?;
+        write!(f, "\n{}", perf_throughput_table)?;
+        write!(f, "\n{}", perf_latency_table)
     }
 }
