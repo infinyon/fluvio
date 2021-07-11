@@ -92,9 +92,6 @@ jobs:
       - name: Build Test CLI 
         run: make build-test
 
-      - name: Build examples
-        run: examples/tests/build.sh
-
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
@@ -167,7 +164,7 @@ jobs:
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
-  build_wasm:
+  check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -238,9 +235,9 @@ jobs:
           name: flv-test-x86_64-unknown-linux-musl
           path: .
       - name: Run smoke-test
-        timeout-minutes: 1
+        timeout-minutes: 3
         run: |
-          make FLUVIO_BIN=./fluvio UNINSTALL=noclean smoke-test-tls-root
+          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
@@ -469,7 +466,7 @@ jobs:
     needs:
       - check
       - build_platform_binaries
-      - build_wasm
+      - check_wasm
       - local_cluster_test
       - k8_cluster_test
       - k8_cluster_upgrade
