@@ -92,6 +92,9 @@ jobs:
       - name: Build Test CLI 
         run: make build-test
 
+      - name: Build examples
+        run: examples/tests/build.sh
+
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
@@ -224,24 +227,20 @@ jobs:
         run: |
           minikube profile list
           minikube status
-      - name: Build Test
-        run: |
-          make RELEASE=release build-test
-      - name: Setup installation pre-requisites
-        run: |
-          cargo run --release --bin fluvio -- cluster start --setup --local --develop
-      - name: Print Fluvio version
-        run: |
-          cargo run --release --bin fluvio -- version
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+      - name: Download artifact - flv-test
+        uses: actions/download-artifact@v2
+        with:
+          name: flv-test-x86_64-unknown-linux-musl
+          path: .
       - name: Run smoke-test
         timeout-minutes: 1
         run: |
-          make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
-      - name: Build examples
-        run: examples/tests/build.sh --release
-      - name: Test examples
-        timeout-minutes: 1
-        run: examples/tests/run.sh --release
+          make FLUVIO_BIN=./fluvio UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
