@@ -32,7 +32,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-11]
+        os: [macos-latest]
         rust: [stable]
         rust_target: [x86_64-apple-darwin]
         check: [clippy, test, unstable]
