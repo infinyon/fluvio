@@ -41,13 +41,10 @@ jobs:
 
     env:
       RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust_target }}
-      SCCACHE_CACHE_SIZE: 2G
       RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
       RELEASE_NAME: debug
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
 
@@ -60,11 +57,8 @@ jobs:
           echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
           echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
 
-      - name: Install sccache
-        run: ./actions/sccache-install.sh ${{ matrix.os }}
       - name: Print env
-        run:
-          echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
+        run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -87,10 +81,6 @@ jobs:
 
       - name: Build Test CLI 
         run: make build-test
-
-      - name: Stop sccache server
-        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
-
 
       # Upload artifacts
       - name: Upload artifact - fluvio
@@ -124,17 +114,11 @@ jobs:
 
     env:
       RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust_target }}
-      SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: dummy
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install sccache
-        run: ./actions/sccache-install.sh ${{ matrix.os }}
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -160,9 +144,6 @@ jobs:
         run: |
           make run-unstable-test
       
-      - name: Stop sccache server
-        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
-
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
     runs-on: ${{ matrix.os }}
