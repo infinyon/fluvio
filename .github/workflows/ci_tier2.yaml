@@ -1,7 +1,7 @@
 # CI for Tier2 platforms
 # This should not block CI or Release
 
-name: CI-Platform-Tier2
+name: CI_Platform_Tier2
 
 permissions:
   contents: read

@@ -1,20 +1,17 @@
 # This workflow tests latest dev release
-name: Test Latest Dev Release
+name: CI_Dev
 
 permissions:
   contents: read
 
 concurrency: 
-  group: ${{ github.head_ref || 'test_dev'}}
+  group: ${{ github.head_ref || 'dev_ci'}}
   cancel-in-progress: true
 
 on:
   push:
     branches: [master]
-    tags:
-      - 'v*'
-#  pull_request:
-#    branches: [master]
+
   workflow_dispatch:
 
 jobs:
