@@ -663,7 +663,7 @@ mod test {
             .parent()
             .expect("parent")
             .join(format!(
-                "smartstream/examples/target/wasm32-unknown-unknown/release/{}.wasm",
+                "smartstream/examples/target/wasm32-unknown-unknown/debug/{}.wasm",
                 module_name
             ));
         read_filter_from_path(wasm_path)
