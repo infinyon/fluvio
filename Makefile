@@ -79,10 +79,10 @@ smoke-test: test-setup
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test-local: TEST_ARG_EXTRA=--local --skip-checks $(EXTRA_ARG)
+smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
 smoke-test-local: smoke-test
 
-smoke-test-stream: TEST_ARG_EXTRA=--skip-checks $(EXTRA_ARG)
+smoke-test-stream: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 smoke-test-stream: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
 smoke-test-stream: smoke-test
 

@@ -42,7 +42,6 @@ const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
-const DEFAULT_DEV_CHART: &str = "./k8-util/helm";
 const DEFAULT_SERVICE_TYPE: &str = "NodePort";
 
 const FLUVIO_SC_SERVICE: &str = "fluvio-sc-public";
@@ -428,7 +427,7 @@ impl ClusterConfigBuilder {
             ))
         })?;
         self.image_tag(git_hash.trim());
-        self.local_chart(DEFAULT_DEV_CHART);
+        self.local_chart(super::DEFAULT_DEV_CHART);
         Ok(self)
     }
 

@@ -336,6 +336,13 @@ impl LocalConfigBuilder {
         self.chart_location = Some(ChartLocation::Local(local_chart_location.into()));
         self
     }
+
+    /// Applies development options to this cluster configuration.
+    /// This uses chart from source code "./k8-util/helm"
+    pub fn development(&mut self) -> &mut Self {
+        self.local_chart(super::DEFAULT_DEV_CHART);
+        self
+    }
 }
 
 /// Install fluvio cluster locally
