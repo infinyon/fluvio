@@ -1,7 +1,12 @@
+# Build platform and run smoke test
 name: CI
 
 permissions:
   contents: read
+
+concurrency: 
+  group: ${{ github.head_ref || 'staging'}}
+  cancel-in-progress: true
 
 on:
   push:
@@ -22,13 +27,6 @@ env:
 
 
 jobs:
-  cancel_previous_runs:
-    name: Cancel Previous Runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: styfle/cancel-workflow-action@0.9.0
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
 
   # build binaries. use release for staging
   # this requires check and test
@@ -116,15 +114,15 @@ jobs:
 
   # Run all checks and unit test. This always run on debug mode
   check:
-    name: Check (${{ matrix.target }}) (${{ matrix.check }})
+    name: Check (${{ matrix.rust_target }}) (${{ matrix.check }})
 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        target: [x86_64-unknown-linux-musl]
-        check: [clippy,test]
+        rust_target: [x86_64-unknown-linux-gnu]
+        check: [clippy,test,unstable]
 
     env:
       RUST_BACKTRACE: full
@@ -160,11 +158,16 @@ jobs:
         run: |
           make run-all-doc-test
           make run-all-unit-test
+
+      - name: Unstable test
+        if: ${{ matrix.check == 'unstable' }} 
+        run: |
+          make run-unstable-test
       
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
-  build_wasm:
+  check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -224,24 +227,24 @@ jobs:
         run: |
           minikube profile list
           minikube status
-      - name: Build Test
-        run: |
-          make RELEASE=release build-test
-      - name: Setup installation pre-requisites
-        run: |
-          cargo run --release --bin fluvio -- cluster start --setup --local --develop
-      - name: Print Fluvio version
-        run: |
-          cargo run --release --bin fluvio -- version
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+      - name: Download artifact - flv-test
+        uses: actions/download-artifact@v2
+        with:
+          name: flv-test-x86_64-unknown-linux-musl
+          path: .
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+      - name: Setup
+        run: ./fluvio cluster start --setup --local --develop
       - name: Run smoke-test
-        timeout-minutes: 1
+        timeout-minutes: 3
         run: |
-          make RELEASE=true UNINSTALL=noclean smoke-test-tls-root
-      - name: Build examples
-        run: examples/tests/build.sh --release
-      - name: Test examples
-        timeout-minutes: 1
-        run: examples/tests/run.sh --release
+          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
@@ -470,7 +473,7 @@ jobs:
     needs:
       - check
       - build_platform_binaries
-      - build_wasm
+      - check_wasm
       - local_cluster_test
       - k8_cluster_test
       - k8_cluster_upgrade

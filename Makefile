@@ -79,10 +79,10 @@ smoke-test: test-setup
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test-local: TEST_ARG_EXTRA=--local --skip-checks $(EXTRA_ARG)
+smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
 smoke-test-local: smoke-test
 
-smoke-test-stream: TEST_ARG_EXTRA=--skip-checks $(EXTRA_ARG)
+smoke-test-stream: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 smoke-test-stream: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
 smoke-test-stream: smoke-test
 
@@ -119,7 +119,7 @@ k8-setup:
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
 smoke-test-k8: build_k8_image smoke-test
 
-smoke-test-k8-tls: TEST_ARG_EXTRA=--tls --skip-checks $(EXTRA_ARG)
+smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
 smoke-test-k8-tls: build_k8_image smoke-test
 
 smoke-test-k8-tls-policy-setup:
@@ -184,7 +184,7 @@ install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
 # Use check first to leverage sccache, the clippy piggybacks
-check-clippy: install-clippy
+check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 

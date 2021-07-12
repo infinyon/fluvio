@@ -1,26 +1,23 @@
-name: Composite Action Test Workflow
+# This workflow tests latest dev release by downloading installer
+name: Test Latest Dev Release
 
 permissions:
   contents: read
+
+concurrency: 
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
 
 on:
   push:
     branches: [master]
     tags:
       - 'v*'
-  pull_request:
-    branches: [master]
+#  pull_request:
+#    branches: [master]
   workflow_dispatch:
 
 jobs:
-
-  cancel_previous_runs:
-    name: Cancel Previous Runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: styfle/cancel-workflow-action@0.4.1
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
 
   composite_action_test:
     name: Composite Action Test
