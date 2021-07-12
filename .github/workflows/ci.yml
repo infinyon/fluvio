@@ -239,6 +239,8 @@ jobs:
           path: .
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+      - name: Setup
+        run: ./fluvio cluster start --setup --local --develop
       - name: Run smoke-test
         timeout-minutes: 3
         run: |

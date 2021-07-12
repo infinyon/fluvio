@@ -119,7 +119,7 @@ k8-setup:
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
 smoke-test-k8: build_k8_image smoke-test
 
-smoke-test-k8-tls: TEST_ARG_EXTRA=--tls --skip-checks $(EXTRA_ARG)
+smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
 smoke-test-k8-tls: build_k8_image smoke-test
 
 smoke-test-k8-tls-policy-setup:
