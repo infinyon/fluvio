@@ -1,3 +1,4 @@
+# Build platform and run smoke test
 name: CI
 
 permissions:
