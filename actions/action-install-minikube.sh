@@ -31,32 +31,12 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     # Update permissions for .kube and .minikube
     sudo chown -R $USER $HOME/.kube $HOME/.minikube
 
-    # Run Minikube Tunnel
-    sudo nohup minikube tunnel >/tmp/tunnel.out 2>/tmp/tunnel.out &
 
 elif [[ "$OSTYPE" == "darwin"* ]]; then
     # Mac OSX
     PLATFORM=darwin-amd64
 
-    curl -LO https://storage.googleapis.com/minikube/releases/${MINIKUBE_VERSION}/minikube-${PLATFORM}
-    sudo install minikube-${PLATFORM} /usr/local/bin/minikube
-
-    # Install hyperkit using brew for osx minikube driver
-    brew install kubectl
-    brew install --cask virtualbox
-
-    # Start Minikube with `hyperkit` driver
-    # OSx does not have `none` bare metal option
-    # https://github.com/kubernetes/minikube/issues/6143 has an issue macos in the github CI VM.
-    minikube start --driver=virtualbox --kubernetes-version 1.19.6
-
-    # Download kubectl
-    minikube kubectl -- get po -A
-
-    # Update permissions for .kube and .minikube
-    sudo chown -R $USER $HOME/.kube $HOME/.minikube
-
-    sudo kubectl config use-context minikube
+    brew install minikube
 
 
 elif [[ "$OSTYPE" == "cygwin" ]]; then
