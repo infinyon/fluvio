@@ -1,4 +1,4 @@
-# This workflow tests latest dev release by downloading installer
+# This workflow tests latest dev release
 name: Test Latest Dev Release
 
 permissions:
@@ -42,3 +42,90 @@ jobs:
           fluvio consume foobar -o 0 -d
           # Delete the topic afterword but this looks to not work right now.
           # fluvio topic delete "foobar"
+
+
+  # Perform upgrade test
+  # disable for now
+  # TODO: run upgrade test from Makefile   
+  k8_cluster_upgrade:
+    name: Kubernetes cluster upgrade test
+    if: ${{ false }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+
+    env:
+      FLV_SOCKET_WAIT: 600
+      FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
+      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
+      FLV_TEST_CONSUMER_WAIT: 300000
+      RUSTV: ${{ matrix.rust }}
+      TARGET: x86_64-unknown-linux-musl
+      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+    steps:
+      - uses: actions/checkout@v2
+      - run: helm version
+
+      - name: Install Minikube for Github runner
+        if: matrix.os == 'ubuntu-latest'
+        uses: manusa/actions-setup-minikube@v2.3.1
+        with:
+          minikube version: "v1.18.1"
+          kubernetes version: "v1.19.6"
+      - name: Setup Minikube for Linux
+        if: startsWith(matrix.os, 'infinyon-ubuntu')
+        run: |
+          minikube delete
+          minikube start --driver=docker --kubernetes-version 1.19.6
+      - name: Test minikube
+        run: |
+          minikube profile list
+          minikube status
+      - name: Setup for upgrade test
+        run: |
+          gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+      # Download artifacts
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+      - name: Download artifact - flv-test
+        uses: actions/download-artifact@v2
+        with:
+          name: flv-test-x86_64-unknown-linux-musl
+          path: .
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio
+          path: /tmp
+      - name: Load Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio.tar
+          docker image ls -a
+
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+
+      - name: Run upgrade test
+        env:
+          TEST_DATA_BYTES: 10000
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 45
+          max_attempts: 3
+          command: |
+            export PATH=~/.fluvio/bin:$PATH
+            cd tests
+            # Use gh cli to collect the last and current release version numbers
+            ./upgrade-test.sh $(gh api repos/infinyon/fluvio/releases -q '.[].tag_name' | grep -v dev | sed 's/v//' | head -2 | tac | xargs)
+
+      - name: Clean minikube
+        run: |
+          minikube delete
