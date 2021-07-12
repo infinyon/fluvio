@@ -185,6 +185,7 @@ jobs:
       - name: Set up Minikube
         env:
           OSTYPE: darwin
+          MINIKUBE_VERSION: 1.21.0
         run: ./actions/action-install-minikube.sh
       - name: Test minikube
         run: |

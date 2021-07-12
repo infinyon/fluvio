@@ -19,6 +19,7 @@ if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
 fi
 
 if [[ "$MATRIX_OS" == "macos-latest" ]]; then
+    brew update
     brew install sccache
 fi
 
