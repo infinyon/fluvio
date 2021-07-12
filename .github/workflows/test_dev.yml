@@ -1,4 +1,5 @@
-name: Composite Action Test Workflow
+# This workflow tests latest dev release by downloading installer
+name: Test Latest Dev Release
 
 permissions:
   contents: read
