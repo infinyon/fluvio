@@ -18,5 +18,10 @@ if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     echo "$HOME/.local/bin" >> $GITHUB_PATH
 fi
 
+if [[ "$MATRIX_OS" == "macos-latest" ]]; then
+    brew install sccache
+fi
+
+
 
           

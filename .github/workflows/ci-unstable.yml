@@ -56,54 +56,27 @@ jobs:
         matrix:
           os: [macos-latest]
           rust: [stable]
-          include:
-            - os: macos-latest
-              sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-              target: x86_64-apple-darwin
-          task:
-            - name: Run integration tests
-              run: make run-unstable-test
-              timeout-minutes: 20
       env:
         RUST_BACKTRACE: full
         RUSTC_WRAPPER: sccache
         RUSTV: ${{ matrix.rust }}
         SCCACHE_CACHE_SIZE: 2G
-        SCCACHE_DIR: ${{ matrix.sccache-path }}
         # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
       steps:
         - uses: actions/checkout@v2
-        - name: Install sccache (macos-latest)
-          run: |
-            brew update
-            brew install sccache
+        - name: Install sccache
+          run: ./actions/sccache-install.sh ${{ matrix.os }}
         - name: Install Rust ${{ matrix.rust }}
           uses: actions-rs/toolchain@v1
           with:
             toolchain: ${{ matrix.rust }}
             profile: minimal
             override: true
-        - name: Cache cargo registry
-          uses: actions/cache@v2
-          continue-on-error: false
-          with:
-            path: |
-              ~/.cargo/registry
-              ~/.cargo/git
-            key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-            restore-keys: |
-              ${{ runner.os }}-cargo-
-        - name: Save sccache
-          uses: actions/cache@v2
-          continue-on-error: false
-          with:
-            path: ${{ matrix.sccache-path }}
-            key: ${{ runner.os }}-sccache-${{ hashFiles('**/Cargo.lock') }}
-            restore-keys: |
-              ${{ runner.os }}-sccache-
+        - uses: Swatinem/rust-cache@v1
         - name: Start sccache server
-          run: sccache --start-server
-        - name: ${{ matrix.task.name }}
-          run: ${{ matrix.task.run }}
+          run: ./actions/sccache-start.sh ${{ matrix.os }}
+        - name: Run integration tests
+          run: make run-unstable-test
+          timeout-minutes: 20
         - name: Stop sccache server
-          run: sccache --stop-server || true
+          run: ./actions/sccache-terminate.sh ${{ matrix.os }}
