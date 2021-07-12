@@ -1,6 +1,7 @@
 use std::sync::Mutex;
 use anyhow::Result;
-use wasmtime::{Memory, Store, Engine};
+use wasmtime::{Memory, Store, Engine, Module};
+use crate::smart_stream::filter::SmartStreamFilter;
 
 mod memory;
 pub mod filter;
@@ -8,6 +9,22 @@ pub mod file_batch;
 
 #[derive(Default)]
 pub struct SmartStreamEngine(pub(crate) Engine);
+
+impl SmartStreamEngine {
+    pub fn create_module_from_binary(&self, bytes: &[u8]) -> Result<SmartStreamModule> {
+        let module = Module::from_binary(&self.0, bytes)?;
+        Ok(SmartStreamModule(module))
+    }
+}
+
+pub struct SmartStreamModule(pub(crate) Module);
+
+impl SmartStreamModule {
+    pub fn create_filter(&self, engine: &SmartStreamEngine) -> Result<SmartStreamFilter> {
+        let filter = SmartStreamFilter::new(&engine, self)?;
+        Ok(filter)
+    }
+}
 
 #[derive(Clone)]
 pub struct RecordsMemory {

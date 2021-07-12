@@ -5,12 +5,12 @@ use std::io::Cursor;
 use anyhow::{Result, Error, anyhow};
 
 use tracing::debug;
-use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store, Module, Engine};
+use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 
 use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use crate::smart_stream::{RecordsCallBack, RecordsMemory};
+use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
 use crate::smart_stream::file_batch::FileBatchIterator;
 
 const FILTER_FN_NAME: &str = "filter";
@@ -24,8 +24,8 @@ pub struct SmartStreamFilter {
 }
 
 impl SmartStreamFilter {
-    pub fn new(engine: &Engine, module: &Module) -> Result<Self> {
-        let mut store = Store::new(engine, ());
+    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
+        let mut store = Store::new(&engine.0, ());
         let cb = Arc::new(RecordsCallBack::new());
         let callback = cb.clone();
 
@@ -44,7 +44,7 @@ impl SmartStreamFilter {
             },
         );
 
-        let instance = Instance::new(&mut store, module, &[copy_records.into()])?;
+        let instance = Instance::new(&mut store, &module.0, &[copy_records.into()])?;
         let filter_fn: FilterFn = instance.get_typed_func(&mut store, FILTER_FN_NAME)?;
 
         Ok(Self {
