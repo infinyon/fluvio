@@ -5,24 +5,33 @@ use std::io::Cursor;
 use anyhow::{Result, Error, anyhow};
 
 use tracing::debug;
-use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc};
+use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 
 use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use crate::smart_stream::{SmartStreamModuleInner, RecordsCallBack, RecordsMemory, SmartStreamInstance};
+use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
 use crate::smart_stream::file_batch::FileBatchIterator;
 
 const FILTER_FN_NAME: &str = "filter";
 type FilterFn = TypedFunc<(i32, i32), i32>;
 
-impl SmartStreamModuleInner {
-    pub fn create_filter(&self) -> Result<SmartFilter> {
-        let callback = Arc::new(RecordsCallBack::new());
-        let callback2 = callback.clone();
+pub struct SmartStreamFilter {
+    store: Store<()>,
+    instance: Instance,
+    filter_fn: FilterFn,
+    records_cb: Arc<RecordsCallBack>,
+}
+
+impl SmartStreamFilter {
+    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
+        let mut store = Store::new(&engine.0, ());
+        let cb = Arc::new(RecordsCallBack::new());
+        let callback = cb.clone();
+
         let copy_records = Func::wrap(
-            &self.store,
-            move |caller: Caller<'_>, ptr: i32, len: i32| {
+            &mut store,
+            move |mut caller: Caller<'_, ()>, ptr: i32, len: i32| {
                 debug!(len, "callback from wasm filter");
                 let memory = match caller.get_export("memory") {
                     Some(Extern::Memory(mem)) => mem,
@@ -30,49 +39,28 @@ impl SmartStreamModuleInner {
                 };
 
                 let records = RecordsMemory { ptr, len, memory };
-
-                callback.set(records);
-
+                cb.set(records);
                 Ok(())
             },
         );
 
-        let instance = Instance::new(&self.store, &self.module, &[copy_records.into()])?;
+        let instance = Instance::new(&mut store, &module.0, &[copy_records.into()])?;
+        let filter_fn: FilterFn = instance.get_typed_func(&mut store, FILTER_FN_NAME)?;
 
-        let filter_fn: FilterFn = instance.get_typed_func(FILTER_FN_NAME)?;
-
-        Ok(SmartFilter::new(
-            filter_fn,
-            SmartStreamInstance::new(instance),
-            callback2,
-        ))
-    }
-}
-
-/// Instance are not thread safe, we need to take care to ensure access to instance are thread safe
-
-/// Instance must be hold in thread safe lock to ensure only one thread can access at time
-pub struct SmartFilter {
-    filter_fn: FilterFn,
-    instance: SmartStreamInstance,
-    records_cb: Arc<RecordsCallBack>,
-}
-
-impl SmartFilter {
-    pub fn new(
-        filter_fn: FilterFn,
-        instance: SmartStreamInstance,
-        records_cb: Arc<RecordsCallBack>,
-    ) -> Self {
-        Self {
-            filter_fn,
+        Ok(Self {
+            store,
             instance,
-            records_cb,
-        }
+            filter_fn,
+            records_cb: callback,
+        })
     }
 
     /// filter batches with maximum bytes to be send back consumer
-    pub fn filter(&self, iter: &mut FileBatchIterator, max_bytes: usize) -> Result<Batch, Error> {
+    pub fn filter(
+        &mut self,
+        iter: &mut FileBatchIterator,
+        max_bytes: usize,
+    ) -> Result<Batch, Error> {
         let mut memory_filter_batch = Batch::<MemoryRecords>::default();
         memory_filter_batch.base_offset = -1; // indicate this is unitialized
         memory_filter_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
@@ -106,11 +94,16 @@ impl SmartFilter {
 
             self.records_cb.clear();
 
-            let array_ptr = self.instance.copy_memory_to(&file_batch.records)?;
+            let array_ptr = super::memory::copy_memory_to_instance(
+                &mut self.store,
+                &self.instance,
+                &file_batch.records,
+            )?;
 
-            let filter_record_count = self
-                .filter_fn
-                .call((array_ptr as i32, file_batch.records.len() as i32))?;
+            let filter_record_count = self.filter_fn.call(
+                &mut self.store,
+                (array_ptr as i32, file_batch.records.len() as i32),
+            )?;
 
             debug!(filter_record_count,filter_execution_time = %now.elapsed().as_millis());
 
@@ -121,7 +114,7 @@ impl SmartFilter {
             let bytes = self
                 .records_cb
                 .get()
-                .map(|m| m.copy_memory_from())
+                .and_then(|m| m.copy_memory_from(&mut self.store).ok())
                 .unwrap_or_default();
             debug!(out_filter_bytes = bytes.len());
             // this is inefficient for now

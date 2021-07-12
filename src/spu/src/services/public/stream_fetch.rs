@@ -24,8 +24,8 @@ use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
-use crate::smart_stream::{SmartStreamModule, SmartStreamEngine};
 use publishers::INIT_OFFSET;
+use crate::smart_stream::{SmartStreamEngine, SmartStreamModule};
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -96,7 +96,7 @@ impl StreamFetchHandler {
                 consumer_offset_listener: offset_listener,
                 stream_id,
                 leader_state: leader_state.clone(),
-                sm_engine: SmartStreamEngine::new(),
+                sm_engine: SmartStreamEngine::default(),
                 sm_bytes,
                 max_fetch_bytes,
             };
@@ -148,16 +148,16 @@ impl StreamFetchHandler {
         // initialize smart stream module here instead of beginning because WASM module is not thread safe
         // and can't be send across Send
         let module = if !self.sm_bytes.is_empty() {
-            Some(
-                self.sm_engine
-                    .create_module_from_binary(&self.sm_bytes)
-                    .map_err(|err| -> FlvSocketError {
-                        FlvSocketError::IoError(IoError::new(
-                            ErrorKind::Other,
-                            format!("module loading error {}", err),
-                        ))
-                    })?,
-            )
+            let module = self
+                .sm_engine
+                .create_module_from_binary(&self.sm_bytes)
+                .map_err(|err| -> FlvSocketError {
+                    FlvSocketError::IoError(IoError::new(
+                        ErrorKind::Other,
+                        format!("module loading error {}", err),
+                    ))
+                })?;
+            Some(module)
         } else {
             None
         };
@@ -310,7 +310,7 @@ impl StreamFetchHandler {
 
                 debug!("creating smart filter");
                 let filter_batch = {
-                    let filter = module.create_filter().map_err(|err| {
+                    let mut filter = module.create_filter(&self.sm_engine).map_err(|err| {
                         IoError::new(ErrorKind::Other, format!("creating filter {}", err))
                     })?;
 

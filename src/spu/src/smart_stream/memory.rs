@@ -10,12 +10,16 @@ const MEMORY: &str = "memory";
 
 /// Copy a byte array into an instance's linear memory
 /// and return the offset relative to the module's memory.
-pub fn copy_memory_to_instance(bytes: &[u8], instance: &Instance) -> Result<isize, Error> {
+pub fn copy_memory_to_instance(
+    store: &mut Store<()>,
+    instance: &Instance,
+    bytes: &[u8],
+) -> Result<isize, Error> {
     // Get the "memory" export of the module.
     // If the module does not export it, just panic,
     // since we are not going to be able to copy the data.
     let memory = instance
-        .get_memory(MEMORY)
+        .get_memory(&mut *store, MEMORY)
         .ok_or_else(|| anyhow!("Missing memory"))?;
 
     // The module is not using any bindgen libraries,
@@ -27,10 +31,10 @@ pub fn copy_memory_to_instance(bytes: &[u8], instance: &Instance) -> Result<isiz
     // which is used to copy the bytes into the module's memory.
     // Then, return the offset.
     let alloc = instance
-        .get_func(ALLOC_FN)
+        .get_func(&mut *store, ALLOC_FN)
         .ok_or_else(|| anyhow!("missing alloc"))?;
 
-    let alloc_result = alloc.call(&[Val::from(bytes.len() as i32)])?;
+    let alloc_result = alloc.call(&mut *store, &[Val::from(bytes.len() as i32)])?;
 
     let guest_ptr_offset = match alloc_result
         .get(0)
@@ -40,7 +44,7 @@ pub fn copy_memory_to_instance(bytes: &[u8], instance: &Instance) -> Result<isiz
         _ => return Err(Error::msg("guest pointer must be Val::I32")),
     };
     unsafe {
-        let raw = memory.data_ptr().offset(guest_ptr_offset);
+        let raw = memory.data_ptr(store).offset(guest_ptr_offset);
         raw.copy_from(bytes.as_ptr(), bytes.len());
     }
 
