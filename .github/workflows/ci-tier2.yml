@@ -166,3 +166,37 @@ jobs:
 
       - name: Stop sccache server
         run: sccache --stop-server || true
+
+
+  unstable_test_mac:
+      name: Unstable Integration test Mac
+      runs-on: ${{ matrix.os }}
+      strategy:
+        fail-fast: false
+        matrix:
+          os: [macos-latest]
+          rust: [stable]
+      env:
+        RUST_BACKTRACE: full
+        RUSTC_WRAPPER: sccache
+        RUSTV: ${{ matrix.rust }}
+        SCCACHE_CACHE_SIZE: 2G
+        # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
+      steps:
+        - uses: actions/checkout@v2
+        - name: Install sccache
+          run: ./actions/sccache-install.sh ${{ matrix.os }}
+        - name: Install Rust ${{ matrix.rust }}
+          uses: actions-rs/toolchain@v1
+          with:
+            toolchain: ${{ matrix.rust }}
+            profile: minimal
+            override: true
+        - uses: Swatinem/rust-cache@v1
+        - name: Start sccache server
+          run: ./actions/sccache-start.sh ${{ matrix.os }}
+        - name: Run integration tests
+          run: make run-unstable-test
+          timeout-minutes: 10
+        - name: Stop sccache server
+          run: ./actions/sccache-terminate.sh ${{ matrix.os }}

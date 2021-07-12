@@ -124,7 +124,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         target: [x86_64-unknown-linux-musl]
-        check: [clippy,test]
+        check: [clippy,test,unstable]
 
     env:
       RUST_BACKTRACE: full
@@ -160,6 +160,11 @@ jobs:
         run: |
           make run-all-doc-test
           make run-all-unit-test
+
+      - name: Unstable test
+        if: ${{ matrix.check == 'unstable' }} 
+        run: |
+          make run-unstable-test
       
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
