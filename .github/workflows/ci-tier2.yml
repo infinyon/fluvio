@@ -30,7 +30,7 @@ jobs:
 
   # Run all checks and unit test. This always run on debug mode
   check:
-    name: Check tier2 platform (${{ matrix.rust-target }}) (${{ matrix.check }})
+    name: Check tier2 platform (${{ matrix.rust_target }}) (${{ matrix.check }})
 
     runs-on: ${{ matrix.os }}
     strategy:
