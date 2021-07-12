@@ -3,6 +3,10 @@ name: CI
 permissions:
   contents: read
 
+concurrency: 
+  group: ${{ github.head_ref }}
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -22,13 +26,6 @@ env:
 
 
 jobs:
-  cancel_previous_runs:
-    name: Cancel Previous Runs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: styfle/cancel-workflow-action@0.9.0
-        with:
-          access_token: ${{ secrets.GITHUB_TOKEN }}
 
   # build binaries. use release for staging
   # this requires check and test
