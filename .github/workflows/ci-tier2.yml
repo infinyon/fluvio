@@ -1,7 +1,7 @@
 # CI for Tier2 platforms
 # This should not block CI or Release
 
-name: CI-Tier2
+name: CI-Platform-Tier2
 
 permissions:
   contents: read
@@ -28,175 +28,189 @@ jobs:
         with:
           access_token: ${{ secrets.GITHUB_TOKEN }}
 
-  build_checks:
-    name: ${{ matrix.task.name }} (${{ matrix.os }})
+  # Run all checks and unit test. This always run on debug mode
+  check:
+    name: Check tier2 platform (${{ matrix.target }}) (${{ matrix.check }})
+
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
-        os: [macos-latest]
+        os: [ubuntu-latest]
         rust: [stable]
-        task:
-          - name: Doc tests
-            run: make run-all-doc-test
-        include:
-          - os: macos-latest
-            rust: stable
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
-            task:
-              name: Clippy
-              run: make check-clippy
-          - os: macos-latest
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
+        target: [macos-latest]
+        check: [clippy,test,unstable]
+
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.target }}
+      TARGET: ${{ matrix.rust_target }}
       SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      SCCACHE_DIR: dummy
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew update
-          brew install sccache
 
+      - name: Install sccache
+        run: ./actions/sccache-install.sh ${{ matrix.os }}
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install zig & lld for MacOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install zig && \
-          brew install llvm@11 && \
-          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
-      - name: Cache cargo registry and sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-sccache-
-
+      - name: Install Zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v1
       - name: Start sccache server
-        run: sccache --start-server
+        run: ./actions/sccache-start.sh ${{ matrix.os }}
 
-      # Main run step: Run task from matrix
-      - name: ${{ matrix.task.name }}
-        run: ${{ matrix.task.run }}
+      - name: Clippy
+        if: ${{ matrix.check == 'clippy' }}
+        run: make check-clippy
 
+      - name: Test
+        if: ${{ matrix.check == 'test' }} 
+        run: |
+          make run-all-doc-test
+          make run-all-unit-test
+
+      - name: Unstable test
+        if: ${{ matrix.check == 'unstable' }} 
+        run: |
+          make run-unstable-test
+      
       - name: Stop sccache server
-        run: sccache --stop-server || true
-
-  build_platform:
-    name: Build Platform (${{ matrix.os }})
+        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
+ 
+  # build binaries. use release for staging
+  # this requires check and test
+  build_platform_binaries:
+    name: Build Tier2 binaries for Platform Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         os: [macos-latest]
         rust: [stable]
-        task:
-          - os: macos-latest
-            sccache-path: /Users/runner/Library/Caches/Mozilla.sccache
-            target: x86_64-apple-darwin
+        rust_target: [x86_64-unknown-linux-musl]
+
     env:
       RUST_BACKTRACE: full
       RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.target }}
+      TARGET: ${{ matrix.rust_target }}
       SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: ${{ matrix.sccache-path }}
+      RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
+      RELEASE_NAME: debug
       # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
 
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
-      - name: Install sccache (macos-latest)
-        if: matrix.os == 'macos-latest'
+      - name: Set RELEASE mode
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: |
-          brew update
-          brew install sccache
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
 
+      - name: Install sccache
+        run: ./actions/sccache-install.sh ${{ matrix.os }}
+      - name: Print env
+        run:
+          echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install zig & lld for MacOS
-        if: matrix.os == 'macos-latest'
-        run: |
-          brew install zig && \
-          brew install llvm@11 && \
-          echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
-      - name: Cache cargo registry and sccache
-        uses: actions/cache@v2
-        continue-on-error: false
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            ${{ matrix.sccache-path }}
-          key: ${{ runner.os }}-cargo-sccache-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-sccache-
-
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v1
       - name: Start sccache server
-        run: sccache --start-server
+        run: ./actions/sccache-start.sh ${{ matrix.os }}
 
-      - name: Build artifacts
-        run: make build-cli build-cluster build-test
+      - name: Rustfmt
+        run: make check-fmt
 
-      - name: Unit tests
-        run: make run-all-unit-test
+      - name: Build CLI
+        run: make build-cli
+
+      - name: Build Cluster CLI 
+        run: make build-cluster
+
+      - name: Build Test CLI 
+        run: make build-test
 
       - name: Stop sccache server
-        run: sccache --stop-server || true
+        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
 
-  unstable_test_mac:
-      name: Unstable Integration test Mac
-      runs-on: ${{ matrix.os }}
-      strategy:
-        fail-fast: false
-        matrix:
-          os: [macos-latest]
-          rust: [stable]
-      env:
-        RUST_BACKTRACE: full
-        RUSTC_WRAPPER: sccache
-        RUSTV: ${{ matrix.rust }}
-        SCCACHE_CACHE_SIZE: 2G
-        # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
-      steps:
-        - uses: actions/checkout@v2
-        - name: Install sccache
-          run: ./actions/sccache-install.sh ${{ matrix.os }}
-        - name: Install Rust ${{ matrix.rust }}
-          uses: actions-rs/toolchain@v1
-          with:
-            toolchain: ${{ matrix.rust }}
-            profile: minimal
-            override: true
-        - uses: Swatinem/rust-cache@v1
-        - name: Start sccache server
-          run: ./actions/sccache-start.sh ${{ matrix.os }}
-        - name: Run integration tests
-          run: make run-unstable-test
-          timeout-minutes: 10
-        - name: Stop sccache server
-          run: ./actions/sccache-terminate.sh ${{ matrix.os }}
+      # Upload artifacts
+      - name: Upload artifact - fluvio
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-${{ matrix.rust_target }}
+          path: ${{ env.RUST_BIN_DIR }}/fluvio
+      - name: Upload artifact - fluvio-run
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.rust_target }}
+          path: ${{ env.RUST_BIN_DIR }}/fluvio-run
+      - name: Upload atrifact - flv-test
+        uses: actions/upload-artifact@v2
+        with:
+          name: flv-test-${{ matrix.rust_target }}
+          path: ${{ env.RUST_BIN_DIR }}/flv-test
+
+  local_cluster_test: 
+    name: Local Tier 2cluster test
+    runs-on: ${{ matrix.os }}
+    needs: build_platform_binaries
+    strategy:
+      matrix:
+        os: [macos-latest]
+        rust: [stable]
+    env:
+      FLV_SOCKET_WAIT: 600
+    steps:
+      - name: Install ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Set up Minikube
+        env:
+          OSTYPE: darwin
+        run: ./actions/action-install-minikube.sh
+      - name: Test minikube
+        run: |
+          minikube profile list
+          minikube status
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+      - name: Download artifact - flv-test
+        uses: actions/download-artifact@v2
+        with:
+          name: flv-test-x86_64-unknown-linux-musl
+          path: .
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+      - name: Run smoke-test
+        timeout-minutes: 3
+        run: |
+          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+      - name: Upload SC log
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: failure()
+        with:
+          name: fluvio-sc-logs
+          path: /tmp/flv_sc.log

@@ -58,8 +58,6 @@ elif [[ "$OSTYPE" == "darwin"* ]]; then
 
     sudo kubectl config use-context minikube
 
-    # Run Minikube Tunnel
-    sudo nohup minikube tunnel >/tmp/tunnel.out 2>/tmp/tunnel.out &
 
 elif [[ "$OSTYPE" == "cygwin" ]]; then
     # POSIX compatibility layer and Linux environment emulation for Windows
