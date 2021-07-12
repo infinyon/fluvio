@@ -1,5 +1,5 @@
-# This workflow tests latest dev release
-name: CI_Dev
+# This workflow test deployment of latest dev release
+name:  CD_Dev
 
 permissions:
   contents: read
