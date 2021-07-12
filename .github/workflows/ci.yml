@@ -391,7 +391,6 @@ jobs:
       - check_wasm
       - local_cluster_test
       - k8_cluster_test
-      - k8_cluster_upgrade
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
