@@ -39,17 +39,11 @@ jobs:
 
     env:
       RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust_target }}
-      SCCACHE_CACHE_SIZE: 2G
-      SCCACHE_DIR: dummy
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
 
-      - name: Install sccache
-        run: ./actions/sccache-install.sh ${{ matrix.os }}
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -59,8 +53,6 @@ jobs:
       - name: Install Zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
-      - name: Start sccache server
-        run: ./actions/sccache-start.sh ${{ matrix.os }}
 
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
@@ -77,9 +69,6 @@ jobs:
         run: |
           make run-unstable-test
 
-      - name: Stop sccache server
-        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
-
   # build binaries. use release for staging
   # this requires check and test
   build_platform_binaries:
@@ -93,13 +82,10 @@ jobs:
 
     env:
       RUST_BACKTRACE: full
-      RUSTC_WRAPPER: sccache
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust_target }}
-      SCCACHE_CACHE_SIZE: 2G
       RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
       RELEASE_NAME: debug
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
 
@@ -112,10 +98,8 @@ jobs:
           echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
           echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
 
-      - name: Install sccache
-        run: ./actions/sccache-install.sh ${{ matrix.os }}
       - name: Print env
-        run: echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
+        run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -126,8 +110,6 @@ jobs:
       - name: Install zig
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
-      - name: Start sccache server
-        run: ./actions/sccache-start.sh ${{ matrix.os }}
 
       - name: Rustfmt
         run: make check-fmt
@@ -140,9 +122,6 @@ jobs:
 
       - name: Build Test CLI
         run: make build-test
-
-      - name: Stop sccache server
-        run: ./actions/sccache-terminate.sh ${{ matrix.os }}
 
       # Upload artifacts
       - name: Upload artifact - fluvio
