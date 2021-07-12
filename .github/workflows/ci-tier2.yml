@@ -30,7 +30,7 @@ jobs:
 
   # Run all checks and unit test. This always run on debug mode
   check:
-    name: Check tier2 platform (${{ matrix.target }}) (${{ matrix.check }})
+    name: Check tier2 platform (${{ matrix.rust-target }}) (${{ matrix.check }})
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -38,7 +38,7 @@ jobs:
         os: [macos-latest]
         rust: [stable]
         rust_target: [x86_64-apple-darwin]
-        check: [clippy,test,unstable]
+        check: [clippy, test, unstable]
 
     env:
       RUST_BACKTRACE: full
@@ -70,19 +70,19 @@ jobs:
         run: make check-clippy
 
       - name: Test
-        if: ${{ matrix.check == 'test' }} 
+        if: ${{ matrix.check == 'test' }}
         run: |
           make run-all-doc-test
           make run-all-unit-test
 
       - name: Unstable test
-        if: ${{ matrix.check == 'unstable' }} 
+        if: ${{ matrix.check == 'unstable' }}
         run: |
           make run-unstable-test
-      
+
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
- 
+
   # build binaries. use release for staging
   # this requires check and test
   build_platform_binaries:
@@ -118,8 +118,7 @@ jobs:
       - name: Install sccache
         run: ./actions/sccache-install.sh ${{ matrix.os }}
       - name: Print env
-        run:
-          echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
+        run: echo "SCCACHE_PATH = ${{ env.SCCACHE_PATH }} "
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
@@ -139,15 +138,14 @@ jobs:
       - name: Build CLI
         run: make build-cli
 
-      - name: Build Cluster CLI 
+      - name: Build Cluster CLI
         run: make build-cluster
 
-      - name: Build Test CLI 
+      - name: Build Test CLI
         run: make build-test
 
       - name: Stop sccache server
         run: ./actions/sccache-terminate.sh ${{ matrix.os }}
-
 
       # Upload artifacts
       - name: Upload artifact - fluvio
@@ -166,7 +164,7 @@ jobs:
           name: flv-test-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/flv-test
 
-  local_cluster_test: 
+  local_cluster_test:
     name: Local Tier 2cluster test
     runs-on: ${{ matrix.os }}
     needs: build_platform_binaries
