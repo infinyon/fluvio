@@ -88,6 +88,23 @@ fn test_var_encode() {
     assert_eq!(v1.write_size(0), 8);
 }
 
+#[derive(Encode, Debug)]
+pub enum NamedEnum {
+    Apple { seeds: u16 },
+    Banana { peel: bool },
+}
+
+#[test]
+fn test_named_encode() {
+    let apple = NamedEnum::Apple { seeds: 13 };
+    let mut dest = Vec::new();
+    apple.encode(&mut dest, 0).unwrap();
+    assert_eq!(dest.len(), 3);
+    assert_eq!(dest[0], 0x00);
+    assert_eq!(dest[1], 0x00);
+    assert_eq!(dest[2], 0x0d);
+}
+
 #[derive(Encode, PartialEq, Decode, Debug)]
 #[repr(u8)]
 pub enum EnumNoExprTest {

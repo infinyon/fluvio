@@ -1,3 +1,4 @@
+use crate::ast::prop::{NamedProp, UnnamedProp};
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::spanned::Spanned;
@@ -91,20 +92,23 @@ impl EnumProp {
             None
         };
 
-        /*
-        if let Some((_, Expr::Lit(elit))) = &variant.discriminant {
-            if let Lit::Int(lit_int) = &elit.lit {
-                Some(lit_int.base10_digits().to_owned())
-            } else {
-                None
-            }
-        } else {
-            None
-        };
-        */
         prop.kind = match &variant.fields {
-            Fields::Named(struct_like) => FieldKind::Named(struct_like.clone()),
-            Fields::Unnamed(tuple_like) => FieldKind::Unnamed(tuple_like.clone()),
+            Fields::Named(struct_like) => {
+                let props = struct_like
+                    .named
+                    .iter()
+                    .map(NamedProp::from_ast)
+                    .collect::<Result<Vec<_>, _>>()?;
+                FieldKind::Named(struct_like.clone(), props)
+            }
+            Fields::Unnamed(tuple_like) => {
+                let props = tuple_like
+                    .unnamed
+                    .iter()
+                    .map(UnnamedProp::from_ast)
+                    .collect::<Result<Vec<_>, _>>()?;
+                FieldKind::Unnamed(tuple_like.clone(), props)
+            }
             _ => FieldKind::Unit,
         };
         Ok(prop)
@@ -112,8 +116,8 @@ impl EnumProp {
 }
 
 pub(crate) enum FieldKind {
-    Named(FieldsNamed),
-    Unnamed(FieldsUnnamed),
+    Named(FieldsNamed, Vec<NamedProp>),
+    Unnamed(FieldsUnnamed, Vec<UnnamedProp>),
     Unit,
 }
 impl Default for FieldKind {

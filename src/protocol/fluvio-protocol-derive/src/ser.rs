@@ -1,11 +1,13 @@
 use crate::ast::{
-    container::ContainerAttributes, prop::Prop, r#enum::EnumProp, r#enum::FieldKind, DeriveItem,
+    container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
+    DeriveItem,
 };
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use std::str::FromStr;
-use syn::{Ident, LitInt};
+use syn::punctuated::Punctuated;
+use syn::{Ident, LitInt, Token};
 
 pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
@@ -54,11 +56,11 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-fn parse_struct_props_encoding(props: &[Prop], struct_ident: &Ident) -> TokenStream {
+fn parse_struct_props_encoding(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
 
-        if prop.varint {
+        if prop.attrs.varint {
             quote! {
                 tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
                 let result = self.#fname.encode_varint(dest);
@@ -86,10 +88,10 @@ fn parse_struct_props_encoding(props: &[Prop], struct_ident: &Ident) -> TokenStr
     }
 }
 
-fn parse_struct_props_size(props: &[Prop], struct_ident: &Ident) -> TokenStream {
+fn parse_struct_props_size(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
-        if prop.varint {
+        if prop.attrs.varint {
             quote! {
                 let write_size = self.#fname.var_write_size();
                 tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#fname),write_size);
@@ -114,46 +116,68 @@ fn parse_enum_variants_encoding(
     enum_ident: &Ident,
     attrs: &ContainerAttributes,
 ) -> TokenStream {
-    let int_type = if let Some(int_type_name) = &attrs.repr_type_name {
-        format_ident!("{}", int_type_name)
-    } else {
-        Ident::new("u8", Span::call_site())
+    let int_type = match &attrs.repr_type_name {
+        Some(int_type_name) => format_ident!("{}", int_type_name),
+        _ => Ident::new("u8", Span::call_site()),
     };
     let mut variant_expr = vec![];
 
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
-        // #[cfg(feature = "discriminant_panic")] {
-        //     if prop.discriminant.is_some() && prop.tag.is_none() && !attrs.encode_discriminant {
-        //         compiler_error!("feature[discriminant_panic]: either #[fluvio(encode_discriminant)] or #[fluvio(tag = ..)] is required on enum: {}", stringify!(#enum_ident));
-        //     }
-        // }
         let field_idx = if let Some(tag) = &prop.tag {
-            if let Ok(literal) = TokenStream::from_str(tag) {
-                literal
-            } else {
-                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+            match TokenStream::from_str(tag) {
+                Ok(literal) => literal,
+                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
             }
         } else if attrs.encode_discriminant {
-            if let Some(dsc) = &prop.discriminant {
-                dsc.as_token_stream()
-            } else {
-                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+            match &prop.discriminant {
+                Some(dsc) => dsc.as_token_stream(),
+                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
             }
         } else {
             LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
         };
         let variant_code = match &prop.kind {
-            FieldKind::Named(_expr) => {
-                quote! { compiler_error!("named fields are not supported"); }
-            }
-            FieldKind::Unnamed(_expr) => {
-                // TODO: handle cases like #enum_ident::#id(val1, val2, val3)
+            FieldKind::Named(_expr, props) => {
+                // The "a, b, c, d" in Enum::Variant { a, b, c, d } => { ... }
+                let fields = props
+                    .iter()
+                    .map(|it| format_ident!("{}", it.field_name))
+                    .collect::<Vec<_>>();
+
+                let encoding = fields.iter().map(|field| {
+                    quote! {
+                        #field .encode(dest, version)?;
+                    }
+                });
+
                 quote! {
-                    #enum_ident::#id(response) => {
+                    #enum_ident::#id { #(#fields),* } => {
+                        let typ = #field_idx as #int_type;
+                        typ.encode(dest, version)?;
+                        #( #encoding )*
+                    }
+                }
+            }
+            FieldKind::Unnamed(_expr, props) => {
+                // The "a, b, c, d" in Enum::Variant(a, b, c, d) => { ... }
+                let fields = props
+                    .iter()
+                    .zip('a'..'z')
+                    .map(|(_, b)| format_ident!("{}", b))
+                    .collect::<Vec<_>>();
+
+                let encoding = fields.iter().map(|field| {
+                    quote! {
+                        #field .encode(dest, version)?;
+                    }
+                });
+
+                quote! {
+                    #enum_ident::#id ( #(#fields),* ) => {
                         let typ = #field_idx as #int_type;
                         typ.encode(dest,version)?;
-                        response.encode(dest, version)?;
+                        #(#encoding)*
                     },
                 }
             }
@@ -178,19 +202,79 @@ fn parse_enum_variants_size(
     enum_ident: &Ident,
     attrs: &ContainerAttributes,
 ) -> TokenStream {
-    let int_type = if let Some(int_type_name) = &attrs.repr_type_name {
-        format_ident!("{}", int_type_name)
-    } else {
-        Ident::new("u8", Span::call_site())
+    let int_type = match &attrs.repr_type_name {
+        Some(int_type_name) => format_ident!("{}", int_type_name),
+        _ => Ident::new("u8", Span::call_site()),
     };
     let mut variant_expr: Vec<TokenStream> = vec![];
 
     for prop in props {
         let id = &format_ident!("{}", prop.variant_name);
-        if let FieldKind::Unnamed(_) = &prop.kind {
-            variant_expr.push(quote! {
-                #enum_ident::#id(response) => { response.write_size(version) + std::mem::size_of::<#int_type>() },
-            });
+        match &prop.kind {
+            FieldKind::Unnamed(_expr, props) => {
+                // The "a, b, c, d" in Enum::Variant(a, b, c, d) => { ... }
+                let fields = props
+                    .iter()
+                    .zip('a'..'z')
+                    .map(|(_, b)| format_ident!("{}", b))
+                    .collect::<Vec<_>>();
+
+                // [a.write_size(version), b.write_size(version), ...]
+                let size_impls = fields
+                    .iter()
+                    .map(|field| {
+                        quote! {
+                            #field .write_size(version)
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                // Join int size and field sizes, separated by `+` to sum them together
+                // size_of::<#int_type>() + a.write_size() + b.write_size() + ...
+                let size_sum: Punctuated<_, Token![+]> =
+                    std::iter::once(quote! { std::mem::size_of::<#int_type>() })
+                        .chain(size_impls)
+                        .collect();
+
+                let arm = quote! {
+                    #enum_ident::#id ( #(#fields),* ) => {
+                        #size_sum
+                    },
+                };
+                variant_expr.push(arm);
+            }
+            FieldKind::Named(_expr, props) => {
+                // The "a, b, c, d" in Enum::Variant(a, b, c, d) => { ... }
+                let fields = props
+                    .iter()
+                    .map(|it| format_ident!("{}", it.field_name))
+                    .collect::<Vec<_>>();
+
+                // [a.write_size(version), b.write_size(version), ...]
+                let size_impls = fields
+                    .iter()
+                    .map(|field| {
+                        quote! {
+                            #field .write_size(version)
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                // Join int size and field sizes, separated by `+` to sum them together
+                // size_of::<#int_type>() + a.write_size() + b.write_size() + ...
+                let size_sum: Punctuated<_, Token![+]> =
+                    std::iter::once(quote! { std::mem::size_of::<#int_type>() })
+                        .chain(size_impls)
+                        .collect();
+
+                let arm = quote! {
+                    #enum_ident::#id { #(#fields),* } => {
+                        #size_sum
+                    },
+                };
+                variant_expr.push(arm);
+            }
+            _ => (),
         }
     }
 

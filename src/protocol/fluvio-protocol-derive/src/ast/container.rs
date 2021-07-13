@@ -5,6 +5,19 @@ use syn::{Attribute, Lit, Meta, NestedMeta, Result};
 pub struct ContainerAttributes {
     pub varint: bool,
     pub default: bool,
+
+    /// Encodes a numeric enum by the value of its descriminant
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// #[derive(fluvio_protocol::derive::Encode)]
+    /// #[fluvio(encode_discriminant)]
+    /// enum ValueEnum {
+    ///     One = 1, // Encodes discriminant "1"
+    ///     Two = 2, // Encodes discriminant "2"
+    /// }
+    /// ```
     pub encode_discriminant: bool,
     pub api_min_version: u16,
     pub api_max_version: Option<u16>,

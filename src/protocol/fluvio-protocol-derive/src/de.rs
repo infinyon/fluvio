@@ -1,5 +1,6 @@
 use crate::ast::{
-    container::ContainerAttributes, prop::Prop, r#enum::EnumProp, r#enum::FieldKind, DeriveItem,
+    container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
+    DeriveItem,
 };
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
@@ -50,10 +51,10 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-pub(crate) fn generate_struct_fields(props: &[Prop], struct_ident: &Ident) -> TokenStream {
+pub(crate) fn generate_struct_fields(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
-        if prop.varint {
+        if prop.attrs.varint {
             quote! {
                 tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
                 let result = self.#fname.decode_varint(src);
@@ -121,7 +122,7 @@ fn generate_try_enum_from_kf_enum(
             LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
         };
         let variant_code = match &prop.kind {
-            FieldKind::Named(expr) => {
+            FieldKind::Named(expr, _props) => {
                 let mut decode_variant_fields = vec![];
                 for (idx, field) in expr.named.iter().enumerate() {
                     let field_ident = &field.ident;
@@ -143,7 +144,7 @@ fn generate_try_enum_from_kf_enum(
                     }
                 }
             }
-            FieldKind::Unnamed(expr) => {
+            FieldKind::Unnamed(expr, _props) => {
                 let mut decode_variant_fields = vec![];
                 for (idx, field) in expr.unnamed.iter().enumerate() {
                     let field_ident = &field.ident;
@@ -212,10 +213,10 @@ pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-pub(crate) fn generate_default_impls(props: &[Prop]) -> TokenStream {
+pub(crate) fn generate_default_impls(props: &[NamedProp]) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
-        if let Some(def) = &prop.default_value {
+        if let Some(def) = &prop.attrs.default_value {
             if let Ok(liter) = TokenStream::from_str(def) {
                 quote! {
                     #fname: #liter,
