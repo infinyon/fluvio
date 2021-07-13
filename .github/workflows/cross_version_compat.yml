@@ -1,0 +1,189 @@
+name: Cluster-Client version compatibility 
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+jobs:
+  cross_compat:
+    timeout-minutes: 20
+    name: cluster(${{ matrix.cluster_type }}):${{ matrix.cluster_version }} x CLI:${{ matrix.cli_version }} 
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        cluster_type: [local] # fyi: k8 tests are unstable in github-runner
+        # Strategy: latest, stable, stable-1 release
+        cli_version: [latest, stable, 0.7.3]
+        cluster_version: [latest, stable, 0.7.3]
+        exclude:
+          - cli_version: latest
+            cluster_version: stable
+          - cli_version: latest
+            cluster_version: 0.7.3 
+          - cli_version: stable
+            cluster_version: 0.7.3 
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          repository: infinyon/fluvio 
+      - run: helm version
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install Minikube for Github runner 
+        if: matrix.os == 'ubuntu-latest' 
+        uses: manusa/actions-setup-minikube@v2.3.1
+        with:
+          minikube version: 'v1.16.0'
+          kubernetes version: 'v1.19.2'
+
+      - name: Open tunnel for Github runner
+        if: matrix.os != 'infinyon-ubuntu-bionic'
+        run: |
+          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
+
+      - name: Setup Minikube for Linux
+        if: startsWith(matrix.os, 'infinyon-ubuntu')
+        run: |
+          pkill -f "minikube tunnel" || true
+          minikube delete
+          minikube start --driver=docker --kubernetes-version 1.19.6
+          nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
+      - name: Test minikube
+        run: |
+          minikube profile list
+          minikube status
+
+      - name: Install Fluvio for cluster @ (version ${{ matrix.cluster_version }}), 
+        if: matrix.cluster_version != 'stable'
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cluster_version }} bash
+            ~/.fluvio/bin/fluvio version
+
+      - name: Install Fluvio for cluster @ (version stable), 
+        if: matrix.cluster_version == 'stable'
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+      - name: Start Fluvio cluster (local) @ (version ${{ matrix.cluster_version }}) 
+        if: matrix.cluster_type == 'local'
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: ~/.fluvio/bin/fluvio cluster start --local
+
+      - name: Start Fluvio cluster (k8) @ (version ${{ matrix.cluster_version }}) 
+        if: matrix.cluster_type == 'k8'
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: ~/.fluvio/bin/fluvio cluster start
+
+      - name: Print version profile and version
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 10
+          max_attempts: 3
+          command: |
+            ~/.fluvio/bin/fluvio profile view 
+            ~/.fluvio/bin/fluvio version
+
+      - name: Create and use first topic (Cluster version == CLI version)
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 10
+          max_attempts: 3
+          command: |
+            ~/.fluvio/bin/fluvio topic create first 
+            ~/.fluvio/bin/fluvio version | ~/.fluvio/bin/fluvio produce first
+            ~/.fluvio/bin/fluvio consume first -B -d
+          on_retry_command: ~/.fluvio/bin/fluvio topic delete first
+
+      - name: Install CLI (version ${{ matrix.cli_version }})
+        if: matrix.cluster_version != matrix.cli_version && matrix.cli_version != 'stable'
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cli_version }} bash
+            ~/.fluvio/bin/fluvio version
+
+      - name: Install CLI (version stable), 
+        if: matrix.cli_version == 'stable'
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+      - name: Validate new topic workflow
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 10
+          max_attempts: 3
+          command: |
+            ~/.fluvio/bin/fluvio topic create second 
+            ~/.fluvio/bin/fluvio version | ~/.fluvio/bin/fluvio produce second
+            ~/.fluvio/bin/fluvio consume second -B -d
+          on_retry_command: ~/.fluvio/bin/fluvio topic delete second 
+
+      - name: Validate first topic workflow
+        uses: nick-invision/retry@v2
+        with:
+          timeout_seconds: 10
+          max_attempts: 3
+          command: |
+            ~/.fluvio/bin/fluvio consume first -B -d
+            ~/.fluvio/bin/fluvio version | ~/.fluvio/bin/fluvio produce first
+            ~/.fluvio/bin/fluvio consume first -B -d
+
+      - name: Clean minikube
+        if: startsWith(matrix.os, 'infinyon-ubuntu')
+        run: |
+          minikube delete
+          pkill -f "minikube tunnel" || true
+      - name: Save logs
+        if: failure() && startsWith(matrix.os, 'infinyon-ubuntu')
+        run: |
+          echo "minikube profile list"
+          minikube profile list
+          echo "helm list"
+          helm list
+          echo "get statefulset"
+          kubectl get statefulset
+          echo "kubectl get pvc"
+          kubectl get pvc
+          echo "kubectl get pods"
+          kubectl get pods
+          echo "kubectl get svc"
+          kubectl get svc
+          echo "kubectl get spu"
+          kubectl get spu
+          echo "kubectl get spg"
+          kubectl get spg
+          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+      - name: Upload logs
+        timeout-minutes: 5
+        if: failure() && startsWith(matrix.os, 'infinyon-ubuntu')
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-k8-logs
+          path: /tmp/flv_sc.log
