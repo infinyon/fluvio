@@ -53,6 +53,8 @@ jobs:
           profile: minimal
           override: true
       - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: 0.8.0
       - uses: Swatinem/rust-cache@v1
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
