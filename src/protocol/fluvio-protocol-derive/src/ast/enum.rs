@@ -111,6 +111,7 @@ impl EnumProp {
             }
             _ => FieldKind::Unit,
         };
+
         Ok(prop)
     }
 }

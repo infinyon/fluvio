@@ -88,21 +88,42 @@ fn test_var_encode() {
     assert_eq!(v1.write_size(0), 8);
 }
 
-#[derive(Encode, Debug)]
+#[derive(Encode, Decode, Debug)]
 pub enum NamedEnum {
-    Apple { seeds: u16 },
+    Apple { seeds: u16, color: String },
     Banana { peel: bool },
+}
+
+impl Default for NamedEnum {
+    fn default() -> Self {
+        Self::Banana { peel: true }
+    }
 }
 
 #[test]
 fn test_named_encode() {
-    let apple = NamedEnum::Apple { seeds: 13 };
+    let apple = NamedEnum::Apple {
+        seeds: 13,
+        color: "Red".into(),
+    };
     let mut dest = Vec::new();
     apple.encode(&mut dest, 0).unwrap();
-    assert_eq!(dest.len(), 3);
-    assert_eq!(dest[0], 0x00);
-    assert_eq!(dest[1], 0x00);
-    assert_eq!(dest[2], 0x0d);
+    let expected = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    assert_eq!(expected, dest);
+}
+
+#[test]
+fn test_named_decode() {
+    let data = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    let mut value = NamedEnum::default();
+    value.decode(&mut std::io::Cursor(data), 0).unwrap();
+    match value {
+        NamedEnum::Apple { seeds, color } => {
+            assert_eq!(seeds, 13);
+            assert_eq!(color, "Red");
+        }
+        _ => panic!("failed to decode"),
+    }
 }
 
 #[derive(Encode, PartialEq, Decode, Debug)]
