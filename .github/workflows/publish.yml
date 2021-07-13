@@ -79,8 +79,8 @@ jobs:
           mv fluvio-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio
           mv fluvio-run-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio-run
 
-        #   mkdir -p target/x86_64-apple-darwin/release/
-        #   mv fluvio-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio
+          mkdir -p target/x86_64-apple-darwin/release/
+          mv fluvio-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio
         #   mv fluvio-run-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio-run
       - name: Publish to Fluvio Packages
         run: |
@@ -88,8 +88,7 @@ jobs:
           ${HOME}/.fluvio/bin/fluvio package publish \
             --version="${VERSION}+${{ github.sha }}" \
             target/x86_64-unknown-linux-musl/release/fluvio
-            
-            
+
           ${HOME}/.fluvio/bin/fluvio package publish \
             --version="${VERSION}+${{ github.sha }}" \
             target/x86_64-unknown-linux-musl/release/fluvio-run
@@ -114,5 +113,5 @@ jobs:
           version: "0.32.9"
       - name: Bump latest version of Fluvio CLI on fluvio-packages
         env:
-          RUST_LOG: debug
+          RUST_LOG: info
         run: cargo make bump-fluvio-latest
