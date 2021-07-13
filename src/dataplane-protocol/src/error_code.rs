@@ -48,6 +48,9 @@ pub enum ErrorCode {
 
     // Stream Fetch error
     FetchSessionNotFoud = 3002,
+
+    // SmartStream errors
+    SmartStreamUserError = 4000,
 }
 
 impl Default for ErrorCode {

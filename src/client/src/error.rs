@@ -30,6 +30,8 @@ pub enum FluvioError {
         cluster_version: Version,
         client_minimum_version: Version,
     },
+    #[error("User SmartStream failed with the following error: {0}")]
+    SmartStreamUserError(String),
     #[error("Unknown error: {0}")]
     Other(String),
 }

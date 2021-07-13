@@ -1521,6 +1521,7 @@ dependencies = [
  "content_inspector",
  "crc32c",
  "derive_builder 0.9.0",
+ "eyre",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
@@ -1776,6 +1777,7 @@ dependencies = [
 name = "fluvio-smartstream"
 version = "0.1.1"
 dependencies = [
+ "eyre",
  "fluvio-dataplane-protocol",
  "fluvio-smartstream-derive",
 ]

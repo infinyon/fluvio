@@ -75,6 +75,9 @@ where
     /// The error code, or 0 if there was no fetch error
     pub error_code: ErrorCode,
 
+    #[fluvio(min_version = 12)]
+    pub smartstream_error: Option<SmartStreamError>,
+
     /// The current high water mark.
     pub high_watermark: i64,
 

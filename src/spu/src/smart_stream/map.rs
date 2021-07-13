@@ -4,64 +4,61 @@ use std::io::Cursor;
 
 use anyhow::{Result, Error, anyhow};
 
-use tracing::{warn, debug};
+use tracing::debug;
 use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 
 use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
+use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
 use crate::smart_stream::file_batch::FileBatchIterator;
-use dataplane::smartstream::{SmartStreamOutput, SmartStreamUserError};
+use dataplane::smartstream::SmartStreamOutput;
 
-const FILTER_FN_NAME: &str = "filter";
-type FilterFn = TypedFunc<(i32, i32), i32>;
+const MAP_FN_NAME: &str = "map";
+type MapFn = TypedFunc<(i32, i32), i32>;
 
-pub struct SmartStreamFilter {
+pub struct SmartStreamMap {
     store: Store<()>,
     instance: Instance,
-    filter_fn: FilterFn,
+    map_fn: MapFn,
     records_cb: Arc<RecordsCallBack>,
 }
 
-impl SmartStreamFilter {
+impl SmartStreamMap {
     pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
         let mut store = Store::new(&engine.0, ());
         let cb = Arc::new(RecordsCallBack::new());
-        let callback = cb.clone();
-
+        let records_cb = cb.clone();
         let copy_records = Func::wrap(
             &mut store,
             move |mut caller: Caller<'_, ()>, ptr: i32, len: i32| {
-                debug!(len, "callback from wasm filter");
+                debug!(len, "callback from wasm map");
                 let memory = match caller.get_export("memory") {
                     Some(Extern::Memory(mem)) => mem,
                     _ => return Err(Trap::new("failed to find host memory")),
                 };
 
                 let records = RecordsMemory { ptr, len, memory };
+
                 cb.set(records);
+
                 Ok(())
             },
         );
 
         let instance = Instance::new(&mut store, &module.0, &[copy_records.into()])?;
-        let filter_fn: FilterFn = instance.get_typed_func(&mut store, FILTER_FN_NAME)?;
+        let map_fn: MapFn = instance.get_typed_func(&mut store, MAP_FN_NAME)?;
 
         Ok(Self {
             store,
             instance,
-            filter_fn,
-            records_cb: callback,
+            map_fn,
+            records_cb,
         })
     }
 
-    /// filter batches with maximum bytes to be send back consumer
-    pub fn filter(
-        &mut self,
-        iter: &mut FileBatchIterator,
-        max_bytes: usize,
-    ) -> Result<(Batch, Option<SmartStreamUserError>), Error> {
+    /// map batches with maximum bytes to be send back consumer
+    pub fn map(&mut self, iter: &mut FileBatchIterator, max_bytes: usize) -> Result<Batch, Error> {
         let mut memory_filter_batch = Batch::<MemoryRecords>::default();
         memory_filter_batch.base_offset = -1; // indicate this is unitialized
         memory_filter_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
@@ -78,7 +75,7 @@ impl SmartStreamFilter {
                         total_records = memory_filter_batch.records().len(),
                         "no more batches filter end"
                     );
-                    return Ok((memory_filter_batch, None));
+                    return Ok(memory_filter_batch);
                 }
             };
 
@@ -101,7 +98,7 @@ impl SmartStreamFilter {
                 &file_batch.records,
             )?;
 
-            let filter_record_count = self.filter_fn.call(
+            let filter_record_count = self.map_fn.call(
                 &mut self.store,
                 (array_ptr as i32, file_batch.records.len() as i32),
             )?;
@@ -109,22 +106,19 @@ impl SmartStreamFilter {
             debug!(filter_record_count,filter_execution_time = %now.elapsed().as_millis());
 
             if filter_record_count == -1 {
-                return Err(anyhow!("filter failed"));
+                return Err(anyhow!("map failed"));
             }
 
-            let bytes = self
+            let output_bytes = self
                 .records_cb
                 .get()
                 .and_then(|m| m.copy_memory_from(&mut self.store).ok())
                 .unwrap_or_default();
-            debug!(out_filter_bytes = bytes.len());
+            debug!(out_filter_bytes = output_bytes.len());
 
             // this is inefficient for now
             let mut output = SmartStreamOutput::default();
-            output.decode(&mut Cursor::new(bytes), 0)?;
-            warn!("FILTER OUTPUT: {:?}", &output);
-
-            let maybe_error = output.error;
+            output.decode(&mut Cursor::new(output_bytes), 0)?;
             let mut records = output.successes;
 
             // there are filtered records!!
@@ -153,7 +147,7 @@ impl SmartStreamFilter {
                         total_bytes = total_bytes + record_bytes,
                         max_bytes, "total filter bytes reached"
                     );
-                    return Ok((memory_filter_batch, maybe_error));
+                    return Ok(memory_filter_batch);
                 }
 
                 total_bytes += record_bytes;
@@ -172,11 +166,6 @@ impl SmartStreamFilter {
                     "adding to offset delta"
                 );
                 memory_filter_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
-            }
-
-            // If we had a filtering error, return current batch and error
-            if maybe_error.is_some() {
-                return Ok((memory_filter_batch, maybe_error));
             }
         }
     }

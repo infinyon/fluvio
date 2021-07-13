@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "filter",
+    "filter_odd",
     "filter_json",
     "map",
     "map_json",

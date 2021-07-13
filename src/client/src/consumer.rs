@@ -6,7 +6,10 @@ use once_cell::sync::Lazy;
 use futures_util::future::{Either, err};
 use futures_util::stream::{StreamExt, once, iter};
 
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse};
+use fluvio_spu_schema::server::stream_fetch::{
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, SmartStreamPayload, SmartStreamWasm,
+    SmartStreamKind, WASM_MODULE_V2_API,
+};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
@@ -356,9 +359,14 @@ impl PartitionConsumer {
                 // If error code is anything else, wrap it in an error
                 Ok(response) => {
                     let code = response.partition.error_code;
-                    return Either::Right(once(err(FluvioError::ApiError(
-                        fluvio_sc_schema::ApiError::Code(code, None),
-                    ))));
+                    let error = match code {
+                        ErrorCode::SmartStreamUserError => {
+                            let error = response.partition.smartstream_error.unwrap();
+                            FluvioError::SmartStreamUserError(format!("{}", error))
+                        }
+                        _ => FluvioError::ApiError(fluvio_sc_schema::ApiError::Code(code, None)),
+                    };
+                    return Either::Right(once(err(error)));
                 }
                 Err(e) => return Either::Right(once(err(e))),
             };
@@ -410,11 +418,22 @@ impl PartitionConsumer {
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
-        if !config.wasm_module.is_empty() {
-            if stream_fetch_version >= WASM_MODULE_API as i16 {
-                stream_request.wasm_module = config.wasm_module;
-            } else {
+        if let Some(module) = config.wasm_module {
+            if stream_fetch_version < WASM_MODULE_API as i16 {
                 return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
+            }
+
+            if stream_fetch_version < WASM_MODULE_V2_API as i16 {
+                // SmartStream V1
+                debug!("Using WASM V1 API");
+                let wasm = match module.wasm {
+                    SmartStreamWasm::Raw(wasm) => wasm,
+                };
+                stream_request.wasm_module = wasm;
+            } else {
+                // SmartStream V2
+                debug!("Using WASM V2 API");
+                stream_request.wasm_payload = Some(module);
             }
         }
 
@@ -569,7 +588,7 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
 pub struct ConsumerConfig {
     pub(crate) max_bytes: i32,
     pub(crate) isolation: Isolation,
-    wasm_module: Vec<u8>,
+    wasm_module: Option<SmartStreamPayload>,
 }
 
 impl Default for ConsumerConfig {
@@ -577,7 +596,7 @@ impl Default for ConsumerConfig {
         Self {
             max_bytes: *MAX_FETCH_BYTES,
             isolation: Isolation::default(),
-            wasm_module: vec![],
+            wasm_module: None,
         }
     }
 }
@@ -591,7 +610,19 @@ impl ConsumerConfig {
 
     /// set wasm filter
     pub fn with_wasm_filter(mut self, bytes: Vec<u8>) -> Self {
-        self.wasm_module = bytes;
+        self.wasm_module = Some(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(bytes),
+            kind: SmartStreamKind::Filter,
+        });
+        self
+    }
+
+    /// set wasm map
+    pub fn with_wasm_map(mut self, bytes: Vec<u8>) -> Self {
+        self.wasm_module = Some(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(bytes),
+            kind: SmartStreamKind::Map,
+        });
         self
     }
 }

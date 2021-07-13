@@ -3,7 +3,7 @@ use std::time::{Instant};
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use tracing::{debug, trace, error, instrument};
+use tracing::{error, warn, debug, trace, instrument};
 use tokio::select;
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
@@ -18,14 +18,15 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    FileStreamFetchRequest, DefaultStreamFetchRequest, StreamFetchResponse,
+    FileStreamFetchRequest, DefaultStreamFetchRequest, StreamFetchResponse, SmartStreamWasm,
+    SmartStreamKind,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use publishers::INIT_OFFSET;
-use crate::smart_stream::{SmartStreamEngine, SmartStreamModule};
+use crate::smart_stream::{SmartStreamEngine, SmartStream};
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -41,7 +42,7 @@ pub struct StreamFetchHandler {
     leader_state: SharedFileLeaderState,
     stream_id: u32,
     sm_engine: SmartStreamEngine,
-    sm_bytes: Vec<u8>,
+    smartstream: Option<SmartStream>,
 }
 
 impl StreamFetchHandler {
@@ -54,14 +55,12 @@ impl StreamFetchHandler {
         end_event: Arc<SimpleEvent>,
     ) -> Result<(), FlvSocketError> {
         // first get receiver to offset update channel to we don't missed events
-
         let (header, msg) = request.get_header_request();
 
         let current_offset = msg.fetch_offset;
         let isolation = msg.isolation;
         let replica = ReplicaKey::new(msg.topic, msg.partition);
         let max_bytes = msg.max_bytes as u32;
-        let sm_bytes = msg.wasm_module;
 
         if let Some(leader_state) = ctx.leaders_state().get(&replica) {
             let (stream_id, offset_publisher) =
@@ -74,12 +73,50 @@ impl StreamFetchHandler {
                 %replica,
                 current_offset,
                 max_bytes,
-                sm_bytes = sm_bytes.len(),
                 "start stream fetch"
             );
 
+            let sm_engine = SmartStreamEngine::default();
+
+            let smartstream = if let Some(payload) = &msg.wasm_payload {
+                let wasm = match &payload.wasm {
+                    SmartStreamWasm::Raw(wasm) => wasm,
+                };
+                let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
+                    FlvSocketError::IoError(IoError::new(
+                        ErrorKind::Other,
+                        format!("module loading error {}", err),
+                    ))
+                })?;
+
+                let smartstream = match payload.kind {
+                    SmartStreamKind::Filter => {
+                        let filter = module.create_filter(&sm_engine).map_err(|err| {
+                            FlvSocketError::IoError(IoError::new(
+                                ErrorKind::Other,
+                                format!("Failed to instantiate SmartStreamFilter {}", err),
+                            ))
+                        })?;
+                        SmartStream::Filter(filter)
+                    }
+                    SmartStreamKind::Map => {
+                        let map = module.create_map(&sm_engine).map_err(|err| {
+                            FlvSocketError::IoError(IoError::new(
+                                ErrorKind::Other,
+                                format!("Failed to instantiate SmartStreamMap {}", err),
+                            ))
+                        })?;
+                        SmartStream::Map(map)
+                    }
+                };
+
+                Some(smartstream)
+            } else {
+                None
+            };
+
             // if we are filtered we should scan all batches instead of just limit to max bytes
-            let max_fetch_bytes = if sm_bytes.is_empty() {
+            let max_fetch_bytes = if smartstream.is_none() {
                 max_bytes
             } else {
                 u32::MAX
@@ -96,8 +133,8 @@ impl StreamFetchHandler {
                 consumer_offset_listener: offset_listener,
                 stream_id,
                 leader_state: leader_state.clone(),
-                sm_engine: SmartStreamEngine::default(),
-                sm_bytes,
+                sm_engine,
+                smartstream,
                 max_fetch_bytes,
             };
 
@@ -145,26 +182,7 @@ impl StreamFetchHandler {
     }
 
     async fn inner_process(&mut self, starting_offset: Offset) -> Result<(), FlvSocketError> {
-        // initialize smart stream module here instead of beginning because WASM module is not thread safe
-        // and can't be send across Send
-        let module = if !self.sm_bytes.is_empty() {
-            let module = self
-                .sm_engine
-                .create_module_from_binary(&self.sm_bytes)
-                .map_err(|err| -> FlvSocketError {
-                    FlvSocketError::IoError(IoError::new(
-                        ErrorKind::Other,
-                        format!("module loading error {}", err),
-                    ))
-                })?;
-            Some(module)
-        } else {
-            None
-        };
-
-        let (mut last_read_offset, consumer_wait) = self
-            .send_back_records(starting_offset, module.as_ref())
-            .await?;
+        let (mut last_read_offset, consumer_wait) = self.send_back_records(starting_offset).await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
 
@@ -194,7 +212,7 @@ impl StreamFetchHandler {
                             last_read_offset,
                             "need send back"
                         );
-                        let (offset, wait) = self.send_back_records(changed_consumer_offset, module.as_ref()).await?;
+                        let (offset, wait) = self.send_back_records(changed_consumer_offset).await?;
                         last_read_offset = offset;
                         if wait {
                             consumer_offset = None;
@@ -237,7 +255,7 @@ impl StreamFetchHandler {
 
                     // we know what consumer offset is
                     debug!(leader_offset_update, consumer_offset = last_consumer_offset, "reading offset event");
-                    let (offset,wait) = self.send_back_records(last_consumer_offset, module.as_ref()).await?;
+                    let (offset,wait) = self.send_back_records(last_consumer_offset).await?;
                     last_read_offset = offset;
                     if wait {
                         consumer_offset = None;
@@ -253,8 +271,6 @@ impl StreamFetchHandler {
         }
 
         debug!("done with stream fetch loop exiting");
-        drop(module);
-
         self.ctx
             .stream_publishers()
             .remove_publisher(self.stream_id)
@@ -267,13 +283,12 @@ impl StreamFetchHandler {
     /// return (next offset, consumer wait)
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
-        skip(self,module_option),
+        skip(self),
         fields(stream_id = self.stream_id)
     )]
     async fn send_back_records(
         &mut self,
         offset: Offset,
-        module_option: Option<&SmartStreamModule>,
     ) -> Result<(Offset, bool), FlvSocketError> {
         let now = Instant::now();
         let mut file_partition_response = FilePartitionResponse {
@@ -301,19 +316,20 @@ impl StreamFetchHandler {
 
         let mut next_offset = offset.isolation(&self.isolation);
 
-        if file_partition_response.records.len() > 0 {
-            // If a smartstream module is provided, we need to read records from file to memory
-            // In-memory records are then processed by smartstream and returned to consumer
-            if let Some(module) = module_option {
+        if !(file_partition_response.records.len() > 0) {
+            debug!("empty records, skipping");
+            return Ok((offset.isolation(&self.isolation), false));
+        }
+
+        // If a smartstream module is provided, we need to read records from file to memory
+        // In-memory records are then processed by smartstream and returned to consumer
+        match self.smartstream.as_mut() {
+            Some(SmartStream::Filter(filter)) => {
+                warn!("HANDLING FETCH, GOT FILTER");
                 type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
                 use crate::smart_stream::file_batch::FileBatchIterator;
 
-                debug!("creating smart filter");
-                let filter_batch = {
-                    let mut filter = module.create_filter(&self.sm_engine).map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("creating filter {}", err))
-                    })?;
-
+                let (filter_batch, smartstream_error) = {
                     let records = &file_partition_response.records;
 
                     let slice = records.raw_slice();
@@ -325,6 +341,14 @@ impl StreamFetchHandler {
                         .map_err(|err| {
                             IoError::new(ErrorKind::Other, format!("filter err {}", err))
                         })?
+                };
+
+                let error_code = match &smartstream_error {
+                    Some(error) => {
+                        warn!("GOT SMARTSTREAM USER ERROR: {}", error);
+                        ErrorCode::SmartStreamUserError
+                    }
+                    None => file_partition_response.error_code,
                 };
 
                 let consumer_wait = !filter_batch.records().is_empty();
@@ -344,7 +368,8 @@ impl StreamFetchHandler {
                 let records = RecordSet::default().add(filter_batch);
                 let filter_partition_response = DefaultPartitionResponse {
                     partition_index: self.replica.partition,
-                    error_code: file_partition_response.error_code,
+                    error_code,
+                    smartstream_error,
                     high_watermark: file_partition_response.high_watermark,
                     log_start_offset: file_partition_response.log_start_offset,
                     records,
@@ -373,7 +398,13 @@ impl StreamFetchHandler {
                     .await?;
 
                 Ok((next_offset, consumer_wait))
-            } else {
+            }
+            Some(SmartStream::Map(map)) => {
+                warn!("HANDLING FETCH, GOT MAP");
+                todo!()
+            }
+            None => {
+                warn!("HANDLING FETCH, GOT NO SMARTSTREAM");
                 // If no smartstream is provided, respond using raw file records
                 debug!("no filter, sending back entire");
 
@@ -401,9 +432,6 @@ impl StreamFetchHandler {
 
                 Ok((offset.isolation(&self.isolation), true))
             }
-        } else {
-            debug!("empty records, skipping");
-            Ok((offset.isolation(&self.isolation), false))
         }
     }
 }
@@ -501,6 +529,7 @@ mod test {
     use crate::replication::leader::LeaderReplicaState;
     use crate::services::create_public_server;
     use super::*;
+    use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
 
     #[fluvio_future::test(ignore)]
     async fn test_stream_fetch() {
@@ -698,7 +727,11 @@ mod test {
             .expect("replica");
         ctx.leaders_state().insert(test_id, replica.clone());
 
-        let wasm_module = load_wasm_module("fluvio_wasm_filter");
+        let wasm = load_wasm_module("fluvio_wasm_filter");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Filter,
+        };
 
         let stream_request = DefaultStreamFetchRequest {
             topic: topic.to_owned(),
@@ -706,7 +739,8 @@ mod test {
             fetch_offset: 0,
             isolation: Isolation::ReadUncommitted,
             max_bytes: 10000,
-            wasm_module,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
             ..Default::default()
         };
 
@@ -876,7 +910,11 @@ mod test {
             .expect("write"); // 3000 bytes total
                               // now total of 300 filter records bytes (min), but last filter record is greater than max
 
-        let wasm_module = load_wasm_module("fluvio_wasm_filter");
+        let wasm = load_wasm_module("fluvio_wasm_filter");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Filter,
+        };
 
         let stream_request = DefaultStreamFetchRequest {
             topic: topic.to_owned(),
@@ -884,7 +922,8 @@ mod test {
             fetch_offset: 0,
             isolation: Isolation::ReadUncommitted,
             max_bytes: 250,
-            wasm_module,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
             ..Default::default()
         };
 
