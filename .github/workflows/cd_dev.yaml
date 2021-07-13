@@ -4,9 +4,9 @@ name:  CD_Dev
 permissions:
   contents: read
 
-concurrency: 
-  group: ${{ github.head_ref || 'cd_dev'}}
-  cancel-in-progress: true
+#concurrency: 
+#  group: ${{ github.head_ref || 'cd_dev' }}
+#  cancel-in-progress: true
 
 on:
   push:
