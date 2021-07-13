@@ -4,6 +4,7 @@ members = [
     "filter_json",
     "map",
     "map_json",
+    "map_regex",
 ]
 
 # lto is need to reduce wasm binary size
