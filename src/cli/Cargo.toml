@@ -64,7 +64,7 @@ k8-client = { version = "5.0.0" }
 fluvio = { version = "0.8.0", path = "../client", default-features = false }
 fluvio-cluster = { version = "0.9.1", path = "../cluster", default-features = false, features = ["cli"] }
 fluvio-command = { version = "0.2.0" }
-fluvio-package-index = { version = "0.3.0", path = "../package-index" }
+fluvio-package-index = { version = "0.4", path = "../package-index" }
 fluvio-extension-common = { version = "0.4.0", path = "../extension-common", features = ["target"]}
 fluvio-controlplane-metadata = { version = "0.9.1", path = "../controlplane-metadata", features = ["use_serde", "k8"] }
 k8-types = { version = "0.2.0", features = ["core"]}

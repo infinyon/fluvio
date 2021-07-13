@@ -63,7 +63,7 @@ pub(crate) fn get_extensions() -> Result<Vec<PathBuf>, CliError> {
 async fn fetch_latest_version<T>(
     agent: &HttpAgent,
     id: &PackageId<T>,
-    target: Target,
+    target: &Target,
     prerelease: bool,
 ) -> Result<Version, CliError> {
     let request = agent.request_package(id)?;
@@ -76,7 +76,7 @@ async fn fetch_latest_version<T>(
     let latest_release = package.latest_release_for_target(target, prerelease)?;
     debug!(release = ?latest_release, "Latest release for package:");
     if !latest_release.target_exists(target) {
-        return Err(fluvio_index::Error::MissingTarget(target).into());
+        return Err(fluvio_index::Error::MissingTarget(target.clone()).into());
     }
     Ok(latest_release.version.clone())
 }
@@ -89,7 +89,7 @@ async fn fetch_latest_version<T>(
 async fn fetch_package_file(
     agent: &HttpAgent,
     id: &PackageId<WithVersion>,
-    target: Target,
+    target: &Target,
 ) -> Result<Vec<u8>, CliError> {
     // Download the package file from the package registry
     let download_request = agent.request_release_download(&id, target)?;

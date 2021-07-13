@@ -51,7 +51,7 @@ impl HttpAgent {
     pub fn request_release_download(
         &self,
         id: &PackageId<WithVersion>,
-        target: Target,
+        target: &Target,
     ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}",
@@ -67,7 +67,7 @@ impl HttpAgent {
     pub fn request_release_checksum(
         &self,
         id: &PackageId<WithVersion>,
-        target: Target,
+        target: &Target,
     ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}.sha256",
