@@ -34,7 +34,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-11]
+        os: [macos-latest]
         rust: [stable]
         rust_target: [x86_64-apple-darwin]
         check: [clippy, test, unstable]
@@ -78,7 +78,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-11]
+        os: [macos-latest]
         rust: [stable]
         rust_target: [x86_64-apple-darwin]
 
@@ -149,7 +149,7 @@ jobs:
     needs: build_platform_binaries
     strategy:
       matrix:
-        os: [macos-11]
+        os: [macos-latest]
         rust: [stable]
     env:
       FLV_SOCKET_WAIT: 600
