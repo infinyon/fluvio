@@ -2041,6 +2041,7 @@ dependencies = [
  "async-trait",
  "bencher",
  "bytes",
+ "csv",
  "fluvio",
  "fluvio-cluster",
  "fluvio-command",

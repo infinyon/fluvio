@@ -10,6 +10,8 @@ use fluvio::RecordKey;
 use fluvio_command::CommandExt;
 use async_lock::RwLock;
 
+use csv::WriterBuilder;
+
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(
@@ -124,7 +126,13 @@ pub async fn produce_message_with_api(
 
         for i in 0..produce_iteration {
             let offset = base_offset + i as i64;
-            let message = generate_message(offset, &test_case);
+
+            let mut wtr = WriterBuilder::new().has_headers(false).from_writer(vec![]);
+            let gen_msg = TestMessage::generate_message(offset, &test_case);
+            wtr.serialize(gen_msg)
+                .expect("TestMessage serialize to csv failed");
+            let message = wtr.into_inner().expect("csv to Vec<u8> failed");
+
             let len = message.len();
             info!("trying send: {}, iteration: {}", topic_name, i);
             let mut lock = test_driver.write().await;
@@ -195,7 +203,13 @@ mod cli {
         let mut child = child.spawn().expect("no child");
 
         let stdin = child.stdin.as_mut().expect("Failed to open stdin");
-        let msg = generate_message(base_offset, test_case);
+
+        let mut wtr = WriterBuilder::new().has_headers(false).from_writer(vec![]);
+        let gen_msg = TestMessage::generate_message(base_offset, &test_case);
+        wtr.serialize(gen_msg)
+            .expect("TestMessage serialize to csv failed");
+        let msg = wtr.into_inner().expect("csv to Vec<u8> failed");
+
         stdin
             .write_all(msg.as_slice())
             .expect("Failed to write to stdin");

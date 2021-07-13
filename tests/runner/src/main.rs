@@ -74,15 +74,13 @@ fn main() {
             eprintln!("{}", test_result);
             if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
                 eprintln!("{:?}", s);
-            }
-            else {
+            } else {
                 eprintln!("There was no string error message provided in panic.");
             }
 
             if let Some(l) = panic_info.location() {
                 eprintln!("file: {} @ line {}", l.file(), l.line());
-            }
-            else {
+            } else {
                 eprintln!("There was no location information from panic.");
             }
         }));
@@ -98,7 +96,7 @@ fn main() {
         cluster_cleanup(option.environment).await;
 
         if let Ok(t) = test_result {
-            println!("{:?}", t)
+            println!("{}", t)
         }
     });
 }
@@ -116,8 +114,7 @@ async fn run_test(
 
     if let Ok(t) = test_result {
         t
-    }
-    else {
+    } else {
         Err(TestResult::default())
     }
 }

@@ -61,7 +61,9 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         io::stderr().write_all(&output.stderr).unwrap();
 
         let msg = output.stdout.as_slice();
-        validate_message(i, *offset, test_case, &msg[0..msg.len() - 1]);
+        let _valid_msg =
+            TestMessage::validate_message(i, *offset, test_case, &msg[0..msg.len() - 1])
+                .expect("Message validation failed");
 
         println!("topic: {}, consume message validated!", topic_name);
     }
@@ -141,31 +143,26 @@ async fn validate_consume_message_api(
                         );
 
 
+                        // Stop E2E timer
+                        let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
 
-                        // record e2e
-                        let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+                        // Parse record
+                        let valid_msg = TestMessage::validate_message(producer_iteration, offset, test_case, &bytes).expect("Validation failed");
 
-                        // Parse the send time out of the record
-                        let data_str = String::from_utf8(record.value().to_vec()).unwrap();
-                        let data_vec: Vec<&str> = data_str.split_terminator(",").collect();
-                        let send_time = Duration::from_nanos(data_vec[0].parse::<u64>().unwrap());
+                        // Calculate the E2E duration
+                        let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
 
-                        let e2e_duration = (e2e_stop_time - send_time).as_nanos();
+                        debug!("stop_time: {:#?} duration: {:#?}",e2e_stop_time, e2e_duration_nanos );
 
-                        debug!("From payload: {:#?} parsed payload: {:#?} stop_time: {:#?} duration: {:#?}",data_vec[0], send_time, e2e_stop_time, e2e_duration );
-
-
-                        // Calculate a duration
 
                         let mut lock = test_driver.write().await;
-                        // record E2E latency
-                        // record consumer-only latency
+                        // record consumer-only and E2E latency
                         let consume_time = consume_timestamp.elapsed().clone().unwrap().as_nanos();
-                        lock.consume_record(bytes.len(), consume_time as u64, e2e_duration as u64).await;
+                        lock.consume_record(bytes.len(), consume_time as u64, e2e_duration_nanos as u64).await;
                         drop(lock);
 
 
-                        validate_message(producer_iteration, offset, test_case, &bytes);
+
                         info!(
                             " total records: {}, validated offset: {}",
                             total_records, offset
