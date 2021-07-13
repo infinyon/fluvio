@@ -1552,9 +1552,8 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa9feaa68147ceb5174f7fbead7779d64085605818bd911d7ef2cbfae1604f84"
+version = "0.3.6"
+source = "git+https://github.com/simlay/future-aio?branch=add-windows-to-ci#a2e69486e52a780683b5879f43f9cfe1e9b91180"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1944,8 +1943,7 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
+source = "git+https://github.com/simlay/future-aio?branch=add-windows-to-ci#a2e69486e52a780683b5879f43f9cfe1e9b91180"
 dependencies = [
  "proc-macro2",
  "quote",
