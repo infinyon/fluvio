@@ -117,7 +117,7 @@ impl Package {
     ///
     /// If `prerelease` is false, this will return only the latest release
     /// whose version does not include a prerelease tag.
-    pub fn latest_release_for_target(&self, target: Target, prerelease: bool) -> Result<&Release> {
+    pub fn latest_release_for_target(&self, target: &Target, prerelease: bool) -> Result<&Release> {
         self.releases
             .iter()
             .rev()
@@ -126,9 +126,9 @@ impl Package {
                 if !prerelease && (it.version.is_prerelease() || !it.version.build.is_empty()) {
                     return false;
                 }
-                it.targets.contains(&target)
+                it.targets.contains(target)
             })
-            .ok_or(Error::MissingTarget(target))
+            .ok_or_else(|| Error::MissingTarget(target.clone()))
     }
 
     fn package_id(&self) -> PackageId<MaybeVersion> {
@@ -157,10 +157,10 @@ impl Package {
         Ok(())
     }
 
-    pub fn releases_for_target(&self, target: Target) -> Vec<&Release> {
+    pub fn releases_for_target(&self, target: &Target) -> Vec<&Release> {
         self.releases
             .iter()
-            .filter(|it| it.targets.contains(&target))
+            .filter(|it| it.targets.contains(target))
             .collect()
     }
 }
@@ -205,13 +205,13 @@ impl Release {
     /// Adds a target to this release. If that target already exists,
     /// nothing happens
     pub fn add_target(&mut self, target: Target) {
-        if !self.target_exists(target) {
+        if !self.target_exists(&target) {
             self.targets.push(target);
         }
     }
 
-    pub fn target_exists(&self, target: Target) -> bool {
-        self.targets.iter().any(|it| it == &target)
+    pub fn target_exists(&self, target: &Target) -> bool {
+        self.targets.iter().any(|it| it == target)
     }
 }
 
@@ -267,7 +267,7 @@ mod tests {
     fn test_get_latest_prerelease() {
         let package = test_package();
         let release = package
-            .latest_release_for_target(Target::X86_64AppleDarwin, true)
+            .latest_release_for_target(&Target::X86_64AppleDarwin, true)
             .unwrap();
         assert_eq!(release.version, Version::parse("0.2.0-alpha.2").unwrap());
     }
@@ -276,7 +276,7 @@ mod tests {
     fn test_get_latest_release() {
         let package = test_package();
         let release = package
-            .latest_release_for_target(Target::X86_64AppleDarwin, false)
+            .latest_release_for_target(&Target::X86_64AppleDarwin, false)
             .unwrap();
         assert_eq!(release.version, Version::parse("0.1.0").unwrap());
     }

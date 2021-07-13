@@ -69,7 +69,7 @@ impl InstallOpt {
                     "🎣 Fetching latest version for package: {}...",
                     &id
                 ));
-                let version = fetch_latest_version(agent, &id, target, self.develop).await?;
+                let version = fetch_latest_version(agent, &id, &target, self.develop).await?;
                 let id = id.into_versioned(version);
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
@@ -80,7 +80,7 @@ impl InstallOpt {
         };
 
         // Download the package file from the package registry
-        let package_file = fetch_package_file(agent, &id, target).await?;
+        let package_file = fetch_package_file(agent, &id, &target).await?;
         install_println("🔑 Downloaded and verified package file");
 
         // Install the package to the ~/.fluvio/bin/ dir
