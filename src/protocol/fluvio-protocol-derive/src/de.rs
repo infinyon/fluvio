@@ -1,5 +1,6 @@
 use crate::ast::{
-    container::ContainerAttributes, prop::Prop, r#enum::EnumProp, r#enum::FieldKind, DeriveItem,
+    container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
+    DeriveItem,
 };
 use proc_macro2::Span;
 use proc_macro2::TokenStream;
@@ -33,7 +34,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             } else {
                 Ident::new("u8", Span::call_site())
             };
-            let enum_tokens = generate_variant_tokens(&int_type);
+            let enum_tokens = generate_decode_enum_impl(&kf_enum.props, &int_type, ident, &attrs);
             let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
             let res = quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
@@ -50,10 +51,10 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-pub(crate) fn generate_struct_fields(props: &[Prop], struct_ident: &Ident) -> TokenStream {
+pub(crate) fn generate_struct_fields(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
-        if prop.varint {
+        if prop.attrs.varint {
             quote! {
                 tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
                 let result = self.#fname.decode_varint(src);
@@ -84,16 +85,107 @@ pub(crate) fn generate_struct_fields(props: &[Prop], struct_ident: &Ident) -> To
     }
 }
 
-fn generate_variant_tokens(int_type: &Ident) -> TokenStream {
-    quote! {
-        use std::convert::TryInto;
+fn generate_decode_enum_impl(
+    props: &[EnumProp],
+    int_type: &Ident,
+    enum_ident: &Ident,
+    attrs: &ContainerAttributes,
+) -> TokenStream {
+    let mut arm_branches = vec![];
+    for (idx, prop) in props.iter().enumerate() {
+        let id = &format_ident!("{}", prop.variant_name);
+        let field_idx = if let Some(tag) = &prop.tag {
+            match TokenStream::from_str(tag) {
+                Ok(literal) => literal,
+                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
+            }
+        } else if attrs.encode_discriminant {
+            match &prop.discriminant {
+                Some(dsc) => dsc.as_token_stream(),
+                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
+            }
+        } else {
+            LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+        };
+
+        let arm_code = match &prop.kind {
+            FieldKind::Unnamed(_, props) => {
+                let (decode, construct): (Vec<_>, Vec<_>) = props
+                    .iter()
+                    .enumerate()
+                    .map(|(idx, _)| {
+                        let var_ident = format_ident!("res_{}", idx);
+                        // Type will be inferred when used to construct parent
+                        let decode = quote! {
+                            let mut #var_ident = Default::default();
+                            #var_ident.decode(src, version)?;
+                        };
+                        let construct = quote! { #var_ident };
+                        (decode, construct)
+                    })
+                    .unzip();
+
+                quote! {
+                    #field_idx => {
+                        #(#decode)*
+
+                        *self = Self::#id ( #(#construct),* );
+                    }
+                }
+            }
+            FieldKind::Named(_, props) => {
+                let (decode, construct): (Vec<_>, Vec<_>) = props
+                    .iter()
+                    .map(|prop| {
+                        let var_ident = format_ident!("{}", &prop.field_name);
+                        // Type will be inferred when used to construct parent
+                        let decode = quote! {
+                            let mut #var_ident = Default::default();
+                            #var_ident.decode(src, version)?;
+                        };
+                        let construct = quote! { #var_ident };
+                        (decode, construct)
+                    })
+                    .unzip();
+
+                quote! {
+                    #field_idx => {
+                        #(#decode)*
+
+                        *self = Self::#id { #(#construct),* };
+                    }
+                }
+            }
+            FieldKind::Unit => {
+                quote! {
+                    #field_idx => {
+                        *self = Self::#id;
+                    }
+                }
+            }
+        };
+
+        arm_branches.push(arm_code);
+    }
+
+    arm_branches.push(quote! {
+        _ => return Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            format!("Unknown {} type {}", stringify!(#enum_ident), typ)
+        ))
+    });
+
+    let output = quote! {
         let mut typ: #int_type = 0;
         typ.decode(src, version)?;
         tracing::trace!("decoded type: {}", typ);
 
-        let convert: Self = typ.try_into()?;
-        *self = convert;
-    }
+        match typ {
+            #(#arm_branches),*
+        }
+    };
+
+    output
 }
 
 fn generate_try_enum_from_kf_enum(
@@ -106,22 +198,20 @@ fn generate_try_enum_from_kf_enum(
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);
         let field_idx = if let Some(tag) = &prop.tag {
-            if let Ok(literal) = TokenStream::from_str(tag) {
-                literal
-            } else {
-                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+            match TokenStream::from_str(tag) {
+                Ok(literal) => literal,
+                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
             }
         } else if attrs.encode_discriminant {
-            if let Some(dsc) = &prop.discriminant {
-                dsc.as_token_stream()
-            } else {
-                LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
+            match &prop.discriminant {
+                Some(dsc) => dsc.as_token_stream(),
+                _ => LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream(),
             }
         } else {
             LitInt::new(&idx.to_string(), Span::call_site()).to_token_stream()
         };
         let variant_code = match &prop.kind {
-            FieldKind::Named(expr) => {
+            FieldKind::Named(expr, _props) => {
                 let mut decode_variant_fields = vec![];
                 for (idx, field) in expr.named.iter().enumerate() {
                     let field_ident = &field.ident;
@@ -143,7 +233,7 @@ fn generate_try_enum_from_kf_enum(
                     }
                 }
             }
-            FieldKind::Unnamed(expr) => {
+            FieldKind::Unnamed(expr, _props) => {
                 let mut decode_variant_fields = vec![];
                 for (idx, field) in expr.unnamed.iter().enumerate() {
                     let field_ident = &field.ident;
@@ -212,10 +302,10 @@ pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-pub(crate) fn generate_default_impls(props: &[Prop]) -> TokenStream {
+pub(crate) fn generate_default_impls(props: &[NamedProp]) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
-        if let Some(def) = &prop.default_value {
+        if let Some(def) = &prop.attrs.default_value {
             if let Ok(liter) = TokenStream::from_str(def) {
                 quote! {
                     #fname: #liter,
