@@ -13,8 +13,8 @@ concurrency:
 on:
   pull_request:
     branches: [master]
-  push:
-    branches: [master]
+#  push:
+#    branches: [master]
   workflow_dispatch:
     inputs:
       verbose:
@@ -30,7 +30,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Check tier2 platform (${{ matrix.rust_target }}) (${{ matrix.check }})
-
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -75,6 +75,7 @@ jobs:
   # this requires check and test
   build_platform_binaries:
     name: Build Tier2 binaries for Platform Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
