@@ -4,7 +4,7 @@ name: CI
 permissions:
   contents: read
 
-concurrency: 
+concurrency:
   group: ${{ github.head_ref || 'ci_staging' }}
   cancel-in-progress: true
 
@@ -25,20 +25,31 @@ on:
 env:
   VERBOSE: ${{ github.events.input.verbose }}
 
-
 jobs:
-
   # build binaries. use release for staging
   # this requires check and test
-  build_platform_binaries:
-    name: Build binaries for Platform Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
+  build_binaries:
+    name: Build binaries for Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        rust_target:
+          [
+            x86_64-unknown-linux-musl,
+            armv7-unknown-linux-gnueabihf,
+            x86_64-apple-darwin,
+          ]
         rust: [stable]
-        rust_target: [x86_64-unknown-linux-musl]
-
+        include:
+          - rust_target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            binaries: [fluvio, fluvio-run, flv-test]
+          - rust_target: armv7-unknown-linux-gnueabihf
+            os: ubuntu-latest
+            binaries: [fluvio]
+          - rust_target: x86_64-apple-darwin
+            os: macos-latest
+            binaries: [fluvio]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -74,31 +85,36 @@ jobs:
         run: make check-fmt
 
       - name: Build CLI
+        if: ${{ contains(matrix.binaries, 'fluvio') }}
         run: make build-cli
 
-      - name: Build Cluster CLI 
+      - name: Build Cluster CLI
+        if: ${{ contains(matrix.binaries, 'fluvio-run') }}
         run: make build-cluster
 
-      - name: Build Test CLI 
+      - name: Build Test CLI
+        if: ${{ contains(matrix.binaries, 'flv-test') }}
         run: make build-test
 
       # Upload artifacts
       - name: Upload artifact - fluvio
+        if: ${{ contains(matrix.binaries, 'fluvio') }}
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio
       - name: Upload artifact - fluvio-run
+        if: ${{ contains(matrix.binaries, 'fluvio-run') }}
         uses: actions/upload-artifact@v2
         with:
           name: fluvio-run-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio-run
       - name: Upload atrifact - flv-test
+        if: ${{ contains(matrix.binaries, 'flv-test') }}
         uses: actions/upload-artifact@v2
         with:
           name: flv-test-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/flv-test
-
 
   # Run all checks and unit test. This always run on debug mode
   check:
@@ -110,7 +126,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust_target: [x86_64-unknown-linux-gnu]
-        check: [clippy,test,unstable]
+        check: [clippy, test, unstable]
 
     env:
       RUST_BACKTRACE: full
@@ -134,16 +150,16 @@ jobs:
         run: make check-clippy
 
       - name: Test
-        if: ${{ matrix.check == 'test' }} 
+        if: ${{ matrix.check == 'test' }}
         run: |
           make run-all-doc-test
           make run-all-unit-test
 
       - name: Unstable test
-        if: ${{ matrix.check == 'unstable' }} 
+        if: ${{ matrix.check == 'unstable' }}
         run: |
           make run-unstable-test
-      
+
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
     runs-on: ${{ matrix.os }}
@@ -178,7 +194,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
-    needs: build_platform_binaries
+    needs: build_binaries
     strategy:
       matrix:
         os: [infinyon-ubuntu-bionic]
@@ -233,7 +249,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
-    needs: build_platform_binaries
+    needs: build_binaries
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -356,15 +372,13 @@ jobs:
           name: fluvio-k8-logs
           path: /tmp/flv_sc.log
 
-
-
   # After all tests have passed, push docker images
   docker_push:
     name: Publish Docker Image
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - check
-      - build_platform_binaries
+      - build_binaries
       - check_wasm
       - local_cluster_test
       - k8_cluster_test
@@ -420,8 +434,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        artifact: [fluvio, fluvio-run]
-        target: [x86_64-unknown-linux-musl]
+        target:
+          [
+            x86_64-unknown-linux-musl,
+            x86_64-apple-darwin,
+            armv7-unknown-linux-gnueabihf,
+          ]
+        artifact: [fluvio]
+        include:
+          - target: x86_64-unknown-linux-musl
+            artifact: fluvio-run
     permissions: write-all
     steps:
       - name: Login GH CLI
