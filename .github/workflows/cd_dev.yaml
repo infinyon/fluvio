@@ -5,13 +5,14 @@ permissions:
   contents: read
 
 concurrency: 
-  group: ${{ github.head_ref || 'dev_ci'}}
+  group: ${{ 'cd_dev' }}
   cancel-in-progress: true
 
 on:
   push:
     branches: [master]
-
+#  pull_request:
+#    branches: [master]
   workflow_dispatch:
 
 jobs:

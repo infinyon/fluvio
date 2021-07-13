@@ -7,11 +7,13 @@ permissions:
   contents: read
 
 concurrency: 
-  group: ${{ github.head_ref }}
+  group: ${{ 'ci_tier2' }}
   cancel-in-progress: true
 
 on:
-#  pull_request:
+  pull_request:
+    branches: [master]
+#  push:
 #    branches: [master]
   workflow_dispatch:
     inputs:
@@ -28,11 +30,11 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Check tier2 platform (${{ matrix.rust_target }}) (${{ matrix.check }})
-
+    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-11]
+        os: [macos-latest]
         rust: [stable]
         rust_target: [x86_64-apple-darwin]
         check: [clippy, test, unstable]
@@ -50,10 +52,10 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install Zig
-        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: goto-bus-stop/setup-zig@v1
+        with:
+          version: 0.8.0
       - uses: Swatinem/rust-cache@v1
-
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
         run: make check-clippy
@@ -73,10 +75,11 @@ jobs:
   # this requires check and test
   build_platform_binaries:
     name: Build Tier2 binaries for Platform Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
+    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-11]
+        os: [macos-latest]
         rust: [stable]
         rust_target: [x86_64-apple-darwin]
 
@@ -91,12 +94,12 @@ jobs:
 
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
-      - name: Set RELEASE mode
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        run: |
-          echo "RELEASE=true" | tee -a $GITHUB_ENV
-          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
-          echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
+      #- name: Set RELEASE mode
+      #  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+      #  run: |
+      #    echo "RELEASE=true" | tee -a $GITHUB_ENV
+      #    echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+      #    echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
 
       - name: Print env
         run: |
@@ -107,8 +110,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - name: Install zig
-        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: goto-bus-stop/setup-zig@v1
       - uses: Swatinem/rust-cache@v1
 
       - name: Rustfmt
@@ -143,10 +145,11 @@ jobs:
   local_cluster_test:
     name: Local Tier 2cluster test
     runs-on: ${{ matrix.os }}
+    if: ${{ false }}
     needs: build_platform_binaries
     strategy:
       matrix:
-        os: [macos-11]
+        os: [macos-latest]
         rust: [stable]
     env:
       FLV_SOCKET_WAIT: 600
