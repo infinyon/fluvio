@@ -9,9 +9,7 @@ use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
 use std::time::Duration;
-use futures_lite::stream::StreamExt;
 use tracing::debug;
-use fluvio::Offset;
 use fluvio_future::timer::sleep;
 
 // Add a chart type for plotting rates over time
@@ -218,7 +216,12 @@ impl FluvioTestDriver {
         let topic_time = now.elapsed().unwrap().as_nanos();
 
         if topic_create.is_ok() {
-            println!("topic \"{}\" created", option.topic_name);
+            println!(
+                "topic \"{}\" created. Replication: {} Partition: {}",
+                option.topic_name,
+                option.replication(),
+                option.partition
+            );
             self.topic_create_latency.record(topic_time as u64).unwrap();
             self.num_topics += 1;
         } else {

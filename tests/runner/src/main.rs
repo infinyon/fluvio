@@ -72,6 +72,19 @@ fn main() {
             //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
             eprintln!("Test panicked: {:#?}",panic_info);
             eprintln!("{}", test_result);
+            if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+                eprintln!("{:?}", s);
+            }
+            else {
+                eprintln!("There was no string error message provided in panic.");
+            }
+
+            if let Some(l) = panic_info.location() {
+                eprintln!("file: {} @ line {}", l.file(), l.line());
+            }
+            else {
+                eprintln!("There was no location information from panic.");
+            }
         }));
         */
 
@@ -84,7 +97,9 @@ fn main() {
         .await;
         cluster_cleanup(option.environment).await;
 
-        println!("{}", test_result)
+        if let Ok(t) = test_result {
+            println!("{:?}", t)
+        }
     });
 }
 
@@ -93,14 +108,18 @@ async fn run_test(
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
     test_driver: Arc<RwLock<FluvioTestDriver>>,
-) -> TestResult {
+) -> Result<TestResult, TestResult> {
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
         (test_meta.test_fn)(test_driver, test_case)
-    }))
-    .expect("Panic hook should have caught this");
+    }));
 
-    test_result.expect("Test Result")
+    if let Ok(t) = test_result {
+        t
+    }
+    else {
+        Err(TestResult::default())
+    }
 }
 
 async fn cluster_cleanup(option: EnvironmentSetup) {
