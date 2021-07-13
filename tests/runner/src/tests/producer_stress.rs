@@ -68,7 +68,10 @@ pub async fn run(
     );
 
     // Support test data or random gen
-    let long_str = String::from("aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccdddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffggggggggggggggggg");
+    //let long_str = String::from("aaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccdddddddddddddddddddddddddeeeeeeeeeeeeeeeeeeeeeeeeefffffffffffffffffffffffffffggggggggggggggggg");
+    let long_str = String::from_utf8([65; 1024].to_vec()).unwrap();
+
+    // TODO: Read in the payload file
 
     let topic_name = test_case.environment.topic_name();
 

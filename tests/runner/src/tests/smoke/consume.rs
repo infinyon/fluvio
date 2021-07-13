@@ -111,7 +111,7 @@ async fn validate_consume_message_api(
         let mut timer = sleep(Duration::from_millis(timer_wait));
 
         loop {
-            let now = SystemTime::now();
+            let consume_timestamp = SystemTime::now();
             select! {
 
                 _ = &mut timer => {
@@ -128,6 +128,7 @@ async fn validate_consume_message_api(
 
                 stream_next = stream.next() => {
 
+
                     if let Some(Ok(record)) = stream_next {
 
                         let offset = record.offset();
@@ -138,21 +139,40 @@ async fn validate_consume_message_api(
                             offset,
                             bytes.len()
                         );
+
+
+
+                        // record e2e
+                        let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap();
+
+                        // Parse the send time out of the record
+                        let data_str = String::from_utf8(record.value().to_vec()).unwrap();
+                        let data_vec: Vec<&str> = data_str.split_terminator(",").collect();
+                        let send_time = Duration::from_nanos(data_vec[0].parse::<u64>().unwrap());
+
+                        let e2e_duration = (e2e_stop_time - send_time).as_nanos();
+
+                        debug!("From payload: {:#?} parsed payload: {:#?} stop_time: {:#?} duration: {:#?}",data_vec[0], send_time, e2e_stop_time, e2e_duration );
+
+
+                        // Calculate a duration
+
+                        let mut lock = test_driver.write().await;
+                        // record E2E latency
+                        // record consumer-only latency
+                        let consume_time = consume_timestamp.elapsed().clone().unwrap().as_nanos();
+                        lock.consume_record(bytes.len(), consume_time as u64, e2e_duration as u64).await;
+                        drop(lock);
+
+
                         validate_message(producer_iteration, offset, test_case, &bytes);
                         info!(
                             " total records: {}, validated offset: {}",
                             total_records, offset
                         );
                         total_records += 1;
-
-                        let mut lock = test_driver.write().await;
-
-                        // record latency
-                        let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                        lock.consume_record(bytes.len(), consume_time as u64).await;
-
-                        debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
-
+                        let lock = test_driver.read().await;
+                        //debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
                         drop(lock);
 
 

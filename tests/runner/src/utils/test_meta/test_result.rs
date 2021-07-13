@@ -21,6 +21,7 @@ pub struct TestResult {
     pub topic_create_latency_histogram: Histogram<u64>,
     pub produce_latency_histogram: Histogram<u64>,
     pub consume_latency_histogram: Histogram<u64>,
+    pub e2e_latency_histogram: Histogram<u64>,
     pub produce_rate_histogram: Histogram<u64>,
     pub consume_rate_histogram: Histogram<u64>,
 }
@@ -44,6 +45,7 @@ impl Default for TestResult {
 
             produce_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             consume_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            e2e_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
                 .unwrap(),
             produce_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
@@ -152,6 +154,23 @@ impl Display for TestResult {
             self.consume_rate_histogram.max() as f64 / BYTES_IN_MBYTE
         );
 
+        let e2e_latency_avg = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.e2e_latency_histogram.mean() as u64)
+        );
+        let e2e_latency_p50 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.e2e_latency_histogram.value_at_percentile(50.0))
+        );
+        let e2e_latency_p99 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.e2e_latency_histogram.value_at_percentile(99.0))
+        );
+        let e2e_latency_p999 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.e2e_latency_histogram.value_at_percentile(99.9))
+        );
+
         let perf_results_header = table!(
             [b->"Perf Results"]
         );
@@ -173,7 +192,8 @@ impl Display for TestResult {
             [b->"Latency", b->"Average", b->"P50", b->"P99", b->"P999"],
             ["Topic create", topic_create_latency_avg, topic_create_latency_p50, topic_create_latency_p99, topic_create_latency_p999],
             ["Producer", producer_latency_avg, producer_latency_p50, producer_latency_p99, producer_latency_p999],
-            ["Consumer", consumer_latency_avg, consumer_latency_p50, consumer_latency_p99, consumer_latency_p999]
+            ["Consumer", consumer_latency_avg, consumer_latency_p50, consumer_latency_p99, consumer_latency_p999],
+            ["E2E", e2e_latency_avg, e2e_latency_p50, e2e_latency_p99, e2e_latency_p999]
         );
 
         write!(f, "{}", basic_results_table)?;
