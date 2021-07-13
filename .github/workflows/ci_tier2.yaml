@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 concurrency: 
-  group: ${{ github.head_ref || 'ci_tier2' }}
+  group: ${{ 'ci_tier2' }}
   cancel-in-progress: true
 
 on:
