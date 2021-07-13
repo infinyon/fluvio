@@ -113,5 +113,5 @@ jobs:
           version: "0.32.9"
       - name: Bump latest version of Fluvio CLI on fluvio-packages
         env:
-          RUST_LOG: debug
+          RUST_LOG: info
         run: cargo make bump-fluvio-latest
