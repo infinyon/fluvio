@@ -47,7 +47,11 @@ install_tools_mac:
 	brew install helm
 
 build-cli: install_rustup_target
+ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
+	cross build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+else
 	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+endif
 
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
@@ -56,7 +60,9 @@ build-test:	build-cluster build-cli
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
-ifdef TARGET
+ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
+	cargo install cross
+else
 	rustup target add $(TARGET)
 endif
 
