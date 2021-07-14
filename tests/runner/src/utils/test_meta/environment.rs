@@ -23,6 +23,9 @@ pub trait EnvDetail: Debug + Clone {
     fn timeout(&self) -> Duration;
     fn set_timeout(&mut self, timeout: Duration);
     fn cluster_type(&self) -> EnvironmentType;
+    fn message_size(&self) -> usize;
+    fn producers(&self) -> u16;
+    fn consumers(&self) -> u16;
 }
 
 impl EnvDetail for EnvironmentSetup {
@@ -103,6 +106,18 @@ impl EnvDetail for EnvironmentSetup {
             EnvironmentType::K8
         }
     }
+
+    fn message_size(&self) -> usize {
+        self.message_size
+    }
+
+    fn producers(&self) -> u16 {
+        self.producers
+    }
+
+    fn consumers(&self) -> u16 {
+        self.consumers
+    }
 }
 
 /// cli options
@@ -176,6 +191,18 @@ pub struct EnvironmentSetup {
     /// In seconds, the maximum time a test will run before considered a fail (default: 1 hour)
     #[structopt(long, parse(try_from_str = parse_timeout_seconds), default_value = "3600")]
     pub timeout: Duration,
+
+    /// Default message size
+    #[structopt(long, default_value="1000")]
+    pub message_size: usize,
+
+    /// Default # of producers (if test uses them)
+    #[structopt(long, default_value="1")]
+    pub producers: u16,
+
+    /// Default # of consumers (if test uses them)
+    #[structopt(long, default_value="1")]
+    pub consumers: u16,
 }
 
 #[allow(clippy::unnecessary_wraps)]
