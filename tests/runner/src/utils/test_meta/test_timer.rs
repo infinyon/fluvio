@@ -1,4 +1,4 @@
-use std::time::{Duration, Instant, SystemTime};
+use std::time::{Duration, Instant};
 
 #[derive(Debug, Clone)]
 pub struct TestTimer {
