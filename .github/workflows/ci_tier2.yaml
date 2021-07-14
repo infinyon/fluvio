@@ -129,17 +129,17 @@ jobs:
       - name: Upload artifact - fluvio
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-${{ matrix.rust_target }}
+          name: fluvio-tier2-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio
       - name: Upload artifact - fluvio-run
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-run-${{ matrix.rust_target }}
+          name: fluvio-tier2-run-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/fluvio-run
       - name: Upload atrifact - flv-test
         uses: actions/upload-artifact@v2
         with:
-          name: flv-test-${{ matrix.rust_target }}
+          name: flv-tier2-test-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/flv-test
 
   local_cluster_test:
