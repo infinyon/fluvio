@@ -77,17 +77,17 @@ impl FluvioTestDriver {
 
     pub fn get_results(&self) -> TestResult {
         TestResult {
-            num_topics: self.topic_num as u64,
-            num_producers: self.producer_num as u64,
-            num_consumers: self.consumer_num as u64,
-            bytes_produced: self.producer_bytes as u64,
-            bytes_consumed: self.consumer_bytes as u64,
-            produce_latency_histogram: self.producer_latency.clone(),
-            consume_latency_histogram: self.consumer_latency.clone(),
+            topic_num: self.topic_num as u64,
+            producer_num: self.producer_num as u64,
+            consumer_num: self.consumer_num as u64,
+            producer_bytes: self.producer_bytes as u64,
+            consumer_bytes: self.consumer_bytes as u64,
+            producer_latency_histogram: self.producer_latency.clone(),
+            consumer_latency_histogram: self.consumer_latency.clone(),
             e2e_latency_histogram: self.e2e_latency.clone(),
             topic_create_latency_histogram: self.topic_create_latency.clone(),
-            produce_rate_histogram: self.producer_rate.clone(),
-            consume_rate_histogram: self.consumer_rate.clone(),
+            producer_rate_histogram: self.producer_rate.clone(),
+            consumer_rate_histogram: self.consumer_rate.clone(),
             ..Default::default()
         }
     }
@@ -123,6 +123,7 @@ impl FluvioTestDriver {
         let bytes_sent = message.as_bytes().len() as u64;
 
         let now = SystemTime::now();
+        let timestamp = now.duration_since(SystemTime::UNIX_EPOCH).expect("timestamp").as_nanos();
         let result = p.send(key, message).await;
         let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
 
@@ -136,6 +137,8 @@ impl FluvioTestDriver {
         self.producer_latency.record(produce_time_ns).unwrap();
 
         self.producer_bytes += bytes_sent as usize;
+
+        self.producer_time_latency.push((timestamp,produce_time_ns));
 
         // Convert Bytes/ns to Bytes/s
         // 1_000_000_000 ns in 1 second

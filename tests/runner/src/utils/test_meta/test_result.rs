@@ -9,21 +9,21 @@ pub struct TestResult {
     pub success: bool,
     pub duration: Duration,
     // stats
-    pub bytes_produced: u64,
-    pub produce_latency: u64,
-    pub num_producers: u64,
-    pub bytes_consumed: u64,
-    pub consume_latency: u64,
-    pub num_consumers: u64,
-    pub num_topics: u64,
+    pub producer_bytes: u64,
+    pub producer_latency: u64,
+    pub producer_num: u64,
+    pub consumer_bytes: u64,
+    pub consumer_latency: u64,
+    pub consumer_num: u64,
+    pub topic_num: u64,
     pub topic_create_latency: u64,
 
     pub topic_create_latency_histogram: Histogram<u64>,
-    pub produce_latency_histogram: Histogram<u64>,
-    pub consume_latency_histogram: Histogram<u64>,
+    pub producer_latency_histogram: Histogram<u64>,
+    pub consumer_latency_histogram: Histogram<u64>,
     pub e2e_latency_histogram: Histogram<u64>,
-    pub produce_rate_histogram: Histogram<u64>,
-    pub consume_rate_histogram: Histogram<u64>,
+    pub producer_rate_histogram: Histogram<u64>,
+    pub consumer_rate_histogram: Histogram<u64>,
 }
 
 impl Default for TestResult {
@@ -32,24 +32,24 @@ impl Default for TestResult {
             success: false,
             duration: Duration::new(0, 0),
 
-            num_producers: 0,
-            num_consumers: 0,
-            num_topics: 0,
+            producer_num: 0,
+            consumer_num: 0,
+            topic_num: 0,
 
-            bytes_produced: 0,
-            bytes_consumed: 0,
+            producer_bytes: 0,
+            consumer_bytes: 0,
 
-            produce_latency: 0,
-            consume_latency: 0,
+            producer_latency: 0,
+            consumer_latency: 0,
             topic_create_latency: 0,
 
-            produce_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-            consume_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             e2e_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
                 .unwrap(),
-            produce_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-            consume_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
     }
 }
@@ -119,54 +119,54 @@ impl Display for TestResult {
 
         let producer_latency_avg = format!(
             "{:.2?}",
-            Duration::from_nanos(self.produce_latency_histogram.mean() as u64)
+            Duration::from_nanos(self.producer_latency_histogram.mean() as u64)
         );
         let producer_latency_p50 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.produce_latency_histogram.value_at_percentile(50.0))
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(50.0))
         );
         let producer_latency_p90 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.produce_latency_histogram.value_at_percentile(90.0))
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(90.0))
         );
         let producer_latency_p99 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.produce_latency_histogram.value_at_percentile(99.0))
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(99.0))
         );
         let producer_latency_p999 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.produce_latency_histogram.value_at_percentile(99.9))
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(99.9))
         );
 
         const BYTES_IN_MBYTE: f64 = 1_000_000.0;
         let producer_rate_mbps = format!(
             "{:.2?}",
-            self.produce_rate_histogram.max() as f64 / BYTES_IN_MBYTE
+            self.producer_rate_histogram.max() as f64 / BYTES_IN_MBYTE
         );
 
         let consumer_latency_avg = format!(
             "{:.2?}",
-            Duration::from_nanos(self.consume_latency_histogram.mean() as u64)
+            Duration::from_nanos(self.consumer_latency_histogram.mean() as u64)
         );
         let consumer_latency_p50 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.consume_latency_histogram.value_at_percentile(50.0))
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(50.0))
         );
         let consumer_latency_p90 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.consume_latency_histogram.value_at_percentile(90.0))
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(90.0))
         );
         let consumer_latency_p99 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.consume_latency_histogram.value_at_percentile(99.0))
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(99.0))
         );
         let consumer_latency_p999 = format!(
             "{:.2?}",
-            Duration::from_nanos(self.consume_latency_histogram.value_at_percentile(99.9))
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(99.9))
         );
         let consumer_rate_mbps = format!(
             "{:.2?}",
-            self.consume_rate_histogram.max() as f64 / BYTES_IN_MBYTE
+            self.consumer_rate_histogram.max() as f64 / BYTES_IN_MBYTE
         );
 
         let e2e_latency_avg = format!(
@@ -196,15 +196,15 @@ impl Display for TestResult {
 
         let perf_created_table = table!(
             [b->"Created", "#"],
-            ["Topic", self.num_topics],
-            ["Producer", self.num_producers],
-            ["Consumer", self.num_consumers]
+            ["Topic", self.topic_num],
+            ["Producer", self.producer_num],
+            ["Consumer", self.consumer_num]
         );
 
         let perf_throughput_table = table!(
             [b->"Throughput", b->"Bytes", b->"Max rate (MBytes/s)"],
-            ["Producer", self.bytes_produced, producer_rate_mbps],
-            ["Consumer", self.bytes_consumed, consumer_rate_mbps]
+            ["Producer", self.producer_bytes, producer_rate_mbps],
+            ["Consumer", self.consumer_bytes, consumer_rate_mbps]
         );
 
         let perf_latency_table = table!(
