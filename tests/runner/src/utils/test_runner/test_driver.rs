@@ -22,17 +22,18 @@ pub struct FluvioTestDriver {
     pub timer: TestTimer,
     //pub memory_sample: Histogram<u64>,
     //pub cpu_sample: Histogram<u64>,
-    pub num_topics: usize,
-    pub num_producers: usize,
-    pub num_consumers: usize,
-    pub bytes_produced: usize,
-    pub bytes_consumed: usize,
-    pub produce_latency: Histogram<u64>,
-    pub consume_latency: Histogram<u64>,
+    pub topic_num: usize,
+    pub producer_num: usize,
+    pub consumer_num: usize,
+    pub producer_bytes: usize,
+    pub consumer_bytes: usize,
+    pub producer_latency: Histogram<u64>,
+    pub producer_time_latency: Vec<(u128,u64)>,
+    pub consumer_latency: Histogram<u64>,
     pub e2e_latency: Histogram<u64>,
     pub topic_create_latency: Histogram<u64>,
-    pub producer_data_rate: Histogram<u64>,
-    pub consumer_data_rate: Histogram<u64>,
+    pub producer_rate: Histogram<u64>,
+    pub consumer_rate: Histogram<u64>,
 }
 
 impl FluvioTestDriver {
@@ -40,17 +41,25 @@ impl FluvioTestDriver {
         Self {
             client,
             timer: TestTimer::new(),
-            num_topics: 0,
-            num_producers: 0,
-            num_consumers: 0,
-            bytes_produced: 0,
-            bytes_consumed: 0,
-            produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-            consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            topic_num: 0,
+            producer_num: 0,
+            consumer_num: 0,
+            producer_bytes: 0,
+            consumer_bytes: 0,
+            producer_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_time_latency: Vec::new(),
+            consumer_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             e2e_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-            producer_data_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-            consumer_data_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        }
+    }
+
+    pub async fn start_system_poll(&self) {
+        while self.is_test_running() {
+            println!("Poll");
+            sleep(Duration::from_millis(500));
         }
     }
 
@@ -58,19 +67,27 @@ impl FluvioTestDriver {
         self.timer.start()
     }
 
+    pub fn stop_timer(&mut self) {
+        self.timer.stop()
+    }
+
+    pub fn is_test_running(&self) -> bool {
+        self.timer.is_running()
+    }
+
     pub fn get_results(&self) -> TestResult {
         TestResult {
-            num_topics: self.num_topics as u64,
-            num_producers: self.num_producers as u64,
-            num_consumers: self.num_consumers as u64,
-            bytes_produced: self.bytes_produced as u64,
-            bytes_consumed: self.bytes_consumed as u64,
-            produce_latency_histogram: self.produce_latency.clone(),
-            consume_latency_histogram: self.consume_latency.clone(),
+            num_topics: self.topic_num as u64,
+            num_producers: self.producer_num as u64,
+            num_consumers: self.consumer_num as u64,
+            bytes_produced: self.producer_bytes as u64,
+            bytes_consumed: self.consumer_bytes as u64,
+            produce_latency_histogram: self.producer_latency.clone(),
+            consume_latency_histogram: self.consumer_latency.clone(),
             e2e_latency_histogram: self.e2e_latency.clone(),
             topic_create_latency_histogram: self.topic_create_latency.clone(),
-            produce_rate_histogram: self.producer_data_rate.clone(),
-            consume_rate_histogram: self.consumer_data_rate.clone(),
+            produce_rate_histogram: self.producer_rate.clone(),
+            consume_rate_histogram: self.consumer_rate.clone(),
             ..Default::default()
         }
     }
@@ -79,7 +96,7 @@ impl FluvioTestDriver {
     pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
         match self.client.topic_producer(topic).await {
             Ok(client) => {
-                self.num_producers += 1;
+                self.producer_num += 1;
                 return client;
             }
             Err(err) => {
@@ -111,21 +128,21 @@ impl FluvioTestDriver {
 
         debug!(
             "(#{}) Produce latency (ns): {:?} ({} B)",
-            self.produce_latency.len() + 1,
+            self.producer_latency.len() + 1,
             produce_time_ns,
             bytes_sent
         );
 
-        self.produce_latency.record(produce_time_ns).unwrap();
+        self.producer_latency.record(produce_time_ns).unwrap();
 
-        self.bytes_produced += bytes_sent as usize;
+        self.producer_bytes += bytes_sent as usize;
 
         // Convert Bytes/ns to Bytes/s
         // 1_000_000_000 ns in 1 second
         const NS_IN_SECOND: f64 = 1_000_000_000.0;
         let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
         debug!("Producer throughput Bytes/s: {:?}", rate);
-        self.producer_data_rate.record(rate as u64).unwrap();
+        self.producer_rate.record(rate as u64).unwrap();
 
         result
     }
@@ -133,7 +150,7 @@ impl FluvioTestDriver {
     pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
         match self.client.partition_consumer(topic.to_string(), 0).await {
             Ok(client) => {
-                self.num_consumers += 1;
+                self.consumer_num += 1;
                 return client;
             }
             Err(err) => {
@@ -178,18 +195,18 @@ impl FluvioTestDriver {
         consume_latency: u64,
         e2e_latency: u64,
     ) {
-        self.consume_latency.record(consume_latency).unwrap();
+        self.consumer_latency.record(consume_latency).unwrap();
         self.e2e_latency.record(e2e_latency).unwrap();
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
-            self.consume_latency.len(),
+            self.consumer_latency.len(),
             consume_latency
         );
 
-        self.bytes_consumed += bytes_len;
+        self.consumer_bytes += bytes_len;
         debug!(
             "Recording consumer bytes len: {:?} (total: {})",
-            bytes_len, self.bytes_consumed
+            bytes_len, self.consumer_bytes
         );
 
         debug!(
@@ -203,7 +220,7 @@ impl FluvioTestDriver {
         const NS_IN_SECOND: f64 = 1_000_000_000.0;
         let rate = (bytes_len as f64 / consume_latency as f64) * NS_IN_SECOND;
         debug!("Consumer throughput Bytes/s: {:?}", rate);
-        self.consumer_data_rate.record(rate as u64).unwrap();
+        self.consumer_rate.record(rate as u64).unwrap();
     }
 
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
@@ -233,7 +250,7 @@ impl FluvioTestDriver {
                 option.partition
             );
             self.topic_create_latency.record(topic_time as u64).unwrap();
-            self.num_topics += 1;
+            self.topic_num += 1;
         } else {
             println!("topic \"{}\" already exists", option.topic_name);
         }

@@ -123,6 +123,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use tokio::select;
             use std::panic::panic_any;
             use std::default::Default;
+            use fluvio_future::task::spawn;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
@@ -150,7 +151,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 let test_driver_clone = test_driver.clone();
 
                 let mut lock = test_driver.write().await;
-                lock.timer.start();
+                lock.start_timer();
                 drop(lock);
 
                 select! {
@@ -158,7 +159,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                         // Stop the clock
                         let mut lock = test_driver.write().await;
-                        lock.timer.stop();
+                        lock.stop_timer();
                         let test_duration = lock.timer.duration();
                         drop(lock);
 
@@ -175,7 +176,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
                         // Stop the clock
                         let mut lock = test_driver.write().await;
-                        lock.timer.stop();
+                        lock.stop_timer();
                         let test_duration = lock.timer.duration();
                         drop(lock);
 
