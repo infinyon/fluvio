@@ -103,3 +103,18 @@ install_repo_minikube_core:
 install_repo_minikube_test: SC_LOG="kf\=$(TEST_LOG_LEVEL)\,sc\=$(TEST_LOG_LEVEL)\,flv\=$(TEST_LOG_LEVEL)\,k8\=$(TEST_LOG_LEVEL)"
 install_repo_minikube_test:
 	helm install fluvio/fluvio --generate-name --set cloud=minikube --set scLog=$(SC_LOG)
+
+
+helm-install-plugin:
+	helm plugin install https://github.com/chartmuseum/helm-push.git
+
+
+helm-login:
+	helm repo remove fluvio
+	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
+
+helm-publish-sys:
+	helm push k8-util/helm/fluvio-sys --version="$(VERSION)" --force fluvio
+
+helm-publish-app:
+	helm push k8-util/helm/fluvio-app --version="$(VERSION)" --force fluvio

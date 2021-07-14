@@ -73,37 +73,48 @@ jobs:
       - name: Download dev release
         run: gh release download dev -R infinyon/fluvio
 
-      - name: Prepare artifacts for publishing
-        run: |
-          mkdir -p target/x86_64-unknown-linux-musl/release/
-          mv fluvio-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio
-          mv fluvio-run-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio-run
-
-          mkdir -p target/aarch64-unknown-linux-musl/release/
-          mv fluvio-aarch64-unknown-linux-musl target/aarch64-unknown-linux-musl/release/fluvio
-
-          mkdir -p target/armv7-unknown-linux-gnueabihf/release/
-          mv fluvio-armv7-unknown-linux-gnueabihf target/armv7-unknown-linux-gnueabihf/release/fluvio
-
-          mkdir -p target/x86_64-apple-darwin/release/
-          mv fluvio-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio
-          
-          mkdir -p target/aarch64-apple-darwin/release/
-          mv fluvio-aarch64-apple-darwin target/aarch64-apple-darwin/release/fluvio
-      - name: Publish to Fluvio Packages
+        # Publish artifacts from GH Releases to Fluvio Packages
+        #
+        # Artifacts from GH Releases look like this:
+        #
+        # ./
+        #   ARTIFACT-TARGET.zip, such as:
+        #   fluvio-x86_64-unknown-linux-musl.zip
+        #   fluvio-aarch64-unknown-linux-musl.zip
+        #   fluvio-x86_64-apple-darwin.zip
+        #
+        # Here, we extract each zip into dirs with the same name.
+        # Then, we get the TARGET from the `.target` file inside.
+        #
+        # ./
+        #   ARTIFACT-TARGET.zip
+        #   ARTIFACT-TARGET/
+        #     ARTIFACT
+        #     .target
+        #   fluvio-x86_64-unknown-linux-musl.zip
+        #   fluvio-x86_64-unknown-linux-musl/
+        #     fluvio
+        #     .target
+      - name: Publish artifacts
         run: |
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
-          ${HOME}/.fluvio/bin/fluvio package publish \
-            --version="${VERSION}+${{ github.sha }}" \
-            target/x86_64-unknown-linux-musl/release/fluvio \
-            target/aarch64-unknown-linux-musl/release/fluvio \
-            target/armv7-unknown-linux-gnueabihf/release/fluvio \
-            target/x86_64-apple-darwin/release/fluvio \
-            target/aarch64-apple-darwin/release/fluvio 
 
-          ${HOME}/.fluvio/bin/fluvio package publish \
-            --version="${VERSION}+${{ github.sha }}" \
-            target/x86_64-unknown-linux-musl/release/fluvio-run
+          for ZIP_FILE in ./*.zip; do
+            # Unzip all .zip files into directories with the same name (minus .zip)
+            UNZIP_DIR="${ZIP_FILE//.zip/}"
+            echo "Unzipping $ZIP_FILE into $UNZIP_DIR"
+            unzip "$ZIP_FILE" -d "$UNZIP_DIR"
+
+            TARGET="$(cat ${UNZIP_DIR}/.target)"
+            ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
+            echo "TARGET=$TARGET"
+            echo "ARTIFACT=$ARTIFACT"
+
+            ${HOME}/.fluvio/bin/fluvio package publish \
+              --version="${VERSION}+${{ github.sha }}" \
+              --target="${TARGET}" \
+              "${UNZIP_DIR}/${ARTIFACT}"
+          done
 
   # Bump the latest version of the Fluvio CLI on the package registry
   # This serves as the final step in the publishing process, and therefore

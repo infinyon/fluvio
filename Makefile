@@ -7,6 +7,7 @@ DOCKER_REGISTRY=infinyon
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_LINUX=x86_64-unknown-linux-musl
 TARGET_DARWIN=x86_64-apple-darwin
+TARGET?=$(TARGET_LINUX)
 CLI_BUILD=fluvio_cli
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
@@ -274,81 +275,6 @@ make publish_fluvio_image:
 	https://api.github.com/repos/infinyon/fluvio/actions/workflows/2333005/dispatches \
 	-d '{"ref":"master"}'
 
-
-#
-# Helm actions
-#
-
-helm-install-plugin:
-	helm plugin install https://github.com/chartmuseum/helm-push.git
-
-
-helm-login:
-	helm repo remove fluvio
-	helm repo add fluvio https://gitops:$(HELM_PASSWORD)@charts.fluvio.io
-
-helm-publish-sys:
-	helm push k8-util/helm/fluvio-sys --version="$(VERSION)" --force fluvio
-
-helm-publish-app:
-	helm push k8-util/helm/fluvio-app --version="$(VERSION)" --force fluvio
-
-
-
-#
-# Github release actions
-#
-
-
-
-GITHUB_USER=infinyon
-GITHUB_REPO=fluvio
-CLI_BINARY=fluvio
-BUILD_OUTPUT=/tmp
-
-release_github:	build-cli-darwin build-cli-linux create-gh-release upload-gh-darwin upload-gh-linux
-
-build-cli-darwin:
-	rustup target add $(TARGET_DARWIN)
-	cargo build --release --bin fluvio --target $(TARGET_DARWIN)
-
-build-cli-linux:
-	rustup target add $(TARGET_LINUX)
-	cargo build --release --bin fluvio --target $(TARGET_LINUX)
-
-
-
-create-gh-release:
-	github-release release \
-		--user ${GITHUB_USER} \
-		--repo ${GITHUB_REPO} \
-		--tag ${GITHUB_TAG} \
-		--name "${GITHUB_TAG}" \
-		--description "${GITHUB_TAG}"
-
-upload-gh-darwin:
-	github-release upload \
-		--user ${GITHUB_USER} \
-		--repo ${GITHUB_REPO} \
-		--tag ${GITHUB_TAG} \
-		--name "fluvio-$(GITHUB_TAG)-$(TARGET_DARWIN)" \
-		--file target/$(TARGET_DARWIN)/release/fluvio
-
-upload-gh-linux:
-	github-release upload \
-		--user ${GITHUB_USER} \
-		--repo ${GITHUB_REPO} \
-		--tag ${GITHUB_TAG} \
-		--name "fluvio-$(GITHUB_TAG)-$(TARGET_LINUX)" \
-		--file target/$(TARGET_LINUX)/release/fluvio
-
-
-
-delete-gh-release:
-	github-release delete \
-	--user ${GITHUB_USER} \
-	--repo ${GITHUB_REPO} \
-	--tag ${GITHUB_TAG}
 
 .EXPORT_ALL_VARIABLES:
 FLUVIO_BUILD_ZIG ?= zig

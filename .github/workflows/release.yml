@@ -61,12 +61,14 @@ jobs:
     steps:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+
+      # Check that this release does not already exist by trying to download it
       - name: Attempt to download release by version number 
         id: release_check
         continue-on-error: true
-        run: |
-          gh release download -R infinyon/fluvio "v${{ env.VERSION }}"
-      # if the check fails, then continue with release
+        run: gh release download -R infinyon/fluvio "v${{ env.VERSION }}"
+
+      # If this release does not already exist (i.e. the release_check failed), create it
       - uses: actions/checkout@v2
         if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Download artifacts from dev
@@ -75,9 +77,12 @@ jobs:
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
-          gh release create -R infinyon/fluvio --title="v${{ env.VERSION }}" -F ./CHANGELOG.md "v${{ env.VERSION }}" \
-            fluvio-x86_64-unknown-linux-musl \
-            fluvio-run-x86_64-unknown-linux-musl
+          ARTIFACTS=(*.zip)
+          gh release create -R infinyon/fluvio \
+            --title="v${{ env.VERSION }}" \
+            -F ./CHANGELOG.md \
+            "v${{ env.VERSION }}" \
+            "${ARTIFACTS[@]}"
 
   ## Check for docker image
   release_docker:
@@ -165,13 +170,13 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
     steps:
+      # Check that this release does not already exist by trying to download it
       - name: Attempt to install Fluvio cli
         id: check_fluvio
         continue-on-error: true
-        run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.VERSION }} bash
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.VERSION }} bash
 
-      # If the check fails, then continue
+      # If this release does not already exist (i.e. check_fluvio failed), continue
       - name: Login GH CLI
         if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
@@ -185,29 +190,48 @@ jobs:
         if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: gh release download dev -R infinyon/fluvio
 
-      - name: Prepare artifacts for release
-        if: ${{ steps.check_fluvio.outcome == 'failure' }}ƒ
-        run: |
-          mkdir -p target/x86_64-unknown-linux-musl/release/
-          mv fluvio-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio
-          mv fluvio-run-x86_64-unknown-linux-musl target/x86_64-unknown-linux-musl/release/fluvio-run
-
-        #  mkdir -p target/x86_64-apple-darwin/release/
-        #  mv fluvio-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio
-        #  mv fluvio-run-x86_64-apple-darwin target/x86_64-apple-darwin/release/fluvio-run
-
-      - name: Release to Fluvio Packages
+        # Publish artifacts from GH Releases to Fluvio Packages
+        #
+        # Artifacts from GH Releases look like this:
+        #
+        # ./
+        #   ARTIFACT-TARGET.zip, such as:
+        #   fluvio-x86_64-unknown-linux-musl.zip
+        #   fluvio-aarch64-unknown-linux-musl.zip
+        #   fluvio-x86_64-apple-darwin.zip
+        #
+        # Here, we extract each zip into dirs with the same name.
+        # Then, we get the TARGET from the `.target` file inside.
+        #
+        # ./
+        #   ARTIFACT-TARGET.zip
+        #   ARTIFACT-TARGET/
+        #     ARTIFACT
+        #     .target
+        #   fluvio-x86_64-unknown-linux-musl.zip
+        #   fluvio-x86_64-unknown-linux-musl/
+        #     fluvio
+        #     .target
+      - name: Publish artifacts
         if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: |
-          ${HOME}/.fluvio/bin/fluvio package publish \
-            --force \
-            --version="${{ env.VERSION }}" \
-            target/x86_64-unknown-linux-musl/release/fluvio
+          for ZIP_FILE in ./*.zip; do
+            # Unzip all .zip files into directories with the same name (minus .zip)
+            UNZIP_DIR="${ZIP_FILE//.zip/}"
+            echo "Unzipping $ZIP_FILE into $UNZIP_DIR"
+            unzip "$ZIP_FILE" -d "$UNZIP_DIR"
 
-          ${HOME}/.fluvio/bin/fluvio package publish \
-            --force \
-            --version="${{ env.VERSION }}" \
-            target/x86_64-unknown-linux-musl/release/fluvio-run
+            TARGET="$(cat ${UNZIP_DIR}/.target)"
+            ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
+            echo "TARGET=$TARGET"
+            echo "ARTIFACT=$ARTIFACT"
+
+            ${HOME}/.fluvio/bin/fluvio package publish \
+              --force \
+              --version="${VERSION}" \
+              --target="${TARGET}" \
+              "${UNZIP_DIR}/${ARTIFACT}"
+          done
 
   bump_stable_fluvio:
     name: Bump stable Fluvio
