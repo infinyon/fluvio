@@ -1,0 +1,9 @@
+#!/bin/sh
+
+if ! $FLUVIO_BUILD_LLD -flavor gnu -v | grep -q 'LLD 11'; then
+   echo "FLUVIO_BUILD_LLD must point to lld from LLVM 11, current version is:"
+   $FLUVIO_BUILD_LLD -flavor gnu -v
+   exit 1
+fi
+
+$FLUVIO_BUILD_LLD -flavor darwin $@
