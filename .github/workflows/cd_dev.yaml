@@ -11,14 +11,16 @@ concurrency:
 on:
   push:
     branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
 jobs:
 
   composite_action_test:
     name: Composite Action Test
+    env:
+      VERSION:  latest
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
