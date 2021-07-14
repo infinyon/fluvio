@@ -69,8 +69,11 @@ impl TestMessage {
         // Verify topic
         assert!(test_case.environment.topic_name == record.topic_name);
 
-        // Verify offset
-        assert!(offset == record.offset);
+        // This gets messy w/ multiple producers
+        if test_case.environment.producers == 1 {
+            // Verify offset
+            assert!(offset == record.offset);
+        }
 
         let producer_record_size = test_case.option.producer_record_size as usize;
 

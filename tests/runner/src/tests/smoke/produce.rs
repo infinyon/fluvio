@@ -18,8 +18,9 @@ pub async fn produce_message(
     test_driver: Arc<RwLock<FluvioTestDriver>>,
     test_case: &SmokeTestCase,
 ) -> Offsets {
-    use fluvio_future::task::spawn; // get initial offsets for each of the topic
+    use fluvio_future::task::spawn;
     let lock = test_driver.read().await;
+    // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&*lock, &test_case).await;
     drop(lock);
 
@@ -32,11 +33,14 @@ pub async fn produce_message(
         produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
     } else {
         // TODO: Support multiple producer
-        spawn(produce_message_with_api(
-            test_driver.clone(),
-            offsets.clone(),
-            test_case.clone(),
-        ));
+
+        for _p in 0..test_case.environment.producers {
+            spawn(produce_message_with_api(
+                test_driver.clone(),
+                offsets.clone(),
+                test_case.clone(),
+            ));
+        }
     }
 
     offsets

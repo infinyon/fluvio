@@ -31,12 +31,20 @@ pub async fn validate_consume_message(
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
+    use fluvio_future::task::spawn;
     let use_cli = test_case.option.use_cli;
 
     if use_cli {
         validate_consume_message_cli(test_case, offsets);
     } else {
-        validate_consume_message_api(test_driver, offsets, test_case).await;
+        for _c in 0..test_case.environment.consumers {
+            spawn(validate_consume_message_api(
+                test_driver.clone(),
+                offsets.clone(),
+                test_case.clone(),
+            ))
+            .await;
+        }
     }
 }
 
@@ -72,7 +80,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
 async fn validate_consume_message_api(
     test_driver: Arc<RwLock<FluvioTestDriver>>,
     offsets: Offsets,
-    test_case: &SmokeTestCase,
+    test_case: SmokeTestCase,
 ) {
     use tokio::select;
     use fluvio_future::timer::sleep;
@@ -147,7 +155,7 @@ async fn validate_consume_message_api(
                         let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
 
                         // Parse record
-                        let valid_msg = TestMessage::validate_message(producer_iteration, offset, test_case, &bytes).expect("Validation failed");
+                        let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &bytes).expect("Validation failed");
 
                         // Calculate the E2E duration
                         let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;

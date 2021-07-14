@@ -193,15 +193,15 @@ pub struct EnvironmentSetup {
     pub timeout: Duration,
 
     /// Default message size
-    #[structopt(long, default_value="1000")]
+    #[structopt(long, default_value = "1000")]
     pub message_size: usize,
 
     /// Default # of producers (if test uses them)
-    #[structopt(long, default_value="1")]
+    #[structopt(long, default_value = "1")]
     pub producers: u16,
 
     /// Default # of consumers (if test uses them)
-    #[structopt(long, default_value="1")]
+    #[structopt(long, default_value = "1")]
     pub consumers: u16,
 }
 
