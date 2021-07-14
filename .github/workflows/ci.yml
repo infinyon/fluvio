@@ -453,8 +453,9 @@ jobs:
       - name: Publish artifact
         run: |
           ls -la
-          mv "${{ matrix.artifact }}" "${{ matrix.artifact }}-${{ matrix.target }}"
-          gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.target }}"
+          echo "${{ matrix.target }}" > .target
+          zip "${{ matrix.artifact }}-${{ matrix.target }}.zip" "${{ matrix.artifact }}" .target
+          gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.target }}.zip"
 
   # Job that follows the success of all required jobs in this workflow.
   # Used by Bors to detect that all required jobs have completed successfully
