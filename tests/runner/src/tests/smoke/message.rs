@@ -43,13 +43,14 @@ impl TestMessage {
                 .expect("Timestamp")
                 .as_nanos(),
             topic_name: test_case.environment.topic_name.clone(),
-            offset: offset,
+            offset,
             length: producer_record_size,
             data: String::from_utf8(data).expect("Convert Vec<u8> to string"),
         }
     }
 
     /// validate the message for given offset
+    #[allow(clippy::result_unit_err)]
     pub fn validate_message(
         _iter: u16,
         offset: i64,

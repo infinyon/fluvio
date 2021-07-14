@@ -6,19 +6,25 @@ pub struct TestTimer {
     pub duration: Option<Duration>,
 }
 
-impl TestTimer {
-    pub fn new() -> Self {
+impl Default for TestTimer {
+    fn default() -> Self {
         TestTimer {
             start_time: None,
             duration: None,
         }
+    }
+}
+
+impl TestTimer {
+    pub fn new() -> Self {
+        TestTimer::default()
     }
     pub fn start(&mut self) {
         self.start_time = Some(Instant::now());
         self.duration = None;
     }
 
-    pub fn is_running(self) -> bool {
+    pub fn is_running(&self) -> bool {
         self.start_time.is_some()
     }
 

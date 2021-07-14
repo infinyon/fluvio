@@ -59,14 +59,14 @@ impl TestResult {
     }
 
     pub fn success(self, success: bool) -> Self {
-        let mut test_result = self.clone();
+        let mut test_result = self;
 
         test_result.success = success;
         test_result
     }
 
     pub fn duration(self, duration: Duration) -> Self {
-        let mut test_result = self.clone();
+        let mut test_result = self;
 
         test_result.duration = duration;
         test_result
