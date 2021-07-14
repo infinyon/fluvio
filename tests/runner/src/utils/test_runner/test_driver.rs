@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
+use crate::test_meta::test_timer::TestTimer;
 use crate::test_meta::{TestCase, test_result::TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
@@ -12,11 +13,15 @@ use std::time::Duration;
 use tracing::debug;
 use fluvio_future::timer::sleep;
 
-// Add a chart type for plotting rates over time
-// Rename: *_latency, *_num, *_bytes
+// TODO:channel?
+// TODO:Add a chart type for plotting rates over time
+// TODO:Rename: *_latency, *_num, *_bytes
 #[derive(Clone)]
 pub struct FluvioTestDriver {
     pub client: Arc<Fluvio>,
+    pub timer: TestTimer,
+    //pub memory_sample: Histogram<u64>,
+    //pub cpu_sample: Histogram<u64>,
     pub num_topics: usize,
     pub num_producers: usize,
     pub num_consumers: usize,
@@ -34,6 +39,7 @@ impl FluvioTestDriver {
     pub fn new(client: Arc<Fluvio>) -> Self {
         Self {
             client,
+            timer: TestTimer::new(),
             num_topics: 0,
             num_producers: 0,
             num_consumers: 0,
@@ -46,6 +52,10 @@ impl FluvioTestDriver {
             producer_data_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             consumer_data_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
+    }
+
+    pub fn start_timer(&mut self) {
+        self.timer.start()
     }
 
     pub fn get_results(&self) -> TestResult {
