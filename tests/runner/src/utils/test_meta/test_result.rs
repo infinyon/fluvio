@@ -245,13 +245,14 @@ impl Display for TestResult {
         let height = 600;
         let (top, right, bottom, left) = (90, 60, 50, 60);
 
+        // Start: Producer Latency timeseries
+
         let x = ScaleLinear::new()
             .set_domain(vec![
                 (self.producer_time_latency[0].0 as f32) as f32,
                 (self.producer_time_latency.last().unwrap().0 as f32) as f32,
             ])
             .set_range(vec![0, width - left - right]);
-        //.set_range(vec![0, 200]);
 
         // Create a linear scale that will interpolate values in [0, 100] range to corresponding
         // values in [availableHeight, 0] range (the height of the chart without the margins).
@@ -296,6 +297,116 @@ impl Display for TestResult {
             .add_bottom_axis_label("Test duration (ms)")
             .save("producer-latency-x-time.svg")
             .unwrap();
+
+        // Start: Consumer Latency timeseries
+
+        let x = ScaleLinear::new()
+            .set_domain(vec![
+                (self.consumer_time_latency[0].0 as f32) as f32,
+                (self.consumer_time_latency.last().unwrap().0 as f32) as f32,
+            ])
+            .set_range(vec![0, width - left - right]);
+
+        // Create a linear scale that will interpolate values in [0, 100] range to corresponding
+        // values in [availableHeight, 0] range (the height of the chart without the margins).
+        // The [availableHeight, 0] range is inverted because SVGs coordinate system's origin is
+        // in top left corner, while chart's origin is in bottom left corner, hence we need to invert
+        // the range on Y axis for the chart to display as though its origin is at bottom left.
+        let y = ScaleLinear::new()
+            .set_domain(vec![
+                (self.consumer_latency_histogram.min() as f32).log(10.0),
+                (self.consumer_latency_histogram.max() as f32).log(10.0),
+            ])
+            .set_range(vec![height - top - bottom, 0]);
+
+        // Going to scale the latency data logarithmically
+        let line_data = self
+            .consumer_time_latency
+            .clone()
+            .into_iter()
+            .map(|x| FluvioTimeData(x.0, (x.1 as f32).log(10.0)))
+            .collect();
+
+        println!("{:?}", &line_data);
+
+        // Create Line series view that is going to represent the data.
+        let line_view = LineSeriesView::new()
+            .set_x_scale(&x)
+            .set_y_scale(&y)
+            .set_label_visibility(false)
+            .load_data(&line_data)
+            .unwrap();
+
+        // Generate and save the chart.
+        Chart::new()
+            .set_width(width)
+            .set_height(height)
+            .set_margins(top, right, bottom, left)
+            .add_title(String::from("(Unofficial) Consumer Latency x Time"))
+            .add_view(&line_view)
+            .add_axis_bottom(&x)
+            .add_axis_left(&y)
+            .add_left_axis_label("Consumer Latency (ms)")
+            .add_bottom_axis_label("Test duration (ms)")
+            .save("consumer-latency-x-time.svg")
+            .unwrap();
+
+        // Start: E2E Latency timeseries
+
+        let x = ScaleLinear::new()
+            .set_domain(vec![
+                (self.e2e_time_latency[0].0 as f32) as f32,
+                (self.e2e_time_latency.last().unwrap().0 as f32) as f32,
+            ])
+            .set_range(vec![0, width - left - right]);
+
+        // Create a linear scale that will interpolate values in [0, 100] range to corresponding
+        // values in [availableHeight, 0] range (the height of the chart without the margins).
+        // The [availableHeight, 0] range is inverted because SVGs coordinate system's origin is
+        // in top left corner, while chart's origin is in bottom left corner, hence we need to invert
+        // the range on Y axis for the chart to display as though its origin is at bottom left.
+        let y = ScaleLinear::new()
+            .set_domain(vec![
+                (self.e2e_latency_histogram.min() as f32).log(10.0),
+                (self.e2e_latency_histogram.max() as f32).log(10.0),
+            ])
+            .set_range(vec![height - top - bottom, 0]);
+
+        // Going to scale the latency data logarithmically
+        let line_data = self
+            .e2e_time_latency
+            .clone()
+            .into_iter()
+            .map(|x| FluvioTimeData(x.0, (x.1 as f32).log(10.0)))
+            .collect();
+
+        println!("{:?}", &line_data);
+
+        // Create Line series view that is going to represent the data.
+        let line_view = LineSeriesView::new()
+            .set_x_scale(&x)
+            .set_y_scale(&y)
+            .set_label_visibility(false)
+            .load_data(&line_data)
+            .unwrap();
+
+        // Generate and save the chart.
+        Chart::new()
+            .set_width(width)
+            .set_height(height)
+            .set_margins(top, right, bottom, left)
+            .add_title(String::from("(Unofficial) End-to-end Latency x Time"))
+            .add_view(&line_view)
+            .add_axis_bottom(&x)
+            .add_axis_left(&y)
+            .add_left_axis_label("e2e Latency (ms)")
+            .add_bottom_axis_label("Test duration (ms)")
+            .save("e2e-latency-x-time.svg")
+            .unwrap();
+
+
+
+
 
         write!(f, "{}", basic_results_table)?;
         write!(f, "\n{}", perf_results_header)?;
