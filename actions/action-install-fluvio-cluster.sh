@@ -19,7 +19,8 @@ CHART_VERSION="${REPO_VERSION}-${GITHUB_SHA}"
 
 # If VERSION is equal to exactly "latest", use LATEST channel
 if [ "${VERSION}" == "latest" ]; then
-    fluvio cluster start --setup --local --sys --chart-version="${CHART_VERSION}"
+    fluvio cluster start --setup --local --sys --chart-version="${REPO_VERSION}-c963500f9d985a1a42b67380bf7bb683cdace1d7"
+#    fluvio cluster start --setup --local --sys --chart-version="${CHART_VERSION}"
 else
     fluvio cluster start --setup --local --sys
 fi
@@ -35,7 +36,8 @@ if [ "$CLUSTER_TYPE" = "local" ]; then
 
     # If VERSION is equal to exactly "latest", use LATEST channel
     if [ "${VERSION}" == "latest" ]; then
-        fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
+        fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER --chart-version="${REPO_VERSION}-c963500f9d985a1a42b67380bf7bb683cdace1d7"
+#        fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
     else
         fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
     fi
