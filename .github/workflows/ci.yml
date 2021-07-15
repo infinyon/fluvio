@@ -34,22 +34,24 @@ jobs:
     strategy:
       matrix:
         rust_target:
-          [
-            x86_64-unknown-linux-musl,
-            armv7-unknown-linux-gnueabihf,
-            x86_64-apple-darwin,
-          ]
+          - aarch64-unknown-linux-musl
+          - armv7-unknown-linux-gnueabihf
+          - x86_64-apple-darwin
+          - x86_64-unknown-linux-musl
         rust: [stable]
         include:
-          - rust_target: x86_64-unknown-linux-musl
+          - rust_target: aarch64-unknown-linux-musl
             os: ubuntu-latest
-            binaries: [fluvio, fluvio-run, flv-test]
+            binaries: [fluvio]
           - rust_target: armv7-unknown-linux-gnueabihf
             os: ubuntu-latest
             binaries: [fluvio]
           - rust_target: x86_64-apple-darwin
             os: macos-latest
             binaries: [fluvio]
+          - rust_target: x86_64-unknown-linux-musl
+            os: ubuntu-latest
+            binaries: [fluvio, fluvio-run, flv-test]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -435,9 +437,10 @@ jobs:
     strategy:
       matrix:
         target:
-          - x86_64-unknown-linux-musl
-          - x86_64-apple-darwin
+          - aarch64-unknown-linux-musl
           - armv7-unknown-linux-gnueabihf
+          - x86_64-apple-darwin
+          - x86_64-unknown-linux-musl
         artifact: [fluvio]
         include:
           - target: x86_64-unknown-linux-musl
