@@ -13,10 +13,15 @@ on:
         description: "Set --verbose to get verbose build output"
         required: false
         default: ""
+      installer_version:
+        required: false
+        description: "The version of Fluvio to download with install.sh"
+        default: "stable"
 
 env:
   VERBOSE: ${{ github.events.input.verbose }}
   FORCE_RELEASE: ${{ github.events.inputs.force }}
+  INSTALLER_VERSION: ${{ github.events.input.installer_version }}
 
 jobs:
   # Re-tag the docker image for this commit as 'latest'
@@ -67,7 +72,7 @@ jobs:
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Install fluvio-package
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.INSTALLER_VERSION }} bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
       - name: Download dev release
