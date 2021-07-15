@@ -56,8 +56,8 @@ jobs:
         run: |
           helm plugin install https://github.com/chartmuseum/helm-push.git
           helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          helm push k8-util/helm/fluvio-sys --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
-          helm push k8-util/helm/fluvio-app --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
+          helm push k8-util/helm/fluvio-sys --force --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
+          helm push k8-util/helm/fluvio-app --force --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
 
   # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
   fluvio:
