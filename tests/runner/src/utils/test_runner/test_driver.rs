@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
 use crate::test_meta::test_timer::TestTimer;
-use crate::test_meta::{TestCase, test_result::TestResult};
+use crate::test_meta::{TestCase, test_result::TestResult, test_result::FluvioTimeData};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::{Fluvio, FluvioError};
@@ -9,7 +9,7 @@ use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use tracing::debug;
 use fluvio_future::timer::sleep;
 
@@ -28,9 +28,11 @@ pub struct FluvioTestDriver {
     pub producer_bytes: usize,
     pub consumer_bytes: usize,
     pub producer_latency: Histogram<u64>,
-    pub producer_time_latency: Vec<(u128,u64)>,
+    pub producer_time_latency: Vec<FluvioTimeData>,
     pub consumer_latency: Histogram<u64>,
+    pub consumer_time_latency: Vec<FluvioTimeData>,
     pub e2e_latency: Histogram<u64>,
+    pub e2e_time_latency: Vec<FluvioTimeData>,
     pub topic_create_latency: Histogram<u64>,
     pub producer_rate: Histogram<u64>,
     pub consumer_rate: Histogram<u64>,
@@ -49,7 +51,9 @@ impl FluvioTestDriver {
             producer_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             producer_time_latency: Vec::new(),
             consumer_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_time_latency: Vec::new(),
             e2e_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            e2e_time_latency: Vec::new(),
             topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             producer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             consumer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
@@ -75,20 +79,28 @@ impl FluvioTestDriver {
         self.timer.is_running()
     }
 
+    pub fn test_elapsed(&self) -> Duration {
+        self.timer.elapsed()
+    }
+
     pub fn get_results(&self) -> TestResult {
         TestResult {
+            success: false,
+            duration: Duration::new(0, 0),
             topic_num: self.topic_num as u64,
             producer_num: self.producer_num as u64,
             consumer_num: self.consumer_num as u64,
             producer_bytes: self.producer_bytes as u64,
             consumer_bytes: self.consumer_bytes as u64,
             producer_latency_histogram: self.producer_latency.clone(),
+            producer_time_latency: self.producer_time_latency.clone(),
             consumer_latency_histogram: self.consumer_latency.clone(),
+            consumer_time_latency: self.consumer_time_latency.clone(),
             e2e_latency_histogram: self.e2e_latency.clone(),
+            e2e_time_latency: self.consumer_time_latency.clone(),
             topic_create_latency_histogram: self.topic_create_latency.clone(),
             producer_rate_histogram: self.producer_rate.clone(),
             consumer_rate_histogram: self.consumer_rate.clone(),
-            ..Default::default()
         }
     }
 
@@ -118,12 +130,14 @@ impl FluvioTestDriver {
         key: RecordKey,
         message: String,
     ) -> Result<(), FluvioError> {
-        use std::time::SystemTime;
-
         let bytes_sent = message.as_bytes().len() as u64;
 
         let now = SystemTime::now();
-        let timestamp = now.duration_since(SystemTime::UNIX_EPOCH).expect("timestamp").as_nanos();
+        //let timestamp = now
+        //    .duration_since(SystemTime::UNIX_EPOCH)
+        //    .expect("timestamp")
+        //    .as_nanos();
+        let timestamp = self.test_elapsed().as_millis();
         let result = p.send(key, message).await;
         let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
 
@@ -138,7 +152,8 @@ impl FluvioTestDriver {
 
         self.producer_bytes += bytes_sent as usize;
 
-        self.producer_time_latency.push((timestamp,produce_time_ns));
+        self.producer_time_latency
+            .push(FluvioTimeData(timestamp, produce_time_ns as f32));
 
         // Convert Bytes/ns to Bytes/s
         // 1_000_000_000 ns in 1 second
@@ -195,15 +210,21 @@ impl FluvioTestDriver {
     pub async fn consume_record(
         &mut self,
         bytes_len: usize,
-        consume_latency: u64,
+        consumer_latency: u64,
         e2e_latency: u64,
     ) {
-        self.consumer_latency.record(consume_latency).unwrap();
+        let now = self.test_elapsed().as_millis();
+
+        self.consumer_latency.record(consumer_latency).unwrap();
+        self.consumer_time_latency
+            .push(FluvioTimeData(now, consumer_latency as f32));
         self.e2e_latency.record(e2e_latency).unwrap();
+        self.e2e_time_latency
+            .push(FluvioTimeData(now, e2e_latency as f32));
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
             self.consumer_latency.len(),
-            consume_latency
+            consumer_latency
         );
 
         self.consumer_bytes += bytes_len;
@@ -215,20 +236,18 @@ impl FluvioTestDriver {
         debug!(
             "(#{}) Recording e2e (ns): {:?}",
             self.e2e_latency.len(),
-            consume_latency
+            e2e_latency
         );
 
         // Convert Bytes/ns to Bytes/s
         // 1_000_000_000 ns in 1 second
         const NS_IN_SECOND: f64 = 1_000_000_000.0;
-        let rate = (bytes_len as f64 / consume_latency as f64) * NS_IN_SECOND;
+        let rate = (bytes_len as f64 / consumer_latency as f64) * NS_IN_SECOND;
         debug!("Consumer throughput Bytes/s: {:?}", rate);
         self.consumer_rate.record(rate as u64).unwrap();
     }
 
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
-        use std::time::SystemTime;
-
         println!("Creating the topic: {}", &option.topic_name);
 
         let admin = self.client.admin().await;
@@ -238,6 +257,7 @@ impl FluvioTestDriver {
 
         // Create topic and record how long it takes
         let now = SystemTime::now();
+        //let timestamp = self.test_elapsed().as_millis();
 
         let topic_create = admin
             .create(option.topic_name.clone(), false, topic_spec)
