@@ -1978,6 +1978,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "charts",
+ "csv",
  "dyn-clone",
  "fluvio",
  "fluvio-cluster",

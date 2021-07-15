@@ -12,7 +12,7 @@ structopt = "0.3.5"
 async-trait = "0.1.21"
 tokio = { version = "1.4", features = ["macros"] }
 syn = "1.0"
-serde = "1.0"
+serde = {version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 quote = "1.0"
 proc-macro2 = "1.0"
@@ -23,8 +23,8 @@ dyn-clone = "1.0"
 semver = "1.0.0"
 hdrhistogram = "7.3.0"
 async-lock = "2.4.0"
-#plotters = { version = "0.3.1", default_features = false, features = ["svg_backend"] }
 charts = "0.3.0"
+csv = "1.1"
 
 fluvio = { path = "../../../../src/client" }
 fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }

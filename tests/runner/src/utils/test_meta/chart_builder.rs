@@ -6,7 +6,7 @@ use charts::{Chart, ScaleLinear, LineSeriesView};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct FluvioTimeData {
-    pub test_elapsed_ns: u128,
+    pub test_elapsed_ns: u128, // This might be in milliseconds when exported to csv
     pub data: f32,
 }
 
@@ -41,8 +41,6 @@ impl ChartBuilder {
         let height = 600;
         let (top, right, bottom, left) = (90, 60, 50, 60);
 
-        // Start: Producer Latency timeseries
-
         let x = ScaleLinear::new()
             .set_domain(vec![
                 ts_data[0].test_elapsed_ns as f32,
@@ -69,7 +67,7 @@ impl ChartBuilder {
             })
             .collect();
 
-        println!("{:?}", &line_data);
+        //println!("{:?}", &line_data);
 
         // Create Line series view that is going to represent the data.
         let line_view = LineSeriesView::new()

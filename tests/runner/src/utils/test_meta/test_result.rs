@@ -3,7 +3,7 @@ use std::fmt::{self, Debug, Display, Formatter};
 use prettytable::{table, row, cell};
 use std::time::Duration;
 use hdrhistogram::Histogram;
-use crate::test_meta::chart_builder::{ChartBuilder, FluvioTimeData};
+use crate::test_meta::chart_builder::FluvioTimeData;
 
 #[derive(Debug, Clone)]
 pub struct TestResult {
@@ -213,38 +213,6 @@ impl Display for TestResult {
             ["Producer", producer_latency_avg, producer_latency_p50, producer_latency_p90, producer_latency_p99, producer_latency_p999],
             ["Consumer", consumer_latency_avg, consumer_latency_p50, consumer_latency_p90, consumer_latency_p99, consumer_latency_p999],
             ["E2E", e2e_latency_avg, e2e_latency_p50, e2e_latency_p90, e2e_latency_p99, e2e_latency_p999]
-        );
-
-        // TODO: Make chart generation opt-in
-
-        // Producer Latency timeseries
-        ChartBuilder::data_x_time(
-            self.producer_time_latency.clone(),
-            self.producer_latency_histogram.clone(),
-            "(Unofficial) Producer Latency x Time",
-            "Producer Latency (ms)",
-            "Test duration (ms)",
-            "producer-latency-x-time.svg",
-        );
-
-        // Consumer Latency timeseries
-        ChartBuilder::data_x_time(
-            self.consumer_time_latency.clone(),
-            self.consumer_latency_histogram.clone(),
-            "(Unofficial) Consumer Latency x Time",
-            "Consumer Latency (ms)",
-            "Test duration (ms)",
-            "consumer-latency-x-time.svg",
-        );
-
-        // E2E Latency timeseries
-        ChartBuilder::data_x_time(
-            self.e2e_time_latency.clone(),
-            self.e2e_latency_histogram.clone(),
-            "(Unofficial) End-to-end Latency x Time",
-            "E2E Latency (ms)",
-            "Test duration (ms)",
-            "e2e-latency-x-time.svg",
         );
 
         write!(f, "{}", basic_results_table)?;

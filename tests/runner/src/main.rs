@@ -11,6 +11,8 @@ use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
+use fluvio_test_util::test_meta::chart_builder::ChartBuilder;
+use fluvio_test_util::test_meta::data_export::DataExporter;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -90,13 +92,54 @@ fn main() {
             option.environment.clone(),
             test_opt,
             test_meta,
-            fluvio_client,
+            fluvio_client.clone(),
         )
         .await;
         cluster_cleanup(option.environment).await;
 
         if let Ok(t) = test_result {
-            println!("{}", t)
+            println!("{}", t);
+
+            // TODO: Make chart generation opt-in
+            // Producer Latency timeseries
+            ChartBuilder::data_x_time(
+                t.producer_time_latency.clone(),
+                t.producer_latency_histogram.clone(),
+                "(Unofficial) Producer Latency x Time",
+                "Producer Latency (ms)",
+                "Test duration (ms)",
+                "producer-latency-x-time.svg",
+            );
+
+            // Consumer Latency timeseries
+            ChartBuilder::data_x_time(
+                t.consumer_time_latency.clone(),
+                t.consumer_latency_histogram.clone(),
+                "(Unofficial) Consumer Latency x Time",
+                "Consumer Latency (ms)",
+                "Test duration (ms)",
+                "consumer-latency-x-time.svg",
+            );
+
+            // E2E Latency timeseries
+            ChartBuilder::data_x_time(
+                t.e2e_time_latency.clone(),
+                t.e2e_latency_histogram.clone(),
+                "(Unofficial) End-to-end Latency x Time",
+                "E2E Latency (ms)",
+                "Test duration (ms)",
+                "e2e-latency-x-time.svg",
+            );
+
+            DataExporter::timeseries_as_csv(
+                t.producer_time_latency.clone(),
+                "producer_latency_x_time.csv",
+            );
+            DataExporter::timeseries_as_csv(
+                t.consumer_time_latency.clone(),
+                "consumer_latency_x_time.csv",
+            );
+            DataExporter::timeseries_as_csv(t.e2e_time_latency.clone(), "e2e_latency_x_time.csv");
         }
     });
 }

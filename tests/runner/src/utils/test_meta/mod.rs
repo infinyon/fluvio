@@ -3,6 +3,7 @@ pub mod environment;
 pub mod test_result;
 pub mod test_timer;
 pub mod chart_builder;
+pub mod data_export;
 
 use std::any::Any;
 use std::fmt::Debug;
