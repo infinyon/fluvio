@@ -29,34 +29,53 @@ jobs:
   # build binaries. use release for staging
   # this requires check and test
   build_binaries:
-    name: Build binaries for Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
+    name: Build ${{ matrix.binary }} for ${{ matrix.target }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        rust_target:
+        target:
 #          - aarch64-unknown-linux-musl
 #          - armv7-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
         rust: [stable]
+        binary: [fluvio]
         include:
-#          - rust_target: aarch64-unknown-linux-musl
-#            os: ubuntu-latest
-#            binaries: [fluvio]
-#          - rust_target: armv7-unknown-linux-gnueabihf
-#            os: ubuntu-latest
-#            binaries: [fluvio]
-          - rust_target: x86_64-apple-darwin
-            os: macos-latest
-            binaries: [fluvio]
-          - rust_target: x86_64-unknown-linux-musl
-            os: ubuntu-latest
-            binaries: [fluvio, fluvio-run, flv-test]
+#          - os: ubuntu-latest
+#            rust: stable
+#            target: aarch64-unknown-linux-musl
+#            binary: fluvio
+#            run: make build-cli
+#          - os: ubuntu-latest
+#            rust: stable
+#            target: armv7-unknown-linux-gnueabihf
+#            binary: fluvio
+#            run: make build-cli
+          - os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            binary: fluvio
+            run: make build-cli
+          - os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            binary: fluvio
+            run: make build-cli
+          - os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            binary: fluvio-run
+            run: make build-cluster
+          - os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-musl
+            binary: flv-test
+            run: make build-test
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.rust_target }}
-      RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
+      TARGET: ${{ matrix.target }}
+      RUST_BIN_DIR: target/${{ matrix.target }}/debug
       RELEASE_NAME: debug
     steps:
       - uses: actions/checkout@v2
@@ -68,7 +87,7 @@ jobs:
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
           echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
-          echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.target }}/release" | tee -a $GITHUB_ENV
 
       - name: Print env
         run: |
@@ -83,57 +102,41 @@ jobs:
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
 
-      - name: Rustfmt
-        run: make check-fmt
-
-      - name: Build CLI
-        if: ${{ contains(matrix.binaries, 'fluvio') }}
-        run: make build-cli
-
-      - name: Build Cluster CLI
-        if: ${{ contains(matrix.binaries, 'fluvio-run') }}
-        run: make build-cluster
-
-      - name: Build Test CLI
-        if: ${{ contains(matrix.binaries, 'flv-test') }}
-        run: make build-test
+      - name: Build ${{ matrix.binary }}
+        run: ${{ matrix.run }}
 
       # Upload artifacts
-      - name: Upload artifact - fluvio
-        if: ${{ contains(matrix.binaries, 'fluvio') }}
+      - name: Upload artifact - ${{ matrix.binary }}
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-${{ matrix.rust_target }}
-          path: ${{ env.RUST_BIN_DIR }}/fluvio
-      - name: Upload artifact - fluvio-run
-        if: ${{ contains(matrix.binaries, 'fluvio-run') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-run-${{ matrix.rust_target }}
-          path: ${{ env.RUST_BIN_DIR }}/fluvio-run
-      - name: Upload atrifact - flv-test
-        if: ${{ contains(matrix.binaries, 'flv-test') }}
-        uses: actions/upload-artifact@v2
-        with:
-          name: flv-test-${{ matrix.rust_target }}
-          path: ${{ env.RUST_BIN_DIR }}/flv-test
+          name: ${{ matrix.binary }}-${{ matrix.target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
 
   # Run all checks and unit test. This always run on debug mode
   check:
-    name: Check (${{ matrix.rust_target }}) (${{ matrix.check }})
-
+    name: ${{ matrix.check.name }} (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        rust_target: [x86_64-unknown-linux-gnu]
-        check: [clippy, test, unstable]
+        target: [x86_64-unknown-linux-gnu]
+        check:
+          - name: Rustfmt
+            run: make check-fmt
+          - name: Clippy
+            run: make check-clippy
+          - name: Unit/Doc tests
+            run: |
+              make run-all-doc-test
+              make run-all-unit-test
+          - name: Unstable tests
+            run: make run-unstable-test
 
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.rust_target }}
+      TARGET: ${{ matrix.target }}
     steps:
       - uses: actions/checkout@v2
 
@@ -147,20 +150,8 @@ jobs:
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
 
-      - name: Clippy
-        if: ${{ matrix.check == 'clippy' }}
-        run: make check-clippy
-
-      - name: Test
-        if: ${{ matrix.check == 'test' }}
-        run: |
-          make run-all-doc-test
-          make run-all-unit-test
-
-      - name: Unstable test
-        if: ${{ matrix.check == 'unstable' }}
-        run: |
-          make run-unstable-test
+      - name: ${{ matrix.check.name }}
+        run: ${{ matrix.check.run }}
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
