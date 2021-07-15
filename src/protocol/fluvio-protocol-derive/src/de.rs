@@ -6,8 +6,10 @@ use proc_macro2::Span;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use std::str::FromStr;
+use syn::punctuated::Punctuated;
 use syn::Ident;
 use syn::LitInt;
+use syn::Token;
 
 pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
@@ -35,7 +37,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
                 Ident::new("u8", Span::call_site())
             };
             let enum_tokens = generate_decode_enum_impl(&kf_enum.props, &int_type, ident, &attrs);
-            let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
+            // let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
             let res = quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
@@ -44,7 +46,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
                     }
                 }
 
-                #try_enum
+                // #try_enum
             };
             res
         }
@@ -110,7 +112,7 @@ fn generate_decode_enum_impl(
 
         let arm_code = match &prop.kind {
             FieldKind::Unnamed(_, props) => {
-                let (decode, construct): (Vec<_>, Vec<_>) = props
+                let (decode, fields): (Vec<_>, Punctuated<_, Token![,]>) = props
                     .iter()
                     .enumerate()
                     .map(|(idx, _)| {
@@ -120,8 +122,7 @@ fn generate_decode_enum_impl(
                             let mut #var_ident = Default::default();
                             #var_ident.decode(src, version)?;
                         };
-                        let construct = quote! { #var_ident };
-                        (decode, construct)
+                        (decode, var_ident)
                     })
                     .unzip();
 
@@ -129,12 +130,12 @@ fn generate_decode_enum_impl(
                     #field_idx => {
                         #(#decode)*
 
-                        *self = Self::#id ( #(#construct),* );
+                        *self = Self::#id ( #fields );
                     }
                 }
             }
             FieldKind::Named(_, props) => {
-                let (decode, construct): (Vec<_>, Vec<_>) = props
+                let (decode, fields): (Vec<_>, Punctuated<_, Token![,]>) = props
                     .iter()
                     .map(|prop| {
                         let var_ident = format_ident!("{}", &prop.field_name);
@@ -143,8 +144,7 @@ fn generate_decode_enum_impl(
                             let mut #var_ident = Default::default();
                             #var_ident.decode(src, version)?;
                         };
-                        let construct = quote! { #var_ident };
-                        (decode, construct)
+                        (decode, var_ident)
                     })
                     .unzip();
 
@@ -152,7 +152,7 @@ fn generate_decode_enum_impl(
                     #field_idx => {
                         #(#decode)*
 
-                        *self = Self::#id { #(#construct),* };
+                        *self = Self::#id { #fields };
                     }
                 }
             }
@@ -169,10 +169,12 @@ fn generate_decode_enum_impl(
     }
 
     arm_branches.push(quote! {
-        _ => return Err(std::io::Error::new(
-            std::io::ErrorKind::InvalidData,
-            format!("Unknown {} type {}", stringify!(#enum_ident), typ)
-        ))
+        _ => {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("Unknown {} type {}", stringify!(#enum_ident), typ)
+            ));
+        }
     });
 
     let output = quote! {
