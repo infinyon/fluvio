@@ -14,7 +14,7 @@ REPO_VERSION="$(curl -sSf https://raw.githubusercontent.com/infinyon/fluvio/mast
 CHART_VERSION="${REPO_VERSION}-${GITHUB_SHA}"
 
 #
-# Install Fluvio System Charts
+# Install Fluvio Cluster
 #
 
 # Install Local Fluvio Cluster
@@ -22,8 +22,7 @@ if [ "$CLUSTER_TYPE" = "local" ]; then
 
     # If VERSION is equal to exactly "latest", use LATEST channel
     if [ "${VERSION}" == "latest" ]; then
-        fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER --chart-version="${REPO_VERSION}-c963500f9d985a1a42b67380bf7bb683cdace1d7"
-#        fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
+        fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
     else
         fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
     fi
