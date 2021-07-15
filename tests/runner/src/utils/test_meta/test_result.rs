@@ -24,7 +24,9 @@ pub struct TestResult {
     pub e2e_latency_histogram: Histogram<u64>,
     pub e2e_time_latency: Vec<FluvioTimeData>,
     pub producer_rate_histogram: Histogram<u64>,
+    pub producer_time_rate: Vec<FluvioTimeData>,
     pub consumer_rate_histogram: Histogram<u64>,
+    pub consumer_time_rate: Vec<FluvioTimeData>,
 }
 
 impl Default for TestResult {
@@ -49,7 +51,9 @@ impl Default for TestResult {
             topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
                 .unwrap(),
             producer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_time_rate: Vec::new(),
             consumer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_time_rate: Vec::new(),
         }
     }
 }

@@ -131,6 +131,26 @@ fn main() {
                 "e2e-latency-x-time.svg",
             );
 
+            // Producer Throughput timeseries
+            ChartBuilder::data_x_time(
+                t.producer_time_rate.clone(),
+                t.producer_rate_histogram.clone(),
+                "(Unofficial) Producer Data x Time",
+                "Producer sent (bytes)",
+                "Test duration (ms)",
+                "producer-data-x-time.svg",
+            );
+
+            // Consumer Throughput timeseries
+            ChartBuilder::data_x_time(
+                t.consumer_time_rate.clone(),
+                t.consumer_rate_histogram.clone(),
+                "(Unofficial) Consumer Data x Time",
+                "Consumer received (bytes)",
+                "Test duration (ms)",
+                "consumer-data-x-time.svg",
+            );
+
             DataExporter::timeseries_as_csv(
                 t.producer_time_latency.clone(),
                 "producer-latency-x-time.csv",
@@ -140,6 +160,14 @@ fn main() {
                 "consumer-latency-x-time.csv",
             );
             DataExporter::timeseries_as_csv(t.e2e_time_latency.clone(), "e2e-latency-x-time.csv");
+            DataExporter::timeseries_as_csv(
+                t.producer_time_rate.clone(),
+                "producer-data-x-time.csv",
+            );
+            DataExporter::timeseries_as_csv(
+                t.consumer_time_rate.clone(),
+                "consumer-data-x-time.csv",
+            );
         }
     });
 }

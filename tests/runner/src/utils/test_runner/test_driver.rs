@@ -36,7 +36,9 @@ pub struct FluvioTestDriver {
     pub e2e_time_latency: Vec<FluvioTimeData>,
     pub topic_create_latency: Histogram<u64>,
     pub producer_rate: Histogram<u64>,
+    pub producer_time_rate: Vec<FluvioTimeData>,
     pub consumer_rate: Histogram<u64>,
+    pub consumer_time_rate: Vec<FluvioTimeData>,
 }
 
 impl FluvioTestDriver {
@@ -57,7 +59,9 @@ impl FluvioTestDriver {
             e2e_time_latency: Vec::new(),
             topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             producer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_time_rate: Vec::new(),
             consumer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_time_rate: Vec::new(),
         }
     }
 
@@ -101,7 +105,9 @@ impl FluvioTestDriver {
             e2e_time_latency: self.consumer_time_latency.clone(),
             topic_create_latency_histogram: self.topic_create_latency.clone(),
             producer_rate_histogram: self.producer_rate.clone(),
+            producer_time_rate: self.producer_time_rate.clone(),
             consumer_rate_histogram: self.consumer_rate.clone(),
+            consumer_time_rate: self.consumer_time_rate.clone(),
         }
     }
 
@@ -136,7 +142,7 @@ impl FluvioTestDriver {
         let now = SystemTime::now();
         let result = p.send(key, message).await;
         let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
-        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS ;
+        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
 
         debug!(
             "(#{}) Produce latency (ns): {:?} ({} B)",
@@ -152,6 +158,11 @@ impl FluvioTestDriver {
         self.producer_time_latency.push(FluvioTimeData {
             test_elapsed_ms: timestamp,
             data: produce_time_ns as f32,
+        });
+
+        self.producer_time_rate.push(FluvioTimeData {
+            test_elapsed_ms: timestamp,
+            data: bytes_sent as f32,
         });
 
         // Convert Bytes/ns to Bytes/s
@@ -212,12 +223,16 @@ impl FluvioTestDriver {
         consumer_latency: u64,
         e2e_latency: u64,
     ) {
-        let now = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS ;
+        let now = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
 
         self.consumer_latency.record(consumer_latency).unwrap();
         self.consumer_time_latency.push(FluvioTimeData {
             test_elapsed_ms: now,
             data: consumer_latency as f32,
+        });
+        self.consumer_time_rate.push(FluvioTimeData {
+            test_elapsed_ms: now,
+            data: bytes_len as f32,
         });
         self.e2e_latency.record(e2e_latency).unwrap();
         self.e2e_time_latency.push(FluvioTimeData {
