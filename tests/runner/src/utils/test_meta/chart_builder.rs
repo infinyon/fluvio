@@ -6,7 +6,7 @@ use charts::{Chart, ScaleLinear, LineSeriesView};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct FluvioTimeData {
-    pub test_elapsed_ms: u128,
+    pub test_elapsed_ms: f32,
     pub data: f32,
 }
 

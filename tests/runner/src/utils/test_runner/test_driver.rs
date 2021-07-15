@@ -13,6 +13,9 @@ use std::time::{Duration, SystemTime};
 use tracing::debug;
 use fluvio_future::timer::sleep;
 
+// # of nanoseconds in a millisecond
+const NANOS_IN_MILLIS: f32 = 1_000_000.0;
+
 // TODO:channel?
 #[derive(Clone)]
 pub struct FluvioTestDriver {
@@ -133,7 +136,7 @@ impl FluvioTestDriver {
         let now = SystemTime::now();
         let result = p.send(key, message).await;
         let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
-        let timestamp = self.test_elapsed().as_millis();
+        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS ;
 
         debug!(
             "(#{}) Produce latency (ns): {:?} ({} B)",
@@ -209,7 +212,7 @@ impl FluvioTestDriver {
         consumer_latency: u64,
         e2e_latency: u64,
     ) {
-        let now = self.test_elapsed().as_millis();
+        let now = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS ;
 
         self.consumer_latency.record(consumer_latency).unwrap();
         self.consumer_time_latency.push(FluvioTimeData {
