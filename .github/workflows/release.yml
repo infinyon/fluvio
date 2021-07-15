@@ -14,9 +14,14 @@ on:
         required: false 
         description: 'Fluvio git commit override (latest `master` by default)'
         default: ''
+      installer_version:
+        required: false
+        description: ''
+        default: 'stable'
 env:
   USE_COMMIT: ${{ github.event.inputs.commit }}
   FORCE_RELEASE: ${{ github.event.inputs.force }}
+  INSTALLER_VERSION: ${{ github.event.inputs.installer_version }}
 
 jobs:
   setup_job:
@@ -160,7 +165,7 @@ jobs:
           helm push k8-util/helm/fluvio-sys --force --version="${{ env.VERSION }}" chartmuseum
           helm push k8-util/helm/fluvio-app --force --version="${{ env.VERSION }}" chartmuseum
 
-  # Check for Fluvio cli
+  # Check for Fluvio CLI
   release_fluvio:
     name: Release Fluvio CLI package
     needs: [setup_job]
@@ -171,7 +176,7 @@ jobs:
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
     steps:
       # Check that this release does not already exist by trying to download it
-      - name: Attempt to install Fluvio cli
+      - name: Attempt to install Fluvio CLI
         id: check_fluvio
         continue-on-error: true
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.VERSION }} bash
@@ -183,7 +188,7 @@ jobs:
       - name: Install fluvio-package
         run: |
           unset VERSION
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.INSTALLER_VERSION }} bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
       - name: Download dev release
@@ -246,7 +251,7 @@ jobs:
     steps:
       - name: Install fluvio-package
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.INSTALLER_VERSION }} bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
       - name: Bump Fluvio CLI
