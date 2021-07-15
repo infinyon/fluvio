@@ -121,10 +121,40 @@ fn version_exactly_eq(a: &Version, b: &Version) -> bool {
 /// strategy should be for a specific type of package. For example, binaries need
 /// to be placed into the PATH, but libraries may need to be installed in a
 /// target-specific way.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum PackageKind {
-    #[serde(rename = "bin")]
+    /// An executable binary package, "bin".
     Binary,
+    /// Anything we don't recognize. This is here to prevent breaking changes
+    /// if the registry adds new package kinds and not all clients are updated.
+    Unknown(String),
+}
+
+impl Serialize for PackageKind {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        let value = match self {
+            Self::Binary => "bin".serialize(serializer)?,
+            Self::Unknown(other) => other.serialize(serializer)?,
+        };
+        Ok(value)
+    }
+}
+
+impl<'de> Deserialize<'de> for PackageKind {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::de::Deserializer<'de>,
+    {
+        let string = String::deserialize(deserializer)?;
+        let kind = match &*string {
+            "bin" => Self::Binary,
+            _ => Self::Unknown(string),
+        };
+        Ok(kind)
+    }
 }
 
 /// A `Release` is a specific version of a published item in Fluvio's registry.
@@ -210,6 +240,61 @@ mod tests {
     }
 
     #[test]
+    fn test_deserialize_package() {
+        let json = r#"{
+          "name": "fluvio",
+          "group": "fluvio",
+          "kind": "bin",
+          "author": "Fluvio Contributors",
+          "description": "The Fluvio CLI, an all-in-one toolkit for streaming with Fluvio",
+          "repository": "https://github.com/infinyon/fluvio",
+          "releases": [
+            { 
+              "version": "0.8.4",
+              "yanked": false,
+              "targets": ["x86_64-unknown-linux-musl", "x86_64-apple-darwin", "armv7-unknown-linux-gnueabihf"]
+            }
+          ]
+        }"#;
+        let package: Package = serde_json::from_str(json).unwrap();
+        assert_eq!(package.name, "fluvio".parse().unwrap());
+        assert_eq!(package.group, "fluvio".parse().unwrap());
+        assert_eq!(package.kind, PackageKind::Binary);
+        assert_eq!(package.author, Some("Fluvio Contributors".to_string()));
+        assert_eq!(
+            package.description,
+            Some("The Fluvio CLI, an all-in-one toolkit for streaming with Fluvio".to_string())
+        );
+        assert_eq!(package.releases.len(), 1);
+
+        let release = &package.releases[0];
+        assert_eq!(release.version, semver::Version::parse("0.8.4").unwrap());
+        assert!(!release.yanked);
+        assert_eq!(release.targets.len(), 3);
+        assert_eq!(release.targets[0], Target::X86_64UnknownLinuxMusl);
+        assert_eq!(release.targets[1], Target::X86_64AppleDarwin);
+        assert_eq!(
+            release.targets[2],
+            "armv7-unknown-linux-gnueabihf".parse().unwrap()
+        );
+    }
+
+    #[test]
+    fn test_deserialize_package_unknown_kind() {
+        let json = r#"{
+          "name": "fluvio-smartstream-filter",
+          "group": "fluvio",
+          "kind": "wasm",
+          "releases": []
+        }"#;
+        let package: Package = serde_json::from_str(json).unwrap();
+        assert_eq!(package.name, "fluvio-smartstream-filter".parse().unwrap());
+        assert_eq!(package.group, "fluvio".parse().unwrap());
+        assert_eq!(package.kind, PackageKind::Unknown("wasm".to_string()));
+        assert!(package.releases.is_empty());
+    }
+
+    #[test]
     fn test_get_latest_prerelease() {
         let package = test_package();
         let release = package
@@ -225,5 +310,26 @@ mod tests {
             .latest_release_for_target(&Target::X86_64AppleDarwin, false)
             .unwrap();
         assert_eq!(release.version, Version::parse("0.1.0").unwrap());
+    }
+
+    #[test]
+    fn test_deserialize_package_kind_bin() {
+        let name = "\"bin\"";
+        let kind: PackageKind = serde_json::from_str(name).unwrap();
+        assert_eq!(kind, PackageKind::Binary);
+    }
+
+    #[test]
+    fn test_serialize_package_kind_bin() {
+        let kind = PackageKind::Binary;
+        let json = serde_json::to_string(&kind).unwrap();
+        assert_eq!(json, "\"bin\"");
+    }
+
+    #[test]
+    fn test_deserialize_package_kind_unknown() {
+        let name = "\"wasm\"";
+        let kind: PackageKind = serde_json::from_str(name).unwrap();
+        assert_eq!(kind, PackageKind::Unknown("wasm".to_string()));
     }
 }
