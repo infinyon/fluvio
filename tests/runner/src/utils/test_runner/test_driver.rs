@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
 use crate::test_meta::test_timer::TestTimer;
-use crate::test_meta::{TestCase, test_result::TestResult, test_result::FluvioTimeData};
+use crate::test_meta::{TestCase, test_result::TestResult, chart_builder::FluvioTimeData};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::{Fluvio, FluvioError};
@@ -152,8 +152,10 @@ impl FluvioTestDriver {
 
         self.producer_bytes += bytes_sent as usize;
 
-        self.producer_time_latency
-            .push(FluvioTimeData(timestamp, produce_time_ns as f32));
+        self.producer_time_latency.push(FluvioTimeData {
+            test_elapsed_ns: timestamp,
+            data: produce_time_ns as f32,
+        });
 
         // Convert Bytes/ns to Bytes/s
         // 1_000_000_000 ns in 1 second
@@ -216,11 +218,15 @@ impl FluvioTestDriver {
         let now = self.test_elapsed().as_millis();
 
         self.consumer_latency.record(consumer_latency).unwrap();
-        self.consumer_time_latency
-            .push(FluvioTimeData(now, consumer_latency as f32));
+        self.consumer_time_latency.push(FluvioTimeData {
+            test_elapsed_ns: now,
+            data: consumer_latency as f32,
+        });
         self.e2e_latency.record(e2e_latency).unwrap();
-        self.e2e_time_latency
-            .push(FluvioTimeData(now, e2e_latency as f32));
+        self.e2e_time_latency.push(FluvioTimeData {
+            test_elapsed_ns: now,
+            data: e2e_latency as f32,
+        });
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
             self.consumer_latency.len(),
