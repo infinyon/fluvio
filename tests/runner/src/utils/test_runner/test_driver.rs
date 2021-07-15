@@ -14,8 +14,6 @@ use tracing::debug;
 use fluvio_future::timer::sleep;
 
 // TODO:channel?
-// TODO:Add a chart type for plotting rates over time
-// TODO:Rename: *_latency, *_num, *_bytes
 #[derive(Clone)]
 pub struct FluvioTestDriver {
     pub client: Arc<Fluvio>,
@@ -133,13 +131,9 @@ impl FluvioTestDriver {
         let bytes_sent = message.as_bytes().len() as u64;
 
         let now = SystemTime::now();
-        //let timestamp = now
-        //    .duration_since(SystemTime::UNIX_EPOCH)
-        //    .expect("timestamp")
-        //    .as_nanos();
-        let timestamp = self.test_elapsed().as_millis();
         let result = p.send(key, message).await;
         let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
+        let timestamp = self.test_elapsed().as_millis();
 
         debug!(
             "(#{}) Produce latency (ns): {:?} ({} B)",
@@ -153,7 +147,7 @@ impl FluvioTestDriver {
         self.producer_bytes += bytes_sent as usize;
 
         self.producer_time_latency.push(FluvioTimeData {
-            test_elapsed_ns: timestamp,
+            test_elapsed_ms: timestamp,
             data: produce_time_ns as f32,
         });
 
@@ -219,12 +213,12 @@ impl FluvioTestDriver {
 
         self.consumer_latency.record(consumer_latency).unwrap();
         self.consumer_time_latency.push(FluvioTimeData {
-            test_elapsed_ns: now,
+            test_elapsed_ms: now,
             data: consumer_latency as f32,
         });
         self.e2e_latency.record(e2e_latency).unwrap();
         self.e2e_time_latency.push(FluvioTimeData {
-            test_elapsed_ns: now,
+            test_elapsed_ms: now,
             data: e2e_latency as f32,
         });
         debug!(

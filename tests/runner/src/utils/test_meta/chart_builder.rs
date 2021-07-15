@@ -6,7 +6,7 @@ use charts::{Chart, ScaleLinear, LineSeriesView};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct FluvioTimeData {
-    pub test_elapsed_ns: u128, // This might be in milliseconds when exported to csv
+    pub test_elapsed_ms: u128,
     pub data: f32,
 }
 
@@ -14,7 +14,7 @@ impl FluvioTimeData {}
 
 impl PointDatum<f32, f32> for FluvioTimeData {
     fn get_x(&self) -> f32 {
-        self.test_elapsed_ns as f32
+        self.test_elapsed_ms as f32
     }
 
     fn get_y(&self) -> f32 {
@@ -43,8 +43,8 @@ impl ChartBuilder {
 
         let x = ScaleLinear::new()
             .set_domain(vec![
-                ts_data[0].test_elapsed_ns as f32,
-                ts_data.last().unwrap().test_elapsed_ns as f32,
+                ts_data[0].test_elapsed_ms as f32,
+                ts_data.last().unwrap().test_elapsed_ms as f32,
             ])
             .set_range(vec![0, width - left - right]);
 
@@ -62,7 +62,7 @@ impl ChartBuilder {
             .clone()
             .into_iter()
             .map(|x| FluvioTimeData {
-                test_elapsed_ns: x.test_elapsed_ns,
+                test_elapsed_ms: x.test_elapsed_ms,
                 data: x.data.log(10.0),
             })
             .collect();
