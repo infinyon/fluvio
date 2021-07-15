@@ -133,13 +133,13 @@ fn main() {
 
             DataExporter::timeseries_as_csv(
                 t.producer_time_latency.clone(),
-                "producer_latency_x_time.csv",
+                "producer-latency-x-time.csv",
             );
             DataExporter::timeseries_as_csv(
                 t.consumer_time_latency.clone(),
-                "consumer_latency_x_time.csv",
+                "consumer-latency-x-time.csv",
             );
-            DataExporter::timeseries_as_csv(t.e2e_time_latency.clone(), "e2e_latency_x_time.csv");
+            DataExporter::timeseries_as_csv(t.e2e_time_latency.clone(), "e2e-latency-x-time.csv");
         }
     });
 }
