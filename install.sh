@@ -485,8 +485,18 @@ main() {
     # If a VERSION env variable is set:
     if [ -n "${VERSION:-""}" ]; then
 
+        # If VERSION is equal to exactly "stable", use STABLE channel
+        if [ "${VERSION}" == "stable" ]; then
+            # Fetch the latest STABLE version information
+            _version=$(fetch_latest_version_for_architecture "${_target}")
+            _status=$?
+            if [ $_status -ne 0 ]; then
+                err "❌ Failed to fetch latest version information!"
+                err "    Error downloading from ${FLUVIO_STABLE}"
+                abort_prompt_issue
+            fi
         # If VERSION is equal to exactly "prerelease", use PRERELEASE channel
-        if [ "${VERSION}" == "prerelease" ]; then
+        elif [ "${VERSION}" == "prerelease" ]; then
             _version=$(fetch_latest_version_for_architecture "${_target}" "${FLUVIO_PRERELEASE}")
             _status=$?
             if [ $_status -ne 0 ]; then
