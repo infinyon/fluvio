@@ -20,10 +20,11 @@ on:
   workflow_dispatch:
 
 jobs:
-  composite_action_test:
-    name: Composite Action Test
+  fluvio_action_test:
+    name: Fluvio Action Test (${{ matrix.os }}, ${{ matrix.version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
