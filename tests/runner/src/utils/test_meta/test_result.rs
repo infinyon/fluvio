@@ -27,6 +27,11 @@ pub struct TestResult {
     pub producer_time_rate: Vec<FluvioTimeData>,
     pub consumer_rate_histogram: Histogram<u64>,
     pub consumer_time_rate: Vec<FluvioTimeData>,
+
+    pub memory_usage_histogram: Histogram<u64>,
+    pub memory_time_usage: Vec<FluvioTimeData>,
+    pub cpu_usage_histogram: Histogram<u64>,
+    pub cpu_time_usage: Vec<FluvioTimeData>,
 }
 
 impl Default for TestResult {
@@ -54,6 +59,11 @@ impl Default for TestResult {
             producer_time_rate: Vec::new(),
             consumer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             consumer_time_rate: Vec::new(),
+
+            memory_usage_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            memory_time_usage: Vec::new(),
+            cpu_usage_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            cpu_time_usage: Vec::new(),
         }
     }
 }
@@ -194,8 +204,17 @@ impl Display for TestResult {
             Duration::from_nanos(self.e2e_latency_histogram.value_at_percentile(99.9))
         );
 
+        let max_memory = format!("{:.2?}", self.memory_usage_histogram.max());
+        let max_cpu = format!("{:.2?}", self.cpu_usage_histogram.max());
+
         let perf_results_header = table!(
             [b->"Perf Results"]
+        );
+
+        let perf_system_utilization = table!(
+            [b->"System", ""],
+            ["Max memory used (KB)", max_memory],
+            ["Max cpu used (%)", max_cpu]
         );
 
         let perf_created_table = table!(
@@ -221,6 +240,7 @@ impl Display for TestResult {
 
         write!(f, "{}", basic_results_table)?;
         write!(f, "\n{}", perf_results_header)?;
+        write!(f, "\n{}", perf_system_utilization)?;
         write!(f, "\n{}", perf_created_table)?;
         write!(f, "\n{}", perf_throughput_table)?;
         write!(f, "\n{}", perf_latency_table)

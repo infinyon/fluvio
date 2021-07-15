@@ -1444,7 +1444,7 @@ dependencies = [
  "sha2",
  "static_assertions",
  "structopt",
- "sysinfo",
+ "sysinfo 0.16.5",
  "tempdir",
  "thiserror",
  "tracing",
@@ -2049,6 +2049,7 @@ dependencies = [
 name = "flv-test"
 version = "1.0.1"
 dependencies = [
+ "async-channel",
  "async-lock",
  "async-trait",
  "bencher",
@@ -2074,6 +2075,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "syn",
+ "sysinfo 0.19.1",
  "tokio",
  "tracing",
 ]
@@ -4197,6 +4199,22 @@ name = "sysinfo"
 version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e7de153d0438a648bb71e06e300e54fc641685e96af96d49b843f43172d341c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "core-foundation-sys",
+ "doc-comment",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "rayon",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.19.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a68b8aff80646f09ec11e59b56091a5278ee527d5baeca938f1a5dbd9a15a859"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys",

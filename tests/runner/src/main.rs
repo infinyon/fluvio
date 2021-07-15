@@ -1,18 +1,25 @@
 use std::sync::Arc;
 use std::process::exit;
+use std::time::Duration;
 use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
-use fluvio_future::task::run_block_on;
+use fluvio_future::task::{run_block_on, spawn};
 use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
-use fluvio_test_util::test_meta::chart_builder::ChartBuilder;
+use fluvio_test_util::test_meta::chart_builder::{ChartBuilder, FluvioTimeData};
 use fluvio_test_util::test_meta::data_export::DataExporter;
+use fluvio_future::timer::sleep;
+use async_channel::TryRecvError;
+use sysinfo::{System, SystemExt};
+
+// # of nanoseconds in a millisecond
+const NANOS_IN_MILLIS: f32 = 1_000_000.0;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -88,11 +95,53 @@ fn main() {
         }));
         */
 
+        let system_profiler_client = fluvio_client.clone();
+        let (s, r) = async_channel::unbounded();
+        spawn(async move {
+            loop {
+                match r.try_recv() {
+                    Err(TryRecvError::Empty) => {
+                        // Do a sample here
+
+                        // Do this at a process-level?
+
+                        let s = System::new_all();
+
+                        let cpu_used = s.load_average().one * 100.0;
+                        let mem_used = s.used_memory();
+
+                        let mut lock = system_profiler_client.write().await;
+                        let timestamp = lock.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
+                        //println!("{} KB", mem_used);
+
+                        lock.memory_usage += mem_used;
+                        lock.memory_time_usage.push(FluvioTimeData {
+                            test_elapsed_ms: timestamp,
+                            data: mem_used as f32,
+                        });
+
+                        lock.cpu_usage += cpu_used as u64;
+                        lock.cpu_time_usage.push(FluvioTimeData {
+                            test_elapsed_ms: timestamp,
+                            data: cpu_used as f32,
+                        });
+                        drop(lock);
+                    }
+                    _ => {
+                        let _ = r.close();
+                    }
+                }
+
+                sleep(Duration::from_millis(10));
+            }
+        });
+
         let test_result = run_test(
             option.environment.clone(),
             test_opt,
             test_meta,
             fluvio_client.clone(),
+            s,
         )
         .await;
         cluster_cleanup(option.environment).await;
@@ -151,6 +200,26 @@ fn main() {
                 "consumer-data-x-time.svg",
             );
 
+            // Memory usage timeseries
+            ChartBuilder::data_x_time(
+                t.memory_time_usage.clone(),
+                t.memory_usage_histogram.clone(),
+                "(Unofficial) Memory usage x Time",
+                "Memory in use (Kbytes)",
+                "Test duration (ms)",
+                "memory-usage-x-time.svg",
+            );
+
+            // CPU usage timeseries
+            ChartBuilder::data_x_time(
+                t.cpu_time_usage.clone(),
+                t.cpu_usage_histogram.clone(),
+                "(Unofficial) CPU usage x Time",
+                "CPU use (%)",
+                "Test duration (ms)",
+                "cpu-usage-x-time.svg",
+            );
+
             DataExporter::timeseries_as_csv(
                 t.producer_time_latency.clone(),
                 "producer-latency-x-time.csv",
@@ -168,6 +237,10 @@ fn main() {
                 t.consumer_time_rate.clone(),
                 "consumer-data-x-time.csv",
             );
+
+            DataExporter::timeseries_as_csv(t.memory_time_usage.clone(), "memory-usage-x-time.csv");
+
+            DataExporter::timeseries_as_csv(t.cpu_time_usage.clone(), "cpu-usage-x-time.csv");
         }
     });
 }
@@ -177,11 +250,16 @@ async fn run_test(
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
     test_driver: Arc<RwLock<FluvioTestDriver>>,
+    system_profiler_channel: async_channel::Sender<()>,
+    // Add channel
 ) -> Result<TestResult, TestResult> {
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
         (test_meta.test_fn)(test_driver, test_case)
     }));
+
+    // Close channel to stop system utilization polling
+    system_profiler_channel.close();
 
     if let Ok(t) = test_result {
         t

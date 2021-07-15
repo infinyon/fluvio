@@ -39,6 +39,10 @@ pub struct FluvioTestDriver {
     pub producer_time_rate: Vec<FluvioTimeData>,
     pub consumer_rate: Histogram<u64>,
     pub consumer_time_rate: Vec<FluvioTimeData>,
+    pub memory_usage: Histogram<u64>,
+    pub memory_time_usage: Vec<FluvioTimeData>,
+    pub cpu_usage: Histogram<u64>,
+    pub cpu_time_usage: Vec<FluvioTimeData>,
 }
 
 impl FluvioTestDriver {
@@ -62,6 +66,10 @@ impl FluvioTestDriver {
             producer_time_rate: Vec::new(),
             consumer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             consumer_time_rate: Vec::new(),
+            memory_usage: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            memory_time_usage: Vec::new(),
+            cpu_usage: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            cpu_time_usage: Vec::new(),
         }
     }
 
@@ -108,6 +116,10 @@ impl FluvioTestDriver {
             producer_time_rate: self.producer_time_rate.clone(),
             consumer_rate_histogram: self.consumer_rate.clone(),
             consumer_time_rate: self.consumer_time_rate.clone(),
+            memory_usage_histogram: self.memory_usage.clone(),
+            memory_time_usage: self.memory_time_usage.clone(),
+            cpu_usage_histogram: self.cpu_usage.clone(),
+            cpu_time_usage: self.cpu_time_usage.clone(),
         }
     }
 
