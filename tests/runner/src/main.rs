@@ -97,44 +97,44 @@ fn main() {
 
         let system_profiler_client = fluvio_client.clone();
         let (s, r) = async_channel::unbounded();
-        //spawn(async move {
-        //    loop {
-        //        match r.try_recv() {
-        //            Err(TryRecvError::Empty) => {
-        //                // Do a sample here
+        spawn(async move {
+            loop {
+                match r.try_recv() {
+                    Err(TryRecvError::Empty) => {
+                        // Do a sample here
 
-        //                // Do this at a process-level?
+                        // Do this at a process-level?
 
-        //                let s = System::new_all();
+                        let s = System::new();
 
-        //                let cpu_used = s.load_average().one * 100.0;
-        //                let mem_used = s.used_memory();
+                        let cpu_used = s.load_average().one * 100.0;
+                        let mem_used = s.used_memory();
 
-        //                let mut lock = system_profiler_client.write().await;
-        //                let timestamp = lock.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
-        //                //println!("{} KB", mem_used);
+                        let mut lock = system_profiler_client.write().await;
+                        let timestamp = lock.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
+                        //println!("{} KB", mem_used);
 
-        //                lock.memory_usage += mem_used;
-        //                lock.memory_time_usage.push(FluvioTimeData {
-        //                    test_elapsed_ms: timestamp,
-        //                    data: mem_used as f32,
-        //                });
+                        lock.memory_usage += mem_used;
+                        lock.memory_time_usage.push(FluvioTimeData {
+                            test_elapsed_ms: timestamp,
+                            data: mem_used as f32,
+                        });
 
-        //                lock.cpu_usage += cpu_used as u64;
-        //                lock.cpu_time_usage.push(FluvioTimeData {
-        //                    test_elapsed_ms: timestamp,
-        //                    data: cpu_used as f32,
-        //                });
-        //                drop(lock);
-        //            }
-        //            _ => {
-        //                let _ = r.close();
-        //            }
-        //        }
+                        lock.cpu_usage += cpu_used as u64;
+                        lock.cpu_time_usage.push(FluvioTimeData {
+                            test_elapsed_ms: timestamp,
+                            data: cpu_used as f32,
+                        });
+                        drop(lock);
+                    }
+                    _ => {
+                        let _ = r.close();
+                    }
+                }
 
-        //        sleep(Duration::from_millis(10));
-        //    }
-        //});
+                sleep(Duration::from_secs(1));
+            }
+        });
 
         let test_result = run_test(
             option.environment.clone(),
@@ -253,31 +253,31 @@ fn main() {
                     ),
                 );
 
-                //// Memory usage timeseries
-                //ChartBuilder::mem_usage_x_time(
-                //    t.memory_time_usage.clone(),
-                //    t.memory_usage_histogram.clone(),
-                //    "(Unofficial) Memory usage x Time",
-                //    "Memory in use (Mbytes)",
-                //    "Test duration (ms)",
-                //    &format!(
-                //        "{}/memory-usage-x-time.svg",
-                //        option.runner_opts.results_dir.display()
-                //    ),
-                //);
+                // Memory usage timeseries
+                ChartBuilder::mem_usage_x_time(
+                    t.memory_time_usage.clone(),
+                    t.memory_usage_histogram.clone(),
+                    "(Unofficial) Memory usage x Time",
+                    "Memory in use (Mbytes)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/memory-usage-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-                //// CPU usage timeseries
-                //ChartBuilder::cpu_usage_x_time(
-                //    t.cpu_time_usage.clone(),
-                //    t.cpu_usage_histogram.clone(),
-                //    "(Unofficial) CPU usage x Time",
-                //    "CPU use (%)",
-                //    "Test duration (ms)",
-                //    &format!(
-                //        "{}/cpu-usage-x-time.svg",
-                //        option.runner_opts.results_dir.display()
-                //    ),
-                //);
+                // CPU usage timeseries
+                ChartBuilder::cpu_usage_x_time(
+                    t.cpu_time_usage.clone(),
+                    t.cpu_usage_histogram.clone(),
+                    "(Unofficial) CPU usage x Time",
+                    "CPU use (%)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/cpu-usage-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
                 DataExporter::timeseries_as_csv(
                     t.producer_time_latency.clone(),
