@@ -9,8 +9,8 @@ pub(crate) struct NamedProp {
     pub attrs: PropAttrs,
 }
 
-#[derive(Default)]
 pub(crate) struct UnnamedProp {
+    pub field_type: Type,
     pub attrs: PropAttrs,
 }
 
@@ -74,7 +74,8 @@ impl NamedProp {
 impl UnnamedProp {
     pub fn from_ast(field: &Field) -> syn::Result<Self> {
         let attrs = PropAttrs::from_ast(&field.attrs)?;
-        let prop = UnnamedProp { attrs };
+        let field_type = field.ty.clone();
+        let prop = UnnamedProp { field_type, attrs };
 
         let result = validate_versions(prop.attrs.min_version, prop.attrs.max_version, None);
 

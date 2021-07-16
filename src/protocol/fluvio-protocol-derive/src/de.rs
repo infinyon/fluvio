@@ -115,11 +115,12 @@ fn generate_decode_enum_impl(
                 let (decode, fields): (Vec<_>, Punctuated<_, Token![,]>) = props
                     .iter()
                     .enumerate()
-                    .map(|(idx, _)| {
+                    .map(|(idx, prop)| {
                         let var_ident = format_ident!("res_{}", idx);
+                        let var_ty = &prop.field_type;
                         // Type will be inferred when used to construct parent
                         let decode = quote! {
-                            let mut #var_ident = Default::default();
+                            let mut #var_ident: #var_ty = Default::default();
                             #var_ident.decode(src, version)?;
                         };
                         (decode, var_ident)

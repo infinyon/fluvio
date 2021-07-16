@@ -126,6 +126,28 @@ fn test_named_decode() {
     }
 }
 
+#[derive(Encode, Decode, Debug)]
+pub enum MultiUnnamedEnum {
+    Apple(u16, String),
+    Banana(bool),
+}
+
+impl Default for MultiUnnamedEnum {
+    fn default() -> Self {
+        Self::Banana(true)
+    }
+}
+
+#[test]
+fn test_multi_unnamed_encode() {
+    let apple = MultiUnnamedEnum::Apple(13, "Red".into());
+    let mut dest = Vec::new();
+    apple.encode(&mut dest, 0).unwrap();
+
+    let expected = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    assert_eq!(expected, dest);
+}
+
 #[derive(Encode, PartialEq, Decode, Debug)]
 #[repr(u8)]
 pub enum EnumNoExprTest {
