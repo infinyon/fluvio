@@ -101,7 +101,7 @@ async fn validate_consume_message_api(
 
         let mut lock = test_driver.write().await;
 
-        let consumer = lock.get_consumer(&topic_name).await;
+        let consumer = lock.get_consumer(&topic_name, i as i32).await;
         drop(lock);
 
         let mut stream = consumer

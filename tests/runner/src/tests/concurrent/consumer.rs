@@ -15,8 +15,9 @@ pub async fn consumer_stream(
 ) {
     let mut lock = test_driver.write().await;
 
+    // FIXME: Support partitions other than 0
     let consumer = lock
-        .get_consumer(option.environment.topic_name.as_str())
+        .get_consumer(option.environment.topic_name.as_str(), 0)
         .await;
     let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 
