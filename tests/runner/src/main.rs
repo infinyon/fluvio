@@ -259,7 +259,10 @@ fn main() {
                 );
                 DataExporter::timeseries_as_csv(
                     t.e2e_time_latency.clone(),
-                    "e2e-latency-x-time.csv",
+                    &format!(
+                        "{}/e2e-latency-x-time.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
                 );
                 DataExporter::timeseries_as_csv(
                     t.producer_time_rate.clone(),

@@ -167,9 +167,10 @@ impl FluvioTestDriver {
 
         self.producer_bytes += bytes_sent as usize;
 
+        // Make both use milliseconds
         self.producer_time_latency.push(FluvioTimeData {
             test_elapsed_ms: timestamp,
-            data: produce_time_ns as f32,
+            data: (produce_time_ns as f32) / NANOS_IN_MILLIS,
         });
 
         self.producer_time_rate.push(FluvioTimeData {
@@ -238,18 +239,22 @@ impl FluvioTestDriver {
         let now = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
 
         self.consumer_latency.record(consumer_latency).unwrap();
+
+        // Make both use milliseconds
         self.consumer_time_latency.push(FluvioTimeData {
             test_elapsed_ms: now,
-            data: consumer_latency as f32,
+            data: (consumer_latency as f32) / NANOS_IN_MILLIS,
         });
         self.consumer_time_rate.push(FluvioTimeData {
             test_elapsed_ms: now,
             data: bytes_len as f32,
         });
         self.e2e_latency.record(e2e_latency).unwrap();
+
+        // Make both use milliseconds
         self.e2e_time_latency.push(FluvioTimeData {
             test_elapsed_ms: now,
-            data: e2e_latency as f32,
+            data: (e2e_latency as f32) / NANOS_IN_MILLIS,
         });
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
