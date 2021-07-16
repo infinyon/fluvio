@@ -16,7 +16,7 @@ use fluvio_test_util::test_meta::chart_builder::{ChartBuilder, FluvioTimeData};
 use fluvio_test_util::test_meta::data_export::DataExporter;
 use fluvio_future::timer::sleep;
 use async_channel::TryRecvError;
-use systemstat::{System, Platform, saturating_sub_bytes};
+use sysinfo::{System, SystemExt};
 
 // # of nanoseconds in a millisecond
 const NANOS_IN_MILLIS: f32 = 1_000_000.0;
@@ -107,16 +107,8 @@ fn main() {
 
                         let s = System::new();
 
-                        let cpu_used = if let Ok(loadavg) = s.load_average() {
-                            loadavg.one * 100.0
-                        } else {
-                            0.0
-                        };
-                        let mem_used = if let Ok(mem) = s.memory() {
-                            saturating_sub_bytes(mem.total, mem.free).as_u64()
-                        } else {
-                            0
-                        };
+                        let cpu_used = s.load_average().one * 100.0;
+                        let mem_used = s.used_memory();
 
                         let mut lock = system_profiler_client.write().await;
                         let timestamp = lock.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
