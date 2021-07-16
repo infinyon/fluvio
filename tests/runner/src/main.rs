@@ -330,7 +330,7 @@ fn main() {
                     ),
                 );
                 DataExporter::timeseries_as_csv(
-                    t.memory_time_usage.clone(),
+                    t.cpu_time_usage.clone(),
                     &format!(
                         "{}/cpu-usage-x-time.csv",
                         option.runner_opts.results_dir.display()
