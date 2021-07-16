@@ -36,5 +36,7 @@ pub async fn execute(request: Request) -> Result<Response, Error> {
 }
 
 async fn create_tls() -> fluvio_future::openssl::TlsConnector {
-    fluvio_future::openssl::TlsConnector::builder().expect("Failed to get TLS connector builder").build()
+    fluvio_future::openssl::TlsConnector::builder()
+        .expect("Failed to get TLS connector builder")
+        .build()
 }
