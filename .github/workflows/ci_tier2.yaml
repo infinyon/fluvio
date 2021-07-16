@@ -6,7 +6,7 @@ name: CI_Platform_Tier2
 permissions:
   contents: read
 
-concurrency: 
+concurrency:
   group: ${{ 'ci_tier2' }}
   cancel-in-progress: true
 
@@ -26,7 +26,7 @@ env:
   VERBOSE: ${{ github.events.input.verbose }}
 
 jobs:
-  
+
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Check tier2 platform (${{ matrix.rust_target }}) (${{ matrix.check }})
@@ -118,6 +118,9 @@ jobs:
 
       - name: Build CLI
         run: make build-cli
+
+      - name: Build minimal cli
+        run: make build-cli-minimal
 
       - name: Build Cluster CLI
         run: make build-cluster

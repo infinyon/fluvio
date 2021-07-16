@@ -27,6 +27,7 @@ use metadata::{MetadataOpt, subcommand_metadata};
 use version::VersionOpt;
 pub use error::{Result, CliError};
 
+#[cfg(feature = "k8s")]
 use fluvio_cluster::cli::ClusterCmd;
 
 use fluvio_extension_common as common;
@@ -92,6 +93,7 @@ enum RootCmd {
     /// cluster, running either directly on your computer (local), or hosted inside
     /// of a Minikube kubernetes environment. These cluster commands will help you
     /// to set up these types of installations.
+    #[cfg(feature = "k8s")]
     #[structopt(name = "cluster")]
     Cluster(Box<ClusterCmd>),
 
@@ -142,6 +144,7 @@ impl RootCmd {
             Self::Profile(profile) => {
                 profile.process(out).await?;
             }
+            #[cfg(feature = "k8s")]
             Self::Cluster(cluster) => {
                 let version = semver::Version::parse(&crate::VERSION).unwrap();
                 cluster.process(out, version, root.target).await?;

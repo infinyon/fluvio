@@ -27,7 +27,7 @@ pub async fn execute(request: Request) -> Result<Response, Error> {
     debug!("Established TCP stream");
     let tls_connector = create_tls().await;
     debug!("Created TLS connector");
-    let tls_stream = tls_connector.connect(host, tcp_stream).await?;
+    let tls_stream = tls_connector.connect(&host, tcp_stream).await?;
     debug!("Opened TLS stream from TCP stream");
     let response = client::connect(tls_stream, request).await?;
 
@@ -35,6 +35,8 @@ pub async fn execute(request: Request) -> Result<Response, Error> {
     Ok(response)
 }
 
-async fn create_tls() -> fluvio_future::native_tls::TlsConnector {
-    fluvio_future::native_tls::TlsConnector::default()
+async fn create_tls() -> fluvio_future::openssl::TlsConnector {
+    fluvio_future::openssl::TlsConnector::builder()
+        .expect("Failed to get TLS connector builder")
+        .build()
 }
