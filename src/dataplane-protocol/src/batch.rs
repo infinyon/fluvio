@@ -7,9 +7,8 @@ use tracing::trace;
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufMut;
 
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::core::Version;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::Version;
 
 use crate::Offset;
 use crate::Size;

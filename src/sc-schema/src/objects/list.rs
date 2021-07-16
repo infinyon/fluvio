@@ -7,7 +7,7 @@ use std::convert::TryInto;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 use dataplane::api::Request;
 
 use fluvio_controlplane_metadata::core::*;

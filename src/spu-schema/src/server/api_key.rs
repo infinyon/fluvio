@@ -1,4 +1,4 @@
-use dataplane::core::{Decoder, Encoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 // Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
 static_assertions::const_assert_eq!(

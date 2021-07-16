@@ -4,9 +4,8 @@ use std::marker::PhantomData;
 use crate::Isolation;
 use crate::api::Request;
 
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::derive::FluvioDefault;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::derive::FluvioDefault;
 
 use crate::record::RecordSet;
 

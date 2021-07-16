@@ -6,9 +6,9 @@ use dataplane::api::ApiMessage;
 use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 use dataplane::bytes::Buf;
-use dataplane::derive::Encoder;
+use fluvio_protocol::Encoder;
 
-use dataplane::derive::Decoder;
+use fluvio_protocol::Decoder;
 
 use super::RegisterSpuRequest;
 use super::UpdateLrsRequest;

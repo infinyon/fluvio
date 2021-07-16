@@ -3,8 +3,8 @@
 use std::fmt;
 
 use dataplane::api::Request;
-use dataplane::derive::Decoder;
-use dataplane::derive::Encoder;
+use fluvio_protocol::Decoder;
+use fluvio_protocol::Encoder;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::InternalScKey;

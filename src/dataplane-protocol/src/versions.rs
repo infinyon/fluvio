@@ -1,5 +1,5 @@
 use std::io::{Error as IoError, ErrorKind};
-use fluvio_protocol::{Encoder, Version, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 use fluvio_protocol::bytes::{BufMut, Buf};
 
 use crate::ErrorCode;

@@ -1,6 +1,5 @@
-use crate::core::Encoder;
-use crate::core::Decoder;
-use crate::derive::FluvioDefault;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::derive::FluvioDefault;
 
 use crate::ErrorCode;
 

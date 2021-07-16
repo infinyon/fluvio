@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use crate::derive::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 pub type Offset = i64;
 pub type Size = u32;

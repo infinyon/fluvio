@@ -15,7 +15,7 @@ use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 
 use dataplane::api::api_decode;
-use dataplane::core::Encoder;
+use fluvio_protocol::Encoder;
 use dataplane::versions::ApiVersionsRequest;
 
 use super::objects::*;

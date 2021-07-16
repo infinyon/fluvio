@@ -1,5 +1,5 @@
 use dataplane::api::Request;
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 use dataplane::ReplicaKey;
 use dataplane::Offset;
 use dataplane::ErrorCode;

@@ -12,7 +12,7 @@
 //!
 use std::fmt;
 
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 use fluvio_types::SpuId;
 
 use crate::partition::*;

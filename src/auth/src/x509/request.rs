@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use dataplane::bytes::Buf;
 use dataplane::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
-use dataplane::derive::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 
 pub type AuthorizationScopes = Vec<String>;
 

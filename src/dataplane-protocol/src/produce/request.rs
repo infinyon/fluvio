@@ -1,9 +1,8 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use crate::core::Encoder;
-use crate::core::Decoder;
-use crate::derive::FluvioDefault;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::derive::FluvioDefault;
 
 use crate::api::Request;
 use crate::record::RecordSet;

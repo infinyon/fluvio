@@ -11,10 +11,7 @@ use once_cell::sync::Lazy;
 use bytes::Buf;
 use bytes::BufMut;
 
-use crate::core::{Encoder, Decoder};
-use crate::core::DecoderVarInt;
-use crate::core::EncoderVarInt;
-use crate::core::Version;
+use fluvio_protocol::{Encoder, Decoder, Version, DecoderVarInt, EncoderVarInt};
 
 use crate::batch::Batch;
 use crate::Offset;

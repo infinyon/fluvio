@@ -4,7 +4,8 @@ use std::convert::TryInto;
 use tracing::trace;
 
 use dataplane::bytes::Buf;
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
+
 use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::fetch_stream_request::FetchStreamRequest;

@@ -3,7 +3,7 @@
 //!
 
 use dataplane::api::Request;
-use dataplane::core::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder};
 use dataplane::Offset;
 
 use crate::errors::ErrorCode;
