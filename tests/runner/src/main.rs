@@ -153,7 +153,7 @@ fn main() {
                 // TODO: Make sure the target directory exists
 
                 // Producer Latency timeseries
-                ChartBuilder::data_x_time(
+                ChartBuilder::latency_x_time(
                     t.producer_time_latency.clone(),
                     t.producer_latency_histogram.clone(),
                     "(Unofficial) Producer Latency x Time",
@@ -166,7 +166,7 @@ fn main() {
                 );
 
                 // Consumer Latency timeseries
-                ChartBuilder::data_x_time(
+                ChartBuilder::latency_x_time(
                     t.consumer_time_latency.clone(),
                     t.consumer_latency_histogram.clone(),
                     "(Unofficial) Consumer Latency x Time",
@@ -179,7 +179,7 @@ fn main() {
                 );
 
                 // E2E Latency timeseries
-                ChartBuilder::data_x_time(
+                ChartBuilder::latency_x_time(
                     t.e2e_time_latency.clone(),
                     t.e2e_latency_histogram.clone(),
                     "(Unofficial) End-to-end Latency x Time",
@@ -191,12 +191,48 @@ fn main() {
                     ),
                 );
 
+                // Producer latency percentile chart
+                ChartBuilder::latency_x_percentile(
+                    t.producer_latency_histogram.clone(),
+                    "(Unofficial) Producer Latency x Percentile",
+                    "Producer Latency (ms)",
+                    "Percentile (%)",
+                    &format!(
+                        "{}/producer-latency-x-percentile.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+
+                // Consumer latency percentile chart
+                ChartBuilder::latency_x_percentile(
+                    t.consumer_latency_histogram.clone(),
+                    "(Unofficial) Consumer Latency x Percentile",
+                    "Consumer Latency (ms)",
+                    "Percentile (%)",
+                    &format!(
+                        "{}/consumer-latency-x-percentile.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+
+                // E2E latency percentile chart
+                ChartBuilder::latency_x_percentile(
+                    t.e2e_latency_histogram.clone(),
+                    "(Unofficial) End-to-end Latency x Percentile",
+                    "E2E Latency (ms)",
+                    "Percentile (%)",
+                    &format!(
+                        "{}/e2e-latency-x-percentile.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+
                 // Producer Throughput timeseries
                 ChartBuilder::data_x_time(
                     t.producer_time_rate.clone(),
                     t.producer_rate_histogram.clone(),
                     "(Unofficial) Producer Data x Time",
-                    "Producer sent (bytes)",
+                    "Producer sent (Kbytes)",
                     "Test duration (ms)",
                     &format!(
                         "{}/producer-data-x-time.svg",
@@ -209,7 +245,7 @@ fn main() {
                     t.consumer_time_rate.clone(),
                     t.consumer_rate_histogram.clone(),
                     "(Unofficial) Consumer Data x Time",
-                    "Consumer received (bytes)",
+                    "Consumer received (Kbytes)",
                     "Test duration (ms)",
                     &format!(
                         "{}/consumer-data-x-time.svg",
@@ -218,11 +254,11 @@ fn main() {
                 );
 
                 // Memory usage timeseries
-                ChartBuilder::data_x_time(
+                ChartBuilder::mem_usage_x_time(
                     t.memory_time_usage.clone(),
                     t.memory_usage_histogram.clone(),
                     "(Unofficial) Memory usage x Time",
-                    "Memory in use (Kbytes)",
+                    "Memory in use (Mbytes)",
                     "Test duration (ms)",
                     &format!(
                         "{}/memory-usage-x-time.svg",
@@ -231,7 +267,7 @@ fn main() {
                 );
 
                 // CPU usage timeseries
-                ChartBuilder::data_x_time(
+                ChartBuilder::cpu_usage_x_time(
                     t.cpu_time_usage.clone(),
                     t.cpu_usage_histogram.clone(),
                     "(Unofficial) CPU usage x Time",

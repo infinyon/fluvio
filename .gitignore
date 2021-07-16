@@ -8,4 +8,5 @@ VERSION
 .scripts
 .env
 .vscode/
-tests/benchmark-results/
+tests/benchmark-results/*.svg
+tests/benchmark-results/*.csv
