@@ -354,7 +354,7 @@ fn main() {
                 );
 
                 DataExporter::percentile_as_csv(
-                    t.consumer_latency_histogram.clone(),
+                    t.consumer_latency_histogram,
                     &format!(
                         "{}/e2e-latency-percentile.csv",
                         option.runner_opts.results_dir.display()

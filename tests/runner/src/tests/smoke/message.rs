@@ -70,10 +70,16 @@ impl TestMessage {
         // Verify topic
         assert!(test_case.environment.topic_name == record.topic_name);
 
-        // This gets messy w/ multiple producers
-        if test_case.environment.producers == 1 {
+        // This gets messy w/ multiple producers or multiple partitions
+        // FIXME: Topics w/ multiple partitions created externally will fail this check
+        if test_case.environment.producers == 1 && test_case.environment.partition == 1 {
             // Verify offset
-            assert!(offset == record.offset);
+            assert!(
+                offset == record.offset,
+                "Got: {}, expected: {}",
+                offset,
+                record.offset
+            );
         }
 
         let producer_record_size = test_case.option.producer_record_size as usize;

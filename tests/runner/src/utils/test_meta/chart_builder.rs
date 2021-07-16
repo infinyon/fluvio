@@ -79,7 +79,6 @@ impl ChartBuilder {
 
         // Transforming data to match y axis
         let line_data = ts_data
-            .clone()
             .into_iter()
             .map(|x| FluvioTimeData {
                 test_elapsed_ms: x.test_elapsed_ms,
@@ -140,7 +139,6 @@ impl ChartBuilder {
 
         // Transforming data to match y axis
         let line_data = ts_data
-            .clone()
             .into_iter()
             .map(|x| FluvioTimeData {
                 test_elapsed_ms: x.test_elapsed_ms,
@@ -201,7 +199,6 @@ impl ChartBuilder {
 
         // Transforming data to match y axis
         let line_data = ts_data
-            .clone()
             .into_iter()
             .map(|x| FluvioTimeData {
                 test_elapsed_ms: x.test_elapsed_ms,
@@ -262,7 +259,6 @@ impl ChartBuilder {
 
         // Transforming data to match y axis
         let line_data = ts_data
-            .clone()
             .into_iter()
             .map(|x| FluvioTimeData {
                 test_elapsed_ms: x.test_elapsed_ms,
@@ -310,7 +306,7 @@ impl ChartBuilder {
         let (top, right, bottom, left) = (90, 60, 50, 60);
 
         let x = ScaleLinear::new()
-            .set_domain(vec![0 as f32, 100 as f32])
+            .set_domain(vec![0 as f32, 100_f32])
             .set_range(vec![0, width - left - right]);
 
         // Y-axis will be converted from nanoseconds to milliseconds
