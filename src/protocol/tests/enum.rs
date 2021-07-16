@@ -127,6 +127,52 @@ fn test_named_decode() {
 }
 
 #[derive(Encode, Decode, Debug)]
+enum NamedCustomTag {
+    #[fluvio(tag = 22)]
+    One { a: String, b: i32 },
+    #[fluvio(tag = 44)]
+    Two { c: i64 },
+}
+
+impl Default for NamedCustomTag {
+    fn default() -> Self {
+        Self::Two { c: 999 }
+    }
+}
+
+#[test]
+fn test_named_custom_tag_encode() {
+    let value = NamedCustomTag::One {
+        a: "Hello".to_string(),
+        b: 234,
+    };
+    let mut dest = Vec::new();
+    value.encode(&mut dest, 0).unwrap();
+
+    let expected = vec![
+        0x16, 0x00, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0xea,
+    ];
+    assert_eq!(dest, expected);
+}
+
+#[test]
+fn test_named_custom_tag_decode() {
+    let data = vec![
+        0x16, 0x00, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0xea,
+    ];
+    let mut value = NamedCustomTag::default();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+
+    match value {
+        NamedCustomTag::One { a, b } => {
+            assert_eq!(a, "Hello");
+            assert_eq!(b, 234);
+        }
+        _ => panic!("Failed decode"),
+    }
+}
+
+#[derive(Encode, Decode, Debug)]
 pub enum MultiUnnamedEnum {
     Apple(u16, String),
     Banana(bool),
@@ -146,6 +192,59 @@ fn test_multi_unnamed_encode() {
 
     let expected = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
     assert_eq!(expected, dest);
+}
+
+#[test]
+fn test_multi_unnamed_decode() {
+    let data = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    let mut value = MultiUnnamedEnum::default();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+
+    match value {
+        MultiUnnamedEnum::Apple(num, string) => {
+            assert_eq!(num, 13);
+            assert_eq!(string, "Red");
+        }
+        _ => panic!("Failed to decode"),
+    }
+}
+
+#[derive(Debug, Encode, Decode)]
+enum MultiUnnamedCustomTag {
+    #[fluvio(tag = 7)]
+    RGB(u8, u8, u8),
+    #[fluvio(tag = 70)]
+    HSV(u8, u8, u8),
+    #[fluvio(tag = 77)]
+    ColorName(String),
+}
+
+impl Default for MultiUnnamedCustomTag {
+    fn default() -> Self {
+        Self::RGB(0, 0, 0)
+    }
+}
+
+#[test]
+fn test_multi_unnamed_custom_tag_encode() {
+    let mut dest = vec![];
+    let value = MultiUnnamedCustomTag::HSV(22, 33, 44);
+    value.encode(&mut dest, 0).unwrap();
+
+    let expected = vec![0x46, 0x16, 0x21, 0x2c];
+    assert_eq!(dest, expected);
+}
+
+#[test]
+fn test_multi_unnamed_custom_tag_decode() {
+    let data = vec![0x46, 0x16, 0x21, 0x2c];
+    let mut value = MultiUnnamedCustomTag::default();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+
+    match value {
+        MultiUnnamedCustomTag::HSV(22, 33, 44) => (),
+        _ => panic!("failed decode"),
+    }
 }
 
 #[derive(Encode, PartialEq, Decode, Debug)]
