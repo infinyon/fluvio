@@ -4,8 +4,8 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 
 use dataplane::api::Request;
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
+use dataplane::derive::Decoder;
+use dataplane::derive::Encoder;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::ReplicaStatus;
 
@@ -13,7 +13,7 @@ use crate::InternalScKey;
 
 /// Live Replica Status
 /// First lrs is leader by convention but should not be relied upon
-#[derive(Decode, Encode, Debug, Default, Clone)]
+#[derive(Decoder, Encoder, Debug, Default, Clone)]
 pub struct UpdateLrsRequest {
     replicas: Vec<LrsRequest>,
 }
@@ -40,11 +40,11 @@ impl Request for UpdateLrsRequest {
     type Response = UpdateLrsResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct UpdateLrsResponse {}
 
 /// Request to update replica status
-#[derive(Decode, Encode, Debug, Default, Clone)]
+#[derive(Decoder, Encoder, Debug, Default, Clone)]
 pub struct LrsRequest {
     pub id: ReplicaKey,
     pub leader: ReplicaStatus,

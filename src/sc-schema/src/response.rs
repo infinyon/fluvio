@@ -5,13 +5,13 @@
 //!
 //! Response sent to client. Sends entity name, error code and error message.
 //!
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
+use dataplane::derive::Decoder;
+use dataplane::derive::Encoder;
 use dataplane::ErrorCode;
 
 use crate::ApiError;
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct Status {
     pub name: String,
     pub error_code: ErrorCode,

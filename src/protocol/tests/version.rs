@@ -1,9 +1,9 @@
 use std::io::Cursor;
 
 use fluvio_protocol_core::{Decoder, Encoder};
-use fluvio_protocol_derive::{Decode, Encode};
+use fluvio_protocol_derive::{Decoder, Encoder};
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 struct TestRecord {
     value: i8,
     #[fluvio(min_version = 1, max_version = 1)]

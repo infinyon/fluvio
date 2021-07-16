@@ -4,7 +4,7 @@
 //! Stores Api Keys supported by the SC.
 //!
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 
 // Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
 static_assertions::const_assert_eq!(
@@ -14,7 +14,7 @@ static_assertions::const_assert_eq!(
 
 /// API call from client to SPU
 #[repr(u16)]
-#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[derive(Encoder, Decoder, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum AdminPublicApiKey {
     ApiVersion = 18, // VERSIONS_API_KEY

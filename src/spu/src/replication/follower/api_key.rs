@@ -1,7 +1,7 @@
-use dataplane::derive::{Encode, Decode};
+use dataplane::derive::{Encoder, Decoder};
 
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum FollowerPeerApiEnum {
     SyncRecords = 0,

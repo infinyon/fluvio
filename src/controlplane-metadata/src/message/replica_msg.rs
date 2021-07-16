@@ -12,7 +12,7 @@
 //!
 use std::fmt;
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 use fluvio_types::SpuId;
 
 use crate::partition::*;
@@ -26,7 +26,7 @@ pub type ReplicaMsg = Message<Replica>;
 // Data Structures
 // -----------------------------------
 
-#[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
 pub struct ReplicaMsgs {
     pub messages: Vec<ReplicaMsg>,
 }

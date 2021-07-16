@@ -5,14 +5,14 @@ use tracing::trace;
 
 use dataplane::bytes::Buf;
 use dataplane::core::Decoder;
-use dataplane::derive::Encode;
+use dataplane::derive::Encoder;
 
 use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::api_key::FollowerPeerApiEnum;
 use super::sync::DefaultSyncRequest;
 
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub enum FollowerPeerRequest {
     SyncRecords(RequestMessage<DefaultSyncRequest>),
 }

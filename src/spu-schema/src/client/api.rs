@@ -6,7 +6,7 @@ use std::convert::TryInto;
 use std::io::Error as IoError;
 
 use dataplane::bytes::Buf;
-use dataplane::derive::Encode;
+use dataplane::derive::Encoder;
 
 use dataplane::api::RequestMessage;
 
@@ -18,7 +18,7 @@ use super::SpuClientApiKey;
 use super::offset::ReplicaOffsetUpdateRequest;
 
 /// Request from Spu Server to Client
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub enum SpuClientRequest {
     ReplicaOffsetUpdateRequest(RequestMessage<ReplicaOffsetUpdateRequest>),
 }

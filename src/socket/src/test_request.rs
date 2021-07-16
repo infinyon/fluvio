@@ -7,10 +7,10 @@ use log::debug;
 
 use fluvio_protocol::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
 use fluvio_protocol::bytes::Buf;
-use fluvio_protocol::derive::{Decode, Encode};
+use fluvio_protocol::derive::{Decoder, Encoder};
 
 #[repr(u16)]
-#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[derive(Encoder, Decoder, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum TestKafkaApiEnum {
     Echo = 1000,
@@ -23,7 +23,7 @@ impl Default for TestKafkaApiEnum {
     }
 }
 
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub struct EchoRequest {
     pub msg: String,
 }
@@ -40,7 +40,7 @@ impl Request for EchoRequest {
 }
 
 /// request to send back status
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub struct AsyncStatusRequest {
     pub count: i32,
 }
@@ -56,19 +56,19 @@ impl Request for AsyncStatusRequest {
     type Response = AsyncStatusResponse;
 }
 
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub struct AsyncStatusResponse {
     pub status: i32,
 }
 
-#[derive(Encode, Debug)]
+#[derive(Encoder, Debug)]
 pub enum TestApiRequest {
     EchoRequest(RequestMessage<EchoRequest>),
     AsyncStatusRequest(RequestMessage<AsyncStatusRequest>),
     Noop(bool),
 }
 
-// Added to satisfy Encode/Decode traits
+// Added to satisfy Encoder/Decoder traits
 impl Default for TestApiRequest {
     fn default() -> TestApiRequest {
         TestApiRequest::Noop(true)
@@ -95,7 +95,7 @@ impl ApiMessage for TestApiRequest {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct EchoResponse {
     pub msg: String,
 }

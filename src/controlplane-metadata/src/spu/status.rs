@@ -7,9 +7,9 @@
 //!
 use std::fmt;
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SpuStatus {
     pub resolution: SpuStatusResolution,
@@ -65,7 +65,7 @@ impl SpuStatus {
     }
 }
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpuStatusResolution {
     Online,

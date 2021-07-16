@@ -8,14 +8,14 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 use fluvio_types::{ReplicaMap, SpuId};
 
 // -----------------------------------
 // Data Structures
 // -----------------------------------
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -33,7 +33,7 @@ impl fmt::Display for TopicStatus {
     }
 }
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum TopicResolution {
     Init,                  // Initializing this is starting state.
@@ -76,12 +76,12 @@ impl std::fmt::Display for TopicResolution {
 }
 
 // -----------------------------------
-// Encode - from KV Topic Status
+// Encoder - from KV Topic Status
 // -----------------------------------
 
 /*
 // -----------------------------------
-// Encode/Decode - Internal API
+// Encoder/Decoder - Internal API
 // -----------------------------------
 
 impl From<&TopicResolution> for u8 {

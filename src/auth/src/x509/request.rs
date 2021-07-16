@@ -4,14 +4,14 @@ use std::fmt::Debug;
 
 use dataplane::bytes::Buf;
 use dataplane::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
-use dataplane::derive::{Encode, Decode};
+use dataplane::derive::{Encoder, Decoder};
 
 pub type AuthorizationScopes = Vec<String>;
 
 pub const AUTH_REQUEST_API_KEY: u16 = 8;
 
 // Auth Test Request & Response
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub struct AuthRequest {
     pub principal: String,
     pub scopes: AuthorizationScopes,
@@ -28,7 +28,7 @@ impl Request for AuthRequest {
     type Response = AuthResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct AuthResponse {
     pub success: bool,
 }
@@ -38,7 +38,7 @@ pub enum AuthorizationApiRequest {
     AuthRequest(RequestMessage<AuthRequest>),
 }
 
-// Added to satisfy Encode/Decode traits
+// Added to satisfy Encoder/Decoder traits
 impl Default for AuthorizationApiRequest {
     fn default() -> AuthorizationApiRequest {
         AuthorizationApiRequest::AuthRequest(RequestMessage::default())

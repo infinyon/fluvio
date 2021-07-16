@@ -5,12 +5,12 @@
 //!
 //!
 use fluvio_types::SpuId;
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
 /// one of replica is leader which is duplicated in the leader field
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),

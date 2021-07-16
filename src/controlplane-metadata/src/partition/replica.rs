@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 use fluvio_types::SpuId;
 use crate::partition::ReplicaKey;
 use crate::core::{MetadataItem};
@@ -11,7 +11,7 @@ use crate::partition::PartitionSpec;
 use super::store::*;
 
 /// Metadata about Replica send from SC
-#[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
 pub struct Replica {
     pub id: ReplicaKey,
     pub leader: SpuId,
@@ -73,7 +73,7 @@ impl fmt::Display for Replica {
 }
 
 /// given replica, where is leader
-#[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
 pub struct ReplicaLeader {
     pub id: ReplicaKey,
     pub leader: SpuId,

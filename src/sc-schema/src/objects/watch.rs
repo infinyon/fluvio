@@ -2,7 +2,7 @@
 
 use std::fmt::Debug;
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use dataplane::api::Request;
@@ -66,7 +66,7 @@ impl Default for WatchResponse {
 }
 
 /// updates on metadata
-#[derive(Encode, Decode, Default, Clone, Debug)]
+#[derive(Encoder, Decoder, Default, Clone, Debug)]
 pub struct MetadataUpdate<S>
 where
     S: Spec + Debug + Encoder + Decoder,

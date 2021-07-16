@@ -1,14 +1,14 @@
 use fluvio_protocol_core::{Encoder, EncoderVarInt};
-use fluvio_protocol_derive::Encode;
+use fluvio_protocol_derive::Encoder;
 
-#[derive(Encode, Default, Debug)]
+#[derive(Encoder, Default, Debug)]
 pub struct SimpleRecord {
     #[varint]
     len: i64,
     attributes: i8,
 }
 
-#[derive(Encode, Default, Debug)]
+#[derive(Encoder, Default, Debug)]
 pub struct RecordSet {
     records: Vec<SimpleRecord>,
 }

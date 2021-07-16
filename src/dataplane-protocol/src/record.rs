@@ -16,8 +16,8 @@ use crate::core::DecoderVarInt;
 use crate::core::Encoder;
 use crate::core::EncoderVarInt;
 use crate::core::Version;
-use crate::derive::Decode;
-use crate::derive::Encode;
+use crate::derive::Decoder;
+use crate::derive::Encoder;
 
 use crate::batch::Batch;
 use crate::Offset;
@@ -327,7 +327,7 @@ impl Encoder for RecordSet {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct RecordHeader {
     attributes: i8,
     #[varint]

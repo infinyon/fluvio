@@ -7,7 +7,7 @@ use std::convert::TryInto;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use dataplane::api::Request;
@@ -76,7 +76,7 @@ impl Default for ListResponse {
     }
 }
 
-#[derive(Encode, Decode, Default, Clone, Debug)]
+#[derive(Encoder, Decoder, Default, Clone, Debug)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),

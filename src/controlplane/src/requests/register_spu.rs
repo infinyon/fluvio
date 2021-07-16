@@ -14,8 +14,8 @@
 //!
 use dataplane::api::Request;
 use dataplane::ErrorCode;
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
+use dataplane::derive::Decoder;
+use dataplane::derive::Encoder;
 use fluvio_types::SpuId;
 
 use crate::InternalScKey;
@@ -24,7 +24,7 @@ use crate::InternalScKey;
 // Data Structures
 // -----------------------------------
 
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub struct RegisterSpuRequest {
     spu: SpuId,
 }
@@ -34,7 +34,7 @@ impl Request for RegisterSpuRequest {
     type Response = RegisterSpuResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct RegisterSpuResponse {
     error_code: ErrorCode,
     error_message: Option<String>,

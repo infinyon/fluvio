@@ -1,14 +1,14 @@
 use std::io::Cursor;
 
 use fluvio_protocol_core::{Decoder, Encoder};
-use fluvio_protocol_derive::{Decode, Encode};
+use fluvio_protocol_derive::{Decoder, Encoder};
 
-#[derive(Encode, Default, Decode, Debug)]
+#[derive(Encoder, Default, Decoder, Debug)]
 pub struct Parent {
     child: Option<Child>,
 }
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct Child {
     flag: bool,
 }

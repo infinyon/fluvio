@@ -4,8 +4,8 @@ use std::marker::PhantomData;
 use crate::core::Encoder;
 use crate::core::Decoder;
 
-use crate::derive::Encode;
-use crate::derive::Decode;
+use crate::derive::Encoder;
+use crate::derive::Decoder;
 use crate::derive::FluvioDefault;
 
 use crate::api::Request;
@@ -17,7 +17,7 @@ pub type DefaultProduceRequest = ProduceRequest<RecordSet>;
 pub type DefaultPartitionRequest = PartitionProduceData<RecordSet>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet>;
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ProduceRequest<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -52,7 +52,7 @@ where
     type Response = ProduceResponse;
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct TopicProduceData<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -65,7 +65,7 @@ where
     pub data: PhantomData<R>,
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct PartitionProduceData<R>
 where
     R: Encoder + Decoder + Default + Debug,

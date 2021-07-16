@@ -11,7 +11,7 @@ pub struct ContainerAttributes {
     /// # Example
     ///
     /// ```rust
-    /// #[derive(fluvio_protocol::derive::Encode)]
+    /// #[derive(fluvio_protocol::derive::Encoder)]
     /// #[fluvio(encode_discriminant)]
     /// enum ValueEnum {
     ///     One = 1, // Encodes discriminant "1"
