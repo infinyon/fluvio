@@ -7,6 +7,7 @@ pub mod data_export;
 
 use std::any::Any;
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
@@ -14,6 +15,19 @@ use structopt::clap::AppSettings;
 use environment::EnvironmentSetup;
 
 use dyn_clone::DynClone;
+
+#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+pub struct TestRunnerOptions {
+    /// The directory path where charts and data will be saved
+    #[structopt(long, parse(from_os_str), default_value = "./tests/benchmark-results")]
+    pub results_dir: PathBuf,
+
+    /// Print test summary only. Don't save charts and data at the end of the test
+    #[structopt(long)]
+    pub skip_data_save: bool,
+    //#[structopt(long, default_value = ",")]
+    //pub csv_delimiter: String,
+}
 
 pub trait TestOption: Debug + DynClone {
     fn as_any(&self) -> &dyn Any;
@@ -54,6 +68,8 @@ impl Default for TestCli {
     about = "Test fluvio platform",
     global_settings = &[AppSettings::ColoredHelp])]
 pub struct BaseCli {
+    #[structopt(flatten)]
+    pub runner_opts: TestRunnerOptions,
     #[structopt(flatten)]
     pub environment: EnvironmentSetup,
 

@@ -5,12 +5,16 @@ use serde::{Serialize, Deserialize};
 use charts::{Chart, ScaleLinear, LineSeriesView};
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct FluvioPercentileData {
+    pub percentile: f32,
+    pub data: f32,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct FluvioTimeData {
     pub test_elapsed_ms: f32,
     pub data: f32,
 }
-
-impl FluvioTimeData {}
 
 impl PointDatum<f32, f32> for FluvioTimeData {
     fn get_x(&self) -> f32 {

@@ -149,98 +149,171 @@ fn main() {
         if let Ok(t) = test_result {
             println!("{}", t);
 
-            // TODO: Make chart generation opt-in
-            // Producer Latency timeseries
-            ChartBuilder::data_x_time(
-                t.producer_time_latency.clone(),
-                t.producer_latency_histogram.clone(),
-                "(Unofficial) Producer Latency x Time",
-                "Producer Latency (ms)",
-                "Test duration (ms)",
-                "producer-latency-x-time.svg",
-            );
+            if !option.runner_opts.skip_data_save {
+                // TODO: Make sure the target directory exists
 
-            // Consumer Latency timeseries
-            ChartBuilder::data_x_time(
-                t.consumer_time_latency.clone(),
-                t.consumer_latency_histogram.clone(),
-                "(Unofficial) Consumer Latency x Time",
-                "Consumer Latency (ms)",
-                "Test duration (ms)",
-                "consumer-latency-x-time.svg",
-            );
+                // Producer Latency timeseries
+                ChartBuilder::data_x_time(
+                    t.producer_time_latency.clone(),
+                    t.producer_latency_histogram.clone(),
+                    "(Unofficial) Producer Latency x Time",
+                    "Producer Latency (ms)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/producer-latency-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            // E2E Latency timeseries
-            ChartBuilder::data_x_time(
-                t.e2e_time_latency.clone(),
-                t.e2e_latency_histogram.clone(),
-                "(Unofficial) End-to-end Latency x Time",
-                "E2E Latency (ms)",
-                "Test duration (ms)",
-                "e2e-latency-x-time.svg",
-            );
+                // Consumer Latency timeseries
+                ChartBuilder::data_x_time(
+                    t.consumer_time_latency.clone(),
+                    t.consumer_latency_histogram.clone(),
+                    "(Unofficial) Consumer Latency x Time",
+                    "Consumer Latency (ms)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/consumer-latency-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            // Producer Throughput timeseries
-            ChartBuilder::data_x_time(
-                t.producer_time_rate.clone(),
-                t.producer_rate_histogram.clone(),
-                "(Unofficial) Producer Data x Time",
-                "Producer sent (bytes)",
-                "Test duration (ms)",
-                "producer-data-x-time.svg",
-            );
+                // E2E Latency timeseries
+                ChartBuilder::data_x_time(
+                    t.e2e_time_latency.clone(),
+                    t.e2e_latency_histogram.clone(),
+                    "(Unofficial) End-to-end Latency x Time",
+                    "E2E Latency (ms)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/e2e-latency-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            // Consumer Throughput timeseries
-            ChartBuilder::data_x_time(
-                t.consumer_time_rate.clone(),
-                t.consumer_rate_histogram.clone(),
-                "(Unofficial) Consumer Data x Time",
-                "Consumer received (bytes)",
-                "Test duration (ms)",
-                "consumer-data-x-time.svg",
-            );
+                // Producer Throughput timeseries
+                ChartBuilder::data_x_time(
+                    t.producer_time_rate.clone(),
+                    t.producer_rate_histogram.clone(),
+                    "(Unofficial) Producer Data x Time",
+                    "Producer sent (bytes)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/producer-data-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            // Memory usage timeseries
-            ChartBuilder::data_x_time(
-                t.memory_time_usage.clone(),
-                t.memory_usage_histogram.clone(),
-                "(Unofficial) Memory usage x Time",
-                "Memory in use (Kbytes)",
-                "Test duration (ms)",
-                "memory-usage-x-time.svg",
-            );
+                // Consumer Throughput timeseries
+                ChartBuilder::data_x_time(
+                    t.consumer_time_rate.clone(),
+                    t.consumer_rate_histogram.clone(),
+                    "(Unofficial) Consumer Data x Time",
+                    "Consumer received (bytes)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/consumer-data-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            // CPU usage timeseries
-            ChartBuilder::data_x_time(
-                t.cpu_time_usage.clone(),
-                t.cpu_usage_histogram.clone(),
-                "(Unofficial) CPU usage x Time",
-                "CPU use (%)",
-                "Test duration (ms)",
-                "cpu-usage-x-time.svg",
-            );
+                // Memory usage timeseries
+                ChartBuilder::data_x_time(
+                    t.memory_time_usage.clone(),
+                    t.memory_usage_histogram.clone(),
+                    "(Unofficial) Memory usage x Time",
+                    "Memory in use (Kbytes)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/memory-usage-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            DataExporter::timeseries_as_csv(
-                t.producer_time_latency.clone(),
-                "producer-latency-x-time.csv",
-            );
-            DataExporter::timeseries_as_csv(
-                t.consumer_time_latency.clone(),
-                "consumer-latency-x-time.csv",
-            );
-            DataExporter::timeseries_as_csv(t.e2e_time_latency.clone(), "e2e-latency-x-time.csv");
-            DataExporter::timeseries_as_csv(
-                t.producer_time_rate.clone(),
-                "producer-data-x-time.csv",
-            );
-            DataExporter::timeseries_as_csv(
-                t.consumer_time_rate.clone(),
-                "consumer-data-x-time.csv",
-            );
+                // CPU usage timeseries
+                ChartBuilder::data_x_time(
+                    t.cpu_time_usage.clone(),
+                    t.cpu_usage_histogram.clone(),
+                    "(Unofficial) CPU usage x Time",
+                    "CPU use (%)",
+                    "Test duration (ms)",
+                    &format!(
+                        "{}/cpu-usage-x-time.svg",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            DataExporter::timeseries_as_csv(t.memory_time_usage.clone(), "memory-usage-x-time.csv");
+                DataExporter::timeseries_as_csv(
+                    t.producer_time_latency.clone(),
+                    &format!(
+                        "{}/producer-latency-x-time.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+                DataExporter::timeseries_as_csv(
+                    t.consumer_time_latency.clone(),
+                    &format!(
+                        "{}/consumer-latency-x-time.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+                DataExporter::timeseries_as_csv(
+                    t.e2e_time_latency.clone(),
+                    "e2e-latency-x-time.csv",
+                );
+                DataExporter::timeseries_as_csv(
+                    t.producer_time_rate.clone(),
+                    &format!(
+                        "{}/producer-data-x-time.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+                DataExporter::timeseries_as_csv(
+                    t.consumer_time_rate.clone(),
+                    &format!(
+                        "{}/consumer-data-x-time.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+                DataExporter::timeseries_as_csv(
+                    t.memory_time_usage.clone(),
+                    &format!(
+                        "{}/memory-usage-x-time.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+                DataExporter::timeseries_as_csv(
+                    t.memory_time_usage.clone(),
+                    &format!(
+                        "{}/cpu-usage-x-time.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
 
-            DataExporter::timeseries_as_csv(t.cpu_time_usage.clone(), "cpu-usage-x-time.csv");
+                DataExporter::percentile_as_csv(
+                    t.producer_latency_histogram.clone(),
+                    &format!(
+                        "{}/producer-latency-percentile.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+
+                DataExporter::percentile_as_csv(
+                    t.consumer_latency_histogram.clone(),
+                    &format!(
+                        "{}/consumer-latency-percentile.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+
+                DataExporter::percentile_as_csv(
+                    t.consumer_latency_histogram.clone(),
+                    &format!(
+                        "{}/e2e-latency-percentile.csv",
+                        option.runner_opts.results_dir.display()
+                    ),
+                );
+            }
         }
     });
 }
