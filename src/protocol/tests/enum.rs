@@ -116,7 +116,7 @@ fn test_named_encode() {
 fn test_named_decode() {
     let data = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
     let mut value = NamedEnum::default();
-    value.decode(&mut std::io::Cursor(data), 0).unwrap();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
     match value {
         NamedEnum::Apple { seeds, color } => {
             assert_eq!(seeds, 13);
@@ -207,8 +207,9 @@ fn test_enum_expr_decode() {
     assert_eq!(val, EnumExprTest::D);
 }
 
-#[derive(Encode, Decode, PartialEq, Debug)]
 #[repr(u16)]
+#[derive(Encode, Decode, PartialEq, Debug)]
+#[fluvio(encode_discriminant)]
 pub enum WideEnum {
     #[fluvio(tag = 5)]
     D = 5,

@@ -37,7 +37,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
                 Ident::new("u8", Span::call_site())
             };
             let enum_tokens = generate_decode_enum_impl(&kf_enum.props, &int_type, ident, &attrs);
-            // let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
+            let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
             let res = quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
@@ -46,7 +46,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
                     }
                 }
 
-                // #try_enum
+                #try_enum
             };
             res
         }
@@ -139,9 +139,10 @@ fn generate_decode_enum_impl(
                     .iter()
                     .map(|prop| {
                         let var_ident = format_ident!("{}", &prop.field_name);
+                        let var_ty = &prop.field_type;
                         // Type will be inferred when used to construct parent
                         let decode = quote! {
-                            let mut #var_ident = Default::default();
+                            let mut #var_ident: #var_ty = Default::default();
                             #var_ident.decode(src, version)?;
                         };
                         (decode, var_ident)
@@ -196,6 +197,12 @@ fn generate_try_enum_from_kf_enum(
     enum_ident: &Ident,
     attrs: &ContainerAttributes,
 ) -> TokenStream {
+    // If #[fluvio(encode_discriminant)] is used, this is an int-enum
+    // If it is not, it may be carrying data, so we cannot have impl TryFrom<int>
+    if !attrs.encode_discriminant {
+        return quote! {};
+    }
+
     let mut variant_expr = vec![];
     for (idx, prop) in props.iter().enumerate() {
         let id = &format_ident!("{}", prop.variant_name);

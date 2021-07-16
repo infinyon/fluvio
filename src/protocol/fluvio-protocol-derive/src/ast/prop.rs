@@ -1,11 +1,11 @@
 use proc_macro2::TokenStream;
 use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
-use syn::{Attribute, Error, Field, Lit, Meta, NestedMeta};
+use syn::{Attribute, Error, Field, Lit, Meta, NestedMeta, Type};
 
-#[derive(Default)]
 pub(crate) struct NamedProp {
     pub field_name: String,
+    pub field_type: Type,
     pub attrs: PropAttrs,
 }
 
@@ -25,8 +25,13 @@ impl NamedProp {
             ));
         };
         let field_name = field_ident.to_string();
+        let field_type = field.ty.clone();
         let attrs = PropAttrs::from_ast(&field.attrs)?;
-        let prop = NamedProp { field_name, attrs };
+        let prop = NamedProp {
+            field_name,
+            field_type,
+            attrs,
+        };
 
         let result = validate_versions(
             prop.attrs.min_version,
