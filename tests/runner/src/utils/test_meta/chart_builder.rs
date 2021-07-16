@@ -342,7 +342,7 @@ impl ChartBuilder {
                 }
             }
         }
-        
+
         //println!("{:?}", &line_data);
 
         // Create Line series view that is going to represent the data.

@@ -554,6 +554,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b700ce4376041dcd0a327fd0097c41095743c4c8af8887265942faf1100bd040"
 
 [[package]]
+name = "bytesize"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "81a18687293a1546b67c246452202bbbf143d239cb43494cc163da14979082da"
+
+[[package]]
 name = "cache-padded"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1444,7 +1450,7 @@ dependencies = [
  "sha2",
  "static_assertions",
  "structopt",
- "sysinfo 0.16.5",
+ "sysinfo",
  "tempdir",
  "thiserror",
  "tracing",
@@ -2075,7 +2081,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "syn",
- "sysinfo 0.19.1",
+ "systemstat",
  "tokio",
  "tracing",
 ]
@@ -4211,18 +4217,17 @@ dependencies = [
 ]
 
 [[package]]
-name = "sysinfo"
-version = "0.19.1"
+name = "systemstat"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a68b8aff80646f09ec11e59b56091a5278ee527d5baeca938f1a5dbd9a15a859"
+checksum = "a934f8fe2f893260080fdde71e840b35308f48bf3bd3b261cb24e668c4b48db3"
 dependencies = [
- "cfg-if 1.0.0",
- "core-foundation-sys",
- "doc-comment",
+ "bytesize",
+ "chrono",
+ "lazy_static",
  "libc",
- "ntapi",
- "once_cell",
- "rayon",
+ "nom",
+ "time 0.1.43",
  "winapi 0.3.9",
 ]
 
