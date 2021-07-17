@@ -194,7 +194,7 @@ impl ChartBuilder {
         // Y-axis will be converted from kilobytes to megabytes
         // (Y-axis range is reversed due to SVG's coordinate system)
         let y = ScaleLinear::new()
-            .set_domain(vec![(0 as f32), (hist_data.max() as f32) / 1_000.0])
+            .set_domain(vec![(0 as f32), (hist_data.max() as f32)])
             .set_range(vec![height - top - bottom, 0]);
 
         // Transforming data to match y axis

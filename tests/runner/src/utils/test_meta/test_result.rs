@@ -213,7 +213,7 @@ impl Display for TestResult {
 
         let perf_system_utilization = table!(
             [b->"System", ""],
-            ["Max memory used (KB)", max_memory],
+            ["Max memory used (MB)", max_memory],
             ["Max cpu used (%)", max_cpu]
         );
 

@@ -16,13 +16,10 @@ use fluvio_future::timer::sleep;
 // # of nanoseconds in a millisecond
 const NANOS_IN_MILLIS: f32 = 1_000_000.0;
 
-// TODO:channel?
 #[derive(Clone)]
 pub struct FluvioTestDriver {
     pub client: Arc<Fluvio>,
     pub timer: TestTimer,
-    //pub memory_sample: Histogram<u64>,
-    //pub cpu_sample: Histogram<u64>,
     pub topic_num: usize,
     pub producer_num: usize,
     pub consumer_num: usize,

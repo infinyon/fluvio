@@ -98,6 +98,10 @@ fn main() {
         let system_profiler_client = fluvio_client.clone();
         let (s, r) = async_channel::unbounded();
         spawn(async move {
+            let mut s = System::new_all();
+
+            let start_mem_used = s.used_memory() as f32 / 1_000.0_f32;
+
             loop {
                 match r.try_recv() {
                     Err(TryRecvError::Empty) => {
@@ -105,16 +109,16 @@ fn main() {
 
                         // Do this at a process-level?
 
-                        let s = System::new();
-
+                        s.refresh_cpu();
                         let cpu_used = s.load_average().one * 100.0;
-                        let mem_used = s.used_memory();
+                        s.refresh_memory();
+                        let mem_used = (s.used_memory() as f32 / 1_000.0_f32) - start_mem_used;
 
                         let mut lock = system_profiler_client.write().await;
                         let timestamp = lock.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
-                        //println!("{} KB", mem_used);
+                        //println!("{} MB", mem_used);
 
-                        lock.memory_usage += mem_used;
+                        lock.memory_usage += mem_used as u64;
                         lock.memory_time_usage.push(FluvioTimeData {
                             test_elapsed_ms: timestamp,
                             data: mem_used as f32,
