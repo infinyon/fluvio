@@ -115,47 +115,44 @@ pub async fn produce_message_with_api(
     use std::time::Duration;
     use fluvio_future::timer::sleep;
 
-    let partition = test_case.environment.partition;
+    // Producers don't support direct send to partitions
+    //let partition = test_case.environment.partition;
 
     let produce_iteration = test_case.option.producer_iteration;
 
     let topic_name = test_case.environment.topic_name.clone();
 
-    for r in 0..partition {
-        let base_offset = *offsets.get(&topic_name).expect("offsets");
+    let base_offset = *offsets.get(&topic_name).expect("offsets");
 
+    let mut lock = test_driver.write().await;
+    let producer = lock.get_producer(&topic_name).await;
+    drop(lock);
+
+    for i in 0..produce_iteration {
+        let offset = base_offset + i as i64;
+
+        let mut wtr = WriterBuilder::new().has_headers(false).from_writer(vec![]);
+        let gen_msg = TestMessage::generate_message(offset, &test_case);
+        wtr.serialize(gen_msg)
+            .expect("TestMessage serialize to csv failed");
+        let message = wtr.into_inner().expect("csv to Vec<u8> failed");
+
+        let len = message.len();
+        info!("trying send: {}, iteration: {}", topic_name, i);
         let mut lock = test_driver.write().await;
-        let producer = lock.get_producer(&topic_name).await;
+        lock.send_count(
+            &producer,
+            RecordKey::NULL,
+            String::from_utf8(message.clone()).unwrap(),
+        )
+        .await
+        .unwrap_or_else(|_| panic!("send record failed for replication: {} iteration: {}", r, i));
         drop(lock);
-
-        for i in 0..produce_iteration {
-            let offset = base_offset + i as i64;
-
-            let mut wtr = WriterBuilder::new().has_headers(false).from_writer(vec![]);
-            let gen_msg = TestMessage::generate_message(offset, &test_case);
-            wtr.serialize(gen_msg)
-                .expect("TestMessage serialize to csv failed");
-            let message = wtr.into_inner().expect("csv to Vec<u8> failed");
-
-            let len = message.len();
-            info!("trying send: {}, iteration: {}", topic_name, i);
-            let mut lock = test_driver.write().await;
-            lock.send_count(
-                &producer,
-                RecordKey::NULL,
-                String::from_utf8(message.clone()).unwrap(),
-            )
-            .await
-            .unwrap_or_else(|_| {
-                panic!("send record failed for replication: {} iteration: {}", r, i)
-            });
-            drop(lock);
-            info!(
-                "completed send iter: {}, offset: {},len: {}",
-                topic_name, offset, len
-            );
-            sleep(Duration::from_millis(10)).await;
-        }
+        info!(
+            "completed send iter: {}, offset: {},len: {}",
+            topic_name, offset, len
+        );
+        sleep(Duration::from_millis(10)).await;
     }
 }
 

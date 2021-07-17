@@ -189,7 +189,11 @@ impl FluvioTestDriver {
     }
 
     pub async fn get_consumer(&mut self, topic: &str, partition: i32) -> PartitionConsumer {
-        match self.client.partition_consumer(topic.to_string(), partition).await {
+        match self
+            .client
+            .partition_consumer(topic.to_string(), partition)
+            .await
+        {
             Ok(client) => {
                 self.consumer_num += 1;
                 return client;
