@@ -37,4 +37,4 @@ rbac:
 serviceAccount:
   name: fluvio
 podSecurityContext: {}
-spuStorageClass: fluvio-spu
+spuStorageClass:  standard
