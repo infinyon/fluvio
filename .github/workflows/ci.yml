@@ -199,27 +199,22 @@ jobs:
     needs: build_binaries
     strategy:
       matrix:
-        os: [infinyon-ubuntu-bionic]
+        os: [ubuntu-latest]
         rust: [stable]
     env:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
-      - run: helm version
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
+      - name: Install Minikube for Github runner
+        uses: manusa/actions-setup-minikube@v2.4.2
         with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-      - name: Install zig
-        run: ./actions/zig-install.sh ${{ matrix.os }}
-      - name: Setup Minikube for Linux
-        run: |
-          ./k8-util/minikube/reset-minikube.sh 
-          sleep 30
+          minikube version: "v1.22.0"
+          kubernetes version: "v1.19.6"
+          github token: ${{ secrets.GITHUB_TOKEN }}
+          driver: docker
       - name: Test minikube
         run: |
+          helm version
           minikube profile list
           minikube status
       - name: Download artifact - fluvio
@@ -297,17 +292,18 @@ jobs:
       FLV_TEST_CONSUMER_WAIT: 300000
     steps:
       - uses: actions/checkout@v2
-      - run: helm version
-
-      - name: Setup Minikube for Linux
-        if: startsWith(matrix.os, 'infinyon-ubuntu')
-        run: |
-          ./k8-util/minikube/reset-minikube.sh
+      - name: Install Minikube for Github runner
+        uses: manusa/actions-setup-minikube@v2.4.2
+        with:
+          minikube version: "v1.22.0"
+          kubernetes version: "v1.19.6"
+          github token: ${{ secrets.GITHUB_TOKEN }}
+          driver: docker
       - name: Test minikube
         run: |
+          helm version
           minikube profile list
           minikube status
-
       # Download artifacts
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
@@ -341,11 +337,7 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-k8-tls-root
-
-      - name: Clean minikube
-        run: |
-          minikube delete
+          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Save logs
         if: failure()
         run: |
