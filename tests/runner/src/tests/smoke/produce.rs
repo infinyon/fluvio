@@ -146,7 +146,7 @@ pub async fn produce_message_with_api(
             String::from_utf8(message.clone()).unwrap(),
         )
         .await
-        .unwrap_or_else(|_| panic!("send record failed for replication: {} iteration: {}", r, i));
+        .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
         drop(lock);
         info!(
             "completed send iter: {}, offset: {},len: {}",
