@@ -15,8 +15,8 @@
 # If CI env var is set, we will build fluvio code and upgrade to local develop image
 
 
-set -exu
-#set -e
+#set -exu
+set -e
 
 echo command: $0 $*
 
