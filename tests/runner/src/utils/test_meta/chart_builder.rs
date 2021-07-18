@@ -202,7 +202,7 @@ impl ChartBuilder {
             .into_iter()
             .map(|x| FluvioTimeData {
                 test_elapsed_ms: x.test_elapsed_ms,
-                data: x.data / 1_000.0,
+                data: x.data,
             })
             .collect();
 
