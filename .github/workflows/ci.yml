@@ -100,7 +100,9 @@ jobs:
 
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
-        run: make build-cli
+        run: |
+          make build-cli
+          ${{ env.RUST_BIN_DIR }}/fluvio version
 
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
