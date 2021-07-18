@@ -54,7 +54,6 @@ jobs:
   # TODO: run upgrade test from Makefile   
   k8_cluster_upgrade:
     name: Kubernetes cluster upgrade test
-    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
