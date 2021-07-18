@@ -14,7 +14,7 @@ on:
 #  pull_request:
 #    branches: [master]
   workflow_run:
-    workflows: [CI]
+    workflows: [Publish]
     branches: [master]
     types: [completed]
   workflow_dispatch:

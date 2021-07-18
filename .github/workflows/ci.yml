@@ -100,7 +100,9 @@ jobs:
 
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
-        run: make build-cli
+        run: |
+          make build-cli
+          ${{ env.RUST_BIN_DIR }}/fluvio version
 
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
@@ -230,14 +232,13 @@ jobs:
           name: flv-test-x86_64-unknown-linux-musl
           path: .
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
       - name: Setup
         run: ./fluvio cluster start --setup --local --develop
       - name: Run smoke-test
         timeout-minutes: 3
         run: |
           make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
-      - run: minikube delete
       - name: Upload SC log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
@@ -327,7 +328,7 @@ jobs:
           docker image ls -a
 
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
 
       - name: Setup installation pre-requisites
         run: |
