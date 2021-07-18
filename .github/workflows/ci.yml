@@ -34,23 +34,23 @@ jobs:
     strategy:
       matrix:
         rust-target:
-#          - aarch64-unknown-linux-musl
-#          - armv7-unknown-linux-gnueabihf
+          - aarch64-unknown-linux-musl
+          - armv7-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
         rust: [stable]
         binary: [fluvio]
         include:
-#          - os: ubuntu-latest
-#            rust: stable
-#            rust-target: aarch64-unknown-linux-musl
-#            binary: fluvio
-#            run: make build-cli
-#          - os: ubuntu-latest
-#            rust: stable
-#            rust-target: armv7-unknown-linux-gnueabihf
-#            binary: fluvio
-#            run: make build-cli
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: aarch64-unknown-linux-musl
+            binary: fluvio
+            run: make build-cli
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fluvio
+            run: make build-cli
           - os: macos-latest
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -429,8 +429,8 @@ jobs:
     strategy:
       matrix:
         rust-target:
-#          - aarch64-unknown-linux-musl
-#          - armv7-unknown-linux-gnueabihf
+          - aarch64-unknown-linux-musl
+          - armv7-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
         artifact: [fluvio]
