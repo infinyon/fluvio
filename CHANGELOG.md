@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.8.6 - UNRELEASED
+* Add k8s feature flag to cli. ([#1257](https://github.com/infinyon/fluvio/pull/1257))
 
 ## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
@@ -13,13 +14,13 @@
 * Upgrade wasmtime to thread-safe API. ([#1200](https://github.com/infinyon/fluvio/issues/1200))
 * Update fluvio-package to support arbitrary Targets. ([#1234](https://github.com/infinyon/fluvio/pull/1234))
 * Future-proof PackageKind by deserializing all Strings. ([#1249](https://github.com/infinyon/fluvio/pull/1249))
- 
+
 ## Platform Version 0.8.4 - 2021-05-29
 * Don't hang when check for non exist topic. ([#697](https://github.com/infinyon/fluvio/pull/697))
 * `fluvio cluster start` uses Kubernetes NodePort by default ([#1083](https://github.com/infinyon/fluvio/pull/1083))
 * Use OpenSSL for Client ([#1150](https://github.com/infinyon/fluvio/pull/1150))
 * Add `--raw` flag to `fluvio produce` for sending whole file input ([#1149](https://github.com/infinyon/fluvio/pull/1148))
-  
+
 ## Platform Version 0.8.3 - 2021-05-25
 * Added builder for fluvio_storage::config::ConfigOption. ([#1076](https://github.com/infinyon/fluvio/pull/1076))
 * Use batch record sending in CLI producer ([#915](https://github.com/infinyon/fluvio/issues/915))
