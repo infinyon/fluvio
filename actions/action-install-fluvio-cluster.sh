@@ -10,16 +10,22 @@ curl -sSf https://raw.githubusercontent.com/infinyon/fluvio/master/install.sh | 
 echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
 . $HOME/.bash_profile
 
-# Install Fluvio System Charts
-fluvio cluster start --setup --local --sys
+REPO_VERSION="$(curl -sSf https://raw.githubusercontent.com/infinyon/fluvio/master/VERSION)"
+CHART_VERSION="${REPO_VERSION}-${GITHUB_SHA}"
 
-# Run Fluvio Cluster Pre-Install Check
+#
+# Install Fluvio Cluster
+#
 
-fluvio cluster check
-
+# Install Local Fluvio Cluster
 if [ "$CLUSTER_TYPE" = "local" ]; then
-        # Install Local Fluvio Cluster
+
+    # If VERSION is equal to exactly "latest", use LATEST channel
+    if [ "${VERSION}" == "latest" ]; then
+        fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
+    else
         fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
+    fi
 else
-        echo "Currently, only local cluster types are supported"
+    echo "Currently, only local cluster types are supported"
 fi
