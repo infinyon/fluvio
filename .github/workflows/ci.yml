@@ -245,8 +245,11 @@ jobs:
         timeout-minutes: 3
         run: |
           make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
-      - run: minikube delete
+      - name: Clean up minikube
+        if: always()
+        run: minikube delete
       - name: Clean up Fluvio user dir
+        if: always()
         run: rm -rf ~/.fluvio
       - name: Upload SC log
         uses: actions/upload-artifact@v2
@@ -350,9 +353,9 @@ jobs:
         run: |
           make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-k8-tls-root
 
-      - name: Clean minikube
-        run: |
-          minikube delete
+      - name: Clean up minikube
+        if: always()
+        run: minikube delete
       - name: Save logs
         if: failure()
         run: |
