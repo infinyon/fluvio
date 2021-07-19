@@ -4,6 +4,7 @@ GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
 DOCKER_REGISTRY=infinyon
+DEVL_K8?=minikube
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_MUSL=x86_64-unknown-linux-musl
 TARGET?=
@@ -241,17 +242,13 @@ latest_image: fluvio_image
 	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
 	docker push $(DOCKER_IMAGE):latest
 
-# Build docker image in minikube environment
-minikube_image: MINIKUBE_FLAG=minikube
-minikube_image: fluvio_image
-
 
 # In CI mode, do not build k8 image
 ifeq (${CI},true)
 build_k8_image:
 else
 # When not in CI (i.e. development), build image before testing
-build_k8_image: minikube_image
+build_k8_image: fluvio_image
 endif
 
 
@@ -260,7 +257,7 @@ endif
 # In further releases, we re-tag the image as needed.
 fluvio_image: fluvio_bin_musl
 	echo "Building Fluvio musl image with tag: $(GIT_COMMIT)"
-	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
+	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(DEVL_K8)
 
 fluvio_bin_musl:
 	rustup target add $(TARGET_MUSL)
