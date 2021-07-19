@@ -1,6 +1,8 @@
 use std::io::Error as IoError;
 
 use fluvio::FluvioError;
+
+#[cfg(feature = "k8s")]
 use fluvio_cluster::cli::ClusterCliError;
 use fluvio_sc_schema::ApiError;
 use fluvio_sc_schema::errors::ErrorCode;
@@ -17,24 +19,36 @@ pub enum CliError {
     IoError(#[from] IoError),
     #[error(transparent)]
     OutputError(#[from] OutputError),
+
+    #[cfg(feature = "k8s")]
     #[error("Fluvio cluster error")]
     ClusterCliError(#[from] ClusterCliError),
+
     #[error("Target Error")]
     TargetError(#[from] TargetError),
     #[error("Consumer Error")]
     ConsumerError(#[from] ConsumerError),
     #[error("Fluvio client error")]
     ClientError(#[from] FluvioError),
+
+    #[cfg(feature = "k8s")]
     #[error("Kubernetes config error")]
     K8ConfigError(#[from] k8_config::ConfigError),
+
+    #[cfg(feature = "k8s")]
     #[error("Kubernetes client error")]
     K8ClientError(#[from] k8_client::ClientError),
+
     #[error("Package index error")]
     IndexError(#[from] fluvio_index::Error),
     #[error("Error finding executable")]
     WhichError(#[from] which::Error),
     #[error(transparent)]
     HttpError(#[from] HttpError),
+
+    #[error(transparent)]
+    TlsError(#[from] fluvio_future::openssl::TlsError),
+
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
     #[error("Unknown error: {0}")]
@@ -62,6 +76,7 @@ impl CliError {
         use color_eyre::Report;
 
         match self {
+            #[cfg(feature = "k8s")]
             CliError::ClusterCliError(cluster) => cluster.into_report(),
             _ => Report::from(self),
         }

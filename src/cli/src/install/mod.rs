@@ -162,7 +162,9 @@ fn make_executable(file: &mut File) -> Result<(), IoError> {
 }
 
 #[cfg(not(unix))]
-fn make_executable(_file: &mut File) {}
+fn make_executable(_file: &mut File) -> Result<(), IoError> {
+    unimplemented!();
+}
 
 pub fn install_println<S: AsRef<str>>(string: S) {
     if std::env::var("FLUVIO_BOOTSTRAP").is_ok() {
