@@ -32,9 +32,10 @@ spuPod:
     limits:
       memory: 1Gi
   nodeSelector: {}
+  storageClass: null
+
 rbac:
   create: true
 serviceAccount:
   name: fluvio
 podSecurityContext: {}
-spuStorageClass:  standard
