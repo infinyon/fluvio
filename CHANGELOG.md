@@ -1,5 +1,7 @@
 # Release Notes
 
+## Platform Version 0.8.6 - UNRELEASED
+
 ## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
 * Make recipes for smoke tests no longer build by default, helps caching. ([#1165](https://github.com/infinyon/fluvio/pull/1165))
