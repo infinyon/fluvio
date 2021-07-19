@@ -2,6 +2,7 @@
 
 ## Platform Version 0.8.6 - UNRELEASED
 * Add k8s feature flag to cli. ([#1257](https://github.com/infinyon/fluvio/pull/1257))
+* Improve `#[derive(Encoder, Decoder)]` to work with data enums. ([#1232](https://github.com/infinyon/fluvio/pull/1232))
 
 ## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
