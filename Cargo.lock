@@ -2733,9 +2733,8 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.2.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de4b3e3f9fa0b63e8d66ff18c20fdea5326edd3bf61a910ea0ef17fbd1db863a"
+version = "0.2.5"
+source = "git+https://github.com/infinyon/k8-api#3a69671c469c46757e489f4ab6919f6601e0e514"
 dependencies = [
  "serde",
  "serde_json",
