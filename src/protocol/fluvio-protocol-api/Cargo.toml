@@ -11,5 +11,5 @@ categories = ["encoding","api-bindings"]
 [dependencies]
 tracing = "0.1"
 fluvio-protocol = { version = "0.3.1", path = "../fluvio-protocol-core", package = "fluvio-protocol-core" }
-fluvio-protocol-derive = { version = "0.2.1", path = "../fluvio-protocol-derive" }
+fluvio-protocol-derive = { version = "0.3", path = "../fluvio-protocol-derive" }
 flv-util = { version = "0.5.0"}

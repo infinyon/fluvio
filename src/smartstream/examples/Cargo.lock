@@ -105,7 +105,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "fluvio-protocol-api",
  "fluvio-protocol-core",
@@ -133,7 +133,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
