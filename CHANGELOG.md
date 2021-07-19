@@ -1,24 +1,24 @@
 # Release Notes
 
-## Platform Version 0.8.5 - UNRELEASED
+## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
 * Make recipes for smoke tests no longer build by default, helps caching. ([#1165](https://github.com/infinyon/fluvio/pull/1165))
 * Relax requirement of `FluvioAdmin` methods from `&mut self` to `&self`. ([#1178](https://github.com/infinyon/fluvio/pull/1178))
 * Sort output of `fluvio partition list` by Topic then Partition. ([#1181](https://github.com/infinyon/fluvio/issues/1181))
 * Add SmartStream Map (`#[smartstream(map)]`) API for transforming records. ([#1174](https://github.com/infinyon/fluvio/pull/1174))
-* Change C compiler to `zig` and linker to `lld`. Resolves segaults when cross compiling to musl. ([#464](https://github.com/infinyon/fluvio/pull/464))
+* Change C compiler to `zig` and linker to `lld`. Resolves segfaults when cross compiling to musl. ([#464](https://github.com/infinyon/fluvio/pull/464))
 * Consumer CLI prints a status when consuming from the end of a partition. ([#1171](https://github.com/infinyon/fluvio/pull/1171))
 * Upgrade wasmtime to thread-safe API. ([#1200](https://github.com/infinyon/fluvio/issues/1200))
 * Update fluvio-package to support arbitrary Targets. ([#1234](https://github.com/infinyon/fluvio/pull/1234))
 * Future-proof PackageKind by deserializing all Strings. ([#1249](https://github.com/infinyon/fluvio/pull/1249))
  
-## Platform Version 0.8.4 - 2020-05-29
+## Platform Version 0.8.4 - 2021-05-29
 * Don't hang when check for non exist topic. ([#697](https://github.com/infinyon/fluvio/pull/697))
 * `fluvio cluster start` uses Kubernetes NodePort by default ([#1083](https://github.com/infinyon/fluvio/pull/1083))
 * Use OpenSSL for Client ([#1150](https://github.com/infinyon/fluvio/pull/1150))
 * Add `--raw` flag to `fluvio produce` for sending whole file input ([#1149](https://github.com/infinyon/fluvio/pull/1148))
   
-## Platform Version 0.8.3 - 2020-05-25
+## Platform Version 0.8.3 - 2021-05-25
 * Added builder for fluvio_storage::config::ConfigOption. ([#1076](https://github.com/infinyon/fluvio/pull/1076))
 * Use batch record sending in CLI producer ([#915](https://github.com/infinyon/fluvio/issues/915))
 * Now ResponseApi and RequestApi encoder-decoders are symmetric ([#1075](https://github.com/infinyon/fluvio/issues/1075))
@@ -32,40 +32,40 @@
 * fluvio-socket build for wasm32 ([#1111](https://github.com/infinyon/fluvio/issues/1111))
 * Add Fluvio::connect_with_connector to support custom connectors. ([#1120](https://github.com/infinyon/fluvio/issues/1120))
 
-## Platform Version 0.8.2 - 2020-05-06
+## Platform Version 0.8.2 - 2021-05-06
 * Fix Replication fail over with duplication ([#1052](https://github.com/infinyon/fluvio/pull/1052))
 * Relax platform version requirement for upgrade check ([#1055](https://github.com/infinyon/fluvio/pull/1055))
 * Update logic for finding latest package release ([#1061](https://github.com/infinyon/fluvio/pull/1061))
 
-## Platform Version 0.8.1 - 2020-05-03
+## Platform Version 0.8.1 - 2021-05-03
 * Use file name for the external commands (fixes #889) ([#1008](https://github.com/infinyon/fluvio/pull/1008))
 * Fix Fluvio log directory on K8 ([#1043](https://github.com/infinyon/fluvio/pull/1043))
 * Add RecordKey API for sending records without keys ([#985](https://github.com/infinyon/fluvio/pull/985))
 * Make Fluvio Client compatitble with WASM ([#1042](https://github.com/infinyon/fluvio/pull/1042))
 * Update Replication logic for SPU ([#1011](https://github.com/infinyon/fluvio/pull/1011))
 
-## Platform Version 0.8.0 - 2020-04-27
+## Platform Version 0.8.0 - 2021-04-27
 * Added Partitioner trait for assigning partitions based on record keys ([#965](https://github.com/infinyon/fluvio/pull/965))
 * Deprecated the `TopicProducer::send_record` method ([#965](https://github.com/infinyon/fluvio/pull/965))
 * Decoupled Fluvio CLI from Fluvio server components ([#928](https://github.com/infinyon/fluvio/pull/928))
 
-## Platform Version 0.7.3 - 2020-04-02
+## Platform Version 0.7.3 - 2021-04-02
 * Added batching for producing records with `send_all` API ([#896](https://github.com/infinyon/fluvio/pull/896)).
 * WASM based Smart Stream Filter MVP ([#901](https://github.com/infinyon/fluvio/pull/901)).
 * Fix topic not being deleted when SPU goes offline ([#914](https://github.com/infinyon/fluvio/pull/914))
 
-## Platform Version 0.7.2 - 2020-03-23
+## Platform Version 0.7.2 - 2021-03-23
 * `fluvio update` updates plugins as well as CLI ([#865](https://github.com/infinyon/fluvio/issues/865)).
 * SPU controller uses SVC ingress annotation ([#888](https://github.com/infinyon/fluvio/pull/888)).
 
-## Platform Version 0.7.1 - 2020-03-15
+## Platform Version 0.7.1 - 2021-03-15
 * Client Key/Value support for producers and consumers
 ([#828](https://github.com/infinyon/fluvio/pull/828)).
 * CLI Key/Value interface ([#830](https://github.com/infinyon/fluvio/pull/830))
 * CI Reliability updates ([#842](https://github.com/infinyon/fluvio/pull/842)),
 ([#832](https://github.com/infinyon/fluvio/pull/832))
 
-## Platform Version 0.7.0 - 2020-02-24
+## Platform Version 0.7.0 - 2021-02-24
 * `fluvio cluster upgrade` ([#709](https://github.com/infinyon/fluvio/pull/709))
 * `install.sh` script works with `VERSION=latest` for prereleases([#812](https://github.com/infinyon/fluvio/pull/812))
 * Fix stream fetch ([#769](https://github.com/infinyon/fluvio/pull/769))
