@@ -1607,7 +1607,7 @@ dependencies = [
  "serde_json",
  "syn",
  "tokio",
- "trybuild",
+ "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
 ]
 
 [[package]]
@@ -1678,6 +1678,7 @@ dependencies = [
  "quote",
  "syn",
  "tracing",
+ "trybuild 1.0.42 (git+https://github.com/infinyon/trybuild?branch=check_option)",
 ]
 
 [[package]]
@@ -1788,7 +1789,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
- "trybuild",
+ "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
 ]
 
 [[package]]
@@ -4558,6 +4559,19 @@ name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
+
+[[package]]
+name = "trybuild"
+version = "1.0.42"
+source = "git+https://github.com/infinyon/trybuild?branch=check_option#271081028a8b10104c5ab6eb1861e35fd23e156e"
+dependencies = [
+ "glob",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "termcolor",
+ "toml",
+]
 
 [[package]]
 name = "trybuild"

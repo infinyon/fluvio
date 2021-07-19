@@ -22,4 +22,5 @@ version = "1.0.0"
 features = ["full"]
 
 [dev-dependencies]
+trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
 fluvio-protocol = { version = "0.5.1", path = "../", features = ["derive", "api"] }
