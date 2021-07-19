@@ -8,9 +8,7 @@ use std::io::ErrorKind;
 
 use tracing::trace;
 
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
-use dataplane::core::Version;
+use dataplane::core::{Encoder, Decoder, Version};
 use dataplane::bytes::{Buf, BufMut};
 use dataplane::api::Request;
 use fluvio_controlplane_metadata::topic::TopicSpec;

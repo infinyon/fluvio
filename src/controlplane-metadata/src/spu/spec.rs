@@ -17,8 +17,7 @@ use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::SpuId;
 use flv_util::socket_helpers::ServerAddress;
 
-use dataplane::derive::{Decoder, Encoder};
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 use dataplane::bytes::{Buf, BufMut};
 use dataplane::core::Version;
 

@@ -6,11 +6,8 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
-use dataplane::derive::Decoder;
-use dataplane::derive::Encoder;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;

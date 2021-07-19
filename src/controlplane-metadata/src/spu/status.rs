@@ -7,7 +7,7 @@
 //!
 use std::fmt;
 
-use dataplane::derive::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]

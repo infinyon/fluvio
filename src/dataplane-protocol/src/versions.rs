@@ -4,7 +4,6 @@ use fluvio_protocol::bytes::{BufMut, Buf};
 
 use crate::ErrorCode;
 use crate::api::Request;
-use crate::derive::{Decoder, Encoder};
 
 pub const VERSIONS_API_KEY: u16 = 18;
 

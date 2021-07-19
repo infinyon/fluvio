@@ -10,7 +10,6 @@ use bytes::BytesMut;
 use tracing::trace;
 
 use dataplane::core::{Encoder, Decoder, Version};
-use dataplane::derive::{Decoder, Encoder};
 use dataplane::record::{RecordSet, FileRecordSet};
 use dataplane::api::Request;
 use dataplane::ErrorCode;

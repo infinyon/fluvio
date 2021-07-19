@@ -6,8 +6,6 @@ use crate::api::Request;
 
 use crate::core::Decoder;
 use crate::core::Encoder;
-use crate::derive::Decoder;
-use crate::derive::Encoder;
 use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;

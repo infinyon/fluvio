@@ -1,8 +1,7 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use crate::derive::Decoder;
-use crate::derive::Encoder;
+use crate::derive::{Encoder, Decoder};
 
 pub type Offset = i64;
 pub type Size = u32;

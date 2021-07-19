@@ -2,7 +2,7 @@
 
 use std::fmt;
 
-use dataplane::derive::*;
+use dataplane::core::{Encoder, Decoder};
 
 #[derive(Encoder, Decoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(

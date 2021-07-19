@@ -10,8 +10,6 @@ use crate::core::bytes::BufMut;
 use crate::core::Decoder;
 use crate::core::Encoder;
 use crate::core::Version;
-use crate::derive::Decoder;
-use crate::derive::Encoder;
 
 use crate::Offset;
 use crate::Size;

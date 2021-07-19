@@ -8,7 +8,7 @@
 use std::collections::BTreeMap;
 use std::fmt;
 
-use dataplane::derive::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 use fluvio_types::{ReplicaMap, SpuId};
 
 // -----------------------------------

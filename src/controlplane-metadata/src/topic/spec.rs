@@ -16,8 +16,7 @@ use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAss
 
 use dataplane::core::Version;
 use dataplane::bytes::{Buf, BufMut};
-use dataplane::derive::{Decoder, Encoder};
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(

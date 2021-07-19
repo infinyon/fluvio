@@ -5,8 +5,7 @@
 use std::fmt;
 
 use dataplane::api::Request;
-use dataplane::derive::Decoder;
-use dataplane::derive::Encoder;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::PartitionOffset;
 use dataplane::ReplicaKey;
 

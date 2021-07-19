@@ -11,13 +11,10 @@ use once_cell::sync::Lazy;
 use bytes::Buf;
 use bytes::BufMut;
 
-use crate::core::Decoder;
+use crate::core::{Encoder, Decoder};
 use crate::core::DecoderVarInt;
-use crate::core::Encoder;
 use crate::core::EncoderVarInt;
 use crate::core::Version;
-use crate::derive::Decoder;
-use crate::derive::Encoder;
 
 use crate::batch::Batch;
 use crate::Offset;

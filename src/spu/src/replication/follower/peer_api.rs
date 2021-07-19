@@ -4,9 +4,7 @@ use std::convert::TryInto;
 use tracing::trace;
 
 use dataplane::bytes::Buf;
-use dataplane::core::Decoder;
-use dataplane::derive::Encoder;
-
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::api_key::FollowerPeerApiEnum;

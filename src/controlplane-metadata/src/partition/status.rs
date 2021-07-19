@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::slice::Iter;
 
-use dataplane::derive::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 use dataplane::Offset;
 use fluvio_types::SpuId;
 

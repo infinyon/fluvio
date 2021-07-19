@@ -5,8 +5,7 @@
 //!
 //! Response sent to client. Sends entity name, error code and error message.
 //!
-use dataplane::derive::Decoder;
-use dataplane::derive::Encoder;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::ErrorCode;
 
 use crate::ApiError;

@@ -15,7 +15,7 @@ use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 
 use dataplane::api::api_decode;
-use dataplane::derive::Encoder;
+use dataplane::core::Encoder;
 use dataplane::versions::ApiVersionsRequest;
 
 use super::objects::*;

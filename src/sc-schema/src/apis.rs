@@ -4,7 +4,7 @@
 //! Stores Api Keys supported by the SC.
 //!
 
-use dataplane::derive::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 
 // Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
 static_assertions::const_assert_eq!(

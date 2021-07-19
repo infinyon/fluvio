@@ -1,5 +1,4 @@
-use dataplane::derive::Encoder;
-use dataplane::derive::Decoder;
+use dataplane::core::{Encoder, Decoder};
 
 /// Api Key for Spu Client API (from server to client)
 #[repr(u16)]

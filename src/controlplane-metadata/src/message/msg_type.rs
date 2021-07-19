@@ -9,8 +9,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt;
 
-use dataplane::derive::{Decoder, Encoder};
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 
 use crate::store::actions::*;
 use crate::core::*;

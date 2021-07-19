@@ -3,8 +3,6 @@ use std::marker::PhantomData;
 
 use crate::core::Decoder;
 use crate::core::Encoder;
-use crate::derive::Encoder;
-use crate::derive::Decoder;
 use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;

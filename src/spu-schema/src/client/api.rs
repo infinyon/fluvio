@@ -6,7 +6,7 @@ use std::convert::TryInto;
 use std::io::Error as IoError;
 
 use dataplane::bytes::Buf;
-use dataplane::derive::Encoder;
+use dataplane::core::Encoder;
 
 use dataplane::api::RequestMessage;
 

@@ -1,4 +1,4 @@
-use dataplane::derive::{Encoder, Decoder};
+use dataplane::core::{Encoder, Decoder};
 
 #[repr(u16)]
 #[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]

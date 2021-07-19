@@ -1,4 +1,4 @@
-use dataplane::derive::{Decoder, Encoder};
+use dataplane::core::{Decoder, Encoder};
 
 // Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
 static_assertions::const_assert_eq!(
