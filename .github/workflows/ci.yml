@@ -23,6 +23,7 @@ on:
         default: ""
 
 env:
+  CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
 
 jobs:
