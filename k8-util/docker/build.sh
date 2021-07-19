@@ -18,7 +18,7 @@ main() {
   local -r K8=$1
   local -r tmp_dir=$(mktemp -d -t fluvio-docker-image-XXXXXX)
 
-  if [ "$K8" = "MINIKUBE" ]; then
+  if [ "$K8" = "minikube" ]; then
     echo "Setting Minikube build context"
     eval $(minikube -p minikube docker-env)
   fi
