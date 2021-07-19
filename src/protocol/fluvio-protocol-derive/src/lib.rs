@@ -23,7 +23,6 @@ use syn::parse_macro_input;
 /// ```
 /// use std::io::Cursor;
 /// use fluvio_protocol::Decoder;
-/// use fluvio_protocol::derive::Decoder;
 ///
 /// #[derive(Default, Decoder)]
 /// pub struct SimpleRecord {
@@ -45,7 +44,7 @@ use syn::parse_macro_input;
 /// So this works
 ///
 /// ```
-/// # use fluvio_protocol::derive::Decoder;
+/// # use fluvio_protocol::Decoder;
 /// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
 /// #[derive(Decoder)]
 /// pub enum ThreeChoice {
@@ -58,7 +57,7 @@ use syn::parse_macro_input;
 /// Also, enum without integer literal works as well
 ///
 /// ```
-/// # use fluvio_protocol::derive::Decoder;
+/// # use fluvio_protocol::Decoder;
 /// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
 /// #[derive(Decoder)]
 /// pub enum ThreeChoice {
@@ -95,7 +94,6 @@ pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use fluvio_protocol::Encoder;
-/// use fluvio_protocol::derive::Encoder;
 ///
 /// #[derive(Encoder)]
 /// pub struct SimpleRecord {
@@ -135,8 +133,7 @@ pub fn fluvio_api(tokens: TokenStream) -> TokenStream {
 /// # Examples
 ///
 /// ```
-/// use fluvio_protocol::derive::Decoder;
-/// use fluvio_protocol::derive::Encoder;
+/// use fluvio_protocol::{Encoder, Decoder};
 /// use fluvio_protocol::api::Request;
 /// use fluvio_protocol::derive::RequestApi as Request;
 ///
