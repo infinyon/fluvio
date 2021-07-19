@@ -20,4 +20,4 @@ bytes = "1"
 fluvio-types = { path = "../types", version = "0.2.0" }
 fluvio-controlplane-metadata = { path = "../controlplane-metadata", version = "0.9.1" }
 fluvio-protocol = { path = "../protocol", version = "0.6" }
-dataplane = { version = "0.5.1", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.6", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" }
