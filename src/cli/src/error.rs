@@ -45,6 +45,10 @@ pub enum CliError {
     WhichError(#[from] which::Error),
     #[error(transparent)]
     HttpError(#[from] HttpError),
+
+    #[error(transparent)]
+    TlsError(#[from] fluvio_future::openssl::TlsError),
+
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
     #[error("Unknown error: {0}")]

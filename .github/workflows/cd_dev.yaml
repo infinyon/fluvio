@@ -9,26 +9,33 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
-    branches: [master]
+#  push:
+#    branches: [master]
 #  pull_request:
 #    branches: [master]
+  workflow_run:
+    workflows: [Publish]
+    branches: [master]
+    types: [completed]
   workflow_dispatch:
 
 jobs:
-
-  composite_action_test:
-    name: Composite Action Test
+  fluvio_action_test:
+    name: Fluvio Action Test (${{ matrix.os }}, ${{ matrix.version }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
+        version: [stable, latest]
 
     steps:
       - uses: actions/checkout@v2
-      - uses: ./
-        name: Install Fluvio Local Cluster
+      - name: Install Fluvio Local Cluster
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
       - name: Fluvio command test
         continue-on-error: true
         run: |

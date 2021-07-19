@@ -19,7 +19,7 @@ path = "src/bin/main.rs"
 doc = false
 
 [features]
-default = ["consumer"]
+default = ["consumer", "k8s"]
 consumer = [
     "atty",
     "ctrlc",

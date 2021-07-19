@@ -54,6 +54,11 @@ else
 	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 endif
 
+build-cli-minimal: install_rustup_target
+	# https://github.com/infinyon/fluvio/issues/1255
+	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer
+
+
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
@@ -201,7 +206,7 @@ build_smartstreams:
 run-all-unit-test: build_smartstreams install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
-	make test-all -C src/protocol	
+	make test-all -C src/protocol
 
 run-unstable-test:build_smartstreams install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
@@ -212,7 +217,7 @@ run-all-doc-test: install_rustup_target
 run-client-doc-test: install_rustup_target
 	cargo test --all-features --doc -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 	cargo test --all-features --doc -p fluvio-cluster $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
-	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)	
+	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 
 clean_build:
