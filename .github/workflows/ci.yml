@@ -237,9 +237,10 @@ jobs:
         with:
           name: flv-test-x86_64-unknown-linux-musl
           path: .
-      - run: chmod +x ~/.fluvio/extensions/fluvio-run
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+      - name: Print extension artifacts and mark executable
+        run: cd ~/.fluvio/extensions && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h
       - name: Setup
         run: ./fluvio cluster start --setup --local --develop
       - name: Run smoke-test
@@ -247,6 +248,7 @@ jobs:
         run: |
           make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
       - run: minikube delete
+      - run: rm -rf ~/.fluvio
       - name: Upload SC log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
