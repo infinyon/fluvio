@@ -39,6 +39,7 @@ jobs:
           - armv7-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
+          - x86_64-pc-windows-msvc
         rust: [stable]
         binary: [fluvio]
         include:
@@ -51,7 +52,14 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
-            run: make build-cli
+            run: make build-cli-minimal
+
+          - os: windows-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-msvc
+            binary: fluvio
+            run: make build-cli-minimal
+
           - os: macos-latest
             rust: stable
             rust-target: x86_64-apple-darwin
