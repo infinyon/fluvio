@@ -14,7 +14,7 @@ const CONFIG_MAP_NAME: &str = "spu-k8";
 #[derive(Debug)]
 pub struct ScK8Config {
     pub image: String,
-    pub storage_class: String,
+    pub storage_class: Option<String>,
     pub resources: Option<ResourceRequirements>,
     pub pod_security_context: Option<PodSecurityContext>,
     pub node_selector: HashMap<String, String>,
@@ -34,9 +34,7 @@ impl ScK8Config {
             ClientError::Other("image not found in ConfigMap spu-k8 data".to_owned())
         })?;
 
-        let storage_class = data.remove("storageClass").ok_or_else(|| {
-            ClientError::Other("storageClass not found in ConfigMap spu-k8 data".to_owned())
-        })?;
+        let storage_class = data.remove("storageClass");
 
         let resources = if let Some(resources_string) = data.remove("resources") {
             serde_json::from_str(&resources_string)?
