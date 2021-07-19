@@ -1,22 +1,23 @@
 # Release process
 
-To do a "full release", the core steps are:
-* Publish all updated crates (this may be a little annoying until it's automated).
-* Bump up version `VERSION` file.
-* Kick off release flow with github `release` action.
-* Rebase master into stable
+Prior to releasing, the release manager should check the following:
 
-## Release Checklist
+- [ ] Confirm that the sample code on the [fluvio.io] homepage is correct (Rust/Node/Python)
+- [ ] Review the "getting started" docs on fluvio.io/docs
 
-There might be only a few steps to release but the release manager should
-verify the following:
+[fluvio.io]: https://fluvio.io
 
-- [ ] Publish all updated crates.
-- [ ] Bump up version `VERSION` file.
-- [ ] Review/run sample code on Home Page - Rust/Node/Python
-- [ ] Review getting started docs on fluvio.io/docs
-- [ ] Rebase master into stable
-- [ ] Kick off release flow with github `release` action.
-- [ ] Announce the release on Discord and twitter
-- [ ] Update `VERSION` file to `alpha-0` for the next release
-- [ ] Add Unreleased section to `CHANGELOG.md`.
+To actually perform the release, the core steps are:
+
+- Run the `release.yml` workflow on GitHub Actions
+- Wait for workflow to complete successfully and apply `vX.Y.Z` tag to git
+- Publish any crates `fluvio` client depends on, followed by `fluvio` crate itself
+- Fast-forward `stable` branch to match `master` (may become automated)
+- Push new commit with updated `VERSION` and `CHANGELOG.md` files
+
+After performing the release, the release manager should do the following in order
+to prepare for the next release and announce the current release to the community:
+
+- [ ] Bump up the version in the `VERSION` file.
+- [ ] Add UNRELEASED section for new version to `CHANGELOG.md`.
+- [ ] Announce the release on Discord and Twitter.
