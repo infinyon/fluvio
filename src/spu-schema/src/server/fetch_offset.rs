@@ -4,8 +4,8 @@
 //! API that allows CLI to fetch topic offsets.
 use std::fmt;
 
-use dataplane::api::Request;
 use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
 use dataplane::PartitionOffset;
 use dataplane::ReplicaKey;
 

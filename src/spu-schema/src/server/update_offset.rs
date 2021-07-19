@@ -2,8 +2,8 @@
 //! # Update Offsets
 //!
 
-use dataplane::api::Request;
 use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
 use dataplane::Offset;
 
 use crate::errors::ErrorCode;

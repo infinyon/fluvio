@@ -1,10 +1,10 @@
 #![allow(clippy::assign_op_pattern)]
 
 use std::fmt::Debug;
+use bytes::Buf;
 
-use dataplane::bytes::Buf;
-use dataplane::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
 use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
 
 pub type AuthorizationScopes = Vec<String>;
 

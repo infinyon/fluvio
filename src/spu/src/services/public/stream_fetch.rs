@@ -9,12 +9,8 @@ use tokio::select;
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, FlvSocketError};
-use dataplane::{
-    ErrorCode,
-    api::{RequestMessage, RequestHeader},
-    fetch::FetchablePartitionResponse,
-    record::RecordSet,
-};
+use fluvio_protocol::api::{RequestMessage, RequestHeader};
+use dataplane::{ErrorCode, fetch::FetchablePartitionResponse, record::RecordSet};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{

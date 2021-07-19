@@ -7,7 +7,7 @@
 use tracing::{trace, instrument};
 use std::io::Error;
 
-use dataplane::api::{RequestMessage, ResponseMessage};
+use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::objects::{DeleteRequest};
 use fluvio_auth::{AuthContext};

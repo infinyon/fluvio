@@ -2,9 +2,8 @@
 
 use std::fmt;
 
-use dataplane::api::Request;
-use fluvio_protocol::Decoder;
-use fluvio_protocol::Encoder;
+use fluvio_protocol::api::Request;
+use fluvio_protocol::{Encoder, Decoder};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::InternalScKey;

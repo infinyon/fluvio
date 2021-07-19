@@ -58,7 +58,7 @@ impl MetadataStores {
 
     /// start watch for spu
     pub async fn start_watch_for_spu(&self) -> Result<(), FlvSocketError> {
-        use dataplane::api::RequestMessage;
+        use fluvio_protocol::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         debug!("start watch for spu");
@@ -76,7 +76,7 @@ impl MetadataStores {
     }
 
     pub async fn start_watch_for_partition(&self) -> Result<(), FlvSocketError> {
-        use dataplane::api::RequestMessage;
+        use fluvio_protocol::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         debug!("start watch for partition");
@@ -94,7 +94,7 @@ impl MetadataStores {
     }
 
     pub async fn start_watch_for_topic(&self) -> Result<(), FlvSocketError> {
-        use dataplane::api::RequestMessage;
+        use fluvio_protocol::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
         debug!("start watch for topic");

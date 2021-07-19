@@ -5,8 +5,7 @@ use std::sync::Arc;
 
 use tracing::{debug, trace, instrument};
 
-use dataplane::api::RequestMessage;
-use dataplane::api::Request;
+use fluvio_protocol::api::{Request, RequestMessage};
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};

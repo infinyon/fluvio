@@ -17,6 +17,7 @@ use_serde = ["fluvio-controlplane-metadata/use_serde", "serde"]
 [dependencies]
 log = "0.4.8"
 tracing = "0.1.19"
+bytes = "1"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 thiserror = "1.0.20"
 static_assertions = "1.1.0"

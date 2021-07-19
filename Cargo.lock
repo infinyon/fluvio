@@ -1374,6 +1374,7 @@ name = "fluvio-auth"
 version = "0.6.1"
 dependencies = [
  "async-trait",
+ "bytes",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
@@ -1488,6 +1489,7 @@ dependencies = [
 name = "fluvio-controlplane"
 version = "0.7.1"
 dependencies = [
+ "bytes",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-protocol",
@@ -1501,6 +1503,7 @@ name = "fluvio-controlplane-metadata"
 version = "0.9.2"
 dependencies = [
  "async-trait",
+ "bytes",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
@@ -1745,6 +1748,7 @@ dependencies = [
 name = "fluvio-sc-schema"
 version = "0.8.1"
 dependencies = [
+ "bytes",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-protocol",

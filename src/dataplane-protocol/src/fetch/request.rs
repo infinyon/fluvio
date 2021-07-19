@@ -2,10 +2,10 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use crate::Isolation;
-use crate::api::Request;
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol::api::Request;
 
 use crate::record::RecordSet;
 

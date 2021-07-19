@@ -5,8 +5,8 @@ use tracing::{debug, trace, error, instrument};
 
 use fluvio_types::event::SimpleEvent;
 use fluvio_socket::ExclusiveFlvSink;
-use dataplane::core::{Encoder, Decoder};
-use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, Metadata, MetadataUpdate};
 
 use fluvio_controlplane_metadata::core::Spec;

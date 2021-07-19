@@ -18,7 +18,7 @@ use dataplane::{
     },
     record::RecordSet,
 };
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::RequestMessage;
 use dataplane::record::Record;
 use dataplane::Offset;
 use dataplane::fixture::BatchProducer;

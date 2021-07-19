@@ -7,9 +7,7 @@ use std::io::ErrorKind;
 use content_inspector::{inspect, ContentType};
 use tracing::{trace, warn};
 use once_cell::sync::Lazy;
-
-use bytes::Buf;
-use bytes::BufMut;
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 use fluvio_protocol::{Encoder, Decoder, Version, DecoderVarInt, EncoderVarInt};
 
@@ -489,9 +487,7 @@ mod test {
     use std::io::Cursor;
     use std::io::Error as IoError;
 
-    use crate::core::Decoder;
-    use crate::core::Encoder;
-    use crate::record::Record;
+    use fluvio_protocol::{Encoder, Decoder};
 
     #[test]
     fn test_decode_encode_record() -> Result<(), IoError> {
@@ -618,7 +614,6 @@ mod test {
 
 #[cfg(feature = "file")]
 pub use file::*;
-use crate::bytes::{Bytes, BytesMut};
 
 #[cfg(feature = "file")]
 mod file {
@@ -628,16 +623,13 @@ mod file {
     use std::io::ErrorKind;
 
     use tracing::trace;
+    use bytes::Buf;
     use bytes::BufMut;
     use bytes::BytesMut;
 
     use fluvio_future::file_slice::AsyncFileSlice;
-    use crate::core::bytes::Buf;
-    use crate::core::Decoder;
-    use crate::core::Encoder;
-    use crate::core::Version;
-    use crate::store::FileWrite;
-    use crate::store::StoreValue;
+    use fluvio_protocol::{Encoder, Decoder, Version};
+    use fluvio_protocol::store::{FileWrite, StoreValue};
 
     #[derive(Default, Debug)]
     pub struct FileRecordSet(AsyncFileSlice);

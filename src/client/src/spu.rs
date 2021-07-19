@@ -5,8 +5,7 @@ use tracing::{debug, trace, instrument};
 use async_lock::Mutex;
 
 use dataplane::ReplicaKey;
-use dataplane::api::Request;
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::{Request, RequestMessage};
 use fluvio_types::SpuId;
 use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, FlvSocketError, AsyncResponse};
 use crate::FluvioError;

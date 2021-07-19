@@ -1,6 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
-use dataplane::api::Request;
+use fluvio_protocol::api::Request;
 use fluvio_protocol::{Decoder, Encoder};
 use fluvio_types::SpuId;
 

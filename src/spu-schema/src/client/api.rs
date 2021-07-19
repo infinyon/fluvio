@@ -5,14 +5,9 @@ use tracing::trace;
 use std::convert::TryInto;
 use std::io::Error as IoError;
 
-use dataplane::bytes::Buf;
+use bytes::Buf;
 use fluvio_protocol::Encoder;
-
-use dataplane::api::RequestMessage;
-
-use dataplane::api::api_decode;
-use dataplane::api::RequestHeader;
-use dataplane::api::ApiMessage;
+use fluvio_protocol::api::{RequestMessage, RequestHeader, ApiMessage, api_decode};
 
 use super::SpuClientApiKey;
 use super::offset::ReplicaOffsetUpdateRequest;

@@ -12,10 +12,9 @@
 //!
 //! In subsequent releases, Register SPU will carry additional credentials for mTLS
 //!
-use dataplane::api::Request;
 use dataplane::ErrorCode;
-use fluvio_protocol::Decoder;
-use fluvio_protocol::Encoder;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
 use fluvio_types::SpuId;
 
 use crate::InternalScKey;

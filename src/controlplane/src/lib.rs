@@ -13,6 +13,6 @@ pub use self::requests::register_spu::*;
 pub use self::requests::update_lrs::*;
 pub use self::requests::remove::*;
 
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::RequestMessage;
 
 pub type UpdateSpuRequestMessage = RequestMessage<UpdateSpuRequest>;

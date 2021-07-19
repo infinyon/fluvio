@@ -6,11 +6,11 @@
 use std::io::Error;
 use std::io::ErrorKind;
 
+use bytes::{Buf, BufMut};
 use tracing::trace;
 
-use dataplane::core::{Encoder, Decoder, Version};
-use dataplane::bytes::{Buf, BufMut};
-use dataplane::api::Request;
+use fluvio_protocol::{Encoder, Decoder, Version};
+use fluvio_protocol::api::Request;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuKey;

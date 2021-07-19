@@ -3,8 +3,8 @@ use std::marker::PhantomData;
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::derive::FluvioDefault;
+use fluvio_protocol::api::Request;
 
-use crate::api::Request;
 use crate::record::RecordSet;
 
 use super::ProduceResponse;
@@ -78,17 +78,15 @@ pub use file::*;
 
 #[cfg(feature = "file")]
 mod file {
+    use super::*;
     use std::io::Error as IoError;
 
     use tracing::trace;
     use bytes::BytesMut;
 
-    use crate::core::Version;
     use crate::record::FileRecordSet;
-    use crate::store::FileWrite;
-    use crate::store::StoreValue;
-
-    use super::*;
+    use fluvio_protocol::Version;
+    use fluvio_protocol::store::{FileWrite, StoreValue};
 
     pub type FileProduceRequest = ProduceRequest<FileRecordSet>;
     pub type FileTopicRequest = TopicProduceData<FileRecordSet>;

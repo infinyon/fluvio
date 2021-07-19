@@ -3,9 +3,8 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use dataplane::api::Request;
-use fluvio_protocol::Decoder;
-use fluvio_protocol::Encoder;
+use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use fluvio_controlplane_metadata::partition::ReplicaStatus;
 

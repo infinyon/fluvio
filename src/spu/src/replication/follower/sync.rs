@@ -9,12 +9,11 @@ use std::marker::PhantomData;
 use bytes::BytesMut;
 use tracing::trace;
 
-use fluvio_protocol::{Decoder, Encoder, Version};
-use dataplane::record::{RecordSet, FileRecordSet};
-use dataplane::api::Request;
 use dataplane::ErrorCode;
-use dataplane::store::StoreValue;
-use dataplane::store::FileWrite;
+use dataplane::record::{RecordSet, FileRecordSet};
+use fluvio_protocol::{Decoder, Encoder, Version};
+use fluvio_protocol::api::Request;
+use fluvio_protocol::store::{StoreValue, FileWrite};
 use fluvio_storage::SlicePartitionResponse;
 use fluvio_future::file_slice::AsyncFileSlice;
 

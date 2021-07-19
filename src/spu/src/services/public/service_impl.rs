@@ -10,7 +10,8 @@ use fluvio_socket::FluvioSocket;
 use fluvio_socket::FlvSocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
-use dataplane::{ErrorCode, api::RequestMessage};
+use fluvio_protocol::api::RequestMessage;
+use dataplane::ErrorCode;
 
 use crate::core::DefaultSharedGlobalContext;
 use super::api_versions::handle_kf_lookup_version_request;
@@ -134,7 +135,7 @@ mod offset {
     use fluvio_spu_schema::server::update_offset::{
         OffsetUpdateStatus, UpdateOffsetsRequest, UpdateOffsetsResponse,
     };
-    use dataplane::api::ResponseMessage;
+    use fluvio_protocol::api::ResponseMessage;
 
     use super::{DefaultSharedGlobalContext, RequestMessage, ErrorCode};
 

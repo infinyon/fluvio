@@ -1,8 +1,7 @@
 use std::io::Error as IoError;
 
-use dataplane::core::{Version, Decoder, Encoder};
-use dataplane::bytes::Buf;
-use dataplane::bytes::BufMut;
+use bytes::{Buf, BufMut};
+use fluvio_protocol::{Version, Decoder, Encoder};
 use dataplane::batch::BatchRecords;
 
 use crate::batch::FileBatchStream;

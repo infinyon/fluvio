@@ -21,7 +21,7 @@ use fluvio_future::fs::BoundedFileOption;
 use fluvio_future::fs::BoundedFileSinkError;
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
-use dataplane::core::Encoder;
+use fluvio_protocol::Encoder;
 
 use crate::util::generate_file_name;
 use crate::validator::validate;
@@ -372,7 +372,7 @@ mod tests {
     use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
     use dataplane::batch::{Batch, MemoryRecords};
-    use dataplane::core::{Decoder, Encoder};
+    use fluvio_protocol::{Decoder, Encoder};
     use dataplane::fixture::create_batch;
     use dataplane::fixture::read_bytes_from_file;
 

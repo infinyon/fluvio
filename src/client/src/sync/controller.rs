@@ -10,8 +10,7 @@ use tracing::{error, debug, instrument};
 use futures_util::stream::StreamExt;
 use event_listener::{Event, EventListener};
 
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
+use fluvio_protocol::{Encoder, Decoder};
 use fluvio_socket::AsyncResponse;
 use fluvio_sc_schema::objects::WatchRequest;
 use fluvio_sc_schema::objects::WatchResponse;

@@ -3,7 +3,7 @@
 use std::fmt::Debug;
 
 use fluvio_protocol::{Encoder, Decoder};
-use dataplane::api::Request;
+use fluvio_protocol::api::Request;
 
 use crate::Status;
 use crate::AdminPublicApiKey;
@@ -28,18 +28,18 @@ impl AdminRequest for CreateRequest {}
 
 #[allow(clippy::module_inception)]
 mod create {
+    use super::*;
 
     use std::io::Error;
     use std::io::ErrorKind;
 
+    use bytes::{Buf, BufMut};
     use tracing::trace;
 
-    use dataplane::core::Version;
-    use dataplane::bytes::{Buf, BufMut};
+    use fluvio_protocol::Version;
     use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_controlplane_metadata::spu::CustomSpuSpec;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
-    use super::*;
 
     const TOPIC: u8 = 0;
     const CUSTOM_SPU: u8 = 1;

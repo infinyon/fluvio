@@ -396,7 +396,7 @@ mod tests {
     use fluvio_future::test_async;
     use dataplane::{Isolation, batch::Batch};
     use dataplane::{Offset, ErrorCode};
-    use dataplane::core::{Decoder, Encoder};
+    use fluvio_protocol::{Decoder, Encoder};
     use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::RecordSet;
     use dataplane::batch::MemoryRecords;

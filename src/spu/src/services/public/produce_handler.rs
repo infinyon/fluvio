@@ -8,8 +8,7 @@ use dataplane::ErrorCode;
 use dataplane::produce::{
     DefaultProduceRequest, ProduceResponse, TopicProduceResponse, PartitionProduceResponse,
 };
-use dataplane::api::RequestMessage;
-use dataplane::api::ResponseMessage;
+use fluvio_protocol::api::{RequestMessage, ResponseMessage};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::core::DefaultSharedGlobalContext;

@@ -5,21 +5,20 @@
 //!
 //! Spu Spec metadata information cached locally.
 //!
+use std::fmt;
 use std::convert::TryFrom;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::fmt;
 
-use flv_util::socket_helpers::EndPoint as SocketEndPoint;
-use flv_util::socket_helpers::EndPointEncryption;
+use bytes::{Buf, BufMut};
+use fluvio_types::SpuId;
 use fluvio_types::defaults::{SPU_PRIVATE_HOSTNAME, SPU_PRIVATE_PORT};
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
-use fluvio_types::SpuId;
+use flv_util::socket_helpers::EndPoint as SocketEndPoint;
+use flv_util::socket_helpers::EndPointEncryption;
 use flv_util::socket_helpers::ServerAddress;
 
-use fluvio_protocol::{Encoder, Decoder};
-use dataplane::bytes::{Buf, BufMut};
-use dataplane::core::Version;
+use fluvio_protocol::{Encoder, Decoder, Version};
 
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(

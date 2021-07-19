@@ -8,7 +8,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 
 use fluvio_protocol::{Encoder, Decoder};
-use dataplane::api::Request;
+use fluvio_protocol::api::Request;
 
 use fluvio_controlplane_metadata::core::*;
 use fluvio_controlplane_metadata::topic::TopicSpec;
@@ -133,18 +133,15 @@ where
 
 // later this can be written using procedure macro
 mod encoding {
+    use super::*;
 
     use std::io::Error;
     use std::io::ErrorKind;
 
+    use bytes::{Buf, BufMut};
     use tracing::trace;
 
-    use dataplane::core::Encoder;
-    use dataplane::core::Decoder;
-    use dataplane::core::Version;
-    use dataplane::bytes::{Buf, BufMut};
-
-    use super::*;
+    use fluvio_protocol::{Encoder, Decoder, Version};
 
     impl ListRequest {
         /// type represent as string

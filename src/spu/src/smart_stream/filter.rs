@@ -7,7 +7,7 @@ use anyhow::{Result, Error, anyhow};
 use tracing::debug;
 use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 
-use dataplane::core::{Decoder, Encoder};
+use fluvio_protocol::{Encoder, Decoder};
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
 use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};

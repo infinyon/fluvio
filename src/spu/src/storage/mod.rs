@@ -7,8 +7,8 @@ use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 use fluvio_controlplane_metadata::partition::{ReplicaKey};
 use dataplane::{Isolation, record::RecordSet};
-use dataplane::core::Encoder;
-use dataplane::{Offset};
+use fluvio_protocol::Encoder;
+use dataplane::Offset;
 use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError, OffsetInfo};
 use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;

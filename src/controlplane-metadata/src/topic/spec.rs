@@ -11,12 +11,10 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 
 use tracing::trace;
+use bytes::{Buf, BufMut};
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
-
-use dataplane::core::Version;
-use dataplane::bytes::{Buf, BufMut};
-use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::{Encoder, Decoder, Version};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(

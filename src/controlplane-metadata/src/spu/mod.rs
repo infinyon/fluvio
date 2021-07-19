@@ -12,11 +12,10 @@ mod k8;
 pub use k8::*;
 
 mod metadata {
+    use super::*;
 
     use crate::core::{Spec, Status};
     use crate::extended::{ObjectType, SpecExt};
-
-    use super::*;
 
     impl Spec for SpuSpec {
         const LABEL: &'static str = "SPU";
@@ -56,22 +55,17 @@ mod metadata {
 }
 
 mod custom_metadata {
+    use super::*;
 
+    use std::fmt;
     use std::io::Error;
     use std::io::ErrorKind;
-    use std::fmt;
-
+    use bytes::{Buf, BufMut};
     use tracing::trace;
-
-    use dataplane::core::Encoder;
-    use dataplane::core::Decoder;
-    use dataplane::core::Version;
-    use dataplane::bytes::{Buf, BufMut};
+    use fluvio_protocol::{Encoder, Decoder, Version};
 
     use crate::core::{Spec, Removable, Creatable};
     use crate::extended::{ObjectType, SpecExt};
-
-    use super::*;
 
     /// this is not real spec but is there to allow passing of parameters
     impl Spec for CustomSpuSpec {

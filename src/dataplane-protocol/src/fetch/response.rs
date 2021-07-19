@@ -139,6 +139,7 @@ pub use file::*;
 
 #[cfg(feature = "file")]
 mod file {
+    use super::*;
 
     use std::io::Error as IoError;
 
@@ -146,11 +147,8 @@ mod file {
     use bytes::BytesMut;
 
     use crate::record::FileRecordSet;
-    use crate::store::FileWrite;
-    use crate::store::StoreValue;
-    use crate::core::Version;
-
-    use super::*;
+    use fluvio_protocol::Version;
+    use fluvio_protocol::store::{FileWrite, StoreValue};
 
     pub type FileFetchResponse = FetchResponse<FileRecordSet>;
     pub type FileTopicResponse = FetchableTopicResponse<FileRecordSet>;

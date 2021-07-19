@@ -1,7 +1,7 @@
 use std::io::Error;
 use tracing::{trace, instrument};
 
-use dataplane::api::{RequestMessage, ResponseMessage, Request};
+use fluvio_protocol::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::versions::{ApiVersionKey, ApiVersionsRequest, ApiVersionsResponse, PlatformVersion};
 use fluvio_sc_schema::objects::*;
 use fluvio_sc_schema::AdminPublicApiKey;

@@ -4,8 +4,8 @@ use std::fmt::Debug;
 
 use tracing::trace;
 
-use crate::core::bytes::Buf;
-use crate::core::bytes::BufMut;
+use bytes::Buf;
+use bytes::BufMut;
 
 use fluvio_protocol::{Encoder, Decoder};
 use fluvio_protocol::Version;
@@ -267,8 +267,7 @@ mod test {
     use std::io::Cursor;
     use std::io::Error as IoError;
 
-    use crate::core::Decoder;
-    use crate::core::Encoder;
+    use fluvio_protocol::{Encoder, Decoder};
     use crate::record::{Record, RecordData};
     use crate::batch::Batch;
     use super::BatchHeader;

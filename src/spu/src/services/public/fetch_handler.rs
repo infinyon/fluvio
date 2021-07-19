@@ -2,7 +2,8 @@ use tracing::{debug, trace, instrument};
 
 use fluvio_socket::ExclusiveFlvSink;
 use fluvio_socket::FlvSocketError;
-use dataplane::{ErrorCode, api::RequestMessage};
+use fluvio_protocol::api::RequestMessage;
+use dataplane::ErrorCode;
 use dataplane::fetch::{FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 

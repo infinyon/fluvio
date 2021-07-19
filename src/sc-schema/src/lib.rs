@@ -31,7 +31,7 @@ pub enum ApiError {
 }
 
 mod admin {
-    use dataplane::api::Request;
+    use fluvio_protocol::api::Request;
 
     pub trait AdminRequest: Request {}
 }

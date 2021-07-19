@@ -7,15 +7,15 @@
 use std::convert::{TryInto};
 use std::io::Error as IoError;
 
+use bytes::Buf;
 use tracing::debug;
 
-use dataplane::bytes::Buf;
-use dataplane::api::{ApiMessage};
-use dataplane::api::RequestHeader;
-use dataplane::api::RequestMessage;
-
-use dataplane::api::api_decode;
 use fluvio_protocol::Encoder;
+use fluvio_protocol::api::ApiMessage;
+use fluvio_protocol::api::RequestHeader;
+use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::api::api_decode;
+
 use dataplane::versions::ApiVersionsRequest;
 
 use super::objects::*;

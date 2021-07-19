@@ -1,12 +1,11 @@
 use std::io::Error as IoError;
 use std::convert::TryInto;
 
+use bytes::Buf;
 use tracing::trace;
 
-use dataplane::bytes::Buf;
 use fluvio_protocol::{Encoder, Decoder};
-
-use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
+use fluvio_protocol::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::api_key::FollowerPeerApiEnum;
 use super::sync::DefaultSyncRequest;

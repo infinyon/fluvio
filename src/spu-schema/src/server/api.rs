@@ -5,15 +5,11 @@ use tracing::trace;
 use std::convert::TryInto;
 use std::io::Error as IoError;
 
-use dataplane::bytes::Buf;
+use bytes::Buf;
 use fluvio_protocol::{Encoder, Decoder};
-use dataplane::api::ApiMessage;
-use dataplane::api::api_decode;
-use dataplane::api::RequestHeader;
-use dataplane::api::RequestMessage;
+use fluvio_protocol::api::{ApiMessage, RequestHeader, RequestMessage, api_decode};
 
 use dataplane::produce::DefaultProduceRequest;
-
 use dataplane::fetch::FileFetchRequest;
 
 use crate::ApiVersionsRequest;

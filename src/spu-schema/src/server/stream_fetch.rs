@@ -6,8 +6,8 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use dataplane::api::Request;
 use fluvio_protocol::{Encoder, Decoder};
+use fluvio_protocol::api::Request;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;
@@ -68,10 +68,9 @@ mod file {
     use log::trace;
     use bytes::BytesMut;
 
-    use dataplane::core::Version;
-    use dataplane::store::StoreValue;
+    use fluvio_protocol::Version;
+    use fluvio_protocol::store::{FileWrite, StoreValue};
     use dataplane::record::FileRecordSet;
-    use dataplane::store::FileWrite;
 
     pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
 
