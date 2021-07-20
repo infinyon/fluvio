@@ -32,7 +32,7 @@ spuPod:
     limits:
       memory: 1Gi
   nodeSelector: {}
-  storageClassName: null
+  storageClassName: "standard"
 
 
 rbac:
