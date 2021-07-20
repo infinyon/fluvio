@@ -9,14 +9,13 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::fmt;
 
-use dataplane::derive::{Decode, Encode};
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 
 use crate::store::actions::*;
 use crate::core::*;
 use crate::store::*;
 
-#[derive(Decode, Encode, Debug, PartialEq, Clone)]
+#[derive(Decoder, Encoder, Debug, PartialEq, Clone)]
 pub enum MsgType {
     UPDATE,
     DELETE,
@@ -28,7 +27,7 @@ impl ::std::default::Default for MsgType {
     }
 }
 
-#[derive(Decode, Encode, Debug, PartialEq, Clone, Default)]
+#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
 pub struct Message<C>
 where
     C: Encoder + Decoder + Debug,

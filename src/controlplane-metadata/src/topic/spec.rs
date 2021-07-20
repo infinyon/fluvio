@@ -16,8 +16,7 @@ use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAss
 
 use dataplane::core::Version;
 use dataplane::bytes::{Buf, BufMut};
-use dataplane::derive::{Decode, Encode};
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(
@@ -261,7 +260,7 @@ impl Encoder for TopicSpec {
 }
 
 /// Topic param
-#[derive(Debug, Clone, Default, PartialEq, Encode, Decode)]
+#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -313,7 +312,7 @@ impl std::fmt::Display for TopicReplicaParam {
 }
 
 /// Hack: field instead of new type to get around encode and decode limitations
-#[derive(Debug, Default, Clone, PartialEq, Encode, Decode)]
+#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMaps {
     maps: Vec<PartitionMap>,
@@ -518,7 +517,7 @@ impl From<(PartitionCount, ReplicationFactor)> for TopicSpec {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct PartitionMap {
     pub id: PartitionId,

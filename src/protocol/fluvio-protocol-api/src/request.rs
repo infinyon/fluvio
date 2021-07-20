@@ -182,8 +182,8 @@ mod test {
     use crate::core::Decoder;
     use crate::core::Encoder;
     use crate::core::Version;
-    use crate::derive::Encode;
-    use crate::derive::Decode;
+    use crate::derive::Encoder;
+    use crate::derive::Decoder;
 
     use super::RequestHeader;
     use super::RequestMessage;
@@ -192,7 +192,7 @@ mod test {
     use crate::Request;
 
     #[repr(u16)]
-    #[derive(PartialEq, Debug, Clone, Copy, Encode, Decode)]
+    #[derive(PartialEq, Debug, Clone, Copy, Encoder, Decoder)]
     #[fluvio(encode_discriminant)]
     pub enum TestApiKey {
         ApiVersion = 0,
@@ -204,7 +204,7 @@ mod test {
         }
     }
 
-    #[derive(Decode, Encode, Debug, Default)]
+    #[derive(Decoder, Encoder, Debug, Default)]
     pub struct ApiVersionRequest {}
 
     impl Request for ApiVersionRequest {
@@ -213,22 +213,23 @@ mod test {
         type Response = ApiVersionResponse;
     }
 
-    #[derive(Encode, Decode, Default, Debug)]
+    #[derive(Encoder, Decoder, Default, Debug)]
     pub struct ApiVersionResponse {
         pub error_code: i16,
         pub api_versions: Vec<ApiVersion>,
         pub throttle_time_ms: i32,
     }
 
-    #[derive(Encode, Decode, Default, Debug)]
+    #[derive(Encoder, Decoder, Default, Debug)]
     pub struct ApiVersion {
         pub api_key: i16,
         pub min_version: i16,
         pub max_version: i16,
     }
 
-    #[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
     #[repr(u16)]
+    #[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
+    #[fluvio(encode_discriminant)]
     pub enum TestApiEnum {
         ApiVersion = 18,
     }

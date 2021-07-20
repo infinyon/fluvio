@@ -10,8 +10,6 @@ use crate::core::bytes::BufMut;
 use crate::core::Decoder;
 use crate::core::Encoder;
 use crate::core::Version;
-use crate::derive::Decode;
-use crate::derive::Encode;
 
 use crate::Offset;
 use crate::Size;
@@ -222,7 +220,7 @@ where
     }
 }
 
-#[derive(Debug, Decode, Encode)]
+#[derive(Debug, Decoder, Encoder)]
 pub struct BatchHeader {
     pub partition_leader_epoch: i32,
     pub magic: i8,

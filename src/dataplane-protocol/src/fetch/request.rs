@@ -6,8 +6,6 @@ use crate::api::Request;
 
 use crate::core::Decoder;
 use crate::core::Encoder;
-use crate::derive::Decode;
-use crate::derive::Encode;
 use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;
@@ -16,7 +14,7 @@ use super::FetchResponse;
 
 pub type DefaultFetchRequest = FetchRequest<RecordSet>;
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchRequest<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -63,7 +61,7 @@ where
     type Response = FetchResponse<R>;
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchableTopic {
     /// The name of the topic to fetch.
     pub name: String,
@@ -72,7 +70,7 @@ pub struct FetchableTopic {
     pub fetch_partitions: Vec<FetchPartition>,
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ForgottenTopic {
     /// The partition name.
     #[fluvio(min_version = 7)]
@@ -83,7 +81,7 @@ pub struct ForgottenTopic {
     pub forgotten_partition_indexes: Vec<i32>,
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchPartition {
     /// The partition index.
     pub partition_index: i32,

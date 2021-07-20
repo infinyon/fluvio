@@ -2,9 +2,7 @@
 
 use std::fmt::Debug;
 
-use dataplane::derive::{Decode, Encode};
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
 use fluvio_controlplane_metadata::core::*;
@@ -66,7 +64,7 @@ impl Default for WatchResponse {
 }
 
 /// updates on metadata
-#[derive(Encode, Decode, Default, Clone, Debug)]
+#[derive(Encoder, Decoder, Default, Clone, Debug)]
 pub struct MetadataUpdate<S>
 where
     S: Spec + Debug + Encoder + Decoder,

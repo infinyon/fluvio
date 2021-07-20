@@ -1,13 +1,13 @@
 #![allow(clippy::assign_op_pattern)]
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 use dataplane::Offset;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use super::LeaderPeerApiEnum;
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct UpdateOffsetRequest {
     pub replicas: Vec<ReplicaOffsetRequest>,
 }
@@ -18,7 +18,7 @@ impl Request for UpdateOffsetRequest {
     type Response = UpdateOffsetResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct ReplicaOffsetRequest {
     pub replica: ReplicaKey,
     pub leo: Offset,
@@ -26,5 +26,5 @@ pub struct ReplicaOffsetRequest {
 }
 
 // no content, this is one way request
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct UpdateOffsetResponse {}

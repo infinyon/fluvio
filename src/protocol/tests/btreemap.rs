@@ -3,9 +3,9 @@ use std::io::Cursor;
 use std::io::Error;
 
 use fluvio_protocol_core::{Decoder, Encoder};
-use fluvio_protocol_derive::{Decode, Encode};
+use fluvio_protocol_derive::{Decoder, Encoder};
 
-#[derive(Encode, Default, Decode, Debug)]
+#[derive(Encoder, Default, Decoder, Debug)]
 pub struct MapHolder {
     values: BTreeMap<i32, Vec<i32>>,
 }

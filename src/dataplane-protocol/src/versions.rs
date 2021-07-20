@@ -4,7 +4,6 @@ use fluvio_protocol::bytes::{BufMut, Buf};
 
 use crate::ErrorCode;
 use crate::api::Request;
-use crate::derive::{Decode, Encode};
 
 pub const VERSIONS_API_KEY: u16 = 18;
 
@@ -12,7 +11,7 @@ pub const VERSIONS_API_KEY: u16 = 18;
 // ApiVersionsRequest
 // -----------------------------------
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct ApiVersionsRequest {}
 
 impl Request for ApiVersionsRequest {
@@ -26,14 +25,14 @@ impl Request for ApiVersionsRequest {
 
 pub type ApiVersions = Vec<ApiVersionKey>;
 
-#[derive(Decode, Encode, Default, Debug, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, PartialEq)]
 pub struct ApiVersionsResponse {
     pub error_code: ErrorCode,
     pub api_keys: ApiVersions,
     pub platform_version: PlatformVersion,
 }
 
-#[derive(Decode, Encode, Default, Clone, Debug, PartialEq)]
+#[derive(Decoder, Encoder, Default, Clone, Debug, PartialEq)]
 pub struct ApiVersionKey {
     pub api_key: i16,
     pub min_version: i16,
@@ -75,7 +74,7 @@ impl Decoder for PlatformVersion {
     where
         T: Buf,
     {
-        // Decode the data as a String
+        // Decoder the data as a String
         let mut string = String::default();
         string.decode(src, version)?;
 

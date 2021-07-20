@@ -1,12 +1,12 @@
 #![allow(clippy::assign_op_pattern)]
 
 use dataplane::api::Request;
-use dataplane::derive::{Decode, Encode};
+use dataplane::derive::{Decoder, Encoder};
 use fluvio_types::SpuId;
 
 use super::SPUPeerApiEnum;
 
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub struct FetchStreamRequest {
     pub spu_id: SpuId,
     pub min_bytes: i32,
@@ -18,7 +18,7 @@ impl Request for FetchStreamRequest {
     type Response = FetchStreamResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct FetchStreamResponse {
     pub spu_id: SpuId,
 }

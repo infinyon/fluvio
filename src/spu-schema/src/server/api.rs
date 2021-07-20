@@ -6,8 +6,7 @@ use std::convert::TryInto;
 use std::io::Error as IoError;
 
 use dataplane::bytes::Buf;
-use dataplane::core::Decoder;
-use dataplane::derive::Encode;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::ApiMessage;
 use dataplane::api::api_decode;
 use dataplane::api::RequestHeader;
@@ -24,7 +23,7 @@ use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
 
 /// Request to Spu Server
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub enum SpuServerRequest {
     /// list of versions supported
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),

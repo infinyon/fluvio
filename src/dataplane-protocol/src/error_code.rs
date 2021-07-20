@@ -5,15 +5,14 @@
 //!
 
 use flv_util::string_helper::upper_cammel_case_to_sentence;
-use crate::derive::Encode;
-use crate::derive::Decode;
+use fluvio_protocol::{Encoder, Decoder};
 
 // -----------------------------------
 // Error Definition & Implementation
 // -----------------------------------
 
 #[repr(i16)]
-#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[derive(Encoder, Decoder, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum ErrorCode {
     UnknownServerError = -1,

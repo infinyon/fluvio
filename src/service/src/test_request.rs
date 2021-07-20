@@ -10,8 +10,8 @@ use fluvio_protocol::api::{
     api_decode, ApiMessage, Request, RequestHeader, RequestMessage, ResponseMessage,
 };
 use fluvio_protocol::bytes::Buf;
-use fluvio_protocol::derive::Decode;
-use fluvio_protocol::derive::Encode;
+use fluvio_protocol::derive::Decoder;
+use fluvio_protocol::derive::Encoder;
 
 use fluvio_socket::FlvSocketError;
 use fluvio_socket::FluvioSocket;
@@ -21,7 +21,7 @@ use crate::call_service;
 use crate::FlvService;
 
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub(crate) enum TestKafkaApiEnum {
     Echo = 1000,
@@ -34,7 +34,7 @@ impl Default for TestKafkaApiEnum {
     }
 }
 
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub(crate) struct EchoRequest {
     msg: String,
 }
@@ -50,28 +50,28 @@ impl Request for EchoRequest {
     type Response = EchoResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub(crate) struct EchoResponse {
     pub msg: String,
 }
 
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub(crate) struct SaveRequest {}
 impl Request for SaveRequest {
     const API_KEY: u16 = TestKafkaApiEnum::Save as u16;
     type Response = SaveResponse;
 }
 
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub(crate) struct SaveResponse {}
 
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub(crate) enum TestApiRequest {
     EchoRequest(RequestMessage<EchoRequest>),
     SaveRequest(RequestMessage<SaveRequest>),
 }
 
-// Added to satisfy Encode/Decode traits
+// Added to satisfy Encoder/Decoder traits
 impl Default for TestApiRequest {
     fn default() -> TestApiRequest {
         TestApiRequest::EchoRequest(RequestMessage::default())

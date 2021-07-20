@@ -3,8 +3,6 @@ use std::marker::PhantomData;
 
 use crate::core::Decoder;
 use crate::core::Encoder;
-use crate::derive::Encode;
-use crate::derive::Decode;
 use crate::derive::FluvioDefault;
 
 use crate::record::RecordSet;
@@ -13,7 +11,7 @@ use crate::Offset;
 
 pub type DefaultFetchResponse = FetchResponse<RecordSet>;
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -51,7 +49,7 @@ where
     }
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchableTopicResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -64,7 +62,7 @@ where
     pub data: PhantomData<R>,
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchablePartitionResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -110,7 +108,7 @@ impl FetchablePartitionResponse<RecordSet> {
     }
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct AbortedTransaction {
     pub producer_id: i64,
     pub first_offset: i64,

@@ -23,9 +23,8 @@ use syn::parse_macro_input;
 /// ```
 /// use std::io::Cursor;
 /// use fluvio_protocol::Decoder;
-/// use fluvio_protocol::derive::Decode;
 ///
-/// #[derive(Default, Decode)]
+/// #[derive(Default, Decoder)]
 /// pub struct SimpleRecord {
 ///     val: u8
 /// }
@@ -39,15 +38,15 @@ use syn::parse_macro_input;
 /// ```
 ///
 ///
-/// Decode applies to either Struct of Enum.  For enum, it implements `TryFrom` trait.  
+/// Decoder applies to either Struct of Enum.  For enum, it implements `TryFrom` trait.  
 /// Currently it only supports integer variants.  
 ///
 /// So this works
 ///
 /// ```
-/// # use fluvio_protocol::derive::Decode;
+/// # use fluvio_protocol::Decoder;
 /// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
-/// #[derive(Decode)]
+/// #[derive(Decoder)]
 /// pub enum ThreeChoice {
 ///     First = 1,
 ///     Second = 2,
@@ -58,9 +57,9 @@ use syn::parse_macro_input;
 /// Also, enum without integer literal works as well
 ///
 /// ```
-/// # use fluvio_protocol::derive::Decode;
+/// # use fluvio_protocol::Decoder;
 /// # impl Default for ThreeChoice { fn default() -> Self { unimplemented!() } }
-/// #[derive(Decode)]
+/// #[derive(Decoder)]
 /// pub enum ThreeChoice {
 ///     First,
 ///     Second,
@@ -73,14 +72,14 @@ use syn::parse_macro_input;
 /// Currently, mixing enum variants are not supported.
 ///
 ///
-/// Decode support container and field level attributes.
+/// Decoder support container and field level attributes.
 /// Container level applies to struct.
 /// For field attributes
 /// * `#[varint]` force decode using varint format.
 /// * `#fluvio(min_version = <version>)]` decodes only if version is equal or greater than min_version
 /// * `#fluvio(max_version = <version>)]`decodes only if version is less or equal than max_version
 ///
-#[proc_macro_derive(Decode, attributes(varint, fluvio))]
+#[proc_macro_derive(Decoder, attributes(varint, fluvio))]
 pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
     let expanded = generate_decode_trait_impls(&input);
@@ -95,9 +94,8 @@ pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
 ///
 /// ```
 /// use fluvio_protocol::Encoder;
-/// use fluvio_protocol::derive::Encode;
 ///
-/// #[derive(Encode)]
+/// #[derive(Encoder)]
 /// pub struct SimpleRecord {
 ///     val: u8
 /// }
@@ -110,10 +108,10 @@ pub fn fluvio_decode(tokens: TokenStream) -> TokenStream {
 /// assert_eq!(data[0],4);
 /// ```
 ///
-/// Encode applies to either Struct of Enum.  
+/// Encoder applies to either Struct of Enum.  
 ///
-/// Encode respects version attributes.  See Decode derive.
-#[proc_macro_derive(Encode, attributes(varint, fluvio))]
+/// Encoder respects version attributes.  See Decoder derive.
+#[proc_macro_derive(Encoder, attributes(varint, fluvio))]
 pub fn fluvio_encode(tokens: TokenStream) -> TokenStream {
     let input = parse_macro_input![tokens as ast::DeriveItem];
     let expanded = generate_encode_trait_impls(&input);
@@ -135,18 +133,17 @@ pub fn fluvio_api(tokens: TokenStream) -> TokenStream {
 /// # Examples
 ///
 /// ```
-/// use fluvio_protocol::derive::Decode;
-/// use fluvio_protocol::derive::Encode;
+/// use fluvio_protocol::{Encoder, Decoder};
 /// use fluvio_protocol::api::Request;
 /// use fluvio_protocol::derive::RequestApi as Request;
 ///
 /// #[fluvio(default,api_min_version = 5, api_max_version = 6, api_key = 10, response = "SimpleResponse")]
-/// #[derive(Debug, Default, Encode, Decode, Request)]
+/// #[derive(Debug, Default, Encoder, Decoder, Request)]
 /// pub struct SimpleRequest {
 ///     val: u8
 /// }
 ///
-/// #[derive(Debug, Default, Encode, Decode)]
+/// #[derive(Debug, Default, Encoder, Decoder)]
 /// #[fluvio(default)]
 /// pub struct SimpleResponse {
 ///     pub value: i8,

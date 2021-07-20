@@ -2,9 +2,9 @@ use std::io::Cursor;
 
 use fluvio_protocol_api::Request;
 use fluvio_protocol_core::{Decoder, Encoder};
-use fluvio_protocol_derive::{Decode, Encode, FluvioDefault, RequestApi};
+use fluvio_protocol_derive::{Decoder, Encoder, FluvioDefault, RequestApi};
 
-#[derive(Encode, Decode, FluvioDefault, RequestApi, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, RequestApi, Debug)]
 #[fluvio(
     api_min_version = 5,
     api_max_version = 6,
@@ -21,7 +21,7 @@ pub struct TestRequest {
     pub value3: i8,
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct TestResponse {
     pub value: i8,
 
@@ -32,7 +32,7 @@ pub struct TestResponse {
     pub value3: i8,
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct KfMetadataResponse {
     #[fluvio(min_version = 2)]
     pub cluster_id: Option<String>,

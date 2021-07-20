@@ -4,15 +4,13 @@ use std::convert::TryInto;
 use tracing::trace;
 
 use dataplane::bytes::Buf;
-use dataplane::core::Decoder;
-use dataplane::derive::{Encode, Decode};
-
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::fetch_stream_request::FetchStreamRequest;
 
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum SPUPeerApiEnum {
     FetchStream = 0,
@@ -24,7 +22,7 @@ impl Default for SPUPeerApiEnum {
     }
 }
 
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub enum SpuPeerRequest {
     FetchStream(RequestMessage<FetchStreamRequest>),
 }

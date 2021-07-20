@@ -11,13 +11,10 @@ use once_cell::sync::Lazy;
 use bytes::Buf;
 use bytes::BufMut;
 
-use crate::core::Decoder;
+use crate::core::{Encoder, Decoder};
 use crate::core::DecoderVarInt;
-use crate::core::Encoder;
 use crate::core::EncoderVarInt;
 use crate::core::Version;
-use crate::derive::Decode;
-use crate::derive::Encode;
 
 use crate::batch::Batch;
 use crate::Offset;
@@ -327,7 +324,7 @@ impl Encoder for RecordSet {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct RecordHeader {
     attributes: i8,
     #[varint]
