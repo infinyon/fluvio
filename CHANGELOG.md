@@ -2,6 +2,7 @@
 
 ## Platform Version 0.8.6 - UNRELEASED
 * Add k8s feature flag to cli. ([#1257](https://github.com/infinyon/fluvio/pull/1257))
+* Add windows build of cli and client. ([#1218](https://github.com/infinyon/fluvio/pull/1218))
 
 ## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
