@@ -1334,7 +1334,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.8.5"
+version = "0.8.6"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1498,7 +1498,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1640,7 +1640,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-api"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
