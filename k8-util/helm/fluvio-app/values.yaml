@@ -30,9 +30,9 @@ spuPod:
     requests:
       memory: 256Mi
     limits:
-      memory: 1Gi
+      memory: 2Gi
   nodeSelector: {}
-  storageClass: "standard"
+  storageClass: null
 
 
 rbac:
