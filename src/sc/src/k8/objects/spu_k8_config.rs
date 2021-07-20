@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use tracing::{debug,info};
+use tracing::{debug};
 use serde::{ Deserialize};
 
 use k8_client::{ClientError, SharedK8Client, };
