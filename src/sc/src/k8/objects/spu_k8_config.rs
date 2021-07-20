@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use tracing::{debug};
+use tracing::{debug,info};
 use serde::{ Deserialize};
 
 use k8_client::{ClientError, SharedK8Client, };
@@ -68,8 +68,11 @@ impl ScK8Config {
         let spu_pod_config = if let Some(config_str) = data.remove("spuPodConfig") {
             serde_json::from_str(&config_str).map_err(|err| ClientError::Other(format!("not able to parse spu pod config: {:#?}",err)))?
         } else {
+            info!("spu pod config not found, using default");
             PodConfig::default()
         };
+
+        info!(?spu_pod_config,"spu pod config");
 
 
         Ok(Self {
