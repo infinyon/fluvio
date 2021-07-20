@@ -52,13 +52,12 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
-            run: make build-cli-minimal
+            run: make build-cli
 
           - os: windows-latest
             rust: stable
             rust-target: x86_64-pc-windows-msvc
             binary: fluvio
-            run: make build-cli-minimal
 
           - os: macos-latest
             rust: stable
@@ -110,8 +109,12 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
 
       - name: Build fluvio
-        if: ${{ matrix.binary == 'fluvio' }}
+        if: ${{ matrix.binary == 'fluvio' && matrix.rust-target != 'x86_64-pc-windows-msvc'}}
         run: make build-cli
+
+      - name: Build fluvio
+        if: ${{ matrix.binary == 'fluvio' && matrix.rust-target == 'x86_64-pc-windows-msvc'}}
+        run: make build-cli-minimal
 
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
