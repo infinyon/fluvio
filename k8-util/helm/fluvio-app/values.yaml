@@ -32,7 +32,7 @@ spuPod:
     limits:
       memory: 1Gi
   nodeSelector: {}
-  storageClass: null
+
 
 rbac:
   create: true
