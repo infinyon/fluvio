@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use tracing::debug;
-use serde::{ Deserialize, Serialize};
+use tracing::{debug,info};
+use serde::{ Deserialize};
 
 use k8_client::{ClientError, SharedK8Client, };
 use k8_metadata_client::MetadataClient;
@@ -13,9 +13,10 @@ use k8_types::core::service::ServiceSpec;
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
 // this is same struct as in helm config
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone, Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PodConfig {
+    #[serde(default)]
     pub node_selector: HashMap<String, String>,
     pub resources: Option<ResourceRequirements>,
     pub storage_class: Option<String>,
@@ -64,9 +65,11 @@ impl ScK8Config {
             None
         };
 
-        let spu_pod_config = serde_json::from_str(&data.remove("spuPodConfig").ok_or_else(|| {
-            ClientError::Other("spu pod config not found in config map".to_owned())
-        })?)?;
+        let spu_pod_config = if let Some(config_str) = data.remove("spuPodConfig") {
+            serde_json::from_str(&config_str).map_err(|err| ClientError::Other(format!("not able to parse spu pod config: {:#?}",err)))?
+        } else {
+            PodConfig::default()
+        };
 
 
         Ok(Self {
