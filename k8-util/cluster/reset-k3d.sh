@@ -1,5 +1,5 @@
 #!/bin/bash
-# delete and re-install minikube ready for fluvio
+# delete and re-install k3d cluster ready for fluvio
 # this defaults to docker and assume you have have sudo access
 set -e
 ARG1=${1:-docker}
