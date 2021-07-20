@@ -5,6 +5,6 @@ metadata:
 data:
   image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.Version }}
   podSecurityContext: {{ .Values.podSecurityContext | toJson | quote }}
-  spuPodConfig: {{ .Values.spuPod.resources | toJson | quote }}
+  spuPodConfig: {{ .Values.spuPod | toJson | quote }}
   lbServiceAnnotations: {{ .Values.loadBalancer.serviceAnnotations | toJson | quote }}
   service: {{ .Values.service | toJson | quote }}
