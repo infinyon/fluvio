@@ -227,6 +227,8 @@ mod k8_convert {
 
         // env.append(&mut spu_template.env.clone());
 
+        let spu_pod_config = &spu_k8_config.spu_pod_config;
+
         let template = TemplateSpec {
             metadata: Some(
                 TemplateMeta::default()
@@ -237,7 +239,7 @@ mod k8_convert {
                 containers: vec![ContainerSpec {
                     name: SPU_DEFAULT_NAME.to_owned(),
                     image: Some(spu_k8_config.image.clone()),
-                    resources: spu_k8_config.resources.clone(),
+                    resources: spu_pod_config.resources.clone(),
                     ports: vec![public_port, private_port],
                     volume_mounts,
                     env,
@@ -246,13 +248,13 @@ mod k8_convert {
                 }],
                 volumes,
                 security_context: spu_k8_config.pod_security_context.clone(),
-                node_selector: Some(spu_k8_config.node_selector.clone()),
+                node_selector: Some(spu_pod_config.node_selector.clone()),
                 ..Default::default()
             },
         };
         let claim = PersistentVolumeClaim {
             access_modes: vec![VolumeAccessMode::ReadWriteOnce],
-            storage_class_name: None, //spu_k8_config.storage_class.clone(),
+            storage_class_name: spu_pod_config.storage_class.clone(),
             resources: ResourceRequirements {
                 requests: VolumeRequest { storage: size },
             },

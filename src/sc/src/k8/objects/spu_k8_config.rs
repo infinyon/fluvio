@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
 use tracing::debug;
+use serde::{ Deserialize, Serialize};
 
-use k8_client::{ClientError, SharedK8Client};
+use k8_client::{ClientError, SharedK8Client, };
 use k8_metadata_client::MetadataClient;
 use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
 use k8_types::core::config_map::ConfigMapSpec;
@@ -11,15 +12,22 @@ use k8_types::core::service::ServiceSpec;
 
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
+// this is same struct as in helm config
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct PodConfig {
+    pub node_selector: HashMap<String, String>,
+    pub resources: Option<ResourceRequirements>,
+    pub storage_class: Option<String>,
+}
+
 #[derive(Debug)]
 pub struct ScK8Config {
     pub image: String,
-    pub storage_class: Option<String>,
-    pub resources: Option<ResourceRequirements>,
     pub pod_security_context: Option<PodSecurityContext>,
-    pub node_selector: HashMap<String, String>,
     pub lb_service_annotations: HashMap<String, String>,
     pub service: Option<ServiceSpec>,
+    pub spu_pod_config: PodConfig
 }
 
 impl ScK8Config {
@@ -34,14 +42,7 @@ impl ScK8Config {
             ClientError::Other("image not found in ConfigMap spu-k8 data".to_owned())
         })?;
 
-        let storage_class = data.remove("storageClass");
-
-        let resources = if let Some(resources_string) = data.remove("resources") {
-            serde_json::from_str(&resources_string)?
-        } else {
-            None
-        };
-
+       
         let pod_security_context =
             if let Some(pod_security_context_string) = data.remove("podSecurityContext") {
                 serde_json::from_str(&pod_security_context_string)?
@@ -49,12 +50,7 @@ impl ScK8Config {
                 None
             };
 
-        let node_selector = if let Some(node_selector_string) = data.remove("nodeSelector") {
-            serde_json::from_str(&node_selector_string)?
-        } else {
-            HashMap::new()
-        };
-
+    
         let lb_service_annotations =
             if let Some(lb_service_annotations) = data.remove("lbServiceAnnotations") {
                 serde_json::from_str(&lb_service_annotations)?
@@ -68,12 +64,15 @@ impl ScK8Config {
             None
         };
 
+        let spu_pod_config = serde_json::from_str(&data.remove("spuPodConfig").ok_or_else(|| {
+            ClientError::Other("spu pod config not found in config map".to_owned())
+        })?)?;
+
+
         Ok(Self {
             image,
-            storage_class,
-            resources,
             pod_security_context,
-            node_selector,
+            spu_pod_config,
             lb_service_annotations,
             service,
         })
