@@ -22,7 +22,7 @@ on:
 jobs:
   # test fluvio in local cluster
   fluvio_action_local_test:
-    name: Fluvio Action Test (${{ matrix.os }}, ${{ matrix.version }})
+    name: Fluvio Action Local Test (${{ matrix.os }}, ${{ matrix.version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -57,6 +57,37 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+
+  fluvio_action_k8_test:
+    name: Fluvio Action K8 Test (${{ matrix.os }}, ${{ matrix.version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        k8: [minikube]
+        rust: [stable]
+        version: [latest]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Fluvio Local Cluster
+        uses: ./
+        with:
+          version: ${{ matrix.version }}
+          cluster-type: k8
+      - name: Fluvio command test
+        continue-on-error: true
+        run: |
+          fluvio version
+          fluvio topic list
+          fluvio topic create "foobar"
+          sleep 3
+          echo foo | fluvio produce "foobar"
+          fluvio consume foobar -o 0 -d
+          # Delete the topic afterword but this looks to not work right now.
+          # fluvio topic delete "foobar"
 
 
   # Perform upgrade test
