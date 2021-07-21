@@ -64,8 +64,8 @@ build-test:	build-cluster build-cli
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
-	$(shell ./build-scripts/install_target.sh)
-
+	./build-scripts/install_target.sh
+	
 
 #
 # List of smoke test steps.  This is used by CI
