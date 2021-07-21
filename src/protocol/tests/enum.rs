@@ -73,6 +73,12 @@ impl Decoder for Mix {
 }
 
 #[derive(Encoder, Debug)]
+pub enum UnitAndDataEnum {
+    UnitVariant,
+    DataVariant(i16),
+}
+
+#[derive(Encoder, Debug)]
 pub enum VariantEnum {
     A(u16),
     C(String),

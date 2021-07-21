@@ -274,7 +274,15 @@ fn parse_enum_variants_size(
                 };
                 variant_expr.push(arm);
             }
-            _ => (),
+            FieldKind::Unit => {
+                let arm = quote! {
+                    #enum_ident::#id => {
+                        std::mem::size_of::<#int_type>()
+                    }
+                };
+
+                variant_expr.push(arm);
+            }
         }
     }
 
