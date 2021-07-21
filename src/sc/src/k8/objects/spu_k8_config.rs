@@ -77,9 +77,9 @@ impl ScK8Config {
         Ok(Self {
             image,
             pod_security_context,
-            spu_pod_config,
             lb_service_annotations,
             service,
+            spu_pod_config,
         })
     }
 
