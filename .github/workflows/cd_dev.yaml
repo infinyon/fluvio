@@ -29,14 +29,14 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        version: [stable, latest]
+        fluvio_version: [stable, latest]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install Fluvio Local Cluster
         uses: ./
         with:
-          version: ${{ matrix.version }}
+          version: ${{ matrix.fluvio_version }}
       - name: Fluvio command test
         continue-on-error: true
         run: |
@@ -68,14 +68,14 @@ jobs:
         os: [ubuntu-latest]
         k8: [minikube]
         rust: [stable]
-        version: [latest]
+        flvuio_version: [stable]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install Fluvio Local Cluster
         uses: ./
         with:
-          version: ${{ matrix.version }}
+          version: ${{ matrix.flvuio_version }}
           cluster-type: k8
       - name: Fluvio command test
         continue-on-error: true
