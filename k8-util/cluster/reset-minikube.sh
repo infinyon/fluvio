@@ -3,6 +3,6 @@
 # this defaults to docker and assume you have have sudo access
 set -e
 ARG1=${1:-docker}
-K8_VERSION=${2:-1.19.6}
+#K8_VERSION=${2:-1.19.6}
 minikube delete
-minikube start --driver $ARG1 --kubernetes-version $K8_VERSION
+minikube start --driver $ARG1
