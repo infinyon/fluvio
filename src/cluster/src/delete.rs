@@ -232,17 +232,20 @@ impl ClusterUninstaller {
         let ns = &self.config.namespace;
 
         // delete objects
-        let _ = self.remove_custom_objects("spugroups", ns, None);
-        let _ = self.remove_custom_objects("spus", ns, None);
-        let _ = self.remove_custom_objects("topics", ns, None);
-        let _ = self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"));
+        let _ = self.remove_custom_objects("spugroups", ns, None,false);
+        let _ = self.remove_custom_objects("spus", ns, None,false);
+        let _ = self.remove_custom_objects("topics", ns, None,false);
+        let _ = self.remove_finalizers_for_partitions(ns).await;
+        let _ = self.remove_custom_objects("partitions", ns, None,true);
+        let _ = self.remove_custom_objects("statefulset", ns, None,false);
+        let _ = self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"),false);
 
         // delete secrets
         let _ = self.remove_secrets("fluvio-ca");
         let _ = self.remove_secrets("fluvio-tls");
 
-        let _ = self.remove_partitions(ns).await;
-        let _ = self.remove_custom_objects("partitions", ns, None);
+       
+       
     }
 
     /// Remove objects of specified type, namespace
@@ -251,12 +254,16 @@ impl ClusterUninstaller {
         object_type: &str,
         namespace: &str,
         selector: Option<&str>,
+        force: bool
     ) -> Result<(), UninstallError> {
         let mut cmd = Command::new("kubectl");
         cmd.arg("delete");
         cmd.arg(object_type);
         cmd.arg("--namespace");
         cmd.arg(namespace);
+        if force {
+            cmd.arg("--force");
+        }
         if let Some(label) = selector {
             info!(
                 "deleting label '{}' object {} in: {}",
@@ -274,7 +281,7 @@ impl ClusterUninstaller {
 
     /// in order to remove partitions, finalizers need to be cleared
     #[instrument(skip(self))]
-    async fn remove_partitions(&self, namespace: &str) -> Result<(), UninstallError> {
+    async fn remove_finalizers_for_partitions(&self, namespace: &str) -> Result<(), UninstallError> {
         use fluvio_controlplane_metadata::partition::PartitionSpec;
         use fluvio_controlplane_metadata::store::k8::K8ExtendedSpec;
         use k8_client::meta_client::MetadataClient;
