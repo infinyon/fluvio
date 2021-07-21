@@ -64,11 +64,7 @@ build-test:	build-cluster build-cli
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
-ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
-	cargo install cross
-else ifdef $(TARGET)
-	rustup target add $(TARGET)
-endif
+	$(shell ./build-scripts/install_target.sh)
 
 
 #
