@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
-use tracing::{debug,info};
-use serde::{ Deserialize};
+use tracing::{debug, info};
+use serde::{Deserialize};
 
-use k8_client::{ClientError, SharedK8Client, };
+use k8_client::{ClientError, SharedK8Client};
 use k8_metadata_client::MetadataClient;
 use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
 use k8_types::core::config_map::ConfigMapSpec;
@@ -28,7 +28,7 @@ pub struct ScK8Config {
     pub pod_security_context: Option<PodSecurityContext>,
     pub lb_service_annotations: HashMap<String, String>,
     pub service: Option<ServiceSpec>,
-    pub spu_pod_config: PodConfig
+    pub spu_pod_config: PodConfig,
 }
 
 impl ScK8Config {
@@ -43,7 +43,6 @@ impl ScK8Config {
             ClientError::Other("image not found in ConfigMap spu-k8 data".to_owned())
         })?;
 
-       
         let pod_security_context =
             if let Some(pod_security_context_string) = data.remove("podSecurityContext") {
                 serde_json::from_str(&pod_security_context_string)?
@@ -51,7 +50,6 @@ impl ScK8Config {
                 None
             };
 
-    
         let lb_service_annotations =
             if let Some(lb_service_annotations) = data.remove("lbServiceAnnotations") {
                 serde_json::from_str(&lb_service_annotations)?
@@ -66,14 +64,15 @@ impl ScK8Config {
         };
 
         let spu_pod_config = if let Some(config_str) = data.remove("spuPodConfig") {
-            serde_json::from_str(&config_str).map_err(|err| ClientError::Other(format!("not able to parse spu pod config: {:#?}",err)))?
+            serde_json::from_str(&config_str).map_err(|err| {
+                ClientError::Other(format!("not able to parse spu pod config: {:#?}", err))
+            })?
         } else {
             info!("spu pod config not found, using default");
             PodConfig::default()
         };
 
-        info!(?spu_pod_config,"spu pod config");
-
+        info!(?spu_pod_config, "spu pod config");
 
         Ok(Self {
             image,
