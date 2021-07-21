@@ -38,6 +38,15 @@ jobs:
           docker tag "infinyon/fluvio:${TAG}" "infinyon/fluvio:latest"
           docker push "infinyon/fluvio:latest"
 
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   # Publish the latest Helm chart, tagged with the version and the git commit.
   # Example tag: 0.7.4-alpha.0-abcdef, where abcdef is the git commit.
   # This job requires the docker image step to have completed successfully.
@@ -58,6 +67,15 @@ jobs:
           helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
           helm push k8-util/helm/fluvio-sys --force --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
           helm push k8-util/helm/fluvio-app --force --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
   fluvio:
@@ -122,6 +140,15 @@ jobs:
               "${UNZIP_DIR}/${ARTIFACT}"
           done
 
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   # Bump the latest version of the Fluvio CLI on the package registry
   # This serves as the final step in the publishing process, and therefore
   # depends on all other jobs to have completed successfully.
@@ -144,3 +171,12 @@ jobs:
         env:
           RUST_LOG: info
         run: cargo make bump-fluvio-latest
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
