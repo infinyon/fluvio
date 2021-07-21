@@ -38,13 +38,12 @@ async fn create_tls() -> fluvio_future::native_tls::TlsConnector {
     fluvio_future::native_tls::TlsConnector::default()
 }
 
-#[fluvio_future::test_async]
-async fn test_web_request() -> Result<(), Error> {
+#[fluvio_future::test]
+async fn test_web_request() {
     use fluvio_index::HttpAgent;
     use http_types::StatusCode;
     let agent = HttpAgent::default();
-    let index = agent.request_index()?;
-    let response = execute(index).await?;
+    let index = agent.request_index().expect("Failed to get request index");
+    let response = execute(index).await.expect("Failed to execute request");
     assert_eq!(response.status(), StatusCode::Ok);
-    Ok(())
 }
