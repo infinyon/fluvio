@@ -253,11 +253,10 @@ endif
 
 
 # Build docker image for Fluvio.
-# In development, we tag the image with just the git commit.
-# In further releases, we re-tag the image as needed.
+# This use musl target
 fluvio_image: fluvio_bin_musl
-	echo "Building Fluvio musl image with tag: $(GIT_COMMIT)"
-	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(DEVL_K8)
+	echo "Building Fluvio musl image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
+	k8-util/docker/build.sh $(GIT_COMMIT) "./target/$(TARGET_MUSL)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
 
 fluvio_bin_musl:
 	rustup target add $(TARGET_MUSL)
