@@ -8,6 +8,8 @@ if echo ${nodes} | grep -q minikube;  then
     echo 'minikube'
 elif echo ${nodes} | grep -q k3d; then
     echo "k3d"
+elif echo ${nodes} | grep -q kind; then
+    echo "kind"
 else 
     "unknown"
 fi

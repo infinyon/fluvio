@@ -34,7 +34,12 @@ main() {
     echo "export image to k3d cluster"
     docker image save infinyon/fluvio:${DOCKER_TAG} --output /tmp/infinyon-fluvio.tar
     k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-  fi  
+  fi
+
+  if [ "$K8" = "kind" ]; then
+    echo "export image to kind cluster"
+    kind load docker-image infinyon/fluvio:${DOCKER_TAG}
+  fi    
 
   popd || true
   rm -rf "${tmp_dir}"

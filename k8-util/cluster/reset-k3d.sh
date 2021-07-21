@@ -2,6 +2,5 @@
 # delete and re-install k3d cluster ready for fluvio
 # this defaults to docker and assume you have have sudo access
 set -e
-ARG1=${1:-docker}
 k3d cluster delete fluvio
 k3d cluster create fluvio
