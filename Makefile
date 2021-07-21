@@ -6,10 +6,7 @@ DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
 DOCKER_REGISTRY=infinyon
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_MUSL=x86_64-unknown-linux-musl
-TARGET_GNU=x86_64-unknown-linux-gnu
-TARGET_DARWIN=x86_64-apple-darwin
-TARGET?=$(TARGET_GNU)
-CLI_BUILD=fluvio_cli
+TARGET=
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
 RELEASE_FLAG=$(if $(RELEASE),--release,)
@@ -69,7 +66,7 @@ build-test:	build-cluster build-cli
 install_rustup_target:
 ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
 	cargo install cross
-else
+else ifdef $(TARGET)
 	rustup target add $(TARGET)
 endif
 
@@ -265,13 +262,13 @@ endif
 # Build docker image for Fluvio.
 # In development, we tag the image with just the git commit.
 # In further releases, we re-tag the image as needed.
-fluvio_image: fluvio_bin_linux
+fluvio_image: fluvio_bin_musl
 	echo "Building Fluvio musl image with tag: $(GIT_COMMIT)"
 	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
 
-fluvio_bin_linux:
-	rustup target add $(TARGET_LINUX)
-	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_LINUX)
+fluvio_bin_musl:
+	rustup target add $(TARGET_MUSL)
+	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_MUSL)
 
 make publish_fluvio_image:
 	curl \
