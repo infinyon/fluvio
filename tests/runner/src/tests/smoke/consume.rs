@@ -185,8 +185,11 @@ async fn validate_consume_message_api(
     drop(lock);
 
     assert_eq!(partitions.len(), 1);
+
     let test_topic = &partitions[0];
-    let leader = &test_topic.status.leader;
+    let status = &test_topic.status;
+    let leader = &status.leader;
 
     assert_eq!(leader.leo, base_offset + producer_iteration as i64);
+    assert_eq!(status.replicas.len(),1);
 }
