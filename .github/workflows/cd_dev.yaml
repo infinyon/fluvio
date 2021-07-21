@@ -20,7 +20,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  fluvio_action_test:
+  # test fluvio in local cluster
+  fluvio_action_local_test:
     name: Fluvio Action Test (${{ matrix.os }}, ${{ matrix.version }})
     runs-on: ${{ matrix.os }}
     strategy:

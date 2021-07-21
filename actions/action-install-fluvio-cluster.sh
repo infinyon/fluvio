@@ -13,19 +13,19 @@ echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
 REPO_VERSION="$(curl -sSf https://raw.githubusercontent.com/infinyon/fluvio/master/VERSION)"
 CHART_VERSION="${REPO_VERSION}-${GITHUB_SHA}"
 
-LOCAL=""
+LOCAL_FLAG=""
 #
 # Install Fluvio Cluster
 #
 
 # Install Local Fluvio Cluster
 if [ "$CLUSTER_TYPE" = "local" ]; then
-    LOCAL = "--local"
+    LOCAL_FLAG="--local"
 fi
 
 # If VERSION is equal to exactly "latest", use LATEST channel
 if [ "${VERSION}" == "latest" ]; then
-    fluvio cluster start --rust-log $RUST_LOG --develop $LOCAL --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
+    fluvio cluster start --rust-log $RUST_LOG --develop ${LOCAL_FLAG} --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
 else
     fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
 fi
