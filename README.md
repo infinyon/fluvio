@@ -13,7 +13,7 @@
 </a>
 <!-- CI Tier2 status -->
 <a href="https://github.com/infinyon/fluvio/actions/workflows/ci_tier2.yaml">
-<img src="https://github.com/infinyon/fluvio/workflows/CI_Platform_Tier2/badge.svg?event=pull_request" alt="Tier2 Status" />
+<img src="https://github.com/infinyon/fluvio/workflows/CI_Platform_Tier2/badge.svg" alt="Tier2 Status" />
 </a>
 <!-- CD status -->
 <a href="https://github.com/infinyon/fluvio/actions/workflows/cd_dev.yaml">

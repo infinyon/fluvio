@@ -120,15 +120,6 @@ jobs:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   # Run all checks and unit test. This always run on debug mode
   check:
     name: ${{ matrix.check.name }} (${{ matrix.rust-target }})
@@ -172,15 +163,6 @@ jobs:
       - name: ${{ matrix.check.name }}
         run: ${{ matrix.check.run }}
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
     runs-on: ${{ matrix.os }}
@@ -211,15 +193,6 @@ jobs:
 
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
-
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   local_cluster_test:
     name: Local cluster test
@@ -277,15 +250,6 @@ jobs:
           name: fluvio-sc-logs
           path: /tmp/flv_sc.log
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   build_image:
     name: Build Fluvio Docker image
     needs: build_binaries
@@ -318,15 +282,6 @@ jobs:
         with:
           name: infinyon-fluvio
           path: /tmp/infinyon-fluvio.tar
-
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   k8_cluster_test:
     name: Kubernetes cluster test
@@ -414,15 +369,6 @@ jobs:
           name: fluvio-k8-logs
           path: /tmp/flv_sc.log
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   # After all tests have passed, push docker images
   docker_push:
     name: Publish Docker Image
@@ -457,15 +403,6 @@ jobs:
           docker tag "infinyon/fluvio:${{ github.sha }}" "infinyon/fluvio:${TAG}"
           docker push "infinyon/fluvio:${TAG}"
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   # When all required jobs pass, bump the `dev` GH prerelease to this commit
   bump_github_release:
     name: Bump dev tag
@@ -485,15 +422,6 @@ jobs:
           git push -f origin dev
       - name: Create new release
         run: gh release create -R infinyon/fluvio dev -p --notes "Published artifacts from the latest build"
-
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
   github_release:
@@ -527,15 +455,6 @@ jobs:
           zip "${{ matrix.artifact }}-${{ matrix.rust-target }}.zip" "${{ matrix.artifact }}" .target
           gh release upload -R infinyon/fluvio --clobber dev "${{ matrix.artifact }}-${{ matrix.rust-target }}.zip"
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   # Job that follows the success of all required jobs in this workflow.
   # Used by Bors to detect that all required jobs have completed successfully
   done:
@@ -546,12 +465,3 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
-
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

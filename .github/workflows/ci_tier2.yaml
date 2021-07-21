@@ -71,15 +71,6 @@ jobs:
         run: |
           make run-unstable-test
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   # build binaries. use release for staging
   # this requires check and test
   build_platform_binaries:
@@ -154,15 +145,6 @@ jobs:
           name: flv-tier2-test-${{ matrix.rust_target }}
           path: ${{ env.RUST_BIN_DIR }}/flv-test
 
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
   local_cluster_test:
     name: Local Tier 2cluster test
     runs-on: ${{ matrix.os }}
@@ -214,12 +196,3 @@ jobs:
         with:
           name: fluvio-sc-logs
           path: /tmp/flv_sc.log
-
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
