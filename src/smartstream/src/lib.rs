@@ -1,3 +1,4 @@
+pub use fluvio_protocol as protocol;
 pub use fluvio_dataplane_protocol as dataplane;
 pub use dataplane::record::{Record, RecordData};
 

@@ -17,5 +17,6 @@ derive = ["fluvio-smartstream-derive"]
 crate-type = ['lib']
 
 [dependencies]
+fluvio-protocol = { version = "0.6", path = "../protocol" }
 fluvio-dataplane-protocol = { version = "0.6", path = "../dataplane-protocol", default-features = false }
 fluvio-smartstream-derive = { version = "0.1.1", path = "./derive", optional = true }

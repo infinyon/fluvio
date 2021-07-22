@@ -1782,6 +1782,7 @@ name = "fluvio-smartstream"
 version = "0.1.1"
 dependencies = [
  "fluvio-dataplane-protocol",
+ "fluvio-protocol",
  "fluvio-smartstream-derive",
 ]
 

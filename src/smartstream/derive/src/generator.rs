@@ -37,7 +37,7 @@ fn generate_decoding() -> TokenStream {
 
         let input_data = Vec::from_raw_parts(ptr, len, len);
         let mut records: Vec<fluvio_smartstream::dataplane::record::Record> = vec![];
-        if let Err(_err) = fluvio_smartstream::dataplane::core::Decoder::decode(&mut records, &mut std::io::Cursor::new(input_data), 0) {
+        if let Err(_err) = fluvio_smartstream::protocol::Decoder::decode(&mut records, &mut std::io::Cursor::new(input_data), 0) {
             return -1;
         };
     }
@@ -69,7 +69,7 @@ fn generate_map(func: &SmartStreamFn) -> TokenStream {
 fn generate_encoding() -> TokenStream {
     quote! {
         let mut out = vec![];
-        if let Err(_) = fluvio_smartstream::dataplane::core::Encoder::encode(&mut processed, &mut out, 0) {
+        if let Err(_) = fluvio_smartstream::protocol::Encoder::encode(&mut processed, &mut out, 0) {
             return -1;
         }
 
