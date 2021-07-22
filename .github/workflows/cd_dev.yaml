@@ -117,11 +117,12 @@ jobs:
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
           minikube version: "v1.22.0"
+          kubernetes version: "v1.21.2"
       - name: Setup Minikube for Linux
         if: startsWith(matrix.os, 'infinyon-ubuntu')
         run: |
           minikube delete
-          minikube start --driver=docker
+          minikube start --driver=docker --kubernetes-version 1.21.2
       - name: Test minikube
         run: |
           minikube profile list

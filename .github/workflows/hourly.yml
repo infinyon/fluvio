@@ -45,7 +45,7 @@ jobs:
         run: |
           pkill -f "minikube tunnel" || true
           minikube delete
-          minikube start --driver=docker
+          minikube start --driver=docker --kubernetes version: 1.21.2
           nohup  minikube tunnel --alsologtostderr > /tmp/tunnel.out 2> /tmp/tunnel.out &
       - name: Test minikube
         run: |

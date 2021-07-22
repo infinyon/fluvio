@@ -30,6 +30,10 @@ inputs:
     description: "Use a specific minikube version"
     required: false
     default: 'v1.21.0'
+  k8-version:
+    description: "Use a specific minikube version"
+    required: false
+    default: '1.21.2'
 runs:
   using: "composite"
   steps:
@@ -42,6 +46,7 @@ runs:
         echo "DEVELOPMENT=${{ inputs.development }}" >> $GITHUB_ENV
         echo "HELM_VERSION=${{ inputs.helm-version }}" >> $GITHUB_ENV
         echo "MINIKUBE_VERSION=${{ inputs.minikube-version }}" >> $GITHUB_ENV
+        echo "K8_VERSION=${{ inputs.k8-version }}" >> $GITHUB_ENV
         echo "OS=${{ runner.os }}" >> $GITHUB_ENV
       shell: bash
     - id: install-helm
