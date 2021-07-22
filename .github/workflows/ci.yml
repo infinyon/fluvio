@@ -210,7 +210,7 @@ jobs:
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
           minikube version: "v1.22.0"
-          kubernetes version: "v1.19.6"
+          kubernetes version: "v1.21.2"
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
       - name: Test minikube
@@ -239,7 +239,7 @@ jobs:
       - name: Setup
         run: ./fluvio cluster start --setup --local --develop
       - name: Run smoke-test
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
       - name: Upload SC log
@@ -299,7 +299,7 @@ jobs:
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
           minikube version: "v1.22.0"
-          kubernetes version: "v1.19.6"
+          kubernetes version: "v1.21.2"
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
       - name: Test minikube
