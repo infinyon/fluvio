@@ -203,13 +203,13 @@ jobs:
         run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
   check_windows:
-    name: Check crates (${{ matrix.wasm-crate }})
+    name: Check Windows for crates (${{ matrix.crate }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [windows-latest]
         rust: [stable]
-        wasm-crate:
+        crate:
           - client
           - cli
     env:
@@ -224,10 +224,11 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Build ${{ matrix.wasm-crate }} for ${{ matrix.os }}
-        run: cargo build --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml
-      - namest Build ${{ matrix.wasm-crate }} for ${{ matrix.os }}
-        run: cargo test --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml
+      - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
+        run: cargo build --manifest-path ./src/${{matrix.crate}}/Cargo.toml
+
+      - name: Test ${{ matrix.crate }} for ${{ matrix.os }}
+        run: cargo test --manifest-path ./src/${{matrix.crate}}/Cargo.toml
 
   local_cluster_test:
     name: Local cluster test
@@ -412,6 +413,7 @@ jobs:
       - check
       - build_binaries
       - check_wasm
+      - check_windows
       - local_cluster_test
       - k8_cluster_test
     runs-on: ubuntu-latest
