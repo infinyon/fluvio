@@ -155,7 +155,7 @@ pub async fn produce_message_with_api(
         let is_batch_time_met = batch_timer
             .elapsed()
             .expect("Unable to get batch time elapsed")
-            > Duration::from_millis(batch_time);
+            >= Duration::from_millis(batch_time);
         let is_buffer_size_met = buffer_data_count >= batch_size;
         let is_last_iteration = i == produce_iteration - 1;
 
