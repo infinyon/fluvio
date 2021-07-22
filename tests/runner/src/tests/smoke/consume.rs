@@ -191,5 +191,5 @@ async fn validate_consume_message_api(
     let leader = &status.leader;
 
     assert_eq!(leader.leo, base_offset + producer_iteration as i64);
-    assert_eq!(status.replicas.len(),1);
+    assert_eq!(status.replicas.len(), 1);
 }
