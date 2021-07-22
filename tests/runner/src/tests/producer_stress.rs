@@ -91,7 +91,7 @@ pub async fn run(
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
                     let mut lock = test_driver.write().await;
-                    lock.send_count(p, RecordKey::NULL, message)
+                    lock.send_count(p, vec![(RecordKey::NULL, message.into())])
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -102,7 +102,7 @@ pub async fn run(
                 }
             } else {
                 let mut lock = test_driver.write().await;
-                lock.send_count(p, RecordKey::NULL, message)
+                lock.send_count(p, vec![(RecordKey::NULL, message.into())])
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)

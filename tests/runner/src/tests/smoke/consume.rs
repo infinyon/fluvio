@@ -215,16 +215,5 @@ async fn validate_consume_message_api(
     let leader = &status.leader;
 
     assert_eq!(leader.leo, base_offset + producer_iteration as i64);
-    println!("status: {:#?}", status);
-
-    let replication = test_case.environment.replication;
-    if replication > 1 {
-        assert_eq!(status.replicas.len() as u16, replication - 1);
-
-        for i in 0..replication - 1 {
-            let follower_status = &status.replicas[i as usize];
-            assert_eq!(follower_status.hw, producer_iteration as i64);
-            assert_eq!(follower_status.leo, producer_iteration as i64);
-        }
-    }
+    //assert_eq!(status.replicas.len(), 1);
 }

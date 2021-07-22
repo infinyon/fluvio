@@ -143,13 +143,17 @@ impl FluvioTestDriver {
     pub async fn send_count(
         &mut self,
         p: &TopicProducer,
-        key: RecordKey,
-        message: String,
+        msg_buf: Vec<(RecordKey, Vec<u8>)>,
     ) -> Result<(), FluvioError> {
-        let bytes_sent = message.as_bytes().len() as u64;
+        let bytes_sent: usize = msg_buf
+            .iter()
+            .map(|m| &m.1)
+            .fold(0, |total, msg| total + msg.len());
 
         let now = SystemTime::now();
-        let result = p.send(key, message).await;
+
+        let result = p.send_all(msg_buf).await;
+
         let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
         let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
 

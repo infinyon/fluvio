@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
-use tracing::info;
+use tracing::{info, debug};
 
 use super::SmokeTestCase;
 use super::message::*;
@@ -128,6 +129,10 @@ pub async fn produce_message_with_api(
     let producer = lock.get_producer(&topic_name).await;
     drop(lock);
 
+    let mut buffer_data_count: usize = 0;
+    let mut producer_buffer = Vec::new();
+    let mut batch_timer = SystemTime::now();
+
     for i in 0..produce_iteration {
         let offset = base_offset + i as i64;
 
@@ -139,15 +144,33 @@ pub async fn produce_message_with_api(
 
         let len = message.len();
         info!("trying send: {}, iteration: {}", topic_name, i);
-        let mut lock = test_driver.write().await;
-        lock.send_count(
-            &producer,
-            RecordKey::NULL,
-            String::from_utf8(message.clone()).unwrap(),
-        )
-        .await
-        .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
-        drop(lock);
+
+        producer_buffer.push((RecordKey::NULL, message.clone()));
+        buffer_data_count += message.len();
+
+        let is_batch_time_met = batch_timer
+            .elapsed()
+            .expect("Unable to get batch time elapsed")
+            < Duration::from_millis(10);
+        let is_buffer_size_met = buffer_data_count >= 10_000;
+        let is_last_iteration = i == produce_iteration - 1;
+
+        if is_batch_time_met || is_buffer_size_met || is_last_iteration {
+            debug!(
+                "batch time trigger: {:#} buffer size trigger:{:#} last?: {:#}",
+                is_batch_time_met, is_buffer_size_met, is_last_iteration
+            );
+
+            let mut lock = test_driver.write().await;
+            lock.send_count(&producer, producer_buffer)
+                .await
+                .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
+            drop(lock);
+            producer_buffer = Vec::new();
+            buffer_data_count = 0;
+            batch_timer = SystemTime::now();
+        }
+
         info!(
             "completed send iter: {}, offset: {},len: {}",
             topic_name, offset, len
