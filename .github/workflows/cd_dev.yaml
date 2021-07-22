@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-  pull_request:
-    branches: [master]
+#  pull_request:
+#    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -77,7 +77,6 @@ jobs:
           version: ${{ matrix.flvuio_version }}
           cluster-type: k8
       - name: Fluvio command test
-        continue-on-error: true
         run: |
           fluvio version
           fluvio topic list
