@@ -6,7 +6,7 @@ DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
 DOCKER_REGISTRY=infinyon
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_MUSL=x86_64-unknown-linux-musl
-TARGET=
+TARGET?=
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
 RELEASE_FLAG=$(if $(RELEASE),--release,)
@@ -64,12 +64,8 @@ build-test:	build-cluster build-cli
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
-ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
-	cargo install cross
-else ifdef $(TARGET)
-	rustup target add $(TARGET)
-endif
-
+	./build-scripts/install_target.sh
+	
 
 #
 # List of smoke test steps.  This is used by CI
