@@ -203,6 +203,14 @@ pub struct EnvironmentSetup {
     /// Default # of consumers (if test uses them)
     #[structopt(long, default_value = "1")]
     pub consumers: u16,
+
+    // Default batch buffer size (10KB default)
+    #[structopt(long, default_value = "10000")]
+    pub batch_bytes: usize,
+
+    // Default batch time in milliseconds (10ms default)
+    #[structopt(long, default_value = "10")]
+    pub batch_ms: u64,
 }
 
 #[allow(clippy::unnecessary_wraps)]

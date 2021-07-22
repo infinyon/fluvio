@@ -125,6 +125,10 @@ pub async fn produce_message_with_api(
 
     let base_offset = *offsets.get(&topic_name).expect("offsets");
 
+    let batch_size = test_case.environment.batch_bytes;
+    let batch_time = test_case.environment.batch_ms;
+
+
     let mut lock = test_driver.write().await;
     let producer = lock.get_producer(&topic_name).await;
     drop(lock);
@@ -151,8 +155,8 @@ pub async fn produce_message_with_api(
         let is_batch_time_met = batch_timer
             .elapsed()
             .expect("Unable to get batch time elapsed")
-            < Duration::from_millis(10);
-        let is_buffer_size_met = buffer_data_count >= 10_000;
+            < Duration::from_millis(batch_time);
+        let is_buffer_size_met = buffer_data_count >= batch_size;
         let is_last_iteration = i == produce_iteration - 1;
 
         if is_batch_time_met || is_buffer_size_met || is_last_iteration {
