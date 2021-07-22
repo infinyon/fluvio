@@ -202,6 +202,33 @@ jobs:
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
+  check_windows:
+    name: Check crates (${{ matrix.wasm-crate }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        rust: [stable]
+        wasm-crate:
+          - client
+          - cli
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Build ${{ matrix.wasm-crate }} for ${{ matrix.os }}
+        run: cargo build --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml
+      - namest Build ${{ matrix.wasm-crate }} for ${{ matrix.os }}
+        run: cargo test --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml
+
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
