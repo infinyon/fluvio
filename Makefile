@@ -4,11 +4,10 @@ GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
 DOCKER_REGISTRY=infinyon
+K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
 DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
-TARGET_LINUX=x86_64-unknown-linux-musl
-TARGET_DARWIN=x86_64-apple-darwin
-TARGET?=$(TARGET_LINUX)
-CLI_BUILD=fluvio_cli
+TARGET_MUSL=x86_64-unknown-linux-musl
+TARGET?=
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
 RELEASE_FLAG=$(if $(RELEASE),--release,)
@@ -66,12 +65,8 @@ build-test:	build-cluster build-cli
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
-ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
-	cargo install cross
-else
-	rustup target add $(TARGET)
-endif
-
+	./build-scripts/install_target.sh
+	
 
 #
 # List of smoke test steps.  This is used by CI
@@ -247,30 +242,25 @@ latest_image: fluvio_image
 	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
 	docker push $(DOCKER_IMAGE):latest
 
-# Build docker image in minikube environment
-minikube_image: MINIKUBE_FLAG=minikube
-minikube_image: fluvio_image
-
 
 # In CI mode, do not build k8 image
 ifeq (${CI},true)
 build_k8_image:
 else
 # When not in CI (i.e. development), build image before testing
-build_k8_image: minikube_image
+build_k8_image: fluvio_image
 endif
 
 
 # Build docker image for Fluvio.
-# In development, we tag the image with just the git commit.
-# In further releases, we re-tag the image as needed.
-fluvio_image: fluvio_bin_linux
-	echo "Building Fluvio musl image with tag: $(GIT_COMMIT)"
-	k8-util/docker/build.sh $(GIT_COMMIT) "./target/x86_64-unknown-linux-musl/$(BUILD_PROFILE)/fluvio-run" $(MINIKUBE_FLAG)
+# This use musl target
+fluvio_image: fluvio_bin_musl
+	echo "Building Fluvio musl image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
+	k8-util/docker/build.sh $(GIT_COMMIT) "./target/$(TARGET_MUSL)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
 
-fluvio_bin_linux:
-	rustup target add $(TARGET_LINUX)
-	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_LINUX)
+fluvio_bin_musl:
+	rustup target add $(TARGET_MUSL)
+	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_MUSL)
 
 make publish_fluvio_image:
 	curl \

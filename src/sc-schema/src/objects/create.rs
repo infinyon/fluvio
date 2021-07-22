@@ -2,9 +2,7 @@
 
 use std::fmt::Debug;
 
-use dataplane::derive::{Decode, Encode};
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
 use crate::Status;
@@ -13,7 +11,7 @@ use crate::AdminRequest;
 
 pub use create::AllCreatableSpec;
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct CreateRequest {
     pub name: String,
     pub dry_run: bool,

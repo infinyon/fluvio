@@ -1,10 +1,10 @@
-use crate::derive::Encode;
-use crate::derive::Decode;
+use crate::core::Encoder;
+use crate::core::Decoder;
 use crate::derive::FluvioDefault;
 
 use crate::ErrorCode;
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ProduceResponse {
     /// Each produce response
     pub responses: Vec<TopicProduceResponse>,
@@ -37,7 +37,7 @@ impl ProduceResponse {
     }
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct TopicProduceResponse {
     /// The topic name
     pub name: String,
@@ -46,7 +46,7 @@ pub struct TopicProduceResponse {
     pub partitions: Vec<PartitionProduceResponse>,
 }
 
-#[derive(Encode, Decode, FluvioDefault, Debug)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct PartitionProduceResponse {
     /// The partition index.
     pub partition_index: i32,

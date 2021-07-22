@@ -1,15 +1,15 @@
 #![allow(clippy::assign_op_pattern)]
 
 use dataplane::api::Request;
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
+use dataplane::derive::Decoder;
+use dataplane::derive::Encoder;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane_metadata::message::SpuMsg;
 
 use crate::InternalSpuApi;
 
 /// Changes to Spu specs
-#[derive(Decode, Encode, Debug, Default)]
+#[derive(Decoder, Encoder, Debug, Default)]
 pub struct UpdateSpuRequest {
     pub epoch: i64,
     pub changes: Vec<SpuMsg>,
@@ -67,5 +67,5 @@ impl UpdateSpuRequest {
     */
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct UpdateSpuResponse {}

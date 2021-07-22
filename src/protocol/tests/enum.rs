@@ -6,7 +6,7 @@ use std::io::ErrorKind;
 
 use fluvio_protocol_core::bytes::{Buf, BufMut};
 use fluvio_protocol_core::{Decoder, Encoder, Version};
-use fluvio_protocol_derive::{Decode, Encode};
+use fluvio_protocol_derive::{Decoder, Encoder};
 
 // manual encode
 pub enum Mix {
@@ -72,7 +72,13 @@ impl Decoder for Mix {
     }
 }
 
-#[derive(Encode, Debug)]
+#[derive(Encoder, Debug)]
+pub enum UnitAndDataEnum {
+    UnitVariant,
+    DataVariant(i16),
+}
+
+#[derive(Encoder, Debug)]
 pub enum VariantEnum {
     A(u16),
     C(String),
@@ -88,7 +94,166 @@ fn test_var_encode() {
     assert_eq!(v1.write_size(0), 8);
 }
 
-#[derive(Encode, PartialEq, Decode, Debug)]
+#[derive(Encoder, Decoder, Debug)]
+pub enum NamedEnum {
+    Apple { seeds: u16, color: String },
+    Banana { peel: bool },
+}
+
+impl Default for NamedEnum {
+    fn default() -> Self {
+        Self::Banana { peel: true }
+    }
+}
+
+#[test]
+fn test_named_encode() {
+    let apple = NamedEnum::Apple {
+        seeds: 13,
+        color: "Red".into(),
+    };
+    let mut dest = Vec::new();
+    apple.encode(&mut dest, 0).unwrap();
+    let expected = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    assert_eq!(expected, dest);
+}
+
+#[test]
+fn test_named_decode() {
+    let data = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    let mut value = NamedEnum::default();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+    match value {
+        NamedEnum::Apple { seeds, color } => {
+            assert_eq!(seeds, 13);
+            assert_eq!(color, "Red");
+        }
+        _ => panic!("failed to decode"),
+    }
+}
+
+#[derive(Encoder, Decoder, Debug)]
+enum NamedCustomTag {
+    #[fluvio(tag = 22)]
+    One { a: String, b: i32 },
+    #[fluvio(tag = 44)]
+    Two { c: i64 },
+}
+
+impl Default for NamedCustomTag {
+    fn default() -> Self {
+        Self::Two { c: 999 }
+    }
+}
+
+#[test]
+fn test_named_custom_tag_encode() {
+    let value = NamedCustomTag::One {
+        a: "Hello".to_string(),
+        b: 234,
+    };
+    let mut dest = Vec::new();
+    value.encode(&mut dest, 0).unwrap();
+
+    let expected = vec![
+        0x16, 0x00, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0xea,
+    ];
+    assert_eq!(dest, expected);
+}
+
+#[test]
+fn test_named_custom_tag_decode() {
+    let data = vec![
+        0x16, 0x00, 0x05, 0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x00, 0x00, 0x00, 0xea,
+    ];
+    let mut value = NamedCustomTag::default();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+
+    match value {
+        NamedCustomTag::One { a, b } => {
+            assert_eq!(a, "Hello");
+            assert_eq!(b, 234);
+        }
+        _ => panic!("Failed decode"),
+    }
+}
+
+#[derive(Encoder, Decoder, Debug)]
+pub enum MultiUnnamedEnum {
+    Apple(u16, String),
+    Banana(bool),
+}
+
+impl Default for MultiUnnamedEnum {
+    fn default() -> Self {
+        Self::Banana(true)
+    }
+}
+
+#[test]
+fn test_multi_unnamed_encode() {
+    let apple = MultiUnnamedEnum::Apple(13, "Red".into());
+    let mut dest = Vec::new();
+    apple.encode(&mut dest, 0).unwrap();
+
+    let expected = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    assert_eq!(expected, dest);
+}
+
+#[test]
+fn test_multi_unnamed_decode() {
+    let data = vec![0x00, 0x00, 0x0d, 0x00, 0x03, 0x52, 0x65, 0x64];
+    let mut value = MultiUnnamedEnum::default();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+
+    match value {
+        MultiUnnamedEnum::Apple(num, string) => {
+            assert_eq!(num, 13);
+            assert_eq!(string, "Red");
+        }
+        _ => panic!("Failed to decode"),
+    }
+}
+
+#[derive(Debug, Encoder, Decoder)]
+enum MultiUnnamedCustomTag {
+    #[fluvio(tag = 7)]
+    RGB(u8, u8, u8),
+    #[fluvio(tag = 70)]
+    HSV(u8, u8, u8),
+    #[fluvio(tag = 77)]
+    ColorName(String),
+}
+
+impl Default for MultiUnnamedCustomTag {
+    fn default() -> Self {
+        Self::RGB(0, 0, 0)
+    }
+}
+
+#[test]
+fn test_multi_unnamed_custom_tag_encode() {
+    let mut dest = vec![];
+    let value = MultiUnnamedCustomTag::HSV(22, 33, 44);
+    value.encode(&mut dest, 0).unwrap();
+
+    let expected = vec![0x46, 0x16, 0x21, 0x2c];
+    assert_eq!(dest, expected);
+}
+
+#[test]
+fn test_multi_unnamed_custom_tag_decode() {
+    let data = vec![0x46, 0x16, 0x21, 0x2c];
+    let mut value = MultiUnnamedCustomTag::default();
+    value.decode(&mut std::io::Cursor::new(data), 0).unwrap();
+
+    match value {
+        MultiUnnamedCustomTag::HSV(22, 33, 44) => (),
+        _ => panic!("failed decode"),
+    }
+}
+
+#[derive(Encoder, PartialEq, Decoder, Debug)]
 #[repr(u8)]
 pub enum EnumNoExprTest {
     A,
@@ -132,7 +297,7 @@ fn test_enum_decode() {
     assert_eq!(val, EnumNoExprTest::A);
 }
 
-#[derive(Encode, Decode, PartialEq, Debug)]
+#[derive(Encoder, Decoder, PartialEq, Debug)]
 #[repr(u8)]
 pub enum EnumExprTest {
     #[fluvio(tag = 5)]
@@ -169,8 +334,9 @@ fn test_enum_expr_decode() {
     assert_eq!(val, EnumExprTest::D);
 }
 
-#[derive(Encode, Decode, PartialEq, Debug)]
 #[repr(u16)]
+#[derive(Encoder, Decoder, PartialEq, Debug)]
+#[fluvio(encode_discriminant)]
 pub enum WideEnum {
     #[fluvio(tag = 5)]
     D = 5,
@@ -201,7 +367,7 @@ fn test_try_decode() {
     assert_eq!(e, WideEnum::E);
 }
 
-#[derive(Encode, Decode, PartialEq, Debug)]
+#[derive(Encoder, Decoder, PartialEq, Debug)]
 pub enum GlColor {
     #[fluvio(tag = 1)]
     GlTextureRedType = 0x8C10,
@@ -232,7 +398,7 @@ fn test_gl_colors() {
     assert_eq!(dest[1], 2);
 }
 
-#[derive(Encode, Decode, PartialEq, Debug)]
+#[derive(Encoder, Decoder, PartialEq, Debug)]
 #[fluvio(encode_discriminant)]
 enum EvenOdd {
     Even = 2,
@@ -260,7 +426,7 @@ fn test_encode_discriminant() {
     assert_eq!(dest[1], 1);
 }
 
-#[derive(Encode, Decode, PartialEq, Debug, Clone, Copy)]
+#[derive(Encoder, Decoder, PartialEq, Debug, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 #[repr(u16)]
 pub enum TestWideEnum {
@@ -281,7 +447,7 @@ fn test_simple_conversion() {
 }
 
 #[repr(i16)]
-#[derive(PartialEq, Debug, Encode, Decode)]
+#[derive(PartialEq, Debug, Encoder, Decoder)]
 #[fluvio(encode_discriminant)]
 pub enum TestErrorCode {
     // The server experienced an unexpected error when processing the request

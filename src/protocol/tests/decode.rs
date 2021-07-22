@@ -1,16 +1,16 @@
 use std::io::Cursor;
 
 use fluvio_protocol_core::{Decoder, DecoderVarInt};
-use fluvio_protocol_derive::Decode;
+use fluvio_protocol_derive::Decoder;
 
-#[derive(Decode, Default, Debug)]
+#[derive(Decoder, Default, Debug)]
 pub struct SimpleRecord {
     #[varint]
     len: i64,
     attributes: i8,
 }
 
-#[derive(Decode, Default, Debug)]
+#[derive(Decoder, Default, Debug)]
 pub struct RecordSet {
     records: Vec<SimpleRecord>,
 }

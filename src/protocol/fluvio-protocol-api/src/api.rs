@@ -14,8 +14,8 @@ use tracing::trace;
 
 use crate::core::Decoder;
 use crate::core::Encoder;
-use crate::derive::Decode;
-use crate::derive::Encode;
+use crate::derive::Decoder;
+use crate::derive::Encoder;
 use crate::core::bytes::Buf;
 
 pub trait Request: Encoder + Decoder + Debug {
@@ -72,7 +72,7 @@ pub trait ApiMessage: Sized + Default {
 
 pub trait ApiKey: Sized + Encoder + Decoder + TryFrom<u16> {}
 
-#[derive(Debug, Encode, Decode, Default)]
+#[derive(Debug, Encoder, Decoder, Default)]
 pub struct RequestHeader {
     api_key: u16,
     api_version: i16,

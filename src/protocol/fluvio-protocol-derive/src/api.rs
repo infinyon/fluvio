@@ -52,7 +52,7 @@ fn generate_encoder(data: &DataStruct, name: &Ident) -> TokenStream {
 
             let definition = quote! {
 
-                #[derive(Encode,Decode,RequestApi,Debug)]
+                #[derive(Encoder,Decoder,RequestApi,Debug)]
                 #[fluvio(default)]
                 pub struct #name {
                     #(#fields_code)*

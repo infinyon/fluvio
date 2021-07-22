@@ -54,6 +54,15 @@ jobs:
             echo "::set-output name=LATEST_TAG::infinyon/fluvio:${{ env.VERSION }}-${{ env.GIT_SHA }}"
             echo "::set-output name=RELEASE_TAG::infinyon/fluvio:${{ env.VERSION }}"
 
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   # Check for Github Release
   release_github:
     name: Release Fluvio to GitHub Release
@@ -87,6 +96,15 @@ jobs:
             -F ./CHANGELOG.md \
             "v${{ env.VERSION }}" \
             "${ARTIFACTS[@]}"
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   ## Check for docker image
   release_docker:
@@ -127,6 +145,15 @@ jobs:
             docker push "${{ env.RELEASE_TAG }}"
           fi
 
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   # Publish the release Helm chart, tagged with the release VERSION.
   # Example tag: 0.7.4
   # This job requires the docker image step to have completed successfully.
@@ -163,6 +190,15 @@ jobs:
           helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
           helm push k8-util/helm/fluvio-sys --force --version="${{ env.VERSION }}" chartmuseum
           helm push k8-util/helm/fluvio-app --force --version="${{ env.VERSION }}" chartmuseum
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # Check for Fluvio CLI
   release_fluvio:
@@ -239,6 +275,15 @@ jobs:
               "${UNZIP_DIR}/${ARTIFACT}"
           done
 
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   bump_stable_fluvio:
     name: Bump stable Fluvio
     needs: [setup_job, release_github, release_docker, release_helm, release_fluvio]
@@ -283,3 +328,12 @@ jobs:
             #git rebase origin/master
             #git push origin stable
           fi
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

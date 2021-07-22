@@ -10,7 +10,6 @@ use bytes::BytesMut;
 use tracing::trace;
 
 use dataplane::core::{Encoder, Decoder, Version};
-use dataplane::derive::{Decode, Encode};
 use dataplane::record::{RecordSet, FileRecordSet};
 use dataplane::api::Request;
 use dataplane::ErrorCode;
@@ -28,7 +27,7 @@ pub type PeerFileTopicResponse = PeerFetchableTopicResponse<FileRecordSet>;
 
 /// used for sending records and commits
 /// re purpose topic response since it has records and commit offsets
-#[derive(Default, Encode, Decode, Debug)]
+#[derive(Default, Encoder, Decoder, Debug)]
 pub struct SyncRequest<R>
 where
     R: Encoder + Decoder + Debug,
@@ -61,7 +60,7 @@ where
     type Response = SyncResponse;
 }
 
-#[derive(Default, Encode, Decode, Debug)]
+#[derive(Default, Encoder, Decoder, Debug)]
 pub struct SyncResponse {}
 
 /// allow sync request to be encoded for zerocopy
@@ -78,7 +77,7 @@ impl FileWrite for FileSyncRequest {
     }
 }
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct PeerFetchableTopicResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -101,7 +100,7 @@ where
     }
 }
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct PeerFetchablePartitionResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,

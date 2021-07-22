@@ -5,8 +5,7 @@
 use std::fmt;
 
 use dataplane::api::Request;
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::PartitionOffset;
 use dataplane::ReplicaKey;
 
@@ -18,7 +17,7 @@ use super::SpuServerApiKey;
 // -----------------------------------
 
 /// Fetch offsets
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct FetchOffsetsRequest {
     /// Each topic in the request.
     pub topics: Vec<FetchOffsetTopic>,
@@ -44,7 +43,7 @@ impl FetchOffsetsRequest {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct FetchOffsetTopic {
     /// The topic name.
     pub name: String,
@@ -53,7 +52,7 @@ pub struct FetchOffsetTopic {
     pub partitions: Vec<FetchOffsetPartition>,
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct FetchOffsetPartition {
     /// The partition index.
     pub partition_index: i32,
@@ -63,7 +62,7 @@ pub struct FetchOffsetPartition {
 // FlvFetchOffsetsResponse
 // -----------------------------------
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct FetchOffsetsResponse {
     /// Each topic offset in the response.
     pub topics: Vec<FetchOffsetTopicResponse>,
@@ -85,7 +84,7 @@ impl FetchOffsetsResponse {
     }
 }
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct FetchOffsetTopicResponse {
     /// The topic name
     pub name: String,
@@ -94,7 +93,7 @@ pub struct FetchOffsetTopicResponse {
     pub partitions: Vec<FetchOffsetPartitionResponse>,
 }
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct FetchOffsetPartitionResponse {
     /// The partition error code, None for no error
     pub error_code: ErrorCode,

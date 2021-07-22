@@ -9,6 +9,9 @@ pub mod bytes {
 }
 
 #[cfg(feature = "derive")]
+pub use fluvio_protocol_derive::{Encoder, Decoder};
+
+#[cfg(feature = "derive")]
 pub mod derive {
     pub use fluvio_protocol_derive::*;
 }

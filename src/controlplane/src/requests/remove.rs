@@ -3,14 +3,14 @@
 use std::fmt;
 
 use dataplane::api::Request;
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
+use dataplane::derive::Decoder;
+use dataplane::derive::Encoder;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
 use crate::InternalScKey;
 
 /// Confirmation of Replica replica
-#[derive(Decode, Encode, Debug, Default, Clone)]
+#[derive(Decoder, Encoder, Debug, Default, Clone)]
 pub struct ReplicaRemovedRequest {
     pub id: ReplicaKey,
     pub confirm: bool, // replica remove confirmed
@@ -33,5 +33,5 @@ impl Request for ReplicaRemovedRequest {
     type Response = ReplicaRemovedResponse;
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct ReplicaRemovedResponse {}

@@ -1,6 +1,5 @@
 use dataplane::api::Request;
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::ReplicaKey;
 use dataplane::Offset;
 use dataplane::ErrorCode;
@@ -12,12 +11,12 @@ use super::SpuClientApiKey;
 // -----------------------------------
 
 /// sets of offset update send by SPU to clients
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct ReplicaOffsetUpdateRequest {
     pub offsets: Vec<ReplicaOffsetUpdate>,
 }
 
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct ReplicaOffsetUpdate {
     pub replica: ReplicaKey,
     pub error_code: ErrorCode,
@@ -36,5 +35,5 @@ impl Request for ReplicaOffsetUpdateRequest {
 }
 
 // no content, this is one way request
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct ReplicaOffsetUpdateResponse {}

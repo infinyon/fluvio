@@ -6,14 +6,14 @@ use dataplane::api::ApiMessage;
 use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 use dataplane::bytes::Buf;
-use dataplane::derive::Encode;
-use dataplane::derive::Decode;
+use dataplane::derive::Encoder;
+use dataplane::derive::Decoder;
 
 use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;
 
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum InternalSpuApi {
     UpdateSpu = 1001,
@@ -26,13 +26,13 @@ impl Default for InternalSpuApi {
     }
 }
 
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub enum InternalSpuRequest {
     UpdateSpuRequest(RequestMessage<UpdateSpuRequest>),
     UpdateReplicaRequest(RequestMessage<UpdateReplicaRequest>),
 }
 
-// Added to satisfy Encode/Decode traits
+// Added to satisfy Encoder/Decoder traits
 impl Default for InternalSpuRequest {
     fn default() -> Self {
         Self::UpdateSpuRequest(RequestMessage::default())

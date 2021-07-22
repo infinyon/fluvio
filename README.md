@@ -8,8 +8,24 @@
 
 <div>
 <!-- CI status -->
-<a href="https://github.com/infinyon/fluvio/actions">
+<a href="https://github.com/infinyon/fluvio/actions/workflows/ci.yml">
 <img src="https://github.com/infinyon/fluvio/workflows/CI/badge.svg" alt="CI Status" />
+</a>
+<!-- CI Tier2 status -->
+<a href="https://github.com/infinyon/fluvio/actions/workflows/ci_tier2.yaml">
+<img src="https://github.com/infinyon/fluvio/workflows/CI_Platform_Tier2/badge.svg" alt="Tier2 Status" />
+</a>
+<!-- CD status -->
+<a href="https://github.com/infinyon/fluvio/actions/workflows/cd_dev.yaml">
+<img src="https://github.com/infinyon/fluvio/workflows/CD_Dev/badge.svg" alt="CD Status" />
+</a>
+<!-- Publish status -->
+<a href="https://github.com/infinyon/fluvio/actions/workflows/publish.yml">
+<img src="https://github.com/infinyon/fluvio/workflows/Publish/badge.svg" alt="Publish CI Status" />
+</a>
+<!-- Release status -->
+<a href="https://github.com/infinyon/fluvio/actions/workflows/release.yml">
+<img src="https://github.com/infinyon/fluvio/workflows/Release/badge.svg" alt="Release CI Status" />
 </a>
 <a href="https://crates.io/crates/fluvio">
 <img src="https://img.shields.io/crates/v/fluvio?style=flat" alt="Crates.io version" />

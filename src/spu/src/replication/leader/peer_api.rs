@@ -4,14 +4,13 @@ use std::convert::TryInto;
 use tracing::trace;
 
 use dataplane::bytes::Buf;
-use dataplane::core::Decoder;
-use dataplane::derive::Encode;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::LeaderPeerApiEnum;
 use super::UpdateOffsetRequest;
 
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub enum LeaderPeerRequest {
     UpdateOffsets(RequestMessage<UpdateOffsetRequest>),
 }

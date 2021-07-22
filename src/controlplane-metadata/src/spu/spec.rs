@@ -17,12 +17,11 @@ use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::SpuId;
 use flv_util::socket_helpers::ServerAddress;
 
-use dataplane::derive::{Decode, Encode};
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::{Encoder, Decoder};
 use dataplane::bytes::{Buf, BufMut};
 use dataplane::core::Version;
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -143,7 +142,7 @@ impl SpuSpec {
 
 /// Custom Spu Spec
 /// This is not real spec since when this is stored on metadata store, it will be stored as SPU
-#[derive(Decode, Encode, Debug, Clone, Default, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, Default, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -187,7 +186,7 @@ impl From<SpuSpec> for CustomSpuSpec {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -249,7 +248,7 @@ impl IngressPort {
     }
 }
 
-#[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IngressAddr {
     pub hostname: Option<String>,
@@ -276,7 +275,7 @@ impl IngressAddr {
     }
 }
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -346,7 +345,7 @@ impl Endpoint {
     }
 }
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum EncryptionEnum {
     PLAINTEXT,
@@ -359,7 +358,7 @@ impl Default for EncryptionEnum {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SpuType {
     Managed,

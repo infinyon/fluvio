@@ -1,13 +1,12 @@
 use std::convert::TryFrom;
 use std::fmt;
 
-use crate::derive::Decode;
-use crate::derive::Encode;
+use crate::derive::{Encoder, Decoder};
 
 pub type Offset = i64;
 pub type Size = u32;
 
-#[derive(Debug, Encode, Decode, Clone)]
+#[derive(Debug, Encoder, Decoder, Clone)]
 #[fluvio(encode_discriminant)]
 #[repr(u8)]
 pub enum Isolation {
@@ -21,7 +20,7 @@ impl Default for Isolation {
     }
 }
 
-#[derive(Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
+#[derive(Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
 pub struct ReplicaKey {
     pub topic: String,
     pub partition: i32,

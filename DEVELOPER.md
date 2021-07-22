@@ -29,23 +29,100 @@ Please read [doc](www.fluvio.io) for technical arch and operation guide.
 
 Please follow [setup](https://www.rust-lang.org/tools/install) instructions to install Rust and Cargo.
 
-## Install minikube
-
-Please follow [minikube](https://minikube.sigs.k8s.io/docs/start/) to install minikube.
-
 ## Install Helm
 
 Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install hel
 
-## Checkout and build Fluvio
+## Setting up Kubernetes Cluster
+
+Fluvio supports the following Kubernetes cluster types for development:
+
+* [minikube](https://minikube.sigs.k8s.io/docs/start/)
+* [kind](https://kind.sigs.k8s.io)
+* [k3d](https://k3d.io)
+
+For these cluster types, fluvio will build a docker image and automatically imports it.  For other cluster types, please file an issue.
+
+Fluvio will run on any Kubernetes Cluster for non-development deployments.
+
+### Create default clusters
+
+If you don't have an existing Kubernetes cluster, you can use following scripts to create a default cluster:
+
+For minikube:
+```
+$ ./k8-util/cluster/reset-minikube.sh
+```
+
+For k3d: 
+```
+$ ./k8-util/cluster/reset-k3d.sh
+```
+
+For kind:
+```
+$ ./k8-util/cluster/reset-kind.sh
+```
+
+## Checking out  Fluvio source code and performing smoke test
 
 Build Fluvio CLI from source code
-
 ```
 $ git clone https://github.com/infinyon/fluvio.git
 $ cd fluvio
-$ cargo build
 ```
+
+Assuming you have set up the Kubernetes cluster, you can build and execute the smoke test.  The smoke test will build a complete fluvio platform, create a test fluvio cluster and run a simple test with a replica of 2.
+
+### Running local smoke test
+
+Perform smoke test using local cluster mode:
+
+```
+make smoke-test-local
+```
+
+This results in message such as:
+```
+Creating the topic: test
+topic "test" created
+found topic: test offset: 0
+starting fetch stream for: test base offset: 0, expected new records: 1000
+<<consume test done for: test >>>>
+consume message validated!, records: 1000
+deleting cluster
+```
+
+### Running Kubernetes smoke test
+
+Perform smoke test as Kubernetes objects:
+```
+make smoke-test-k8
+```
+
+### Make targets
+
+Fluvio 
+
+`build-cli`: build only cli
+`build-cli-minimal`: build cli without Kubernetes admin
+`build-cluster`:  build platform components such as SC and SPU
+
+
+## Download a published version of Fluvio
+
+If, instead of building Fluvio, you would prefer to just download it and get to work,
+you can use our one-line installation script. You can use it to install the latest
+release or prerelease, or to install a specific version:
+
+```
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | bash                 # Install latest release
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash  # Install latest pre-release
+$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=x.y.z bash   # Install specific version
+```
+
+
+## Working with both Release and develop version of Flvuio
 
 The next step is very important, as it will help you to prevent subtle development
 bugs. Fluvio is built in two separate pieces, `fluvio` (the CLI), and `fluvio-run`
@@ -71,17 +148,6 @@ Make sure to replace `/Users/nick/infinyon/fluvio` with the path where you clone
 on your own system. Then, the `flvd` command (short for "fluvio develop") will recompile
 both `fluvio-run` and `fluvio`, then execute `fluvio` and pass the arguments to it.
 
-## Download a published version of Fluvio
-
-If, instead of building Fluvio, you would prefer to just download it and get to work,
-you can use our one-line installation script. You can use it to install the latest
-release or prerelease, or to install a specific version:
-
-```
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | bash                 # Install latest release
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash  # Install latest pre-release
-$ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=x.y.z bash   # Install specific version
-```
 
 ## Setting Kubernetes up for running Fluvio in development
 
@@ -92,6 +158,8 @@ $ flvd cluster start --sys --develop
 ```
 
 # Running Fluvio with local cluster
+
+In this mode, we run SC and SPU as the local process.
 
 We highly recommend using the `flvd cluster start --local --develop` command for most development.
 
@@ -160,7 +228,9 @@ $ cargo run --bin fluvio-run -- spu -i 5001 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 ```
 
 
-# Deploying to minikube
+# Deploying as Kubernetes 
+
+In this mode, we run Fluvio components as Kubernetes objects.
 
 ## Pre-requisites
 

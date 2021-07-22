@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::fmt;
 use std::slice::Iter;
 
-use dataplane::derive::{Decode, Encode};
+use dataplane::core::{Encoder, Decoder};
 use dataplane::Offset;
 use fluvio_types::SpuId;
 
@@ -20,7 +20,7 @@ use super::ElectionScoring;
 // Data Structures
 // -----------------------------------
 
-#[derive(Decode, Encode, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -189,7 +189,7 @@ fn find_status(status: &mut Vec<ReplicaStatus>, spu: SpuId) -> Option<&'_ mut Re
     status.iter_mut().find(|status| status.spu == spu)
 }
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum PartitionResolution {
     Offline,             // No leader available for serving partition
@@ -204,7 +204,7 @@ impl Default for PartitionResolution {
     }
 }
 
-#[derive(Decode, Encode, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),

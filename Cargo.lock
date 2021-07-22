@@ -1333,7 +1333,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.8.5"
+version = "0.8.6"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1497,7 +1497,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1606,7 +1606,7 @@ dependencies = [
  "serde_json",
  "syn",
  "tokio",
- "trybuild",
+ "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
 ]
 
 [[package]]
@@ -1625,7 +1625,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1639,7 +1639,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-api"
-version = "0.4.0"
+version = "0.4.1"
 dependencies = [
  "fluvio-protocol-core",
  "fluvio-protocol-derive",
@@ -1670,13 +1670,14 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "fluvio-protocol",
  "proc-macro2",
  "quote",
  "syn",
  "tracing",
+ "trybuild 1.0.42 (git+https://github.com/infinyon/trybuild?branch=check_option)",
 ]
 
 [[package]]
@@ -1787,7 +1788,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
- "trybuild",
+ "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
 ]
 
 [[package]]
@@ -2731,9 +2732,9 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de4b3e3f9fa0b63e8d66ff18c20fdea5326edd3bf61a910ea0ef17fbd1db863a"
+checksum = "a9c889f69cdaf502b736e4d38a6030d165c7342822693dc75babe3373121e8dc"
 dependencies = [
  "serde",
  "serde_json",
@@ -4557,6 +4558,19 @@ name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
+
+[[package]]
+name = "trybuild"
+version = "1.0.42"
+source = "git+https://github.com/infinyon/trybuild?branch=check_option#271081028a8b10104c5ab6eb1861e35fd23e156e"
+dependencies = [
+ "glob",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "termcolor",
+ "toml",
+]
 
 [[package]]
 name = "trybuild"

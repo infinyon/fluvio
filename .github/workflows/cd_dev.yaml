@@ -20,24 +20,63 @@ on:
   workflow_dispatch:
 
 jobs:
-  fluvio_action_test:
-    name: Fluvio Action Test (${{ matrix.os }}, ${{ matrix.version }})
+  # test fluvio in local cluster
+  fluvio_action_local_test:
+    name: Fluvio Action Local Test (${{ matrix.os }}, ${{ matrix.version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        version: [stable, latest]
+        fluvio_version: [stable, latest]
 
     steps:
       - uses: actions/checkout@v2
       - name: Install Fluvio Local Cluster
         uses: ./
         with:
-          version: ${{ matrix.version }}
+          version: ${{ matrix.fluvio_version }}
       - name: Fluvio command test
-        continue-on-error: true
+        run: |
+          fluvio version
+          fluvio topic list
+          fluvio topic create "foobar"
+          sleep 3
+          echo foo | fluvio produce "foobar"
+          fluvio consume foobar -o 0 -d
+          # Delete the topic afterword but this looks to not work right now.
+          # fluvio topic delete "foobar"
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+
+  fluvio_action_k8_test:
+    name: Fluvio Action K8 Test (${{ matrix.os }}, ${{ matrix.version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        k8: [minikube]
+        rust: [stable]
+        flvuio_version: [stable]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Fluvio Local Cluster
+        uses: ./
+        with:
+          version: ${{ matrix.flvuio_version }}
+          cluster-type: k8
+      - name: Fluvio command test
         run: |
           fluvio version
           fluvio topic list
@@ -134,3 +173,12 @@ jobs:
       - name: Clean minikube
         run: |
           minikube delete
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

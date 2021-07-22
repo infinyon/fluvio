@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-protocol-derive"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description =  "Procedure macro to encode/decode fluvio protocol"
@@ -22,4 +22,5 @@ version = "1.0.0"
 features = ["full"]
 
 [dev-dependencies]
-fluvio-protocol = { version = "0.5.1", path = "../", features = ["derive", "api"] }
+trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
+fluvio-protocol = { version = "0.6", path = "../", features = ["derive", "api"] }

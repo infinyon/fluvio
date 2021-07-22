@@ -1,4 +1,4 @@
-use dataplane::derive::{Decode, Encode};
+use dataplane::core::{Decoder, Encoder};
 
 // Make sure that the ApiVersion variant matches dataplane's API_VERSIONS_KEY
 static_assertions::const_assert_eq!(
@@ -8,7 +8,7 @@ static_assertions::const_assert_eq!(
 
 /// Api Key for Spu Server API
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum SpuServerApiKey {
     ApiVersion = 18, // API_VERSIONS_KEY

@@ -6,9 +6,9 @@ use dataplane::api::ApiMessage;
 use dataplane::api::RequestHeader;
 use dataplane::api::RequestMessage;
 use dataplane::bytes::Buf;
-use dataplane::derive::Encode;
+use dataplane::derive::Encoder;
 
-use dataplane::derive::Decode;
+use dataplane::derive::Decoder;
 
 use super::RegisterSpuRequest;
 use super::UpdateLrsRequest;
@@ -17,7 +17,7 @@ use super::ReplicaRemovedRequest;
 /// API call from Spu to SC
 
 #[repr(u16)]
-#[derive(PartialEq, Debug, Encode, Decode, Clone, Copy)]
+#[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 pub enum InternalScKey {
     RegisterSpu = 2000,
@@ -32,7 +32,7 @@ impl Default for InternalScKey {
 }
 
 /// Request made to Spu from Sc
-#[derive(Debug, Encode)]
+#[derive(Debug, Encoder)]
 pub enum InternalScRequest {
     RegisterSpuRequest(RequestMessage<RegisterSpuRequest>),
     UpdateLrsRequest(RequestMessage<UpdateLrsRequest>),

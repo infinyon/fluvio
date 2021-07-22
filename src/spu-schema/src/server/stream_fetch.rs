@@ -6,11 +6,8 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
+use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
-use dataplane::derive::Decode;
-use dataplane::derive::Encode;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;
@@ -26,7 +23,7 @@ pub const WASM_MODULE_API: i16 = 11;
 
 /// Fetch records continuously
 /// Output will be send back as stream
-#[derive(Decode, Encode, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug)]
 pub struct StreamFetchRequest<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -50,7 +47,7 @@ where
     type Response = StreamFetchResponse<R>;
 }
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct StreamFetchResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,

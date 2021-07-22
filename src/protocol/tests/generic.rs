@@ -2,9 +2,9 @@ use std::fmt::Debug;
 use std::io::Cursor;
 
 use fluvio_protocol_core::{Decoder, Encoder};
-use fluvio_protocol_derive::{Decode, Encode};
+use fluvio_protocol_derive::{Decoder, Encoder};
 
-#[derive(Encode, Decode, Default, Debug)]
+#[derive(Encoder, Decoder, Default, Debug)]
 pub struct GenericRecord<R>
 where
     R: Encoder + Decoder + Debug,
