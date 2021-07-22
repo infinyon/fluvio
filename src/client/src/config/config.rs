@@ -488,12 +488,13 @@ pub mod test {
         let mut conf_file = ConfigFile::load(Some("test-data/profiles/config.toml".to_owned()))
             .expect("parse failed");
         let config = conf_file.mut_config();
+        let cfg_path = temp_dir().join("test_config.toml");
         config.set_current_profile("local3");
         config
-            .save_to("/tmp/test_config.toml")
+            .save_to(cfg_path.clone())
             .expect("save should succeed");
         let update_conf_file =
-            ConfigFile::load(Some("/tmp/test_config.toml".to_owned())).expect("parse failed");
+            ConfigFile::load(Some(cfg_path.to_string_lossy().to_string())).expect("parse failed");
         assert_eq!(
             update_conf_file.config().current_profile_name().unwrap(),
             "local3"

@@ -38,6 +38,7 @@ async fn create_tls() -> fluvio_future::native_tls::TlsConnector {
     fluvio_future::native_tls::TlsConnector::default()
 }
 
+#[cfg(test)]
 #[fluvio_future::test]
 async fn test_web_request() {
     use fluvio_index::HttpAgent;
