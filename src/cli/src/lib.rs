@@ -146,7 +146,8 @@ impl RootCmd {
             }
             #[cfg(feature = "k8s")]
             Self::Cluster(cluster) => {
-                let version = semver::Version::parse(&crate::VERSION).unwrap();
+                let version_string = format!("{}-{}", crate::VERSION, env!("GIT_HASH"));
+                let version = semver::Version::parse(&version_string).unwrap();
                 cluster.process(out, version, root.target).await?;
             }
             Self::Install(install) => {
