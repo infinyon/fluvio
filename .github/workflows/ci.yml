@@ -210,7 +210,7 @@ jobs:
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
           minikube version: "v1.22.0"
-          kubernetes version: "v1.19.6"
+          kubernetes version: "v1.21.2"
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
       - name: Test minikube
@@ -299,7 +299,6 @@ jobs:
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
           minikube version: "v1.22.0"
-          kubernetes version: "v1.19.6"
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
       - name: Test minikube
