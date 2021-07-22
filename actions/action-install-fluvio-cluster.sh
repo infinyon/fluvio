@@ -25,7 +25,7 @@ fi
 
 # If VERSION is equal to exactly "latest", use LATEST channel
 if [ "${VERSION}" == "latest" ]; then
-    fluvio cluster start --rust-log $RUST_LOG --develop ${LOCAL_FLAG} --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
+    fluvio cluster start --rust-log $RUST_LOG  $LOCAL_FLAG --spu $SPU_NUMBER --chart-version="${CHART_VERSION}"
 else
-    fluvio cluster start --rust-log $RUST_LOG --develop --local --spu $SPU_NUMBER
+    fluvio cluster start --rust-log $RUST_LOG  $LOCAL_FLAG  --spu $SPU_NUMBER
 fi
