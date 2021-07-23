@@ -6,11 +6,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use async_lock::RwLock;
 
-use tracing::{info, debug};
+use tracing::{info, debug, error};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestDriverType};
+use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestConsumer, TestDriverType};
 use fluvio::Offset;
 use fluvio_command::CommandExt;
 
@@ -110,99 +110,176 @@ async fn validate_consume_message_api(
 
         let mut lock = test_driver.write().await;
 
-        let consumer = lock.get_consumer(&topic_name, i as i32).await;
+        let mut consumer = lock.get_consumer(&topic_name, i as i32).await;
         drop(lock);
 
-        let mut stream = consumer
-            .stream(
-                Offset::absolute(base_offset)
-                    .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
-            )
-            .await
-            .expect("stream");
+        match consumer {
+            TestConsumer::Fluvio(fluvio_consumer) => {
+                let mut stream = fluvio_consumer
+                    .stream(
+                        Offset::absolute(base_offset)
+                            .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
+                    )
+                    .await
+                    .expect("stream");
 
-        let mut total_records: u16 = 0;
+                let mut total_records: u16 = 0;
 
-        // add 30 seconds per 1000
-        let cycle = producer_iteration / 1000 + 1;
-        let timer_wait = cycle as u64 * consume_wait_timeout();
-        info!("total cycle: {}, timer wait: {}", cycle, timer_wait);
-        let mut timer = sleep(Duration::from_millis(timer_wait));
+                // add 30 seconds per 1000
+                let cycle = producer_iteration / 1000 + 1;
+                let timer_wait = cycle as u64 * consume_wait_timeout();
+                info!("total cycle: {}, timer wait: {}", cycle, timer_wait);
+                let mut timer = sleep(Duration::from_millis(timer_wait));
 
-        loop {
-            let consume_timestamp = SystemTime::now();
-            select! {
+                loop {
+                    let consume_timestamp = SystemTime::now();
+                    select! {
 
-                _ = &mut timer => {
-                    println!("Timeout in timer");
-                    debug!("timer expired");
-                    panic!("timer expired");
-                },
+                        _ = &mut timer => {
+                            println!("Timeout in timer");
+                            debug!("timer expired");
+                            panic!("timer expired");
+                        },
 
-                // max time for each read
-                _ = sleep(Duration::from_millis(5000)) => {
-                    println!("Timeout in read");
-                    panic!("no consumer read iter: current {}",producer_iteration);
-                },
+                        // max time for each read
+                        _ = sleep(Duration::from_millis(5000)) => {
+                            println!("Timeout in read");
+                            panic!("no consumer read iter: current {}",producer_iteration);
+                        },
 
-                stream_next = stream.next() => {
-
-
-                    if let Some(Ok(record)) = stream_next {
-
-                        let offset = record.offset();
-                        let bytes = record.value();
-                        info!(
-                            "* consumer iter: {}, received offset: {}, bytes: {}",
-                            total_records,
-                            offset,
-                            bytes.len()
-                        );
+                        stream_next = stream.next() => {
 
 
-                        // Stop E2E timer
-                        let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
+                            if let Some(Ok(record)) = stream_next {
 
-                        // Parse record
-                        let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &bytes).expect("Validation failed");
-
-                        // Calculate the E2E duration
-                        let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
-
-                        debug!("stop_time: {:#?} duration: {:#?}",e2e_stop_time, e2e_duration_nanos );
-
-
-                        let mut lock = test_driver.write().await;
-                        // record consumer-only and E2E latency
-                        let consume_time = consume_timestamp.elapsed().clone().unwrap().as_nanos();
-                        lock.consume_record(bytes.len(), consume_time as u64, e2e_duration_nanos as u64).await;
-                        drop(lock);
+                                let offset = record.offset();
+                                let bytes = record.value();
+                                info!(
+                                    "* consumer iter: {}, received offset: {}, bytes: {}",
+                                    total_records,
+                                    offset,
+                                    bytes.len()
+                                );
 
 
+                                // Stop E2E timer
+                                let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
 
-                        info!(
-                            " total records: {}, validated offset: {}",
-                            total_records, offset
-                        );
-                        total_records += 1;
-                        let lock = test_driver.read().await;
-                        //debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
-                        drop(lock);
+                                // Parse record
+                                let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &bytes).expect("Validation failed");
+
+                                // Calculate the E2E duration
+                                let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
+
+                                debug!("stop_time: {:#?} duration: {:#?}",e2e_stop_time, e2e_duration_nanos );
 
 
-                        if total_records == producer_iteration {
-                            println!("<<consume test done for: {} >>>>", topic_name);
-                            println!("consume message validated!, records: {}",total_records);
-                            break;
+                                let mut lock = test_driver.write().await;
+                                // record consumer-only and E2E latency
+                                let consume_time = consume_timestamp.elapsed().clone().unwrap().as_nanos();
+                                lock.consume_record(bytes.len(), consume_time as u64, e2e_duration_nanos as u64).await;
+                                drop(lock);
+
+
+
+                                info!(
+                                    " total records: {}, validated offset: {}",
+                                    total_records, offset
+                                );
+                                total_records += 1;
+                                //let lock = test_driver.read().await;
+                                ////debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
+                                //drop(lock);
+
+
+                                if total_records == producer_iteration {
+                                    println!("<<consume test done for: {} >>>>", topic_name);
+                                    println!("consume message validated!, records: {}",total_records);
+                                    break;
+                                }
+
+                            } else {
+                                println!("I panicked bc of no stream");
+                                panic!("no more stream");
+                            }
                         }
 
-                    } else {
-                        println!("I panicked bc of no stream");
-                        panic!("no more stream");
                     }
                 }
-
             }
+            TestConsumer::Pulsar(mut pulsar_consumer) => {
+                //let mut counter = 0usize;
+                let mut total_records: u16 = 0;
+
+                loop {
+                    //while let Some(msg) = pulsar_consumer.try_next().await.expect("Pulsar consume try failed") {
+
+                    let consume_timestamp = SystemTime::now();
+                    select! {
+                        Ok(next) = pulsar_consumer.try_next() => {
+
+                            if let Some(msg) = next {
+
+                                pulsar_consumer.ack(&msg).await.expect("Pulsar consume ask failed");
+
+                                // Stop E2E timer
+                                let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
+
+
+                                let data = match msg.deserialize() {
+                                    Ok(data) => data.data,
+                                    Err(e) => {
+                                        error!("could not deserialize message: {:?}", e);
+                                        break;
+                                    }
+                                };
+
+                                // Parse record
+                                let offset = 0;
+                                let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &data).expect("Validation failed");
+
+                                // Calculate the E2E duration
+                                let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
+
+                                debug!("stop_time: {:#?} duration: {:#?}",e2e_stop_time, e2e_duration_nanos );
+
+                                let mut lock = test_driver.write().await;
+                                // record consumer-only and E2E latency
+                                let consume_time = consume_timestamp.elapsed().clone().unwrap().as_nanos();
+
+                                lock.consume_record(data.len(), consume_time as u64, e2e_duration_nanos as u64).await;
+
+                                drop(lock);
+
+
+
+                                total_records += 1;
+
+                                if total_records == producer_iteration {
+                                    println!("<<consume test done for: {} >>>>", topic_name);
+                                    println!("consume message validated!, records: {}",total_records);
+                                    break;
+                                }
+
+
+
+                        //if data.data.as_str() != "data" {
+                        //    error!("Unexpected payload: {}", &data.data);
+                        //    break;
+                        //}
+                        //counter += 1;
+                        //info!("got {} messages - payload: {}", counter, data.data);
+                            } else {
+                                info!("No more messages from Pulsar");
+                                break;
+                            }
+                    }
+
+                                        }
+                }
+            }
+
+            _ => panic!("Only support Fluvio"),
         }
     }
 

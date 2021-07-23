@@ -17,7 +17,8 @@ use fluvio_future::timer::sleep;
 use serde::{Serialize, Deserialize};
 use pulsar::{
     message::proto, producer, producer::Producer as PulsarProducer, Error as PulsarError, Pulsar,
-    SerializeMessage, AsyncStdExecutor,
+    SerializeMessage, AsyncStdExecutor, Consumer as PulsarConsumer, DeserializeMessage,
+    message::Payload, message::proto::command_subscribe::SubType,
 };
 
 // # of nanoseconds in a millisecond
@@ -37,10 +38,9 @@ pub enum TestProducer {
 
 pub enum TestConsumer {
     Fluvio(PartitionConsumer),
-    Pulsar,
+    Pulsar(PulsarConsumer<PulsarTestData, AsyncStdExecutor>),
     Kafka,
 }
-
 
 #[derive(Serialize, Deserialize)]
 pub struct PulsarTestData {
@@ -54,6 +54,14 @@ impl SerializeMessage for PulsarTestData {
             payload,
             ..Default::default()
         })
+    }
+}
+
+impl DeserializeMessage for PulsarTestData {
+    type Output = Result<PulsarTestData, serde_json::Error>;
+
+    fn deserialize_message(payload: &Payload) -> Self::Output {
+        serde_json::from_slice(&payload.data)
     }
 }
 
@@ -327,9 +335,7 @@ impl FluvioTestDriver {
         Ok(result)
     }
 
-
-
-    pub async fn get_consumer(&mut self, topic: &str, partition: i32) -> PartitionConsumer {
+    pub async fn get_consumer(&mut self, topic: &str, partition: i32) -> TestConsumer {
         match self.client.as_ref() {
             TestDriverType::Fluvio(fluvio_client) => {
                 match fluvio_client
@@ -338,14 +344,32 @@ impl FluvioTestDriver {
                 {
                     Ok(client) => {
                         self.consumer_num += 1;
-                        return client;
+                        return TestConsumer::Fluvio(client);
                     }
                     Err(err) => {
                         panic!("unable to get consumer to topic: {}, error: {}", topic, err);
                     }
                 }
             }
+            TestDriverType::Pulsar => {
+                let addr = "pulsar://127.0.0.1:6650";
+                let pulsar: Pulsar<_> = Pulsar::builder(addr, AsyncStdExecutor)
+                    .build()
+                    .await
+                    .expect("Failed to create Pulsar builder");
 
+                let consumer: PulsarConsumer<PulsarTestData, _> = pulsar
+                    .consumer()
+                    .with_topic(topic)
+                    .with_consumer_name("test_consumer")
+                    //.with_subscription_type(SubType::Exclusive)
+                    .with_subscription("test_subscription")
+                    .build()
+                    .await
+                    .expect("Failed to create Pulsar consumer");
+
+                TestConsumer::Pulsar(consumer)
+            }
             _ => panic!("Only Fluvio support"),
         }
     }

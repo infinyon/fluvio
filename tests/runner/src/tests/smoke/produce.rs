@@ -2,7 +2,9 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestDriverType, TestProducer, PulsarTestData};
+use fluvio_test_util::test_runner::test_driver::{
+    FluvioTestDriver, TestDriverType, TestProducer, PulsarTestData,
+};
 use tracing::{info, debug};
 
 use super::SmokeTestCase;
@@ -200,12 +202,11 @@ pub async fn produce_message_with_api(
                 sleep(Duration::from_millis(10)).await;
             }
             TestProducer::Pulsar(ref mut p) => {
-
-                    let mut lock = test_driver.write().await;
-                    lock.pulsar_send(p, vec!(PulsarTestData{ data: message}))
-                        .await
-                        .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
-                    drop(lock);
+                let mut lock = test_driver.write().await;
+                lock.pulsar_send(p, vec![PulsarTestData { data: message }])
+                    .await
+                    .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
+                drop(lock);
             }
             _ => panic!("Unimplemented Producer type"),
         }
