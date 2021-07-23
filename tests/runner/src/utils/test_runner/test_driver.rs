@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
+use pulsar::producer::SendFuture;
 use crate::test_meta::test_timer::TestTimer;
 use crate::test_meta::{TestCase, test_result::TestResult, chart_builder::FluvioTimeData};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
@@ -13,12 +14,52 @@ use std::time::{Duration, SystemTime};
 use tracing::debug;
 use fluvio_future::timer::sleep;
 
+use serde::{Serialize, Deserialize};
+use pulsar::{
+    message::proto, producer, producer::Producer as PulsarProducer, Error as PulsarError, Pulsar,
+    SerializeMessage, AsyncStdExecutor,
+};
+
 // # of nanoseconds in a millisecond
 const NANOS_IN_MILLIS: f32 = 1_000_000.0;
 
+pub enum TestDriverType {
+    Fluvio(Fluvio),
+    Pulsar,
+    Kafka,
+}
+
+pub enum TestProducer {
+    Fluvio(TopicProducer),
+    Pulsar(PulsarProducer<AsyncStdExecutor>),
+    Kafka,
+}
+
+pub enum TestConsumer {
+    Fluvio(PartitionConsumer),
+    Pulsar,
+    Kafka,
+}
+
+
+#[derive(Serialize, Deserialize)]
+pub struct PulsarTestData {
+    pub data: Vec<u8>,
+}
+
+impl SerializeMessage for PulsarTestData {
+    fn serialize_message(input: Self) -> Result<producer::Message, PulsarError> {
+        let payload = serde_json::to_vec(&input).map_err(|e| PulsarError::Custom(e.to_string()))?;
+        Ok(producer::Message {
+            payload,
+            ..Default::default()
+        })
+    }
+}
+
 #[derive(Clone)]
 pub struct FluvioTestDriver {
-    pub client: Arc<Fluvio>,
+    pub client: Arc<TestDriverType>,
     pub timer: TestTimer,
     pub topic_num: usize,
     pub producer_num: usize,
@@ -43,7 +84,7 @@ pub struct FluvioTestDriver {
 }
 
 impl FluvioTestDriver {
-    pub fn new(client: Arc<Fluvio>) -> Self {
+    pub fn new(client: Arc<TestDriverType>) -> Self {
         Self {
             client,
             timer: TestTimer::new(),
@@ -121,26 +162,73 @@ impl FluvioTestDriver {
     }
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
-    pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
-        match self.client.topic_producer(topic).await {
-            Ok(client) => {
-                self.producer_num += 1;
-                return client;
+    pub async fn get_producer(&mut self, topic: &str) -> TestProducer {
+        match self.client.as_ref() {
+            TestDriverType::Fluvio(fluvio_client) => {
+                match fluvio_client.topic_producer(topic).await {
+                    Ok(producer) => {
+                        self.producer_num += 1;
+                        return TestProducer::Fluvio(producer);
+                    }
+                    Err(err) => {
+                        println!(
+                            "unable to get producer to topic: {}, error: {} sleeping 10 second ",
+                            topic, err
+                        );
+                        sleep(Duration::from_secs(10)).await;
+                    }
+                }
             }
-            Err(err) => {
-                println!(
-                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
-            }
-        }
+            TestDriverType::Pulsar => {
+                let addr = "pulsar://127.0.0.1:6650";
+                let pulsar: Pulsar<_> = Pulsar::builder(addr, AsyncStdExecutor)
+                    .build()
+                    .await
+                    .expect("Failed to make Pulsar builder");
+                let producer = pulsar
+                    .producer()
+                    //.with_topic("non-persistent://public/default/test")
+                    .with_topic(topic)
+                    .with_name("my producer")
+                    .with_options(producer::ProducerOptions {
+                        schema: Some(proto::Schema {
+                            r#type: proto::schema::Type::String as i32,
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    })
+                    .build()
+                    .await
+                    .expect("Failed to create producer");
 
+                return TestProducer::Pulsar(producer);
+            }
+
+            //TestDriverType::Kafka(_) => {
+            //    let broker = "localhost:9092";
+            //    let producer: Result<KafkaProducer, KafkaError>  = KafkaClientConfig::new()
+            //    .set("bootstrap.servers", broker)
+            //    .set("message.timeout.ms", "5000")
+            //    .create();
+
+            //    match producer {
+            //        Ok(p) => {
+            //            self.producer_num += 1;
+            //            return TestProducer::Kafka(p);
+            //        },
+            //        Err(_e) => {
+            //            println!("Unable to get kafka producer")
+            //        }
+            //    }
+
+            //}
+            _ => panic!("Only support Fluvio"),
+        }
         panic!("can't get producer");
     }
 
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
-    pub async fn send_count(
+    pub async fn fluvio_send(
         &mut self,
         p: &TopicProducer,
         msg_buf: Vec<(RecordKey, Vec<u8>)>,
@@ -189,28 +277,78 @@ impl FluvioTestDriver {
         result
     }
 
-    pub async fn get_consumer(&mut self, topic: &str, partition: i32) -> PartitionConsumer {
-        match self
-            .client
-            .partition_consumer(topic.to_string(), partition)
-            .await
-        {
-            Ok(client) => {
-                self.consumer_num += 1;
-                return client;
-            }
-            Err(err) => {
-                println!(
-                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
-            }
-        }
+    pub async fn pulsar_send(
+        &mut self,
+        p: &mut PulsarProducer<AsyncStdExecutor>,
+        //msg_buf: Vec<(RecordKey, Vec<u8>)>,
+        msg_buf: Vec<PulsarTestData>,
+    ) -> Result<Vec<SendFuture>, PulsarError> {
+        let bytes_sent: usize = msg_buf
+            .iter()
+            .map(|m| &m.data)
+            .fold(0, |total, msg| total + msg.len());
 
-        panic!("can't get consumer");
+        let now = SystemTime::now();
+
+        let result = p.send_all(msg_buf).await.expect("Send failed");
+
+        let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
+        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
+
+        debug!(
+            "(#{}) Produce latency (ns): {:?} ({} B)",
+            self.producer_latency.len() + 1,
+            produce_time_ns,
+            bytes_sent
+        );
+
+        self.producer_latency.record(produce_time_ns).unwrap();
+
+        self.producer_bytes += bytes_sent as usize;
+
+        // Make both use milliseconds
+        self.producer_time_latency.push(FluvioTimeData {
+            test_elapsed_ms: timestamp,
+            data: (produce_time_ns as f32) / NANOS_IN_MILLIS,
+        });
+
+        self.producer_time_rate.push(FluvioTimeData {
+            test_elapsed_ms: timestamp,
+            data: bytes_sent as f32,
+        });
+
+        // Convert Bytes/ns to Bytes/s
+        // 1_000_000_000 ns in 1 second
+        const NS_IN_SECOND: f64 = 1_000_000_000.0;
+        let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
+        debug!("Producer throughput Bytes/s: {:?}", rate);
+        self.producer_rate.record(rate as u64).unwrap();
+
+        Ok(result)
     }
 
+
+
+    pub async fn get_consumer(&mut self, topic: &str, partition: i32) -> PartitionConsumer {
+        match self.client.as_ref() {
+            TestDriverType::Fluvio(fluvio_client) => {
+                match fluvio_client
+                    .partition_consumer(topic.to_string(), partition)
+                    .await
+                {
+                    Ok(client) => {
+                        self.consumer_num += 1;
+                        return client;
+                    }
+                    Err(err) => {
+                        panic!("unable to get consumer to topic: {}, error: {}", topic, err);
+                    }
+                }
+            }
+
+            _ => panic!("Only Fluvio support"),
+        }
+    }
     // This doesn't work yet
     //pub async fn stream_count(&mut self, consumer: PartitionConsumer, offset: Offset) {
     //    use std::time::SystemTime;
@@ -288,34 +426,43 @@ impl FluvioTestDriver {
     }
 
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
-        println!("Creating the topic: {}", &option.topic_name);
+        match self.client.as_ref() {
+            TestDriverType::Fluvio(fluvio_client) => {
+                println!("Creating the topic: {}", &option.topic_name);
+                let admin = fluvio_client.admin().await;
 
-        let admin = self.client.admin().await;
+                let topic_spec = TopicSpec::new_computed(
+                    option.partition as i32,
+                    option.replication() as i32,
+                    None,
+                );
 
-        let topic_spec =
-            TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
+                // Create topic and record how long it takes
+                let now = SystemTime::now();
+                //let timestamp = self.test_elapsed().as_millis();
 
-        // Create topic and record how long it takes
-        let now = SystemTime::now();
-        //let timestamp = self.test_elapsed().as_millis();
+                let topic_create = admin
+                    .create(option.topic_name.clone(), false, topic_spec)
+                    .await;
 
-        let topic_create = admin
-            .create(option.topic_name.clone(), false, topic_spec)
-            .await;
+                let topic_time = now.elapsed().unwrap().as_nanos();
 
-        let topic_time = now.elapsed().unwrap().as_nanos();
-
-        if topic_create.is_ok() {
-            println!(
-                "topic \"{}\" created. Replication: {} Partition: {}",
-                option.topic_name,
-                option.replication(),
-                option.partition
-            );
-            self.topic_create_latency.record(topic_time as u64).unwrap();
-            self.topic_num += 1;
-        } else {
-            println!("topic \"{}\" already exists", option.topic_name);
+                if topic_create.is_ok() {
+                    println!(
+                        "topic \"{}\" created. Replication: {} Partition: {}",
+                        option.topic_name,
+                        option.replication(),
+                        option.partition
+                    );
+                    self.topic_create_latency.record(topic_time as u64).unwrap();
+                    self.topic_num += 1;
+                } else {
+                    println!("topic \"{}\" already exists", option.topic_name);
+                }
+            }
+            _ => {
+                println!("No topic creation support for other cluster types");
+            }
         }
 
         Ok(())

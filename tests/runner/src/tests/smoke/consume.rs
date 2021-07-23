@@ -10,7 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestDriverType};
 use fluvio::Offset;
 use fluvio_command::CommandExt;
 
@@ -91,7 +91,16 @@ async fn validate_consume_message_api(
     let producer_iteration = test_case.option.producer_iteration;
     let partition = test_case.environment.partition;
     let topic_name = test_case.environment.topic_name.clone();
-    let base_offset = offsets.get(&topic_name).expect("offsets");
+
+    let lock = test_driver.read().await;
+    // TODO: Deal with offsets
+    let base_offset = if let TestDriverType::Fluvio(_) = lock.client.as_ref() {
+        *offsets.get(&topic_name).expect("offsets")
+    } else {
+        0
+    };
+
+    drop(lock);
 
     for i in 0..partition {
         println!(
@@ -106,7 +115,7 @@ async fn validate_consume_message_api(
 
         let mut stream = consumer
             .stream(
-                Offset::absolute(*base_offset)
+                Offset::absolute(base_offset)
                     .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
             )
             .await
@@ -201,19 +210,23 @@ async fn validate_consume_message_api(
     sleep(Duration::from_secs(15)).await;
 
     let lock = test_driver.write().await;
-    let admin = lock.client.admin().await;
-    let partitions = admin
-        .list::<PartitionSpec, _>(vec![])
-        .await
-        .expect("partitions");
-    drop(lock);
 
-    assert_eq!(partitions.len(), 1);
+    if let TestDriverType::Fluvio(fluvio_client) = lock.client.as_ref() {
+        let admin = fluvio_client.admin().await;
+        let partitions = admin
+            .list::<PartitionSpec, _>(vec![])
+            .await
+            .expect("partitions");
 
-    let test_topic = &partitions[0];
-    let status = &test_topic.status;
-    let leader = &status.leader;
+        drop(lock);
 
-    assert_eq!(leader.leo, base_offset + producer_iteration as i64);
-    //assert_eq!(status.replicas.len(), 1);
+        assert_eq!(partitions.len(), 1);
+
+        let test_topic = &partitions[0];
+        let status = &test_topic.status;
+        let leader = &status.leader;
+
+        assert_eq!(leader.leo, base_offset + producer_iteration as i64);
+        //assert_eq!(status.replicas.len(), 1);
+    }
 }

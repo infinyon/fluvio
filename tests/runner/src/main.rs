@@ -9,7 +9,7 @@ use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::{run_block_on, spawn};
 use std::panic::{self, AssertUnwindSafe};
-use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestDriverType};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
 use fluvio_test_util::test_meta::chart_builder::{ChartBuilder, FluvioTimeData};
@@ -40,31 +40,34 @@ fn main() {
         let mut subcommand = vec![test_name.clone()];
 
         // We want to get a TestOption compatible struct back
-        let test_opt: Box<dyn TestOption> = if let Some(TestCli::Args(args)) = option.test_cmd_args
-        {
-            // Add the args to the subcommand
-            subcommand.extend(args);
+        let test_opt: Box<dyn TestOption> =
+            if let Some(TestCli::Args(args)) = option.test_cmd_args.clone() {
+                // Add the args to the subcommand
+                subcommand.extend(args);
 
-            // Parse the subcommand
-            (test_meta.validate_fn)(subcommand)
-        } else {
-            // No args
-            (test_meta.validate_fn)(subcommand)
-        };
+                // Parse the subcommand
+                (test_meta.validate_fn)(subcommand)
+            } else {
+                // No args
+                (test_meta.validate_fn)(subcommand)
+            };
 
         println!("Start running fluvio test runner");
         fluvio_future::subscriber::init_logger();
 
         // Can I get a FluvioConfig anywhere
         // Deploy a cluster
-        let fluvio_client = cluster_setup(&option.environment).await;
+        let fluvio_client = cluster_setup(&option).await;
 
         // Check on test requirements before running the test
-        if !FluvioTestDriver::is_env_acceptable(
-            &(test_meta.requirements)(),
-            &TestCase::new(option.environment.clone(), test_opt.clone()),
-        ) {
-            exit(-1);
+        if &option.runner_opts.cluster_type == "fluvio" {
+            // Check on test requirements before running the test
+            if !FluvioTestDriver::is_env_acceptable(
+                &(test_meta.requirements)(),
+                &TestCase::new(option.environment.clone(), test_opt.clone()),
+            ) {
+                exit(-1);
+            }
         }
 
         let _panic_timer = TestTimer::start();
@@ -393,26 +396,39 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
     }
 }
 
-async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<FluvioTestDriver>> {
-    let fluvio_client = if option.skip_cluster_start() {
-        println!("skipping cluster start");
-        // Connect to cluster in profile
-        Arc::new(
-            Fluvio::connect()
-                .await
-                .expect("Unable to connect to Fluvio test cluster via profile"),
-        )
-    } else {
-        let mut test_cluster = TestCluster::new(option.clone());
-        Arc::new(
-            test_cluster
-                .start()
-                .await
-                .expect("Unable to connect to fresh test cluster"),
-        )
-    };
+async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<FluvioTestDriver>> {
+    // TODO: Maybe have an enum for the types of cluster drivers we support
+    match option.runner_opts.cluster_type.as_str() {
+        "fluvio" => {
+            let env = &option.environment;
+            let fluvio_client = if env.skip_cluster_start() {
+                println!("skipping cluster start");
+                // Connect to cluster in profile
+                Arc::new(TestDriverType::Fluvio(
+                    Fluvio::connect()
+                        .await
+                        .expect("Unable to connect to Fluvio test cluster via profile"),
+                ))
+            } else {
+                let mut test_cluster = TestCluster::new(env.clone());
+                Arc::new(TestDriverType::Fluvio(
+                    test_cluster
+                        .start()
+                        .await
+                        .expect("Unable to connect to fresh test cluster"),
+                ))
+            };
 
-    Arc::new(RwLock::new(FluvioTestDriver::new(fluvio_client)))
+            Arc::new(RwLock::new(FluvioTestDriver::new(fluvio_client)))
+        }
+        "pulsar" => Arc::new(RwLock::new(FluvioTestDriver::new(Arc::new(
+            TestDriverType::Pulsar,
+        )))),
+        "kafka" => Arc::new(RwLock::new(FluvioTestDriver::new(Arc::new(
+            TestDriverType::Kafka,
+        )))),
+        _ => unreachable!(),
+    }
 }
 
 #[cfg(test)]

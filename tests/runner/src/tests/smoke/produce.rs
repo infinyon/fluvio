@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestDriverType, TestProducer, PulsarTestData};
 use tracing::{info, debug};
 
 use super::SmokeTestCase;
@@ -57,7 +57,7 @@ mod offsets {
     use fluvio_controlplane_metadata::partition::ReplicaKey;
 
     use super::SmokeTestCase;
-    use super::FluvioTestDriver;
+    use super::{FluvioTestDriver, TestDriverType};
 
     pub async fn find_offsets(
         test_driver: &FluvioTestDriver,
@@ -69,16 +69,24 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let client = test_driver.client.clone();
-        let mut admin = client.admin().await;
+        match test_driver.client.as_ref() {
+            TestDriverType::Fluvio(fluvio_client) => {
+                let client = fluvio_client.clone();
+                let mut admin = client.admin().await;
 
-        // TODO: Support partition
-        for _i in 0..partition {
-            let topic_name = test_case.environment.topic_name.clone();
-            // find last offset
-            let offset = last_leo(&mut admin, &topic_name).await;
-            println!("found topic: {} offset: {}", topic_name, offset);
-            offsets.insert(topic_name, offset);
+                // TODO: Support partition
+                for _i in 0..partition {
+                    let topic_name = test_case.environment.topic_name.clone();
+                    // find last offset
+                    let offset = last_leo(&mut admin, &topic_name).await;
+                    println!("found topic: {} offset: {}", topic_name, offset);
+                    offsets.insert(topic_name, offset);
+                }
+            }
+            _ => {
+                // Do we need to support getting partition offset maps from other clusters?
+                ()
+            }
         }
 
         offsets
@@ -123,14 +131,22 @@ pub async fn produce_message_with_api(
 
     let topic_name = test_case.environment.topic_name.clone();
 
-    let base_offset = *offsets.get(&topic_name).expect("offsets");
+    let lock = test_driver.read().await;
+
+    // TODO: Deal with offsets
+    let base_offset = if let TestDriverType::Fluvio(_) = lock.client.as_ref() {
+        *offsets.get(&topic_name).expect("offsets")
+    } else {
+        0
+    };
+
+    drop(lock);
 
     let batch_size = test_case.environment.batch_bytes;
     let batch_time = test_case.environment.batch_ms;
 
-
     let mut lock = test_driver.write().await;
-    let producer = lock.get_producer(&topic_name).await;
+    let mut producer = lock.get_producer(&topic_name).await;
     drop(lock);
 
     let mut buffer_data_count: usize = 0;
@@ -146,40 +162,53 @@ pub async fn produce_message_with_api(
             .expect("TestMessage serialize to csv failed");
         let message = wtr.into_inner().expect("csv to Vec<u8> failed");
 
-        let len = message.len();
-        info!("trying send: {}, iteration: {}", topic_name, i);
+        match producer {
+            TestProducer::Fluvio(ref p) => {
+                let len = message.len();
+                info!("trying send: {}, iteration: {}", topic_name, i);
 
-        producer_buffer.push((RecordKey::NULL, message.clone()));
-        buffer_data_count += message.len();
+                producer_buffer.push((RecordKey::NULL, message.clone()));
+                buffer_data_count += message.len();
 
-        let is_batch_time_met = batch_timer
-            .elapsed()
-            .expect("Unable to get batch time elapsed")
-            >= Duration::from_millis(batch_time);
-        let is_buffer_size_met = buffer_data_count >= batch_size;
-        let is_last_iteration = i == produce_iteration - 1;
+                let is_batch_time_met = batch_timer
+                    .elapsed()
+                    .expect("Unable to get batch time elapsed")
+                    >= Duration::from_millis(batch_time);
+                let is_buffer_size_met = buffer_data_count >= batch_size;
+                let is_last_iteration = i == produce_iteration - 1;
 
-        if is_batch_time_met || is_buffer_size_met || is_last_iteration {
-            debug!(
-                "batch time trigger: {:#} buffer size trigger:{:#} last?: {:#}",
-                is_batch_time_met, is_buffer_size_met, is_last_iteration
-            );
+                if is_batch_time_met || is_buffer_size_met || is_last_iteration {
+                    debug!(
+                        "batch time trigger: {:#} buffer size trigger:{:#} last?: {:#}",
+                        is_batch_time_met, is_buffer_size_met, is_last_iteration
+                    );
 
-            let mut lock = test_driver.write().await;
-            lock.send_count(&producer, producer_buffer)
-                .await
-                .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
-            drop(lock);
-            producer_buffer = Vec::new();
-            buffer_data_count = 0;
-            batch_timer = SystemTime::now();
+                    let mut lock = test_driver.write().await;
+                    lock.fluvio_send(&p, producer_buffer)
+                        .await
+                        .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
+                    drop(lock);
+                    producer_buffer = Vec::new();
+                    buffer_data_count = 0;
+                    batch_timer = SystemTime::now();
+                }
+
+                info!(
+                    "completed send iter: {}, offset: {},len: {}",
+                    topic_name, offset, len
+                );
+                sleep(Duration::from_millis(10)).await;
+            }
+            TestProducer::Pulsar(ref mut p) => {
+
+                    let mut lock = test_driver.write().await;
+                    lock.pulsar_send(p, vec!(PulsarTestData{ data: message}))
+                        .await
+                        .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
+                    drop(lock);
+            }
+            _ => panic!("Unimplemented Producer type"),
         }
-
-        info!(
-            "completed send iter: {}, offset: {},len: {}",
-            topic_name, offset, len
-        );
-        sleep(Duration::from_millis(10)).await;
     }
 }
 

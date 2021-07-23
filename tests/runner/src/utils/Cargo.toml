@@ -25,6 +25,9 @@ hdrhistogram = "7.3.0"
 async-lock = "2.4.0"
 charts = "0.3.0"
 csv = "1.1"
+pulsar = { version = "4.0", default-features = false, features = ["async-std-runtime"] }
+env_logger = "0.9.0"
+log = "0.4"
 
 fluvio = { path = "../../../../src/client" }
 fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }
