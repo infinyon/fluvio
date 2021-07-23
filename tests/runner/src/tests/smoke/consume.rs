@@ -192,4 +192,10 @@ async fn validate_consume_message_api(
 
     assert_eq!(leader.leo, base_offset + producer_iteration as i64);
     assert_eq!(status.replicas.len(), 1);
+
+    let follower_status = &status.replicas[0];
+    assert_eq!(follower_status.hw,producer_iteration as i64);
+    assert_eq!(follower_status.leo,producer_iteration as i64);
+
+    println!("status: {:#?}",status);
 }
