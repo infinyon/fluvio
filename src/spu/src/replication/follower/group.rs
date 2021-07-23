@@ -138,9 +138,8 @@ mod controller {
 
         
             let mut backoff = ExponentialBackoffBuilder::default()
-                .min(Duration::from_secs(5))
-                .max(Duration::from_secs(100))
-                .adaptive()
+                .min(Duration::from_secs(1))
+                .max(Duration::from_secs(300))
                 .build()
                 .unwrap();
 
@@ -299,7 +298,7 @@ mod controller {
 
         /// connect to leader, if can't connect try until we succeed
         /// or if we received termination message
-        async fn create_socket_to_leader(&mut self,backoff: &mut Adaptive<ExponentialBackoff>) -> FluvioSocket {
+        async fn create_socket_to_leader(&mut self,backoff: &mut ExponentialBackoff) -> FluvioSocket {
             let leader_spu = self.get_spu().await;
             let leader_endpoint = leader_spu.private_endpoint.to_string();
 
