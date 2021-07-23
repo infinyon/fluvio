@@ -52,6 +52,10 @@ jobs:
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
             run: make build-cli
+          - os: windows-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-msvc
+            binary: fluvio.exe
           - os: macos-latest
             rust: stable
             rust-target: x86_64-apple-darwin
@@ -81,6 +85,7 @@ jobs:
       # then build and run in release mode
       - name: Set RELEASE mode
         if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
           echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
@@ -104,6 +109,10 @@ jobs:
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
         run: make build-cli
+
+      - name: Build fluvio
+        if: ${{ matrix.binary == 'fluvio.exe' }}
+        run: make build-cli-minimal
 
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
@@ -193,6 +202,34 @@ jobs:
 
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
+
+  check_windows:
+    name: Check Windows for crates (${{ matrix.crate }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest]
+        rust: [stable]
+        crate:
+          - client
+          - cli
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
+        run: cargo build --manifest-path ./src/${{matrix.crate}}/Cargo.toml
+
+      - name: Test ${{ matrix.crate }} for ${{ matrix.os }}
+        run: cargo test --manifest-path ./src/${{matrix.crate}}/Cargo.toml
 
   local_cluster_test:
     name: Local cluster test
@@ -377,6 +414,7 @@ jobs:
       - check
       - build_binaries
       - check_wasm
+      - check_windows
       - local_cluster_test
       - k8_cluster_test
     runs-on: ubuntu-latest
