@@ -70,7 +70,7 @@ fn main() {
             }
         }
 
-        let _panic_timer = TestTimer::start();
+        let _panic_timer = TestTimer::new().start();
         /*
         std::panic::set_hook(Box::new(move |panic_info| {
             let mut panic_timer = panic_timer.clone();

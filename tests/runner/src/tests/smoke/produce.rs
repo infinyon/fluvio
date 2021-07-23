@@ -208,7 +208,13 @@ pub async fn produce_message_with_api(
                     .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
                 drop(lock);
             }
-            _ => panic!("Unimplemented Producer type"),
+            TestProducer::Kafka(ref mut p) => {
+                let mut lock = test_driver.write().await;
+                lock.kafka_send(p, topic_name.as_str(), message)
+                    .await
+                    .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
+                drop(lock);
+            }
         }
     }
 }

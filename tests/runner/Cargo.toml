@@ -25,6 +25,7 @@ hdrhistogram = "7.3.0"
 async-lock = "2.4.0"
 async-channel = "1.6.1"
 sysinfo = "0.19.1"
+rdkafka = "0.26.0"
 
 
 # Fluvio dependencies

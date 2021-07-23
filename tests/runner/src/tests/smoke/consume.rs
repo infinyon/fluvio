@@ -14,6 +14,8 @@ use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestConsumer,
 use fluvio::Offset;
 use fluvio_command::CommandExt;
 
+use rdkafka::message::Message;
+
 use super::SmokeTestCase;
 use super::message::*;
 
@@ -208,12 +210,9 @@ async fn validate_consume_message_api(
                 }
             }
             TestConsumer::Pulsar(mut pulsar_consumer) => {
-                //let mut counter = 0usize;
                 let mut total_records: u16 = 0;
 
                 loop {
-                    //while let Some(msg) = pulsar_consumer.try_next().await.expect("Pulsar consume try failed") {
-
                     let consume_timestamp = SystemTime::now();
                     select! {
                         Ok(next) = pulsar_consumer.try_next() => {
@@ -251,7 +250,64 @@ async fn validate_consume_message_api(
 
                                 drop(lock);
 
+                                total_records += 1;
 
+                                if total_records == producer_iteration {
+                                    println!("<<consume test done for: {} >>>>", topic_name);
+                                    println!("consume message validated!, records: {}",total_records);
+                                    break;
+                                }
+
+                            } else {
+                                info!("No more messages from Pulsar");
+                                break;
+                            }
+                        }
+
+                    }
+                }
+            }
+            TestConsumer::Kafka(kafka_consumer) => {
+                let mut total_records: u16 = 0;
+
+                let mut stream_msg = kafka_consumer.stream();
+
+                loop {
+                    let consume_timestamp = SystemTime::now();
+                    select! {
+                        Some(next) = stream_msg.next() => {
+
+                            if let Ok(msg) = next {
+
+                                // Stop E2E timer
+                                let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
+
+
+                                let data = match msg.payload() {
+                                    Some(d) => {
+                                        d.to_vec()
+                                    },
+                                    None => {
+                                        panic!("No data in message")
+                                    }
+                                };
+
+                                // Parse record
+                                let offset = 0;
+                                let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &data).expect("Validation failed");
+
+                                // Calculate the E2E duration
+                                let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
+
+                                debug!("stop_time: {:#?} duration: {:#?}",e2e_stop_time, e2e_duration_nanos );
+
+                                let mut lock = test_driver.write().await;
+                                // record consumer-only and E2E latency
+                                let consume_time = consume_timestamp.elapsed().clone().unwrap().as_nanos();
+
+                                lock.consume_record(data.len(), consume_time as u64, e2e_duration_nanos as u64).await;
+
+                                drop(lock);
 
                                 total_records += 1;
 
@@ -261,25 +317,15 @@ async fn validate_consume_message_api(
                                     break;
                                 }
 
-
-
-                        //if data.data.as_str() != "data" {
-                        //    error!("Unexpected payload: {}", &data.data);
-                        //    break;
-                        //}
-                        //counter += 1;
-                        //info!("got {} messages - payload: {}", counter, data.data);
                             } else {
-                                info!("No more messages from Pulsar");
+                                info!("No more messages from Kafka");
                                 break;
                             }
-                    }
+                        }
 
-                                        }
+                    }
                 }
             }
-
-            _ => panic!("Only support Fluvio"),
         }
     }
 

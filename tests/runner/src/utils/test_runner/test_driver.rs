@@ -21,6 +21,17 @@ use pulsar::{
     message::Payload, message::proto::command_subscribe::SubType,
 };
 
+use std::future::Future;
+use std::pin::Pin;
+use std::process;
+//use std::time::Duration;
+use rdkafka::config::ClientConfig as KafkaClientConfig;
+use rdkafka::consumer::{Consumer, StreamConsumer as KafkaConsumer, DefaultConsumerContext};
+use rdkafka::message::Message;
+use rdkafka::producer::{FutureProducer as KafkaProducer, FutureRecord as KafkaRecord};
+use rdkafka::producer::future_producer::OwnedDeliveryResult as KafkaProducerResult;
+use rdkafka::util::AsyncRuntime;
+
 // # of nanoseconds in a millisecond
 const NANOS_IN_MILLIS: f32 = 1_000_000.0;
 
@@ -33,13 +44,13 @@ pub enum TestDriverType {
 pub enum TestProducer {
     Fluvio(TopicProducer),
     Pulsar(PulsarProducer<AsyncStdExecutor>),
-    Kafka,
+    Kafka(KafkaProducer),
 }
 
 pub enum TestConsumer {
     Fluvio(PartitionConsumer),
     Pulsar(PulsarConsumer<PulsarTestData, AsyncStdExecutor>),
-    Kafka,
+    Kafka(KafkaConsumer<DefaultConsumerContext, KafkaAsyncStdRuntime>),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -62,6 +73,23 @@ impl DeserializeMessage for PulsarTestData {
 
     fn deserialize_message(payload: &Payload) -> Self::Output {
         serde_json::from_slice(&payload.data)
+    }
+}
+
+pub struct KafkaAsyncStdRuntime;
+
+impl AsyncRuntime for KafkaAsyncStdRuntime {
+    type Delay = Pin<Box<dyn Future<Output = ()> + Send>>;
+
+    fn spawn<T>(task: T)
+    where
+        T: Future<Output = ()> + Send + 'static,
+    {
+        fluvio_future::task::spawn(task);
+    }
+
+    fn delay_for(duration: Duration) -> Self::Delay {
+        Box::pin(fluvio_future::timer::sleep(duration))
     }
 }
 
@@ -212,25 +240,17 @@ impl FluvioTestDriver {
                 return TestProducer::Pulsar(producer);
             }
 
-            //TestDriverType::Kafka(_) => {
-            //    let broker = "localhost:9092";
-            //    let producer: Result<KafkaProducer, KafkaError>  = KafkaClientConfig::new()
-            //    .set("bootstrap.servers", broker)
-            //    .set("message.timeout.ms", "5000")
-            //    .create();
+            TestDriverType::Kafka => {
+                let broker = "localhost:9092";
+                let producer = KafkaClientConfig::new()
+                    .set("bootstrap.servers", broker)
+                    .set("message.timeout.ms", "5000")
+                    .create()
+                    .expect("Kafka producer creation failed");
 
-            //    match producer {
-            //        Ok(p) => {
-            //            self.producer_num += 1;
-            //            return TestProducer::Kafka(p);
-            //        },
-            //        Err(_e) => {
-            //            println!("Unable to get kafka producer")
-            //        }
-            //    }
-
-            //}
-            _ => panic!("Only support Fluvio"),
+                self.producer_num += 1;
+                return TestProducer::Kafka(producer);
+            }
         }
         panic!("can't get producer");
     }
@@ -335,6 +355,63 @@ impl FluvioTestDriver {
         Ok(result)
     }
 
+    pub async fn kafka_send(
+        &mut self,
+        p: &mut KafkaProducer,
+        topic: &str,
+        msg_buf: Vec<u8>,
+    ) -> KafkaProducerResult {
+        //let bytes_sent: usize = msg_buf
+        //    .iter()
+        //    .map(|m| &m.data)
+        //    .fold(0, |total, msg| total + msg.len());
+        let bytes_sent: usize = msg_buf.len();
+
+        let now = SystemTime::now();
+
+        //let result = p.send_all(msg_buf).await.expect("Send failed");
+        let result = p
+            .send::<Vec<u8>, _, _>(
+                KafkaRecord::to(topic).payload(&msg_buf),
+                Duration::from_secs(0),
+            )
+            .await;
+
+        let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
+        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
+
+        debug!(
+            "(#{}) Produce latency (ns): {:?} ({} B)",
+            self.producer_latency.len() + 1,
+            produce_time_ns,
+            bytes_sent
+        );
+
+        self.producer_latency.record(produce_time_ns).unwrap();
+
+        self.producer_bytes += bytes_sent as usize;
+
+        // Make both use milliseconds
+        self.producer_time_latency.push(FluvioTimeData {
+            test_elapsed_ms: timestamp,
+            data: (produce_time_ns as f32) / NANOS_IN_MILLIS,
+        });
+
+        self.producer_time_rate.push(FluvioTimeData {
+            test_elapsed_ms: timestamp,
+            data: bytes_sent as f32,
+        });
+
+        // Convert Bytes/ns to Bytes/s
+        // 1_000_000_000 ns in 1 second
+        const NS_IN_SECOND: f64 = 1_000_000_000.0;
+        let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
+        debug!("Producer throughput Bytes/s: {:?}", rate);
+        self.producer_rate.record(rate as u64).unwrap();
+
+        result
+    }
+
     pub async fn get_consumer(&mut self, topic: &str, partition: i32) -> TestConsumer {
         match self.client.as_ref() {
             TestDriverType::Fluvio(fluvio_client) => {
@@ -370,7 +447,21 @@ impl FluvioTestDriver {
 
                 TestConsumer::Pulsar(consumer)
             }
-            _ => panic!("Only Fluvio support"),
+            TestDriverType::Kafka => {
+                let broker = "localhost:9092";
+                let consumer: KafkaConsumer<_, KafkaAsyncStdRuntime> = KafkaClientConfig::new()
+                    .set("bootstrap.servers", broker)
+                    .set("session.timeout.ms", "6000")
+                    .set("enable.auto.commit", "false")
+                    .set("auto.offset.reset", "earliest")
+                    .set("group.id", "rust-rdkafka-smol-runtime-example")
+                    .create()
+                    .expect("Consumer creation failed");
+
+                consumer.subscribe(&[topic]).unwrap();
+
+                TestConsumer::Kafka(consumer)
+            }
         }
     }
     // This doesn't work yet

@@ -28,6 +28,7 @@ csv = "1.1"
 pulsar = { version = "4.0", default-features = false, features = ["async-std-runtime"] }
 env_logger = "0.9.0"
 log = "0.4"
+rdkafka = "0.26.0"
 
 fluvio = { path = "../../../../src/client" }
 fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }
