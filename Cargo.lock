@@ -3,6 +3,16 @@
 version = 3
 
 [[package]]
+name = "adaptive_backoff"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c13fe4a0db6c40b835c26d92806193ff904a3a28c13258a7b432521c0fedf04"
+dependencies = [
+ "anyhow",
+ "thiserror",
+]
+
+[[package]]
 name = "addr2line"
 version = "0.14.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1820,6 +1830,7 @@ dependencies = [
 name = "fluvio-spu"
 version = "0.5.1"
 dependencies = [
+ "adaptive_backoff",
  "anyhow",
  "async-channel",
  "async-io",
