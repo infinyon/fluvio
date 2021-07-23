@@ -1,6 +1,6 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use tracing::{debug, error, trace, instrument};
+use tracing::{debug, error, trace, warn, instrument};
 use async_rwlock::{RwLock};
 use adaptive_backoff::prelude::*;
 
@@ -161,7 +161,7 @@ mod controller {
                     Err(err) => error!("err: {}", err),
                 }
 
-                debug!("lost connection to leader, sleeping 5 seconds and will retry it");
+                warn!("lost connection to leader, sleeping 5 seconds and will retry it");
 
                 if self.group.is_end() {
                     debug!("end");
@@ -307,7 +307,7 @@ mod controller {
                 debug!(
                     %leader_endpoint,
                     counter,
-                    "trying to create socket to leader",
+                    "trying connect to leader",
                 );
 
                 match FluvioSocket::connect(&leader_endpoint).await {
