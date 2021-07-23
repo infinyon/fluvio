@@ -135,8 +135,6 @@ mod controller {
         )
         )]
         async fn dispatch_loop(mut self) {
-
-        
             let mut backoff = ExponentialBackoffBuilder::default()
                 .min(Duration::from_secs(1))
                 .max(Duration::from_secs(300))
@@ -298,7 +296,10 @@ mod controller {
 
         /// connect to leader, if can't connect try until we succeed
         /// or if we received termination message
-        async fn create_socket_to_leader(&mut self,backoff: &mut ExponentialBackoff) -> FluvioSocket {
+        async fn create_socket_to_leader(
+            &mut self,
+            backoff: &mut ExponentialBackoff,
+        ) -> FluvioSocket {
             let leader_spu = self.get_spu().await;
             let leader_endpoint = leader_spu.private_endpoint.to_string();
 
@@ -317,9 +318,15 @@ mod controller {
                     }
 
                     Err(err) => {
-                        error!("error connecting to leader at: <{}> err: {}", leader_endpoint,err);
+                        error!(
+                            "error connecting to leader at: <{}> err: {}",
+                            leader_endpoint, err
+                        );
                         let wait = backoff.wait();
-                        debug!(seconds = wait.as_secs(),"sleeping seconds to connect to leader");
+                        debug!(
+                            seconds = wait.as_secs(),
+                            "sleeping seconds to connect to leader"
+                        );
                         sleep(wait).await;
                         counter += 1;
                     }

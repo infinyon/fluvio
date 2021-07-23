@@ -88,7 +88,7 @@ impl SpuGroupObj {
 
     pub fn generate_service(&self) -> (String, WSAction<SpgServiceSpec>) {
         let svc_name = self.svc_name.to_owned();
-        let k8_service = k8_convert::generate_service(self.spec(),&self.key());
+        let k8_service = k8_convert::generate_service(self.spec(), &self.key());
 
         (
             svc_name.clone(),
@@ -263,7 +263,10 @@ mod k8_convert {
         K8StatefulSetSpec {
             replicas: Some(replicas),
             service_name: group_svc_name.to_owned(),
-            selector: LabelSelector::new_labels(vec![("app", SPU_DEFAULT_NAME), ("group", group_name)]),
+            selector: LabelSelector::new_labels(vec![
+                ("app", SPU_DEFAULT_NAME),
+                ("group", group_name),
+            ]),
             template,
             volume_claim_templates: vec![TemplateSpec {
                 spec: claim,
