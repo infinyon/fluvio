@@ -88,7 +88,7 @@ impl SpuGroupObj {
 
     pub fn generate_service(&self) -> (String, WSAction<SpgServiceSpec>) {
         let svc_name = self.svc_name.to_owned();
-        let k8_service = k8_convert::generate_service(self.spec(), &svc_name);
+        let k8_service = k8_convert::generate_service(self.spec(), &self.key());
 
         (
             svc_name.clone(),
@@ -123,7 +123,7 @@ mod k8_convert {
     /// convert spu group spec into k8 statefulset spec
     pub fn generate_k8_stateful(
         spg_spec: &SpuGroupSpec,
-        name: &str,
+        group_name: &str,
         group_svc_name: &str,
         namespace: &str,
         spu_k8_config: &ScK8Config,
@@ -232,7 +232,7 @@ mod k8_convert {
         let template = TemplateSpec {
             metadata: Some(
                 TemplateMeta::default()
-                    .set_labels(vec![("app", SPU_DEFAULT_NAME), ("group", name)]),
+                    .set_labels(vec![("app", SPU_DEFAULT_NAME), ("group", group_name)]),
             ),
             spec: PodSpec {
                 termination_grace_period_seconds: Some(10),
@@ -263,7 +263,10 @@ mod k8_convert {
         K8StatefulSetSpec {
             replicas: Some(replicas),
             service_name: group_svc_name.to_owned(),
-            selector: LabelSelector::new_labels(vec![("app", SPU_DEFAULT_NAME), ("group", name)]),
+            selector: LabelSelector::new_labels(vec![
+                ("app", SPU_DEFAULT_NAME),
+                ("group", group_name),
+            ]),
             template,
             volume_claim_templates: vec![TemplateSpec {
                 spec: claim,
@@ -275,7 +278,7 @@ mod k8_convert {
 
     /// generate headless service from SPG spec
     /// for now, we forgo port and env variable because it wasn't mapped from K8
-    pub fn generate_service(_spg: &SpuGroupSpec, name: &str) -> ServiceSpec {
+    pub fn generate_service(_spg: &SpuGroupSpec, group_name: &str) -> ServiceSpec {
         let mut public_port = ServicePort {
             port: SPU_PUBLIC_PORT,
             ..Default::default()
@@ -290,7 +293,7 @@ mod k8_convert {
 
         let mut selector = HashMap::new();
         selector.insert("app".to_owned(), SPU_DEFAULT_NAME.to_owned());
-        selector.insert("group".to_owned(), name.to_owned());
+        selector.insert("group".to_owned(), group_name.to_owned());
 
         ServiceSpec {
             cluster_ip: "None".to_owned(),

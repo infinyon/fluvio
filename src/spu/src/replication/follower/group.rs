@@ -1,7 +1,8 @@
 use std::{collections::HashMap, sync::Arc, time::Duration};
 
-use tracing::{debug, error, trace, instrument};
+use tracing::{debug, error, trace, warn, instrument};
 use async_rwlock::{RwLock};
+use adaptive_backoff::prelude::*;
 
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
@@ -134,13 +135,19 @@ mod controller {
         )
         )]
         async fn dispatch_loop(mut self) {
+            let mut backoff = ExponentialBackoffBuilder::default()
+                .min(Duration::from_secs(1))
+                .max(Duration::from_secs(300))
+                .build()
+                .unwrap();
+
             loop {
                 if self.group.is_end() {
                     debug!("end");
                     break;
                 }
 
-                let socket = self.create_socket_to_leader().await;
+                let socket = self.create_socket_to_leader(&mut backoff).await;
 
                 match self.sync_with_leader(socket).await {
                     Ok(terminate_flag) => {
@@ -152,7 +159,7 @@ mod controller {
                     Err(err) => error!("err: {}", err),
                 }
 
-                debug!("lost connection to leader, sleeping 5 seconds and will retry it");
+                warn!("lost connection to leader, sleeping 5 seconds and will retry it");
 
                 if self.group.is_end() {
                     debug!("end");
@@ -289,7 +296,10 @@ mod controller {
 
         /// connect to leader, if can't connect try until we succeed
         /// or if we received termination message
-        async fn create_socket_to_leader(&mut self) -> FluvioSocket {
+        async fn create_socket_to_leader(
+            &mut self,
+            backoff: &mut ExponentialBackoff,
+        ) -> FluvioSocket {
             let leader_spu = self.get_spu().await;
             let leader_endpoint = leader_spu.private_endpoint.to_string();
 
@@ -298,7 +308,7 @@ mod controller {
                 debug!(
                     %leader_endpoint,
                     counter,
-                    "trying to create socket to leader",
+                    "trying connect to leader",
                 );
 
                 match FluvioSocket::connect(&leader_endpoint).await {
@@ -308,9 +318,16 @@ mod controller {
                     }
 
                     Err(err) => {
-                        error!("error connecting err: {}, sleeping ", err);
-                        debug!("sleeping 5 seconds to connect to leader");
-                        sleep(Duration::from_secs(5)).await;
+                        error!(
+                            "error connecting to leader at: <{}> err: {}",
+                            leader_endpoint, err
+                        );
+                        let wait = backoff.wait();
+                        debug!(
+                            seconds = wait.as_secs(),
+                            "sleeping seconds to connect to leader"
+                        );
+                        sleep(wait).await;
                         counter += 1;
                     }
                 }
