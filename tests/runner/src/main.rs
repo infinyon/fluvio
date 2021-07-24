@@ -419,14 +419,28 @@ async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<FluvioTestDriver>> {
                 ))
             };
 
-            Arc::new(RwLock::new(FluvioTestDriver::new(fluvio_client)))
+            Arc::new(RwLock::new(
+                FluvioTestDriver::new(fluvio_client)
+                    .with_cluster_addr(option.environment.cluster_addr.clone())
+                    .with_producer_batch_ms(option.environment.batch_ms)
+                    .with_producer_batch_size(option.environment.batch_kbytes)
+                    .with_producer_record_size(option.environment.record_bytes),
+            ))
         }
-        "pulsar" => Arc::new(RwLock::new(FluvioTestDriver::new(Arc::new(
-            TestDriverType::Pulsar,
-        )))),
-        "kafka" => Arc::new(RwLock::new(FluvioTestDriver::new(Arc::new(
-            TestDriverType::Kafka,
-        )))),
+        "pulsar" => Arc::new(RwLock::new(
+            FluvioTestDriver::new(Arc::new(TestDriverType::Pulsar))
+                .with_cluster_addr(option.environment.cluster_addr.clone())
+                .with_producer_batch_ms(option.environment.batch_ms)
+                .with_producer_batch_size(option.environment.batch_kbytes)
+                .with_producer_record_size(option.environment.record_bytes),
+        )),
+        "kafka" => Arc::new(RwLock::new(
+            FluvioTestDriver::new(Arc::new(TestDriverType::Kafka))
+                .with_cluster_addr(option.environment.cluster_addr.clone())
+                .with_producer_batch_ms(option.environment.batch_ms)
+                .with_producer_batch_size(option.environment.batch_kbytes)
+                .with_producer_record_size(option.environment.record_bytes),
+        )),
         _ => unreachable!(),
     }
 }

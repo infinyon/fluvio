@@ -130,22 +130,20 @@ pub async fn produce_message_with_api(
     //let partition = test_case.environment.partition;
 
     let produce_iteration = test_case.option.producer_iteration;
-
     let topic_name = test_case.environment.topic_name.clone();
-
     let lock = test_driver.read().await;
 
-    // TODO: Deal with offsets
+    // TODO: Deal with offsets for other clusters
     let base_offset = if let TestDriverType::Fluvio(_) = lock.client.as_ref() {
         *offsets.get(&topic_name).expect("offsets")
     } else {
         0
     };
 
-    drop(lock);
-
-    let batch_size = test_case.environment.batch_bytes;
+    let batch_size_bytes = test_case.environment.batch_kbytes * 1000;
     let batch_time = test_case.environment.batch_ms;
+
+    drop(lock);
 
     let mut lock = test_driver.write().await;
     let mut producer = lock.get_producer(&topic_name).await;
@@ -165,6 +163,8 @@ pub async fn produce_message_with_api(
         let message = wtr.into_inner().expect("csv to Vec<u8> failed");
 
         match producer {
+            // Batch accumulation is handled in memory
+            // Then when filesize or timer triggers, send buffer
             TestProducer::Fluvio(ref p) => {
                 let len = message.len();
                 info!("trying send: {}, iteration: {}", topic_name, i);
@@ -176,7 +176,7 @@ pub async fn produce_message_with_api(
                     .elapsed()
                     .expect("Unable to get batch time elapsed")
                     >= Duration::from_millis(batch_time);
-                let is_buffer_size_met = buffer_data_count >= batch_size;
+                let is_buffer_size_met = buffer_data_count >= batch_size_bytes;
                 let is_last_iteration = i == produce_iteration - 1;
 
                 if is_batch_time_met || is_buffer_size_met || is_last_iteration {
@@ -201,6 +201,8 @@ pub async fn produce_message_with_api(
                 );
                 sleep(Duration::from_millis(10)).await;
             }
+            // Pulsar producer should have been configured for batch w/r/t # of messages
+            // TODO: We need to keep track of timeout, and manually flush buffer
             TestProducer::Pulsar(ref mut p) => {
                 let mut lock = test_driver.write().await;
                 lock.pulsar_send(p, vec![PulsarTestData { data: message }])
@@ -208,6 +210,7 @@ pub async fn produce_message_with_api(
                     .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
                 drop(lock);
             }
+            // Kafka producer was configured for batching via cli config
             TestProducer::Kafka(ref mut p) => {
                 let mut lock = test_driver.write().await;
                 lock.kafka_send(p, topic_name.as_str(), message)

@@ -31,7 +31,7 @@ impl TestMessage {
     /// generate test data based on iteration and option
     ///
     pub fn generate_message(offset: i64, test_case: &SmokeTestCase) -> Self {
-        let producer_record_size = test_case.option.producer_record_size as usize;
+        let producer_record_size = test_case.environment.record_bytes as usize;
 
         // TODO: Support reading in a payload from file here, but default to generating the message
 

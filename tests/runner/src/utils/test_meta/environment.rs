@@ -204,13 +204,24 @@ pub struct EnvironmentSetup {
     #[structopt(long, default_value = "1")]
     pub consumers: u16,
 
-    // Default batch buffer size (10KB default)
-    #[structopt(long, default_value = "10000")]
-    pub batch_bytes: usize,
+    /// Default record size in bytes (1000 default)
+    #[structopt(long, default_value = "1000")]
+    pub record_bytes: usize,
 
-    // Default batch time in milliseconds (10ms default)
+    /// Default batch buffer size in kbytes (10KB default)
+    #[structopt(long, default_value = "10")]
+    pub batch_kbytes: usize,
+
+    /// Default batch time in milliseconds (10ms default)
     #[structopt(long, default_value = "10")]
     pub batch_ms: u64,
+
+    /// Override cluster broker address (i.e. Pulsar, Kafka)
+    #[structopt(long)]
+    pub cluster_addr: Option<String>,
+    // TODO:
+    // Producer timeout ms
+    // Consumer timeout ms
 }
 
 #[allow(clippy::unnecessary_wraps)]

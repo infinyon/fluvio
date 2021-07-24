@@ -96,6 +96,10 @@ impl AsyncRuntime for KafkaAsyncStdRuntime {
 #[derive(Clone)]
 pub struct FluvioTestDriver {
     pub client: Arc<TestDriverType>,
+    other_cluster_addr: Option<String>,
+    producer_batch_kbytes: usize,
+    producer_batch_ms: u64,
+    producer_record_bytes: usize,
     pub timer: TestTimer,
     pub topic_num: usize,
     pub producer_num: usize,
@@ -123,6 +127,10 @@ impl FluvioTestDriver {
     pub fn new(client: Arc<TestDriverType>) -> Self {
         Self {
             client,
+            other_cluster_addr: None,
+            producer_batch_kbytes: 10,
+            producer_batch_ms: 10,
+            producer_record_bytes: 1000,
             timer: TestTimer::new(),
             topic_num: 0,
             producer_num: 0,
@@ -145,6 +153,26 @@ impl FluvioTestDriver {
             cpu_usage: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             cpu_time_usage: Vec::new(),
         }
+    }
+
+    pub fn with_cluster_addr(mut self, addr: Option<String>) -> Self {
+        self.other_cluster_addr = addr;
+        self
+    }
+
+    pub fn with_producer_batch_size(mut self, size_kb: usize) -> Self {
+        self.producer_batch_kbytes = size_kb;
+        self
+    }
+
+    pub fn with_producer_batch_ms(mut self, time_ms: u64) -> Self {
+        self.producer_batch_ms = time_ms;
+        self
+    }
+
+    pub fn with_producer_record_size(mut self, size_bytes: usize) -> Self {
+        self.producer_record_bytes = size_bytes;
+        self
     }
 
     pub async fn start_system_poll(&self) {
@@ -216,35 +244,64 @@ impl FluvioTestDriver {
                 }
             }
             TestDriverType::Pulsar => {
-                let addr = "pulsar://127.0.0.1:6650";
+                let addr = match &self.other_cluster_addr {
+                    Some(addr) => addr,
+                    None => "pulsar://127.0.0.1:6650",
+                };
+
                 let pulsar: Pulsar<_> = Pulsar::builder(addr, AsyncStdExecutor)
                     .build()
                     .await
                     .expect("Failed to make Pulsar builder");
+
+                // Based on looking at the Pulsar-rs producer code, it seems that batch size is based on # of messages, not bytes
+                let calc_batch_size =
+                    (self.producer_batch_kbytes * 1000) / self.producer_record_bytes;
+                debug!(
+                    "Using calculated batch size of {} messages",
+                    calc_batch_size
+                );
+
                 let producer = pulsar
                     .producer()
-                    //.with_topic("non-persistent://public/default/test")
                     .with_topic(topic)
-                    .with_name("my producer")
+                    .with_name("flv-test-pulsar")
                     .with_options(producer::ProducerOptions {
                         schema: Some(proto::Schema {
                             r#type: proto::schema::Type::String as i32,
                             ..Default::default()
                         }),
+                        compression: None,
+                        batch_size: Some(calc_batch_size as u32),
                         ..Default::default()
                     })
                     .build()
                     .await
                     .expect("Failed to create producer");
 
+                self.producer_num += 1;
                 return TestProducer::Pulsar(producer);
             }
 
             TestDriverType::Kafka => {
-                let broker = "localhost:9092";
+                let broker = match &self.other_cluster_addr {
+                    Some(addr) => addr,
+                    None => "localhost:9092",
+                };
+
+                // https://docs.rs/rdkafka/0.26.0/rdkafka/producer/index.html#producer-configuration
                 let producer = KafkaClientConfig::new()
                     .set("bootstrap.servers", broker)
                     .set("message.timeout.ms", "5000")
+                    .set("request.required.ack", "1")
+                    .set(
+                        "queue.buffering.max.kbytes",
+                        format!("{}", self.producer_batch_kbytes),
+                    )
+                    .set(
+                        "queue.buffering.max.ms",
+                        format!("{}", self.producer_batch_ms),
+                    )
                     .create()
                     .expect("Kafka producer creation failed");
 
@@ -429,7 +486,11 @@ impl FluvioTestDriver {
                 }
             }
             TestDriverType::Pulsar => {
-                let addr = "pulsar://127.0.0.1:6650";
+                let addr = match &self.other_cluster_addr {
+                    Some(addr) => addr,
+                    None => "pulsar://127.0.0.1:6650",
+                };
+
                 let pulsar: Pulsar<_> = Pulsar::builder(addr, AsyncStdExecutor)
                     .build()
                     .await
@@ -438,9 +499,8 @@ impl FluvioTestDriver {
                 let consumer: PulsarConsumer<PulsarTestData, _> = pulsar
                     .consumer()
                     .with_topic(topic)
-                    .with_consumer_name("test_consumer")
-                    //.with_subscription_type(SubType::Exclusive)
-                    .with_subscription("test_subscription")
+                    .with_consumer_name("flv-test-kafka-consumer")
+                    .with_subscription("flv-test-kafka-subscription")
                     .build()
                     .await
                     .expect("Failed to create Pulsar consumer");
@@ -448,13 +508,18 @@ impl FluvioTestDriver {
                 TestConsumer::Pulsar(consumer)
             }
             TestDriverType::Kafka => {
-                let broker = "localhost:9092";
+                let broker = match &self.other_cluster_addr {
+                    Some(addr) => addr,
+                    None => "localhost:9092",
+                };
+
+                // https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
                 let consumer: KafkaConsumer<_, KafkaAsyncStdRuntime> = KafkaClientConfig::new()
                     .set("bootstrap.servers", broker)
                     .set("session.timeout.ms", "6000")
                     .set("enable.auto.commit", "false")
                     .set("auto.offset.reset", "earliest")
-                    .set("group.id", "rust-rdkafka-smol-runtime-example")
+                    .set("group.id", "flv-test-kafka")
                     .create()
                     .expect("Consumer creation failed");
 

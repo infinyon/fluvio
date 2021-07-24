@@ -219,11 +219,10 @@ async fn validate_consume_message_api(
 
                             if let Some(msg) = next {
 
-                                pulsar_consumer.ack(&msg).await.expect("Pulsar consume ask failed");
-
                                 // Stop E2E timer
                                 let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
 
+                                pulsar_consumer.ack(&msg).await.expect("Pulsar consume ask failed");
 
                                 let data = match msg.deserialize() {
                                     Ok(data) => data.data,
