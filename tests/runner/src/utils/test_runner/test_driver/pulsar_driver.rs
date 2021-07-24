@@ -1,4 +1,4 @@
-use super::{FluvioTestDriver, NANOS_IN_MILLIS};
+use super::{TestDriver, NANOS_IN_MILLIS};
 use serde::{Serialize, Deserialize};
 use pulsar::{
     producer, producer::Producer as PulsarProducer, Error as PulsarError, SerializeMessage,
@@ -33,7 +33,7 @@ impl DeserializeMessage for PulsarTestData {
     }
 }
 
-impl FluvioTestDriver {
+impl TestDriver {
     pub async fn pulsar_send(
         &mut self,
         p: &mut PulsarProducer<AsyncStdExecutor>,

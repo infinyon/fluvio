@@ -1,4 +1,4 @@
-use super::{FluvioTestDriver, NANOS_IN_MILLIS};
+use super::{TestDriver, NANOS_IN_MILLIS};
 use crate::test_meta::chart_builder::FluvioTimeData;
 use tracing::debug;
 
@@ -27,7 +27,7 @@ impl AsyncRuntime for KafkaAsyncStdRuntime {
     }
 }
 
-impl FluvioTestDriver {
+impl TestDriver {
     pub async fn kafka_send(
         &mut self,
         p: &mut KafkaProducer,

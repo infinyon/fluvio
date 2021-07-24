@@ -1,11 +1,11 @@
-use super::{FluvioTestDriver, NANOS_IN_MILLIS};
+use super::{TestDriver, NANOS_IN_MILLIS};
 use crate::test_meta::chart_builder::FluvioTimeData;
 
 use fluvio::{TopicProducer, RecordKey, FluvioError};
 use std::time::SystemTime;
 use tracing::debug;
 
-impl FluvioTestDriver {
+impl TestDriver {
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
     pub async fn fluvio_send(
         &mut self,

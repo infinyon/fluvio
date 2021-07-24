@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use fluvio_test_util::test_runner::test_driver::{
-    FluvioTestDriver, TestDriverType, TestProducer, PulsarTestData,
+    TestDriver, TestDriverType, TestProducer, PulsarTestData,
 };
 use tracing::{info, debug};
 
@@ -18,7 +18,7 @@ use csv::WriterBuilder;
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     test_case: &SmokeTestCase,
 ) -> Offsets {
     use fluvio_future::task::spawn;
@@ -59,10 +59,10 @@ mod offsets {
     use fluvio_controlplane_metadata::partition::ReplicaKey;
 
     use super::SmokeTestCase;
-    use super::{FluvioTestDriver, TestDriverType};
+    use super::{TestDriver, TestDriverType};
 
     pub async fn find_offsets(
-        test_driver: &FluvioTestDriver,
+        test_driver: &TestDriver,
         test_case: &SmokeTestCase,
     ) -> HashMap<String, i64> {
         let partition = test_case.environment.partition;
@@ -119,7 +119,7 @@ mod offsets {
 }
 
 pub async fn produce_message_with_api(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {

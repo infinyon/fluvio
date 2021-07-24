@@ -77,7 +77,7 @@ pub struct TestDriver {
     pub cpu_time_usage: Vec<FluvioTimeData>,
 }
 
-impl FluvioTestDriver {
+impl TestDriver {
     pub fn new(client: Arc<TestDriverType>) -> Self {
         Self {
             client,

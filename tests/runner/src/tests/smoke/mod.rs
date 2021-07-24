@@ -11,7 +11,7 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use async_lock::RwLock;
 
@@ -67,7 +67,7 @@ impl TestOption for SmokeTestOption {
 
 #[fluvio_test(topic = "test")]
 pub async fn smoke(
-    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_driver: Arc<RwLock<TestDriver>>,
     mut test_case: TestCase,
 ) -> TestResult {
     let smoke_test_case = test_case.into();

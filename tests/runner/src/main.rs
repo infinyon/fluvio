@@ -9,7 +9,7 @@ use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::{run_block_on, spawn};
 use std::panic::{self, AssertUnwindSafe};
-use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestDriverType};
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
 use fluvio_test_util::test_meta::chart_builder::{ChartBuilder, FluvioTimeData};
@@ -62,7 +62,7 @@ fn main() {
         // Check on test requirements before running the test
         if &option.runner_opts.cluster_type == "fluvio" {
             // Check on test requirements before running the test
-            if !FluvioTestDriver::is_env_acceptable(
+            if !TestDriver::is_env_acceptable(
                 &(test_meta.requirements)(),
                 &TestCase::new(option.environment.clone(), test_opt.clone()),
             ) {
@@ -372,7 +372,7 @@ async fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     system_profiler_channel: async_channel::Sender<()>,
     // Add channel
 ) -> Result<TestResult, TestResult> {
@@ -400,7 +400,7 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
     }
 }
 
-async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<FluvioTestDriver>> {
+async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<TestDriver>> {
     // TODO: Maybe have an enum for the types of cluster drivers we support
     match option.runner_opts.cluster_type.as_str() {
         "fluvio" => {
@@ -424,7 +424,7 @@ async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<FluvioTestDriver>> {
             };
 
             Arc::new(RwLock::new(
-                FluvioTestDriver::new(fluvio_client)
+                TestDriver::new(fluvio_client)
                     .with_cluster_addr(option.environment.cluster_addr.clone())
                     .with_producer_batch_ms(option.environment.batch_ms)
                     .with_producer_batch_size(option.environment.batch_kbytes)
@@ -432,14 +432,14 @@ async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<FluvioTestDriver>> {
             ))
         }
         "pulsar" => Arc::new(RwLock::new(
-            FluvioTestDriver::new(Arc::new(TestDriverType::Pulsar))
+            TestDriver::new(Arc::new(TestDriverType::Pulsar))
                 .with_cluster_addr(option.environment.cluster_addr.clone())
                 .with_producer_batch_ms(option.environment.batch_ms)
                 .with_producer_batch_size(option.environment.batch_kbytes)
                 .with_producer_record_size(option.environment.record_bytes),
         )),
         "kafka" => Arc::new(RwLock::new(
-            FluvioTestDriver::new(Arc::new(TestDriverType::Kafka))
+            TestDriver::new(Arc::new(TestDriverType::Kafka))
                 .with_cluster_addr(option.environment.cluster_addr.clone())
                 .with_producer_batch_ms(option.environment.batch_ms)
                 .with_producer_batch_size(option.environment.batch_kbytes)

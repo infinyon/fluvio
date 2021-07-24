@@ -78,7 +78,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
-        pub fn #out_fn_iden(mut test_driver: Arc<RwLock<FluvioTestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #out_fn_iden(mut test_driver: Arc<RwLock<TestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             //println!("Inside the function");
             let future = async move {
                 //println!("Inside the async wrapper function");
@@ -97,7 +97,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         #[allow(clippy::unnecessary_operation)]
-        pub async fn ext_test_fn(mut test_driver: Arc<RwLock<FluvioTestDriver>>, test_case: TestCase) -> TestResult {
+        pub async fn ext_test_fn(mut test_driver: Arc<RwLock<TestDriver>>, test_case: TestCase) -> TestResult {
             use fluvio_test_util::test_meta::environment::EnvDetail;
             #test_body;
 
@@ -107,14 +107,14 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             lock.get_results()
         }
 
-        pub async fn #async_inner_fn_iden(mut test_driver: Arc<RwLock<FluvioTestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub async fn #async_inner_fn_iden(mut test_driver: Arc<RwLock<TestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::TestCase;
             use fluvio_test_util::test_meta::test_result::TestResult;
             use fluvio_test_util::test_meta::environment::EnvDetail;
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
             use fluvio_test_util::test_meta::test_timer::TestTimer;
-            use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+            use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
             use fluvio_test_util::setup::environment::EnvironmentType;
             use fluvio_future::task::run;
@@ -128,7 +128,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
 
-            let is_env_acceptable = FluvioTestDriver::is_env_acceptable(&test_reqs, &test_case);
+            let is_env_acceptable = TestDriver::is_env_acceptable(&test_reqs, &test_case);
 
             // Customize test environment if it meets minimum requirements
             if is_env_acceptable {

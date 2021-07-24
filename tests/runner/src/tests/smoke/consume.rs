@@ -10,7 +10,7 @@ use tracing::{info, debug, error};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio_test_util::test_runner::test_driver::{FluvioTestDriver, TestConsumer, TestDriverType};
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestConsumer, TestDriverType};
 use fluvio::Offset;
 use fluvio_command::CommandExt;
 
@@ -29,7 +29,7 @@ fn consume_wait_timeout() -> u64 {
 
 /// verify consumers
 pub async fn validate_consume_message(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
@@ -76,7 +76,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
 }
 
 async fn validate_consume_message_api(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {
