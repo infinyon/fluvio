@@ -34,7 +34,7 @@ pub enum Error {
     #[error("PackageIds must have zero or one `:` separator: <name>(:<version>)?")]
     InvalidNameVersionSegment,
     #[error("Invalid semver")]
-    InvalidSemver(#[from] semver::SemVerError),
+    InvalidSemver(#[from] semver::Error),
     #[error("Invalid package name: {0}")]
     InvalidPackageName(String),
     #[error("Invalid group name: {0}")]

@@ -1346,7 +1346,9 @@ impl ClusterInstaller {
     }
 }
 
-fn versions_compatible(mut a: Version, mut b: Version) -> bool {
+fn versions_compatible(a: Version,b: Version) -> bool {
+    use colored::Colorize;
+
     a.pre.clear();
     b.pre.clear();
     a == b
