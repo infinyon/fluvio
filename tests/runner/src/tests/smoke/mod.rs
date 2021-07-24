@@ -43,6 +43,9 @@ pub struct SmokeTestOption {
     pub use_cli: bool,
     #[structopt(long, default_value = "1")]
     pub producer_iteration: u16,
+    // Deprecating this flag in favor of TestDriver flag `message-size`
+    #[structopt(long, default_value = "1000")]
+    pub producer_record_size: u16,
     #[structopt(long)]
     pub consumer_wait: bool,
 }
@@ -70,7 +73,16 @@ pub async fn smoke(
     mut test_driver: Arc<RwLock<TestDriver>>,
     mut test_case: TestCase,
 ) -> TestResult {
-    let smoke_test_case = test_case.into();
+    let mut smoke_test_case: SmokeTestCase = test_case.into();
+
+    if smoke_test_case.option.producer_record_size != 1000
+        && smoke_test_case.environment.message_size
+            != smoke_test_case.option.producer_record_size as usize
+    {
+        eprintln!("--producer-record-size is deprecated. In the future use flv-test option `--message-size`");
+        smoke_test_case.option.producer_record_size =
+            smoke_test_case.environment.message_size as u16;
+    }
 
     let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
     consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;

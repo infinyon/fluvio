@@ -192,7 +192,7 @@ pub struct EnvironmentSetup {
     #[structopt(long, parse(try_from_str = parse_timeout_seconds), default_value = "3600")]
     pub timeout: Duration,
 
-    /// Default message size
+    /// Default message size in bytes (1000 default)
     #[structopt(long, default_value = "1000")]
     pub message_size: usize,
 
@@ -204,10 +204,6 @@ pub struct EnvironmentSetup {
     #[structopt(long, default_value = "1")]
     pub consumers: u16,
 
-    /// Default record size in bytes (1000 default)
-    #[structopt(long, default_value = "1000")]
-    pub record_bytes: usize,
-
     /// Default batch buffer size in kbytes (10KB default)
     #[structopt(long, default_value = "10")]
     pub batch_kbytes: usize,
@@ -215,6 +211,10 @@ pub struct EnvironmentSetup {
     /// Default batch time in milliseconds (10ms default)
     #[structopt(long, default_value = "10")]
     pub batch_ms: u64,
+
+    /// For benchmarking purposes. If set other than "fluvio", other cluster must be running and configured
+    #[structopt(long, default_value="fluvio", possible_values=&["fluvio","pulsar","kafka"])]
+    pub cluster_type: String,
 
     /// Override cluster broker address (i.e. Pulsar, Kafka)
     #[structopt(long)]

@@ -60,7 +60,7 @@ fn main() {
         let fluvio_client = cluster_setup(&option).await;
 
         // Check on test requirements before running the test
-        if &option.runner_opts.cluster_type == "fluvio" {
+        if &option.environment.cluster_type == "fluvio" {
             // Check on test requirements before running the test
             if !TestDriver::is_env_acceptable(
                 &(test_meta.requirements)(),
@@ -153,7 +153,7 @@ fn main() {
         .await;
 
         // TODO: Support some form of cluster cleanup for other clusters
-        if &option.runner_opts.cluster_type == "fluvio" {
+        if &option.environment.cluster_type == "fluvio" {
             cluster_cleanup(option.environment).await;
         }
 
@@ -402,7 +402,7 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
 
 async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<TestDriver>> {
     // TODO: Maybe have an enum for the types of cluster drivers we support
-    match option.runner_opts.cluster_type.as_str() {
+    match option.environment.cluster_type.as_str() {
         "fluvio" => {
             let env = &option.environment;
             let fluvio_client = if env.skip_cluster_start() {
@@ -428,7 +428,7 @@ async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<TestDriver>> {
                     .with_cluster_addr(option.environment.cluster_addr.clone())
                     .with_producer_batch_ms(option.environment.batch_ms)
                     .with_producer_batch_size(option.environment.batch_kbytes)
-                    .with_producer_record_size(option.environment.record_bytes),
+                    .with_producer_record_size(option.environment.message_size),
             ))
         }
         "pulsar" => Arc::new(RwLock::new(
@@ -436,14 +436,14 @@ async fn cluster_setup(option: &BaseCli) -> Arc<RwLock<TestDriver>> {
                 .with_cluster_addr(option.environment.cluster_addr.clone())
                 .with_producer_batch_ms(option.environment.batch_ms)
                 .with_producer_batch_size(option.environment.batch_kbytes)
-                .with_producer_record_size(option.environment.record_bytes),
+                .with_producer_record_size(option.environment.message_size),
         )),
         "kafka" => Arc::new(RwLock::new(
             TestDriver::new(Arc::new(TestDriverType::Kafka))
                 .with_cluster_addr(option.environment.cluster_addr.clone())
                 .with_producer_batch_ms(option.environment.batch_ms)
                 .with_producer_batch_size(option.environment.batch_kbytes)
-                .with_producer_record_size(option.environment.record_bytes),
+                .with_producer_record_size(option.environment.message_size),
         )),
         _ => unreachable!(),
     }

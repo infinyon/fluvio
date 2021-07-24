@@ -64,14 +64,19 @@ Test runner can be a running in two ways:
 > If you want the cluster to stick around, then you should start the cluster locally, and pass `--disable-install` and `--keep-cluster` flags.
 
 ## Benchmark testing
-(The feature is experimental.)
 
-* Tests must opt-in to be run in benchmark mode. To opt-in add `#[fluvio_test(benchmark = true)]` to test
-* To run a test in benchmark mode, run test with the `--benchmark` flag.
+Tests using the `TestDriver` struct are measured for producer/consumer latency and throughput. As well as memory and CPU usage.
+
+The `smoke` test support multiple cluster types (See: [Testing with other clusters](#testing-with-other-clusters) for more information) 
 
 ```
-cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5
+cargo run --release --bin flv-test -- --develop --disable-install --keep-cluster --message-size 1000 smoke -- --producer-iteration 1000
 ```
+
+## Viewing test results
+After passing tests, we generate graphs and CSV files in `fluvio/tests/benchmark-results`.
+
+[View](./benchmark-results/index.html)
 
 ---
 ## Smoke test
@@ -251,13 +256,19 @@ This feature is *experimental*.
 To get started, follow the instructions for starting a local Pulsar or Kafka cluster.
 
 * [Pulsar - standalone](https://pulsar.apache.org/docs/en/standalone/#use-pulsar-standalone)
+  * Start in background from binary release: `./bin/pulsar-daemon start standalone`
+  * Stop in background From binary release: `./bin/pulsar-daemon stop standalone`
 * [Kafka - quickstart](https://kafka.apache.org/quickstart)
+  * Start zookeeper in foreground from binary release: `/bin/zookeeper-server-start.sh config/zookeeper.properties`
+  * Start kafka in foreground from binary release: `./bin/kafka-server-start.sh config/server.properties`
+  * Stop kafka in foreground by pressing `CTRL+C` (first before zookeeper, or Kafka might hang waiting for zookeeper to return)
+  * Stop zookeeper  in foreground by pressing `CTRL+C` : ``
 
 By default, tests are run against a fluvio cluster, but the `--cluster-type` option supports `fluvio`, `pulsar`, `kafka` options.
 
 Example command for running a benchmark test w/ 1000 byte record size, sending 10K records:
-* `flv-test --record-bytes 1000 --cluster-type pulsar smoke -- --producer-iteration 10000`
-* `flv-test --record-bytes 1000 --cluster-type kafka smoke -- --producer-iteration 10000`
+* `flv-test --cluster-type pulsar --message-size 1000 smoke -- --producer-iteration 10000`
+* `flv-test --cluster-type kafka --message-size 1000 smoke -- --producer-iteration 10000`
 
 ### Features not yet supported by other cluster tests
 * Cluster instantiation

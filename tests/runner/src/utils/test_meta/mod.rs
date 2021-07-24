@@ -27,9 +27,6 @@ pub struct TestRunnerOptions {
     pub skip_data_save: bool,
     //#[structopt(long, default_value = ",")]
     //pub csv_delimiter: String,
-    /// For benchmarking purposes. If set other than "fluvio", other cluster must be running and configured
-    #[structopt(long, default_value="fluvio", possible_values=&["fluvio","pulsar","kafka"])]
-    pub cluster_type: String,
 }
 
 pub trait TestOption: Debug + DynClone {
