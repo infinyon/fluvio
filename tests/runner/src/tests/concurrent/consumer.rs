@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use async_lock::RwLock;
 use std::sync::mpsc::Receiver;
-use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestConsumer};
 use futures_lite::StreamExt;
 use fluvio::Offset;
 
@@ -9,7 +9,7 @@ use super::ConcurrentTestCase;
 use super::util::*;
 
 pub async fn consumer_stream(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     option: ConcurrentTestCase,
     digests: Receiver<String>,
 ) {
@@ -19,20 +19,26 @@ pub async fn consumer_stream(
     let consumer = lock
         .get_consumer(option.environment.topic_name.as_str(), 0)
         .await;
-    let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 
-    let mut index: i32 = 0;
-    while let Some(Ok(record)) = stream.next().await {
-        let existing_record_digest = digests.recv().unwrap();
-        let current_record_digest = hash_record(record.as_ref());
-        println!(
-            "Consuming {:<5} (size {:<5}): was produced: {}, was consumed: {}",
-            index,
-            record.as_ref().len(),
-            existing_record_digest,
-            current_record_digest
-        );
-        assert_eq!(existing_record_digest, current_record_digest);
-        index += 1;
+    match consumer {
+        TestConsumer::Fluvio(fluvio_consumer) => {
+            let mut stream = fluvio_consumer.stream(Offset::beginning()).await.unwrap();
+
+            let mut index: i32 = 0;
+            while let Some(Ok(record)) = stream.next().await {
+                let existing_record_digest = digests.recv().unwrap();
+                let current_record_digest = hash_record(record.as_ref());
+                println!(
+                    "Consuming {:<5} (size {:<5}): was produced: {}, was consumed: {}",
+                    index,
+                    record.as_ref().len(),
+                    existing_record_digest,
+                    current_record_digest
+                );
+                assert_eq!(existing_record_digest, current_record_digest);
+                index += 1;
+            }
+        }
+        _ => panic!("Currently test only supports Fluvio cluster"),
     }
 }

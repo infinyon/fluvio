@@ -13,7 +13,7 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 #[derive(Debug, Clone)]
 pub struct ConcurrentTestCase {
@@ -48,16 +48,25 @@ impl TestOption for ConcurrentTestOption {
 
 #[fluvio_test(topic = "test-bug")]
 pub async fn concurrent(
-    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_driver: Arc<RwLock<TestDriver>>,
     mut test_case: TestCase,
 ) -> TestResult {
+    // TODO: Support other clusters
+    let lock = test_driver.read().await;
+    if let TestDriverType::Fluvio(_) = lock.client.as_ref() {
+        // Do nothing
+    } else {
+        panic!("This test is only supported by Fluvio clusters")
+    }
+    drop(lock);
+
     test_concurrent_consume_produce(test_driver.clone(), test_case.into()).await
 }
 
 // TODO: This needs to support a max size, or a file input.
 // TODO: This needs to support some way to allow producer to send 50% of some max size before starting consumer to play catch-up
 pub async fn test_concurrent_consume_produce(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     option: ConcurrentTestCase,
 ) {
     println!("Testing concurrent consumer and producer");

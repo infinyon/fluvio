@@ -9,7 +9,7 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType, TestProducer};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use async_lock::RwLock;
 
@@ -50,11 +50,16 @@ impl TestOption for ProducerStressTestOption {
 }
 
 #[fluvio_test(name = "producer_stress", topic = "test")]
-pub async fn run(
-    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
-    mut test_case: TestCase,
-) -> TestResult {
+pub async fn run(mut test_driver: Arc<RwLock<TestDriver>>, mut test_case: TestCase) -> TestResult {
     let test_case: ProducerStressTestCase = test_case.into();
+
+    // TODO: Support other clusters
+    let lock = test_driver.read().await;
+    if let TestDriverType::Fluvio(_) = lock.client.as_ref() {
+        // Do nothing
+    } else {
+        panic!("This test is only supported by Fluvio clusters")
+    }
 
     println!("\nStarting single-process producer stress");
 
@@ -91,22 +96,31 @@ pub async fn run(
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
                     let mut lock = test_driver.write().await;
-                    lock.send_count(p, vec![(RecordKey::NULL, message.into())])
-                        .await
-                        .unwrap_or_else(|_| {
-                            eprintln!(
-                                "[CI MODE] send record failed for iteration: {} message: {}",
-                                n, i
-                            );
-                        });
+
+                    if let TestProducer::Fluvio(fluvio_producer) = p {
+                        lock.fluvio_send(fluvio_producer, vec![(RecordKey::NULL, message.into())])
+                            .await
+                            .unwrap_or_else(|_| {
+                                eprintln!(
+                                    "[CI MODE] send record failed for iteration: {} message: {}",
+                                    n, i
+                                );
+                            });
+                    }
+
+                    drop(lock);
                 }
             } else {
                 let mut lock = test_driver.write().await;
-                lock.send_count(p, vec![(RecordKey::NULL, message.into())])
-                    .await
-                    .unwrap_or_else(|_| {
-                        panic!("send record failed for iteration: {} message: {}", n, i)
-                    });
+
+                if let TestProducer::Fluvio(fluvio_producer) = p {
+                    lock.fluvio_send(fluvio_producer, vec![(RecordKey::NULL, message.into())])
+                        .await
+                        .unwrap_or_else(|_| {
+                            panic!("send record failed for iteration: {} message: {}", n, i)
+                        });
+                }
+                drop(lock);
             }
         }
     }
