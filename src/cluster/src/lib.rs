@@ -31,7 +31,7 @@ mod check;
 mod start;
 mod delete;
 mod error;
-mod sys;
+mod charts;
 
 /// extensions
 #[cfg(feature = "cli")]
@@ -46,7 +46,7 @@ pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
 pub use delete::ClusterUninstaller;
-pub use sys::{SysConfig, SysConfigBuilder, SysInstaller};
+pub use charts::{SysConfig, SysConfigBuilder, SysInstaller};
 pub use fluvio::config as fluvio_config;
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";

@@ -1,7 +1,7 @@
 use semver::Version;
 use crate::cli::start::StartOpt;
 use crate::cli::ClusterCliError;
-use crate::sys::{SysConfig, SysInstaller};
+use crate::charts::{SysConfig, SysInstaller};
 use crate::ClusterError;
 use crate::error::SysInstallError;
 
