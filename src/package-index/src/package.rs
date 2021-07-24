@@ -69,7 +69,7 @@ impl Package {
             .rev()
             .find(|it| {
                 // If not in prerelease mode, do not keep prerelease or build meta
-                if !prerelease && (it.version.pre.is_empty() || !it.version.build.is_empty()) {
+                if !prerelease && (!it.version.pre.is_empty() || !it.version.build.is_empty()) {
                     return false;
                 }
                 it.targets.contains(target)
@@ -309,7 +309,6 @@ mod tests {
         let release = package
             .latest_release_for_target(&Target::X86_64AppleDarwin, false)
             .unwrap();
-        println!("release: {:#?}",release.version);
         assert_eq!(release.version, Version::parse("0.1.0").unwrap());
     }
 

@@ -1347,8 +1347,7 @@ impl ClusterInstaller {
 }
 
 fn versions_compatible(a: Version, b: Version) -> bool {
-    
-    Version::new(a.major,a.minor,a.patch) == Version::new(b.major,b.minor,b.patch)
+    Version::new(a.major, a.minor, a.patch) == Version::new(b.major, b.minor, b.patch)
 }
 
 #[cfg(test)]
