@@ -278,7 +278,7 @@ impl TestDriver {
             TestDriverType::Pulsar => {
                 let addr = match &self.other_cluster_addr {
                     Some(addr) => addr,
-                    None => "pulsar://localhost:6650",
+                    None => "pulsar://127.0.0.1:6650",
                 };
 
                 let pulsar: Pulsar<_> = Pulsar::builder(addr, AsyncStdExecutor)
