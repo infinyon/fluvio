@@ -75,7 +75,7 @@ checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -86,7 +86,7 @@ dependencies = [
  "flv-util",
  "futures-util",
  "once_cell",
- "semver 0.11.0",
+ "semver 1.0.3",
  "tracing",
 ]
 
@@ -143,7 +143,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-smartstream-derive",
