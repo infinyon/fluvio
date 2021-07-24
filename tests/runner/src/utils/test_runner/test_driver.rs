@@ -505,6 +505,7 @@ impl FluvioTestDriver {
                     .await
                     .expect("Failed to create Pulsar consumer");
 
+                self.consumer_num += 1;
                 TestConsumer::Pulsar(consumer)
             }
             TestDriverType::Kafka => {
@@ -525,6 +526,7 @@ impl FluvioTestDriver {
 
                 consumer.subscribe(&[topic]).unwrap();
 
+                self.consumer_num += 1;
                 TestConsumer::Kafka(consumer)
             }
         }
