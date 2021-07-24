@@ -38,13 +38,13 @@ pub enum TestDriverType {
 
 pub enum TestProducer {
     Fluvio(TopicProducer),
-    Pulsar(PulsarProducer<AsyncStdExecutor>),
+    Pulsar(Box<PulsarProducer<AsyncStdExecutor>>),
     Kafka(KafkaProducer),
 }
 
 pub enum TestConsumer {
     Fluvio(PartitionConsumer),
-    Pulsar(PulsarConsumer<PulsarTestData, AsyncStdExecutor>),
+    Pulsar(Box<PulsarConsumer<PulsarTestData, AsyncStdExecutor>>),
     Kafka(KafkaConsumer<DefaultConsumerContext, KafkaAsyncStdRuntime>),
 }
 #[derive(Clone)]
@@ -227,7 +227,7 @@ impl TestDriver {
                     .expect("Failed to create producer");
 
                 self.producer_num += 1;
-                return TestProducer::Pulsar(producer);
+                return TestProducer::Pulsar(Box::new(producer));
             }
 
             TestDriverType::Kafka => {
@@ -268,7 +268,7 @@ impl TestDriver {
                 {
                     Ok(client) => {
                         self.consumer_num += 1;
-                        return TestConsumer::Fluvio(client);
+                        TestConsumer::Fluvio(client)
                     }
                     Err(err) => {
                         panic!("unable to get consumer to topic: {}, error: {}", topic, err);
@@ -296,7 +296,7 @@ impl TestDriver {
                     .expect("Failed to create Pulsar consumer");
 
                 self.consumer_num += 1;
-                TestConsumer::Pulsar(consumer)
+                TestConsumer::Pulsar(Box::new(consumer))
             }
             TestDriverType::Kafka => {
                 let broker = match &self.other_cluster_addr {

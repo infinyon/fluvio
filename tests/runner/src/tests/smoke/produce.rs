@@ -61,6 +61,7 @@ mod offsets {
     use super::SmokeTestCase;
     use super::{TestDriver, TestDriverType};
 
+    // FIXME: We should support finding offsets from other clusters
     pub async fn find_offsets(
         test_driver: &TestDriver,
         test_case: &SmokeTestCase,
@@ -71,25 +72,18 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        match test_driver.client.as_ref() {
-            TestDriverType::Fluvio(fluvio_client) => {
-                let client = fluvio_client.clone();
-                let mut admin = client.admin().await;
+        if let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref() {
+            let mut admin = fluvio_client.admin().await;
 
-                // TODO: Support partition
-                for _i in 0..partition {
-                    let topic_name = test_case.environment.topic_name.clone();
-                    // find last offset
-                    let offset = last_leo(&mut admin, &topic_name).await;
-                    println!("found topic: {} offset: {}", topic_name, offset);
-                    offsets.insert(topic_name, offset);
-                }
+            // TODO: Support partition
+            for _i in 0..partition {
+                let topic_name = test_case.environment.topic_name.clone();
+                // find last offset
+                let offset = last_leo(&mut admin, &topic_name).await;
+                println!("found topic: {} offset: {}", topic_name, offset);
+                offsets.insert(topic_name, offset);
             }
-            _ => {
-                // Do we need to support getting partition offset maps from other clusters?
-                ()
-            }
-        }
+        };
 
         offsets
     }
