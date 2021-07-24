@@ -309,6 +309,7 @@ mod tests {
         let release = package
             .latest_release_for_target(&Target::X86_64AppleDarwin, false)
             .unwrap();
+        println!("release: {:#?}",release.version);
         assert_eq!(release.version, Version::parse("0.1.0").unwrap());
     }
 
