@@ -1,33 +1,31 @@
-#[allow(unused_imports)]
-use fluvio_command::CommandExt;
-use pulsar::producer::SendFuture;
+pub mod fluvio_driver;
+pub mod kafka_driver;
+pub mod pulsar_driver;
+
+pub use pulsar_driver::PulsarTestData;
+pub use kafka_driver::KafkaAsyncStdRuntime;
+
 use crate::test_meta::test_timer::TestTimer;
 use crate::test_meta::{TestCase, test_result::TestResult, chart_builder::FluvioTimeData};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
-use fluvio::{Fluvio, FluvioError};
+use fluvio::Fluvio;
 use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
-use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
+use fluvio::{TopicProducer, PartitionConsumer};
 use std::time::{Duration, SystemTime};
 use tracing::debug;
 use fluvio_future::timer::sleep;
 
-use serde::{Serialize, Deserialize};
 use pulsar::{
-    message::proto, producer, producer::Producer as PulsarProducer, Error as PulsarError, Pulsar,
-    SerializeMessage, AsyncStdExecutor, Consumer as PulsarConsumer, DeserializeMessage,
-    message::Payload,
+    message::proto, producer, producer::Producer as PulsarProducer, Pulsar, AsyncStdExecutor,
+    Consumer as PulsarConsumer,
 };
 
-use std::future::Future;
-use std::pin::Pin;
 use rdkafka::config::ClientConfig as KafkaClientConfig;
 use rdkafka::consumer::{Consumer, StreamConsumer as KafkaConsumer, DefaultConsumerContext};
-use rdkafka::producer::{FutureProducer as KafkaProducer, FutureRecord as KafkaRecord};
-use rdkafka::producer::future_producer::OwnedDeliveryResult as KafkaProducerResult;
-use rdkafka::util::AsyncRuntime;
+use rdkafka::producer::FutureProducer as KafkaProducer;
 
 // # of nanoseconds in a millisecond
 const NANOS_IN_MILLIS: f32 = 1_000_000.0;
@@ -49,49 +47,8 @@ pub enum TestConsumer {
     Pulsar(PulsarConsumer<PulsarTestData, AsyncStdExecutor>),
     Kafka(KafkaConsumer<DefaultConsumerContext, KafkaAsyncStdRuntime>),
 }
-
-#[derive(Serialize, Deserialize)]
-pub struct PulsarTestData {
-    pub data: Vec<u8>,
-}
-
-impl SerializeMessage for PulsarTestData {
-    fn serialize_message(input: Self) -> Result<producer::Message, PulsarError> {
-        let payload = serde_json::to_vec(&input).map_err(|e| PulsarError::Custom(e.to_string()))?;
-        Ok(producer::Message {
-            payload,
-            ..Default::default()
-        })
-    }
-}
-
-impl DeserializeMessage for PulsarTestData {
-    type Output = Result<PulsarTestData, serde_json::Error>;
-
-    fn deserialize_message(payload: &Payload) -> Self::Output {
-        serde_json::from_slice(&payload.data)
-    }
-}
-
-pub struct KafkaAsyncStdRuntime;
-
-impl AsyncRuntime for KafkaAsyncStdRuntime {
-    type Delay = Pin<Box<dyn Future<Output = ()> + Send>>;
-
-    fn spawn<T>(task: T)
-    where
-        T: Future<Output = ()> + Send + 'static,
-    {
-        fluvio_future::task::spawn(task);
-    }
-
-    fn delay_for(duration: Duration) -> Self::Delay {
-        Box::pin(fluvio_future::timer::sleep(duration))
-    }
-}
-
 #[derive(Clone)]
-pub struct FluvioTestDriver {
+pub struct TestDriver {
     pub client: Arc<TestDriverType>,
     other_cluster_addr: Option<String>,
     producer_batch_kbytes: usize,
@@ -170,13 +127,6 @@ impl FluvioTestDriver {
     pub fn with_producer_record_size(mut self, size_bytes: usize) -> Self {
         self.producer_record_bytes = size_bytes;
         self
-    }
-
-    pub async fn start_system_poll(&self) {
-        while self.is_test_running() {
-            println!("Poll");
-            sleep(Duration::from_millis(500));
-        }
     }
 
     pub fn start_timer(&mut self) {
@@ -307,163 +257,6 @@ impl FluvioTestDriver {
             }
         }
         panic!("can't get producer");
-    }
-
-    // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
-    pub async fn fluvio_send(
-        &mut self,
-        p: &TopicProducer,
-        msg_buf: Vec<(RecordKey, Vec<u8>)>,
-    ) -> Result<(), FluvioError> {
-        let bytes_sent: usize = msg_buf
-            .iter()
-            .map(|m| &m.1)
-            .fold(0, |total, msg| total + msg.len());
-
-        let now = SystemTime::now();
-
-        let result = p.send_all(msg_buf).await;
-
-        let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
-        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
-
-        debug!(
-            "(#{}) Produce latency (ns): {:?} ({} B)",
-            self.producer_latency.len() + 1,
-            produce_time_ns,
-            bytes_sent
-        );
-
-        self.producer_latency.record(produce_time_ns).unwrap();
-
-        self.producer_bytes += bytes_sent as usize;
-
-        // Make both use milliseconds
-        self.producer_time_latency.push(FluvioTimeData {
-            test_elapsed_ms: timestamp,
-            data: (produce_time_ns as f32) / NANOS_IN_MILLIS,
-        });
-
-        self.producer_time_rate.push(FluvioTimeData {
-            test_elapsed_ms: timestamp,
-            data: bytes_sent as f32,
-        });
-
-        // Convert Bytes/ns to Bytes/s
-        // 1_000_000_000 ns in 1 second
-        const NS_IN_SECOND: f64 = 1_000_000_000.0;
-        let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
-        debug!("Producer throughput Bytes/s: {:?}", rate);
-        self.producer_rate.record(rate as u64).unwrap();
-
-        result
-    }
-
-    pub async fn pulsar_send(
-        &mut self,
-        p: &mut PulsarProducer<AsyncStdExecutor>,
-        //msg_buf: Vec<(RecordKey, Vec<u8>)>,
-        msg_buf: Vec<PulsarTestData>,
-    ) -> Result<Vec<SendFuture>, PulsarError> {
-        let bytes_sent: usize = msg_buf
-            .iter()
-            .map(|m| &m.data)
-            .fold(0, |total, msg| total + msg.len());
-
-        let now = SystemTime::now();
-
-        let result = p.send_all(msg_buf).await.expect("Send failed");
-
-        let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
-        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
-
-        debug!(
-            "(#{}) Produce latency (ns): {:?} ({} B)",
-            self.producer_latency.len() + 1,
-            produce_time_ns,
-            bytes_sent
-        );
-
-        self.producer_latency.record(produce_time_ns).unwrap();
-
-        self.producer_bytes += bytes_sent as usize;
-
-        // Make both use milliseconds
-        self.producer_time_latency.push(FluvioTimeData {
-            test_elapsed_ms: timestamp,
-            data: (produce_time_ns as f32) / NANOS_IN_MILLIS,
-        });
-
-        self.producer_time_rate.push(FluvioTimeData {
-            test_elapsed_ms: timestamp,
-            data: bytes_sent as f32,
-        });
-
-        // Convert Bytes/ns to Bytes/s
-        // 1_000_000_000 ns in 1 second
-        const NS_IN_SECOND: f64 = 1_000_000_000.0;
-        let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
-        debug!("Producer throughput Bytes/s: {:?}", rate);
-        self.producer_rate.record(rate as u64).unwrap();
-
-        Ok(result)
-    }
-
-    pub async fn kafka_send(
-        &mut self,
-        p: &mut KafkaProducer,
-        topic: &str,
-        msg_buf: Vec<u8>,
-    ) -> KafkaProducerResult {
-        //let bytes_sent: usize = msg_buf
-        //    .iter()
-        //    .map(|m| &m.data)
-        //    .fold(0, |total, msg| total + msg.len());
-        let bytes_sent: usize = msg_buf.len();
-
-        let now = SystemTime::now();
-
-        //let result = p.send_all(msg_buf).await.expect("Send failed");
-        let result = p
-            .send::<Vec<u8>, _, _>(
-                KafkaRecord::to(topic).payload(&msg_buf),
-                Duration::from_secs(0),
-            )
-            .await;
-
-        let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
-        let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
-
-        debug!(
-            "(#{}) Produce latency (ns): {:?} ({} B)",
-            self.producer_latency.len() + 1,
-            produce_time_ns,
-            bytes_sent
-        );
-
-        self.producer_latency.record(produce_time_ns).unwrap();
-
-        self.producer_bytes += bytes_sent as usize;
-
-        // Make both use milliseconds
-        self.producer_time_latency.push(FluvioTimeData {
-            test_elapsed_ms: timestamp,
-            data: (produce_time_ns as f32) / NANOS_IN_MILLIS,
-        });
-
-        self.producer_time_rate.push(FluvioTimeData {
-            test_elapsed_ms: timestamp,
-            data: bytes_sent as f32,
-        });
-
-        // Convert Bytes/ns to Bytes/s
-        // 1_000_000_000 ns in 1 second
-        const NS_IN_SECOND: f64 = 1_000_000_000.0;
-        let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
-        debug!("Producer throughput Bytes/s: {:?}", rate);
-        self.producer_rate.record(rate as u64).unwrap();
-
-        result
     }
 
     pub async fn get_consumer(&mut self, topic: &str, partition: i32) -> TestConsumer {
@@ -668,8 +461,4 @@ impl FluvioTestDriver {
 
         true
     }
-
-    pub fn generate_message() {}
-
-    pub fn validate_message() {}
 }

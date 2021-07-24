@@ -5,6 +5,7 @@ use crate::test_meta::{TestCase, TestOption, test_result::TestResult};
 use crate::test_meta::derive_attr::TestRequirements;
 use crate::test_meta::environment::EnvDetail;
 
+/// This is the struct used by the `inventory` crate to register tests using the `#[fluvio_test]` annotation
 #[derive(Debug)]
 pub struct FluvioTestMeta {
     pub name: String,
