@@ -151,7 +151,11 @@ fn main() {
             s,
         )
         .await;
-        cluster_cleanup(option.environment).await;
+
+        // TODO: Support some form of cluster cleanup for other clusters
+        if &option.runner_opts.cluster_type == "fluvio" {
+            cluster_cleanup(option.environment).await;
+        }
 
         if let Ok(t) = test_result {
             println!("{}", t);

@@ -52,10 +52,10 @@ impl TestMessage {
     /// validate the message for given offset
     #[allow(clippy::result_unit_err)]
     pub fn validate_message(
-        _iter: u16,
         offset: i64,
         test_case: &SmokeTestCase,
         data: &[u8],
+        is_fluvio: bool,
     ) -> Result<Self, ()> {
         let mut rdr = ReaderBuilder::new().has_headers(false).from_reader(data);
 
@@ -70,23 +70,25 @@ impl TestMessage {
         // Verify topic
         assert!(test_case.environment.topic_name == record.topic_name);
 
-        //// This gets messy w/ multiple producers or multiple partitions
-        //// FIXME: Topics w/ multiple partitions created externally will fail this check
-        //if test_case.environment.producers == 1 && test_case.environment.partition == 1 {
-        //    // Verify offset
-        //    assert!(
-        //        offset == record.offset,
-        //        "Got: {}, expected: {}",
-        //        offset,
-        //        record.offset
-        //    );
-        //}
+        // Some of this validation only works with Fluvio clusters at the moment
+        if is_fluvio {
+            //// FIXME: This gets messy w/ multiple producers or multiple partitions
+            //// FIXME: Topics w/ multiple partitions created externally will fail this check
+            if test_case.environment.producers == 1 && test_case.environment.partition == 1 {
+                // Verify offset
+                assert!(
+                    offset == record.offset,
+                    "Got: {}, expected: {}",
+                    offset,
+                    record.offset
+                );
+            }
 
-        //let producer_record_size = test_case.option.producer_record_size as usize;
+            let producer_record_size = test_case.environment.record_bytes as usize;
 
-        // Check on data
-        //assert!(producer_record_size == record.length);
-        //assert!(producer_record_size == record.data.len());
+            // Check on data
+            assert!(producer_record_size == record.data.len());
+        }
 
         Ok(record)
     }

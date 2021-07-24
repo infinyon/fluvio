@@ -126,9 +126,6 @@ pub async fn produce_message_with_api(
     use std::time::Duration;
     use fluvio_future::timer::sleep;
 
-    // Producers don't support direct send to partitions
-    //let partition = test_case.environment.partition;
-
     let produce_iteration = test_case.option.producer_iteration;
     let topic_name = test_case.environment.topic_name.clone();
     let lock = test_driver.read().await;
@@ -210,7 +207,7 @@ pub async fn produce_message_with_api(
                     .unwrap_or_else(|_| panic!("send record failed for iteration: {}", i));
                 drop(lock);
             }
-            // Kafka producer was configured for batching via cli config
+            // Kafka producer was configured for batching via flv-test cli options
             TestProducer::Kafka(ref mut p) => {
                 let mut lock = test_driver.write().await;
                 lock.kafka_send(p, topic_name.as_str(), message)

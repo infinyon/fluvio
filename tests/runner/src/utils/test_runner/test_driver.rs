@@ -18,16 +18,13 @@ use serde::{Serialize, Deserialize};
 use pulsar::{
     message::proto, producer, producer::Producer as PulsarProducer, Error as PulsarError, Pulsar,
     SerializeMessage, AsyncStdExecutor, Consumer as PulsarConsumer, DeserializeMessage,
-    message::Payload, message::proto::command_subscribe::SubType,
+    message::Payload,
 };
 
 use std::future::Future;
 use std::pin::Pin;
-use std::process;
-//use std::time::Duration;
 use rdkafka::config::ClientConfig as KafkaClientConfig;
 use rdkafka::consumer::{Consumer, StreamConsumer as KafkaConsumer, DefaultConsumerContext};
-use rdkafka::message::Message;
 use rdkafka::producer::{FutureProducer as KafkaProducer, FutureRecord as KafkaRecord};
 use rdkafka::producer::future_producer::OwnedDeliveryResult as KafkaProducerResult;
 use rdkafka::util::AsyncRuntime;
@@ -488,7 +485,7 @@ impl FluvioTestDriver {
             TestDriverType::Pulsar => {
                 let addr = match &self.other_cluster_addr {
                     Some(addr) => addr,
-                    None => "pulsar://127.0.0.1:6650",
+                    None => "pulsar://localhost:6650",
                 };
 
                 let pulsar: Pulsar<_> = Pulsar::builder(addr, AsyncStdExecutor)

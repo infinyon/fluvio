@@ -73,16 +73,6 @@ Test runner can be a running in two ways:
 cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5
 ```
 
-> The `--benchmark` flag is specified as an option of `flv-test` (Before the `--`.)
-
-An error message will appear when attempting to benchmark tests without `benchmark = true`.
-
-Benchmarks are performed with the [bencher](https://crates.io/crates/bencher) crate using the [auto_bench](https://docs.rs/bencher/0.1.5/bencher/struct.Bencher.html#method.auto_bench) method.
-
-The number of iterations are not user-controllable because it is the easiest way to use the crate to build a statistical summary.
-
-Total iterations run depend on the runtime of a single test. The longer the test, the fewer the runs.
-
 ---
 ## Smoke test
 
@@ -247,3 +237,32 @@ But if we run it like:
 `cargo run --bin flv-test -- example --spu 2`
 
 The test would start and a test topic named `test_topic` would be created because the minimum requirements were met.
+
+
+## Testing with other clusters
+
+This feature is *experimental*.
+
+`flv-test` supports testing against Pulsar and Kafka clusters.
+
+* For Pulsar support, we use [pulsar-rs](https://github.com/wyyerd/pulsar-rs)
+* For Kafka support, we use [rdkafka](https://github.com/fede1024/rust-rdkafka)
+
+To get started, follow the instructions for starting a local Pulsar or Kafka cluster.
+
+* [Pulsar - standalone](https://pulsar.apache.org/docs/en/standalone/#use-pulsar-standalone)
+* [Kafka - quickstart](https://kafka.apache.org/quickstart)
+
+By default, tests are run against a fluvio cluster, but the `--cluster-type` option supports `fluvio`, `pulsar`, `kafka` options.
+
+Example command for running a benchmark test w/ 1000 byte record size, sending 10K records:
+* `flv-test --record-bytes 1000 --cluster-type pulsar smoke -- --producer-iteration 10000`
+* `flv-test --record-bytes 1000 --cluster-type kafka smoke -- --producer-iteration 10000`
+
+### Features not yet supported by other cluster tests
+* Cluster instantiation
+  * Clusters must be started. By default `flv-test` will connect to `localhost` on their respective default ports (Pulsar's `6650` or Kafka's `9092`)
+  * Override this cluster address with ``--cluster-addr host:port`
+* Topic creation
+  * Configure your other cluster to auto-create topics, or create topics prior to running your test.
+* Running tests w/o batching

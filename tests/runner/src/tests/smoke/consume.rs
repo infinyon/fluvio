@@ -51,32 +51,28 @@ pub async fn validate_consume_message(
 }
 
 fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
-    let replication = test_case.environment.replication;
+    let topic_name = test_case.environment.topic_name.clone();
+    let offset = offsets.get(&topic_name).expect("topic offset");
+    let mut command = get_fluvio().expect("fluvio not found");
+    command
+        .arg("consume")
+        .arg(&topic_name)
+        .arg("--partition")
+        .arg("0")
+        .arg("-d")
+        .arg("-o")
+        .arg(offset.to_string());
+    println!("Executing> {}", command.display());
+    let output = command.result().expect("fluvio command failed");
 
-    for i in 0..replication {
-        let topic_name = test_case.environment.topic_name.clone();
-        let offset = offsets.get(&topic_name).expect("topic offset");
-        let mut command = get_fluvio().expect("fluvio not found");
-        command
-            .arg("consume")
-            .arg(&topic_name)
-            .arg("--partition")
-            .arg("0")
-            .arg("-d")
-            .arg("-o")
-            .arg(offset.to_string());
-        println!("Executing> {}", command.display());
-        let output = command.result().expect("fluvio command failed");
+    io::stderr().write_all(&output.stderr).unwrap();
 
-        io::stderr().write_all(&output.stderr).unwrap();
+    let msg = output.stdout.as_slice();
+    let _valid_msg =
+        TestMessage::validate_message(*offset, test_case, &msg[0..msg.len() - 1], true)
+            .expect("Message validation failed");
 
-        let msg = output.stdout.as_slice();
-        let _valid_msg =
-            TestMessage::validate_message(i, *offset, test_case, &msg[0..msg.len() - 1])
-                .expect("Message validation failed");
-
-        println!("topic: {}, consume message validated!", topic_name);
-    }
+    println!("topic: {}, consume message validated!", topic_name);
 }
 
 async fn validate_consume_message_api(
@@ -112,7 +108,7 @@ async fn validate_consume_message_api(
 
         let mut lock = test_driver.write().await;
 
-        let mut consumer = lock.get_consumer(&topic_name, i as i32).await;
+        let consumer = lock.get_consumer(&topic_name, i as i32).await;
         drop(lock);
 
         match consumer {
@@ -168,7 +164,7 @@ async fn validate_consume_message_api(
                                 let e2e_stop_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_nanos();
 
                                 // Parse record
-                                let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &bytes).expect("Validation failed");
+                                let valid_msg = TestMessage::validate_message(offset, &test_case, &bytes, true).expect("Validation failed");
 
                                 // Calculate the E2E duration
                                 let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
@@ -234,7 +230,7 @@ async fn validate_consume_message_api(
 
                                 // Parse record
                                 let offset = 0;
-                                let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &data).expect("Validation failed");
+                                let valid_msg = TestMessage::validate_message(offset, &test_case, &data, false).expect("Validation failed");
 
                                 // Calculate the E2E duration
                                 let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
@@ -293,7 +289,7 @@ async fn validate_consume_message_api(
 
                                 // Parse record
                                 let offset = 0;
-                                let valid_msg = TestMessage::validate_message(producer_iteration, offset, &test_case, &data).expect("Validation failed");
+                                let valid_msg = TestMessage::validate_message(offset, &test_case, &data, false).expect("Validation failed");
 
                                 // Calculate the E2E duration
                                 let e2e_duration_nanos = e2e_stop_time - valid_msg.timestamp;
