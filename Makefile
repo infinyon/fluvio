@@ -203,8 +203,8 @@ run-all-unit-test: build_smartstreams install_rustup_target
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C src/protocol
 
-run-unstable-test:build_smartstreams install_rustup_target
-	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored
+run-integration-test:build_smartstreams install_rustup_target
+	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored --test-threads=1
 
 run-all-doc-test: install_rustup_target
 	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)

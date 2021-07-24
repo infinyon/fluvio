@@ -19,26 +19,20 @@ doc = false
 
 [features]
 default = []
-telemetry = [
-    "tracing-opentelemetry",
-    "opentelemetry",
-    "opentelemetry-jaeger",
-]
+
 
 [dependencies]
 tracing = "0.1"
 tracing-subscriber = "0.2"
-tracing-opentelemetry = { version = "0.10", optional = true }
-opentelemetry = { version = "0.11", optional = true }
-opentelemetry-jaeger = { version = "0.10", optional = true }
+
 
 structopt = { version = "0.3.16", default-features = false }
 thiserror = "1.0.20"
-semver = "0.11.0"
+semver = "1.0.0"
 serde_json = "1.0.64"
 
 # regardless of TLS, sc and spu always use openssl_tls for now because we need cert API
 fluvio-future = { version = "0.3.0", features = ["subscriber"] }
 fluvio-sc = { version = "0.6.4", path = "../sc" }
 fluvio-spu = { version = "0.5.1", path = "../spu" }
-fluvio-extension-common = { version = "0.4.0", path = "../extension-common" }
+fluvio-extension-common = { version = "0.5.0", path = "../extension-common" }

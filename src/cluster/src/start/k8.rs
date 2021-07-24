@@ -1346,10 +1346,8 @@ impl ClusterInstaller {
     }
 }
 
-fn versions_compatible(mut a: Version, mut b: Version) -> bool {
-    a.pre.clear();
-    b.pre.clear();
-    a == b
+fn versions_compatible(a: Version, b: Version) -> bool {
+    Version::new(a.major, a.minor, a.patch) == Version::new(b.major, b.minor, b.patch)
 }
 
 #[cfg(test)]

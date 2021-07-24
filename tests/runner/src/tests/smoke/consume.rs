@@ -173,8 +173,8 @@ async fn validate_consume_message_api(
         }
     }
 
-    // wait 500m second and ensure partition list
-    sleep(Duration::from_millis(500)).await;
+    // wait 15 seconds to get status and ensure replication is done
+    sleep(Duration::from_secs(15)).await;
 
     let lock = test_driver.write().await;
     let admin = lock.client.admin().await;

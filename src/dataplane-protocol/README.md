@@ -1,6 +1,6 @@
-# kf-protocol-fs
+#fluvio-protocol-fs
 
-Adds zero memory copy transfer over kafka protocol
+Adds zero memory copy transfer over fluvio protocol
 
 ## License
 

@@ -69,7 +69,7 @@ impl Package {
             .rev()
             .find(|it| {
                 // If not in prerelease mode, do not keep prerelease or build meta
-                if !prerelease && (it.version.is_prerelease() || !it.version.build.is_empty()) {
+                if !prerelease && (!it.version.pre.is_empty() || !it.version.build.is_empty()) {
                     return false;
                 }
                 it.targets.contains(target)

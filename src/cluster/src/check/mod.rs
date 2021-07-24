@@ -90,6 +90,10 @@ pub enum CheckError {
     /// Could not delete dummy service
     #[error("Could not delete service")]
     ServiceDeleteError,
+
+    /// Unable to parse Error
+    #[error("Could not parse Version")]
+    VersionError(#[from] semver::Error),
 }
 
 /// Allows checks to suggest further action
@@ -348,7 +352,7 @@ impl ClusterCheck for K8Version {
 
         // Trim off the `v` in v0.1.2 to get just "0.1.2"
         let server_version = &server_version[1..];
-        if Version::parse(&server_version) < Version::parse(KUBE_VERSION) {
+        if Version::parse(&server_version)? < Version::parse(KUBE_VERSION)? {
             return Ok(CheckStatus::fail(
                 UnrecoverableCheck::IncompatibleKubectlVersion {
                     installed: server_version.to_string(),
@@ -372,7 +376,7 @@ impl ClusterCheck for HelmVersion {
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
         let required = DEFAULT_HELM_VERSION;
-        if Version::parse(&helm_version) < Version::parse(required) {
+        if Version::parse(&helm_version)? < Version::parse(required)? {
             return Ok(CheckStatus::fail(
                 UnrecoverableCheck::IncompatibleHelmVersion {
                     installed: helm_version,
