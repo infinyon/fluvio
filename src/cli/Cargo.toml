@@ -41,7 +41,7 @@ tracing-futures = "0.2.4"
 url = "2.1.1"
 semver = "1.0.0"
 structopt = { version = "0.3.16", default-features = false }
-dirs = "1.0.2"
+dirs = "3.0.0"
 async-h1 = "2.1.2"
 http-types = "2.4.0"
 thiserror = "1.0.20"
@@ -56,7 +56,7 @@ serde_json = "1.0"
 prettytable-rs = "0.8.0"
 static_assertions = "1.1.0"
 tempdir = "0.3.7"
-sysinfo = "0.16.1"
+sysinfo = "0.19.0"
 atty = { version = "0.2.14", optional = true }
 ctrlc = { version = "3.1.3", optional = true}
 colored = "2"

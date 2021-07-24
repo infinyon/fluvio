@@ -236,7 +236,7 @@ dependencies = [
  "httparse",
  "lazy_static",
  "log",
- "pin-project 1.0.8",
+ "pin-project",
 ]
 
 [[package]]
@@ -1353,7 +1353,7 @@ dependencies = [
  "base64",
  "bytes",
  "cfg-if 1.0.0",
- "dirs 1.0.5",
+ "dirs 3.0.2",
  "event-listener",
  "fluvio-dataplane-protocol",
  "fluvio-future",
@@ -1409,7 +1409,7 @@ dependencies = [
  "colored",
  "content_inspector",
  "ctrlc",
- "dirs 1.0.5",
+ "dirs 3.0.2",
  "eyre",
  "fluvio",
  "fluvio-cluster",
@@ -1529,7 +1529,7 @@ dependencies = [
  "cfg-if 1.0.0",
  "content_inspector",
  "crc32c",
- "derive_builder 0.9.0",
+ "derive_builder 0.10.2",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
@@ -1583,7 +1583,7 @@ dependencies = [
  "nix 0.20.0",
  "openssl",
  "openssl-sys",
- "pin-project 1.0.8",
+ "pin-project",
  "pin-utils",
  "thiserror",
  "tracing",
@@ -1698,14 +1698,11 @@ dependencies = [
  "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",
- "opentelemetry",
- "opentelemetry-jaeger",
  "semver 1.0.3",
  "serde_json",
  "structopt",
  "thiserror",
  "tracing",
- "tracing-opentelemetry",
  "tracing-subscriber",
 ]
 
@@ -1818,7 +1815,7 @@ dependencies = [
  "futures-util",
  "log",
  "once_cell",
- "pin-project 1.0.8",
+ "pin-project",
  "thiserror",
  "tokio",
  "tokio-util",
@@ -1839,7 +1836,7 @@ dependencies = [
  "bytes",
  "cfg-if 1.0.0",
  "chrono",
- "derive_builder 0.9.0",
+ "derive_builder 0.10.2",
  "event-listener",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
@@ -1855,7 +1852,7 @@ dependencies = [
  "flv-util",
  "futures-util",
  "log",
- "nix 0.20.0",
+ "nix 0.22.0",
  "once_cell",
  "pin-utils",
  "regex",
@@ -2611,12 +2608,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "integer-encoding"
-version = "1.1.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48dc51180a9b377fd75814d0cc02199c20f8e99433d6762f650d39cdbbd3b56f"
-
-[[package]]
 name = "inventory"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2968,6 +2959,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "nix"
+version = "0.22.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf1e25ee6b412c2a1e3fcb6a4499a5c1bfe7f43e014bdce9a6b6666e5aa2d187"
+dependencies = [
+ "bitflags",
+ "cc",
+ "cfg-if 1.0.0",
+ "libc",
+ "memoffset",
+]
+
+[[package]]
 name = "nom"
 version = "6.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3115,45 +3119,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "opentelemetry"
-version = "0.11.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3434e2a9d2aec539d91f4251bf9047cd53b4d3f386f9d336f4c8076c72a5256"
-dependencies = [
- "async-trait",
- "futures",
- "js-sys",
- "lazy_static",
- "percent-encoding",
- "pin-project 0.4.28",
- "rand 0.7.3",
- "regex",
- "thiserror",
-]
-
-[[package]]
-name = "opentelemetry-jaeger"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4c604a73595f605a852c431ef9c6bbacc7b911f094900905fd2f684b6fc44b4"
-dependencies = [
- "async-trait",
- "lazy_static",
- "opentelemetry",
- "thiserror",
- "thrift",
-]
-
-[[package]]
-name = "ordered-float"
-version = "1.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3305af35278dd29f46fcdd139e0b1fbfae2153f0e5928b39b035542dd31e37b7"
-dependencies = [
- "num-traits",
-]
-
-[[package]]
 name = "owning_ref"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3254,31 +3219,11 @@ dependencies = [
 
 [[package]]
 name = "pin-project"
-version = "0.4.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "918192b5c59119d51e0cd221f4d49dde9112824ba717369e903c97d076083d0f"
-dependencies = [
- "pin-project-internal 0.4.28",
-]
-
-[[package]]
-name = "pin-project"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "576bc800220cc65dac09e99e97b08b358cfab6e17078de8dc5fee223bd2d0c08"
 dependencies = [
- "pin-project-internal 1.0.8",
-]
-
-[[package]]
-name = "pin-project-internal"
-version = "0.4.28"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3be26700300be6d9d23264c73211d8190e755b6b5ca7a1b28230025511b52a5e"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
+ "pin-project-internal",
 ]
 
 [[package]]
@@ -4221,9 +4166,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.16.5"
+version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "567e910ef0207be81a4e1bb0491e9a8d9866cf45b20fe1a52c03d347da9ea51b"
+checksum = "9e7de153d0438a648bb71e06e300e54fc641685e96af96d49b843f43172d341c"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys",
@@ -4327,28 +4272,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8018d24e04c95ac8790716a5987d0fec4f8b27249ffa0f7d33f1369bdfb88cbd"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "threadpool"
-version = "1.8.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d050e60b33d41c19108b32cea32164033a9013fe3b46cbd4457559bfbf77afaa"
-dependencies = [
- "num_cpus",
-]
-
-[[package]]
-name = "thrift"
-version = "0.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6d965454947cc7266d22716ebfd07b18d84ebaf35eec558586bbb2a8cb6b5b"
-dependencies = [
- "byteorder",
- "integer-encoding",
- "log",
- "ordered-float",
- "threadpool",
 ]
 
 [[package]]
@@ -4506,7 +4429,7 @@ version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "97d095ae15e245a057c8e8451bab9b3ee1e1f68e9ba2b4fbc18d0ac5237835f2"
 dependencies = [
- "pin-project 1.0.8",
+ "pin-project",
  "tracing",
 ]
 
@@ -4519,19 +4442,6 @@ dependencies = [
  "lazy_static",
  "log",
  "tracing-core",
-]
-
-[[package]]
-name = "tracing-opentelemetry"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1706e1f42970e09aa0635deb4f4607e8704a4390427d5f0062bf59240338bcc"
-dependencies = [
- "opentelemetry",
- "tracing",
- "tracing-core",
- "tracing-log",
- "tracing-subscriber",
 ]
 
 [[package]]

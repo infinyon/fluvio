@@ -98,9 +98,9 @@ fn os_info() -> Option<String> {
 
     let info = format!(
         "{} {} (kernel {})",
-        sys.get_name()?,
-        sys.get_os_version()?,
-        sys.get_kernel_version()?,
+        sys.name()?,
+        sys.os_version()?,
+        sys.kernel_version()?,
     );
 
     Some(info)
