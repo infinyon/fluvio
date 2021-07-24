@@ -93,7 +93,7 @@ pub enum CheckError {
 
     /// Unable to parse Error
     #[error("Could not parse Version")]
-    VersionError(#[from] semver::Error)
+    VersionError(#[from] semver::Error),
 }
 
 /// Allows checks to suggest further action
