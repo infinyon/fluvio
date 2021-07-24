@@ -69,7 +69,7 @@ jobs:
       - name: Unstable test
         if: ${{ matrix.check == 'unstable' }}
         run: |
-          make run-unstable-test
+          make run-integration-test
 
   # build binaries. use release for staging
   # this requires check and test
