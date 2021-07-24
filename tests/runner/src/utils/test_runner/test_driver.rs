@@ -293,7 +293,7 @@ impl FluvioTestDriver {
                 let producer = KafkaClientConfig::new()
                     .set("bootstrap.servers", broker)
                     .set("message.timeout.ms", "5000")
-                    .set("request.required.ack", "1")
+                    //.set("request.required.ack", "1")
                     .set(
                         "queue.buffering.max.kbytes",
                         format!("{}", self.producer_batch_kbytes),
