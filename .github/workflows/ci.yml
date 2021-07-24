@@ -147,8 +147,8 @@ jobs:
             run: |
               make run-all-doc-test
               make run-all-unit-test
-          - name: Unstable tests
-            run: make run-unstable-test
+          - name: Integration tests
+            run: make run-integration-test
 
     env:
       RUST_BACKTRACE: full
