@@ -477,10 +477,10 @@ mod tests {
     fn extra_vars() {
         let args = BaseCli::from_iter(vec![
             "flv-test",
+            "--record-bytes=1000",
             "smoke",
             "--",
             "--producer-iteration=9000",
-            "--producer-record-size=1000",
         ]);
 
         if let Some(TestCli::Args(cmd)) = args.test_cmd_args {
@@ -492,7 +492,6 @@ mod tests {
 
             let expected = SmokeTestOption {
                 producer_iteration: 9000,
-                producer_record_size: 1000,
                 ..Default::default()
             };
 
