@@ -70,8 +70,8 @@ fn main() {
             }
         }
 
-        let _panic_timer = TestTimer::new().start();
-        /*
+        let mut panic_timer = TestTimer::new();
+        panic_timer.start();
         std::panic::set_hook(Box::new(move |panic_info| {
             let mut panic_timer = panic_timer.clone();
             panic_timer.stop();
@@ -96,7 +96,6 @@ fn main() {
                 eprintln!("There was no location information from panic.");
             }
         }));
-        */
 
         let system_profiler_client = fluvio_client.clone();
         let (s, r) = async_channel::unbounded();
