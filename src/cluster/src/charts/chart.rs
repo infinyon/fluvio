@@ -1,21 +1,21 @@
-use std::path::{Path, PathBuf};
-use std::collections::BTreeMap;
+use std::path::{PathBuf};
 
-use tracing::{info, debug, instrument};
+
+use tracing::{info,instrument};
 use derive_builder::Builder;
-use tempfile::NamedTempFile;
+
 use semver::Version;
 
 use fluvio_helm::{HelmClient, InstallArg};
 
-use crate::{
-    ChartLocation, DEFAULT_CHART_APP_REPO, DEFAULT_CHART_SYS_REPO, DEFAULT_NAMESPACE,
-    DEFAULT_CHART_REMOTE,
-};
-use crate::error::K8InstallError;
-use crate::error::ChartInstallError;
+use crate::DEFAULT_NAMESPACE;
 
+use super::ChartInstallError;
+use super::location::ChartLocation;
+use super::SYS_CHART_NAME;
 
+const APP_CHART_NAME: &str = "fluvio";
+const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 
 
 /// Configuration options for installing Fluvio system charts
@@ -37,7 +37,7 @@ pub struct ChartConfig {
     pub namespace: String,
     /// The location at which to find the system chart to install
     #[builder(default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())")]
-    pub chart_location: ChartLocation,
+    pub location: ChartLocation,
     /// The version of the chart to install (REQUIRED).
     ///
     /// # Example
@@ -50,7 +50,11 @@ pub struct ChartConfig {
     /// # }
     /// ```
     #[builder(setter(into))]
-    pub chart_version: Version,
+    pub version: Version,
+
+    #[builder(setter(into))]
+    pub name: String,
+
 
     /// Set a list of chart value paths.
     #[builder(default)]
@@ -60,10 +64,11 @@ pub struct ChartConfig {
     /// equavalent to helm set
     #[builder(default)]
     string_values: Vec<(String,String)>
+
 }
 
 impl ChartConfig {
-    /// Creates a default [`SysConfigBuilder`].
+    /// Creates builder for app chart 
     ///
     /// The required argument `chart_version` must be provdied when
     /// constructing the builder.
@@ -71,13 +76,23 @@ impl ChartConfig {
     /// # Example
     ///
     /// ```
-    /// use fluvio_cluster::SysConfig;
+    /// use fluvio_cluster::ChartConfig;
     /// use semver::Version;
-    /// let builder = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
+    /// let builder = ChartConfig::app_builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder(chart_version: Version) -> ChartConfigBuilder {
+    pub fn app_builder(chart_version: Version) -> ChartConfigBuilder {
         let mut builder = ChartConfigBuilder::default();
-        builder.chart_version(chart_version);
+        builder.version(chart_version);
+        builder.name(APP_CHART_NAME);
+        builder.location(ChartLocation::app_inline());
+        builder
+    }
+
+    pub fn sys_builder(chart_version: Version) -> ChartConfigBuilder {
+        let mut builder = ChartConfigBuilder::default();
+        builder.version(chart_version);
+        builder.name(SYS_CHART_NAME);
+        builder.location(ChartLocation::app_inline());
         builder
     }
 }
@@ -92,32 +107,14 @@ impl ChartConfigBuilder {
     }
 
     /// The local chart location to install sys charts from
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::SysConfigBuilder;
-    /// # fn add_local_chart(builder: &mut SysConfigBuilder) {
-    /// builder.local_chart("./helm/fluvio-sys");
-    /// # }
-    /// ```
-    pub fn local_chart<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Local(path.into()));
+    pub fn local<P: Into<PathBuf>>(&mut self, path: P) -> &mut Self {
+        self.location = Some(ChartLocation::Local(path.into()));
         self
     }
 
-    /// The remote chart location to install sys charts from
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::SysConfigBuilder;
-    /// # fn add_remote_chart(builder: &mut SysConfigBuilder) {
-    /// builder.remote_chart("https://charts.fluvio.io");
-    /// # }
-    /// ```
-    pub fn remote_chart<S: Into<String>>(&mut self, location: S) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Remote(location.into()));
+    /// The remote chart location to install charts from
+    pub fn remote<S: Into<String>>(&mut self, location: S) -> &mut Self {
+        self.location = Some(ChartLocation::Remote(location.into()));
         self
     }
 
@@ -167,7 +164,7 @@ impl ChartConfigBuilder {
     /// # fn example() -> Result<(), SysInstallError> {
     /// use semver::Version;
     /// let custom_namespace = false;
-    /// let config = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
+    /// let config = ChartConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
     ///     // Custom namespace is not applied
     ///     .with_if(custom_namespace, |builder| builder.namespace("my-namespace"))
     ///     .build()?;
@@ -194,7 +191,7 @@ impl ChartConfigBuilder {
 /// # use fluvio_cluster::{SysInstallError, SysConfig, SysInstaller};
 /// # fn example() -> Result<(), SysInstallError> {
 /// use semver::Version;
-/// let config = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap())
+/// let config = ChartConfig::builder(Version::parse("0.7.0-alpha.1").unwrap(),"fluvio-app")
 ///     .namespace("fluvio")
 ///     .build()?;
 /// let installer = SysInstaller::from_config(config)?;
@@ -204,8 +201,6 @@ impl ChartConfigBuilder {
 /// ```
 #[derive(Debug)]
 pub struct ChartInstaller {
-    chart_name: String,
-    chart_repo: String,
     config: ChartConfig,
     helm_client: HelmClient,
 }
@@ -230,12 +225,12 @@ impl ChartInstaller {
         self.process(true)
     }
 
-    /// Tells whether a system chart with the configured details is already installed
+    /// Tells whether a chart is installed the configured details is already installed
     pub fn is_installed(&self) -> Result<bool, ChartInstallError> {
-        let sys_charts = self
+        let installed_charts = self
             .helm_client
-            .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)?;
-        Ok(!sys_charts.is_empty())
+            .get_installed_chart_by_name(&self.config.name, None)?;
+        Ok(!installed_charts.is_empty())
     }
 
     #[instrument(skip(self))]
@@ -244,26 +239,11 @@ impl ChartInstaller {
         upgrade: bool,
     ) -> Result<(), ChartInstallError> {
         
-        let chart_setup = match &self.config.chart_location {
-            &ChartLocation::Inline(dir) => {
-                use crate::charts::InlineDir;
+        let chart_setup = self.config.location.setup(&self.config.name,&self.helm_client)?;
 
-                let inline_dir = InlineDir::new(dir)?;
-                inline_dir.unpack()?;
-                inline_dir
-
-            },
-            ChartLocation::Remote(chart_location) => {
-                self.setup_remote_chart(chart_location)?;
-            }
-            ChartLocation::Local(chart_home) => {
-                self.setup_local_chart(chart_home)?;
-            }
-        };
-
-        let args = InstallArg::new(&self.chart_repo, &self.chart_name)
+        let args = InstallArg::new( &chart_setup.location(),&self.config.name)
             .namespace(&self.config.namespace)
-            .version(&self.config.chart_version.to_string())
+            .version(&self.config.version.to_string())
             .opts(self.config.string_values)
             .values(self.config.values)
             .develop();
@@ -273,33 +253,7 @@ impl ChartInstaller {
             self.helm_client.install(&args)?;
         }
 
-        info!(chart = self.chart_name," has been installed");
-        Ok(())
-    }
-
-    #[instrument(skip(self))]
-    fn setup_remote_chart(
-        &self,
-        chart_location: &str,
-    ) -> Result<(), ChartInstallError> {
-        debug!(?chart_location, "Using remote helm chart:");
-        self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
-        self.helm_client.repo_update()?;
-        
-        Ok(())
-    }
-
-    #[instrument(skip(self))]
-    fn setup_local_chart(
-        &self,
-        chart_home: &Path,
-    ) -> Result<(), ChartInstallError> {
-        
-        let chart_location = chart_home.join(self.chart_name);
-        let chart_string = chart_location.to_string_lossy();
-        debug!(chart_location = %chart_location.display(), "Using local helm chart:");
-
-        
+        info!(chart = %self.config.name," has been installed");
         Ok(())
     }
 
@@ -316,11 +270,11 @@ mod tests {
     #[test]
     fn test_build_config() {
         let config: ChartConfig =
-            ChartConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
+            ChartConfig::app_builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
                 .build()
                 .expect("should build config with required options");
         assert_eq!(
-            config.chart_version,
+            config.version,
             semver::Version::parse("0.7.0-alpha.1").unwrap()
         );
     }

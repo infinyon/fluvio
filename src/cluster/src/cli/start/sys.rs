@@ -1,9 +1,9 @@
 use semver::Version;
 use crate::cli::start::StartOpt;
 use crate::cli::ClusterCliError;
-use crate::charts::{ChartConfig, SysInstaller};
+use crate::charts::{ChartConfig, ChartInstallError,ChartInstaller};
 use crate::ClusterError;
-use crate::error::ChartInstallError;
+
 
 pub fn process_sys(
     opt: StartOpt,
@@ -25,17 +25,15 @@ fn install_sys_impl(
         .clone()
         .unwrap_or(default_chart_version);
 
-    let config = ChartConfig::builder(chart_version)
+    let config = ChartConfig::sys_builder(chart_version)
         .namespace(&opt.k8_config.namespace)
         .with(|builder| match &opt.k8_config.chart_location {
             // If a chart location is given, use it
-            Some(chart_location) => builder.local_chart(chart_location),
-            // If we're in develop mode (but no explicit chart location), use local path
-            None if opt.develop => builder.local_chart("./k8-util/helm"),
+            Some(chart_location) => builder.local(chart_location),
             _ => builder,
         })
         .build()?;
-    let installer = SysInstaller::from_config(config)?;
+    let installer = ChartInstaller::from_config(config)?;
 
     if upgrade {
         installer.upgrade()?;

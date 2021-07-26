@@ -30,8 +30,9 @@ use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, CheckStatus,
-    ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE, ChartLocation, ChartConfig,
+    ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE
 };
+use crate::charts::{ChartLocation,ChartConfig};
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
 use semver::Version;
@@ -876,6 +877,8 @@ impl ClusterInstaller {
 
         debug!("Using helm install settings: {:#?}", &install_settings);
 
+        
+
         match &self.config.chart_location {
             // For remote, we add a repo pointing to the chart location.
             ChartLocation::Remote(chart_location) => {
@@ -922,7 +925,7 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
-                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
+                    .values([self.config.chart_values.clone()].concat())
                     .version(&self.config.chart_version.to_string());
 
                 debug!("Using helm install args: {:#?}", &args);

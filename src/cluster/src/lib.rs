@@ -26,6 +26,7 @@
 #![allow(clippy::upper_case_acronyms)]
 
 
+pub mod charts;
 mod check;
 mod start;
 mod delete;
@@ -44,12 +45,11 @@ pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
 pub use delete::ClusterUninstaller;
-pub use charts::{ChartConfig, ChartConfigBuilder, ChartInstaller};
 pub use fluvio::config as fluvio_config;
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
 pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
-pub(crate) const DEFAULT_CHART_SYS_REPO: &str = "fluvio-sys";
+
 pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
 pub(crate) const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 
@@ -90,13 +90,5 @@ mod common {
         }
     }
 
-    /// Distinguishes between a Local and Remote helm chart
-    #[derive(Debug, Clone)]
-    pub enum ChartLocation {
-        Inline(include_dir::Dir<'static>),
-        /// Local charts must be located at a valid filesystem path.
-        Local(PathBuf),
-        /// Remote charts will be located at a URL such as `https://...`
-        Remote(String),
-    }
+    
 }
