@@ -574,7 +574,7 @@ pub struct ConsumerConfig {
     pub(crate) max_bytes: i32,
     #[builder(default)]
     pub(crate) isolation: Isolation,
-    #[builder(private, setter(into, strip_option))]
+    #[builder(private, default, setter(into, strip_option))]
     pub(crate) wasm_module: Option<Vec<u8>>,
 }
 
@@ -632,5 +632,15 @@ impl Record {
 impl AsRef<[u8]> for Record {
     fn as_ref(&self) -> &[u8] {
         self.value()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_consumer_config_default() {
+        let _config = ConsumerConfig::builder().build().unwrap();
     }
 }
