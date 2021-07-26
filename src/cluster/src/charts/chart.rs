@@ -242,7 +242,7 @@ impl ChartInstaller {
         
         let chart_setup = self.config.location.setup(&self.config.name,&self.helm_client)?;
 
-        let args = InstallArg::new( &chart_setup.location(),&self.config.name)
+        let args = InstallArg::new( &self.config.name,&chart_setup.location())
             .namespace(&self.config.namespace)
             .version(&self.config.version.to_string())
             .opts(self.config.string_values.to_owned())
