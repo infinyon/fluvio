@@ -1353,6 +1353,7 @@ dependencies = [
  "base64",
  "bytes",
  "cfg-if 1.0.0",
+ "derive_builder 0.10.2",
  "dirs 3.0.2",
  "event-listener",
  "fluvio-dataplane-protocol",
