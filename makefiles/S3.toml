@@ -98,9 +98,13 @@ dependencies = ["install-fluvio-package"]
 script = """
 ${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
     bump dynamic $(cat VERSION)
-
 ${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
     bump latest $(cat VERSION)
+
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    tag "fluvio:$(cat VERSION)" --tag=stable --force
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    tag "fluvio:$(cat VERSION)" --tag=latest --force
 """
 
 # Bumps the `latest` version tag on packages.fluvio.io
@@ -109,9 +113,9 @@ ${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
 [tasks.bump-fluvio-latest]
 dependencies = ["install-fluvio-package"]
 script = """
-${HOME}/.fluvio/extensions/fluvio-package \
-    ${FLUVIO_PUBLISH_TEST} \
-    bump \
-    latest \
-    "$(cat VERSION)+$(git rev-parse HEAD)"
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    bump latest "$(cat VERSION)+$(git rev-parse HEAD)"
+
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    tag "fluvio:$(cat VERSION)+$(git rev-parse HEAD)" --tag=latest --force
 """
