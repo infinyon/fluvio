@@ -131,7 +131,7 @@ mod display {
                         l -> format!("{:?}",status.resolution),
                         l -> status.leader.hw.to_string(),
                         l -> status.leader.leo.to_string(),
-                        l -> status.lsr.to_string(),
+                        l -> status.lrs.to_string(),
                         l -> format!("{:?}",status.replicas)
                     ]
                 })
