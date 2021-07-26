@@ -52,6 +52,7 @@ pub struct ChartConfig {
     #[builder(setter(into))]
     pub version: Version,
 
+    /// set chart name
     #[builder(setter(into))]
     pub name: String,
 
@@ -244,8 +245,8 @@ impl ChartInstaller {
         let args = InstallArg::new( &chart_setup.location(),&self.config.name)
             .namespace(&self.config.namespace)
             .version(&self.config.version.to_string())
-            .opts(self.config.string_values)
-            .values(self.config.values)
+            .opts(self.config.string_values.to_owned())
+            .values(self.config.values.to_owned())
             .develop();
         if upgrade {
             self.helm_client.upgrade(&args)?;

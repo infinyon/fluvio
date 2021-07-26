@@ -123,6 +123,7 @@ mod inline{
             self.0.path()
         }
 
+        // unpack
         pub fn unpack<'a>(inline: &Dir<'a>, base_dir: &Path) -> Result<(),IoError> {
 
             debug!(?base_dir,"unpacking inline at base");
@@ -159,7 +160,7 @@ mod inline{
             use super::InlineChart;
             use super::super::SYS_CHART_DIR;
 
-            let inline_chart = InlineChart::new(SYS_CHART_DIR).expect("unpack");
+            let _inline_chart = InlineChart::new(SYS_CHART_DIR).expect("unpack");
         }
 
     }

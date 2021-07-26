@@ -15,6 +15,7 @@ mod error {
     /// Errors that may occur while trying to install Fluvio system charts
     #[derive(thiserror::Error, Debug)]
     pub enum ChartInstallError {
+        // io error
         #[error(transparent)]
         IoError(#[from] IoError),
         /// An error occurred while running helm.

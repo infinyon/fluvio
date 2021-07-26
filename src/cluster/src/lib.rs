@@ -57,9 +57,6 @@ pub use common::*;
 
 mod common {
 
-
-    use std::path::PathBuf;
-
     use super::CheckStatuses;
 
     /// The result of a successful startup of a Fluvio cluster
@@ -71,8 +68,8 @@ mod common {
     /// were run (if any).
     /// TODO: In future release, we should return address without port
     pub struct StartStatus {
-        address: String,
-        port: u16,
+        pub(crate) address: String,
+        pub(crate) port: u16,
         #[allow(unused)]
         pub(crate) checks: Option<CheckStatuses>,
     }
