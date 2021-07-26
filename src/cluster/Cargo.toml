@@ -44,6 +44,7 @@ which = "4.1.0"
 directories = "3.0.2"
 tempfile = "3.2"
 include_dir = "0.6.1"
+tempdir = "0.3.7"
 
 # Fluvio dependencies
 fluvio = { version = "0.9.0", path = "../client", default-features = false }
@@ -60,4 +61,4 @@ k8-metadata-client = { version = "3.0.0" }
 k8-types = { version = "0.2.0", features = ["app"]}
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.0", features = ["task"] }
+fluvio-future = { version = "0.3.7", features = ["task","fixture"] }

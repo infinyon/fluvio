@@ -1,9 +1,9 @@
 use semver::Version;
 use crate::cli::start::StartOpt;
 use crate::cli::ClusterCliError;
-use crate::charts::{SysConfig, SysInstaller};
+use crate::charts::{ChartConfig, SysInstaller};
 use crate::ClusterError;
-use crate::error::SysInstallError;
+use crate::error::ChartInstallError;
 
 pub fn process_sys(
     opt: StartOpt,
@@ -18,14 +18,14 @@ fn install_sys_impl(
     opt: StartOpt,
     default_chart_version: Version,
     upgrade: bool,
-) -> Result<(), SysInstallError> {
+) -> Result<(), ChartInstallError> {
     let chart_version = opt
         .k8_config
         .chart_version
         .clone()
         .unwrap_or(default_chart_version);
 
-    let config = SysConfig::builder(chart_version)
+    let config = ChartConfig::builder(chart_version)
         .namespace(&opt.k8_config.namespace)
         .with(|builder| match &opt.k8_config.chart_location {
             // If a chart location is given, use it

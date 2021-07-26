@@ -1,34 +1,28 @@
+use std::path::{Path, PathBuf};
+use std::collections::BTreeMap;
+
 use tracing::{info, debug, instrument};
 use derive_builder::Builder;
+use tempfile::NamedTempFile;
+use semver::Version;
+
+use fluvio_helm::{HelmClient, InstallArg};
+
 use crate::{
     ChartLocation, DEFAULT_CHART_APP_REPO, DEFAULT_CHART_SYS_REPO, DEFAULT_NAMESPACE,
     DEFAULT_CHART_REMOTE,
 };
-use fluvio_helm::{HelmClient, InstallArg};
-use std::path::{Path, PathBuf};
-use crate::error::SysInstallError;
-use semver::Version;
+use crate::error::K8InstallError;
+use crate::error::ChartInstallError;
 
-const DEFAULT_SYS_NAME: &str = "fluvio-sys";
-const DEFAULT_CHART_SYS_NAME: &str = "fluvio/fluvio-sys";
-const DEFAULT_CLOUD_NAME: &str = "minikube";
+
+
 
 /// Configuration options for installing Fluvio system charts
 #[derive(Builder, Debug, Clone)]
 #[builder(build_fn(private, name = "build_impl"))]
-pub struct SysConfig {
-    /// The type of cloud infrastructure the cluster will be running on
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::SysConfigBuilder;
-    /// # fn add_cloud(builder: &mut SysConfigBuilder) {
-    /// builder.cloud("minikube");
-    /// # }
-    /// ```
-    #[builder(setter(into), default = "DEFAULT_CLOUD_NAME.to_string()")]
-    pub cloud: String,
+pub struct ChartConfig {
+    
     /// The namespace in which to install the system chart
     ///
     /// # Example
@@ -44,7 +38,7 @@ pub struct SysConfig {
     /// The location at which to find the system chart to install
     #[builder(default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())")]
     pub chart_location: ChartLocation,
-    /// The version of the system chart to install (REQUIRED).
+    /// The version of the chart to install (REQUIRED).
     ///
     /// # Example
     ///
@@ -59,7 +53,7 @@ pub struct SysConfig {
     pub chart_version: Version,
 }
 
-impl SysConfig {
+impl ChartConfig {
     /// Creates a default [`SysConfigBuilder`].
     ///
     /// The required argument `chart_version` must be provdied when
@@ -72,19 +66,19 @@ impl SysConfig {
     /// use semver::Version;
     /// let builder = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder(chart_version: Version) -> SysConfigBuilder {
-        let mut builder = SysConfigBuilder::default();
+    pub fn builder(chart_version: Version) -> ChartConfigBuilder {
+        let mut builder = ChartConfigBuilder::default();
         builder.chart_version(chart_version);
         builder
     }
 }
 
-impl SysConfigBuilder {
+impl ChartConfigBuilder {
     /// Validates all builder options and constructs a `SysConfig`
-    pub fn build(&self) -> Result<SysConfig, SysInstallError> {
+    pub fn build(&self) -> Result<ChartConfig, ChartInstallError> {
         let config = self
             .build_impl()
-            .map_err(SysInstallError::MissingRequiredConfig)?;
+            .map_err(ChartInstallError::MissingRequiredConfig)?;
         Ok(config)
     }
 
@@ -200,14 +194,16 @@ impl SysConfigBuilder {
 /// # }
 /// ```
 #[derive(Debug)]
-pub struct SysInstaller {
-    config: SysConfig,
+pub struct ChartInstaller {
+    chart_name: String,
+    chart_repo: String,
+    config: ChartConfig,
     helm_client: HelmClient,
 }
 
-impl SysInstaller {
+impl ChartInstaller {
     /// Create a new `SysInstaller` using the given config
-    pub fn from_config(config: SysConfig) -> Result<Self, SysInstallError> {
+    pub fn from_config(config: ChartConfig) -> Result<Self, ChartInstallError> {
         let helm_client = HelmClient::new()?;
         Ok(Self {
             config,
@@ -216,17 +212,17 @@ impl SysInstaller {
     }
 
     /// Install the Fluvio System chart on the configured cluster
-    pub fn install(&self) -> Result<(), SysInstallError> {
+    pub fn install(&self) -> Result<(), ChartInstallError> {
         self.process(false)
     }
 
     /// Upgrade the Fluvio System chart on the configured cluster
-    pub fn upgrade(&self) -> Result<(), SysInstallError> {
+    pub fn upgrade(&self) -> Result<(), ChartInstallError> {
         self.process(true)
     }
 
     /// Tells whether a system chart with the configured details is already installed
-    pub fn is_installed(&self) -> Result<bool, SysInstallError> {
+    pub fn is_installed(&self) -> Result<bool, ChartInstallError> {
         let sys_charts = self
             .helm_client
             .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)?;
@@ -234,9 +230,23 @@ impl SysInstaller {
     }
 
     #[instrument(skip(self))]
-    fn process(&self, upgrade: bool) -> Result<(), SysInstallError> {
-        let settings = vec![("cloud".to_owned(), self.config.cloud.to_owned())];
+    fn process(
+        &self, 
+        upgrade: bool,
+        option_settings: Vec<(String,String)>,
+        values_settings: BTreeMap<String,String>) -> Result<(), ChartInstallError> {
+        
+        let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
+        let np_pathbuf = vec![np_conf_path.to_path_buf()];
+
+        serde_yaml::to_writer(&np_addr_fd, &values_settings)
+                .map_err(|err| ChartInstallError::Other(err.to_string()))?;
+
+        let settings: Vec<(String,String)> = vec![];
         match &self.config.chart_location {
+            &ChartLocation::Inline => {
+
+            },
             ChartLocation::Remote(chart_location) => {
                 self.process_remote_chart(chart_location, upgrade, settings)?;
             }
@@ -252,14 +262,14 @@ impl SysInstaller {
     #[instrument(skip(self, upgrade))]
     fn process_remote_chart(
         &self,
-        chart: &str,
+        chart_location: &str,
         upgrade: bool,
         settings: Vec<(String, String)>,
-    ) -> Result<(), SysInstallError> {
-        debug!(?chart, "Using remote helm chart:");
-        self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart)?;
+    ) -> Result<(), ChartInstallError> {
+        debug!(?chart_location, "Using remote helm chart:");
+        self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
         self.helm_client.repo_update()?;
-        let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_SYS_NAME)
+        let args = InstallArg::new(&self.chart_repo, &self.chart_name)
             .namespace(&self.config.namespace)
             .version(&self.config.chart_version.to_string())
             .opts(settings)
@@ -278,7 +288,8 @@ impl SysInstaller {
         chart_home: &Path,
         upgrade: bool,
         settings: Vec<(String, String)>,
-    ) -> Result<(), SysInstallError> {
+    ) -> Result<(), ChartInstallError> {
+        
         let chart_location = chart_home.join(DEFAULT_SYS_NAME);
         let chart_string = chart_location.to_string_lossy();
         debug!(chart_location = %chart_location.display(), "Using local helm chart:");
@@ -293,9 +304,13 @@ impl SysInstaller {
         } else {
             self.helm_client.install(&args)?;
         }
+        
         Ok(())
     }
 }
+
+
+
 
 #[cfg(test)]
 mod tests {
@@ -303,8 +318,8 @@ mod tests {
 
     #[test]
     fn test_build_config() {
-        let config: SysConfig =
-            SysConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
+        let config: ChartConfig =
+            ChartConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
                 .build()
                 .expect("should build config with required options");
         assert_eq!(

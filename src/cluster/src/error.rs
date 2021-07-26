@@ -18,7 +18,7 @@ pub enum ClusterError {
     InstallLocal(#[from] LocalInstallError),
     /// An error occurred while trying to install Fluvio system charts
     #[error("Failed to install Fluvio system charts")]
-    InstallSys(#[from] SysInstallError),
+    InstallSys(#[from] ChartInstallError),
     /// An error occurred while trying to uninstall Fluvio
     #[error("Failed to uninstall Fluvio")]
     Uninstall(#[from] UninstallError),
@@ -26,13 +26,19 @@ pub enum ClusterError {
 
 /// Errors that may occur while trying to install Fluvio system charts
 #[derive(thiserror::Error, Debug)]
-pub enum SysInstallError {
+pub enum ChartInstallError {
+    #[error(transparent)]
+    IoError(#[from] IoError),
     /// An error occurred while running helm.
     #[error("Helm client error")]
     HelmError(#[from] HelmError),
     /// Attempted to construct a Config object without all required fields
     #[error("Missing required config option {0}")]
     MissingRequiredConfig(String),
+    /// A different kind of error occurred.
+    #[error("An unknown error occurred: {0}")]
+    Other(String),
+    
 }
 
 /// Errors that may occur while trying to install Fluvio on Kubernetes

@@ -41,12 +41,12 @@ use fluvio_helm as helm;
 
 pub use start::k8::{ClusterInstaller, ClusterConfig, ClusterConfigBuilder};
 pub use start::local::{LocalInstaller, LocalConfig, LocalConfigBuilder};
-pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError, SysInstallError};
+pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError, ChartInstallError};
 pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
 pub use delete::ClusterUninstaller;
-pub use charts::{SysConfig, SysConfigBuilder, SysInstaller};
+pub use charts::{ChartConfig, SysConfigBuilder, SysInstaller};
 pub use fluvio::config as fluvio_config;
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
@@ -86,6 +86,7 @@ impl StartStatus {
 /// Distinguishes between a Local and Remote helm chart
 #[derive(Debug, Clone)]
 pub enum ChartLocation {
+    Inline,
     /// Local charts must be located at a valid filesystem path.
     Local(PathBuf),
     /// Remote charts will be located at a URL such as `https://...`

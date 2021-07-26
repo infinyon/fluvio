@@ -30,7 +30,7 @@ use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, CheckStatus,
-    ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE, ChartLocation, SysConfig,
+    ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE, ChartLocation, ChartConfig,
 };
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
@@ -659,7 +659,7 @@ impl ClusterInstaller {
     /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
-        let sys_config: SysConfig = SysConfig::builder(self.config.chart_version.clone())
+        let sys_config: ChartConfig = ChartConfig::builder(self.config.chart_version.clone())
             .namespace(&self.config.namespace)
             .chart_location(self.config.chart_location.clone())
             .cloud(&self.config.cloud)
@@ -801,10 +801,7 @@ impl ClusterInstaller {
         // NodePort services need to provide SPU with an external address
         // We're going to provide it via annotation on the SPU's K8 service
 
-        // We're going to write the annotation to a temp file so Helm can use it
-        // This is a workaround. More on this later in the function.
-        let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
-        let np_pathbuf = vec![np_conf_path.to_path_buf()];
+        
 
         if self.config.service_type == "NodePort" {
             debug!("Using NodePort service type");
@@ -829,9 +826,7 @@ impl ClusterInstaller {
                 .find(|a| a.r#type == "InternalIP")
                 .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
 
-            // The following is a workaround for https://github.com/infinyon/fluvio-helm/issues/16
-            // Defining this annotation via `install_settings` var would be preference
-
+        
             // Set this annotation w/ the external address by overriding this Helm chart value:
             let mut ingress_address = BTreeMap::new();
             ingress_address.insert("fluvio.io/ingress-address", external_addr.address);
@@ -842,8 +837,10 @@ impl ClusterInstaller {
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);
 
+            /* 
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .map_err(|err| K8InstallError::Other(err.to_string()))?;
+            */
         }
 
         // If TLS is enabled, set it as a helm variable

@@ -23,9 +23,9 @@ use k8_client::ClientError as K8ClientError;
 
 use crate::{
     DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
-    SysConfig, SysInstaller,
+    ChartConfig, SysInstaller,
 };
-use crate::error::SysInstallError;
+use crate::error::ChartInstallError;
 use std::fs::File;
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
@@ -390,11 +390,11 @@ impl ClusterCheck for HelmVersion {
 
 #[derive(Debug)]
 pub(crate) struct SysChartCheck {
-    config: SysConfig,
+    config: ChartConfig,
 }
 
 impl SysChartCheck {
-    pub(crate) fn new(config: SysConfig) -> Self {
+    pub(crate) fn new(config: ChartConfig) -> Self {
         Self { config }
     }
 }
@@ -419,7 +419,7 @@ impl ClusterCheck for SysChartCheck {
 
     async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
         // Use closure to catch errors
-        let result = (|| -> Result<(), SysInstallError> {
+        let result = (|| -> Result<(), ChartInstallError> {
             debug!(
                 "Installing Fluvio sys chart with config: {:#?}",
                 &self.config
