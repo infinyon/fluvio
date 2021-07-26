@@ -15,14 +15,6 @@ use crate::Offset;
 use crate::Size;
 use crate::record::Record;
 
-#[allow(deprecated)]
-#[deprecated(since = "0.5.1", note = "Use 'MemoryRecords' instead")]
-pub type DefaultBatchRecords = Vec<crate::record::DefaultRecord>;
-
-#[allow(deprecated)]
-#[deprecated(since = "0.5.1", note = "Use 'Batch' instead")]
-pub type DefaultBatch = Batch<DefaultBatchRecords>;
-
 pub trait BatchRecords: Default + Debug + Encoder + Decoder {
     /// how many bytes does record wants to process
     fn remainder_bytes(&self, remainder: usize) -> usize {
