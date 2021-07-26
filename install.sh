@@ -7,9 +7,8 @@ set -o pipefail
 
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
 readonly FLUVIO_PREFIX="https://packages.fluvio.io/v1"
-readonly FLUVIO_STABLE="${FLUVIO_PREFIX}/stable"
-readonly FLUVIO_PRERELEASE="${FLUVIO_PREFIX}/prerelease"
-readonly FLUVIO_LATEST="${FLUVIO_PREFIX}/latest"
+readonly FLUVIO_TAG_STABLE="stable"
+readonly FLUVIO_PACKAGE="fluvio/fluvio"
 readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
 
 # Ensure that this architecture is supported and matches the
@@ -39,38 +38,33 @@ assert_supported_architecture() {
     return 1
 }
 
-# Fetch the latest released version for this architecture
+# Fetch the tagged version of the given package
 #
-# @param $1: The target triple of this architecture
-# @param $2 (optional): The release channel to find the version to download
-#   - Defaults to $FLUVIO_STABLE
-# @return <stdout>: The version of the latest release
-fetch_latest_version_for_architecture() {
-    local _status _downloaded _newest
-    local _arch="$1"; shift
-    local _channel="${1:-"$FLUVIO_STABLE"}"
+# @param $1: The name of the tag to lookup the version for
+#   - Defaults to $FLUVIO_TAG_STABLE, i.e. "stable"
+# @param $2 (optional): The name of the package to lookup
+#   - Defaults to $FLUVIO_PACKAGE, i.e. "fluvio/fluvio"
+# @return <stdout>: The version of the release that is tagged
+# shellcheck disable=SC2120
+fetch_tag_version() {
+    local _status _downloaded
+    local _tag="${1:-"$FLUVIO_TAG_STABLE"}"; shift
+    local _package="${1:-"$FLUVIO_PACKAGE"}";
+    local -r _tag_url="${FLUVIO_PREFIX}/packages/${_package}/tags/${_tag}"
 
     # Download the list of latest releases
-    _downloaded="$(ensure downloader "${_channel}" - 2>&1)"
+    _downloaded="$(downloader "${_tag_url}" - 2>&1)"
     _status=$?
 
     if [ $_status -ne 0 ]; then
         return $_status
     fi
 
-    # Find the latest release for this architecture
-    _newest="$(echo "${_downloaded}" | grep "${_arch}" | sed "s/.*\=//")"
-    _status=$?
-
-    if [ $_status -ne 0 ]; then
-        return $_status
-    fi
-
-    if [ -z "$_newest" ]; then
+    if [ -z "$_downloaded" ]; then
         return 1
     fi
 
-    echo "${_newest}"
+    echo "${_downloaded}"
 }
 
 # Download the Fluvio CLI binary to a temporary file
@@ -485,48 +479,23 @@ main() {
     # If a VERSION env variable is set:
     if [ -n "${VERSION:-""}" ]; then
 
-        # If VERSION is equal to exactly "stable", use STABLE channel
-        if [ "${VERSION}" == "stable" ]; then
-            # Fetch the latest STABLE version information
-            _version=$(fetch_latest_version_for_architecture "${_target}")
-            _status=$?
-            if [ $_status -ne 0 ]; then
-                err "❌ Failed to fetch latest version information!"
-                err "    Error downloading from ${FLUVIO_STABLE}"
-                abort_prompt_issue
-            fi
-        # If VERSION is equal to exactly "prerelease", use PRERELEASE channel
-        elif [ "${VERSION}" == "prerelease" ]; then
-            _version=$(fetch_latest_version_for_architecture "${_target}" "${FLUVIO_PRERELEASE}")
-            _status=$?
-            if [ $_status -ne 0 ]; then
-                err "❌ Failed to fetch latest version information!"
-                err "    Error downloading from ${FLUVIO_PRERELEASE}"
-                abort_prompt_issue
-            fi
-        # If VERSION is equal to exactly "latest", use LATEST channel
-        elif [ "${VERSION}" == "latest" ]; then
-            _version=$(fetch_latest_version_for_architecture "${_target}" "${FLUVIO_LATEST}")
-            _status=$?
-            if [ $_status -ne 0 ]; then
-                err "❌ Failed to fetch latest version information!"
-                err "    Error downloading from ${FLUVIO_LATEST}"
-                abort_prompt_issue
-            fi
-        else
-            # Otherwise, try to install the specific given version
-            _version="${VERSION}"
-        fi
+        # Try using VERSION as a tag name
+        set +e
+        _version=$(fetch_tag_version "${VERSION}")
+        _status=$?
+        set -e
 
     else
-        # Otherwise, fetch the latest STABLE version information
-        _version=$(fetch_latest_version_for_architecture "${_target}")
+        # If VERSION is not set, try fetching a version from the default tag "stable"
+        set +e
+        _version=$(fetch_tag_version)
         _status=$?
-        if [ $_status -ne 0 ]; then
-            err "❌ Failed to fetch latest version information!"
-            err "    Error downloading from ${FLUVIO_STABLE}"
-            abort_prompt_issue
-        fi
+        set -e
+    fi
+
+    # If we did not find a version via a tag, use VERSION as the version itself
+    if [ $_status -ne 0 ]; then
+        _version="${VERSION}"
     fi
 
     # Download Fluvio to a temporary file
