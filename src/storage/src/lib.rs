@@ -107,8 +107,6 @@ mod inner {
     pub trait SlicePartitionResponse {
         fn set_hw(&mut self, offset: i64);
 
-        fn set_last_stable_offset(&mut self, offset: i64);
-
         fn set_log_start_offset(&mut self, offset: i64);
 
         fn set_slice(&mut self, slice: AsyncFileSlice);
@@ -119,11 +117,6 @@ mod inner {
     impl SlicePartitionResponse for FilePartitionResponse {
         fn set_hw(&mut self, offset: i64) {
             self.high_watermark = offset;
-        }
-
-        #[allow(deprecated)]
-        fn set_last_stable_offset(&mut self, offset: i64) {
-            self.last_stable_offset = offset;
         }
 
         fn set_log_start_offset(&mut self, offset: i64) {

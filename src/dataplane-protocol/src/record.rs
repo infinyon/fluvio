@@ -19,9 +19,6 @@ use crate::core::Version;
 use crate::batch::Batch;
 use crate::Offset;
 
-#[deprecated(since = "0.5.1", note = "Use 'Record' instead")]
-pub type DefaultRecord = Record<RecordData>;
-
 /// maximum text to display
 static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
     let var_value = std::env::var("FLV_MAX_STRING_DISPLAY").unwrap_or_default();
@@ -67,9 +64,6 @@ impl<K: Into<Vec<u8>>> From<K> for RecordKey {
     }
 }
 
-#[deprecated(since = "0.5.1", note = "Use 'RecordData' instead")]
-pub type DefaultAsyncBuffer = RecordData;
-
 /// A type containing the data contents of a Record.
 ///
 /// The `RecordData` type provides useful conversions for
@@ -81,16 +75,6 @@ pub type DefaultAsyncBuffer = RecordData;
 /// [the Producer API]: https://docs.rs/fluvio/producer/TopicProducer::send
 #[derive(Clone, Default)]
 pub struct RecordData(Bytes);
-
-impl RecordData {
-    #[deprecated(since = "0.5.1", note = "Use 'From::from' instead")]
-    pub fn new<T>(val: T) -> Self
-    where
-        T: Into<Bytes>,
-    {
-        Self(val.into())
-    }
-}
 
 impl RecordData {
     pub fn len(&self) -> usize {

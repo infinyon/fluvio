@@ -284,7 +284,6 @@ impl FileReplica {
         );
 
         response.set_hw(hw);
-        response.set_last_stable_offset(hw);
         response.set_log_start_offset(self.get_log_start_offset());
 
         match self.find_segment(start_offset) {

@@ -128,33 +128,6 @@ impl TopicProducer {
 
         Ok(())
     }
-
-    /// Sends an event to a specific partition within this producer's topic
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio::{TopicProducer, FluvioError};
-    /// # async fn do_send_record(producer: &TopicProducer) -> Result<(), FluvioError> {
-    /// let partition = 0;
-    /// producer.send_record("Hello, Fluvio!", partition).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[instrument(
-        skip(self, buffer),
-        fields(topic = %self.topic),
-    )]
-    #[deprecated(since = "0.6.2", note = "Use 'send' instead")]
-    pub async fn send_record<B: AsRef<[u8]>>(
-        &self,
-        buffer: B,
-        _partition: i32,
-    ) -> Result<(), FluvioError> {
-        let buffer: Vec<u8> = Vec::from(buffer.as_ref());
-        self.send_all(Some((RecordKey::NULL, buffer))).await?;
-        Ok(())
-    }
 }
 
 async fn group_by_spu(

@@ -76,10 +76,6 @@ where
     /// The current high water mark.
     pub high_watermark: i64,
 
-    /// The last stable offset (or LSO) of the partition which is inherited from Kafka semamntics
-    #[deprecated(since = "0.4.0", note = "Please use high_watermark")]
-    pub last_stable_offset: i64,
-
     /// next offset to fetch in case of filter
     /// consumer should return that back to SPU, othewise SPU will re-turn same filter records
     #[fluvio(min_version = 11, ignorable)]
@@ -158,7 +154,6 @@ mod file {
     pub type FilePartitionResponse = FetchablePartitionResponse<FileRecordSet>;
 
     impl FileWrite for FilePartitionResponse {
-        #[allow(deprecated)]
         fn file_encode(
             &self,
             src: &mut BytesMut,
@@ -169,7 +164,6 @@ mod file {
             self.partition_index.encode(src, version)?;
             self.error_code.encode(src, version)?;
             self.high_watermark.encode(src, version)?;
-            self.last_stable_offset.encode(src, version)?;
             if version >= 11 {
                 self.next_filter_offset.encode(src, version)?;
             } else {

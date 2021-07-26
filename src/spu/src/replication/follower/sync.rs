@@ -169,8 +169,5 @@ impl SlicePartitionResponse for PeerFilePartitionResponse {
         self.error = error;
     }
 
-    /// ignore last stable offset
-    fn set_last_stable_offset(&mut self, _offset: i64) {}
-
     fn set_log_start_offset(&mut self, _offset: i64) {}
 }
