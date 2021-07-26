@@ -20,9 +20,10 @@ use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::{
-    LocalInstallError, ClusterError, StartStatus, ClusterChecker, ChartLocation,
-    DEFAULT_CHART_REMOTE, ChartConfig,
+    LocalInstallError, ClusterError, StartStatus, ClusterChecker,
+    DEFAULT_CHART_REMOTE
 };
+use crate::charts::{ChartLocation,ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 
@@ -374,8 +375,8 @@ impl LocalInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let sys_config: ChartConfig = ChartConfig::builder(self.config.chart_version.clone())
-            .chart_location(self.config.chart_location.clone())
+        let sys_config: ChartConfig = ChartConfig::sys_builder(self.config.chart_version.clone())
+            .location(self.config.chart_location.clone())
             .build()
             .expect("should build config since all required arguments are given");
 

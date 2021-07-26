@@ -29,10 +29,10 @@ use crate::helm::{HelmClient, Chart};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::{
-    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, CheckStatus,
+    ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus,
     ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE
 };
-use crate::charts::{ChartLocation,ChartConfig};
+use crate::charts::{ChartLocation,ChartConfig,ChartInstaller};
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
 use semver::Version;
@@ -660,10 +660,9 @@ impl ClusterInstaller {
     /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
-        let sys_config: ChartConfig = ChartConfig::builder(self.config.chart_version.clone())
+        let sys_config: ChartConfig = ChartConfig::sys_builder(self.config.chart_version.clone())
             .namespace(&self.config.namespace)
-            .chart_location(self.config.chart_location.clone())
-            .cloud(&self.config.cloud)
+            .location(self.config.chart_location.clone())
             .build()
             .unwrap();
 
@@ -868,8 +867,7 @@ impl ClusterInstaller {
             ));
         }
 
-        use fluvio_helm::InstallArg;
-
+    
         let install_settings: Vec<(String, String)> = install_settings
             .into_iter()
             .map(|(k, v)| (k.to_owned(), v.to_string()))
@@ -877,66 +875,16 @@ impl ClusterInstaller {
 
         debug!("Using helm install settings: {:#?}", &install_settings);
 
-        
+        let chart_version = &self.config.chart_version;
+        let config = ChartConfig::app_builder(chart_version.to_owned())
+            .namespace(&self.config.namespace)
+            .location(self.config.chart_location.to_owned())
+            .string_values(install_settings)
+            .values(chart_values)
+            .build()?;
 
-        match &self.config.chart_location {
-            // For remote, we add a repo pointing to the chart location.
-            ChartLocation::Remote(chart_location) => {
-                self.helm_client
-                    .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
-                self.helm_client.repo_update()?;
-                if !self.helm_client.chart_version_exists(
-                    &self.config.chart_name,
-                    &self.config.chart_version.to_string(),
-                )? {
-                    return Err(K8InstallError::HelmChartNotFound(format!(
-                        "{}:{}",
-                        &self.config.chart_name, &self.config.chart_version
-                    )));
-                }
-                debug!(
-                    chart_location = &**chart_location,
-                    "Using remote helm chart:"
-                );
-                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, &self.config.chart_name)
-                    .namespace(&self.config.namespace)
-                    .opts(install_settings)
-                    .develop()
-                    .values(chart_values)
-                    .version(&self.config.chart_version.to_string());
-
-                debug!("Using helm install args: {:#?}", &args);
-
-                if self.config.upgrade {
-                    self.helm_client.upgrade(&args)?;
-                } else {
-                    self.helm_client.install(&args)?;
-                }
-            }
-            // For local, we do not use a repo but install from the chart location directly.
-            ChartLocation::Local(chart_home) => {
-                let chart_location = chart_home.join(DEFAULT_APP_NAME);
-                let chart_string = chart_location.to_string_lossy();
-                debug!(
-                    chart_location = chart_string.as_ref(),
-                    "Using local helm chart:"
-                );
-                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, chart_string)
-                    .namespace(&self.config.namespace)
-                    .opts(install_settings)
-                    .develop()
-                    .values([self.config.chart_values.clone()].concat())
-                    .version(&self.config.chart_version.to_string());
-
-                debug!("Using helm install args: {:#?}", &args);
-
-                if self.config.upgrade {
-                    self.helm_client.upgrade(&args)?;
-                } else {
-                    self.helm_client.install(&args)?;
-                }
-            }
-        }
+        let installer = ChartInstaller::from_config(config)?;        
+        installer.process(self.config.upgrade)?;
 
         info!("Fluvio app chart has been installed");
         Ok(())

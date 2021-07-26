@@ -12,10 +12,11 @@ use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
 
 use crate::helm::HelmClient;
-use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO};
+use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE};
 use crate::error::UninstallError;
 use crate::ClusterError;
 use crate::start::local::DEFAULT_DATA_DIR;
+use crate::charts::SYS_CHART_NAME;
 
 /// Uninstalls different flavors of fluvio
 #[derive(Debug)]
@@ -166,7 +167,7 @@ impl ClusterUninstaller {
 
         self.helm_client
             .uninstall(
-                UninstallArg::new(DEFAULT_CHART_SYS_REPO.to_owned())
+                UninstallArg::new(SYS_CHART_NAME.to_owned())
                     .namespace(self.config.namespace.to_owned())
                     .ignore_not_found(),
             )

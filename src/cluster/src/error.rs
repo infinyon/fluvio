@@ -44,6 +44,9 @@ pub enum K8InstallError {
     /// An error occurred while running helm.
     #[error("Helm client error")]
     HelmError(#[from] HelmError),
+    /// An error occurred while running helm.
+    #[error("Helm Chart error")]
+    ChartError(#[from] ChartInstallError),
     /// Failed to execute a command
     #[error(transparent)]
     CommandError(#[from] CommandError),

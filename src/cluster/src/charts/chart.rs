@@ -234,7 +234,7 @@ impl ChartInstaller {
     }
 
     #[instrument(skip(self))]
-    fn process(
+    pub fn process(
         &self, 
         upgrade: bool,
     ) -> Result<(), ChartInstallError> {

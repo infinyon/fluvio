@@ -34,14 +34,8 @@ fn install_sys_impl(
         })
         .build()?;
     let installer = ChartInstaller::from_config(config)?;
-
-    if upgrade {
-        installer.upgrade()?;
-        println!("Fluvio system chart has been upgraded");
-    } else {
-        installer.install()?;
-        println!("Fluvio system chart has been installed");
-    }
+    installer.process(upgrade)?;
+    
 
     Ok(())
 }
