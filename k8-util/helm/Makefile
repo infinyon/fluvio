@@ -125,9 +125,16 @@ helm-publish-app:
 sys_charts:
 	mkdir -p pkg_sys
 
+app_charts:
+	mkdir -p app_sys
 
 clean:
 	rm -rf pkg_sys;
 
 helm-package-sys: sys_charts
 	helm package ./fluvio-sys --app-version $(APP_VERSION) -d pkg_sys
+
+helm-package-app: app_charts
+	helm package ./fluvio-app --app-version $(APP_VERSION) -d pkg_app
+
+package:	helm-package-sys helm-package-app

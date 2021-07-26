@@ -10,7 +10,7 @@ pub use inline::*;
 use super::ChartInstallError;
 
 const SYS_CHART_DIR: Dir = include_dir!("../../k8-util/helm/pkg_sys");
-const APP_CHART_DIR: Dir = include_dir!("../../k8-util/helm/fluvio-app");
+const APP_CHART_DIR: Dir = include_dir!("../../k8-util/helm/pkg_app");
 
 /// Distinguishes between a Local and Remote helm chart
 #[derive(Debug, Clone)]
