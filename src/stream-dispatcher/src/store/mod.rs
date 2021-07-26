@@ -99,6 +99,20 @@ mod context {
     where
         S: Spec + PartialEq,
     {
+        /// Wait for the termination of the apply action object, this is similar to ```kubectl apply```
+        pub async fn apply(
+            &self,
+            input: MetadataStoreObject<S, K8MetaItem>,
+        ) -> Result<MetadataStoreObject<S, K8MetaItem>, IoError>
+        where
+            S::IndexKey: Display,
+        {
+            let key: S::IndexKey = input.key_owned();
+            debug!("{}: applying: {}", S::LABEL, key);
+
+            self.wait_action(&key, WSAction::Apply(input)).await
+        }
+
         /// Wait for creation/update of spec.  There is no guarantee that this spec has been applied.
         /// Only that spec has been changed.
         ///
