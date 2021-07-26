@@ -51,6 +51,15 @@ pub struct ChartConfig {
     /// ```
     #[builder(setter(into))]
     pub chart_version: Version,
+
+    /// Set a list of chart value paths.
+    #[builder(default)]
+    values: Vec<PathBuf>,
+
+    /// inline array of string values
+    /// equavalent to helm set
+    #[builder(default)]
+    string_values: Vec<(String,String)>
 }
 
 impl ChartConfig {
@@ -233,80 +242,68 @@ impl ChartInstaller {
     fn process(
         &self, 
         upgrade: bool,
-        option_settings: Vec<(String,String)>,
-        values_settings: BTreeMap<String,String>) -> Result<(), ChartInstallError> {
+    ) -> Result<(), ChartInstallError> {
         
-        let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
-        let np_pathbuf = vec![np_conf_path.to_path_buf()];
+        let chart_setup = match &self.config.chart_location {
+            &ChartLocation::Inline(dir) => {
+                use crate::charts::InlineDir;
 
-        serde_yaml::to_writer(&np_addr_fd, &values_settings)
-                .map_err(|err| ChartInstallError::Other(err.to_string()))?;
-
-        let settings: Vec<(String,String)> = vec![];
-        match &self.config.chart_location {
-            &ChartLocation::Inline => {
+                let inline_dir = InlineDir::new(dir)?;
+                inline_dir.unpack()?;
+                inline_dir
 
             },
             ChartLocation::Remote(chart_location) => {
-                self.process_remote_chart(chart_location, upgrade, settings)?;
+                self.setup_remote_chart(chart_location)?;
             }
             ChartLocation::Local(chart_home) => {
-                self.process_local_chart(chart_home, upgrade, settings)?;
+                self.setup_local_chart(chart_home)?;
             }
-        }
+        };
 
-        info!("Fluvio sys chart has been installed");
-        Ok(())
-    }
-
-    #[instrument(skip(self, upgrade))]
-    fn process_remote_chart(
-        &self,
-        chart_location: &str,
-        upgrade: bool,
-        settings: Vec<(String, String)>,
-    ) -> Result<(), ChartInstallError> {
-        debug!(?chart_location, "Using remote helm chart:");
-        self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
-        self.helm_client.repo_update()?;
         let args = InstallArg::new(&self.chart_repo, &self.chart_name)
             .namespace(&self.config.namespace)
             .version(&self.config.chart_version.to_string())
-            .opts(settings)
+            .opts(self.config.string_values)
+            .values(self.config.values)
             .develop();
         if upgrade {
             self.helm_client.upgrade(&args)?;
         } else {
             self.helm_client.install(&args)?;
         }
+
+        info!(chart = self.chart_name," has been installed");
         Ok(())
     }
 
-    #[instrument(skip(self, upgrade))]
-    fn process_local_chart(
+    #[instrument(skip(self))]
+    fn setup_remote_chart(
+        &self,
+        chart_location: &str,
+    ) -> Result<(), ChartInstallError> {
+        debug!(?chart_location, "Using remote helm chart:");
+        self.helm_client.repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
+        self.helm_client.repo_update()?;
+        
+        Ok(())
+    }
+
+    #[instrument(skip(self))]
+    fn setup_local_chart(
         &self,
         chart_home: &Path,
-        upgrade: bool,
-        settings: Vec<(String, String)>,
     ) -> Result<(), ChartInstallError> {
         
-        let chart_location = chart_home.join(DEFAULT_SYS_NAME);
+        let chart_location = chart_home.join(self.chart_name);
         let chart_string = chart_location.to_string_lossy();
         debug!(chart_location = %chart_location.display(), "Using local helm chart:");
 
-        let args = InstallArg::new(DEFAULT_CHART_SYS_REPO, chart_string)
-            .namespace(&self.config.namespace)
-            .version(&self.config.chart_version.to_string())
-            .develop()
-            .opts(settings);
-        if upgrade {
-            self.helm_client.upgrade(&args)?;
-        } else {
-            self.helm_client.install(&args)?;
-        }
         
         Ok(())
     }
+
+
 }
 
 

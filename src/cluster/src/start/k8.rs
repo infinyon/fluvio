@@ -798,12 +798,19 @@ impl ClusterInstaller {
             ("cloud", Cow::Borrowed(&self.config.cloud)),
         ];
 
+
+        let mut chart_values = self.config.chart_values.clone();
+
         // NodePort services need to provide SPU with an external address
         // We're going to provide it via annotation on the SPU's K8 service
 
-        
-
         if self.config.service_type == "NodePort" {
+
+            // We're going to write the annotation to a temp file so Helm can use it
+            // This is a workaround. More on this later in the function.
+            let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
+            chart_values.push(np_conf_path.to_path_buf());
+            
             debug!("Using NodePort service type");
             debug!("Getting external IP from K8s node");
             let kube_client = &self.kube_client;
@@ -837,10 +844,10 @@ impl ClusterInstaller {
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);
 
-            /* 
+            
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .map_err(|err| K8InstallError::Other(err.to_string()))?;
-            */
+            
         }
 
         // If TLS is enabled, set it as a helm variable
@@ -892,7 +899,7 @@ impl ClusterInstaller {
                     .namespace(&self.config.namespace)
                     .opts(install_settings)
                     .develop()
-                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
+                    .values(chart_values)
                     .version(&self.config.chart_version.to_string());
 
                 debug!("Using helm install args: {:#?}", &args);
