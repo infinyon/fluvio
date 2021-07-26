@@ -1,7 +1,6 @@
 use std::path::{PathBuf};
 
-
-use tracing::{info,instrument};
+use tracing::{info, instrument};
 use derive_builder::Builder;
 
 use semver::Version;
@@ -17,12 +16,10 @@ use super::SYS_CHART_NAME;
 const APP_CHART_NAME: &str = "fluvio";
 const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 
-
 /// Configuration options for installing Fluvio system charts
 #[derive(Builder, Debug, Clone)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ChartConfig {
-    
     /// The namespace in which to install the system chart
     ///
     /// # Example
@@ -50,12 +47,11 @@ pub struct ChartConfig {
     /// # }
     /// ```
     #[builder(setter(into))]
-    pub version: Version,
+    pub version: Option<Version>,
 
     /// set chart name
     #[builder(setter(into))]
     pub name: String,
-
 
     /// Set a list of chart value paths.
     #[builder(default)]
@@ -64,12 +60,11 @@ pub struct ChartConfig {
     /// inline array of string values
     /// equavalent to helm set
     #[builder(default)]
-    string_values: Vec<(String,String)>
-
+    string_values: Vec<(String, String)>,
 }
 
 impl ChartConfig {
-    /// Creates builder for app chart 
+    /// Creates builder for app chart
     ///
     /// The required argument `chart_version` must be provdied when
     /// constructing the builder.
@@ -81,17 +76,15 @@ impl ChartConfig {
     /// use semver::Version;
     /// let builder = ChartConfig::app_builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn app_builder(chart_version: Version) -> ChartConfigBuilder {
+    pub fn app_builder() -> ChartConfigBuilder {
         let mut builder = ChartConfigBuilder::default();
-        builder.version(chart_version);
         builder.name(APP_CHART_NAME);
         builder.location(ChartLocation::app_inline());
         builder
     }
 
-    pub fn sys_builder(chart_version: Version) -> ChartConfigBuilder {
+    pub fn sys_builder() -> ChartConfigBuilder {
         let mut builder = ChartConfigBuilder::default();
-        builder.version(chart_version);
         builder.name(SYS_CHART_NAME);
         builder.location(ChartLocation::app_inline());
         builder
@@ -235,19 +228,23 @@ impl ChartInstaller {
     }
 
     #[instrument(skip(self))]
-    pub fn process(
-        &self, 
-        upgrade: bool,
-    ) -> Result<(), ChartInstallError> {
-        
-        let chart_setup = self.config.location.setup(&self.config.name,&self.helm_client)?;
+    pub fn process(&self, upgrade: bool) -> Result<(), ChartInstallError> {
+        let chart_setup = self
+            .config
+            .location
+            .setup(&self.config.name, &self.helm_client)?;
 
-        let args = InstallArg::new( &self.config.name,&chart_setup.location())
+        let mut args = InstallArg::new(&self.config.name, &chart_setup.location())
             .namespace(&self.config.namespace)
-            .version(&self.config.version.to_string())
             .opts(self.config.string_values.to_owned())
             .values(self.config.values.to_owned())
             .develop();
+        args = if let Some(version) = &self.config.version {
+            args.version(version.to_string())
+        } else {
+            args
+        };
+
         if upgrade {
             self.helm_client.upgrade(&args)?;
         } else {
@@ -256,27 +253,5 @@ impl ChartInstaller {
 
         info!(chart = %self.config.name," has been installed");
         Ok(())
-    }
-
-
-}
-
-
-
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_build_config() {
-        let config: ChartConfig =
-            ChartConfig::app_builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
-                .build()
-                .expect("should build config with required options");
-        assert_eq!(
-            config.version,
-            semver::Version::parse("0.7.0-alpha.1").unwrap()
-        );
     }
 }

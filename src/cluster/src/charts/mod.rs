@@ -27,8 +27,5 @@ mod error {
         /// A different kind of error occurred.
         #[error("An unknown error occurred: {0}")]
         Other(String),
-        
     }
-
 }
-

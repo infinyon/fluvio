@@ -1,5 +1,4 @@
 use structopt::StructOpt;
-use semver::Version;
 
 use crate::{ClusterChecker, ClusterError};
 use crate::cli::ClusterCliError;
@@ -11,10 +10,10 @@ use crate::charts::ChartConfig;
 pub struct CheckOpt {}
 
 impl CheckOpt {
-    pub async fn process(self, default_chart_version: Version) -> Result<(), ClusterCliError> {
+    pub async fn process(self) -> Result<(), ClusterCliError> {
         use colored::*;
         println!("{}", "Running pre-startup checks...".bold());
-        let sys_config: ChartConfig = ChartConfig::sys_builder(default_chart_version)
+        let sys_config: ChartConfig = ChartConfig::sys_builder()
             .build()
             .map_err(ClusterError::InstallSys)?;
         let mut progress = ClusterChecker::empty()

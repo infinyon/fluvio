@@ -11,15 +11,13 @@ use crate::check::render::{
 
 pub async fn process_k8(
     opt: StartOpt,
-    default_chart_version: Version,
+    platform_version: Version,
     upgrade: bool,
     skip_sys: bool,
 ) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
-    let chart_version = opt.k8_config.chart_version.unwrap_or(default_chart_version);
-
-    let mut builder = ClusterConfig::builder(chart_version);
+    let mut builder = ClusterConfig::builder(platform_version);
 
     if opt.develop {
         builder.development()?;
@@ -27,6 +25,7 @@ pub async fn process_k8(
 
     builder
         .namespace(opt.k8_config.namespace)
+        .chart_version(opt.k8_config.chart_version)
         .group_name(opt.k8_config.group_name)
         .spu_replicas(opt.spu)
         .save_profile(!opt.skip_profile_creation)

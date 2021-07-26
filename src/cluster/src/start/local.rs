@@ -19,11 +19,8 @@ use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::{
-    LocalInstallError, ClusterError, StartStatus, ClusterChecker,
-    DEFAULT_CHART_REMOTE
-};
-use crate::charts::{ChartLocation,ChartConfig};
+use crate::{LocalInstallError, ClusterError, StartStatus, ClusterChecker, DEFAULT_CHART_REMOTE};
+use crate::charts::{ChartLocation, ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 
@@ -136,7 +133,7 @@ pub struct LocalConfig {
     /// # }
     /// ```
     #[builder(setter(into))]
-    chart_version: Version,
+    chart_version: Option<Version>,
     /// The location to find the fluvio charts
     #[builder(
         private,
@@ -208,9 +205,9 @@ impl LocalConfig {
     /// use semver::Version;
     /// let mut builder = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder(chart_version: Version) -> LocalConfigBuilder {
+    pub fn builder(_platform_version: Version) -> LocalConfigBuilder {
         let mut builder = LocalConfigBuilder::default();
-        builder.chart_version(chart_version);
+
         if let Some(data_dir) = &*DEFAULT_DATA_DIR {
             builder.data_dir(data_dir);
         }
@@ -375,8 +372,9 @@ impl LocalInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let sys_config: ChartConfig = ChartConfig::sys_builder(self.config.chart_version.clone())
+        let sys_config: ChartConfig = ChartConfig::sys_builder()
             .location(self.config.chart_location.clone())
+            .version(self.config.chart_version.clone())
             .build()
             .expect("should build config since all required arguments are given");
 
@@ -691,22 +689,5 @@ impl LocalInstaller {
             "not able to provision:{} spu",
             spu
         )))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_build_config() {
-        let config: LocalConfig =
-            LocalConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
-                .build()
-                .expect("should succeed with required config options");
-        assert_eq!(
-            config.chart_version,
-            semver::Version::parse("0.7.0-alpha.1").unwrap()
-        )
     }
 }

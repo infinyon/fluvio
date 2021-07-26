@@ -22,12 +22,9 @@ use k8_types::InputObjectMeta;
 use k8_types::core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 
-use crate::{
-    DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
-};
+use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
 
-use crate::charts:: {ChartConfig,ChartInstaller,ChartInstallError,SYS_CHART_NAME};
-
+use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
 const DELAY: u64 = 1000;

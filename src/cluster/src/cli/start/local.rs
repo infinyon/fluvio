@@ -15,9 +15,9 @@ use crate::check::render::{render_statuses_next_steps, render_results_next_steps
 /// reported, or `Err(e)` if something unexpected occurred.
 pub async fn process_local(
     opt: StartOpt,
-    default_chart_version: Version,
+    platform_version: Version,
 ) -> Result<(), ClusterCliError> {
-    let mut builder = LocalConfig::builder(default_chart_version);
+    let mut builder = LocalConfig::builder(platform_version);
     builder
         .log_dir(opt.log_dir.to_string())
         .render_checks(true)

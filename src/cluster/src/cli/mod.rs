@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 use structopt::StructOpt;
 use semver::Version;
 
@@ -69,21 +70,21 @@ impl ClusterCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,
-        default_chart_version: Version,
+        platform_version: Version,
         target: ClusterTarget,
     ) -> Result<(), ClusterCliError> {
         match self {
             Self::Start(start) => {
-                start.process(default_chart_version, false, false).await?;
+                start.process(platform_version, false, false).await?;
             }
             Self::Upgrade(upgrade) => {
-                upgrade.process(default_chart_version).await?;
+                upgrade.process(platform_version).await?;
             }
             Self::Delete(uninstall) => {
                 uninstall.process().await?;
             }
             Self::Check(check) => {
-                check.process(default_chart_version).await?;
+                check.process().await?;
             }
             Self::Releases(releases) => {
                 releases.process().await?;

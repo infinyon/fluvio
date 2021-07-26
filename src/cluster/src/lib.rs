@@ -25,7 +25,6 @@
 #![deny(broken_intra_doc_links)]
 #![allow(clippy::upper_case_acronyms)]
 
-
 pub mod charts;
 mod check;
 mod start;
@@ -86,6 +85,4 @@ mod common {
             self.port
         }
     }
-
-    
 }

@@ -132,7 +132,7 @@ pub struct StartOpt {
 impl StartOpt {
     pub async fn process(
         self,
-        default_chart_version: Version,
+        platform_version: Version,
         upgrade: bool,
         skip_sys: bool,
     ) -> Result<(), ClusterCliError> {
@@ -141,11 +141,11 @@ impl StartOpt {
         use crate::cli::start::k8::process_k8;
 
         if self.sys {
-            process_sys(self, default_chart_version, upgrade)?;
+            process_sys(self, upgrade)?;
         } else if self.local {
-            process_local(self, default_chart_version).await?;
+            process_local(self, platform_version).await?;
         } else {
-            process_k8(self, default_chart_version, upgrade, skip_sys).await?;
+            process_k8(self, platform_version, upgrade, skip_sys).await?;
         }
 
         Ok(())
@@ -162,9 +162,9 @@ pub struct UpgradeOpt {
 }
 
 impl UpgradeOpt {
-    pub async fn process(self, default_chart_version: Version) -> Result<(), ClusterCliError> {
+    pub async fn process(self, platform_version: Version) -> Result<(), ClusterCliError> {
         self.start
-            .process(default_chart_version, true, self.skip_sys)
+            .process(platform_version, true, self.skip_sys)
             .await?;
         Ok(())
     }
