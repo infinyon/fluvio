@@ -107,20 +107,18 @@ impl ConsumeOpt {
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
 
-        let mut consume_config = {
-            let mut config = ConsumerConfig::default();
-            if let Some(max_bytes) = self.max_bytes {
-                config = config.with_max_bytes(max_bytes);
-            }
-            config
-        };
+        let mut builder = ConsumerConfig::builder();
+        if let Some(max_bytes) = self.max_bytes {
+            builder.max_bytes(max_bytes);
+        }
 
         if let Some(filter_path) = &self.smart_stream {
             let buffer = std::fs::read(filter_path)?;
             debug!(len = buffer.len(), "read filter bytes");
-            consume_config = consume_config.with_wasm_filter(buffer);
+            builder.wasm_filter(buffer);
         }
 
+        let consume_config = builder.build()?;
         if self.disable_continuous {
             self.consume_records_batch(&consumer, offset, consume_config)
                 .await?;

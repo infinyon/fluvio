@@ -30,6 +30,8 @@ pub enum FluvioError {
         cluster_version: Version,
         client_minimum_version: Version,
     },
+    #[error("Consumer config error: {0}")]
+    ConsumerConfigError(String),
     #[error("Unknown error: {0}")]
     Other(String),
 }
