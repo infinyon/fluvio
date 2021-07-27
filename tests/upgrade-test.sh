@@ -11,9 +11,9 @@
 # Usage:
 # ./upgrade-test.sh [current stable version] [dev version]
 #
-# If CI env var is set, we will build fluvio code and upgrade to local develop image
+# If CI env var is set, we will upgrade to VERSION=latest from public installer
 # If DEBUG env var is set, the bash session will be extra verbose
-# If USE_LATEST is set, cluster will upgrade to VERSION=latest from public installer
+# If USE_LATEST is set, cluster will upgrade as if in CI mode, but without the pausing
 
 set -e
 
@@ -105,23 +105,27 @@ function validate_upgrade_cluster_to_prerelease() {
     pushd ..
     if [[ ! -z "$CI" ]];
     then
-        echo "[CI MODE] Test the prebuilt CI image v${TARGET_VERSION}"
-        # This should use the binary that CI downloads into repo root w/ the preloaded image
-        FLUVIO_BIN_ABS_PATH=$(readlink -f ./fluvio)
+        echo "[CI MODE] Download the latest published dev CLI"
+        TARGET_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
+        echo "[CI MODE] Installed CLI version ${TARGET_VERSION}"
+        FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
+        echo "[CI MODE] Upgrading cluster to ${TARGET_VERSION}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
+        sleep 20
+
     else 
 
         if [[ ! -z "$USE_LATEST" ]];
         then
-            echo "Build and test the latest published dev image"
-            echo "Install dev CLI"
+            echo "Download the latest published dev CLI"
             TARGET_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
-            echo "Installed version ${TARGET_VERSION}"
+            echo "Installed CLI version ${TARGET_VERSION}"
             FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
+            echo "Upgrading cluster to ${TARGET_VERSION}"
             $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
             sleep 20
         else
-            echo "Test the prebuilt CI image v${PRERELEASE}"
+            echo "Test local development image v${PRERELEASE}"
             # This should use the binary that the Makefile set
             $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
         fi
