@@ -11,16 +11,16 @@ readonly FLUVIO_TAG_STABLE="stable"
 readonly FLUVIO_PACKAGE="fluvio/fluvio"
 readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
 
-# Ensure that this architecture is supported and matches the
+# Ensure that this target is supported and matches the
 # naming convention of known platform releases in the registry
 #
 # @param $1: The target triple of this architecture
 # @return: Status 0 if the architecture is supported, exit if not
-assert_supported_architecture() {
-    local _arch="$1"; shift
+assert_supported_client_target() {
+    local _target="$1"; shift
 
-    # Match against all supported architectures
-    case $_arch in
+    # Match against all supported targets
+    case $_target in
         x86_64-apple-darwin)
             echo "x86_64-apple-darwin"
             return 0
@@ -33,8 +33,19 @@ assert_supported_architecture() {
             echo "x86_64-unknown-linux-musl"
             return 0
             ;;
+        arm-unknown-linux-gnueabihf)
+            echo "arm-unknown-linux-gnueabihf"
+            return 0
+            ;;
+        armv7-unknown-linux-gnueabihf)
+            echo "armv7-unknown-linux-gnueabihf"
+            return 0
+            ;;
     esac
 
+    err "Target '${_target}' is not supported"
+    err "Consider filing an issue to add support for this platform using the link below! 👇"
+    err "  https://github.com/infinyon/fluvio/issues/new?title=Support+target+${_target}"
     return 1
 }
 
@@ -468,13 +479,7 @@ main() {
     # Some architectures may be folded into a single 'target' distribution
     # e.g. x86_64-unknown-linux-musl and x86_64-unknown-linux-gnu both download
     # the musl target release. The _target here is used in the URL to download
-    _target=$(assert_supported_architecture ${_arch})
-    _status=$?
-    if [ $_status -ne 0 ]; then
-        # If this architecture is not supported, return error
-        err "❌ Architecture ${_arch} is not supported."
-        abort_prompt_issue
-    fi
+    _target=$(assert_supported_client_target ${_arch})
 
     # If a VERSION env variable is set:
     if [ -n "${VERSION:-""}" ]; then
