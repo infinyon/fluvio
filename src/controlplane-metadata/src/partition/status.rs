@@ -29,6 +29,7 @@ use super::ElectionScoring;
 pub struct PartitionStatus {
     pub resolution: PartitionResolution,
     pub leader: ReplicaStatus,
+    #[cfg_attr(feature = "use_serde", serde(alias = "lsr"))]
     pub lrs: u32,
     pub replicas: Vec<ReplicaStatus>,
     pub is_being_deleted: bool,
