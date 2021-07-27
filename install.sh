@@ -544,7 +544,7 @@ main() {
     # verify_checksum "${_url}" "${_temp_file}" || return 1
 
     # After verification, install the file and make it executable
-    say "⬇️ Downloaded Fluvio, installing..."
+    say "⬇️  Downloaded Fluvio, installing..."
     ensure mkdir -p "${FLUVIO_BIN}"
     ensure mkdir -p "${FLUVIO_EXTENSIONS}"
     local _install_file="${FLUVIO_BIN}/fluvio"
@@ -557,13 +557,15 @@ main() {
     FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio/fluvio-cloud
 
     set +e
-    _=$(assert_supported_cluster_target "${_target}")
+    _output=$(assert_supported_cluster_target "${_target}")
     _status=$?
     set -e
 
     if [ $_status -eq 0 ]; then
         say "☁️ Installing Fluvio Runner..."
         FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio/fluvio-run
+    else
+        echo "${_output}"
     fi
 
     say "🎉 Install complete!"
