@@ -84,11 +84,15 @@ impl ChartLocation {
 }
 
 pub enum ChartSetup {
+    /// inline
     Inline(InlineChart),
+    /// location
     Location(String),
 }
 
 impl ChartSetup {
+
+    /// location
     pub fn location(&self) -> String {
         match self {
             Self::Inline(inline_chart) => inline_chart.path().display().to_string(),
@@ -114,6 +118,8 @@ mod inline {
     }
 
     impl InlineChart {
+
+        /// create new inline chart
         pub fn new(inline: Dir<'static>) -> Result<Self, IoError> {
             let temp_dir = TempDir::new("chart")?;
             let chart = Self::unpack(&inline, temp_dir.path())?;
@@ -123,12 +129,12 @@ mod inline {
             })
         }
 
-        // path
+        /// path
         pub fn path(&self) -> &Path {
             &self.chart
         }
 
-        // find a single chart and return it's physical path
+        /// find a single chart and return it's physical path
         pub fn unpack<'a>(inline: &Dir<'a>, base_dir: &Path) -> Result<PathBuf, IoError> {
             debug!(?base_dir, "unpacking inline at base");
 

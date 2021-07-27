@@ -147,10 +147,10 @@ pub struct ClusterConfig {
     #[builder(setter(into), default = "DEFAULT_REGISTRY.to_string()")]
     image_registry: String,
     /// Sets a specific version of the Fluvio helm chart to install.
-    #[builder(setter(into))]
+    #[builder(setter(into),default)]
     chart_version: Option<Version>,
     /// The location to search for the Helm charts to install
-    #[builder(setter(into, strip_option))]
+    #[builder(setter(into, strip_option),default)]
     chart_location: Option<UserChartLocation>,
     /// Sets a custom SPU group name. The default is `main`.
     ///
