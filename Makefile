@@ -202,7 +202,7 @@ install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
 # Use check first to leverage sccache, the clippy piggybacks
-check-clippy: install-clippy install_rustup_target
+check-clippy: install-clippy install_rustup_target helm_pkg
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
