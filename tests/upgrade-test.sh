@@ -25,7 +25,7 @@ readonly CI=${CI:-}
 readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
 readonly USE_LATEST=${USE_LATEST:-}
-readonly FLUVIO_BIN=$(readlink -f ${FLUVIO_BIN:-"$(pwd)/fluvio"})
+readonly FLUVIO_BIN=$(readlink -f ${FLUVIO_BIN:-"$(which fluvio)"})
 
 # Change to this script's directory 
 pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
@@ -35,7 +35,7 @@ function cleanup() {
     rm -f --verbose ./*.txt.tmp;
     rm -f --verbose ./*.checksum;
     echo Delete cluster if possible
-    fluvio cluster delete || true
+    $FLUVIO_BIN cluster delete || true
 }
 
 # If we're in CI, we want to slow down execution
