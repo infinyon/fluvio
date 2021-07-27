@@ -137,7 +137,7 @@ jobs:
           max_attempts: 3
           command: |
             export PATH=~/.fluvio/bin:$PATH
-            make upgrade-test
+            USE_LATEST=true make upgrade-test
 
       - name: Clean minikube
         run: |
