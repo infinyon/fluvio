@@ -47,7 +47,7 @@ install_tools_mac:
 	brew install helm
 
 build-cli: install_rustup_target
-ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
+ifneq (,$(findstring arm, $(TARGET))) # If TARGET contains the substring "arm"
 	cross build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 else
 	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
@@ -66,7 +66,6 @@ build-test:	build-cluster build-cli
 
 install_rustup_target:
 	./build-scripts/install_target.sh
-	
 
 #
 # List of smoke test steps.  This is used by CI
