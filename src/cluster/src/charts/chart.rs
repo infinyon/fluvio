@@ -1,6 +1,6 @@
 use std::path::{PathBuf};
 
-use tracing::{info, instrument};
+use tracing::{info, debug, instrument};
 use derive_builder::Builder;
 
 use semver::Version;
@@ -83,10 +83,11 @@ impl ChartConfig {
         builder
     }
 
+    /// create chart builder for sys
     pub fn sys_builder() -> ChartConfigBuilder {
         let mut builder = ChartConfigBuilder::default();
         builder.name(SYS_CHART_NAME);
-        builder.location(ChartLocation::app_inline());
+        builder.location(ChartLocation::sys_inline());
         builder
     }
 }
@@ -202,6 +203,7 @@ pub struct ChartInstaller {
 impl ChartInstaller {
     /// Create a new `SysInstaller` using the given config
     pub fn from_config(config: ChartConfig) -> Result<Self, ChartInstallError> {
+        debug!("using config: {:#?}", config);
         let helm_client = HelmClient::new()?;
         Ok(Self {
             config,

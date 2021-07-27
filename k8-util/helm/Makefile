@@ -130,6 +130,7 @@ app_charts:
 
 clean:
 	rm -rf pkg_sys;
+	rm -rf pkg_app;
 
 helm-package-sys: sys_charts
 	helm package ./fluvio-sys --app-version $(APP_VERSION) -d pkg_sys

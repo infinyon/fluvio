@@ -832,6 +832,8 @@ impl ClusterInstaller {
 
         debug!("Using helm install settings: {:#?}", &install_settings);
 
+        println!("installing fluvio chart");
+
         let config = ChartConfig::app_builder()
             .namespace(&self.config.namespace)
             .version(self.config.chart_version.clone())

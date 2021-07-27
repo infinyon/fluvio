@@ -48,7 +48,7 @@ install_tools_mac:
 	brew install helm
 
 helm_pkg:	
-	make -C k8-util/helm helm-package-sys
+	make -C k8-util/helm package
 
 build-cli: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)

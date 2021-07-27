@@ -15,6 +15,7 @@ const APP_CHART_DIR: Dir = include_dir!("../../k8-util/helm/pkg_app");
 /// Distinguishes between a Local and Remote helm chart
 #[derive(Debug, Clone)]
 pub enum ChartLocation {
+    /// inline chart
     Inline(include_dir::Dir<'static>),
     /// Local charts must be located at a valid filesystem path.
     Local(PathBuf),
@@ -23,10 +24,12 @@ pub enum ChartLocation {
 }
 
 impl ChartLocation {
+    /// inline chart for app
     pub const fn app_inline() -> Self {
         Self::Inline(APP_CHART_DIR)
     }
 
+    /// inline chart for sys
     pub const fn sys_inline() -> Self {
         Self::Inline(SYS_CHART_DIR)
     }
@@ -39,6 +42,7 @@ impl ChartLocation {
     ) -> Result<ChartSetup, ChartInstallError> {
         let chart_setup = match self {
             &ChartLocation::Inline(dir) => {
+                debug!("unpacking using inline chart");
                 let chart = InlineChart::new(dir)?;
                 ChartSetup::Inline(chart)
             }
@@ -82,49 +86,59 @@ impl ChartSetup {
 }
 
 mod inline {
-    use std::path::Path;
-    use std::fs::{File, create_dir};
-    use std::io::Error as IoError;
+    use std::path::{Path, PathBuf};
+    use std::fs::{File};
+    use std::io::{Error as IoError, ErrorKind};
     use std::io::Write;
 
     use tracing::{debug, trace};
     use tempdir::TempDir;
     use include_dir::{Dir};
 
-    pub struct InlineChart(TempDir);
+    /// Inline chart contains only a single chart
+    pub struct InlineChart {
+        dir: TempDir,
+        chart: PathBuf,
+    }
 
     impl InlineChart {
         pub fn new(inline: Dir<'static>) -> Result<Self, IoError> {
-            let temp_dir = TempDir::new("sys_chart")?;
-            Self::unpack(&inline, temp_dir.path())?;
-            Ok(Self(temp_dir))
+            let temp_dir = TempDir::new("chart")?;
+            let chart = Self::unpack(&inline, temp_dir.path())?;
+            Ok(Self {
+                dir: temp_dir,
+                chart,
+            })
         }
 
         // path
         pub fn path(&self) -> &Path {
-            self.0.path()
+            &self.chart
         }
 
-        // unpack
-        pub fn unpack<'a>(inline: &Dir<'a>, base_dir: &Path) -> Result<(), IoError> {
+        // find a single chart and return it's physical path
+        pub fn unpack<'a>(inline: &Dir<'a>, base_dir: &Path) -> Result<PathBuf, IoError> {
             debug!(?base_dir, "unpacking inline at base");
 
-            for inline_file in inline.files {
-                let sub_file = base_dir.to_owned().join(inline_file.path());
-                trace!(?sub_file, "writing file");
-                let contents = inline_file.contents();
-                let mut file = File::create(sub_file)?;
-                file.write_all(contents)?;
+            // there should be only 1 chart file in the directory
+            if inline.files.is_empty() {
+                return Err(IoError::new(ErrorKind::InvalidData, "no chart found"));
+            }
+            if inline.files.len() > 1 {
+                return Err(IoError::new(
+                    ErrorKind::InvalidData,
+                    "more than 1 chart file found",
+                ));
             }
 
-            for dir in inline.dirs() {
-                let sub_dir = base_dir.to_owned().join(dir.path());
-                trace!(?sub_dir, "creating sub dir");
-                create_dir(&sub_dir)?;
-                Self::unpack(dir, base_dir)?;
-            }
+            let file = inline.files[0];
+            let chart = base_dir.to_owned().join(file.path());
+            trace!(?chart, "writing file");
+            let contents = file.contents();
+            let mut chart_file = File::create(&chart)?;
+            chart_file.write_all(contents)?;
 
-            Ok(())
+            Ok(chart)
         }
     }
 
