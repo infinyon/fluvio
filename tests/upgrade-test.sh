@@ -63,9 +63,11 @@ function validate_cluster_stable() {
 
     echo "Create test topic: ${STABLE_TOPIC}"
     fluvio topic create ${STABLE_TOPIC} 
+    fluvio topic create ${STABLE_TOPIC}-delete 
     ci_check;
 
     cat data1.txt.tmp | fluvio produce ${STABLE_TOPIC}
+    cat data1.txt.tmp | fluvio produce ${STABLE_TOPIC}-delete
     ci_check;
 
     echo "Validate test data w/ v${STABLE} CLI matches expected data created BEFORE upgrading cluster + CLI to v${PRERELEASE}"
@@ -79,6 +81,9 @@ function validate_cluster_stable() {
         echo "Expected: $(cat stable-cli-stable-topic.checksum | awk '{print $1}')"
         exit 1
     fi
+
+    echo "Validate deleting topic created by v${STABLE} CLI"
+    fluvio topic delete ${STABLE_TOPIC}-delete 
 
 }
 
@@ -144,6 +149,11 @@ function validate_upgrade_cluster_to_prerelease() {
         exit 1
     fi
 
+    echo "Validate deleting topic created by v${STABLE} CLI"
+    $FLUVIO_BIN topic delete ${STABLE_TOPIC} 
+
+    echo "Validate deleting topic created by v${PRERELEASE} CLI"
+    $FLUVIO_BIN topic delete ${PRERELEASE_TOPIC} 
 }
 
 # Create 2 base data files and calculate checksums for the expected states of each of our testing topics
