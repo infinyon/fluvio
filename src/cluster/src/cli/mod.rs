@@ -9,14 +9,12 @@ mod start;
 mod delete;
 mod util;
 mod check;
-mod releases;
 mod error;
 
 use start::StartOpt;
 use start::UpgradeOpt;
 use delete::DeleteOpt;
 use check::CheckOpt;
-use releases::ReleasesCmd;
 use group::SpuGroupCmd;
 use spu::SpuCmd;
 
@@ -44,10 +42,6 @@ pub enum ClusterCmd {
     /// Check that all requirements for cluster startup are met
     #[structopt(name = "check")]
     Check(CheckOpt),
-
-    /// Print information about various Fluvio releases
-    #[structopt(name = "releases")]
-    Releases(ReleasesCmd),
 
     /// Manage and view Streaming Processing Units (SPUs)
     ///
@@ -85,9 +79,6 @@ impl ClusterCmd {
             }
             Self::Check(check) => {
                 check.process().await?;
-            }
-            Self::Releases(releases) => {
-                releases.process().await?;
             }
             Self::SPU(spu) => {
                 let fluvio = target.connect().await?;

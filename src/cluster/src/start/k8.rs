@@ -30,16 +30,13 @@ use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses,
-    DEFAULT_CHART_REMOTE,
 };
-use crate::charts::{ChartLocation, ChartConfig, ChartInstaller};
+use crate::charts::{ChartLocation, ChartConfig, ChartInstaller,APP_CHART_NAME};
 use crate::check::render::render_check_progress;
 use fluvio_command::CommandExt;
 use semver::Version;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
-const DEFAULT_APP_NAME: &str = "fluvio-app";
-const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_SERVICE_TYPE: &str = "NodePort";
@@ -146,9 +143,6 @@ pub struct ClusterConfig {
     /// [`image_tag`]: ./struct.ClusterInstaller.html#method.image_tag
     #[builder(setter(into), default = "DEFAULT_REGISTRY.to_string()")]
     image_registry: String,
-    /// The name of the Fluvio helm chart to install
-    #[builder(setter(into), default = "DEFAULT_CHART_APP_NAME.to_string()")]
-    chart_name: String,
     /// Sets a specific version of the Fluvio helm chart to install.
     #[builder(setter(into))]
     chart_version: Option<Version>,
@@ -602,15 +596,6 @@ impl ClusterInstaller {
             kube_client: K8Client::default().map_err(K8InstallError::K8ClientError)?,
             helm_client: HelmClient::new().map_err(K8InstallError::HelmError)?,
         })
-    }
-
-    /// Get all the available versions of fluvio chart
-    pub fn versions() -> Result<Vec<Chart>, ClusterError> {
-        let helm_client = HelmClient::new().map_err(K8InstallError::HelmError)?;
-        let versions = helm_client
-            .versions(DEFAULT_CHART_APP_NAME)
-            .map_err(K8InstallError::HelmError)?;
-        Ok(versions)
     }
 
     /// Checks if all of the prerequisites for installing Fluvio are met

@@ -6,6 +6,7 @@ pub use error::*;
 pub use location::*;
 
 pub(crate) const SYS_CHART_NAME: &str = "fluvio-sys";
+pub(crate) const APP_CHART_NAME: &str = "fluvio";
 
 mod error {
 
