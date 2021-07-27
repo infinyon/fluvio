@@ -455,6 +455,10 @@ jobs:
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
 
+      - name: Setup for upgrade test
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
       - name: Run upgrade test with CI artifacts
         env:
           TEST_DATA_BYTES: 10000
