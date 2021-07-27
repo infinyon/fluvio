@@ -9,6 +9,7 @@ DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_MUSL=x86_64-unknown-linux-musl
 TARGET?=
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
+CARGO_BUILDER=$(if $(findstring arm,$(TARGET)),cross,cargo) # If TARGET contains the substring "arm"
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
 RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
@@ -47,11 +48,7 @@ install_tools_mac:
 	brew install helm
 
 build-cli: install_rustup_target
-ifeq ($(TARGET), armv7-unknown-linux-gnueabihf)
-	cross build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
-else
-	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
-endif
+	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
@@ -66,7 +63,6 @@ build-test:	build-cluster build-cli
 
 install_rustup_target:
 	./build-scripts/install_target.sh
-	
 
 #
 # List of smoke test steps.  This is used by CI

@@ -46,12 +46,14 @@ jobs:
             rust: stable
             rust-target: aarch64-unknown-linux-musl
             binary: fluvio
-            run: make build-cli
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: arm-unknown-linux-gnueabihf
+            binary: fluvio
           - os: ubuntu-latest
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
-            run: make build-cli
           - os: windows-latest
             rust: stable
             rust-target: x86_64-pc-windows-msvc
@@ -472,6 +474,7 @@ jobs:
         rust-target:
           - aarch64-unknown-linux-musl
           - armv7-unknown-linux-gnueabihf
+          - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
         artifact: [fluvio]
