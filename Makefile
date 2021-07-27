@@ -209,18 +209,18 @@ check-clippy: install-clippy install_rustup_target helm_pkg
 build_smartstreams:
 	make -C src/smartstream/examples build
 
-run-all-unit-test: build_smartstreams install_rustup_target
+run-all-unit-test: build_smartstreams install_rustup_target helm_pkg
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C src/protocol
 
-run-integration-test:build_smartstreams install_rustup_target
+run-integration-test:build_smartstreams install_rustup_target helm_pkg
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored --test-threads=1
 
-run-all-doc-test: install_rustup_target
+run-all-doc-test: install_rustup_target helm_pkg
 	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-run-client-doc-test: install_rustup_target
+run-client-doc-test: install_rustup_target helm_pkg
 	cargo test --all-features --doc -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 	cargo test --all-features --doc -p fluvio-cluster $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
