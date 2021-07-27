@@ -138,4 +138,4 @@ helm-package-sys: sys_charts
 helm-package-app: app_charts
 	helm package ./fluvio-app --app-version $(APP_VERSION) -d pkg_app
 
-package:	helm-package-sys helm-package-app
+package:	clean helm-package-sys helm-package-app
