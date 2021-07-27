@@ -467,6 +467,7 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           command: |
+            export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test 
 
       - name: Save logs
