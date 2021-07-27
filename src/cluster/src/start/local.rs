@@ -135,7 +135,8 @@ pub struct LocalConfig {
     #[builder(setter(into))]
     chart_version: Option<Version>,
     
-    // chart location of sys chart
+    /// chart location of sys chart
+    #[builder(setter(into, strip_option))]
     chart_location: Option<UserChartLocation>,
 
     /// Whether to install the `fluvio-sys` chart in the full installation.
@@ -236,7 +237,7 @@ impl LocalConfigBuilder {
     pub fn build(&self) -> Result<LocalConfig, ClusterError> {
         let config = self
             .build_impl()
-            .map_err(LocalInstallError::MissingRequiredConfig)?;
+            .map_err(|err| LocalInstallError::MissingRequiredConfig(err.to_string()))?;
         Ok(config)
     }
 
@@ -329,7 +330,7 @@ impl LocalConfigBuilder {
     ///
     /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location = Some(UserChartLocation::Local(local_chart_location.into()));
+        self.chart_location(UserChartLocation::Local(local_chart_location.into()));
         self
     }
 

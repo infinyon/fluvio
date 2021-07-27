@@ -97,7 +97,7 @@ impl ChartConfigBuilder {
     pub fn build(&self) -> Result<ChartConfig, ChartInstallError> {
         let config = self
             .build_impl()
-            .map_err(ChartInstallError::MissingRequiredConfig)?;
+            .map_err(|err| ChartInstallError::MissingRequiredConfig(err.to_string()))?;
         Ok(config)
     }
 

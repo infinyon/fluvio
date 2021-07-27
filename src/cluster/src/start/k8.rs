@@ -33,7 +33,7 @@ use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses,
 };
-use crate::charts::{ChartLocation, ChartConfig, ChartInstaller};
+use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress;
 use crate::UserChartLocation;
 
@@ -150,6 +150,7 @@ pub struct ClusterConfig {
     #[builder(setter(into))]
     chart_version: Option<Version>,
     /// The location to search for the Helm charts to install
+    #[builder(setter(into, strip_option))]
     chart_location: Option<UserChartLocation>,
     /// Sets a custom SPU group name. The default is `main`.
     ///
@@ -363,7 +364,7 @@ impl ClusterConfigBuilder {
     pub fn build(&self) -> Result<ClusterConfig, ClusterError> {
         let config = self
             .build_impl()
-            .map_err(K8InstallError::MissingRequiredConfig)?;
+            .map_err(|err| K8InstallError::MissingRequiredConfig(err.to_string()))?;
         Ok(config)
     }
 
@@ -415,7 +416,7 @@ impl ClusterConfigBuilder {
     ///
     /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location = UserChartLocation::Local(local_chart_location.into());
+        self.chart_location(UserChartLocation::Local(local_chart_location.into()));
         self
     }
 
@@ -442,7 +443,7 @@ impl ClusterConfigBuilder {
     ///
     /// [`local_chart`]: ./struct.ClusterInstallerBuilder#method.local_chart
     pub fn remote_chart<S: Into<String>>(&mut self, remote_chart_location: S) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Remote(remote_chart_location.into()));
+        self.chart_location(UserChartLocation::Remote(remote_chart_location.into()));
         self
     }
 

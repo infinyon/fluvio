@@ -47,9 +47,6 @@ impl TestEnvironmentDriver for LocalEnvDriver {
             builder.log_dir(log_dir);
         }
 
-        if self.option.develop {
-            builder.development();
-        }
 
         if self.option.tls {
             let (client, server) = load_tls(&self.option.tls_user());
