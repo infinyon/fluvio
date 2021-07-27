@@ -19,7 +19,7 @@ use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::{LocalInstallError, ClusterError, StartStatus, ClusterChecker, DEFAULT_CHART_REMOTE};
+use crate::{LocalInstallError, ClusterError, StartStatus, ClusterChecker};
 use crate::charts::{ChartLocation, ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
@@ -134,12 +134,10 @@ pub struct LocalConfig {
     /// ```
     #[builder(setter(into))]
     chart_version: Option<Version>,
-    /// The location to find the fluvio charts
-    #[builder(
-        private,
-        default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())"
-    )]
-    chart_location: ChartLocation,
+    
+    // chart location
+    #[builder(setter(into))]
+    chart_location: Option<ChartLocation>,
     /// Whether to install the `fluvio-sys` chart in the full installation.
     ///
     /// Defaults to `true`.
@@ -372,11 +370,14 @@ impl LocalInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let sys_config: ChartConfig = ChartConfig::sys_builder()
-            .location(self.config.chart_location.clone())
+        let mut sys_config: ChartConfig = ChartConfig::sys_builder()
             .version(self.config.chart_version.clone())
             .build()
             .expect("should build config since all required arguments are given");
+
+        if let Some(location) = &self.config.chart_location {
+            sys_config.location = location.to_owned().into();
+        }
 
         if self.config.render_checks {
             let mut progress = ClusterChecker::empty()

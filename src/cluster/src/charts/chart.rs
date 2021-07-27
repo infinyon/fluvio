@@ -32,8 +32,8 @@ pub struct ChartConfig {
     /// ```
     #[builder(setter(into), default = "DEFAULT_NAMESPACE.to_string()")]
     pub namespace: String,
-    /// The location at which to find the system chart to install
-    #[builder(default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())")]
+    /// The location at which to find the chart to install
+    #[builder(setter(into))]
     pub location: ChartLocation,
     /// The version of the chart to install (REQUIRED).
     ///

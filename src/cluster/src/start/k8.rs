@@ -12,6 +12,7 @@ use derive_builder::Builder;
 use tracing::{info, warn, debug, error, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
+use semver::Version;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
@@ -24,17 +25,19 @@ use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
+use fluvio_command::CommandExt;
 
-use crate::helm::{HelmClient, Chart};
+use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::{
     ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses,
 };
-use crate::charts::{ChartLocation, ChartConfig, ChartInstaller,APP_CHART_NAME};
+use crate::charts::{ChartLocation, ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress;
-use fluvio_command::CommandExt;
-use semver::Version;
+use crate::UserChartLocation;
+
+
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_GROUP_NAME: &str = "main";
@@ -147,11 +150,8 @@ pub struct ClusterConfig {
     #[builder(setter(into))]
     chart_version: Option<Version>,
     /// The location to search for the Helm charts to install
-    #[builder(
-        private,
-        default = "ChartLocation::app_inline()"
-    )]
-    chart_location: ChartLocation,
+    #[builder(setter(into))]
+    chart_location: Option<UserChartLocation>,
     /// Sets a custom SPU group name. The default is `main`.
     ///
     /// # Example
@@ -416,7 +416,7 @@ impl ClusterConfigBuilder {
     ///
     /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Local(local_chart_location.into()));
+        self.chart_location = Some(UserChartLocation::Local(local_chart_location.into()));
         self
     }
 
@@ -611,12 +611,15 @@ impl ClusterInstaller {
     /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
-        let sys_config: ChartConfig = ChartConfig::sys_builder()
+        let mut sys_config: ChartConfig = ChartConfig::sys_builder()
             .version(self.config.chart_version.clone())
             .namespace(&self.config.namespace)
-            .location(self.config.chart_location.clone())
             .build()
             .unwrap();
+
+        if let Some(location) = &self.config.chart_location {
+            sys_config.location = location.to_owned().into();
+        }
 
         let mut checker = ClusterChecker::empty()
             .with_k8_checks()
@@ -750,7 +753,7 @@ impl ClusterInstaller {
         // NodePort services need to provide SPU with an external address
         // We're going to provide it via annotation on the SPU's K8 service
 
-        if self.config.service_type == "NodePort" {
+        let _temp_files = if self.config.service_type == "NodePort" {
             // We're going to write the annotation to a temp file so Helm can use it
             // This is a workaround. More on this later in the function.
             let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
@@ -790,7 +793,10 @@ impl ClusterInstaller {
 
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .map_err(|err| K8InstallError::Other(err.to_string()))?;
-        }
+            Some((np_addr_fd, np_conf_path))
+        } else {
+            None
+        };
 
         // If TLS is enabled, set it as a helm variable
         if let TlsPolicy::Anonymous | TlsPolicy::Verified(_) = self.config.server_tls_policy {
@@ -818,13 +824,16 @@ impl ClusterInstaller {
 
         println!("installing fluvio chart");
 
-        let config = ChartConfig::app_builder()
+        let mut config = ChartConfig::app_builder()
             .namespace(&self.config.namespace)
             .version(self.config.chart_version.clone())
-            .location(self.config.chart_location.to_owned())
             .string_values(install_settings)
             .values(chart_values)
             .build()?;
+
+        if let Some(location) = &self.config.chart_location {
+            config.location = location.to_owned().into();
+        }
 
         let installer = ChartInstaller::from_config(config)?;
         installer.process(self.config.upgrade)?;

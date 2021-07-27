@@ -402,6 +402,7 @@ impl ClusterCheck for SysChartCheck {
     /// Check that the system chart is installed
     /// This uses whatever namespace it is being called
     async fn perform_check(&self) -> CheckResult {
+        debug!("performing sys chart check");
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         // check installed system chart version
         let sys_charts = helm
@@ -419,7 +420,7 @@ impl ClusterCheck for SysChartCheck {
         // Use closure to catch errors
         let result = (|| -> Result<(), ChartInstallError> {
             debug!(
-                "Installing Fluvio sys chart with config: {:#?}",
+                "Fixing by installing Fluvio sys chart with config: {:#?}",
                 &self.config
             );
             let sys_installer = ChartInstaller::from_config(self.config.clone())?;

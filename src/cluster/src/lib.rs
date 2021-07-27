@@ -56,6 +56,8 @@ pub use common::*;
 
 mod common {
 
+    use std::path::PathBuf;
+
     use super::CheckStatuses;
 
     /// The result of a successful startup of a Fluvio cluster
@@ -84,5 +86,14 @@ mod common {
         pub fn port(&self) -> u16 {
             self.port
         }
+    }
+
+    /// User configuration chart location
+    #[derive(Debug, Clone)]
+    pub enum UserChartLocation {
+        /// Local charts must be located at a valid filesystem path.
+        Local(PathBuf),
+        /// Remote charts will be located at a URL such as `https://...`
+        Remote(String),
     }
 }

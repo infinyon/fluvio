@@ -7,6 +7,9 @@ use fluvio_helm::{HelmClient};
 
 pub use inline::*;
 
+
+use crate::UserChartLocation;
+
 use super::ChartInstallError;
 
 const SYS_CHART_DIR: Dir = include_dir!("../../k8-util/helm/pkg_sys");
@@ -21,6 +24,15 @@ pub enum ChartLocation {
     Local(PathBuf),
     /// Remote charts will be located at a URL such as `https://...`
     Remote(String),
+}
+
+impl From<UserChartLocation> for ChartLocation {
+    fn from(location: UserChartLocation) -> Self {
+        match location {
+            UserChartLocation::Local(path) => Self::Local(path),
+            UserChartLocation::Remote(location) => Self::Remote(location)
+        }
+    }
 }
 
 impl ChartLocation {
