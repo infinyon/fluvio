@@ -41,7 +41,6 @@ const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_APP_NAME: &str = "fluvio-app";
 const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_GROUP_NAME: &str = "main";
-const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_SERVICE_TYPE: &str = "NodePort";
 
@@ -156,7 +155,7 @@ pub struct ClusterConfig {
     /// The location to search for the Helm charts to install
     #[builder(
         private,
-        default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())"
+        default = "ChartLocation::app_inline()"
     )]
     chart_location: ChartLocation,
     /// Sets a custom SPU group name. The default is `main`.
