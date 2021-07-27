@@ -374,7 +374,6 @@ impl ClusterConfigBuilder {
     /// NOTE that these options will be overwritten even if they were
     /// previously assigned.
     ///
-    /// - Use local_chart "./k8-util/helm"
     /// - Use the git hash of HEAD as the image_tag
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
         let output = Command::new("git")
@@ -388,7 +387,6 @@ impl ClusterConfigBuilder {
             ))
         })?;
         self.image_tag(git_hash.trim());
-        self.local_chart(super::DEFAULT_DEV_CHART);
         Ok(self)
     }
 
@@ -416,7 +414,9 @@ impl ClusterConfigBuilder {
     ///
     /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location(UserChartLocation::Local(local_chart_location.into()));
+        let user_chart_location = UserChartLocation::Local(local_chart_location.into());
+        debug!(?user_chart_location,"setting local chart");
+        self.chart_location(user_chart_location);
         self
     }
 
@@ -832,6 +832,7 @@ impl ClusterInstaller {
             .build()?;
 
         if let Some(location) = &self.config.chart_location {
+            debug!(user_location=?location,"overriding with user chart location");
             config.location = location.to_owned().into();
         }
 
