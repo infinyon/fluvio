@@ -25,7 +25,7 @@ readonly CI=${CI:-}
 readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
 readonly USE_LATEST=${USE_LATEST:-}
-readonly FLUVIO_BIN=$(readlink -f ${FLUVIO_BIN:-"$(pwd)/fluvio"})
+readonly FLUVIO_BIN=$(readlink -f ${FLUVIO_BIN:-"$(which fluvio)"})
 
 # Change to this script's directory 
 pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
@@ -35,7 +35,7 @@ function cleanup() {
     rm -f --verbose ./*.txt.tmp;
     rm -f --verbose ./*.checksum;
     echo Delete cluster if possible
-    fluvio cluster delete || true
+    $FLUVIO_BIN cluster delete || true
 }
 
 # If we're in CI, we want to slow down execution
@@ -103,32 +103,21 @@ function validate_upgrade_cluster_to_prerelease() {
 
     # Change dir to get access to Helm charts
     pushd ..
-    if [[ ! -z "$CI" ]];
+    if [[ ! -z "$USE_LATEST" ]];
     then
-        echo "[CI MODE] Download the latest published dev CLI"
+        echo "Download the latest published dev CLI"
         TARGET_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
-        echo "[CI MODE] Installed CLI version ${TARGET_VERSION}"
+        echo "Installed CLI version ${TARGET_VERSION}"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
-        echo "[CI MODE] Upgrading cluster to ${TARGET_VERSION}"
+        echo "Upgrading cluster to ${TARGET_VERSION}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
         sleep 20
+    else
+        echo "Test local image v${PRERELEASE}"
+        # This should use the binary that the Makefile set
 
-    else 
-
-        if [[ ! -z "$USE_LATEST" ]];
-        then
-            echo "Download the latest published dev CLI"
-            TARGET_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
-            echo "Installed CLI version ${TARGET_VERSION}"
-            FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
-            echo "Upgrading cluster to ${TARGET_VERSION}"
-            $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
-            sleep 20
-        else
-            echo "Test local development image v${PRERELEASE}"
-            # This should use the binary that the Makefile set
-            $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
-        fi
+        echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
     fi
     popd
 

@@ -377,9 +377,102 @@ jobs:
           make FLUVIO_BIN=./fluvio RELEASE=true TARGET=x86_64-unknown-linux-musl k8-setup
 
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 5
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          command: |
+            make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
+
+      - name: Save logs
+        if: failure()
         run: |
-          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
+          echo "minikube profile list"
+          minikube profile list
+          echo "helm list"
+          helm list
+          echo "get statefulset"
+          kubectl get statefulset
+          echo "kubectl get pvc"
+          kubectl get pvc
+          echo "kubectl get pods"
+          kubectl get pods
+          echo "kubectl get svc"
+          kubectl get svc
+          echo "kubectl get spu"
+          kubectl get spu
+          echo "kubectl get spg"
+          kubectl get spg
+          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+      - name: Upload logs
+        timeout-minutes: 5
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: fluvio-k8-logs
+          path: /tmp/flv_sc.log
+
+  k8_upgrade_test:
+    name: Upgrade cluster test
+    if: false # Disable job for CI
+    needs: build_image
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    env:
+      FLV_SOCKET_WAIT: 600
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Minikube for Github runner
+        uses: manusa/actions-setup-minikube@v2.4.2
+        with:
+          minikube version: "v1.22.0"
+          kubernetes version: "v1.21.2"
+          github token: ${{ secrets.GITHUB_TOKEN }}
+          driver: docker
+      - name: Test minikube
+        run: |
+          helm version
+          minikube profile list
+          minikube status
+      # Download artifacts
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio
+          path: /tmp
+      - name: Load Fluvio Docker Image
+        run: |
+          ls -la /tmp
+          eval $(minikube -p minikube docker-env)
+          docker image load --input /tmp/infinyon-fluvio.tar
+          docker image ls -a
+
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio && ./fluvio version
+
+      - name: Setup for upgrade test
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+      - name: Run upgrade test with CI artifacts
+        env:
+          TEST_DATA_BYTES: 10000
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          command: |
+            export PATH=~/.fluvio/bin:$PATH
+            make FLUVIO_BIN=./fluvio upgrade-test 
+
       - name: Save logs
         if: failure()
         run: |
@@ -419,6 +512,7 @@ jobs:
       - check_windows
       - local_cluster_test
       - k8_cluster_test
+      #- k8_upgrade_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
