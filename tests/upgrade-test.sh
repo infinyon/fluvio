@@ -9,23 +9,26 @@
 # Content is verified via checksum
 #
 # Usage:
-# ./upgrade-test.sh <current stable version> [dev version]
+# ./upgrade-test.sh [current stable version] [dev version]
 #
 # If CI env var is set, we will build fluvio code and upgrade to local develop image
 # If DEBUG env var is set, the bash session will be extra verbose
+# If USE_LATEST is set, cluster will upgrade to VERSION=latest from public installer
 
 set -e
 
-# Change to this script's directory 
-pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
 
 readonly STABLE=${1:-stable}
-readonly PRERELEASE=${2:-$(cat ../VERSION)-$(git rev-parse HEAD)}
+readonly PRERELEASE=${2:-$(cat VERSION)-$(git rev-parse HEAD)}
 readonly CI_SLEEP=${CI_SLEEP:-10}
 readonly CI=${CI:-}
-readonly STABLE_TOPIC=${STABLE_TOPIC:-stable-cli-topic}
-readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease-cli-topic}
+readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
+readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
+readonly USE_LATEST=${USE_LATEST:-}
+readonly FLUVIO_BIN=$(readlink -f ${FLUVIO_BIN:-"$(pwd)/fluvio"})
 
+# Change to this script's directory 
+pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
 
 function cleanup() {
     echo Clean up test data
@@ -55,23 +58,25 @@ function validate_cluster_stable() {
     echo "Install (current stable) v${STABLE} CLI"
     curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${STABLE} bash
 
-    fluvio cluster start 
+    local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
+
+    $STABLE_FLUVIO cluster start 
     ci_check;
 
-    fluvio version
+    $STABLE_FLUVIO version
     ci_check;
 
     echo "Create test topic: ${STABLE_TOPIC}"
-    fluvio topic create ${STABLE_TOPIC} 
-    fluvio topic create ${STABLE_TOPIC}-delete 
+    $STABLE_FLUVIO topic create ${STABLE_TOPIC} 
+    $STABLE_FLUVIO topic create ${STABLE_TOPIC}-delete 
     ci_check;
 
-    cat data1.txt.tmp | fluvio produce ${STABLE_TOPIC}
-    cat data1.txt.tmp | fluvio produce ${STABLE_TOPIC}-delete
+    cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}
+    cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}-delete
     ci_check;
 
     echo "Validate test data w/ v${STABLE} CLI matches expected data created BEFORE upgrading cluster + CLI to v${PRERELEASE}"
-    fluvio consume -B -d ${STABLE_TOPIC} 2>/dev/null | tee output.txt.tmp
+    $STABLE_FLUVIO consume -B -d ${STABLE_TOPIC} 2>/dev/null | tee output.txt.tmp
     ci_check;
 
     if cat output.txt.tmp | shasum -c stable-cli-stable-topic.checksum; then
@@ -83,7 +88,7 @@ function validate_cluster_stable() {
     fi
 
     echo "Validate deleting topic created by v${STABLE} CLI"
-    fluvio topic delete ${STABLE_TOPIC}-delete 
+    $STABLE_FLUVIO topic delete ${STABLE_TOPIC}-delete 
 
 }
 
@@ -93,40 +98,54 @@ function validate_cluster_stable() {
 # Then we produce + consume on the Stable + Stable-1 topic and validate the checksums on each of those topics
 function validate_upgrade_cluster_to_prerelease() {
 
+    local FLUVIO_BIN_ABS_PATH=$(readlink -f $FLUVIO_BIN)
+    local TARGET_VERSION=${PRERELEASE}
+
+    # Change dir to get access to Helm charts
+    pushd ..
     if [[ ! -z "$CI" ]];
     then
-        echo "[CI MODE] Build and test the dev image v${PRERELEASE}"
-        pushd ..
-
-        local FLUVIO_BIN="$(pwd)/fluvio"
-        $FLUVIO_BIN cluster upgrade --chart-version=${PRERELEASE} --develop
-        popd
+        echo "[CI MODE] Test the prebuilt CI image v${TARGET_VERSION}"
+        # This should use the binary that CI downloads into repo root w/ the preloaded image
+        FLUVIO_BIN_ABS_PATH=$(readlink -f ./fluvio)
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
     else 
-        echo "Build and test the latest published dev image v${PRERELEASE}"
-        echo "Install prerelease v${PRERELEASE} CLI"
-        curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-        local FLUVIO_BIN=`which fluvio`
-        $FLUVIO_BIN cluster upgrade --chart-version=${PRERELEASE}
+
+        if [[ ! -z "$USE_LATEST" ]];
+        then
+            echo "Build and test the latest published dev image"
+            echo "Install dev CLI"
+            TARGET_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
+            echo "Installed version ${TARGET_VERSION}"
+            FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
+            $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
+            sleep 20
+        else
+            echo "Test the prebuilt CI image v${PRERELEASE}"
+            # This should use the binary that the Makefile set
+            $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
+        fi
     fi
+    popd
 
     ci_check;
 
-    $FLUVIO_BIN version
+    $FLUVIO_BIN_ABS_PATH version
     ci_check;
 
     echo "Create test topic: ${PRERELEASE_TOPIC}"
-    $FLUVIO_BIN topic create ${PRERELEASE_TOPIC}
+    $FLUVIO_BIN_ABS_PATH topic create ${PRERELEASE_TOPIC}
     ci_check;
 
-    cat data2.txt.tmp | fluvio produce ${PRERELEASE_TOPIC}
+    cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${PRERELEASE_TOPIC}
     ci_check;
 
-    echo "Validate test data w/ v${PRERELEASE} CLI matches expected data AFTER upgrading cluster + CLI to v${PRERELEASE}"
-    $FLUVIO_BIN consume -B -d ${PRERELEASE_TOPIC} 2>/dev/null | tee output.txt.tmp
+    echo "Validate test data w/ v${TARGET_VERSION} CLI matches expected data AFTER upgrading cluster + CLI to v${TARGET_VERSION}"
+    $FLUVIO_BIN_ABS_PATH consume -B -d ${PRERELEASE_TOPIC} 2>/dev/null | tee output.txt.tmp
     ci_check;
 
     if cat output.txt.tmp | shasum -c prerelease-cli-prerelease-topic.checksum; then
-        echo "${PRERELEASE_TOPIC} topic validated with v${PRERELEASE} CLI"
+        echo "${PRERELEASE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
         echo "Expected: $(cat prerelease-cli-prerelease-topic.checksum | awk '{print $1}')"
@@ -134,15 +153,15 @@ function validate_upgrade_cluster_to_prerelease() {
     fi
 
     # Exercise older topics
-    cat data2.txt.tmp | fluvio produce ${STABLE_TOPIC}
+    cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${STABLE_TOPIC}
     ci_check;
 
-    echo "Validate v${STABLE} test data w/ ${PRERELEASE} CLI matches expected data AFTER upgrading cluster + CLI to v${PRERELEASE}"
-    $FLUVIO_BIN consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
+    echo "Validate v${STABLE} test data w/ ${TARGET_VERSION} CLI matches expected data AFTER upgrading cluster + CLI to v${TARGET_VERSION}"
+    $FLUVIO_BIN_ABS_PATH consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
     ci_check;
 
     if cat output.txt.tmp | shasum -c prerelease-cli-stable-topic.checksum; then
-        echo "${STABLE_TOPIC} topic validated with v${PRERELEASE} CLI"
+        echo "${STABLE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
     else
         echo "Got: $(cat output.txt.tmp | awk '{print $1}')"
         echo "Expected: $(cat prerelease-cli-stable-topic.checksum | awk '{print $1}')"
@@ -150,10 +169,10 @@ function validate_upgrade_cluster_to_prerelease() {
     fi
 
     echo "Validate deleting topic created by v${STABLE} CLI"
-    $FLUVIO_BIN topic delete ${STABLE_TOPIC} 
+    $FLUVIO_BIN_ABS_PATH topic delete ${STABLE_TOPIC} 
 
-    echo "Validate deleting topic created by v${PRERELEASE} CLI"
-    $FLUVIO_BIN topic delete ${PRERELEASE_TOPIC} 
+    echo "Validate deleting topic created by v${TARGET_VERSION} CLI"
+    $FLUVIO_BIN_ABS_PATH topic delete ${PRERELEASE_TOPIC} 
 }
 
 # Create 2 base data files and calculate checksums for the expected states of each of our testing topics
@@ -164,7 +183,7 @@ function create_test_data() {
     # The baseline files
     for BASE in {1..2}
     do
-        echo "Create the baseline file \#${BASE}"
+        echo "Create the baseline file #${BASE}"
         local RANDOM_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${TEST_DATA_BYTES} | head -n1)
         echo ${RANDOM_DATA} | tee -a data${BASE}.txt.tmp
     done
