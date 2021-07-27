@@ -138,11 +138,6 @@ jobs:
         with:
           name: fluvio-x86_64-unknown-linux-musl
           path: .
-      - name: Download artifact - flv-test
-        uses: actions/download-artifact@v2
-        with:
-          name: flv-test-x86_64-unknown-linux-musl
-          path: .
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
@@ -155,7 +150,7 @@ jobs:
           docker image ls -a
 
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio -h && ./flv-test -h
+        run: ls -la . && chmod +x ./fluvio&& ./fluvio -h
 
       - name: Run upgrade test
         env:
@@ -167,8 +162,7 @@ jobs:
           command: |
             export PATH=~/.fluvio/bin:$PATH
             cd tests
-            # Use gh cli to collect the last and current release version numbers
-            ./upgrade-test.sh $(gh api repos/infinyon/fluvio/releases -q '.[].tag_name' | grep -v dev | sed 's/v//' | head -2 | tac | xargs)
+            ./upgrade-test.sh
 
       - name: Clean minikube
         run: |
