@@ -7,6 +7,7 @@ pub use location::*;
 
 pub(crate) const SYS_CHART_NAME: &str = "fluvio-sys";
 pub(crate) const APP_CHART_NAME: &str = "fluvio";
+pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
 
 mod error {
 
@@ -16,7 +17,7 @@ mod error {
     /// Errors that may occur while trying to install Fluvio system charts
     #[derive(thiserror::Error, Debug)]
     pub enum ChartInstallError {
-        // io error
+        /// io error
         #[error(transparent)]
         IoError(#[from] IoError),
         /// An error occurred while running helm.

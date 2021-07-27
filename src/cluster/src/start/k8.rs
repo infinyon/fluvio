@@ -30,14 +30,10 @@ use fluvio_command::CommandExt;
 use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
-use crate::{
-    ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses,
-};
+use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress;
 use crate::UserChartLocation;
-
-
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_GROUP_NAME: &str = "main";
@@ -147,10 +143,10 @@ pub struct ClusterConfig {
     #[builder(setter(into), default = "DEFAULT_REGISTRY.to_string()")]
     image_registry: String,
     /// Sets a specific version of the Fluvio helm chart to install.
-    #[builder(setter(into),default)]
+    #[builder(setter(into), default)]
     chart_version: Option<Version>,
     /// The location to search for the Helm charts to install
-    #[builder(setter(into, strip_option),default)]
+    #[builder(setter(into, strip_option), default)]
     chart_location: Option<UserChartLocation>,
     /// Sets a custom SPU group name. The default is `main`.
     ///
@@ -415,7 +411,7 @@ impl ClusterConfigBuilder {
     /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
         let user_chart_location = UserChartLocation::Local(local_chart_location.into());
-        debug!(?user_chart_location,"setting local chart");
+        debug!(?user_chart_location, "setting local chart");
         self.chart_location(user_chart_location);
         self
     }

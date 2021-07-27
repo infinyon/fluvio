@@ -7,7 +7,6 @@ use fluvio_helm::{HelmClient};
 
 pub use inline::*;
 
-
 use crate::UserChartLocation;
 
 use super::ChartInstallError;
@@ -30,7 +29,7 @@ impl From<UserChartLocation> for ChartLocation {
     fn from(location: UserChartLocation) -> Self {
         match location {
             UserChartLocation::Local(path) => Self::Local(path),
-            UserChartLocation::Remote(location) => Self::Remote(location)
+            UserChartLocation::Remote(location) => Self::Remote(location),
         }
     }
 }
@@ -83,6 +82,8 @@ impl ChartLocation {
     }
 }
 
+/// Chart that is ready to be install
+/// It may be clean up as necessary
 pub enum ChartSetup {
     /// inline
     Inline(InlineChart),
@@ -91,7 +92,6 @@ pub enum ChartSetup {
 }
 
 impl ChartSetup {
-
     /// location
     pub fn location(&self) -> String {
         match self {
@@ -113,18 +113,17 @@ mod inline {
 
     /// Inline chart contains only a single chart
     pub struct InlineChart {
-        dir: TempDir,
+        _dir: TempDir,
         chart: PathBuf,
     }
 
     impl InlineChart {
-
         /// create new inline chart
         pub fn new(inline: Dir<'static>) -> Result<Self, IoError> {
             let temp_dir = TempDir::new("chart")?;
             let chart = Self::unpack(&inline, temp_dir.path())?;
             Ok(Self {
-                dir: temp_dir,
+                _dir: temp_dir,
                 chart,
             })
         }

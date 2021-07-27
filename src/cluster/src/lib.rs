@@ -25,6 +25,7 @@
 #![deny(broken_intra_doc_links)]
 #![allow(clippy::upper_case_acronyms)]
 
+/// charts
 pub mod charts;
 mod check;
 mod start;
@@ -47,10 +48,6 @@ pub use delete::ClusterUninstaller;
 pub use fluvio::config as fluvio_config;
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";
-pub(crate) const DEFAULT_HELM_VERSION: &str = "3.3.4";
-
-pub(crate) const DEFAULT_CHART_APP_REPO: &str = "fluvio";
-pub(crate) const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 
 pub use common::*;
 

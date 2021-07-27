@@ -14,7 +14,6 @@ use super::location::ChartLocation;
 use super::SYS_CHART_NAME;
 
 const APP_CHART_NAME: &str = "fluvio";
-const DEFAULT_CHART_REMOTE: &str = "https://charts.fluvio.io";
 
 /// Configuration options for installing Fluvio system charts
 #[derive(Builder, Debug, Clone)]
@@ -229,6 +228,7 @@ impl ChartInstaller {
         Ok(!installed_charts.is_empty())
     }
 
+    /// install or upgrade
     #[instrument(skip(self))]
     pub fn process(&self, upgrade: bool) -> Result<(), ChartInstallError> {
         let chart_setup = self

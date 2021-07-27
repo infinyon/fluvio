@@ -134,7 +134,7 @@ pub struct LocalConfig {
     /// ```
     #[builder(setter(into))]
     chart_version: Option<Version>,
-    
+
     /// chart location of sys chart
     #[builder(setter(into, strip_option))]
     chart_location: Option<UserChartLocation>,
@@ -333,8 +333,6 @@ impl LocalConfigBuilder {
         self.chart_location(UserChartLocation::Local(local_chart_location.into()));
         self
     }
-
-
 }
 
 /// Install fluvio cluster locally

@@ -12,7 +12,8 @@ use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
 
 use crate::helm::HelmClient;
-use crate::{DEFAULT_CHART_APP_REPO, DEFAULT_NAMESPACE};
+use crate::charts::APP_CHART_NAME;
+use crate::{DEFAULT_NAMESPACE};
 use crate::error::UninstallError;
 use crate::ClusterError;
 use crate::start::local::DEFAULT_DATA_DIR;
@@ -114,7 +115,7 @@ impl ClusterUninstaller {
     pub fn new() -> ClusterUninstallerBuilder {
         ClusterUninstallerBuilder {
             namespace: DEFAULT_NAMESPACE.to_string(),
-            name: DEFAULT_CHART_APP_REPO.to_string(),
+            name: APP_CHART_NAME.to_string(),
             retry_count: 10,
         }
     }

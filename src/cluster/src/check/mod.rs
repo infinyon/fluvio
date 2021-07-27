@@ -22,7 +22,8 @@ use k8_types::InputObjectMeta;
 use k8_types::core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 
-use crate::{DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION};
+use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
+use crate::{DEFAULT_NAMESPACE};
 
 use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
 
@@ -444,7 +445,7 @@ impl ClusterCheck for AlreadyInstalled {
     async fn perform_check(&self) -> CheckResult {
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         let app_charts = helm
-            .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO, None)
+            .get_installed_chart_by_name(APP_CHART_NAME, None)
             .map_err(CheckError::HelmError)?;
         if !app_charts.is_empty() {
             return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));

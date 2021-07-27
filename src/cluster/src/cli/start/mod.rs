@@ -74,10 +74,6 @@ pub struct K8Install {
     #[structopt(long)]
     pub chart_location: Option<String>,
 
-    /// k8
-    #[structopt(long, default_value = "minikube")]
-    pub cloud: String,
-
     /// chart values
     #[structopt(long, parse(from_os_str))]
     pub chart_values: Vec<PathBuf>,
