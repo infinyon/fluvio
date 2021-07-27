@@ -19,8 +19,8 @@ use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::{LocalInstallError, ClusterError, StartStatus, ClusterChecker};
-use crate::charts::{ChartLocation, ChartConfig};
+use crate::{ClusterChecker, ClusterError, LocalInstallError, StartStatus, UserChartLocation};
+use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 
@@ -135,9 +135,9 @@ pub struct LocalConfig {
     #[builder(setter(into))]
     chart_version: Option<Version>,
     
-    // chart location
-    #[builder(setter(into))]
-    chart_location: Option<ChartLocation>,
+    // chart location of sys chart
+    chart_location: Option<UserChartLocation>,
+
     /// Whether to install the `fluvio-sys` chart in the full installation.
     ///
     /// Defaults to `true`.
@@ -329,16 +329,11 @@ impl LocalConfigBuilder {
     ///
     /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Local(local_chart_location.into()));
+        self.chart_location = Some(UserChartLocation::Local(local_chart_location.into()));
         self
     }
 
-    /// Applies development options to this cluster configuration.
-    /// This uses chart from source code "./k8-util/helm"
-    pub fn development(&mut self) -> &mut Self {
-        self.local_chart(super::DEFAULT_DEV_CHART);
-        self
-    }
+
 }
 
 /// Install fluvio cluster locally

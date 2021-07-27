@@ -150,7 +150,6 @@ pub struct ClusterConfig {
     #[builder(setter(into))]
     chart_version: Option<Version>,
     /// The location to search for the Helm charts to install
-    #[builder(setter(into))]
     chart_location: Option<UserChartLocation>,
     /// Sets a custom SPU group name. The default is `main`.
     ///
@@ -416,7 +415,7 @@ impl ClusterConfigBuilder {
     ///
     /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location = Some(UserChartLocation::Local(local_chart_location.into()));
+        self.chart_location = UserChartLocation::Local(local_chart_location.into());
         self
     }
 
