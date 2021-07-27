@@ -73,6 +73,7 @@ where
 
         input_metadata.labels = ctx.item().get_labels();
         input_metadata.annotations = ctx.item().annotations.clone();
+        input_metadata.owner_references = ctx.item().owner_references.clone();
 
         trace!("converted metadata: {:#?}", input_metadata);
         let new_k8 = InputK8Obj::new(k8_spec, input_metadata);
