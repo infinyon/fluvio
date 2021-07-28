@@ -24,9 +24,6 @@ jobs:
   verify_releases:
     name: Verify latest (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
-    env:
-      SLEEP: 30
-      TOPIC_NAME: foobar
     strategy:
       fail-fast: false
       matrix:
@@ -36,6 +33,9 @@ jobs:
         fluvio_version: [latest]
 
     steps:
+      - env:
+          SLEEP: 30
+          TOPIC: foobar
       - uses: actions/checkout@v2
       - name: Install Fluvio Local Cluster
         uses: ./
