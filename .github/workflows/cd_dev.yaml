@@ -32,7 +32,7 @@ jobs:
         cluster_type: [local,k8]
         fluvio_version: [latest]
     env:
-      SLEEP: 5
+      SLEEP: 10
       TOPIC: foobar
     steps:
       - uses: actions/checkout@v2
