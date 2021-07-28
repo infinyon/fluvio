@@ -154,51 +154,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  # Publish the release Helm chart, tagged with the release VERSION.
-  # Example tag: 0.7.4
-  # This job requires the docker image step to have completed successfully.
-  release_helm:
-    name: Release Helm Chart
-    needs: [setup_job, release_docker]
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.setup_job.outputs.VERSION }}
-    steps:
-      - name: Check repo for Release charts
-        continue-on-error: true
-        id: helm_check
-        run: |
-          NUM_CHARTS=$(curl https://charts.fluvio.io/api/charts | jq '.[]' | jq '.[] | select(.version | test("^${{ env.VERSION }}$")) | @json' | wc -l)
-          if [[ $NUM_CHARTS -eq 2 ]]; then
-            echo "Release chart is published";
-          else
-            echo "Release chart NOT published";
-            exit 1
-          fi
-      - uses: actions/checkout@v2
-        if: ${{ steps.helm_check.outcome == 'failure' }}
-      - name: Install Helm
-        if: ${{ steps.helm_check.outcome == 'failure' }}
-        env:
-          HELM_VERSION: v3.3.4
-          OS: ubuntu-latest
-        run: actions/ci-replace-helm.sh
-      - name: Publish helm charts
-        if: ${{ steps.helm_check.outcome == 'failure' }}
-        run: |
-          helm plugin install https://github.com/chartmuseum/helm-push.git
-          helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          helm push k8-util/helm/fluvio-sys --force --version="${{ env.VERSION }}" chartmuseum
-          helm push k8-util/helm/fluvio-app --force --version="${{ env.VERSION }}" chartmuseum
-
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   # Check for Fluvio CLI
   release_fluvio:
@@ -286,7 +241,7 @@ jobs:
 
   bump_stable_fluvio:
     name: Bump stable Fluvio
-    needs: [setup_job, release_github, release_docker, release_helm, release_fluvio]
+    needs: [setup_job, release_github, release_docker, release_fluvio]
     #permissions: write-all
     runs-on: ubuntu-latest
     env:
