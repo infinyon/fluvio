@@ -22,7 +22,7 @@ on:
 jobs:
   # test fluvio in local cluster 
   verify_releases:
-    name: Verify release ${{ matrix.fluvio_version }}) cluster (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
+    name: Verify release (${{ matrix.fluvio_version }}) cluster (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
