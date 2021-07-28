@@ -26,20 +26,21 @@ env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
 
+
 jobs:
   # build binaries. use release for staging
   # this requires check and test
   build_binaries:
-    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} (${{ matrix.os }})
+    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         rust-target:
           - aarch64-unknown-linux-musl
+          - aarch64-apple-darwin
           - armv7-unknown-linux-gnueabihf
           - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
-          - aarch64-apple-darwin
         rust: [stable]
         binary: [fluvio]
         include:
@@ -166,7 +167,7 @@ jobs:
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
         with:
-          key: ${{ matrix.rust-target }}-${{ matrix.check.name }}
+          key: ${{ matrix.rust-target }}-${{ matrix.check }}
 
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
@@ -175,7 +176,7 @@ jobs:
         if: ${{ matrix.check == 'doc' }}
         run: make run-all-doc-test
       - name: Unit Test
-        if: ${{ matrix.check == 'unit' }}
+        if: ${{ matrix.check == 'test' }}
         run: make run-all-unit-test
       - name: Integration test
         if: ${{ matrix.check == 'integration' }}
@@ -575,6 +576,7 @@ jobs:
       matrix:
         rust-target:
           - aarch64-unknown-linux-musl
+          - aarch64-apple-darwin
           - armv7-unknown-linux-gnueabihf
           - arm-unknown-linux-gnueabihf
           - x86_64-apple-darwin
