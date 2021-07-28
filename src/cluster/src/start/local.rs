@@ -132,11 +132,11 @@ pub struct LocalConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[builder(setter(into))]
+    #[builder(setter(into), default)]
     chart_version: Option<Version>,
 
     /// chart location of sys chart
-    #[builder(setter(into, strip_option))]
+    #[builder(setter(into, strip_option), default)]
     chart_location: Option<UserChartLocation>,
 
     /// Whether to install the `fluvio-sys` chart in the full installation.
