@@ -300,12 +300,12 @@ struct MultiPlexingResponseDispatcher {
 
 impl MultiPlexingResponseDispatcher {
     pub fn run(stream: FluvioStream, senders: Senders, terminate: Arc<Event>) {
-        use fluvio_future::task::spawn;
+        use fluvio_future::task::spawn_local;
 
         let dispatcher = Self { senders, terminate };
 
         debug!("dispatcher: spawning dispatcher loop");
-        spawn(dispatcher.dispatcher_loop(stream));
+        spawn_local(dispatcher.dispatcher_loop(stream));
     }
 
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
