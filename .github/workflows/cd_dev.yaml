@@ -24,6 +24,8 @@ jobs:
   verify_releases:
     name: Verify release (${{ matrix.fluvio_version }}) cluster (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
+    env:
+      SLEEP: 10
     strategy:
       fail-fast: false
       matrix:
@@ -43,9 +45,11 @@ jobs:
         run: |
           fluvio version
           fluvio topic list
+          sleep ${{ env.SLEEP }}
           fluvio topic create "foobar"
-          sleep 3
+          sleep ${{ env.SLEEP }}
           echo foo | fluvio produce "foobar"
+          sleep ${{ env.SLEEP }}
           fluvio consume foobar -o 0 -d
           # Delete the topic afterword but this looks to not work right now.
           # fluvio topic delete "foobar"
