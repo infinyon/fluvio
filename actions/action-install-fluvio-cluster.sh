@@ -5,15 +5,13 @@
 set -eu -o pipefail
 echo "Installing Fluvio Local Cluster"
 
-echo "Installing Fluvio CLI from latest source"
-curl -sSf https://raw.githubusercontent.com/infinyon/fluvio/master/install.sh | bash
+curl -fsS https://packages.fluvio.io/v1/install.sh | bash
 echo 'export PATH="$HOME/.fluvio/bin:$PATH"' >> $HOME/.bash_profile
 . $HOME/.bash_profile
 
-REPO_VERSION="$(curl -sSf https://raw.githubusercontent.com/infinyon/fluvio/master/VERSION)"
-CHART_VERSION="${REPO_VERSION}-${GITHUB_SHA}"
 
 LOCAL_FLAG=""
+IMAGE=""
 #
 # Install Fluvio Cluster
 #
@@ -23,5 +21,10 @@ if [ "$CLUSTER_TYPE" = "local" ]; then
     LOCAL_FLAG="--local"
 fi
 
+# For latest, we need to put image tag
+if [ "$VERSION" = "latest" ]; then
+    IMAGE="--image-version latest"
+fi
 
-fluvio cluster start --rust-log $RUST_LOG  $LOCAL_FLAG --spu $SPU_NUMBER
+
+fluvio cluster start $IMAGE --rust-log $RUST_LOG  $LOCAL_FLAG --spu $SPU_NUMBER
