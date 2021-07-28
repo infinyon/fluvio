@@ -28,50 +28,19 @@ env:
 
 
 jobs:
-  # build binaries. use release for staging
-  # this requires check and test
-  build_binaries:
+
+
+  # build binaries for linux musl which is primary OS for testing clusters
+  build_primary_binaries:
     name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         rust-target:
-          - aarch64-unknown-linux-musl
-          - aarch64-apple-darwin
-          - armv7-unknown-linux-gnueabihf
-          - x86_64-apple-darwin
           - x86_64-unknown-linux-musl
         rust: [stable]
         binary: [fluvio]
         include:
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: aarch64-unknown-linux-musl
-            binary: fluvio
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: arm-unknown-linux-gnueabihf
-            binary: fluvio
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: armv7-unknown-linux-gnueabihf
-            binary: fluvio
-          - os: windows-latest
-            rust: stable
-            rust-target: x86_64-pc-windows-msvc
-            binary: fluvio.exe
-          - os: macos-latest
-            rust: stable
-            rust-target: x86_64-apple-darwin
-            binary: fluvio
-          - os: macos-latest
-            rust: stable
-            rust-target: x86_64-apple-darwin
-            binary: fluvio
-          - os: macos-11
-            rust: stable
-            rust-target: aarch64-apple-darwin
-            binary: fluvio
           - os: ubuntu-latest
             rust: stable
             rust-target: x86_64-unknown-linux-musl
@@ -122,10 +91,6 @@ jobs:
         if: ${{ matrix.binary == 'fluvio' }}
         run: make build-cli
 
-      - name: Build fluvio
-        if: ${{ matrix.binary == 'fluvio.exe' }}
-        run: make build-cli-minimal
-
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
         run: make build-cluster
@@ -133,6 +98,98 @@ jobs:
       - name: Build flv-test
         if: ${{ matrix.binary == 'flv-test' }}
         run: make build-test
+
+      # Upload artifacts
+      - name: Upload artifact - ${{ matrix.binary }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+
+
+  # build other binaries which doesn't need test
+  build_binaries:
+    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust-target:
+          - aarch64-unknown-linux-musl
+          - aarch64-apple-darwin
+          - armv7-unknown-linux-gnueabihf
+          - x86_64-apple-darwin
+        rust: [stable]
+        binary: [fluvio]
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: aarch64-unknown-linux-musl
+            binary: fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: arm-unknown-linux-gnueabihf
+            binary: fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fluvio
+          - os: windows-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-msvc
+            binary: fluvio.exe
+          - os: macos-latest
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fluvio
+          - os: macos-latest
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fluvio
+          - os: macos-11
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fluvio
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
+      RELEASE_NAME: debug
+    steps:
+      - uses: actions/checkout@v2
+
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode
+      - name: Set RELEASE mode
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        shell: bash
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
+
+      - name: Print env
+        run: |
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
+
+      - name: Build fluvio
+        if: ${{ matrix.binary == 'fluvio' }}
+        run: make build-cli
+
+      - name: Build fluvio
+        if: ${{ matrix.binary == 'fluvio.exe' }}
+        run: make build-cli-minimal
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -250,7 +307,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test
     runs-on: ${{ matrix.os }}
-    needs: build_binaries
+    needs: build_primary_binaries
     strategy:
       matrix:
         os: [ubuntu-latest]
@@ -305,7 +362,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
-    needs: build_binaries
+    needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -521,7 +578,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - check
-      - build_binaries
+      - build_primary_binaries
       - check_wasm
       - check_windows
       - local_cluster_test
@@ -593,7 +650,9 @@ jobs:
   publish_github_binaries:
     name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.rust-target }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: bump_github_release
+    needs: 
+      - bump_github_release
+      - build_binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
