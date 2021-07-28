@@ -44,12 +44,12 @@ const FLUVIO_SC_SERVICE: &str = "fluvio-sc-public";
 /// maximum time waiting for sc service to come up
 static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_SERVICE_WAIT").unwrap_or_default();
-    var_value.parse().unwrap_or(30)
+    var_value.parse().unwrap_or(60)
 });
 /// maximum time waiting for network check, DNS or network
 static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_NETWORK_LOOP").unwrap_or_default();
-    var_value.parse().unwrap_or(30)
+    var_value.parse().unwrap_or(60)
 });
 const NETWORK_SLEEP_MS: u64 = 2000;
 /// maximum tiime for VERSION CHECK
