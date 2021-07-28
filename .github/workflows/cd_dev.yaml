@@ -48,9 +48,9 @@ jobs:
           sleep ${{ env.SLEEP }}
           fluvio topic list
           sleep ${{ env.SLEEP }}
-          fluvio topic create "${{ env.TOPIC }}"
+          fluvio topic create ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
-          echo foo | fluvio produce "${{ env.TOPIC }}"
+          echo foo | fluvio produce ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
           fluvio consume ${{ env.TOPIC }} -o 0 -d
           # Delete the topic afterword but this looks to not work right now.
