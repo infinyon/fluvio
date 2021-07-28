@@ -104,7 +104,7 @@ pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
-const MINIMUM_PLATFORM_VERSION: &str = "0.8.0";
+const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 
 /// Creates a producer that sends records to the named topic
 ///
