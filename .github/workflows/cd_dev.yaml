@@ -47,7 +47,7 @@ jobs:
           sleep ${{ env.SLEEP }}
           fluvio topic list
           sleep ${{ env.SLEEP }}
-          fluvio topic create "${{ env.TOPIC }}"
+          fluvio topic create ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
           echo foo | fluvio produce ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
