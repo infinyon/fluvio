@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -22,13 +22,14 @@ on:
 jobs:
   # test fluvio in local cluster
   fluvio_action_local_test:
-    name: Fluvio Action Local Test (${{ matrix.os }}, ${{ matrix.fluvio_version }})
+    name: Verify local cluster test for releases (${{ matrix.os }}, ${{ matrix.fluvio_version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
+        cluster_type: [local,k8]
         fluvio_version: [stable, latest]
 
     steps:
@@ -37,6 +38,7 @@ jobs:
         uses: ./
         with:
           version: ${{ matrix.fluvio_version }}
+          cluster-type: ${{ matrix.cluster_type }}
       - name: Fluvio command test
         run: |
           fluvio version
@@ -58,39 +60,11 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
 
-  fluvio_action_k8_test:
-    name: Fluvio Action K8 Test (${{ matrix.os }}, ${{ matrix.version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        k8: [minikube]
-        rust: [stable]
-        flvuio_version: [stable]
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Fluvio Local Cluster
-        uses: ./
-        with:
-          version: ${{ matrix.flvuio_version }}
-          cluster-type: k8
-      - name: Fluvio command test
-        run: |
-          fluvio version
-          fluvio topic list
-          fluvio topic create "foobar"
-          sleep 3
-          echo foo | fluvio produce "foobar"
-          fluvio consume foobar -o 0 -d
-          # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "foobar"
-
-
-  # Perform upgrade test
+  # Perform upgrade test from previous stable version to latest
   k8_cluster_upgrade:
     name: Kubernetes cluster upgrade test
+    if: false
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
