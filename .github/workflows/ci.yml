@@ -175,7 +175,7 @@ jobs:
         if: ${{ matrix.check == 'doc' }}
         run: make run-all-doc-test
       - name: Unit Test
-        if: ${{ matrix.check == 'unit' }}
+        if: ${{ matrix.check == 'test' }}
         run: make run-all-unit-test
       - name: Integration test
         if: ${{ matrix.check == 'integration' }}
