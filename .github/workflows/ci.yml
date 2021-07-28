@@ -572,7 +572,25 @@ jobs:
         run: gh release create -R infinyon/fluvio dev -p --notes "Published artifacts from the latest build"
 
   # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
-  github_release:
+  publish_github_helm_pkg:
+    name: Publish helm chart to GitHub Releases dev
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: bump_github_release
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: package helm
+        run:  make helm_pkg
+      - name: Publish artifact
+        run: |
+          gh release upload -R infinyon/fluvio --clobber dev k8-util/helm/pkg_app/*.*
+          gh release upload -R infinyon/fluvio --clobber dev k8-util/helm/pkg_sys/*.*
+
+
+  publish_github_binaries:
     name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.rust-target }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs: bump_github_release
@@ -612,7 +630,7 @@ jobs:
   done:
     name: Done
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: github_release
+    needs: [publish_github_binaries,publish_github_helm_pkg]
     runs-on: ubuntu-latest
     steps:
       - name: Done
