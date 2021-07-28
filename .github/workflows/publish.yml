@@ -126,7 +126,7 @@ jobs:
   # If the 'latest' tag gets bumped, you can be sure the whole publish flow succeeded.
   bump_fluvio:
     name: Bump Fluvio CLI version
-    needs: [docker, helm, fluvio]
+    needs: [docker, fluvio]
     runs-on: ubuntu-latest
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
