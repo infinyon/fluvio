@@ -65,6 +65,10 @@ jobs:
             binary: fluvio
           - os: macos-latest
             rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fluvio
+          - os: macos-11
+            rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio
           - os: ubuntu-latest
