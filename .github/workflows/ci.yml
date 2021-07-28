@@ -485,7 +485,7 @@ jobs:
           max_attempts: 3
           command: |
             export PATH=~/.fluvio/bin:$PATH
-            make FLUVIO_BIN=./fluvio upgrade-test 
+            make FLUVIO_BIN=./fluvio upgrade-test
 
       - name: Save logs
         if: failure()
@@ -590,6 +590,8 @@ jobs:
         include:
           - rust-target: x86_64-unknown-linux-musl
             artifact: fluvio-run
+          - rust-target: x86_64-pc-windows-msvc
+            artifact: fluvio.exe
     permissions: write-all
     steps:
       - name: Login GH CLI
