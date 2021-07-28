@@ -50,7 +50,7 @@ install_tools_mac:
 helm_pkg:	
 	make -C k8-util/helm package
 
-build-cli: install_rustup_target
+build-cli: install_rustup_target helm_pkg
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-cli-minimal: install_rustup_target
