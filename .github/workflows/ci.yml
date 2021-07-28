@@ -574,8 +574,8 @@ jobs:
   # Upload the build artifacts to the `dev` GH release, overwriting old artifacts
   publish_github_helm_pkg:
     name: Publish helm chart to GitHub Releases dev
-    # if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    # needs: bump_github_release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    needs: bump_github_release
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -630,7 +630,7 @@ jobs:
   done:
     name: Done
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: publish_github_binaries
+    needs: [publish_github_binaries,publish_github_helm_pkg]
     runs-on: ubuntu-latest
     steps:
       - name: Done
