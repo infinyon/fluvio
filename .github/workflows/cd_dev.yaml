@@ -31,11 +31,10 @@ jobs:
         rust: [stable]
         cluster_type: [local,k8]
         fluvio_version: [latest]
-
+    env:
+      SLEEP: 30
+      TOPIC: foobar
     steps:
-      - env:
-          SLEEP: 30
-          TOPIC: foobar
       - uses: actions/checkout@v2
       - name: Install Fluvio Local Cluster
         uses: ./
@@ -48,7 +47,7 @@ jobs:
           sleep ${{ env.SLEEP }}
           fluvio topic list
           sleep ${{ env.SLEEP }}
-          fluvio topic create ${{ env.TOPIC }}
+          fluvio topic create "${{ env.TOPIC }}"
           sleep ${{ env.SLEEP }}
           echo foo | fluvio produce ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
