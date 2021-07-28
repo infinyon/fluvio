@@ -133,32 +133,20 @@ jobs:
 
   # Run all checks and unit test. This always run on debug mode
   check:
-    name: ${{ matrix.check.name }} (${{ matrix.rust-target }})
+    name: ${{ matrix.check }} (${{ matrix.rust-target }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check:
-          - name: Rustfmt
-            run: make check-fmt
-          - name: Clippy
-            run: make check-clippy
-          - name: Unit/Doc tests
-            run: |
-              make run-all-doc-test
-              make run-all-unit-test
-          - name: Integration tests
-            run: make run-integration-test
-
+        check: [clippy, doc, test, integration]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
     steps:
       - uses: actions/checkout@v2
-
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
@@ -171,8 +159,19 @@ jobs:
         with:
           key: ${{ matrix.rust-target }}-${{ matrix.check.name }}
 
-      - name: ${{ matrix.check.name }}
-        run: ${{ matrix.check.run }}
+      - name: Clippy
+        if: ${{ matrix.check == 'clippy' }}
+        run: make check-clippy
+      - name: Doc Test
+        if: ${{ matrix.check == 'doc' }}
+        run: make run-all-doc-test
+      - name: Unit Test
+        if: ${{ matrix.check == 'unit' }}
+        run: make run-all-unit-test
+      - name: Integration test
+        if: ${{ matrix.check == 'integration' }}
+        run: make run-integration-test
+
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
