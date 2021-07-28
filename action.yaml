@@ -18,22 +18,6 @@ inputs:
     required: false
     # Blank default will use stable
     default: ''
-  development:
-    description: "Use a debug release version of fluvio"
-    required: false
-    default: "true"
-  helm-version:
-    description: "Use a specific helm version"
-    required: false
-    default: 'v3.3.4'
-  minikube-version:
-    description: "Use a specific minikube version"
-    required: false
-    default: 'v1.21.0'
-  k8-version:
-    description: "Use a specific minikube version"
-    required: false
-    default: '1.21.2'
 runs:
   using: "composite"
   steps:
@@ -43,17 +27,7 @@ runs:
         echo "CLUSTER_TYPE=${{ inputs.cluster-type }}" >> $GITHUB_ENV
         echo "RUST_LOG=${{ inputs.rust-log }}" >> $GITHUB_ENV
         echo "VERSION=${{ inputs.version }}" >> $GITHUB_ENV
-        echo "DEVELOPMENT=${{ inputs.development }}" >> $GITHUB_ENV
-        echo "HELM_VERSION=${{ inputs.helm-version }}" >> $GITHUB_ENV
-        echo "MINIKUBE_VERSION=${{ inputs.minikube-version }}" >> $GITHUB_ENV
-        echo "K8_VERSION=${{ inputs.k8-version }}" >> $GITHUB_ENV
         echo "OS=${{ runner.os }}" >> $GITHUB_ENV
-      shell: bash
-    - id: install-helm
-      run: ${{ github.action_path }}/actions/ci-replace-helm.sh
-      shell: bash
-    - id: install-minikube
-      run: ${{ github.action_path }}/actions/action-install-minikube.sh
       shell: bash
     - id: install-fluvio
       run: ${{ github.action_path }}/actions/action-install-fluvio-cluster.sh
