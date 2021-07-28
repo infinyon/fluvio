@@ -25,14 +25,15 @@ jobs:
     name: Verify release (${{ matrix.fluvio_version }}) cluster (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
     env:
-      SLEEP: 10
+      SLEEP: 30
+      TOPIC_NAME: foobar
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
         cluster_type: [local,k8]
-        fluvio_version: [stable, latest]
+        fluvio_version: [latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -44,15 +45,16 @@ jobs:
       - name: Fluvio command test
         run: |
           fluvio version
+          sleep ${{ env.SLEEP }}
           fluvio topic list
           sleep ${{ env.SLEEP }}
-          fluvio topic create "foobar"
+          fluvio topic create "${{ env.TOPIC }}"
           sleep ${{ env.SLEEP }}
-          echo foo | fluvio produce "foobar"
+          echo foo | fluvio produce "${{ env.TOPIC }}"
           sleep ${{ env.SLEEP }}
-          fluvio consume foobar -o 0 -d
+          fluvio consume ${{ env.TOPIC }} -o 0 -d
           # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "foobar"
+          # fluvio topic delete "${{ env.TOPIC }}"
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
