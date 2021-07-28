@@ -20,33 +20,47 @@ on:
   workflow_dispatch:
 
 jobs:
-  # test fluvio in local cluster
-  fluvio_action_local_test:
-    name: Fluvio Action Local Test (${{ matrix.os }}, ${{ matrix.fluvio_version }})
+  # test fluvio in local cluster 
+  verify_releases:
+    name: Verify latest (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust: [stable]
-        fluvio_version: [stable, latest]
-
+        cluster_type: [local,k8]
+        fluvio_version: [latest]
+    env:
+      SLEEP: 10
+      TOPIC: foobar
     steps:
       - uses: actions/checkout@v2
+      - name: Install Minikube for Github runner
+        uses: manusa/actions-setup-minikube@v2.4.2
+        with:
+          minikube version: "v1.22.0"
+          kubernetes version: "v1.21.2"
+          github token: ${{ secrets.GITHUB_TOKEN }}
+          driver: docker
       - name: Install Fluvio Local Cluster
         uses: ./
         with:
           version: ${{ matrix.fluvio_version }}
+          cluster-type: ${{ matrix.cluster_type }}
       - name: Fluvio command test
         run: |
           fluvio version
+          sleep ${{ env.SLEEP }}
           fluvio topic list
-          fluvio topic create "foobar"
-          sleep 3
-          echo foo | fluvio produce "foobar"
-          fluvio consume foobar -o 0 -d
+          sleep ${{ env.SLEEP }}
+          fluvio topic create ${{ env.TOPIC }}
+          sleep ${{ env.SLEEP }}
+          echo foo | fluvio produce ${{ env.TOPIC }}
+          sleep ${{ env.SLEEP }}
+          fluvio consume ${{ env.TOPIC }} -o 0 -d
           # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "foobar"
+          # fluvio topic delete "${{ env.TOPIC }}"
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
@@ -58,39 +72,11 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
 
-  fluvio_action_k8_test:
-    name: Fluvio Action K8 Test (${{ matrix.os }}, ${{ matrix.version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        k8: [minikube]
-        rust: [stable]
-        flvuio_version: [stable]
 
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Fluvio Local Cluster
-        uses: ./
-        with:
-          version: ${{ matrix.flvuio_version }}
-          cluster-type: k8
-      - name: Fluvio command test
-        run: |
-          fluvio version
-          fluvio topic list
-          fluvio topic create "foobar"
-          sleep 3
-          echo foo | fluvio produce "foobar"
-          fluvio consume foobar -o 0 -d
-          # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "foobar"
-
-
-  # Perform upgrade test
+  # Perform upgrade test from previous stable version to latest
   k8_cluster_upgrade:
     name: Kubernetes cluster upgrade test
+    if: false
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
