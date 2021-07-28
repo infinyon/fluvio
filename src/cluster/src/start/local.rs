@@ -19,10 +19,8 @@ use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::{
-    LocalInstallError, ClusterError, StartStatus, ClusterChecker, ChartLocation,
-    DEFAULT_CHART_REMOTE, SysConfig,
-};
+use crate::{ClusterChecker, ClusterError, LocalInstallError, StartStatus, UserChartLocation};
+use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 
@@ -134,14 +132,13 @@ pub struct LocalConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[builder(setter(into))]
-    chart_version: Version,
-    /// The location to find the fluvio charts
-    #[builder(
-        private,
-        default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())"
-    )]
-    chart_location: ChartLocation,
+    #[builder(setter(into), default)]
+    chart_version: Option<Version>,
+
+    /// chart location of sys chart
+    #[builder(setter(into, strip_option), default)]
+    chart_location: Option<UserChartLocation>,
+
     /// Whether to install the `fluvio-sys` chart in the full installation.
     ///
     /// Defaults to `true`.
@@ -207,9 +204,9 @@ impl LocalConfig {
     /// use semver::Version;
     /// let mut builder = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder(chart_version: Version) -> LocalConfigBuilder {
+    pub fn builder(_platform_version: Version) -> LocalConfigBuilder {
         let mut builder = LocalConfigBuilder::default();
-        builder.chart_version(chart_version);
+
         if let Some(data_dir) = &*DEFAULT_DATA_DIR {
             builder.data_dir(data_dir);
         }
@@ -240,7 +237,7 @@ impl LocalConfigBuilder {
     pub fn build(&self) -> Result<LocalConfig, ClusterError> {
         let config = self
             .build_impl()
-            .map_err(LocalInstallError::MissingRequiredConfig)?;
+            .map_err(|err| LocalInstallError::MissingRequiredConfig(err.to_string()))?;
         Ok(config)
     }
 
@@ -333,14 +330,7 @@ impl LocalConfigBuilder {
     ///
     /// [`with_remote_chart`]: ./struct.ClusterInstallerBuilder#method.with_remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Local(local_chart_location.into()));
-        self
-    }
-
-    /// Applies development options to this cluster configuration.
-    /// This uses chart from source code "./k8-util/helm"
-    pub fn development(&mut self) -> &mut Self {
-        self.local_chart(super::DEFAULT_DEV_CHART);
+        self.chart_location(UserChartLocation::Local(local_chart_location.into()));
         self
     }
 }
@@ -374,10 +364,14 @@ impl LocalInstaller {
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
         println!("Performing pre-flight checks");
-        let sys_config: SysConfig = SysConfig::builder(self.config.chart_version.clone())
-            .chart_location(self.config.chart_location.clone())
+        let mut sys_config: ChartConfig = ChartConfig::sys_builder()
+            .version(self.config.chart_version.clone())
             .build()
             .expect("should build config since all required arguments are given");
+
+        if let Some(location) = &self.config.chart_location {
+            sys_config.location = location.to_owned().into();
+        }
 
         if self.config.render_checks {
             let mut progress = ClusterChecker::empty()
@@ -690,22 +684,5 @@ impl LocalInstaller {
             "not able to provision:{} spu",
             spu
         )))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_build_config() {
-        let config: LocalConfig =
-            LocalConfig::builder(semver::Version::parse("0.7.0-alpha.1").unwrap())
-                .build()
-                .expect("should succeed with required config options");
-        assert_eq!(
-            config.chart_version,
-            semver::Version::parse("0.7.0-alpha.1").unwrap()
-        )
     }
 }

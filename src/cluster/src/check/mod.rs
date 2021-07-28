@@ -2,6 +2,7 @@ use std::io::Error as IoError;
 use std::fmt::Debug;
 use std::time::Duration;
 use std::process::{Command};
+use std::fs::File;
 
 pub mod render;
 
@@ -21,12 +22,10 @@ use k8_types::InputObjectMeta;
 use k8_types::core::service::ServiceSpec;
 use k8_client::ClientError as K8ClientError;
 
-use crate::{
-    DEFAULT_NAMESPACE, DEFAULT_CHART_SYS_REPO, DEFAULT_CHART_APP_REPO, DEFAULT_HELM_VERSION,
-    SysConfig, SysInstaller,
-};
-use crate::error::SysInstallError;
-use std::fs::File;
+use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
+use crate::{DEFAULT_NAMESPACE};
+
+use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
 const DELAY: u64 = 1000;
@@ -390,11 +389,11 @@ impl ClusterCheck for HelmVersion {
 
 #[derive(Debug)]
 pub(crate) struct SysChartCheck {
-    config: SysConfig,
+    config: ChartConfig,
 }
 
 impl SysChartCheck {
-    pub(crate) fn new(config: SysConfig) -> Self {
+    pub(crate) fn new(config: ChartConfig) -> Self {
         Self { config }
     }
 }
@@ -404,10 +403,11 @@ impl ClusterCheck for SysChartCheck {
     /// Check that the system chart is installed
     /// This uses whatever namespace it is being called
     async fn perform_check(&self) -> CheckResult {
+        debug!("performing sys chart check");
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         // check installed system chart version
         let sys_charts = helm
-            .get_installed_chart_by_name(DEFAULT_CHART_SYS_REPO, None)
+            .get_installed_chart_by_name(SYS_CHART_NAME, None)
             .map_err(CheckError::HelmError)?;
         if sys_charts.is_empty() {
             return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
@@ -419,12 +419,12 @@ impl ClusterCheck for SysChartCheck {
 
     async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
         // Use closure to catch errors
-        let result = (|| -> Result<(), SysInstallError> {
+        let result = (|| -> Result<(), ChartInstallError> {
             debug!(
-                "Installing Fluvio sys chart with config: {:#?}",
+                "Fixing by installing Fluvio sys chart with config: {:#?}",
                 &self.config
             );
-            let sys_installer = SysInstaller::from_config(self.config.clone())?;
+            let sys_installer = ChartInstaller::from_config(self.config.clone())?;
             sys_installer.install()?;
             Ok(())
         })();
@@ -445,7 +445,7 @@ impl ClusterCheck for AlreadyInstalled {
     async fn perform_check(&self) -> CheckResult {
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         let app_charts = helm
-            .get_installed_chart_by_name(DEFAULT_CHART_APP_REPO, None)
+            .get_installed_chart_by_name(APP_CHART_NAME, None)
             .map_err(CheckError::HelmError)?;
         if !app_charts.is_empty() {
             return Ok(CheckStatus::fail(CheckFailed::AlreadyInstalled));

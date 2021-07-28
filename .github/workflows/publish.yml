@@ -47,36 +47,7 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  # Publish the latest Helm chart, tagged with the version and the git commit.
-  # Example tag: 0.7.4-alpha.0-abcdef, where abcdef is the git commit.
-  # This job requires the docker image step to have completed successfully.
-  helm:
-    name: Publish Latest Helm Chart
-    needs: docker
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install Helm
-        run: actions/ci-replace-helm.sh
-        env:
-          HELM_VERSION: v3.3.4
-          OS: ${{ matrix.os }}
-      - name: Install Helm Push plugin
-        run: |
-          helm plugin install https://github.com/chartmuseum/helm-push.git
-          helm repo add chartmuseum https://gitops:${{ secrets.HELM_PASSWORD }}@charts.fluvio.io
-          helm push k8-util/helm/fluvio-sys --force --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
-          helm push k8-util/helm/fluvio-app --force --version="$(cat VERSION)-$(git rev-parse HEAD)" chartmuseum
-
-      - name: Slack Notification
-        uses: 8398a7/action-slack@v3
-        if: failure()
-        with:
-          status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
+  
   # Download the `fluvio` release artifact for each target and publish them to packages.fluvio.io
   fluvio:
     name: Publish Fluvio CLI

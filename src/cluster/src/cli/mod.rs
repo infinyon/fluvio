@@ -1,4 +1,5 @@
 use std::sync::Arc;
+
 use structopt::StructOpt;
 use semver::Version;
 
@@ -8,14 +9,12 @@ mod start;
 mod delete;
 mod util;
 mod check;
-mod releases;
 mod error;
 
 use start::StartOpt;
 use start::UpgradeOpt;
 use delete::DeleteOpt;
 use check::CheckOpt;
-use releases::ReleasesCmd;
 use group::SpuGroupCmd;
 use spu::SpuCmd;
 
@@ -44,10 +43,6 @@ pub enum ClusterCmd {
     #[structopt(name = "check")]
     Check(CheckOpt),
 
-    /// Print information about various Fluvio releases
-    #[structopt(name = "releases")]
-    Releases(ReleasesCmd),
-
     /// Manage and view Streaming Processing Units (SPUs)
     ///
     /// SPUs make up the part of a Fluvio cluster which is in charge
@@ -69,24 +64,21 @@ impl ClusterCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,
-        default_chart_version: Version,
+        platform_version: Version,
         target: ClusterTarget,
     ) -> Result<(), ClusterCliError> {
         match self {
             Self::Start(start) => {
-                start.process(default_chart_version, false, false).await?;
+                start.process(platform_version, false, false).await?;
             }
             Self::Upgrade(upgrade) => {
-                upgrade.process(default_chart_version).await?;
+                upgrade.process(platform_version).await?;
             }
             Self::Delete(uninstall) => {
                 uninstall.process().await?;
             }
             Self::Check(check) => {
-                check.process(default_chart_version).await?;
-            }
-            Self::Releases(releases) => {
-                releases.process().await?;
+                check.process().await?;
             }
             Self::SPU(spu) => {
                 let fluvio = target.connect().await?;

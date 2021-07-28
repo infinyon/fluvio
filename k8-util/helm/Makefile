@@ -1,6 +1,6 @@
 MAKE_DIR = $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 VERSION := $(shell cat $(MAKE_DIR)/../../VERSION)
-CHART_VERSION = $(VERSION)
+APP_VERSION = $(VERSION)
 GIT_VERSION=$(shell git log -1 --pretty=format:"%H")
 REGISTRY=infinyon
 CLOUD=minikube
@@ -118,3 +118,24 @@ helm-publish-sys:
 
 helm-publish-app:
 	helm push k8-util/helm/fluvio-app --version="$(VERSION)" --force fluvio
+
+
+.PHONY: target_directory
+
+sys_charts:
+	mkdir -p pkg_sys
+
+app_charts:
+	mkdir -p app_sys
+
+clean:
+	rm -rf pkg_sys;
+	rm -rf pkg_app;
+
+helm-package-sys: sys_charts
+	helm package ./fluvio-sys --app-version $(APP_VERSION) -d pkg_sys
+
+helm-package-app: app_charts
+	helm package ./fluvio-app --app-version $(APP_VERSION) -d pkg_app
+
+package:	clean helm-package-sys helm-package-app

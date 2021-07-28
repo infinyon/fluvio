@@ -235,7 +235,12 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.os }}-${{ matrix.crate }}
 
+      - name: set up helm
+        run:  make helm_pkg
       - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
         run: cargo build --manifest-path ./src/${{matrix.crate}}/Cargo.toml
 
@@ -285,7 +290,7 @@ jobs:
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
       - name: Setup
-        run: ./fluvio cluster start --setup --local --develop
+        run: ./fluvio cluster start --setup --local
       - name: Run smoke-test
         timeout-minutes: 5
         run: |

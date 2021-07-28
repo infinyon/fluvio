@@ -4,8 +4,10 @@ use fluvio::FluvioError;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
 use fluvio_helm::HelmError;
-use crate::check::{CheckResults, CheckStatuses};
 use fluvio_command::CommandError;
+
+use crate::check::{CheckResults, CheckStatuses};
+use crate::charts::ChartInstallError;
 
 /// The types of errors that can occur during cluster management
 #[derive(thiserror::Error, Debug)]
@@ -18,21 +20,10 @@ pub enum ClusterError {
     InstallLocal(#[from] LocalInstallError),
     /// An error occurred while trying to install Fluvio system charts
     #[error("Failed to install Fluvio system charts")]
-    InstallSys(#[from] SysInstallError),
+    InstallSys(#[from] ChartInstallError),
     /// An error occurred while trying to uninstall Fluvio
     #[error("Failed to uninstall Fluvio")]
     Uninstall(#[from] UninstallError),
-}
-
-/// Errors that may occur while trying to install Fluvio system charts
-#[derive(thiserror::Error, Debug)]
-pub enum SysInstallError {
-    /// An error occurred while running helm.
-    #[error("Helm client error")]
-    HelmError(#[from] HelmError),
-    /// Attempted to construct a Config object without all required fields
-    #[error("Missing required config option {0}")]
-    MissingRequiredConfig(String),
 }
 
 /// Errors that may occur while trying to install Fluvio on Kubernetes
@@ -53,6 +44,9 @@ pub enum K8InstallError {
     /// An error occurred while running helm.
     #[error("Helm client error")]
     HelmError(#[from] HelmError),
+    /// An error occurred while running helm.
+    #[error("Helm Chart error")]
+    ChartError(#[from] ChartInstallError),
     /// Failed to execute a command
     #[error(transparent)]
     CommandError(#[from] CommandError),

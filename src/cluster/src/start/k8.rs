@@ -12,6 +12,7 @@ use derive_builder::Builder;
 use tracing::{info, warn, debug, error, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
+use semver::Version;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
@@ -24,23 +25,18 @@ use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
+use fluvio_command::CommandExt;
 
-use crate::helm::{HelmClient, Chart};
+use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
-use crate::{
-    ClusterError, StartStatus, DEFAULT_NAMESPACE, DEFAULT_CHART_APP_REPO, CheckStatus,
-    ClusterChecker, CheckStatuses, DEFAULT_CHART_REMOTE, ChartLocation, SysConfig,
-};
+use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
+use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress;
-use fluvio_command::CommandExt;
-use semver::Version;
+use crate::UserChartLocation;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
-const DEFAULT_APP_NAME: &str = "fluvio-app";
-const DEFAULT_CHART_APP_NAME: &str = "fluvio/fluvio-app";
 const DEFAULT_GROUP_NAME: &str = "main";
-const DEFAULT_CLOUD_NAME: &str = "minikube";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
 const DEFAULT_SERVICE_TYPE: &str = "NodePort";
 
@@ -66,6 +62,9 @@ static MAX_SC_VERSION_LOOP: Lazy<u8> = Lazy::new(|| {
 #[derive(Builder, Debug)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ClusterConfig {
+    /// Platform version
+    #[builder(setter(into))]
+    platform_version: Version,
     /// Sets the Kubernetes namespace to install Fluvio into.
     ///
     /// The default namespace is "default".
@@ -143,39 +142,12 @@ pub struct ClusterConfig {
     /// [`image_tag`]: ./struct.ClusterInstaller.html#method.image_tag
     #[builder(setter(into), default = "DEFAULT_REGISTRY.to_string()")]
     image_registry: String,
-    /// The name of the Fluvio helm chart to install
-    #[builder(setter(into), default = "DEFAULT_CHART_APP_NAME.to_string()")]
-    chart_name: String,
     /// Sets a specific version of the Fluvio helm chart to install.
-    ///
-    /// When working with published Fluvio images, the chart version will appear
-    /// to be a [Semver] version, such as `0.6.0`.
-    ///
-    /// When developing for Fluvio, chart versions are named after the git hash
-    /// of the revision a chart was built on.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
-    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// use semver::Version;
-    /// let config = builder
-    ///     .chart_version(Version::parse("0.6.0").unwrap())
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [Semver]: https://docs.rs/semver/0.10.0/semver/
-    #[builder(setter(into))]
-    chart_version: Version,
+    #[builder(setter(into), default)]
+    chart_version: Option<Version>,
     /// The location to search for the Helm charts to install
-    #[builder(
-        private,
-        default = "ChartLocation::Remote(DEFAULT_CHART_REMOTE.to_string())"
-    )]
-    chart_location: ChartLocation,
+    #[builder(setter(into, strip_option), default)]
+    chart_location: Option<UserChartLocation>,
     /// Sets a custom SPU group name. The default is `main`.
     ///
     /// # Example
@@ -191,22 +163,7 @@ pub struct ClusterConfig {
     /// ```
     #[builder(setter(into), default = "DEFAULT_GROUP_NAME.to_string()")]
     group_name: String,
-    /// Sets the K8 cluster cloud environment.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
-    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = builder
-    ///     .cloud("minikube")
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    #[builder(setter(into), default = "DEFAULT_CLOUD_NAME.to_string()")]
-    cloud: String,
+
     /// How many SPUs to provision for this Fluvio cluster. Defaults to 1
     ///
     /// # Example
@@ -374,9 +331,9 @@ impl ClusterConfig {
     /// use semver::Version;
     /// let builder = ClusterConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder(chart_version: Version) -> ClusterConfigBuilder {
+    pub fn builder(platform_version: Version) -> ClusterConfigBuilder {
         let mut builder = ClusterConfigBuilder::default();
-        builder.chart_version(chart_version);
+        builder.platform_version(platform_version);
         builder
     }
 }
@@ -403,7 +360,7 @@ impl ClusterConfigBuilder {
     pub fn build(&self) -> Result<ClusterConfig, ClusterError> {
         let config = self
             .build_impl()
-            .map_err(K8InstallError::MissingRequiredConfig)?;
+            .map_err(|err| K8InstallError::MissingRequiredConfig(err.to_string()))?;
         Ok(config)
     }
 
@@ -413,7 +370,6 @@ impl ClusterConfigBuilder {
     /// NOTE that these options will be overwritten even if they were
     /// previously assigned.
     ///
-    /// - Use local_chart "./k8-util/helm"
     /// - Use the git hash of HEAD as the image_tag
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
         let output = Command::new("git")
@@ -427,7 +383,6 @@ impl ClusterConfigBuilder {
             ))
         })?;
         self.image_tag(git_hash.trim());
-        self.local_chart(super::DEFAULT_DEV_CHART);
         Ok(self)
     }
 
@@ -455,7 +410,9 @@ impl ClusterConfigBuilder {
     ///
     /// [`remote_chart`]: ./struct.ClusterInstallerBuilder#method.remote_chart
     pub fn local_chart<S: Into<PathBuf>>(&mut self, local_chart_location: S) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Local(local_chart_location.into()));
+        let user_chart_location = UserChartLocation::Local(local_chart_location.into());
+        debug!(?user_chart_location, "setting local chart");
+        self.chart_location(user_chart_location);
         self
     }
 
@@ -482,7 +439,7 @@ impl ClusterConfigBuilder {
     ///
     /// [`local_chart`]: ./struct.ClusterInstallerBuilder#method.local_chart
     pub fn remote_chart<S: Into<String>>(&mut self, remote_chart_location: S) -> &mut Self {
-        self.chart_location = Some(ChartLocation::Remote(remote_chart_location.into()));
+        self.chart_location(UserChartLocation::Remote(remote_chart_location.into()));
         self
     }
 
@@ -637,15 +594,6 @@ impl ClusterInstaller {
         })
     }
 
-    /// Get all the available versions of fluvio chart
-    pub fn versions() -> Result<Vec<Chart>, ClusterError> {
-        let helm_client = HelmClient::new().map_err(K8InstallError::HelmError)?;
-        let versions = helm_client
-            .versions(DEFAULT_CHART_APP_NAME)
-            .map_err(K8InstallError::HelmError)?;
-        Ok(versions)
-    }
-
     /// Checks if all of the prerequisites for installing Fluvio are met
     ///
     /// This will attempt to automatically fix any missing prerequisites,
@@ -659,12 +607,15 @@ impl ClusterInstaller {
     /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
-        let sys_config: SysConfig = SysConfig::builder(self.config.chart_version.clone())
+        let mut sys_config: ChartConfig = ChartConfig::sys_builder()
+            .version(self.config.chart_version.clone())
             .namespace(&self.config.namespace)
-            .chart_location(self.config.chart_location.clone())
-            .cloud(&self.config.cloud)
             .build()
             .unwrap();
+
+        if let Some(location) = &self.config.chart_location {
+            sys_config.location = location.to_owned().into();
+        }
 
         let mut checker = ClusterChecker::empty()
             .with_k8_checks()
@@ -785,28 +736,25 @@ impl ClusterInstaller {
             self.upload_tls_secrets(tls)?;
         }
 
-        let fluvio_tag = self
-            .config
-            .image_tag
-            .clone()
-            .unwrap_or_else(|| self.config.chart_version.to_string());
-
         // Specify common installation settings to pass to helm
-        let mut install_settings: Vec<(_, Cow<str>)> = vec![
-            ("image.registry", Cow::Borrowed(&self.config.image_registry)),
-            ("image.tag", Cow::Borrowed(&fluvio_tag)),
-            ("cloud", Cow::Borrowed(&self.config.cloud)),
-        ];
+        let mut install_settings: Vec<(_, Cow<str>)> =
+            vec![("image.registry", Cow::Borrowed(&self.config.image_registry))];
+
+        if let Some(tag) = &self.config.image_tag {
+            install_settings.push(("image.tag", Cow::Borrowed(tag)))
+        }
+
+        let mut chart_values = self.config.chart_values.clone();
 
         // NodePort services need to provide SPU with an external address
         // We're going to provide it via annotation on the SPU's K8 service
 
-        // We're going to write the annotation to a temp file so Helm can use it
-        // This is a workaround. More on this later in the function.
-        let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
-        let np_pathbuf = vec![np_conf_path.to_path_buf()];
+        let _temp_files = if self.config.service_type == "NodePort" {
+            // We're going to write the annotation to a temp file so Helm can use it
+            // This is a workaround. More on this later in the function.
+            let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
+            chart_values.push(np_conf_path.to_path_buf());
 
-        if self.config.service_type == "NodePort" {
             debug!("Using NodePort service type");
             debug!("Getting external IP from K8s node");
             let kube_client = &self.kube_client;
@@ -829,9 +777,6 @@ impl ClusterInstaller {
                 .find(|a| a.r#type == "InternalIP")
                 .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
 
-            // The following is a workaround for https://github.com/infinyon/fluvio-helm/issues/16
-            // Defining this annotation via `install_settings` var would be preference
-
             // Set this annotation w/ the external address by overriding this Helm chart value:
             let mut ingress_address = BTreeMap::new();
             ingress_address.insert("fluvio.io/ingress-address", external_addr.address);
@@ -844,7 +789,10 @@ impl ClusterInstaller {
 
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .map_err(|err| K8InstallError::Other(err.to_string()))?;
-        }
+            Some((np_addr_fd, np_conf_path))
+        } else {
+            None
+        };
 
         // If TLS is enabled, set it as a helm variable
         if let TlsPolicy::Anonymous | TlsPolicy::Verified(_) = self.config.server_tls_policy {
@@ -863,8 +811,6 @@ impl ClusterInstaller {
             ));
         }
 
-        use fluvio_helm::InstallArg;
-
         let install_settings: Vec<(String, String)> = install_settings
             .into_iter()
             .map(|(k, v)| (k.to_owned(), v.to_string()))
@@ -872,64 +818,22 @@ impl ClusterInstaller {
 
         debug!("Using helm install settings: {:#?}", &install_settings);
 
-        match &self.config.chart_location {
-            // For remote, we add a repo pointing to the chart location.
-            ChartLocation::Remote(chart_location) => {
-                self.helm_client
-                    .repo_add(DEFAULT_CHART_APP_REPO, chart_location)?;
-                self.helm_client.repo_update()?;
-                if !self.helm_client.chart_version_exists(
-                    &self.config.chart_name,
-                    &self.config.chart_version.to_string(),
-                )? {
-                    return Err(K8InstallError::HelmChartNotFound(format!(
-                        "{}:{}",
-                        &self.config.chart_name, &self.config.chart_version
-                    )));
-                }
-                debug!(
-                    chart_location = &**chart_location,
-                    "Using remote helm chart:"
-                );
-                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, &self.config.chart_name)
-                    .namespace(&self.config.namespace)
-                    .opts(install_settings)
-                    .develop()
-                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
-                    .version(&self.config.chart_version.to_string());
+        println!("installing fluvio chart");
 
-                debug!("Using helm install args: {:#?}", &args);
+        let mut config = ChartConfig::app_builder()
+            .namespace(&self.config.namespace)
+            .version(self.config.chart_version.clone())
+            .string_values(install_settings)
+            .values(chart_values)
+            .build()?;
 
-                if self.config.upgrade {
-                    self.helm_client.upgrade(&args)?;
-                } else {
-                    self.helm_client.install(&args)?;
-                }
-            }
-            // For local, we do not use a repo but install from the chart location directly.
-            ChartLocation::Local(chart_home) => {
-                let chart_location = chart_home.join(DEFAULT_APP_NAME);
-                let chart_string = chart_location.to_string_lossy();
-                debug!(
-                    chart_location = chart_string.as_ref(),
-                    "Using local helm chart:"
-                );
-                let args = InstallArg::new(DEFAULT_CHART_APP_REPO, chart_string)
-                    .namespace(&self.config.namespace)
-                    .opts(install_settings)
-                    .develop()
-                    .values([self.config.chart_values.clone(), np_pathbuf].concat())
-                    .version(&self.config.chart_version.to_string());
-
-                debug!("Using helm install args: {:#?}", &args);
-
-                if self.config.upgrade {
-                    self.helm_client.upgrade(&args)?;
-                } else {
-                    self.helm_client.install(&args)?;
-                }
-            }
+        if let Some(location) = &self.config.chart_location {
+            debug!(user_location=?location,"overriding with user chart location");
+            config.location = location.to_owned().into();
         }
+
+        let installer = ChartInstaller::from_config(config)?;
+        installer.process(self.config.upgrade)?;
 
         info!("Fluvio app chart has been installed");
         Ok(())
@@ -1074,8 +978,10 @@ impl ClusterInstaller {
 
             // The major.minor.patch versions should match after upgrade
             let platform_version = fluvio.platform_version();
-            let compatible =
-                versions_compatible(platform_version.clone(), self.config.chart_version.clone());
+            let compatible = versions_compatible(
+                platform_version.clone(),
+                self.config.platform_version.clone(),
+            );
 
             if compatible {
                 // Success
@@ -1083,12 +989,12 @@ impl ClusterInstaller {
             }
             debug!(
                 platform = %platform_version,
-                chart_version = %self.config.chart_version,
-                "Existing platform version is different than chart version",
+                platform_version = %self.config.platform_version,
+                "Existing platform version is different than platform version",
             );
             if attempt >= *MAX_SC_VERSION_LOOP - 1 {
                 return Err(K8InstallError::FailedPlatformVersion(
-                    self.config.chart_version.to_string(),
+                    self.config.platform_version.to_string(),
                 ));
             }
             sleep(Duration::from_millis(2_000)).await;
@@ -1361,7 +1267,7 @@ mod tests {
                 .build()
                 .expect("should succeed with required config options");
         assert_eq!(
-            config.chart_version,
+            config.platform_version,
             semver::Version::parse("0.7.0-alpha.1").unwrap()
         )
     }
