@@ -6,6 +6,7 @@
 * Improve `#[derive(Encoder, Decoder)]` to work with data enums. ([#1232](https://github.com/infinyon/fluvio/pull/1232))
 * Fix Replication bug in K8 ([#1290](https://github.com/infinyon/fluvio/pull/1290))
 * Add apply method to `StoreContext`. ([#1289](https://github.com/infinyon/fluvio/pull/1289))
+* Build M1 mac CLI ([#132](https://github.com/infinyon/fluvio/pull/1312))
 
 ## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))

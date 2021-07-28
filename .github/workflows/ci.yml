@@ -30,7 +30,7 @@ jobs:
   # build binaries. use release for staging
   # this requires check and test
   build_binaries:
-    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} (${{ matrix.os }})
+    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -166,7 +166,7 @@ jobs:
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
         with:
-          key: ${{ matrix.rust-target }}-${{ matrix.check.name }}
+          key: ${{ matrix.rust-target }}-${{ matrix.check }}
 
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
