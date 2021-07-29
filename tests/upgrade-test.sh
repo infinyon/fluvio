@@ -87,8 +87,13 @@ function validate_cluster_stable() {
         exit 1
     fi
 
-    echo "Validate deleting topic created by v${STABLE} CLI"
-    $STABLE_FLUVIO topic delete ${STABLE_TOPIC}-delete 
+    echo "stable validated"
+
+    $STABLE_FLUVIO partition list
+
+
+    # echo "Validate deleting topic created by v${STABLE} CLI"
+    # $STABLE_FLUVIO topic delete ${STABLE_TOPIC}-delete 
 
 }
 
@@ -110,14 +115,15 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Installed CLI version ${TARGET_VERSION}"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
         echo "Upgrading cluster to ${TARGET_VERSION}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
+        $FLUVIO_BIN_ABS_PATH cluster upgrade
         sleep 20
     else
         echo "Test local image v${PRERELEASE}"
         # This should use the binary that the Makefile set
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
+        $FLUVIO_BIN_ABS_PATH cluster upgrade  --develop
     fi
     popd
 
