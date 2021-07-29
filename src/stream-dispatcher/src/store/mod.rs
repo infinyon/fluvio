@@ -218,9 +218,9 @@ mod context {
 
             match self.sender.send(action).await {
                 Ok(_) => loop {
-                    if let Some(new_value) = self.store.value(&key).await {
+                    if let Some(new_value) = self.store.value(key).await {
                         if let Some(old_value) = &current_value {
-                            if new_value.is_newer(&old_value) {
+                            if new_value.is_newer(old_value) {
                                 debug!("store: {}, object: {:#?}, updated", S::LABEL, key);
                                 return Ok(new_value.inner_owned());
                             }

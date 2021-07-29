@@ -315,7 +315,7 @@ async fn fetch_offsets(
         response
     );
 
-    match response.find_partition(&replica) {
+    match response.find_partition(replica) {
         Some(partition_response) => {
             debug!("replica: {}, fetch offset: {}", replica, partition_response);
             Ok(partition_response)

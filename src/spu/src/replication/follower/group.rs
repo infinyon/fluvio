@@ -83,7 +83,7 @@ mod controller {
     use fluvio_future::timer::sleep;
     use fluvio_socket::FluvioSocket;
     use fluvio_socket::FluvioSink;
-    use fluvio_socket::FlvSocketError;
+    use fluvio_socket::SocketError;
     use dataplane::{ReplicaKey, api::RequestMessage};
     use fluvio_types::{SpuId};
     use fluvio_storage::FileReplica;
@@ -176,7 +176,7 @@ mod controller {
         async fn sync_with_leader(
             &mut self,
             mut socket: FluvioSocket,
-        ) -> Result<bool, FlvSocketError> {
+        ) -> Result<bool, SocketError> {
             self.send_fetch_stream_request(&mut socket).await?;
 
             let (mut sink, mut stream) = socket.split();
@@ -249,7 +249,7 @@ mod controller {
             &self,
             sink: &mut FluvioSink,
             mut req: DefaultSyncRequest,
-        ) -> Result<(), FlvSocketError> {
+        ) -> Result<(), SocketError> {
             let mut offsets = UpdateOffsetRequest::default();
 
             for topic_request in &mut req.topics {
@@ -339,7 +339,7 @@ mod controller {
         async fn send_fetch_stream_request(
             &self,
             socket: &mut FluvioSocket,
-        ) -> Result<(), FlvSocketError> {
+        ) -> Result<(), SocketError> {
             let local_spu_id = self.local_spu_id();
             debug!("sending fetch stream for leader",);
             let fetch_request = FetchStreamRequest {
@@ -361,7 +361,7 @@ mod controller {
             &self,
             sink: &mut FluvioSink,
             spu_replicas: &FollowerGroup,
-        ) -> Result<(), FlvSocketError> {
+        ) -> Result<(), SocketError> {
             self.send_offsets_to_leader(sink, spu_replicas.replica_offsets())
                 .await
         }
@@ -372,7 +372,7 @@ mod controller {
             &self,
             sink: &mut FluvioSink,
             offsets: UpdateOffsetRequest,
-        ) -> Result<(), FlvSocketError> {
+        ) -> Result<(), SocketError> {
             let local_spu = self.config.id();
             debug!(local_spu, "sending offsets to leader");
             let req_msg = RequestMessage::new_request(offsets)

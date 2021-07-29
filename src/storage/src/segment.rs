@@ -150,7 +150,7 @@ where
                                     start_pos.get_pos(),
                                     end_pos.get_pos() - start_pos.get_pos(),
                                 )?)),
-                                None => Err(StorageError::OffsetError(OffsetError::NotExistent)),
+                                None => Err(StorageError::Offset(OffsetError::NotExistent)),
                             }
                         }
                     }
@@ -325,7 +325,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         if item.base_offset == 0 {
             item.set_base_offset(current_offset);
         } else if item.base_offset < current_offset {
-            return Err(StorageError::LogValidationError(
+            return Err(StorageError::LogValidation(
                 LogValidationError::ExistingBatch,
             ));
         }
@@ -334,7 +334,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         debug!(
             base_offset,
             file_offset = pos,
-            batch_len = compute_batch_record_size(&item),
+            batch_len = compute_batch_record_size(item),
             "start writing batch"
         );
 

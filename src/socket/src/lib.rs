@@ -8,7 +8,7 @@ mod stream;
 pub mod test_request;
 
 pub use fluvio_future::net::{BoxConnection, Connection};
-pub use self::error::FlvSocketError;
+pub use self::error::SocketError;
 pub use self::socket::FluvioSocket;
 pub use multiplexing::*;
 pub use sink::*;
@@ -23,13 +23,11 @@ use fluvio_protocol::api::ResponseMessage;
 pub async fn send_and_receive<R>(
     addr: &str,
     request: &RequestMessage<R>,
-) -> Result<ResponseMessage<R::Response>, FlvSocketError>
+) -> Result<ResponseMessage<R::Response>, SocketError>
 where
     R: Request,
 {
     let mut client = FluvioSocket::connect(addr).await?;
-
-    let msgs: ResponseMessage<R::Response> = client.send(&request).await?;
-
+    let msgs: ResponseMessage<R::Response> = client.send(request).await?;
     Ok(msgs)
 }

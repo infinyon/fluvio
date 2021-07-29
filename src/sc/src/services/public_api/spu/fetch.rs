@@ -32,7 +32,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let spus: Vec<Metadata<SpuSpec>> = auth_ctx
+    let custom_spus: Vec<_> = auth_ctx
         .global_ctx
         .spus()
         .store()
@@ -46,11 +46,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
                 None
             }
         })
-        .collect();
-
-    let custom_spus: Vec<Metadata<CustomSpuSpec>> = spus
-        .into_iter()
-        .map(|spu| Metadata {
+        .map(|spu: Metadata<SpuSpec>| Metadata {
             name: spu.name,
             spec: spu.spec.into(),
             status: spu.status,

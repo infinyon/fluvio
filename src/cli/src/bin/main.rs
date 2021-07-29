@@ -26,7 +26,7 @@ fn print_help_hack() -> Result<()> {
         HelpOpt {}.process()?;
         std::process::exit(0);
     } else if let Some(first_arg) = args.nth(1) {
-        if vec!["-h", "--help", "help"].contains(&&first_arg.as_str()) {
+        if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
             HelpOpt {}.process()?;
             std::process::exit(0);
         }

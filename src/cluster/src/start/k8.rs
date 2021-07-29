@@ -1021,7 +1021,7 @@ impl ClusterInstaller {
     async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), K8InstallError> {
         info!(sock_addr = %sock_addr_str, "waiting for SC port check");
         for i in 0..*MAX_SC_NETWORK_LOOP {
-            let sock_addr = self.wait_for_sc_dns(&sock_addr_str).await?;
+            let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
             if TcpStream::connect(&*sock_addr).await.is_ok() {
                 info!(sock_addr = %sock_addr_str, "finished SC port check");
                 return Ok(());

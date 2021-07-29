@@ -42,7 +42,7 @@ mod context {
         type UId = u32;
 
         fn uid(&self) -> &Self::UId {
-            &self
+            self
         }
 
         fn is_newer(&self, another: &Self) -> bool {
@@ -54,7 +54,7 @@ mod context {
         type UId = u64;
 
         fn uid(&self) -> &Self::UId {
-            &self
+            self
         }
 
         fn is_newer(&self, another: &Self) -> bool {

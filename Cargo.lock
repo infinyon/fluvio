@@ -1743,7 +1743,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.8.1"
+version = "0.9.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1802,6 +1802,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "structopt",
+ "thiserror",
  "tokio",
  "toml",
  "tracing",
@@ -1824,7 +1825,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-storage"
-version = "0.5.0"
+version = "0.4.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1843,6 +1844,7 @@ dependencies = [
  "pin-utils",
  "serde",
  "structopt",
+ "thiserror",
  "tracing",
 ]
 
@@ -1938,6 +1940,7 @@ version = "0.2.4"
 dependencies = [
  "event-listener",
  "fluvio-future",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-futures",

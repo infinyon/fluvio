@@ -15,7 +15,7 @@ use fluvio_protocol::Encoder as FlvEncoder;
 use fluvio_protocol::Version;
 use fluvio_future::net::{BoxWriteConnection, ConnectionFd};
 
-use crate::FlvSocketError;
+use crate::SocketError;
 
 type SinkFrame = FramedWrite<Compat<BoxWriteConnection>, FluvioCodec>;
 
@@ -54,10 +54,7 @@ impl FluvioSink {
     }
 
     /// as client, send request to server
-    pub async fn send_request<R>(
-        &mut self,
-        req_msg: &RequestMessage<R>,
-    ) -> Result<(), FlvSocketError>
+    pub async fn send_request<R>(&mut self, req_msg: &RequestMessage<R>) -> Result<(), SocketError>
     where
         RequestMessage<R>: FlvEncoder + Default + Debug,
     {
@@ -71,7 +68,7 @@ impl FluvioSink {
         &mut self,
         resp_msg: &ResponseMessage<P>,
         version: Version,
-    ) -> Result<(), FlvSocketError>
+    ) -> Result<(), SocketError>
     where
         ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
@@ -113,7 +110,7 @@ mod file {
             &mut self,
             msg: &T,
             version: Version,
-        ) -> Result<(), FlvSocketError>
+        ) -> Result<(), SocketError>
         where
             T: FileWrite,
         {
@@ -128,10 +125,7 @@ mod file {
         }
 
         /// write store values to socket
-        async fn write_store_values(
-            &mut self,
-            values: Vec<StoreValue>,
-        ) -> Result<(), FlvSocketError> {
+        async fn write_store_values(&mut self, values: Vec<StoreValue>) -> Result<(), SocketError> {
             trace!("writing store values to socket values: {}", values.len());
 
             for value in values {
@@ -189,7 +183,7 @@ impl ExclusiveFlvSink {
         self.inner.lock().await
     }
 
-    pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), FlvSocketError>
+    pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), SocketError>
     where
         RequestMessage<R>: FlvEncoder + Default + Debug,
     {
@@ -202,7 +196,7 @@ impl ExclusiveFlvSink {
         &mut self,
         resp_msg: &ResponseMessage<P>,
         version: Version,
-    ) -> Result<(), FlvSocketError>
+    ) -> Result<(), SocketError>
     where
         ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
@@ -241,7 +235,7 @@ mod tests {
     use tracing::info;
 
     use crate::FluvioSocket;
-    use crate::FlvSocketError;
+    use crate::SocketError;
     use fluvio_future::fs::util;
     use fluvio_future::fs::AsyncFileExtension;
     use fluvio_future::test_async;
@@ -249,7 +243,7 @@ mod tests {
     use fluvio_future::zero_copy::ZeroCopy;
     use fluvio_protocol::{Decoder, Encoder};
 
-    async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
+    async fn test_server(addr: &str) -> Result<(), SocketError> {
         let listener = TcpListener::bind(&addr).await.expect("bind");
         debug!("server is running");
         let mut incoming = listener.incoming();
@@ -283,10 +277,10 @@ mod tests {
         Ok(())
     }
 
-    async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
+    async fn setup_client(addr: &str) -> Result<(), SocketError> {
         sleep(Duration::from_millis(50)).await;
         debug!("client: trying to connect");
-        let mut socket = FluvioSocket::connect(&addr).await.expect("connect");
+        let mut socket = FluvioSocket::connect(addr).await.expect("connect");
         info!("client: connect to test server and waiting...");
         let stream = socket.get_mut_stream();
         let next_value = stream.get_mut_tcp_stream().next().await;
@@ -303,7 +297,7 @@ mod tests {
     }
 
     #[test_async]
-    async fn test_sink_copy() -> Result<(), FlvSocketError> {
+    async fn test_sink_copy() -> Result<(), SocketError> {
         let addr = "127.0.0.1:9999";
 
         let _r = join(setup_client(addr), test_server(addr)).await;

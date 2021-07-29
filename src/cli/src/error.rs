@@ -89,7 +89,7 @@ impl CliError {
     /// program should return when exiting after those errors.
     pub fn print(self) -> Result<()> {
         match &self {
-            Self::ConsumerError(ConsumerError::ClientError(FluvioError::ApiError(api))) => {
+            Self::ConsumerError(ConsumerError::ClientError(FluvioError::AdminApi(api))) => {
                 match api {
                     ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
                         println!("Topic already exists");

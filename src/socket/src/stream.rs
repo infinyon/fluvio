@@ -14,7 +14,7 @@ use tokio_util::compat::Compat;
 use tracing::error;
 use tracing::trace;
 
-use crate::FlvSocketError;
+use crate::SocketError;
 
 type FrameStream = FramedRead<Compat<BoxReadConnection>, FluvioCodec>;
 
@@ -33,7 +33,7 @@ impl FluvioStream {
     /// as server, get stream of request coming from client
     pub fn request_stream<R>(
         &mut self,
-    ) -> impl Stream<Item = Result<RequestMessage<R>, FlvSocketError>> + '_
+    ) -> impl Stream<Item = Result<RequestMessage<R>, SocketError>> + '_
     where
         RequestMessage<R>: FluvioDecoder + Debug,
     {
@@ -48,9 +48,7 @@ impl FluvioStream {
     }
 
     /// as server, get next request from client
-    pub async fn next_request_item<R>(
-        &mut self,
-    ) -> Option<Result<RequestMessage<R>, FlvSocketError>>
+    pub async fn next_request_item<R>(&mut self) -> Option<Result<RequestMessage<R>, SocketError>>
     where
         RequestMessage<R>: FluvioDecoder + Debug,
     {
@@ -62,7 +60,7 @@ impl FluvioStream {
     pub async fn next_response<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
+    ) -> Result<ResponseMessage<R::Response>, SocketError>
     where
         R: Request,
     {
@@ -80,7 +78,7 @@ impl FluvioStream {
                 }
                 Err(source) => {
                     error!("error receiving response: {:?}", source);
-                    Err(FlvSocketError::IoError(source))
+                    Err(SocketError::Io(source))
                 }
             }
         } else {
@@ -90,7 +88,7 @@ impl FluvioStream {
     }
 
     /// as server, get api request (PublicRequest, InternalRequest, etc)
-    pub fn api_stream<R, A>(&mut self) -> impl Stream<Item = Result<R, FlvSocketError>> + '_
+    pub fn api_stream<R, A>(&mut self) -> impl Stream<Item = Result<R, SocketError>> + '_
     where
         R: ApiMessage<ApiKey = A>,
         A: FluvioDecoder + Debug,
@@ -105,7 +103,7 @@ impl FluvioStream {
         })
     }
 
-    pub async fn next_api_item<R, A>(&mut self) -> Option<Result<R, FlvSocketError>>
+    pub async fn next_api_item<R, A>(&mut self) -> Option<Result<R, SocketError>>
     where
         R: ApiMessage<ApiKey = A>,
         A: FluvioDecoder + Debug,

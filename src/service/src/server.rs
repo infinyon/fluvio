@@ -20,7 +20,7 @@ use fluvio_future::task::spawn;
 
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
-use fluvio_socket::{FluvioSocket, FlvSocketError};
+use fluvio_socket::{FluvioSocket, SocketError};
 
 #[async_trait]
 pub trait SocketBuilder: Clone {
@@ -55,7 +55,7 @@ pub trait FlvService {
         self: Arc<Self>,
         context: Self::Context,
         socket: FluvioSocket,
-    ) -> Result<(), FlvSocketError>;
+    ) -> Result<(), SocketError>;
 }
 
 /// Transform Service into Futures 01
@@ -205,7 +205,7 @@ mod test {
 
     use fluvio_protocol::api::RequestMessage;
     use fluvio_socket::FluvioSocket;
-    use fluvio_socket::FlvSocketError;
+    use fluvio_socket::SocketError;
 
     use crate::test_request::EchoRequest;
     use crate::test_request::SharedTestContext;
@@ -226,7 +226,7 @@ mod test {
         server
     }
 
-    async fn create_client(addr: String) -> Result<FluvioSocket, FlvSocketError> {
+    async fn create_client(addr: String) -> Result<FluvioSocket, SocketError> {
         debug!("client wait for 1 second for 2nd server to come up");
         sleep(Duration::from_millis(100)).await;
         FluvioSocket::connect(&addr).await
@@ -252,7 +252,7 @@ mod test {
     }
 
     #[test_async]
-    async fn test_server() -> Result<(), FlvSocketError> {
+    async fn test_server() -> Result<(), SocketError> {
         // create fake server, anything will do since we only
         // care about creating tcp stream
 

@@ -1,28 +1,27 @@
 use std::io::Error as IoError;
-use thiserror::Error;
 
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
 use crate::config::ConfigError;
 use semver::Version;
 
 /// Possible errors that may arise when using Fluvio
-#[derive(Error, Debug)]
+#[derive(thiserror::Error, Debug)]
 pub enum FluvioError {
+    #[error(transparent)]
+    Io(#[from] IoError),
     #[error("Topic not found: {0}")]
     TopicNotFound(String),
     #[error("Partition not found: {0}-{1}")]
     PartitionNotFound(String, i32),
     #[error("Spu not found: {0}")]
     SPUNotFound(i32),
-    #[error(transparent)]
-    IoError(#[from] IoError),
     #[error("Fluvio socket error")]
-    FlvSocketError(#[from] FlvSocketError),
-    #[error("Fluvio SC schema error")]
-    ApiError(#[from] ApiError),
+    Socket(#[from] SocketError),
+    #[error("Fluvio controlplane error")]
+    AdminApi(#[from] ApiError),
     #[error("Fluvio config error")]
-    ConfigError(#[from] ConfigError),
+    ClientConfig(#[from] ConfigError),
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),
     #[error("Cluster (with platform version {cluster_version}) is older than the minimum required version {client_minimum_version}")]
@@ -31,7 +30,7 @@ pub enum FluvioError {
         client_minimum_version: Version,
     },
     #[error("Consumer config error: {0}")]
-    ConsumerConfigError(String),
+    ConsumerConfig(String),
     #[error("Unknown error: {0}")]
     Other(String),
 }

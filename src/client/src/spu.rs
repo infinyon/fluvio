@@ -8,7 +8,7 @@ use dataplane::ReplicaKey;
 use dataplane::api::Request;
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
-use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, FlvSocketError, AsyncResponse};
+use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, SocketError, AsyncResponse};
 use crate::FluvioError;
 use crate::sockets::ClientConfig;
 use crate::sync::MetadataStores;
@@ -62,10 +62,7 @@ impl Drop for SpuPool {
 
 impl SpuPool {
     /// start synchronize based on pool
-    pub fn start(
-        config: Arc<ClientConfig>,
-        metadata: MetadataStores,
-    ) -> Result<Self, FlvSocketError> {
+    pub fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError> {
         debug!("starting spu pool");
         Ok(Self {
             metadata,

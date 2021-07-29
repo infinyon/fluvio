@@ -45,7 +45,7 @@ impl BatchProducer {
         header.producer_epoch = -1;
 
         for i in 0..self.records {
-            batches.add_record((self.record_generator)(i as usize, &self));
+            batches.add_record((self.record_generator)(i as usize, self));
         }
 
         batches

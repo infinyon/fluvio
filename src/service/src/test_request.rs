@@ -13,7 +13,7 @@ use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::Decoder;
 use fluvio_protocol::derive::Encoder;
 
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use fluvio_socket::FluvioSocket;
 
 use crate::api_loop;
@@ -132,7 +132,7 @@ impl FlvService for TestService {
         self: Arc<Self>,
         _context: Self::Context,
         socket: FluvioSocket,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
 

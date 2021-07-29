@@ -127,7 +127,7 @@ impl LogIndex {
         let path_ref = path.as_ref();
         let base_offset = log_path_get_offset(path_ref)?;
         if path_ref.extension() != Some(OsStr::new(EXTENSION)) {
-            return Err(StorageError::LogValidationError(
+            return Err(StorageError::LogValidation(
                 LogValidationError::InvalidExtension,
             ));
         }

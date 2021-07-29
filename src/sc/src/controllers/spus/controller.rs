@@ -136,6 +136,9 @@ impl SpuController {
 
         // check if any of spu are init, change to offline
         let read_guard = self.spus.store().read().await;
+
+        // Ignore needless_collect because we are reading from a guard that we want to drop ASAP
+        #[allow(clippy::needless_collect)]
         let spu_names: Vec<String> = read_guard
             .values()
             .filter_map(|spu| {

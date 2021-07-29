@@ -8,7 +8,7 @@ use tracing::{debug, trace, instrument};
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
 use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
 
@@ -209,7 +209,7 @@ impl VersionedSerialSocket {
 
     /// send and wait for reply serially
     #[instrument(level = "trace", skip(self, request))]
-    pub async fn send_receive<R>(&self, request: R) -> Result<R::Response, FlvSocketError>
+    pub async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
     where
         R: Request + Send + Sync,
     {

@@ -25,7 +25,7 @@ use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
 use fluvio_protocol::Decoder;
 
-use crate::FlvSocketError;
+use crate::SocketError;
 use crate::ExclusiveFlvSink;
 use crate::FluvioSocket;
 use crate::FluvioStream;
@@ -104,7 +104,7 @@ impl MultiplexerSocket {
     pub async fn send_and_receive<R>(
         &self,
         mut req_msg: RequestMessage<R>,
-    ) -> Result<R::Response, FlvSocketError>
+    ) -> Result<R::Response, SocketError>
     where
         R: Request,
     {
@@ -191,7 +191,7 @@ impl MultiplexerSocket {
         &self,
         mut req_msg: RequestMessage<R>,
         queue_len: usize,
-    ) -> Result<AsyncResponse<R>, FlvSocketError>
+    ) -> Result<AsyncResponse<R>, SocketError>
     where
         R: Request,
     {
@@ -247,7 +247,7 @@ impl<R> PinnedDrop for AsyncResponse<R> {
 }
 
 impl<R: Request> Stream for AsyncResponse<R> {
-    type Item = Result<R::Response, FlvSocketError>;
+    type Item = Result<R::Response, SocketError>;
 
     #[instrument(
         skip(self, cx),
@@ -275,7 +275,7 @@ impl<R: Request> Stream for AsyncResponse<R> {
         let bytes = if let Some(bytes) = bytes {
             bytes
         } else {
-            return Poll::Ready(Some(Err(FlvSocketError::SocketClosed)));
+            return Poll::Ready(Some(Err(SocketError::SocketClosed)));
         };
 
         let mut cursor = Cursor::new(&bytes);
@@ -372,7 +372,7 @@ impl MultiPlexingResponseDispatcher {
 
     /// send message to correct receiver
     #[instrument(skip(self, msg))]
-    pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), FlvSocketError> {
+    pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {

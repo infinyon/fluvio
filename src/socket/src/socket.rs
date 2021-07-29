@@ -10,7 +10,7 @@ use fluvio_future::net::{
     BoxReadConnection, BoxWriteConnection, ConnectionFd, DefaultDomainConnector, TcpDomainConnector,
 };
 
-use super::FlvSocketError;
+use super::SocketError;
 use crate::FluvioSink;
 use crate::FluvioStream;
 
@@ -65,13 +65,12 @@ impl FluvioSocket {
     pub async fn send<R>(
         &mut self,
         req_msg: &RequestMessage<R>,
-    ) -> Result<ResponseMessage<R::Response>, FlvSocketError>
+    ) -> Result<ResponseMessage<R::Response>, SocketError>
     where
         R: Request,
     {
-        self.sink.send_request(&req_msg).await?;
-
-        self.stream.next_response(&req_msg).await
+        self.sink.send_request(req_msg).await?;
+        self.stream.next_response(req_msg).await
     }
 }
 
@@ -89,7 +88,7 @@ impl FluvioSocket {
     pub async fn connect_with_connector(
         addr: &str,
         connector: &dyn TcpDomainConnector,
-    ) -> Result<Self, FlvSocketError> {
+    ) -> Result<Self, SocketError> {
         debug!("trying to connect to addr at: {}", addr);
         let (write, read, fd) = connector.connect(addr).await?;
         Ok(Self::from_stream(write, read, fd))
@@ -104,7 +103,7 @@ impl From<(FluvioSink, FluvioStream)> for FluvioSocket {
 }
 
 impl FluvioSocket {
-    pub async fn connect(addr: &str) -> Result<Self, FlvSocketError> {
+    pub async fn connect(addr: &str) -> Result<Self, SocketError> {
         let connector = DefaultDomainConnector::new();
         Self::connect_with_connector(addr, &connector).await
     }

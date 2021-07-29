@@ -358,7 +358,7 @@ impl PartitionConsumer {
                 // If error code is anything else, wrap it in an error
                 Ok(response) => {
                     let code = response.partition.error_code;
-                    return Either::Right(once(err(FluvioError::ApiError(
+                    return Either::Right(once(err(FluvioError::AdminApi(
                         fluvio_sc_schema::ApiError::Code(code, None),
                     ))));
                 }
@@ -587,7 +587,7 @@ impl ConsumerConfig {
 impl ConsumerConfigBuilder {
     pub fn build(&self) -> Result<ConsumerConfig, FluvioError> {
         let config = self.build_impl().map_err(|e| {
-            FluvioError::ConsumerConfigError(format!("Missing required config option: {}", e))
+            FluvioError::ConsumerConfig(format!("Missing required config option: {}", e))
         })?;
         Ok(config)
     }
