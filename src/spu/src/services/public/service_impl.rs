@@ -7,7 +7,7 @@ use tokio::select;
 
 use fluvio_types::event::SimpleEvent;
 use fluvio_socket::FluvioSocket;
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use fluvio_service::{call_service, FlvService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::{ErrorCode, api::RequestMessage};
@@ -38,7 +38,7 @@ impl FlvService for PublicService {
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
         socket: FluvioSocket,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         let (sink, mut stream) = socket.split();
 
         let mut s_sink = sink.as_shared();

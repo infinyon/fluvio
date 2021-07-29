@@ -170,7 +170,7 @@ impl SpuController {
         for svc_md in updates.into_iter() {
             let svc_id = svc_md.key();
             let svc_meta = svc_md.ctx().item().inner();
-            if let Some(spu_name) = SpuServiceSpec::spu_name(&svc_meta) {
+            if let Some(spu_name) = SpuServiceSpec::spu_name(svc_meta) {
                 if let Some(spu) = self.spus.store().value(spu_name).await {
                     self.apply_ingress_from_svc(spu.inner_owned(), svc_md)
                         .await?;

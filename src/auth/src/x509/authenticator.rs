@@ -66,11 +66,11 @@ impl X509Authenticator {
                 .send(&request_message)
                 .await
                 .map_err(|err| match err {
-                    fluvio_socket::FlvSocketError::IoError(source) => source,
-                    fluvio_socket::FlvSocketError::SocketClosed => {
+                    fluvio_socket::SocketError::Io(source) => source,
+                    fluvio_socket::SocketError::SocketClosed => {
                         IoError::new(IoErrorKind::BrokenPipe, "connection closed")
                     }
-                    fluvio_socket::FlvSocketError::SendFileError { .. } => {
+                    fluvio_socket::SocketError::SendFile { .. } => {
                         panic!("shoud not be doing zero copy here")
                     }
                 })?;
@@ -136,7 +136,7 @@ impl Authenticator for X509Authenticator {
         let scopes = self.scope_bindings.get_scopes(&principal);
         let authorization_request = AuthRequest::new(principal, scopes);
         let success =
-            Self::send_authorization_request(&target_tcp_stream, authorization_request).await?;
+            Self::send_authorization_request(target_tcp_stream, authorization_request).await?;
         Ok(success)
     }
 }

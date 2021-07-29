@@ -1,7 +1,7 @@
 use tracing::{debug, trace, instrument};
 
 use fluvio_socket::ExclusiveFlvSink;
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use dataplane::{ErrorCode, api::RequestMessage};
 use dataplane::fetch::{FileFetchResponse, FileFetchRequest, FilePartitionResponse, FileTopicResponse};
 use fluvio_controlplane_metadata::partition::ReplicaKey;
@@ -14,7 +14,7 @@ pub async fn handle_fetch_request(
     request: RequestMessage<FileFetchRequest>,
     ctx: DefaultSharedGlobalContext,
     sink: ExclusiveFlvSink,
-) -> Result<(), FlvSocketError> {
+) -> Result<(), SocketError> {
     let (header, fetch_request) = request.get_header_request();
     let mut fetch_response = FileFetchResponse::default();
 

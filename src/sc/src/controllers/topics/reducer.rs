@@ -113,7 +113,7 @@ impl TopicReducer {
                     .push(TopicWSAction::UpdateStatus((topic.key_owned(), status)));
 
                 // find children and delete them
-                let partitions = topic.childrens(&self.partition_store()).await;
+                let partitions = topic.childrens(self.partition_store()).await;
 
                 if partitions.is_empty() {
                     error!(

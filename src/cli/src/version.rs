@@ -19,7 +19,7 @@ impl VersionOpt {
         }
         let platform = self.format_platform_version(target).await;
         self.print("Fluvio Platform", &platform);
-        self.print("Git Commit", &env!("GIT_HASH"));
+        self.print("Git Commit", env!("GIT_HASH"));
         if let Some(os_info) = os_info() {
             self.print("OS Details", &os_info);
         }

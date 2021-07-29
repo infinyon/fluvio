@@ -1,7 +1,6 @@
 use std::path::Path;
 use std::path::PathBuf;
 use std::num::ParseIntError;
-use std::fmt;
 
 use dataplane::Offset;
 
@@ -15,29 +14,16 @@ where
     file
 }
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum OffsetError {
+    #[error("Offset does not exist")]
     NotExistent,
+    #[error("Invalid path")]
     InvalidPath,
+    #[error("Invalid logfile name")]
     InvalidLogFileName,
-    OffsetParseError(ParseIntError),
-}
-
-impl fmt::Display for OffsetError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::NotExistent => write!(f, "non existent"),
-            Self::InvalidPath => write!(f, "invalid path"),
-            Self::InvalidLogFileName => write!(f, "log file name is invalid"),
-            Self::OffsetParseError(err) => write!(f, "{}", err),
-        }
-    }
-}
-
-impl From<ParseIntError> for OffsetError {
-    fn from(error: ParseIntError) -> Self {
-        OffsetError::OffsetParseError(error)
-    }
+    #[error("Failed to parse offset")]
+    OffsetParse(#[from] ParseIntError),
 }
 
 pub fn log_path_get_offset<P>(path: P) -> Result<Offset, OffsetError>

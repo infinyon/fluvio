@@ -16,7 +16,7 @@ use fluvio_types::SpuId;
 use dataplane::api::RequestMessage;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_service::{FlvService, wait_for_request};
-use fluvio_socket::{FluvioSocket, FlvSocketError, FluvioSink};
+use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_controlplane::{
     InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
     UpdateSpuRequest, ReplicaRemovedRequest,
@@ -50,7 +50,7 @@ impl FlvService for ScInternalService {
         self: Arc<Self>,
         context: SharedContext,
         socket: FluvioSocket,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();
 
@@ -120,10 +120,10 @@ impl FlvService for ScInternalService {
 async fn dispatch_loop(
     context: SharedContext,
     spu_id: SpuId,
-    mut api_stream: impl Stream<Item = Result<InternalScRequest, FlvSocketError>> + Unpin,
+    mut api_stream: impl Stream<Item = Result<InternalScRequest, SocketError>> + Unpin,
     mut sink: FluvioSink,
     health_sender: Sender<SpuAction>,
-) -> Result<(), FlvSocketError> {
+) -> Result<(), SocketError> {
     let mut time_left = Duration::from_secs(HEALTH_DURATION);
 
     let mut spu_spec_listener = context.spus().change_listener();
@@ -278,7 +278,7 @@ async fn send_spu_spec_changes(
     listener: &mut K8ChangeListener<SpuSpec>,
     sink: &mut FluvioSink,
     spu_id: SpuId,
-) -> Result<(), FlvSocketError> {
+) -> Result<(), SocketError> {
     if !listener.has_change() {
         debug!("changes is empty, skipping");
         return Ok(());
@@ -326,7 +326,7 @@ async fn send_replica_spec_changes(
     listener: &mut K8ChangeListener<PartitionSpec>,
     sink: &mut FluvioSink,
     spu_id: SpuId,
-) -> Result<(), FlvSocketError> {
+) -> Result<(), SocketError> {
     use crate::stores::ChangeFlag;
 
     if !listener.has_change() {

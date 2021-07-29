@@ -7,7 +7,7 @@ use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::AdminRequest;
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
@@ -125,7 +125,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    async fn send_receive<R>(&self, request: R) -> Result<R::Response, FlvSocketError>
+    async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
     where
         R: AdminRequest + Send + Sync,
     {

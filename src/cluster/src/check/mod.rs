@@ -351,7 +351,7 @@ impl ClusterCheck for K8Version {
 
         // Trim off the `v` in v0.1.2 to get just "0.1.2"
         let server_version = &server_version[1..];
-        if Version::parse(&server_version)? < Version::parse(KUBE_VERSION)? {
+        if Version::parse(server_version)? < Version::parse(KUBE_VERSION)? {
             return Ok(CheckStatus::fail(
                 UnrecoverableCheck::IncompatibleKubectlVersion {
                     installed: server_version.to_string(),

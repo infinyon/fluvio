@@ -1,16 +1,7 @@
-use std::fmt;
-
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum PartitionError {
+    #[error("Invalid partition syntax: {0}")]
     InvalidSyntax(String),
-}
-
-impl fmt::Display for PartitionError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::InvalidSyntax(msg) => write!(f, "invalid partition syntax: {}", msg),
-        }
-    }
 }
 
 // returns a tuple (topic_name, idx)

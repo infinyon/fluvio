@@ -20,7 +20,7 @@ use fluvio_auth::Authorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::FluvioSocket;
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use fluvio_service::FlvService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
@@ -52,7 +52,7 @@ where
         self: Arc<Self>,
         ctx: Self::Context,
         mut socket: FluvioSocket,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         let auth_context = ctx
             .auth
             .create_auth_context(&mut socket)

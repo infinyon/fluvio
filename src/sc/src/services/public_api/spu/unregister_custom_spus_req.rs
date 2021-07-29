@@ -54,7 +54,7 @@ pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
 
             // spu-name must exist
             if let Some(spu) = spu_store.value(&spu_name).await {
-                un_register_custom_spu(&auth_ctx, spu.inner_owned()).await
+                un_register_custom_spu(auth_ctx, spu.inner_owned()).await
             } else {
                 // spu does not exist
                 Status::new(
@@ -69,7 +69,7 @@ pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
 
             // spu-id must exist
             if let Some(spu) = spu_store.get_by_id(spu_id).await {
-                un_register_custom_spu(&auth_ctx, spu).await
+                un_register_custom_spu(auth_ctx, spu).await
             } else {
                 // spu does not exist
                 Status::new(

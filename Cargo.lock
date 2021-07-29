@@ -1802,6 +1802,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "structopt",
+ "thiserror",
  "tokio",
  "toml",
  "tracing",
@@ -1843,6 +1844,7 @@ dependencies = [
  "pin-utils",
  "serde",
  "structopt",
+ "thiserror",
  "tracing",
 ]
 
@@ -1938,6 +1940,7 @@ version = "0.2.4"
 dependencies = [
  "event-listener",
  "fluvio-future",
+ "thiserror",
  "tokio",
  "tracing",
  "tracing-futures",

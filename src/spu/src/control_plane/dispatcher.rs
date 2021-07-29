@@ -19,7 +19,7 @@ use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
 use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::api::RequestMessage;
-use fluvio_socket::{FluvioSocket, FlvSocketError, FluvioSink};
+use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
 use flv_util::actions::Actions;
 
@@ -35,8 +35,10 @@ use super::message_sink::{SharedStatusUpdate};
 struct DispatcherCounter {
     pub replica_changes: u64, // replica changes received from sc
     pub spu_changes: u64,     // spu changes received from sc
-    pub status_send: u64,     // number of status send to sc
-    pub reconnect: u64,       // number of reconnect to sc
+    // TODO remove dead code: https://github.com/infinyon/fluvio/issues/1332
+    #[allow(dead_code)]
+    pub status_send: u64, // number of status send to sc
+    pub reconnect: u64, // number of reconnect to sc
 }
 
 /// Controller for handling connection to SC
@@ -136,7 +138,7 @@ impl ScDispatcher<FileReplica> {
             socket = socket.id()
         )
     )]
-    async fn request_loop(&mut self, socket: FluvioSocket) -> Result<(), FlvSocketError> {
+    async fn request_loop(&mut self, socket: FluvioSocket) -> Result<(), SocketError> {
         use async_io::Timer;
 
         /// Interval between each send to SC
@@ -300,7 +302,7 @@ impl ScDispatcher<FileReplica> {
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
         sc_sink: &mut FluvioSink,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         let (_, request) = req_msg.get_header_request();
 
         debug!( message = ?request,"replica request");
@@ -356,7 +358,7 @@ impl ScDispatcher<FileReplica> {
         &self,
         actions: Actions<SpecChange<Replica>>,
         sc_sink: &mut FluvioSink,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         trace!( actions = ?actions,"replica actions");
 
         if actions.count() == 0 {
@@ -477,7 +479,7 @@ impl ScDispatcher<FileReplica> {
         &self,
         replica: Replica,
         sc_sink: &mut FluvioSink,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         use fluvio_controlplane::ReplicaRemovedRequest;
 
         // try to send message to leader controller if still exists

@@ -23,7 +23,7 @@ use dataplane::record::Record;
 use dataplane::Offset;
 use dataplane::fixture::BatchProducer;
 
-use fluvio_socket::{FluvioSocket, FlvSocketError};
+use fluvio_socket::{FluvioSocket, SocketError};
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
 use fluvio_storage::config::ConfigOption;
@@ -79,7 +79,7 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
 }
 
 async fn handle_response(socket: &mut FluvioSocket, replica: &FileReplica) {
-    let request: Result<RequestMessage<FileFetchRequest>, FlvSocketError> = socket
+    let request: Result<RequestMessage<FileFetchRequest>, SocketError> = socket
         .get_mut_stream()
         .next_request_item()
         .await

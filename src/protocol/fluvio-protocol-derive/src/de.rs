@@ -36,8 +36,8 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             } else {
                 Ident::new("u8", Span::call_site())
             };
-            let enum_tokens = generate_decode_enum_impl(&kf_enum.props, &int_type, ident, &attrs);
-            let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, &attrs);
+            let enum_tokens = generate_decode_enum_impl(&kf_enum.props, &int_type, ident, attrs);
+            let try_enum = generate_try_enum_from_kf_enum(&kf_enum.props, &int_type, ident, attrs);
             let res = quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {

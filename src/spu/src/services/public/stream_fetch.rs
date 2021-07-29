@@ -8,7 +8,7 @@ use tokio::select;
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
-use fluvio_socket::{ExclusiveFlvSink, FlvSocketError};
+use fluvio_socket::{ExclusiveFlvSink, SocketError};
 use dataplane::{
     ErrorCode,
     api::{RequestMessage, RequestHeader},
@@ -52,7 +52,7 @@ impl StreamFetchHandler {
         ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
         end_event: Arc<SimpleEvent>,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         // first get receiver to offset update channel to we don't missed events
 
         let (header, msg) = request.get_header_request();
@@ -144,15 +144,15 @@ impl StreamFetchHandler {
         }
     }
 
-    async fn inner_process(&mut self, starting_offset: Offset) -> Result<(), FlvSocketError> {
+    async fn inner_process(&mut self, starting_offset: Offset) -> Result<(), SocketError> {
         // initialize smart stream module here instead of beginning because WASM module is not thread safe
         // and can't be send across Send
         let module = if !self.sm_bytes.is_empty() {
             let module = self
                 .sm_engine
                 .create_module_from_binary(&self.sm_bytes)
-                .map_err(|err| -> FlvSocketError {
-                    FlvSocketError::IoError(IoError::new(
+                .map_err(|err| -> SocketError {
+                    SocketError::Io(IoError::new(
                         ErrorKind::Other,
                         format!("module loading error {}", err),
                     ))
@@ -274,7 +274,7 @@ impl StreamFetchHandler {
         &mut self,
         offset: Offset,
         module_option: Option<&SmartStreamModule>,
-    ) -> Result<(Offset, bool), FlvSocketError> {
+    ) -> Result<(Offset, bool), SocketError> {
         let now = Instant::now();
         let mut file_partition_response = FilePartitionResponse {
             partition_index: self.replica.partition,

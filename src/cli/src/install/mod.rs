@@ -92,13 +92,13 @@ async fn fetch_package_file(
     target: &Target,
 ) -> Result<Vec<u8>, CliError> {
     // Download the package file from the package registry
-    let download_request = agent.request_release_download(&id, target)?;
+    let download_request = agent.request_release_download(id, target)?;
     debug!(url = %download_request.url(), "Requesting package download:");
     let response = crate::http::execute(download_request).await?;
     let package_file = agent.release_from_response(response).await?;
 
     // Download the package checksum from the package registry
-    let checksum_request = agent.request_release_checksum(&id, target)?;
+    let checksum_request = agent.request_release_checksum(id, target)?;
     let response = crate::http::execute(checksum_request).await?;
     let package_checksum = agent.checksum_from_response(response).await?;
 

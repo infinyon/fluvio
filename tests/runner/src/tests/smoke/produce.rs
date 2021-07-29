@@ -18,7 +18,7 @@ pub async fn produce_message(
 ) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let lock = test_driver.read().await;
-    let offsets = offsets::find_offsets(&*lock, &test_case).await;
+    let offsets = offsets::find_offsets(&*lock, test_case).await;
     drop(lock);
 
     let use_cli = test_case.option.use_cli;

@@ -317,7 +317,7 @@ where
         let followers = self.followers.read().await;
         debug!(?leader_offset);
         for follower in &self.replica.replicas {
-            if let Some(follower_info) = followers.get(&follower) {
+            if let Some(follower_info) = followers.get(follower) {
                 debug!(follower, ?follower_info);
                 if follower_info.is_valid() && !follower_info.is_same(&leader_offset) {
                     debug!(follower, "notify");
@@ -912,7 +912,7 @@ mod test_leader {
 
         // write fake recordset to ensure leo = 10
         leader
-            .write_record_set(&mut create_recordset(10), &notifier)
+            .write_record_set(&mut create_recordset(10), notifier)
             .await
             .expect("write");
 
@@ -925,7 +925,7 @@ mod test_leader {
         // handle invalidate offset update from follower
         assert!(
             !leader
-                .update_states_from_followers(5001, OffsetInfo { leo: 5, hw: 20 }, &notifier)
+                .update_states_from_followers(5001, OffsetInfo { leo: 5, hw: 20 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 0);
@@ -934,7 +934,7 @@ mod test_leader {
         // update from invalid follower
         assert!(
             !leader
-                .update_states_from_followers(5004, OffsetInfo { leo: 6, hw: 11 }, &notifier)
+                .update_states_from_followers(5004, OffsetInfo { leo: 6, hw: 11 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 0);
@@ -942,7 +942,7 @@ mod test_leader {
         // handle newer leo
         assert!(
             !leader
-                .update_states_from_followers(5001, OffsetInfo { leo: 20, hw: 0 }, &notifier)
+                .update_states_from_followers(5001, OffsetInfo { leo: 20, hw: 0 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 0);
@@ -951,7 +951,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=0,hw=0");
         assert!(
             leader
-                .update_states_from_followers(5001, OffsetInfo { leo: 0, hw: 0 }, &notifier)
+                .update_states_from_followers(5001, OffsetInfo { leo: 0, hw: 0 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 0); // no change on hw since we just updated the update true follower's state
@@ -963,7 +963,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=6,hw=0");
         assert!(
             leader
-                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 }, &notifier)
+                .update_states_from_followers(5001, OffsetInfo { leo: 6, hw: 0 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 0);
@@ -973,7 +973,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=10,hw=0");
         assert!(
             leader
-                .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 0 }, &notifier)
+                .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 0 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 0);
@@ -987,7 +987,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=0,hw=0");
         assert!(
             leader
-                .update_states_from_followers(5002, OffsetInfo { leo: 0, hw: 0 }, &notifier)
+                .update_states_from_followers(5002, OffsetInfo { leo: 0, hw: 0 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 0);
@@ -997,7 +997,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=6,hw=0");
         assert!(
             leader
-                .update_states_from_followers(5002, OffsetInfo { leo: 6, hw: 0 }, &notifier)
+                .update_states_from_followers(5002, OffsetInfo { leo: 6, hw: 0 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 6);
@@ -1008,7 +1008,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=10,hw=0");
         assert!(
             leader
-                .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 0 }, &notifier)
+                .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 0 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 10);
@@ -1019,7 +1019,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5002 with leo=10,hw=10");
         assert!(
             leader
-                .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 10 }, &notifier)
+                .update_states_from_followers(5002, OffsetInfo { leo: 10, hw: 10 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 10);
@@ -1030,7 +1030,7 @@ mod test_leader {
         debug!(offsets = ?leader.followers_info().await,"updating 5001 with leo=10,hw=10");
         assert!(
             leader
-                .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 10 }, &notifier)
+                .update_states_from_followers(5001, OffsetInfo { leo: 10, hw: 10 }, notifier)
                 .await
         );
         assert_eq!(leader.hw(), 10);

@@ -91,7 +91,7 @@ impl ProduceOpt {
                 let batches: Vec<_> = lines.chunks(DEFAULT_BATCH_SIZE).collect();
                 for batch in batches {
                     let batch: Vec<_> = batch.iter().map(|it| &**it).collect();
-                    self.produce_strs(&producer, &batch).await?;
+                    self.produce_strs(producer, &batch).await?;
                 }
             }
             None => {
@@ -100,7 +100,7 @@ impl ProduceOpt {
                     eprint!("> ");
                 }
                 while let Some(Ok(line)) = lines.next() {
-                    self.produce_strs(&producer, &[&line]).await?;
+                    self.produce_strs(producer, &[&line]).await?;
                     if self.interactive_mode() {
                         print_cli_ok!();
                         eprint!("> ");

@@ -21,7 +21,7 @@ pub struct SmartStreamModule(pub(crate) Module);
 
 impl SmartStreamModule {
     pub fn create_filter(&self, engine: &SmartStreamEngine) -> Result<SmartStreamFilter> {
-        let filter = SmartStreamFilter::new(&engine, self)?;
+        let filter = SmartStreamFilter::new(engine, self)?;
         Ok(filter)
     }
 }

@@ -15,7 +15,7 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
             let ident = &kf_struct.struct_ident;
             let (impl_generics, ty_generics, where_clause) = kf_struct.generics.split_for_impl();
             let encoded_field_tokens = parse_struct_props_encoding(&kf_struct.props, ident);
-            let size_field_tokens = parse_struct_props_size(&kf_struct.props, &ident);
+            let size_field_tokens = parse_struct_props_size(&kf_struct.props, ident);
             quote! {
                 impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
                     fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {

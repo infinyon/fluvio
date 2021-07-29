@@ -1,5 +1,4 @@
 use std::io::Error as IoError;
-use std::fmt;
 use std::path::Path;
 
 use tracing::warn;
@@ -12,41 +11,22 @@ use crate::batch_header::BatchHeaderStream;
 use crate::util::log_path_get_offset;
 use crate::util::OffsetError;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum LogValidationError {
+    #[error(transparent)]
+    Io(#[from] IoError),
+    #[error("Invalid extension")]
     InvalidExtension,
-    LogNameError(OffsetError),
-    IoError(IoError),
-    BaseOffError,
-    OffsetNotOrderedError,
+    #[error("Invalid log name")]
+    LogName(#[from] OffsetError),
+    #[error("Base off error")]
+    BaseOff,
+    #[error("Offset not ordered")]
+    OffsetNotOrdered,
+    #[error("No batches")]
     NoBatches,
+    #[error("Batch already exists")]
     ExistingBatch,
-}
-
-impl fmt::Display for LogValidationError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::InvalidExtension => write!(f, "invalid extension"),
-            Self::LogNameError(err) => write!(f, "{}", err),
-            Self::IoError(err) => write!(f, "{}", err),
-            Self::BaseOffError => write!(f, "base off error"),
-            Self::OffsetNotOrderedError => write!(f, "offset not order"),
-            Self::NoBatches => write!(f, "no batches"),
-            Self::ExistingBatch => write!(f, "batch exist"),
-        }
-    }
-}
-
-impl From<OffsetError> for LogValidationError {
-    fn from(error: OffsetError) -> Self {
-        LogValidationError::LogNameError(error)
-    }
-}
-
-impl From<IoError> for LogValidationError {
-    fn from(error: IoError) -> Self {
-        LogValidationError::IoError(error)
-    }
 }
 
 /// validate the file and find last offset
@@ -86,7 +66,7 @@ where
                 "batch base offset: {} is less than base offset: {} path: {:#?}",
                 batch_base_offset, base_offset, file_name
             );
-            return Err(LogValidationError::BaseOffError);
+            return Err(LogValidationError::BaseOff);
         }
 
         if batch_base_offset <= end_offset {
@@ -94,7 +74,7 @@ where
                 "batch offset is  {} is less than prev offset  {}",
                 batch_base_offset, end_offset
             );
-            return Err(LogValidationError::OffsetNotOrderedError);
+            return Err(LogValidationError::OffsetNotOrdered);
         }
 
         end_offset = batch_base_offset + offset_delta as Offset;

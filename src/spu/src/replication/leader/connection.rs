@@ -5,7 +5,7 @@ use futures_util::stream::StreamExt;
 use tracing::instrument;
 
 use fluvio_storage::OffsetInfo;
-use fluvio_socket::{FluvioSink, FlvSocketError, FluvioStream};
+use fluvio_socket::{FluvioSink, SocketError, FluvioStream};
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
@@ -65,7 +65,7 @@ impl FollowerHandler {
         &mut self,
         mut sink: FluvioSink,
         mut stream: FluvioStream,
-    ) -> Result<(), FlvSocketError> {
+    ) -> Result<(), SocketError> {
         use tokio::select;
 
         let mut api_stream = stream.api_stream::<LeaderPeerRequest, LeaderPeerApiEnum>();
@@ -124,7 +124,7 @@ impl FollowerHandler {
 
     // updates form other SPU trigger this
     #[instrument(skip(self))]
-    async fn update_from_leaders(&mut self, sink: &mut FluvioSink) -> Result<(), FlvSocketError> {
+    async fn update_from_leaders(&mut self, sink: &mut FluvioSink) -> Result<(), SocketError> {
         let replicas = self.spu_update.drain_replicas().await;
 
         if replicas.is_empty() {
@@ -165,10 +165,7 @@ impl FollowerHandler {
     }
 
     #[instrument(skip(self, request))]
-    async fn update_from_follower(
-        &self,
-        request: UpdateOffsetRequest,
-    ) -> Result<(), FlvSocketError> {
+    async fn update_from_follower(&self, request: UpdateOffsetRequest) -> Result<(), SocketError> {
         for update in request.replicas {
             debug!(?update, "request");
             let replica_key = update.replica;

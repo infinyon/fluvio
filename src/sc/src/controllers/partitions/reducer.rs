@@ -202,10 +202,7 @@ impl PartitionReducer {
                     for replica_status in partition_kv.status.replica_iter() {
                         if replica_status.spu == online_leader_spu_id
                             && policy
-                                .potential_leader_score(
-                                    &replica_status,
-                                    &partition_kv.status.leader,
-                                )
+                                .potential_leader_score(replica_status, &partition_kv.status.leader)
                                 .is_suitable()
                         {
                             info!(

@@ -220,7 +220,7 @@ impl TopicNextState {
                         "assigned topic: {} resolution: {:#?} ignoring",
                         topic.key, topic.status.resolution
                     );
-                    let mut next_state = TopicNextState::same_next_state(&topic);
+                    let mut next_state = TopicNextState::same_next_state(topic);
                     if next_state.resolution == TopicResolution::Provisioned {
                         next_state.partitions = topic.create_new_partitions(partition_store).await;
                     }
@@ -246,9 +246,9 @@ pub async fn generate_replica_map_for_topic(
 
     // generate partition map (with our without rack assignment)
     if param.ignore_rack_assignment || in_rack_count == 0 {
-        generate_partitions_without_rack(&spus, &param, start_index).await
+        generate_partitions_without_rack(spus, param, start_index).await
     } else {
-        generate_partitions_with_rack_assignment(&spus, &param, start_index).await
+        generate_partitions_with_rack_assignment(spus, param, start_index).await
     }
 }
 
@@ -261,7 +261,7 @@ async fn generate_partitions_with_rack_assignment(
     start_index: i32,
 ) -> ReplicaMap {
     let mut partition_map = BTreeMap::new();
-    let rack_map = SpuAdminStore::live_spu_rack_map_sorted(&spus).await;
+    let rack_map = SpuAdminStore::live_spu_rack_map_sorted(spus).await;
     let spu_list = SpuAdminStore::online_spus_in_rack(&rack_map);
     let spu_cnt = spus.online_spu_count().await;
 

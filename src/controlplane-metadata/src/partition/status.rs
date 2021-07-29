@@ -125,7 +125,7 @@ impl PartitionStatus {
             // only do for live replicas
             if online.contains(&candidate.spu) {
                 if let ElectionScoring::Score(score) =
-                    policy.potential_leader_score(&candidate, &self.leader)
+                    policy.potential_leader_score(candidate, &self.leader)
                 {
                     if candiate_spu.is_some() {
                         if score < best_score {

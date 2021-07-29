@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use thiserror::Error;
 
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
 use crate::config::ConfigError;
 use semver::Version;
@@ -18,7 +18,7 @@ pub enum FluvioError {
     #[error(transparent)]
     IoError(#[from] IoError),
     #[error("Fluvio socket error")]
-    FlvSocketError(#[from] FlvSocketError),
+    FlvSocketError(#[from] SocketError),
     #[error("Fluvio SC schema error")]
     ApiError(#[from] ApiError),
     #[error("Fluvio config error")]

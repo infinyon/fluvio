@@ -20,7 +20,7 @@ use fluvio_dataplane_protocol::fetch::{
     DefaultFetchRequest, FileFetchResponse, FileFetchRequest, FilePartitionResponse,
     FileTopicResponse,
 };
-use fluvio_socket::FlvSocketError;
+use fluvio_socket::SocketError;
 
 use flv_util::fixture::ensure_clean_file;
 use fluvio_socket::FluvioSocket;
@@ -53,7 +53,7 @@ async fn setup_batch_file() -> Result<(), IoError> {
     Ok(())
 }
 
-async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
+async fn test_server(addr: &str) -> Result<(), SocketError> {
     let listener = TcpListener::bind(addr).await?;
     debug!("server is running");
     let mut incoming = listener.incoming();
@@ -62,7 +62,7 @@ async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
     let incoming_stream = incoming_stream.expect("next").expect("unwrap again");
     let mut socket: FluvioSocket = incoming_stream.into();
 
-    let fetch_request: Result<RequestMessage<FileFetchRequest>, FlvSocketError> = socket
+    let fetch_request: Result<RequestMessage<FileFetchRequest>, SocketError> = socket
         .get_mut_stream()
         .next_request_item()
         .await
@@ -98,7 +98,7 @@ async fn test_server(addr: &str) -> Result<(), FlvSocketError> {
     Ok(())
 }
 
-async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
+async fn setup_client(addr: &str) -> Result<(), SocketError> {
     sleep(Duration::from_millis(50)).await;
     debug!("client: trying to connect");
     let mut socket = FluvioSocket::connect(addr).await?;
@@ -126,7 +126,7 @@ async fn setup_client(addr: &str) -> Result<(), FlvSocketError> {
 
 /// test server where it is sending out file copy
 #[test_async]
-async fn test_save_fetch() -> Result<(), FlvSocketError> {
+async fn test_save_fetch() -> Result<(), SocketError> {
     // create fetch and save
     setup_batch_file().await?;
 
