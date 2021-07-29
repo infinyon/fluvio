@@ -21,7 +21,7 @@ pub enum FluvioError {
     #[error("Fluvio SC schema error")]
     ScSchema(#[from] ApiError),
     #[error("Fluvio config error")]
-    Config(#[from] ConfigError),
+    ClientConfig(#[from] ConfigError),
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),
     #[error("Cluster (with platform version {cluster_version}) is older than the minimum required version {client_minimum_version}")]
