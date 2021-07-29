@@ -61,7 +61,7 @@ build-cli-minimal: install_rustup_target
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-build-test:	build-cluster build-cli
+build-test:	install_rustup_target helm_pkg
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
@@ -165,8 +165,8 @@ test-rbac:
 ifeq (${CI},true)
 build-test-ci:
 else
-# When not in CI (i.e. development), build before testing
-build-test-ci: build-test
+# When not in CI (i.e. development), need build cli and cluster
+build-test-ci: build-test build-cli build-cluster
 endif
 
 

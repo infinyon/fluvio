@@ -34,6 +34,7 @@ jobs:
     env:
       SLEEP: 10
       TOPIC: foobar
+      FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
       - name: Install Minikube for Github runner
