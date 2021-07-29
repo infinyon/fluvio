@@ -252,7 +252,7 @@ async fn validate_consume_message_api(
                         bytes.len()
                     );
 
-                    validate_message(producer_iteration, offset, test_case, &bytes);
+                    validate_message(producer_iteration, offset, test_case, bytes);
                     info!(
                         "2nd fetch total records: {}, validated offset: {}",
                         total_records, offset
