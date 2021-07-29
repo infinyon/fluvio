@@ -1727,6 +1727,7 @@ dependencies = [
 name = "fluvio-smartstream"
 version = "0.2.0"
 dependencies = [
+ "eyre",
  "fluvio-dataplane-protocol",
  "fluvio-smartstream-derive",
 ]

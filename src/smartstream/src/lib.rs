@@ -4,6 +4,11 @@ pub use dataplane::record::{Record, RecordData};
 #[cfg(feature = "derive")]
 pub use fluvio_smartstream_derive::smartstream;
 
+pub const ENCODING_ERROR: i32 = -1;
+
+pub use eyre::Error;
+pub type Result<T> = eyre::Result<T>;
+
 pub mod memory {
     /// Allocate memory into the module's linear memory
     /// and return the offset to the start of the block.
