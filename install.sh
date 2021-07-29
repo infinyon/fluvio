@@ -70,7 +70,7 @@ assert_supported_cluster_target() {
     esac
 
     say "🥈 Target '${_target}' is not a Tier 1 platform target"
-    say "⏭  Skipping installation of cluster executable fluvio-run"
+    say "⏭    Skipping installation of cluster executable fluvio-run"
     return 1
 }
 
