@@ -59,11 +59,12 @@ impl InstallOpt {
 
         // After any "install" command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
-        let maybe_latest = check_update_available(&agent, false).await?;
-        if let Some(latest_version) = maybe_latest {
-            prompt_available_update(&latest_version);
+        let update_result = check_update_available(&agent, false).await;
+        if let Ok(maybe_latest) = update_result {
+            if let Some(latest_version) = maybe_latest {
+                prompt_available_update(&latest_version);
+            }
         }
-
         Ok(())
     }
 
