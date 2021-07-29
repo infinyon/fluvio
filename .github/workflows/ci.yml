@@ -572,15 +572,17 @@ jobs:
           name: fluvio-k8-logs
           path: /tmp/flv_sc.log
 
-  # After all tests have passed, push docker images
+  # Ensure all checks, tests are perform and all binaries are built
+  # After this, we are committed for release
   docker_push:
     name: Publish Docker Image
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - check
-      - build_primary_binaries
       - check_wasm
       - check_windows
+      - build_primary_binaries 
+      - build_binaries
       - local_cluster_test
       - k8_cluster_test
       #- k8_upgrade_test
@@ -612,7 +614,8 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: docker_push
+    needs: 
+      - docker_push
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -652,7 +655,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs: 
       - bump_github_release
-      - build_binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
