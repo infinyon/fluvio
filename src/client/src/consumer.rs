@@ -358,7 +358,7 @@ impl PartitionConsumer {
                 // If error code is anything else, wrap it in an error
                 Ok(response) => {
                     let code = response.partition.error_code;
-                    return Either::Right(once(err(FluvioError::ScSchema(
+                    return Either::Right(once(err(FluvioError::AdminApi(
                         fluvio_sc_schema::ApiError::Code(code, None),
                     ))));
                 }

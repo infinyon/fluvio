@@ -168,7 +168,7 @@ impl ConsumeOpt {
             let result: std::result::Result<Record, _> = result;
             let record = match result {
                 Ok(record) => record,
-                Err(FluvioError::ScSchema(ApiError::Code(code, _))) => {
+                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
                     eprintln!("{}", code.to_sentence());
                     continue;
                 }

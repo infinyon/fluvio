@@ -18,8 +18,8 @@ pub enum FluvioError {
     SPUNotFound(i32),
     #[error("Fluvio socket error")]
     Socket(#[from] SocketError),
-    #[error("Fluvio SC schema error")]
-    ScSchema(#[from] ApiError),
+    #[error("Fluvio controlplane error")]
+    AdminApi(#[from] ApiError),
     #[error("Fluvio config error")]
     ClientConfig(#[from] ConfigError),
     #[error("Attempted to create negative offset: {0}")]
