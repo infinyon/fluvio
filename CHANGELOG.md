@@ -8,6 +8,11 @@
 * Add apply method to `StoreContext`. ([#1289](https://github.com/infinyon/fluvio/pull/1289))
 * Build M1 mac CLI ([#132](https://github.com/infinyon/fluvio/pull/1312))
 * Use inline helm chart ([#1292](https://github.com/infinyon/fluvio/pull/1292))
+* Update `ConsumerConfig` with more idiomatic builder ([#1271](https://github.com/infinyon/fluvio/issues/1271))
+* Improve `install.sh` to run on more targets ([#1269](https://github.com/infinyon/fluvio/issues/1269))
+* Make `fluvio-cloud` an optional part of installation based on target support ([#1317](https://github.com/infinyon/fluvio/issues/1317))
+* Remove `#[deprecated]` items from crates ([#1299](https://github.com/infinyon/fluvio/issues/1299))
+* Bump `MINIMUM_PLATFORM_VERSION` to `0.9.0` ([#1310](https://github.com/infinyon/fluvio/issues/1310))
 
 ## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
