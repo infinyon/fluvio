@@ -46,7 +46,7 @@ thiserror = "1"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.3", features = ["events"], path = "../types" }
-fluvio-storage = { version = "0.5.0", path = "../storage" }
+fluvio-storage = { version = "0.4", path = "../storage" }
 fluvio-controlplane = { version = "0.8.0", path = "../controlplane" }
 fluvio-controlplane-metadata = { version = "0.10.0", path = "../controlplane-metadata" }
 fluvio-spu-schema = { version = "0.7.0", path = "../spu-schema", features = ["file"]}
