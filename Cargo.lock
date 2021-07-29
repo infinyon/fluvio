@@ -1514,8 +1514,6 @@ dependencies = [
 [[package]]
 name = "fluvio-future"
 version = "0.3.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2ffaf3160b66ced37e2f1dcb073b07b3a3a3544a77bf172c94d47f44843d540f"
 dependencies = [
  "async-fs",
  "async-io",
@@ -1906,8 +1904,6 @@ dependencies = [
 [[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c18fef80a26d3533f4fcbc95ff51cfd161f975f544b48e423368fa69aadc478e"
 dependencies = [
  "proc-macro2",
  "quote",
