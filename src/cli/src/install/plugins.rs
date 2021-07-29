@@ -38,7 +38,24 @@ impl InstallOpt {
             return Ok(());
         }
 
-        self.install_plugin(&agent).await?;
+        let result = self.install_plugin(&agent).await;
+        match result {
+            Ok(_) => (),
+            Err(CliError::IndexError(fluvio_index::Error::MissingTarget(target))) => {
+                install_println(format!(
+                    "❕ Package '{}' is not available for target {}, skipping",
+                    self.package.name(),
+                    target
+                ));
+                install_println("❕ Consider filing an issue to add support for this platform using the link below! 👇");
+                install_println(format!(
+                    "❕   https://github.com/infinyon/fluvio/issues/new?title=Support+fluvio-cloud+on+target+{}",
+                    target
+                ));
+                return Ok(());
+            }
+            Err(e) => return Err(e),
+        }
 
         // After any "install" command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
@@ -50,7 +67,7 @@ impl InstallOpt {
         Ok(())
     }
 
-    async fn install_plugin(self, agent: &HttpAgent) -> Result<(), CliError> {
+    async fn install_plugin(&self, agent: &HttpAgent) -> Result<(), CliError> {
         let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
@@ -61,16 +78,16 @@ impl InstallOpt {
                     &self.package
                 ));
                 let version = version.clone();
-                self.package.into_versioned(version)
+                self.package.clone().into_versioned(version)
             }
             None => {
-                let id = self.package;
+                let id = &self.package;
                 install_println(format!(
                     "🎣 Fetching latest version for package: {}...",
                     &id
                 ));
                 let version = fetch_latest_version(agent, &id, &target, self.develop).await?;
-                let id = id.into_versioned(version);
+                let id = id.clone().into_versioned(version);
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
                     &id
