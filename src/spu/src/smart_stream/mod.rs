@@ -2,9 +2,11 @@ use std::sync::Mutex;
 use anyhow::Result;
 use wasmtime::{Memory, Store, Engine, Module};
 use crate::smart_stream::filter::SmartStreamFilter;
+use crate::smart_stream::map::SmartStreamMap;
 
 mod memory;
 pub mod filter;
+pub mod map;
 pub mod file_batch;
 
 #[derive(Default)]
@@ -24,6 +26,16 @@ impl SmartStreamModule {
         let filter = SmartStreamFilter::new(&engine, self)?;
         Ok(filter)
     }
+
+    pub fn create_map(&self, engine: &SmartStreamEngine) -> Result<SmartStreamMap> {
+        let map = SmartStreamMap::new(&engine, self)?;
+        Ok(map)
+    }
+}
+
+pub enum SmartStream {
+    Filter(SmartStreamFilter),
+    Map(SmartStreamMap),
 }
 
 #[derive(Clone)]
