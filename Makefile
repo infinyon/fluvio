@@ -149,7 +149,7 @@ upgrade-test:
 else
 # When not in CI (i.e. development), load the dev k8 image before running test
 upgrade-test: build_k8_image
-	DEBUG=true ./tests/upgrade-test.sh
+	./tests/upgrade-test.sh
 endif
 
 

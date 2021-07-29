@@ -167,11 +167,11 @@ function validate_upgrade_cluster_to_prerelease() {
         exit 1
     fi
 
-    echo "Validate deleting topic created by v${STABLE} CLI"
+    #echo "Validate deleting topic created by v${STABLE} CLI"
     $FLUVIO_BIN_ABS_PATH topic delete ${STABLE_TOPIC} 
 
-    echo "Validate deleting topic created by v${TARGET_VERSION} CLI"
-    $FLUVIO_BIN_ABS_PATH topic delete ${PRERELEASE_TOPIC} 
+    # echo "Validate deleting topic created by v${TARGET_VERSION} CLI"
+    #$FLUVIO_BIN_ABS_PATH topic delete ${PRERELEASE_TOPIC} 
 }
 
 # Create 2 base data files and calculate checksums for the expected states of each of our testing topics
