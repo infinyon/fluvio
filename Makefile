@@ -61,7 +61,7 @@ build-cli-minimal: install_rustup_target
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-build-test:	
+build-test:	install_rustup_target
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
