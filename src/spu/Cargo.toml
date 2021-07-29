@@ -51,7 +51,7 @@ fluvio-controlplane = { version = "0.8.0", path = "../controlplane" }
 fluvio-controlplane-metadata = { version = "0.10.0", path = "../controlplane-metadata" }
 fluvio-spu-schema = { version = "0.7.0", path = "../spu-schema", features = ["file"]}
 fluvio-protocol = { path = "../protocol", version = "0.6" }
-fluvio-socket = { path = "../socket", version = "0.8.1", features = ["file"] }
+fluvio-socket = { path = "../socket", version = "0.9", features = ["file"] }
 dataplane = { version = "0.6.0", path = "../dataplane-protocol", package = "fluvio-dataplane-protocol" , features=["file"]}
 fluvio-service = { path = "../service", version = "0.6.0" }
 flv-tls-proxy = { version = "0.5.0" }
