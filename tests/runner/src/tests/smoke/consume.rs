@@ -158,7 +158,6 @@ async fn validate_consume_message_api(
 
 
                         if total_records == producer_iteration {
-                            println!("<<consume test done for: {} >>>>", topic_name);
                             println!("consume message validated!, records: {}",total_records);
                             break;
                         }
@@ -173,28 +172,29 @@ async fn validate_consume_message_api(
         }
     }
 
-    // wait 15 seconds to get status and ensure replication is done
-    sleep(Duration::from_secs(15)).await;
-
-    let lock = test_driver.write().await;
-    let admin = lock.client.admin().await;
-    let partitions = admin
-        .list::<PartitionSpec, _>(vec![])
-        .await
-        .expect("partitions");
-    drop(lock);
-
-    assert_eq!(partitions.len(), 1);
-
-    let test_topic = &partitions[0];
-    let status = &test_topic.status;
-    let leader = &status.leader;
-
-    assert_eq!(leader.leo, base_offset + producer_iteration as i64);
-    println!("status: {:#?}", status);
-
     let replication = test_case.environment.replication;
     if replication > 1 {
+        println!("waiting 5 seconds to verify replication status...");
+        // wait 5 seconds to get status and ensure replication is done
+        sleep(Duration::from_secs(5)).await;
+
+        let lock = test_driver.write().await;
+        let admin = lock.client.admin().await;
+        let partitions = admin
+            .list::<PartitionSpec, _>(vec![])
+            .await
+            .expect("partitions");
+        drop(lock);
+
+        assert_eq!(partitions.len(), 1);
+
+        let test_topic = &partitions[0];
+        let status = &test_topic.status;
+        let leader = &status.leader;
+
+        assert_eq!(leader.leo, base_offset + producer_iteration as i64);
+        println!("status: {:#?}", status);
+
         assert_eq!(status.replicas.len() as u16, replication - 1);
 
         for i in 0..replication - 1 {
@@ -203,4 +203,72 @@ async fn validate_consume_message_api(
             assert_eq!(follower_status.leo, producer_iteration as i64);
         }
     }
+
+    println!("replication status verified");
+
+    println!("performing 2nd fetch check. waiting 5 seconds");
+    // do complete fetch, since producer has completed, we should retrieve everything
+    sleep(Duration::from_secs(5)).await;
+
+    for i in 0..partition {
+        println!(
+            "performing complete  fetch stream for: {} base offset: {}, expected new records: {}",
+            topic_name, base_offset, producer_iteration
+        );
+
+        let mut lock = test_driver.write().await;
+
+        let consumer = lock.get_consumer(&topic_name).await;
+        drop(lock);
+
+        let mut stream = consumer
+            .stream(
+                Offset::absolute(*base_offset)
+                    .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
+            )
+            .await
+            .expect("stream");
+
+        let mut total_records: u16 = 0;
+
+        loop {
+            select! {
+
+                // max time for each read
+                _ = sleep(Duration::from_millis(5000)) => {
+                    println!("Timeout in read");
+                    panic!("no consumer read iter: current {}",producer_iteration);
+                },
+
+                stream_next = stream.next() => {
+
+                    let record = stream_next.expect("some").expect("records");
+                    let offset = record.offset();
+                    let bytes = record.value();
+                    info!(
+                        "2nd fetch full * consumer iter: {}, received offset: {}, bytes: {}",
+                        total_records,
+                        offset,
+                        bytes.len()
+                    );
+
+                    validate_message(producer_iteration, offset, test_case, bytes);
+                    info!(
+                        "2nd fetch total records: {}, validated offset: {}",
+                        total_records, offset
+                    );
+
+                    total_records += 1;
+
+                    if total_records == producer_iteration {
+                        break;
+                    }
+
+                }
+
+            }
+        }
+    }
+
+    println!("full <<consume test done for: {} >>>>", topic_name);
 }
