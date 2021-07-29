@@ -368,7 +368,11 @@ impl StreamFetchHandler {
                 };
 
                 let error_code = match smartstream_error {
-                    Some(error) => ErrorCode::SmartStreamError(SmartStreamError::UserError(error)),
+                    Some(mut builder) => {
+                        debug!("Received error builder from WASM: {:#?}", &builder);
+                        let error = builder.base_offset(starting_offset).build();
+                        ErrorCode::SmartStreamError(SmartStreamError::Runtime(error))
+                    }
                     None => file_partition_response.error_code,
                 };
                 debug!("Filter error code output: {:#?}", &error_code);
@@ -440,7 +444,10 @@ impl StreamFetchHandler {
                 };
 
                 let error_code = match smartstream_error {
-                    Some(error) => ErrorCode::SmartStreamError(SmartStreamError::UserError(error)),
+                    Some(mut builder) => {
+                        let error = builder.base_offset(starting_offset).build();
+                        ErrorCode::SmartStreamError(SmartStreamError::Runtime(error))
+                    }
                     None => file_partition_response.error_code,
                 };
                 debug!("Map error code output: {:#?}", &error_code);
@@ -1113,7 +1120,7 @@ mod test {
         assert_eq!(records[4].value.as_ref(), "8".as_bytes());
 
         match &response.partition.error_code {
-            ErrorCode::SmartStreamError(SmartStreamError::UserError(error)) => {
+            ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)) => {
                 let rendered = format!("{}", error);
                 assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nLocation:\n    filter_odd/src/lib.rs:45:43");
             }

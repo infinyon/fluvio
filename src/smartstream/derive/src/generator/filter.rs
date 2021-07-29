@@ -39,7 +39,11 @@ pub fn generate_filter_smartstream(func: &SmartStreamFn) -> TokenStream {
                             }
                         }
                         Err(e) => {
-                            output.error = Some(fluvio_smartstream::dataplane::smartstream::SmartStreamUserError::from(e));
+                            let offset_delta = record.preamble.offset_delta();
+                            let kind = fluvio_smartstream::dataplane::smartstream::SmartStreamType::Filter;
+                            let mut error = fluvio_smartstream::dataplane::smartstream::SmartStreamRuntimeErrorBuilder::new(e, offset_delta, kind);
+                            error.record(&record);
+                            output.error = Some(error);
                             break;
                         }
                     }

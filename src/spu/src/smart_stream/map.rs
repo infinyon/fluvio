@@ -12,7 +12,7 @@ use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
 use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
 use crate::smart_stream::file_batch::FileBatchIterator;
-use dataplane::smartstream::{SmartStreamOutput, SmartStreamUserError};
+use dataplane::smartstream::{SmartStreamOutput, SmartStreamRuntimeErrorBuilder};
 
 const MAP_FN_NAME: &str = "map";
 type MapFn = TypedFunc<(i32, i32), i32>;
@@ -62,7 +62,7 @@ impl SmartStreamMap {
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-    ) -> Result<(Batch, Option<SmartStreamUserError>), Error> {
+    ) -> Result<(Batch, Option<SmartStreamRuntimeErrorBuilder>), Error> {
         let mut memory_map_batch = Batch::<MemoryRecords>::default();
         memory_map_batch.base_offset = -1; // indicate this is unitialized
         memory_map_batch.set_offset_delta(-1); // make add_to_offset_delta correctly

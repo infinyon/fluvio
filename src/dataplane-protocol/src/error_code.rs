@@ -6,7 +6,7 @@
 
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 use fluvio_protocol::{Encoder, Decoder};
-use crate::smartstream::SmartStreamUserError;
+use crate::smartstream::SmartStreamRuntimeError;
 
 // -----------------------------------
 // Error Definition & Implementation
@@ -102,12 +102,12 @@ impl ErrorCode {
 // TODO: Add variant for reporting panics
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 pub enum SmartStreamError {
-    UserError(SmartStreamUserError),
+    Runtime(SmartStreamRuntimeError),
 }
 
 impl Default for SmartStreamError {
     fn default() -> Self {
-        Self::UserError(Default::default())
+        Self::Runtime(Default::default())
     }
 }
 

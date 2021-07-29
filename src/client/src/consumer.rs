@@ -369,8 +369,8 @@ impl PartitionConsumer {
                 let code = response.partition.error_code;
                 match code {
                     ErrorCode::None => None,
-                    ErrorCode::SmartStreamError(SmartStreamError::UserError(error)) => {
-                        Some(Err(FluvioError::SmartStreamUserError(format!("{}", error))))
+                    ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)) => {
+                        Some(Err(FluvioError::SmartStreamRuntime(error)))
                     }
                     _ => Some(Err(FluvioError::AdminApi(
                         fluvio_sc_schema::ApiError::Code(code, None),

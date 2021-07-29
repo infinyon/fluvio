@@ -73,7 +73,7 @@ impl<K: Into<Vec<u8>>> From<K> for RecordKey {
 /// [the Producer API] as an example.
 ///
 /// [the Producer API]: https://docs.rs/fluvio/producer/TopicProducer::send
-#[derive(Clone, Default)]
+#[derive(Clone, Default, PartialEq)]
 pub struct RecordData(Bytes);
 
 impl RecordData {
