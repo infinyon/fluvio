@@ -349,9 +349,12 @@ jobs:
       - name: Setup
         run: ./fluvio cluster start --setup --local
       - name: Run smoke-test
-        timeout-minutes: 5
-        run: |
-          make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+        uses: nick-invision/retry@v2
+        with:
+          timeout-minutes: 5
+          max_attempts: 3
+          command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          
       - name: Upload SC log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
@@ -452,8 +455,7 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          command: |
-            make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
+          command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
 
       - name: Save logs
         if: failure()
