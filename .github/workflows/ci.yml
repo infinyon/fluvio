@@ -351,10 +351,10 @@ jobs:
       - name: Run smoke-test
         uses: nick-invision/retry@v2
         with:
-          timeout-minutes: 5
+          timeout_minutes: 5
           max_attempts: 3
           command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
-          
+
       - name: Upload SC log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
