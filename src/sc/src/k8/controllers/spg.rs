@@ -154,6 +154,7 @@ impl SpgStatefulSetController {
             let (stateful_key, stateful_action) =
                 spu_group.statefulset_action(&self.namespace, spu_k8_config, self.tls.as_ref());
 
+            debug!(?stateful_action, "applying statefulset");
             self.statefulsets
                 .wait_action(&stateful_key, stateful_action)
                 .await?;

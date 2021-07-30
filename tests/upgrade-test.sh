@@ -66,13 +66,16 @@ function validate_cluster_stable() {
     $STABLE_FLUVIO version
     ci_check;
 
+    echo "waiting 5 seconds"
+    sleep 5;
+
     echo "Create test topic: ${STABLE_TOPIC}"
     $STABLE_FLUVIO topic create ${STABLE_TOPIC} 
-    $STABLE_FLUVIO topic create ${STABLE_TOPIC}-delete 
+    # $STABLE_FLUVIO topic create ${STABLE_TOPIC}-delete 
     ci_check;
 
     cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}
-    cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}-delete
+    # cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}-delete
     ci_check;
 
     echo "Validate test data w/ v${STABLE} CLI matches expected data created BEFORE upgrading cluster + CLI to v${PRERELEASE}"
@@ -87,8 +90,12 @@ function validate_cluster_stable() {
         exit 1
     fi
 
-    echo "Validate deleting topic created by v${STABLE} CLI"
-    $STABLE_FLUVIO topic delete ${STABLE_TOPIC}-delete 
+    # echo "Validate deleting topic created by v${STABLE} CLI"
+    # $STABLE_FLUVIO topic delete ${STABLE_TOPIC}-delete 
+    echo "stable validated"
+
+
+    $STABLE_FLUVIO partition list
 
 }
 
@@ -110,14 +117,15 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Installed CLI version ${TARGET_VERSION}"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
         echo "Upgrading cluster to ${TARGET_VERSION}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
+        $FLUVIO_BIN_ABS_PATH cluster upgrade
         sleep 20
     else
         echo "Test local image v${PRERELEASE}"
         # This should use the binary that the Makefile set
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --chart-version=${TARGET_VERSION} --develop
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
+        $FLUVIO_BIN_ABS_PATH cluster upgrade  --develop
     fi
     popd
 
@@ -161,11 +169,11 @@ function validate_upgrade_cluster_to_prerelease() {
         exit 1
     fi
 
-    echo "Validate deleting topic created by v${STABLE} CLI"
-    $FLUVIO_BIN_ABS_PATH topic delete ${STABLE_TOPIC} 
+    #echo "Validate deleting topic created by v${STABLE} CLI"
+    # $FLUVIO_BIN_ABS_PATH topic delete ${STABLE_TOPIC} 
 
-    echo "Validate deleting topic created by v${TARGET_VERSION} CLI"
-    $FLUVIO_BIN_ABS_PATH topic delete ${PRERELEASE_TOPIC} 
+    # echo "Validate deleting topic created by v${TARGET_VERSION} CLI"
+    #$FLUVIO_BIN_ABS_PATH topic delete ${PRERELEASE_TOPIC} 
 }
 
 # Create 2 base data files and calculate checksums for the expected states of each of our testing topics

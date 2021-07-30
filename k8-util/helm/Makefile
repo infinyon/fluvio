@@ -132,10 +132,14 @@ clean:
 	rm -rf pkg_sys;
 	rm -rf pkg_app;
 
-helm-package-sys: sys_charts
+pkg_sys:	fluvio-sys/*.*
+	rm -rf pkg_sys;
+	mkdir -p pkg_sys;
 	helm package ./fluvio-sys --app-version $(APP_VERSION) -d pkg_sys
 
-helm-package-app: app_charts
+pkg_app:	fluvio-app/*.*
+	rm -rf pkg_app
+	mkdir -p pkg_app
 	helm package ./fluvio-app --app-version $(APP_VERSION) -d pkg_app
 
-package:	clean helm-package-sys helm-package-app
+package:	pkg_sys pkg_app

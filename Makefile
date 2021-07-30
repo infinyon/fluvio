@@ -109,6 +109,7 @@ SC_HOST=localhost
 SC_PORT=9003
 test-permission-user1:
 	rm -f /tmp/topic.err
+	sleep 10
 	- $(FLUVIO_BIN) --cluster ${SC_HOST}:${SC_PORT} \
 		--tls --enable-client-cert --domain fluvio.local \
 		--ca-cert tls/certs/ca.crt \
@@ -148,8 +149,8 @@ upgrade-test:
 	FLUVIO_BIN=./fluvio ./tests/upgrade-test.sh
 else
 # When not in CI (i.e. development), load the dev k8 image before running test
-upgrade-test: build_k8_image
-	DEBUG=true ./tests/upgrade-test.sh
+upgrade-test: build-cli build_k8_image
+	./tests/upgrade-test.sh
 endif
 
 
@@ -170,19 +171,18 @@ build-test-ci: build-test build-cli build-cluster
 endif
 
 
-test-setup:	build-test-ci
 ifeq ($(UNINSTALL),noclean)
+clean_cluster:
 	echo "no clean"
 else
+clean_cluster:
 	echo "clean up previous installation"
 	$(FLUVIO_BIN) cluster delete
 	$(FLUVIO_BIN) cluster delete --local
 endif
 
-# Test multiplexor
-# this should generate error in multiplexor
-test-multiplexor:
-	make smoke-test DEFAULT_ITERATION=4  EXTRA_ARG=--keep-cluster
+test-setup:	build-test-ci clean_cluster
+
 
 #
 #  Various Lint tools
@@ -226,34 +226,6 @@ run-client-doc-test: install_rustup_target helm_pkg
 	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 
-clean_build:
-	rm -rf /tmp/cli-*
-
-
-release:	update_version release_image helm_publish_app publish_cli
-
-# This needed to be run every time we increment VERSION
-update_version:
-	cp VERSION	src/cli/src
-
-
-#
-# Docker actions
-#
-release_image: RELEASE=true
-release_image: fluvio_image
-	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(VERSION)
-	docker push $(DOCKER_IMAGE):$(VERSION)
-
-# Build latest image and push to Docker registry
-latest_image: RELEASE=true
-latest_image: fluvio_image
-	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):$(DOCKER_TAG)
-	docker tag $(DOCKER_IMAGE):$(GIT_COMMIT) $(DOCKER_IMAGE):latest
-	docker push $(DOCKER_IMAGE):$(DOCKER_TAG)
-	docker push $(DOCKER_IMAGE):latest
-
-
 # In CI mode, do not build k8 image
 ifeq (${CI},true)
 build_k8_image:
@@ -269,17 +241,20 @@ fluvio_image: fluvio_bin_musl
 	echo "Building Fluvio musl image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
 	k8-util/docker/build.sh $(GIT_COMMIT) "./target/$(TARGET_MUSL)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
 
+
+
 fluvio_bin_musl:
 	rustup target add $(TARGET_MUSL)
 	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_MUSL)
 
-make publish_fluvio_image:
-	curl \
-	-X POST \
-	-H "Accept: application/vnd.github.v3+json" \
-	-H "Authorization: $(GITHUB_ACCESS_TOKEN)" \
-	https://api.github.com/repos/infinyon/fluvio/actions/workflows/2333005/dispatches \
-	-d '{"ref":"master"}'
+
+install_stable:
+	curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+# upgrade existing cluster
+upgrade: build-cli build_k8_image
+	$(FLUVIO_BIN) cluster upgrade --sys
+	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
 
 
 .EXPORT_ALL_VARIABLES:
