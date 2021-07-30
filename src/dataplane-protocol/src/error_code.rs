@@ -6,47 +6,72 @@
 
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 use fluvio_protocol::{Encoder, Decoder};
+use crate::smartstream::SmartStreamRuntimeError;
 
 // -----------------------------------
 // Error Definition & Implementation
 // -----------------------------------
 
 #[repr(i16)]
-#[derive(Encoder, Decoder, PartialEq, Debug, Clone, Copy)]
-#[fluvio(encode_discriminant)]
+#[derive(Encoder, Decoder, PartialEq, Debug, Clone)]
 pub enum ErrorCode {
-    UnknownServerError = -1,
+    #[fluvio(tag = -1)]
+    UnknownServerError,
 
     // Not an error
-    None = 0,
+    #[fluvio(tag = 0)]
+    None,
 
-    OffsetOutOfRange = 1,
-    NotLeaderForPartition = 6,
-    MessageTooLarge = 10,
-    PermissionDenied = 13,
-    StorageError = 56,
+    #[fluvio(tag = 1)]
+    OffsetOutOfRange,
+    #[fluvio(tag = 6)]
+    NotLeaderForPartition,
+    #[fluvio(tag = 10)]
+    MessageTooLarge,
+    #[fluvio(tag = 13)]
+    PermissionDenied,
+    #[fluvio(tag = 56)]
+    StorageError,
 
     // Spu errors
-    SpuError = 1000,
-    SpuRegisterationFailed = 1001,
-    SpuOffline = 1002,
-    SpuNotFound = 1003,
-    SpuAlreadyExists = 1004,
+    #[fluvio(tag = 1000)]
+    SpuError,
+    #[fluvio(tag = 1001)]
+    SpuRegisterationFailed,
+    #[fluvio(tag = 1002)]
+    SpuOffline,
+    #[fluvio(tag = 1003)]
+    SpuNotFound,
+    #[fluvio(tag = 1004)]
+    SpuAlreadyExists,
 
     // Topic errors
-    TopicError = 2000,
-    TopicNotFound = 2001,
-    TopicAlreadyExists = 2002,
-    TopicPendingInitialization = 2003,
-    TopicInvalidConfiguration = 2004,
-    TopicNotProvisioned = 2005,
+    #[fluvio(tag = 2000)]
+    TopicError,
+    #[fluvio(tag = 2001)]
+    TopicNotFound,
+    #[fluvio(tag = 2002)]
+    TopicAlreadyExists,
+    #[fluvio(tag = 2003)]
+    TopicPendingInitialization,
+    #[fluvio(tag = 2004)]
+    TopicInvalidConfiguration,
+    #[fluvio(tag = 2005)]
+    TopicNotProvisioned,
 
     // Partition errors
-    PartitionPendingInitialization = 3000,
-    PartitionNotLeader = 3001,
+    #[fluvio(tag = 3000)]
+    PartitionPendingInitialization,
+    #[fluvio(tag = 3001)]
+    PartitionNotLeader,
 
     // Stream Fetch error
-    FetchSessionNotFoud = 3002,
+    #[fluvio(tag = 3002)]
+    FetchSessionNotFoud,
+
+    // SmartStream errors
+    #[fluvio(tag = 4000)]
+    SmartStreamError(SmartStreamError),
 }
 
 impl Default for ErrorCode {
@@ -60,7 +85,7 @@ impl ErrorCode {
         matches!(self, ErrorCode::None)
     }
 
-    pub fn to_sentence(self) -> String {
+    pub fn to_sentence(&self) -> String {
         match self {
             ErrorCode::None => "".to_owned(),
             _ => upper_cammel_case_to_sentence(format!("{:?}", self), true),
@@ -72,20 +97,86 @@ impl ErrorCode {
     }
 }
 
+/// A type representing the possible errors that may occur during SmartStream execution.
+// This is also where we can update our error representation in the future
+// TODO: Add variant for reporting panics
+#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+pub enum SmartStreamError {
+    Runtime(SmartStreamRuntimeError),
+}
+
+impl Default for SmartStreamError {
+    fn default() -> Self {
+        Self::Runtime(Default::default())
+    }
+}
+
 // -----------------------------------
 // Unit Tests
 // -----------------------------------
 
 #[cfg(test)]
 mod test {
-
-    use std::convert::TryInto;
-
-    use super::ErrorCode;
+    use super::*;
 
     #[test]
-    fn test_error_code_from_conversion() {
-        let erro_code: ErrorCode = (1001i16).try_into().expect("convert");
-        assert_eq!(erro_code, ErrorCode::SpuRegisterationFailed);
+    fn test_protocol_tags_unchanged() {
+        macro_rules! assert_tag {
+            ($variant:expr, $tag:expr, $version:expr) => {{
+                let mut data = Vec::new();
+                let mut value = ErrorCode::default();
+
+                fluvio_protocol::Encoder::encode(&$variant, &mut data, $version)
+                    .expect(&format!("Failed to encode {}", stringify!($variant)));
+                assert_eq!(
+                    data,
+                    ($tag as i16).to_be_bytes(),
+                    "Data check failed for {}",
+                    stringify!($variant)
+                );
+                fluvio_protocol::Decoder::decode(
+                    &mut value,
+                    &mut std::io::Cursor::new(&data),
+                    $version,
+                )
+                .expect(&format!("Failed to decode {}", stringify!($variant)));
+                assert_eq!(
+                    &value,
+                    &$variant,
+                    "Value check failed for {}",
+                    stringify!($variant)
+                );
+            }};
+        }
+
+        assert_tag!(ErrorCode::UnknownServerError, -1, 0);
+        assert_tag!(ErrorCode::None, 0, 0);
+        assert_tag!(ErrorCode::OffsetOutOfRange, 1, 0);
+        assert_tag!(ErrorCode::NotLeaderForPartition, 6, 0);
+        assert_tag!(ErrorCode::MessageTooLarge, 10, 0);
+        assert_tag!(ErrorCode::PermissionDenied, 13, 0);
+        assert_tag!(ErrorCode::StorageError, 56, 0);
+
+        // Spu errors
+        assert_tag!(ErrorCode::SpuError, 1000, 0);
+        assert_tag!(ErrorCode::SpuRegisterationFailed, 1001, 0);
+        assert_tag!(ErrorCode::SpuOffline, 1002, 0);
+        assert_tag!(ErrorCode::SpuNotFound, 1003, 0);
+        assert_tag!(ErrorCode::SpuAlreadyExists, 1004, 0);
+
+        // Topic errors
+        assert_tag!(ErrorCode::TopicError, 2000, 0);
+        assert_tag!(ErrorCode::TopicNotFound, 2001, 0);
+        assert_tag!(ErrorCode::TopicAlreadyExists, 2002, 0);
+        assert_tag!(ErrorCode::TopicPendingInitialization, 2003, 0);
+        assert_tag!(ErrorCode::TopicInvalidConfiguration, 2004, 0);
+        assert_tag!(ErrorCode::TopicNotProvisioned, 2005, 0);
+
+        // Partition errors
+        assert_tag!(ErrorCode::PartitionPendingInitialization, 3000, 0);
+        assert_tag!(ErrorCode::PartitionNotLeader, 3001, 0);
+
+        // Stream Fetch error
+        assert_tag!(ErrorCode::FetchSessionNotFoud, 3002, 0);
     }
 }
