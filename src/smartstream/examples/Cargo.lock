@@ -74,6 +74,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
 
 [[package]]
+name = "eyre"
+version = "0.6.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "221239d1d5ea86bf5d6f91c9d6bc3646ffe471b08ff9b0f91c44f115ac969d2b"
+dependencies = [
+ "indenter",
+ "once_cell",
+]
+
+[[package]]
 name = "fluvio-dataplane-protocol"
 version = "0.6.0"
 dependencies = [
@@ -81,12 +91,14 @@ dependencies = [
  "cfg-if",
  "content_inspector",
  "crc32c",
+ "eyre",
  "fluvio-future",
  "fluvio-protocol",
  "flv-util",
  "futures-util",
  "once_cell",
  "semver 1.0.3",
+ "thiserror",
  "tracing",
 ]
 
@@ -335,6 +347,12 @@ dependencies = [
  "proc-macro-nested",
  "slab",
 ]
+
+[[package]]
+name = "indenter"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ce23b50ad8242c51a442f3ff322d56b02f08852c77e4c0b4d3fd684abc89c683"
 
 [[package]]
 name = "instant"
