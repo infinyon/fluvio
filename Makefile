@@ -248,9 +248,6 @@ fluvio_bin_musl:
 	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_MUSL)
 
 
-install_stable:
-	curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-
 # upgrade existing cluster
 upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --sys

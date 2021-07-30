@@ -96,6 +96,7 @@ where
 
     #[instrument(
         skip(self),
+        name = "WatchControllerLoop",
         fields(
             spec = S::LABEL,
             sink=self.response_sink.id()
