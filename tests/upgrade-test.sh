@@ -71,9 +71,11 @@ function validate_cluster_stable() {
 
     echo "Create test topic: ${STABLE_TOPIC}"
     $STABLE_FLUVIO topic create ${STABLE_TOPIC} 
+    # $STABLE_FLUVIO topic create ${STABLE_TOPIC}-delete 
     ci_check;
 
     cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}
+    # cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}-delete
     ci_check;
 
     echo "Validate test data w/ v${STABLE} CLI matches expected data created BEFORE upgrading cluster + CLI to v${PRERELEASE}"
@@ -88,13 +90,12 @@ function validate_cluster_stable() {
         exit 1
     fi
 
-    echo "stable validated"
-
-    $STABLE_FLUVIO partition list
-
-
     # echo "Validate deleting topic created by v${STABLE} CLI"
     # $STABLE_FLUVIO topic delete ${STABLE_TOPIC}-delete 
+    echo "stable validated"
+
+
+    $STABLE_FLUVIO partition list
 
 }
 
@@ -220,7 +221,7 @@ function main() {
     echo "Update cluster to prerelease v${PRERELEASE}"
     validate_upgrade_cluster_to_prerelease;
 
-    # cleanup;
+    cleanup;
 
     # Change back to original directory
     popd > /dev/null
