@@ -218,6 +218,9 @@ pub struct BatchHeader {
     pub magic: i8,
     pub crc: u32,
     pub attributes: i16,
+    /// Indicates the count from the beginning of the batch to the end
+    ///
+    /// Adding this to the base_offset will give the offset of the last record in this batch
     pub last_offset_delta: i32,
     pub first_timestamp: i64,
     pub max_time_stamp: i64,
