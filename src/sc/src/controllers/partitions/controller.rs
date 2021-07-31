@@ -5,7 +5,6 @@
 use tracing::{debug, trace,instrument};
 
 use fluvio_future::task::spawn;
-use tracing::instrument;
 
 use crate::core::SharedContext;
 use crate::stores::{StoreContext};
