@@ -219,7 +219,6 @@ where
 
         match action {
             WSAction::Apply(obj) => {
-                
                 if let Err(err) = self.ws_update_service.apply(obj).await {
                     error!("error: {}, applying {}", S::LABEL, err);
                 }

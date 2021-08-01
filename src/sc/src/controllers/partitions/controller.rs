@@ -2,7 +2,7 @@
 //! # Auth Controller
 //!
 
-use tracing::{debug, trace,instrument};
+use tracing::{debug, trace, instrument};
 
 use fluvio_future::task::spawn;
 
@@ -39,10 +39,7 @@ impl PartitionController {
         spawn(controller.dispatch_loop());
     }
 
-    #[instrument(
-        skip(self),
-        name = "PartitionController"
-    )]
+    #[instrument(skip(self), name = "PartitionController")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
 
