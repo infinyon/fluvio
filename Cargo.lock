@@ -1482,6 +1482,7 @@ dependencies = [
  "content_inspector",
  "crc32c",
  "derive_builder",
+ "eyre",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
@@ -1489,6 +1490,7 @@ dependencies = [
  "futures-util",
  "once_cell",
  "semver 1.0.3",
+ "thiserror",
  "tracing",
 ]
 
@@ -1735,6 +1737,7 @@ dependencies = [
 name = "fluvio-smartstream"
 version = "0.2.0"
 dependencies = [
+ "eyre",
  "fluvio-dataplane-protocol",
  "fluvio-smartstream-derive",
 ]
