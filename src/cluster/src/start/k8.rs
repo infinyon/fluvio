@@ -686,7 +686,7 @@ impl ClusterInstaller {
             .wait_for_sc_service(namespace)
             .await
             .map_err(|_| K8InstallError::UnableToDetectService)?;
-        println!("Fluvio SC is up at: {}",address);
+        println!("Fluvio SC is up at: {}", address);
 
         if self.config.save_profile {
             self.update_profile(address.clone())?;
@@ -1106,7 +1106,7 @@ impl ClusterInstaller {
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
-                println!("All SPUs({}) are ready",ready_spu);
+                println!("All SPUs({}) are ready", ready_spu);
                 return Ok(true);
             } else {
                 debug!(
@@ -1117,8 +1117,7 @@ impl ClusterInstaller {
                 );
                 println!(
                     "{} of {} spu are ready, sleeping 10 seconds...",
-                    ready_spu,
-                    self.config.spu_replicas,
+                    ready_spu, self.config.spu_replicas,
                 );
                 sleep(Duration::from_secs(10)).await;
             }
