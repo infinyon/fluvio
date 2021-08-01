@@ -69,7 +69,7 @@ jobs:
           sleep ${{ env.SLEEP }}
           echo foo | fluvio produce ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
-          fluvio consume ${{ env.TOPIC }} -o 0 -d
+          fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
           # Delete the topic afterword but this looks to not work right now.
           # fluvio topic delete "${{ env.TOPIC }}"
 
