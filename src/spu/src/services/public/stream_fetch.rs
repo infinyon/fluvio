@@ -621,6 +621,7 @@ mod test {
     use crate::services::create_public_server;
     use super::*;
     use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
+    use dataplane::smartstream::SmartStreamType;
 
     #[fluvio_future::test(ignore)]
     async fn test_stream_fetch() {
@@ -1114,8 +1115,12 @@ mod test {
 
         match &response.partition.error_code {
             ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)) => {
+                assert_eq!(error.offset, 10);
+                assert!(error.record_key.is_none());
+                assert_eq!(error.record_value.as_ref(), "ten".as_bytes());
+                assert_eq!(error.kind, SmartStreamType::Filter);
                 let rendered = format!("{}", error);
-                assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nLocation:\n    filter_odd/src/lib.rs:45:43");
+                assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartStream Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
             }
             _ => panic!("should have gotten error code"),
         }

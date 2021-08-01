@@ -131,7 +131,6 @@ impl SmartStreamMap {
 
             let maybe_error = output.error;
             let mut records = output.successes;
-            println!("GOT MAP RECORDS: {:#?}", &records);
 
             // there are mapped records!!
             if records.is_empty() {
