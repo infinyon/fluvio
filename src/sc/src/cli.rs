@@ -64,6 +64,14 @@ pub struct ScOpt {
         env
     )]
     auth_policy: Option<PathBuf>,
+
+    #[structopt(long)]
+    /// disable all controller and services
+    disable_all: bool,
+
+    #[structopt(long)]
+    /// only enable k8
+    enable_k8: bool,
 }
 
 impl ScOpt {
