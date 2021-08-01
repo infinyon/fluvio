@@ -68,8 +68,8 @@ jobs:
           echo "fluvio topic create ${{ env.TOPIC }}""
           fluvio topic create ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
+          echo "foo | fluvio produce ${{ env.TOPIC }}""
           echo foo | fluvio produce ${{ env.TOPIC }}
-          foo | fluvio produce ${{ env.TOPIC }}
           sleep ${{ env.SLEEP }}
           echo "fluvio consume ${{ env.TOPIC }} -o 0 -d"
           fluvio consume ${{ env.TOPIC }} -o 0 -d
