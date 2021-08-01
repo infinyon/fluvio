@@ -28,7 +28,7 @@ impl SmartStreamModule {
     }
 
     pub fn create_map(&self, engine: &SmartStreamEngine) -> Result<SmartStreamMap> {
-        let map = SmartStreamMap::new(&engine, self)?;
+        let map = SmartStreamMap::new(engine, self)?;
         Ok(map)
     }
 }
