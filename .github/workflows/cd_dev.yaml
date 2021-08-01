@@ -53,7 +53,8 @@ jobs:
         run: |
           lscpu
           fluvio version
-          sleep ${{ env.SLEEP }}
+          echo "sleeping 1 minute to ensure cluster is up"
+          sleep 60
           fluvio topic list
           sleep ${{ env.SLEEP }}
           fluvio topic create ${{ env.TOPIC }}
@@ -64,11 +65,16 @@ jobs:
           # Delete the topic afterword but this looks to not work right now.
           # fluvio topic delete "${{ env.TOPIC }}"
 
-      - name: Upload SC log
+      - name: Debug failure
         if: failure()
         run: |
           lscpu
           kubectl get pods
+          kubectl get pvc
+          kubectl get svc
+          kubectl get topics
+          kubectl get partitions
+          kubectl get spu
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
