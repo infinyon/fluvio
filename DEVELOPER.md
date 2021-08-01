@@ -266,12 +266,12 @@ sudo apt-get install clang-11 lldb-11 lld-11
 
 ## Building the image 
 
-In order to deploy to minikube, the Docker image version must be built and loaded into minikube.
+In order to deploy to Kubernetes, the Docker image version must be built and loaded into cluster.  This is different for each cluster type.
 
 Run following command to build the image
 
 ```
-$ make minikube_image
+$ make build_k8_image
 ```
 
 ## Cleanup
@@ -283,7 +283,7 @@ $ flvd cluster delete --local
 $ flvd cluster delete
 ```
 
-## Install in minikube
+## Install Fluvio components as Kubernetes
 
 Run command below now to run install with image just built
 
