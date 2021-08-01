@@ -66,7 +66,7 @@ impl SpgStatefulSetController {
         }
     }
 
-    #[instrument(skip(self), name = "SpgLoop")]
+    #[instrument(skip(self), name = "SpgStatefulSetController")]
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 

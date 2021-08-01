@@ -2,10 +2,9 @@
 //! # Auth Controller
 //!
 
-use tracing::{debug, trace};
+use tracing::{debug, trace, instrument};
 
 use fluvio_future::task::spawn;
-use tracing::instrument;
 
 use crate::core::SharedContext;
 use crate::stores::{StoreContext};
@@ -40,10 +39,9 @@ impl PartitionController {
         spawn(controller.dispatch_loop());
     }
 
+    #[instrument(skip(self), name = "PartitionController")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
-
-        debug!("starting dispatch loop");
 
         let mut spu_status_listener = self.spus.change_listener();
         let mut partition_listener = self.partitions.change_listener();

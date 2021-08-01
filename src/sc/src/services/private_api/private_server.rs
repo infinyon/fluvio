@@ -6,8 +6,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use tracing::error;
-use tracing::{debug, info, trace};
-use tracing::instrument;
+use tracing::{debug, info, trace, instrument};
 use async_trait::async_trait;
 use async_channel::Sender;
 use futures_util::stream::Stream;
@@ -117,6 +116,10 @@ impl FlvService for ScInternalService {
 }
 
 // perform internal dispatch
+#[instrument(
+    name = "ScInternalService",
+    skip(context, api_stream, sink, health_sender)
+)]
 async fn dispatch_loop(
     context: SharedContext,
     spu_id: SpuId,

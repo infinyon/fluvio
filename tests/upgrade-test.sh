@@ -60,6 +60,7 @@ function validate_cluster_stable() {
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
+    echo "Installing stable fluvio"
     $STABLE_FLUVIO cluster start 
     ci_check;
 
@@ -219,9 +220,9 @@ function main() {
     validate_cluster_stable;
 
     echo "Update cluster to prerelease v${PRERELEASE}"
-    validate_upgrade_cluster_to_prerelease;
+    # validate_upgrade_cluster_to_prerelease;
 
-    cleanup;
+    # cleanup;
 
     # Change back to original directory
     popd > /dev/null
