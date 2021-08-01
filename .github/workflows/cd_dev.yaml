@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -62,6 +62,12 @@ jobs:
           fluvio consume ${{ env.TOPIC }} -o 0 -d
           # Delete the topic afterword but this looks to not work right now.
           # fluvio topic delete "${{ env.TOPIC }}"
+
+      - name: Upload SC log
+        if: failure()
+        run: |
+          lscpu
+          kubectl get pods
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
