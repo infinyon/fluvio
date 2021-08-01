@@ -686,7 +686,7 @@ impl ClusterInstaller {
             .wait_for_sc_service(namespace)
             .await
             .map_err(|_| K8InstallError::UnableToDetectService)?;
-        info!(addr = %address, "Fluvio SC is up:");
+        println!("Fluvio SC is up at: {}", address);
 
         if self.config.save_profile {
             self.update_profile(address.clone())?;
@@ -696,7 +696,7 @@ impl ClusterInstaller {
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
         if self.config.spu_replicas > 0 && !self.config.upgrade {
-            debug!("waiting for SC to spin up");
+            debug!("waiting for SC to spin up before attemp to spin up spu");
             // Wait a little bit for the SC to spin up
             sleep(Duration::from_millis(2000)).await;
 
@@ -1065,7 +1065,7 @@ impl ClusterInstaller {
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
-        info!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
+        debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
@@ -1106,7 +1106,7 @@ impl ClusterInstaller {
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
-                info!(spu_count, "All SPUs are ready");
+                println!("All SPUs({}) are ready", ready_spu);
                 return Ok(true);
             } else {
                 debug!(
@@ -1115,14 +1115,11 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                info!(
-                    attempt = i,
-                    "{} of {} spu ready, sleeping for {} ms",
-                    ready_spu,
-                    self.config.spu_replicas,
-                    NETWORK_SLEEP_MS
+                println!(
+                    "{} of {} spu are ready, sleeping 10 seconds...",
+                    ready_spu, self.config.spu_replicas,
                 );
-                sleep(Duration::from_millis(NETWORK_SLEEP_MS)).await;
+                sleep(Duration::from_secs(10)).await;
             }
         }
 
