@@ -51,6 +51,7 @@ jobs:
           cluster-type: ${{ matrix.cluster_type }}
       - name: Fluvio command test
         run: |
+          lscpu
           fluvio version
           sleep ${{ env.SLEEP }}
           fluvio topic list
