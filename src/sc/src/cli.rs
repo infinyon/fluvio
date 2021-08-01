@@ -65,13 +65,9 @@ pub struct ScOpt {
     )]
     auth_policy: Option<PathBuf>,
 
+    /// only allow white list of controllers
     #[structopt(long)]
-    /// disable all controller and services
-    disable_all: bool,
-
-    #[structopt(long)]
-    /// only enable k8
-    enable_k8: bool,
+    white_list: Option<Vec<String>>,
 }
 
 impl ScOpt {
@@ -118,6 +114,7 @@ impl ScOpt {
 
         config.namespace = self.namespace.unwrap();
         config.x509_auth_scopes = self.x509_auth_scopes;
+        config.white_list = self.white_list;
 
         // Set Configuration Authorzation Policy
         let policy = match self.auth_policy {

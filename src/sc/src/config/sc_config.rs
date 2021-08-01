@@ -25,6 +25,7 @@ pub struct ScConfig {
     pub run_k8_dispatchers: bool,
     pub namespace: String,
     pub x509_auth_scopes: Option<PathBuf>,
+    pub white_list: Option<Vec<String>>
 }
 
 impl ::std::default::Default for ScConfig {
@@ -35,6 +36,7 @@ impl ::std::default::Default for ScConfig {
             run_k8_dispatchers: true,
             namespace: "default".to_owned(),
             x509_auth_scopes: None,
+            white_list: None
         }
     }
 }
