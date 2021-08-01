@@ -12,7 +12,7 @@ inputs:
   rust-log:
     description: "Add rust log options (e.g. debug, warn, info)"
     required: false
-    default: 'info'
+    default: 'warn'
   version:
     description: "Use a specific version of the fluvio CLI (e.g. latest, 0.6.0)"
     required: false
