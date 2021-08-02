@@ -2,6 +2,8 @@
 pub mod k8;
 pub mod cli;
 pub mod core;
+
+#[macro_use]
 pub mod config;
 pub mod stores;
 mod init;

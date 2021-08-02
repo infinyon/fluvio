@@ -14,7 +14,7 @@ use crate::core::SharedContext;
 use crate::controllers::spus::SpuController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
-use crate::config::ScConfig;
+use crate::config::{ScConfig};
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
 use crate::services::auth::basic::BasicRbacPolicy;
@@ -37,6 +37,7 @@ where
 
     let namespace = sc_config.namespace.clone();
     let ctx = Context::shared_metadata(sc_config);
+    let config = ctx.config();
 
     K8ClusterStateDispatcher::<SpuSpec, C>::start(
         namespace.clone(),
@@ -62,9 +63,11 @@ where
         ctx.spgs().clone(),
     );
 
-    SpuController::start(ctx.clone());
-    TopicController::start(ctx.clone());
-    PartitionController::start(ctx.clone());
+    whitelist!(config, "spu", { SpuController::start(ctx.clone()) });
+    whitelist!(config, "topic", { TopicController::start(ctx.clone()) });
+    whitelist!(config, "partition", {
+        PartitionController::start(ctx.clone())
+    });
 
     start_internal_server(ctx.clone());
 

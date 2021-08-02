@@ -67,7 +67,7 @@ pub struct ScOpt {
 
     /// only allow white list of controllers
     #[structopt(long)]
-    white_list: Option<Vec<String>>,
+    white_list: Vec<String>,
 }
 
 impl ScOpt {
@@ -114,7 +114,7 @@ impl ScOpt {
 
         config.namespace = self.namespace.unwrap();
         config.x509_auth_scopes = self.x509_auth_scopes;
-        config.white_list = self.white_list;
+        config.white_list = self.white_list.into_iter().collect();
 
         // Set Configuration Authorzation Policy
         let policy = match self.auth_policy {

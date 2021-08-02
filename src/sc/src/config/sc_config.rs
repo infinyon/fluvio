@@ -3,6 +3,7 @@
 //!
 //! Stores configuration parameter used by Streaming Controller module.
 //!
+use std::collections::HashSet;
 use std::{io::Error as IoError, path::PathBuf};
 
 use fluvio_types::defaults::SC_PUBLIC_PORT;
@@ -25,7 +26,7 @@ pub struct ScConfig {
     pub run_k8_dispatchers: bool,
     pub namespace: String,
     pub x509_auth_scopes: Option<PathBuf>,
-    pub white_list: Option<Vec<String>>
+    pub white_list: HashSet<String>,
 }
 
 impl ::std::default::Default for ScConfig {
@@ -36,7 +37,20 @@ impl ::std::default::Default for ScConfig {
             run_k8_dispatchers: true,
             namespace: "default".to_owned(),
             x509_auth_scopes: None,
-            white_list: None
+            white_list: HashSet::new(),
+        }
+    }
+}
+
+impl ScConfig {
+    /// check if white list is enabled for controller name
+    /// if white list is empty then everything is enabled,
+    /// otherwise only included
+    pub fn enabled(&self, name: &str) -> bool {
+        if self.white_list.is_empty() {
+            true
+        } else {
+            self.white_list.contains(name)
         }
     }
 }
