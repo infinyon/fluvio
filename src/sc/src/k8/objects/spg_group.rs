@@ -1,5 +1,7 @@
 use std::ops::Deref;
 
+use tracing::trace;
+
 use fluvio_controlplane_metadata::core::MetadataItem;
 use fluvio_types::SpuId;
 
@@ -76,6 +78,8 @@ impl SpuGroupObj {
             spu_k8_config,
             tls,
         );
+
+        trace!(?k8_spec);
 
         (
             statefulset_name.clone(),

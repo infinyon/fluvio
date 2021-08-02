@@ -92,6 +92,7 @@ where
 
     #[instrument(
         name = "K8StateDispatcher",
+        skip(self),
         fields(
             spec = S::LABEL,
             namespace = self.namespace.named(),

@@ -1,4 +1,4 @@
-pub mod spg;
+pub mod spg_stateful;
 pub mod spu_service;
 pub mod spu;
 
@@ -17,7 +17,7 @@ mod k8_operator {
     use crate::k8::objects::spu_service::SpuServiceSpec;
     use crate::k8::objects::statefulset::StatefulsetSpec;
     use crate::k8::objects::spg_service::SpgServiceSpec;
-    use crate::k8::controllers::spg::SpgStatefulSetController;
+    use crate::k8::controllers::spg_stateful::SpgStatefulSetController;
     use crate::k8::controllers::spu_service::SpuServiceController;
     use crate::k8::controllers::spu::SpuController;
 
