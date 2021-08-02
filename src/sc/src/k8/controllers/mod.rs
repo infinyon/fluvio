@@ -27,6 +27,8 @@ mod k8_operator {
         global_ctx: SharedContext,
         tls: Option<TlsConfig>,
     ) {
+        let config = global_ctx.config();
+
         let spu_service_ctx: StoreContext<SpuServiceSpec> = StoreContext::new();
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
@@ -51,27 +53,33 @@ mod k8_operator {
             spg_service_ctx.clone(),
         );
 
-        SpgStatefulSetController::start(
-            k8_client.clone(),
-            namespace.clone(),
-            global_ctx.spgs().clone(),
-            statefulset_ctx,
-            global_ctx.spus().clone(),
-            spg_service_ctx,
-            tls,
-        );
+        whitelist!(config, "k8_spg", {
+            SpgStatefulSetController::start(
+                k8_client.clone(),
+                namespace.clone(),
+                global_ctx.spgs().clone(),
+                statefulset_ctx,
+                global_ctx.spus().clone(),
+                spg_service_ctx,
+                tls,
+            )
+        });
 
-        SpuController::start(
-            global_ctx.spus().clone(),
-            spu_service_ctx.clone(),
-            global_ctx.spgs().clone(),
-        );
+        whitelist!(config, "k8_spu", {
+            SpuController::start(
+                global_ctx.spus().clone(),
+                spu_service_ctx.clone(),
+                global_ctx.spgs().clone(),
+            );
+        });
 
-        SpuServiceController::start(
-            k8_client,
-            namespace,
-            spu_service_ctx,
-            global_ctx.spgs().clone(),
-        );
+        whitelist!(config, "k8_spu_service", {
+            SpuServiceController::start(
+                k8_client,
+                namespace,
+                spu_service_ctx,
+                global_ctx.spgs().clone(),
+            );
+        });
     }
 }

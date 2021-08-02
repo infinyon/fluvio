@@ -69,9 +69,10 @@ where
         PartitionController::start(ctx.clone())
     });
 
-    start_internal_server(ctx.clone());
-
-    pub_server::start(ctx.clone(), auth_policy);
+    whitelist!(config, "internal", { start_internal_server(ctx.clone()) });
+    whitelist!(config, "public", {
+        pub_server::start(ctx.clone(), auth_policy)
+    });
 
     mod pub_server {
 

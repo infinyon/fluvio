@@ -91,7 +91,9 @@ where
     }
 
     #[instrument(
+        name = "K8StateDispatcher",
         fields(
+            spec = S::LABEL,
             namespace = self.namespace.named(),
         )
     )]
