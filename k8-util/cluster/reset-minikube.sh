@@ -6,3 +6,4 @@ ARG1=${1:-docker}
 K8_VERSION=${2:-1.21.2}
 minikube delete
 minikube start --driver $ARG1 --kubernetes-version=$K8_VERSION
+# minikube start --extra-config=apiserver.v=10

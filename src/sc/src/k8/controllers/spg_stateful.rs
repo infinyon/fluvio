@@ -118,7 +118,7 @@ impl SpgStatefulSetController {
         Ok(())
     }
 
-    #[instrument(skip(self, spu_k8_config,spu_group))]
+    #[instrument(skip(self, spu_k8_config, spu_group))]
     async fn sync_spg_to_statefulset(
         &mut self,
         spu_group: SpuGroupObj,

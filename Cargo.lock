@@ -2708,7 +2708,6 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.2.7"
-source = "git+https://github.com/infinyon/k8-api#ec0e38fbee1249962170efc5d8e41378f25711a1"
 dependencies = [
  "serde",
  "serde_json",
