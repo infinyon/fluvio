@@ -4,6 +4,7 @@ use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
 use crate::config::ConfigError;
 use semver::Version;
+use dataplane::smartstream::SmartStreamRuntimeError;
 
 /// Possible errors that may arise when using Fluvio
 #[derive(thiserror::Error, Debug)]
@@ -31,6 +32,8 @@ pub enum FluvioError {
     },
     #[error("Consumer config error: {0}")]
     ConsumerConfig(String),
+    #[error("Encountered a runtime error in the user's SmartStream")]
+    SmartStreamRuntime(#[from] SmartStreamRuntimeError),
     #[error("Unknown error: {0}")]
     Other(String),
 }
