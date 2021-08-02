@@ -2,7 +2,7 @@ use std::fmt;
 use serde::{Serialize, Deserialize, Deserializer, Serializer};
 use url::Url;
 use crate::Error;
-use semver::Version;
+use crate::version::PackageVersion;
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -149,8 +149,8 @@ deserialize_no_slash_string!(
     "package name"
 );
 
-pub type WithVersion = Version;
-pub type MaybeVersion = Option<Version>;
+pub type WithVersion = PackageVersion;
+pub type MaybeVersion = Option<PackageVersion>;
 
 /// A unique identifier for a package that describes its registry, group,
 /// name, and (possibly) version.
@@ -258,7 +258,11 @@ impl<T> PackageId<T> {
 
 impl PackageId<WithVersion> {
     /// Create a new, versioned PackageId.
-    pub fn new_versioned(name: PackageName, group: GroupName, version: Version) -> Self {
+    pub(crate) fn new_versioned(
+        name: PackageName,
+        group: GroupName,
+        version: PackageVersion,
+    ) -> Self {
         Self {
             registry: None,
             group: Some(group),
@@ -268,14 +272,19 @@ impl PackageId<WithVersion> {
     }
 
     /// A PackageId<WithVersion> indisputably has a version, no Option required.
-    pub fn version(&self) -> &Version {
+    pub fn version(&self) -> &PackageVersion {
         &self.version
+    }
+
+    /// Return the inner PackageVersion, consuming the PackageId
+    pub fn into_version(self) -> PackageVersion {
+        self.version
     }
 }
 
 impl PackageId<MaybeVersion> {
     /// Create a new PackageId with no version info.
-    pub fn new_unversioned(name: PackageName, group: GroupName) -> Self {
+    pub(crate) fn new_unversioned(name: PackageName, group: GroupName) -> Self {
         PackageId {
             registry: None,
             group: Some(group),
@@ -285,7 +294,7 @@ impl PackageId<MaybeVersion> {
     }
 
     /// Add a Version to any PackageId to create a PackageId<WithVersion>
-    pub fn into_versioned(self, version: Version) -> PackageId<WithVersion> {
+    pub fn into_versioned(self, version: PackageVersion) -> PackageId<WithVersion> {
         PackageId {
             registry: self.registry,
             name: self.name,
@@ -296,7 +305,7 @@ impl PackageId<MaybeVersion> {
 }
 
 impl PackageId<MaybeVersion> {
-    pub fn maybe_version(&self) -> Option<&Version> {
+    pub fn maybe_version(&self) -> Option<&PackageVersion> {
         self.version.as_ref()
     }
 }
@@ -313,7 +322,7 @@ impl std::str::FromStr for PackageId<WithVersion> {
             _ => return Err(Error::InvalidNameVersionSegment),
         };
 
-        let version = Version::parse(version_string)?;
+        let version = version_string.parse::<PackageVersion>()?;
         let name: PackageName = name_string.parse()?;
 
         let maybe_group_segment = segments.pop();
@@ -350,7 +359,7 @@ impl std::str::FromStr for PackageId<MaybeVersion> {
 
         let name: PackageName = name_string.parse()?;
         let version = match version_string {
-            Some(version_string) => Some(Version::parse(version_string)?),
+            Some(version_string) => Some(version_string.parse::<PackageVersion>()?),
             None => None,
         };
 
@@ -503,7 +512,10 @@ mod tests {
         assert_eq!(package_id.registry(), &Registry::default());
         assert_eq!(package_id.group().as_str(), "fluvio.io");
         assert_eq!(package_id.name().as_str(), "fluvio");
-        assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
+        assert_eq!(
+            package_id.version(),
+            &PackageVersion::Semver(Version::parse("0.6.0").unwrap())
+        );
     }
 
     #[test]
@@ -515,7 +527,10 @@ mod tests {
         assert_eq!(package_id.registry(), &registry_url.parse().unwrap());
         assert_eq!(package_id.group().as_str(), "fluvio.io");
         assert_eq!(package_id.name().as_str(), "fluvio");
-        assert_eq!(package_id.version(), &Version::parse("0.6.0").unwrap());
+        assert_eq!(
+            package_id.version(),
+            &PackageVersion::Semver(Version::parse("0.6.0").unwrap())
+        );
     }
 
     #[test]
@@ -524,7 +539,10 @@ mod tests {
         assert_eq!(package_id.registry(), &Registry::default());
         assert_eq!(package_id.group().as_str(), "fluvio");
         assert_eq!(package_id.name().as_str(), "fluvio-cloud");
-        assert_eq!(package_id.version(), &Version::parse("0.1.4").unwrap());
+        assert_eq!(
+            package_id.version(),
+            &PackageVersion::Semver(Version::parse("0.1.4").unwrap())
+        );
     }
 
     #[test]
@@ -542,7 +560,7 @@ mod tests {
         let package_id = PackageId::new_versioned(
             "project-x-secret-sauce".parse().unwrap(),
             "infinyon.super.secret.division".parse().unwrap(),
-            Version::parse("100.0.0-special-edition").unwrap(),
+            "100.0.0-special-edition".parse::<PackageVersion>().unwrap(),
         );
 
         let package_id_string = package_id.to_string();
@@ -561,7 +579,7 @@ mod tests {
         let package_id_with_version = PackageId::new_versioned(
             "fluvio".parse().unwrap(),
             "fluvio".parse().unwrap(),
-            Version::parse("1.2.3-alpha").unwrap(),
+            "1.2.3-alpha".parse::<PackageVersion>().unwrap(),
         );
         assert_eq!(
             "fluvio/fluvio:1.2.3-alpha",
@@ -625,7 +643,7 @@ mod tests {
         let package_id_with_version = PackageId::new_versioned(
             "fluvio".parse().unwrap(),
             "fluvio".parse().unwrap(),
-            Version::parse("1.2.3").unwrap(),
+            "1.2.3".parse::<PackageVersion>().unwrap(),
         );
 
         let json = serde_json::to_string(&package_id_with_version).unwrap();

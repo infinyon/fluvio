@@ -84,7 +84,7 @@ impl UpdateOpt {
         // Find the latest version of this package
         install_println("🎣 Fetching latest version for fluvio...");
         let latest_version = fetch_latest_version(agent, &id, &target, self.develop).await?;
-        let id = id.into_versioned(latest_version);
+        let id = id.into_versioned(latest_version.into());
 
         // Download the package file from the package registry
         install_println(format!(
@@ -122,7 +122,7 @@ impl UpdateOpt {
             id.pretty(),
             version
         );
-        let id = id.clone().into_versioned(version);
+        let id = id.clone().into_versioned(version.into());
         let package_file = fetch_package_file(agent, &id, &target).await?;
         println!("🔑 Downloaded and verified package file");
 

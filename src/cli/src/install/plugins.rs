@@ -83,7 +83,7 @@ impl InstallOpt {
                 let id = &self.package;
                 install_println(format!("🎣 Fetching latest version for package: {}...", id));
                 let version = fetch_latest_version(agent, id, &target, self.develop).await?;
-                let id = id.clone().into_versioned(version);
+                let id = id.clone().into_versioned(version.into());
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
                     id
