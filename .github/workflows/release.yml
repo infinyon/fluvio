@@ -15,9 +15,9 @@ on:
         description: 'Fluvio git commit override (latest `master` by default)'
         default: ''
       installer_version:
-        required: true
+        required: false
         description: ''
-        default: 'stable'
+        default: ''
 env:
   USE_COMMIT: ${{ github.event.inputs.commit }}
   FORCE_RELEASE: ${{ github.event.inputs.force }}
@@ -178,8 +178,10 @@ jobs:
       - name: Install fluvio-package
         run: |
           unset VERSION
-          export VERSION=${{ github.event.inputs.installer_version || 'stable' }}
-          echo "VERSION=$VERSION"
+          if [ -n "${{ github.event.inputs.installer_version }}" ]; then
+              export VERSION=${{ github.event.inputs.installer_version }}
+              echo "VERSION=$VERSION"
+          fi
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
@@ -252,8 +254,10 @@ jobs:
     steps:
       - name: Install fluvio-package
         run: |
-          export VERSION=${{ github.event.inputs.installer_version || 'stable' }}
-          echo "VERSION=$VERSION"
+          if [ -n "${{ github.event.inputs.installer_version }}" ]; then
+              export VERSION=${{ github.event.inputs.installer_version }}
+              echo "VERSION=$VERSION"
+          fi
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
