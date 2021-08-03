@@ -107,7 +107,6 @@ jobs:
 
     env:
       FLV_SOCKET_WAIT: 600
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
       - name: Install Minikube for Github runner
