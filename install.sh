@@ -67,9 +67,13 @@ assert_supported_cluster_target() {
             echo "x86_64-unknown-linux-musl"
             return 0
             ;;
+        x86_64-apple-darwin)
+            echo "x86_64-apple-darwin"
+            return 0
+            ;;
     esac
 
-    say "🥈 Target '${_target}' is not a Tier 1 platform target"
+    say "🥈 Target '${_target}' is not a Tier 1 or 2 platform target"
     say "⏭    Skipping installation of cluster executable fluvio-run"
     return 1
 }
