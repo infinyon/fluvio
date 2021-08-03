@@ -3,7 +3,7 @@ use std::io::{ErrorKind, Error as IoError};
 use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
-use fluvio_index::{HttpAgent, PackageId, Target, WithVersion};
+use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
 use crate::CliError;
 
 pub mod update;
@@ -91,14 +91,29 @@ async fn fetch_package_file(
     id: &PackageId<WithVersion>,
     target: &Target,
 ) -> Result<Vec<u8>, CliError> {
+    // If the PackageVersion is a tag, try to resolve it to a semver::Version
+    let version = match id.version() {
+        PackageVersion::Semver(version) => version.clone(),
+        PackageVersion::Tag(tag) => {
+            let tag_request = agent.request_tag(id, tag)?;
+            let tag_response = crate::http::execute(tag_request).await?;
+            agent.tag_version_from_response(tag, tag_response).await?
+        }
+        _ => {
+            return Err(
+                fluvio_index::Error::Other("unknown PackageVersion type".to_string()).into(),
+            )
+        }
+    };
+
     // Download the package file from the package registry
-    let download_request = agent.request_release_download(id, target)?;
+    let download_request = agent.request_release_download(id, &version, target)?;
     debug!(url = %download_request.url(), "Requesting package download:");
     let response = crate::http::execute(download_request).await?;
     let package_file = agent.release_from_response(response).await?;
 
     // Download the package checksum from the package registry
-    let checksum_request = agent.request_release_checksum(id, target)?;
+    let checksum_request = agent.request_release_checksum(id, &version, target)?;
     let response = crate::http::execute(checksum_request).await?;
     let package_checksum = agent.checksum_from_response(response).await?;
 

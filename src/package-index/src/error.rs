@@ -39,10 +39,18 @@ pub enum Error {
     InvalidPackageName(String),
     #[error("Invalid group name: {0}")]
     InvalidGroupName(String),
+    #[error("Invalid tag name: {0}")]
+    InvalidTagName(String),
+    #[error("Tag '{0}' does not exist")]
+    TagDoesNotExist(String),
+    #[error("Failed to parse PackageVersion from '{0}', must be valid Semver or Tag name")]
+    InvalidPackageVersion(String),
     #[error("Version number is required here")]
     MissingVersion,
     #[error("Failed to parse registry segment of PackageId")]
     FailedToParseRegistry(url::ParseError),
+    #[error("An unknown error occurred: {0}")]
+    Other(String),
 }
 
 #[derive(thiserror::Error, Debug)]

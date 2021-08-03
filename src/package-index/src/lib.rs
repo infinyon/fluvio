@@ -10,15 +10,19 @@
 
 use serde::{Serialize, Deserialize};
 
+mod tags;
 mod http;
 mod error;
 mod target;
+mod version;
 mod package;
 mod package_id;
 
+pub use tags::TagName;
 pub use http::HttpAgent;
 pub use error::{Error, Result};
 pub use target::{Target, package_target};
+pub use version::PackageVersion;
 pub use package::{Package, PackageKind, Release};
 pub use package_id::{PackageId, GroupName, PackageName, Registry, WithVersion, MaybeVersion};
 use semver::Version;

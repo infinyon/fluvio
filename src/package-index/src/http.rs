@@ -1,7 +1,7 @@
 use url::Url;
 use http_types::{Request, Response};
 use crate::package_id::WithVersion;
-use crate::{Result, FluvioIndex, Package, PackageId, Target};
+use crate::{Result, FluvioIndex, Package, PackageId, Target, TagName};
 
 pub struct HttpAgent {
     base_url: url::Url,
@@ -48,36 +48,62 @@ impl HttpAgent {
         Ok(package)
     }
 
-    pub fn request_release_download(
+    pub fn request_tag(&self, id: &PackageId<WithVersion>, tag: &TagName) -> Result<Request> {
+        let url = self.base_url.join(&format!(
+            "packages/{group}/{name}/tags/{tag}",
+            group = id.group(),
+            name = id.name(),
+            tag = tag,
+        ))?;
+
+        Ok(Request::get(url))
+    }
+
+    pub fn request_release_download<T>(
         &self,
-        id: &PackageId<WithVersion>,
+        id: &PackageId<T>,
+        version: &semver::Version,
         target: &Target,
     ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}",
             group = &id.group(),
             name = &id.name(),
-            version = id.version(),
+            version = version,
             target = target.as_str(),
         ))?;
 
         Ok(Request::get(url))
     }
 
-    pub fn request_release_checksum(
+    pub fn request_release_checksum<T>(
         &self,
-        id: &PackageId<WithVersion>,
+        id: &PackageId<T>,
+        version: &semver::Version,
         target: &Target,
     ) -> Result<Request> {
         let url = self.base_url.join(&format!(
             "packages/{group}/{name}/{version}/{target}/{name}.sha256",
             group = &id.group(),
             name = &id.name(),
-            version = id.version(),
+            version = version,
             target = target.as_str(),
         ))?;
 
         Ok(Request::get(url))
+    }
+
+    pub async fn tag_version_from_response(
+        &self,
+        tag: &TagName,
+        mut response: Response,
+    ) -> Result<semver::Version> {
+        let string = response.body_string().await?;
+        if string.contains("<title>404 Not Found") {
+            return Err(crate::Error::TagDoesNotExist(tag.to_string()));
+        }
+        let version = semver::Version::parse(&string)?;
+        Ok(version)
     }
 
     pub async fn release_from_response(&self, mut response: Response) -> Result<Vec<u8>> {
