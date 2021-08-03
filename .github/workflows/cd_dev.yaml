@@ -54,8 +54,10 @@ jobs:
             k3d cluster create fluvio
             export PATH=~/.fluvio/bin:$PATH
             if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
+              echo "installing k8 cluster"
               fluvio cluster start --image-version latest
             else
+              echo "installing local cluster"
               fluvio cluster start --local
             fi
             sleep 30
