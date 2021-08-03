@@ -457,7 +457,9 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 3
-          command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
+          command: |
+            ./k8-util/cluster/reset-minikube.sh 
+            make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
 
       - name: Save logs
         if: failure()
@@ -466,17 +468,12 @@ jobs:
           minikube profile list
           echo "helm list"
           helm list
-          echo "get statefulset"
-          kubectl get statefulset
-          echo "kubectl get pvc"
-          kubectl get pvc
-          echo "kubectl get pods"
-          kubectl get pods
-          echo "kubectl get svc"
-          kubectl get svc
-          echo "kubectl get spu"
           kubectl get spu
-          echo "kubectl get spg"
+          kubectl get statefulset
+          kubectl get pvc
+          kubectl get pods
+          kubectl get svc
+
           kubectl get spg
           kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs
