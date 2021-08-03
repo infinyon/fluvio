@@ -53,7 +53,7 @@ jobs:
             k3d cluster delete fluvio
             k3d cluster create fluvio
             export PATH=~/.fluvio/bin:$PATH
-            if [[ ${{ maxtri.cluster_type }} == 'local' ]]; then
+            if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
                 fluvio cluster start --image-version latest
             else
               fluvio cluster start --local
