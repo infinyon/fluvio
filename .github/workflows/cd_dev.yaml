@@ -98,7 +98,7 @@ jobs:
   # Perform upgrade test from previous stable version to latest
   k8_cluster_upgrade:
     name: Kubernetes cluster upgrade test
-    if: false
+   # if: false
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -107,16 +107,8 @@ jobs:
 
     env:
       FLV_SOCKET_WAIT: 600
-      FLV_CLUSTER_MAX_SC_VERSION_LOOP: 120
-      FLV_CLUSTER_MAX_SC_NETWORK_LOOP: 60
-      FLV_TEST_CONSUMER_WAIT: 300000
-      RUSTV: ${{ matrix.rust }}
-      TARGET: x86_64-unknown-linux-musl
-      # SCCACHE_RECACHE: 1 # Uncomment this to clear cache, then comment it back out
     steps:
       - uses: actions/checkout@v2
-      - run: helm version
-
       - name: Install Minikube for Github runner
         if: matrix.os == 'ubuntu-latest'
         uses: manusa/actions-setup-minikube@v2.4.2
@@ -132,13 +124,32 @@ jobs:
           TEST_DATA_BYTES: 10000
         uses: nick-invision/retry@v2
         with:
-          timeout_minutes: 45
+          timeout_minutes: 15
           max_attempts: 3
           command: |
             ./k8-util/cluster/reset-minikube.sh 
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
-
+      - name: Save logs
+        if: failure()
+        run: |
+          echo "minikube profile list"
+          minikube profile list
+          echo "helm list"
+          helm list
+          echo "get statefulset"
+          kubectl get statefulset
+          echo "kubectl get pvc"
+          kubectl get pvc
+          echo "kubectl get pods"
+          kubectl get pods
+          echo "kubectl get svc"
+          kubectl get svc
+          echo "kubectl get spu"
+          kubectl get spu
+          echo "kubectl get spg"
+          kubectl get spg
+          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()

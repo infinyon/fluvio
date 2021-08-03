@@ -20,7 +20,7 @@ set -e
 
 readonly STABLE=${1:-stable}
 readonly PRERELEASE=${2:-$(cat VERSION)-$(git rev-parse HEAD)}
-readonly CI_SLEEP=${CI_SLEEP:-10}
+readonly CI_SLEEP=${CI_SLEEP:-5}
 readonly CI=${CI:-}
 readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
@@ -118,8 +118,10 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Installed CLI version ${TARGET_VERSION}"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
         echo "Upgrading cluster to ${TARGET_VERSION}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade
-        sleep 20
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
+        echo "Wait for SPU to be upgraded. sleeping 1 minute"
+        sleep 60
     else
         echo "Test local image v${PRERELEASE}"
         # This should use the binary that the Makefile set
