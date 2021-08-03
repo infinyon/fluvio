@@ -41,10 +41,10 @@ jobs:
       - name: Install Kind
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-      - name: Install Fluvio Local Cluster
+      - name: Install Fluvio CLI
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-      - name: Fluvio E2E Test
+      - name: Create Fluvio cluster and run E2E Test
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 7
@@ -54,11 +54,12 @@ jobs:
             k3d cluster create fluvio
             export PATH=~/.fluvio/bin:$PATH
             if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
-              echo "installing k8 cluster"
-              fluvio cluster start --image-version latest
-            else
-              echo "installing local cluster"
+              echo "Installing local cluster"
               fluvio cluster start --local
+            else
+              echo "Installing k8 cluster"
+              fluvio cluster start --image-version latest
+              
             fi
             sleep 30
             fluvio version
