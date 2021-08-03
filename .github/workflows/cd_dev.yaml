@@ -35,43 +35,39 @@ jobs:
       SLEEP: 10
       TOPIC: foobar
       FLV_SOCKET_WAIT: 600
+
     steps:
       - uses: actions/checkout@v2
-      - name: Install Minikube for Github runner
-        uses: manusa/actions-setup-minikube@v2.4.2
-        with:
-          minikube version: "v1.22.0"
-          kubernetes version: "v1.21.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-          driver: docker
+      - name: Install Kind
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Install Fluvio Local Cluster
-        uses: ./
-        with:
-          version: ${{ matrix.fluvio_version }}
-          cluster-type: ${{ matrix.cluster_type }}
-      - name: Check Cluster status
         run: |
-          lscpu
-          fluvio version
-          echo "sleeping 1 minute to ensure cluster is up"
-          sleep 60
-          kubectl get pods
-          kubectl get pvc
-          kubectl get svc
-          kubectl get topics
-          kubectl get partitions
-          kubectl get spu
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
       - name: Fluvio E2E Test
-        run: |
-          fluvio topic list
-          sleep ${{ env.SLEEP }}
-          fluvio topic create ${{ env.TOPIC }}
-          sleep ${{ env.SLEEP }}
-          echo foo | fluvio produce ${{ env.TOPIC }}
-          sleep ${{ env.SLEEP }}
-          fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
-          # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "${{ env.TOPIC }}"
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 7
+          max_attempts: 3
+          command: |
+            k3d cluster delete fluvio
+            k3d cluster create fluvio
+            export PATH=~/.fluvio/bin:$PATH
+            if [[ ${{ maxtri.cluster_type }} == 'local' ]]; then
+                fluvio cluster start --image-version latest
+            else
+              fluvio cluster start --local
+            fi
+            sleep 30
+            fluvio version
+            sleep ${{ env.SLEEP }}
+            fluvio topic create ${{ env.TOPIC }}
+            sleep ${{ env.SLEEP }}
+            echo foo | fluvio produce ${{ env.TOPIC }}
+            sleep ${{ env.SLEEP }}
+            fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
+            # Delete the topic afterword but this looks to not work right now.
+            # fluvio topic delete "${{ env.TOPIC }}"
 
       - name: Debug failure
         if: failure()
