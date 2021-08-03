@@ -49,7 +49,7 @@ pub fn generate_map_smartstream(func: &SmartStreamFn) -> TokenStream {
                             let error = fluvio_smartstream::dataplane::smartstream::SmartStreamRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
-                                fluvio_smartstream::dataplane::smartstream::SmartStreamType::Filter,
+                                fluvio_smartstream::dataplane::smartstream::SmartStreamType::Map,
                                 err,
                             );
                             output.error = Some(error);
