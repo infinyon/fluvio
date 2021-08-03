@@ -1334,7 +1334,13 @@ mod test {
 
         let mut records: RecordSet = BatchProducer::builder()
             .records(10u16)
-            .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
+            .record_generator(Arc::new(|i, _| {
+                if i < 9 {
+                    Record::new(i.to_string())
+                } else {
+                    Record::new("nine".to_string())
+                }
+            }))
             .build()
             .expect("batch")
             .records();
@@ -1349,7 +1355,7 @@ mod test {
 
         assert_eq!(response.partition.records.batches.len(), 1);
         let records = response.partition.records.batches[0].records();
-        assert_eq!(records.len(), 10);
+        assert_eq!(records.len(), 9);
         assert_eq!(records[0].value.as_ref(), "0".as_bytes());
         assert_eq!(records[1].value.as_ref(), "2".as_bytes());
         assert_eq!(records[2].value.as_ref(), "4".as_bytes());
@@ -1359,11 +1365,14 @@ mod test {
         assert_eq!(records[6].value.as_ref(), "12".as_bytes());
         assert_eq!(records[7].value.as_ref(), "14".as_bytes());
         assert_eq!(records[8].value.as_ref(), "16".as_bytes());
-        assert_eq!(records[9].value.as_ref(), "18".as_bytes());
 
         match &response.partition.error_code {
-            ErrorCode::None => (),
-            _ => panic!("should not get error"),
+            ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)) => {
+                assert_eq!(error.offset, 9);
+                assert_eq!(error.kind, SmartStreamType::Map);
+                assert_eq!(error.record_value.as_ref(), "nine".as_bytes());
+            }
+            _ => panic!("should get runtime error"),
         }
 
         drop(response);
