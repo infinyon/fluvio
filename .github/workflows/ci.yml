@@ -438,19 +438,9 @@ jobs:
         with:
           name: infinyon-fluvio
           path: /tmp
-      - name: Load Fluvio Docker Image
-        run: |
-          ls -la /tmp
-          eval $(minikube -p minikube docker-env)
-          docker image load --input /tmp/infinyon-fluvio.tar
-          docker image ls -a
 
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
-
-      - name: Setup installation pre-requisites
-        run: |
-          make FLUVIO_BIN=./fluvio RELEASE=true TARGET=x86_64-unknown-linux-musl k8-setup
 
       - name: Run smoke-test-k8-tls-root
         uses: nick-invision/retry@v2
@@ -458,7 +448,10 @@ jobs:
           timeout_minutes: 7
           max_attempts: 3
           command: |
-            ./k8-util/cluster/reset-minikube.sh 
+            ./k8-util/cluster/reset-minikube.sh
+            eval $(minikube -p minikube docker-env)
+            docker image load --input /tmp/infinyon-fluvio.tar
+            docker image ls -a
             make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
 
       - name: Save logs
