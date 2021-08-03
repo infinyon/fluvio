@@ -34,9 +34,6 @@ members = [
 ]
 resolver = "2"
 
-[patch.crates-io]
-k8-types = { git = "https://github.com/infinyon/k8-api" }
-
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
