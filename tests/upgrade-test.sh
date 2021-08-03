@@ -69,8 +69,6 @@ function validate_cluster_stable() {
     $STABLE_FLUVIO version
     ci_check;
 
-    echo "waiting 5 seconds"
-    sleep 5;
 
     echo "Create test topic: ${STABLE_TOPIC}"
     $STABLE_FLUVIO topic create ${STABLE_TOPIC} 
@@ -129,6 +127,9 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
+
+        helm list
+        kubectl get configmap spu-k8 -o yaml
 
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
         sleep 60
