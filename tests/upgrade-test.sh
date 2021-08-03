@@ -119,7 +119,7 @@ function validate_upgrade_cluster_to_prerelease() {
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
         echo "Upgrading cluster to ${TARGET_VERSION}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
-        $FLUVIO_BIN_ABS_PATH cluster upgrade
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
         sleep 60
     else
