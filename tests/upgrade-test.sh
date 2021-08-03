@@ -57,8 +57,9 @@ function ci_check() {
 # Then we produce + consume on the Stable-1 topic and validate the checksums on that topic
 function validate_cluster_stable() {
 
-    echo "Install (current stable) v${STABLE} CLI"
-    curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${STABLE} bash
+    echo "Install (current stable) CLI"
+    unset VERSION
+    curl -fsS https://packages.fluvio.io/v1/install.sh | bash
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
