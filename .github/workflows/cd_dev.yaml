@@ -54,7 +54,7 @@ jobs:
             k3d cluster create fluvio
             export PATH=~/.fluvio/bin:$PATH
             if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
-                fluvio cluster start --image-version latest
+              fluvio cluster start --image-version latest
             else
               fluvio cluster start --local
             fi
