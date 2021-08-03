@@ -257,20 +257,6 @@ impl<T> PackageId<T> {
 }
 
 impl PackageId<WithVersion> {
-    /// Create a new, versioned PackageId.
-    pub(crate) fn new_versioned(
-        name: PackageName,
-        group: GroupName,
-        version: PackageVersion,
-    ) -> Self {
-        Self {
-            registry: None,
-            group: Some(group),
-            name,
-            version,
-        }
-    }
-
     /// A PackageId<WithVersion> indisputably has a version, no Option required.
     pub fn version(&self) -> &PackageVersion {
         &self.version
@@ -556,31 +542,10 @@ mod tests {
     }
 
     #[test]
-    fn test_package_id_idempotent() {
-        let package_id = PackageId::new_versioned(
-            "project-x-secret-sauce".parse().unwrap(),
-            "infinyon.super.secret.division".parse().unwrap(),
-            "100.0.0-special-edition".parse::<PackageVersion>().unwrap(),
-        );
-
-        let package_id_string = package_id.to_string();
-        assert_eq!(
-            package_id_string,
-            "infinyon.super.secret.division/\
-            project-x-secret-sauce:100.0.0-special-edition"
-        );
-
-        let parsed_package_id: PackageId<WithVersion> = package_id_string.parse().unwrap();
-        assert_eq!(package_id, parsed_package_id);
-    }
-
-    #[test]
     fn test_package_id_display() {
-        let package_id_with_version = PackageId::new_versioned(
-            "fluvio".parse().unwrap(),
-            "fluvio".parse().unwrap(),
-            "1.2.3-alpha".parse::<PackageVersion>().unwrap(),
-        );
+        let package_id_with_version = "fluvio/fluvio:1.2.3-alpha"
+            .parse::<PackageId<WithVersion>>()
+            .unwrap();
         assert_eq!(
             "fluvio/fluvio:1.2.3-alpha",
             format!("{}", package_id_with_version)
@@ -640,12 +605,9 @@ mod tests {
 
     #[test]
     fn test_serialize_package_id_versioned() {
-        let package_id_with_version = PackageId::new_versioned(
-            "fluvio".parse().unwrap(),
-            "fluvio".parse().unwrap(),
-            "1.2.3".parse::<PackageVersion>().unwrap(),
-        );
-
+        let package_id_with_version = "fluvio/fluvio:1.2.3"
+            .parse::<PackageId<WithVersion>>()
+            .unwrap();
         let json = serde_json::to_string(&package_id_with_version).unwrap();
         assert_eq!(json, r#""fluvio/fluvio:1.2.3""#);
     }

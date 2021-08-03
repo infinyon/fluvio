@@ -23,7 +23,7 @@ impl std::str::FromStr for TagName {
                 s
             )));
         }
-        if s.contains("/") {
+        if s.contains('/') {
             return Err(Error::InvalidTagName(format!(
                 "tag name may not contain '/', got '{}'",
                 s

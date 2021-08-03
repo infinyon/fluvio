@@ -33,7 +33,7 @@ impl std::str::FromStr for PackageVersion {
             return Ok(Self::Tag(tagname));
         };
 
-        return Err(Error::InvalidPackageVersion(s.to_string()));
+        Err(Error::InvalidPackageVersion(s.to_string()))
     }
 }
 
