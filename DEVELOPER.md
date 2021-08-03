@@ -165,6 +165,10 @@ We highly recommend using the `flvd cluster start --local --develop` command for
 
 However, in the following cases, we run `sc` and `spu` individually, allowing individual testing.
 
+## Filtering Log
+
+Please see [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
+
 ## Starting SC
 
 The Streaming Controller (SC) is the controller for a Fluvio cluster.
@@ -307,6 +311,8 @@ Note that when you uninstall cluster, CLI will remove all related objects such a
 - Storage
 
 ## Running SC in locally
+
+
 
 First install fluvio k8 cluster as normally.
 

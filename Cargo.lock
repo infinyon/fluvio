@@ -1853,7 +1853,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -2708,7 +2708,7 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.2.7"
-source = "git+https://github.com/infinyon/k8-api#ec0e38fbee1249962170efc5d8e41378f25711a1"
+source = "git+https://github.com/infinyon/k8-api#507cb5179cf2869da432ab36a5d985b4c89560ee"
 dependencies = [
  "serde",
  "serde_json",

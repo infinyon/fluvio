@@ -123,19 +123,10 @@ jobs:
         with:
           minikube version: "v1.22.0"
           kubernetes version: "v1.21.2"
-      - name: Setup Minikube for Linux
-        if: startsWith(matrix.os, 'infinyon-ubuntu')
-        run: |
-          minikube delete
-          minikube start --driver=docker --kubernetes-version 1.21.2
       - name: Test minikube
         run: |
           minikube profile list
           minikube status
-      - name: Setup for upgrade test
-        run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-
       - name: Run upgrade test
         env:
           TEST_DATA_BYTES: 10000
@@ -144,12 +135,9 @@ jobs:
           timeout_minutes: 45
           max_attempts: 3
           command: |
+            ./k8-util/cluster/reset-minikube.sh 
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
-
-      - name: Clean minikube
-        run: |
-          minikube delete
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3

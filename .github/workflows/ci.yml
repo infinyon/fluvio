@@ -489,7 +489,7 @@ jobs:
 
   k8_upgrade_test:
     name: Upgrade cluster test
-    if: ${{ false }} # Disable job for CI
+    if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
@@ -533,10 +533,6 @@ jobs:
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
 
-      - name: Setup for upgrade test
-        run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-
       - name: Run upgrade test with CI artifacts
         env:
           TEST_DATA_BYTES: 10000
@@ -545,6 +541,7 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           command: |
+            ./k8-util/cluster/reset-minikube.sh 
             export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test
 
@@ -589,7 +586,7 @@ jobs:
       - build_binaries
       - local_cluster_test
       - k8_cluster_test
-      #- k8_upgrade_test
+      # - k8_upgrade_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2

@@ -36,6 +36,8 @@ function cleanup() {
     rm -f --verbose ./*.checksum;
     echo Delete cluster if possible
     $FLUVIO_BIN cluster delete || true
+    $FLUVIO_BIN cluster delete --sys || true
+
 }
 
 # If we're in CI, we want to slow down execution
@@ -67,8 +69,6 @@ function validate_cluster_stable() {
     $STABLE_FLUVIO version
     ci_check;
 
-    echo "waiting 5 seconds"
-    sleep 5;
 
     echo "Create test topic: ${STABLE_TOPIC}"
     $STABLE_FLUVIO topic create ${STABLE_TOPIC} 
@@ -126,7 +126,14 @@ function validate_upgrade_cluster_to_prerelease() {
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
-        $FLUVIO_BIN_ABS_PATH cluster upgrade  --develop
+        $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
+
+        helm list
+        kubectl get configmap spu-k8 -o yaml
+        kubectl get pods 
+        kubectl get pod -l app=fluvio-sc -o yaml
+        echo "Wait for SPU to be upgraded. sleeping 1 minute"
+        sleep 60
     fi
     popd
 
@@ -220,9 +227,9 @@ function main() {
     validate_cluster_stable;
 
     echo "Update cluster to prerelease v${PRERELEASE}"
-    # validate_upgrade_cluster_to_prerelease;
+    validate_upgrade_cluster_to_prerelease;
 
-    # cleanup;
+    cleanup;
 
     # Change back to original directory
     popd > /dev/null

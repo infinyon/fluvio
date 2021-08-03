@@ -118,7 +118,7 @@ impl SpgStatefulSetController {
         Ok(())
     }
 
-    #[instrument(skip(self, spu_k8_config))]
+    #[instrument(skip(self, spu_k8_config, spu_group))]
     async fn sync_spg_to_statefulset(
         &mut self,
         spu_group: SpuGroupObj,
@@ -137,6 +137,7 @@ impl SpgStatefulSetController {
         } else {
             // if we pass this stage, then we reserved id.
             if !spu_group.is_already_valid() {
+                debug!("not valid");
                 let status = SpuGroupStatus::reserved();
                 self.groups
                     .update_status(spg_name.to_owned(), status)
@@ -144,6 +145,7 @@ impl SpgStatefulSetController {
                 return Ok(());
             }
 
+            debug!("continue");
             let (spg_service_key, spg_service_action) = spu_group.generate_service();
 
             trace!("spg_service_actions: {:#?}", spg_service_action);
