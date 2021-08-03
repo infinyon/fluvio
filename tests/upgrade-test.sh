@@ -58,6 +58,7 @@ function ci_check() {
 function validate_cluster_stable() {
 
     echo "Install (current stable) CLI"
+    unset VERSION
     curl -fsS https://packages.fluvio.io/v1/install.sh | bash
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
