@@ -20,7 +20,7 @@ set -e
 
 readonly STABLE=${1:-stable}
 readonly PRERELEASE=${2:-$(cat VERSION)-$(git rev-parse HEAD)}
-readonly CI_SLEEP=${CI_SLEEP:-10}
+readonly CI_SLEEP=${CI_SLEEP:-5}
 readonly CI=${CI:-}
 readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
