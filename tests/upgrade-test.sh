@@ -130,7 +130,8 @@ function validate_upgrade_cluster_to_prerelease() {
 
         helm list
         kubectl get configmap spu-k8 -o yaml
-
+        kubectl get pods 
+        kubectl get pod -l app=fluvio-sc -o yaml
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
         sleep 60
     fi
