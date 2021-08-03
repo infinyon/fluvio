@@ -455,7 +455,7 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         uses: nick-invision/retry@v2
         with:
-          timeout_minutes: 5
+          timeout_minutes: 7
           max_attempts: 3
           command: |
             ./k8-util/cluster/reset-minikube.sh 
