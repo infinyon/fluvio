@@ -63,16 +63,16 @@ where
         ctx.spgs().clone(),
     );
 
-    whitelist!(config, "spu", { SpuController::start(ctx.clone()) });
-    whitelist!(config, "topic", { TopicController::start(ctx.clone()) });
-    whitelist!(config, "partition", {
-        PartitionController::start(ctx.clone())
-    });
+    whitelist!(config, "spu", SpuController::start(ctx.clone()));
+    whitelist!(config, "topic", TopicController::start(ctx.clone()));
+    whitelist!(config, "partition", PartitionController::start(ctx.clone()));
 
-    whitelist!(config, "internal", { start_internal_server(ctx.clone()) });
-    whitelist!(config, "public", {
+    whitelist!(config, "internal", start_internal_server(ctx.clone()));
+    whitelist!(
+        config,
+        "public",
         pub_server::start(ctx.clone(), auth_policy)
-    });
+    );
 
     mod pub_server {
 

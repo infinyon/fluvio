@@ -62,7 +62,7 @@ mod k8_operator {
                 global_ctx.spus().clone(),
                 spg_service_ctx,
                 tls,
-            )
+            );
         });
 
         whitelist!(config, "k8_spu", {
