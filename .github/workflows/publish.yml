@@ -16,7 +16,7 @@ on:
       installer_version:
         required: true
         description: "The version of Fluvio to download with install.sh"
-        default: "stable"
+        default: ""
 
 env:
   VERBOSE: ${{ github.events.input.verbose }}
@@ -60,8 +60,10 @@ jobs:
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Install fluvio-package
         run: |
-          export VERSION=${{ github.event.inputs.installer_version || 'stable' }}
-          echo "VERSION=$VERSION"
+          if [ -n "${{ github.event.inputs.installer_version }}" ]; then
+              export VERSION=${{ github.event.inputs.installer_version }}
+              echo "VERSION=$VERSION"
+          fi
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
