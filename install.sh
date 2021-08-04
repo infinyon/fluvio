@@ -26,7 +26,7 @@ assert_supported_client_target() {
             return 0
             ;;
         aarch64-unknown-linux-musl)
-            echo "aarch64-apple-darwin"
+            echo "aarch64-unknown-linux-musl"
             return 0
             ;;
         x86_64-apple-darwin)
