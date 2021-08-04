@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-  pull_request:
-    branches: [master]
+#  pull_request:
+#    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
