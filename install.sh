@@ -16,45 +16,19 @@ readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
 #
 # @param $1: The target triple of this architecture
 # @return: Status 0 if the architecture is supported, exit if not
-assert_supported_client_target() {
+normalize_target() {
     local _target="$1"; shift
 
     # Match against all supported targets
     case $_target in
-        aarch64-apple-darwin)
-            echo "aarch64-apple-darwin"
-            return 0
-            ;;
-        aarch64-unknown-linux-musl)
-            echo "aarch64-unknown-linux-musl"
-            return 0
-            ;;
-        x86_64-apple-darwin)
-            echo "x86_64-apple-darwin"
-            return 0
-            ;;
-        x86_64-unknown-linux-musl)
-            echo "x86_64-unknown-linux-musl"
-            return 0
-            ;;
         x86_64-unknown-linux-gnu)
             echo "x86_64-unknown-linux-musl"
             return 0
             ;;
-        arm-unknown-linux-gnueabihf)
-            echo "arm-unknown-linux-gnueabihf"
-            return 0
-            ;;
-        armv7-unknown-linux-gnueabihf)
-            echo "armv7-unknown-linux-gnueabihf"
-            return 0
-            ;;
     esac
 
-    err "Target '${_target}' is not supported"
-    err "Consider filing an issue to add support for this platform using the link below! 👇"
-    err "  https://github.com/infinyon/fluvio/issues/new?title=Support+target+${_target}"
-    return 1
+    echo "${_target}"
+    return 0
 }
 
 # Ensure that this target is supported for cluster builds and matches the
@@ -516,7 +490,7 @@ main() {
     # Some architectures may be folded into a single 'target' distribution
     # e.g. x86_64-unknown-linux-musl and x86_64-unknown-linux-gnu both download
     # the musl target release. The _target here is used in the URL to download
-    _target=$(assert_supported_client_target ${_arch})
+    _target=$(normalize_target ${_arch})
 
     # If a VERSION env variable is set:
     if [ -n "${VERSION:-""}" ]; then
