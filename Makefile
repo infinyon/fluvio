@@ -51,7 +51,7 @@ helm_pkg:
 	make -C k8-util/helm package
 
 
-build-cli: install_rustup_target 
+build-cli: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-cli-minimal: install_rustup_target
@@ -253,6 +253,11 @@ fluvio_bin_musl:
 upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --sys
 	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
+
+
+clean:
+	cargo clean
+	make -C k8-util/helm clean
 
 
 .EXPORT_ALL_VARIABLES:
