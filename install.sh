@@ -21,6 +21,14 @@ assert_supported_client_target() {
 
     # Match against all supported targets
     case $_target in
+        aarch64-apple-darwin)
+            echo "aarch64-apple-darwin"
+            return 0
+            ;;
+        aarch64-unknown-linux-musl)
+            echo "aarch64-apple-darwin"
+            return 0
+            ;;
         x86_64-apple-darwin)
             echo "x86_64-apple-darwin"
             return 0
