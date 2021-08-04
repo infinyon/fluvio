@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -21,16 +21,14 @@ on:
 
 jobs:
   # test fluvio in local cluster 
-  verify_releases:
+  verify_latest_releases:
     name: Verify latest (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
         cluster_type: [local,k8]
-        fluvio_version: [latest]
     env:
       SLEEP: 10
       TOPIC: foobar
@@ -91,7 +89,6 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
 
 
   # Perform upgrade test from previous stable version to latest
