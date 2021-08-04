@@ -303,8 +303,6 @@ jobs:
         with:
           key: ${{ matrix.os }}-${{ matrix.crate }}
 
-      - name: set up helm
-        run:  make helm_pkg
       - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
         run: cargo build --manifest-path ./src/${{matrix.crate}}/Cargo.toml
 
