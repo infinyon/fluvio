@@ -36,9 +36,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install Kind
-        run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - uses: nolar/setup-k3d-k3s@v1
       - name: Install Fluvio CLI
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
@@ -48,8 +46,7 @@ jobs:
           timeout_minutes: 7
           max_attempts: 3
           command: |
-            k3d cluster delete fluvio
-            k3d cluster create fluvio
+            ./k8-util/cluster/reset-k3d.sh 
             export PATH=~/.fluvio/bin:$PATH
             if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
               echo "Installing local cluster"
@@ -105,16 +102,7 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
-      - name: Install Minikube for Github runner
-        if: matrix.os == 'ubuntu-latest'
-        uses: manusa/actions-setup-minikube@v2.4.2
-        with:
-          minikube version: "v1.22.0"
-          kubernetes version: "v1.21.2"
-      - name: Test minikube
-        run: |
-          minikube profile list
-          minikube status
+      - uses: nolar/setup-k3d-k3s@v1
       - name: Run upgrade test
         env:
           TEST_DATA_BYTES: 10000
@@ -123,27 +111,18 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           command: |
-            ./k8-util/cluster/reset-minikube.sh 
+            ./k8-util/cluster/reset-k3d.sh 
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
       - name: Save logs
         if: failure()
         run: |
-          echo "minikube profile list"
-          minikube profile list
-          echo "helm list"
           helm list
-          echo "get statefulset"
           kubectl get statefulset
-          echo "kubectl get pvc"
           kubectl get pvc
-          echo "kubectl get pods"
           kubectl get pods
-          echo "kubectl get svc"
           kubectl get svc
-          echo "kubectl get spu"
           kubectl get spu
-          echo "kubectl get spg"
           kubectl get spg
           kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Slack Notification
