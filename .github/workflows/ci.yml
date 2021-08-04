@@ -323,18 +323,7 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
-      - name: Install Minikube for Github runner
-        uses: manusa/actions-setup-minikube@v2.4.2
-        with:
-          minikube version: "v1.22.0"
-          kubernetes version: "v1.21.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-          driver: docker
-      - name: Test minikube
-        run: |
-          helm version
-          minikube profile list
-          minikube status
+      - uses: nolar/setup-k3d-k3s@v1
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
         with:
@@ -353,14 +342,14 @@ jobs:
           path: .
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
-      - name: Setup
-        run: ./fluvio cluster start --setup --local
       - name: Run smoke-test
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 5
           max_attempts: 3
-          command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          command: |
+            ./k8-util/cluster/reset-k3d.sh 
+            make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Upload SC log
         uses: actions/upload-artifact@v2
@@ -415,18 +404,7 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
-      - name: Install Minikube for Github runner
-        uses: manusa/actions-setup-minikube@v2.4.2
-        with:
-          minikube version: "v1.22.0"
-          kubernetes version: "v1.21.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-          driver: docker
-      - name: Test minikube
-        run: |
-          helm version
-          minikube profile list
-          minikube status
+      - uses: nolar/setup-k3d-k3s@v1
       # Download artifacts
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
@@ -453,18 +431,13 @@ jobs:
           timeout_minutes: 7
           max_attempts: 3
           command: |
-            ./k8-util/cluster/reset-minikube.sh
-            eval $(minikube -p minikube docker-env)
-            docker image load --input /tmp/infinyon-fluvio.tar
-            docker image ls -a
+            ./k8-util/cluster/reset-k3d.sh
+            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
 
       - name: Save logs
         if: failure()
         run: |
-          echo "minikube profile list"
-          minikube profile list
-          echo "helm list"
           helm list
           kubectl get spu
           kubectl get statefulset
@@ -494,18 +467,7 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
-      - name: Install Minikube for Github runner
-        uses: manusa/actions-setup-minikube@v2.4.2
-        with:
-          minikube version: "v1.22.0"
-          kubernetes version: "v1.21.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-          driver: docker
-      - name: Test minikube
-        run: |
-          helm version
-          minikube profile list
-          minikube status
+      - uses: nolar/setup-k3d-k3s@v1
       # Download artifacts
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
@@ -528,31 +490,20 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           command: |
-            ./k8-util/cluster/reset-minikube.sh 
-            eval $(minikube -p minikube docker-env)
-            docker image load --input /tmp/infinyon-fluvio.tar
-            docker image ls -a
+            ./k8-util/cluster/reset-k3d.sh
+            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test
 
       - name: Save logs
         if: failure()
         run: |
-          echo "minikube profile list"
-          minikube profile list
-          echo "helm list"
           helm list
-          echo "get statefulset"
           kubectl get statefulset
-          echo "kubectl get pvc"
           kubectl get pvc
-          echo "kubectl get pods"
           kubectl get pods
-          echo "kubectl get svc"
           kubectl get svc
-          echo "kubectl get spu"
           kubectl get spu
-          echo "kubectl get spg"
           kubectl get spg
           kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Upload logs

@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-  pull_request:
-    branches: [master]
+#  pull_request:
+#    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -117,21 +117,12 @@ jobs:
       - name: Save logs
         if: failure()
         run: |
-          echo "minikube profile list"
-          minikube profile list
-          echo "helm list"
           helm list
-          echo "get statefulset"
           kubectl get statefulset
-          echo "kubectl get pvc"
           kubectl get pvc
-          echo "kubectl get pods"
           kubectl get pods
-          echo "kubectl get svc"
           kubectl get svc
-          echo "kubectl get spu"
           kubectl get spu
-          echo "kubectl get spg"
           kubectl get spg
           kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Slack Notification
