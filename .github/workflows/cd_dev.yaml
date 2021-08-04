@@ -21,57 +21,54 @@ on:
 
 jobs:
   # test fluvio in local cluster 
-  verify_releases:
+  verify_latest_releases:
     name: Verify latest (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
         cluster_type: [local,k8]
-        fluvio_version: [latest]
     env:
       SLEEP: 10
       TOPIC: foobar
       FLV_SOCKET_WAIT: 600
+
     steps:
       - uses: actions/checkout@v2
-      - name: Install Minikube for Github runner
-        uses: manusa/actions-setup-minikube@v2.4.2
-        with:
-          minikube version: "v1.22.0"
-          kubernetes version: "v1.21.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-          driver: docker
-      - name: Install Fluvio Local Cluster
-        uses: ./
-        with:
-          version: ${{ matrix.fluvio_version }}
-          cluster-type: ${{ matrix.cluster_type }}
-      - name: Check Cluster status
+      - name: Install Kind
         run: |
-          lscpu
-          fluvio version
-          echo "sleeping 1 minute to ensure cluster is up"
-          sleep 60
-          kubectl get pods
-          kubectl get pvc
-          kubectl get svc
-          kubectl get topics
-          kubectl get partitions
-          kubectl get spu
-      - name: Fluvio E2E Test
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Install Fluvio CLI
         run: |
-          fluvio topic list
-          sleep ${{ env.SLEEP }}
-          fluvio topic create ${{ env.TOPIC }}
-          sleep ${{ env.SLEEP }}
-          echo foo | fluvio produce ${{ env.TOPIC }}
-          sleep ${{ env.SLEEP }}
-          fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
-          # Delete the topic afterword but this looks to not work right now.
-          # fluvio topic delete "${{ env.TOPIC }}"
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+      - name: Create Fluvio cluster and run E2E Test
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 7
+          max_attempts: 3
+          command: |
+            k3d cluster delete fluvio
+            k3d cluster create fluvio
+            export PATH=~/.fluvio/bin:$PATH
+            if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
+              echo "Installing local cluster"
+              fluvio cluster start --local
+            else
+              echo "Installing k8 cluster"
+              fluvio cluster start --image-version latest
+              
+            fi
+            sleep 30
+            fluvio version
+            sleep ${{ env.SLEEP }}
+            fluvio topic create ${{ env.TOPIC }}
+            sleep ${{ env.SLEEP }}
+            echo foo | fluvio produce ${{ env.TOPIC }}
+            sleep ${{ env.SLEEP }}
+            fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
+            # Delete the topic afterword but this looks to not work right now.
+            # fluvio topic delete "${{ env.TOPIC }}"
 
       - name: Debug failure
         if: failure()
@@ -92,7 +89,6 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
 
 
   # Perform upgrade test from previous stable version to latest
