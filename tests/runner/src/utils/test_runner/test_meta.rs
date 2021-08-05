@@ -1,14 +1,14 @@
 use std::sync::Arc;
 use async_lock::RwLock;
 use crate::test_meta::{TestCase, TestOption, TestResult};
-use super::FluvioTestDriver;
+use super::test_driver::TestDriver;
 use crate::test_meta::derive_attr::TestRequirements;
 use crate::test_meta::environment::EnvDetail;
 
 #[derive(Debug)]
 pub struct FluvioTestMeta {
     pub name: String,
-    pub test_fn: fn(Arc<RwLock<FluvioTestDriver>>, TestCase) -> Result<TestResult, TestResult>,
+    pub test_fn: fn(Arc<RwLock<TestDriver>>, TestCase) -> Result<TestResult, TestResult>,
     pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
     pub requirements: fn() -> TestRequirements,
 }
