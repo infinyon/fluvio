@@ -13,6 +13,7 @@ To actually perform the release, the core steps are:
 - Wait for workflow to complete successfully and apply `vX.Y.Z` tag to git
 - Publish any crates `fluvio` client depends on, followed by `fluvio` crate itself
 - Publish any updates to `fluvio-smartstream` if needed
+- Update `infinyon/fluvio-smartstream-template` if needed
 - Fast-forward `stable` branch to match `master` (may become automated)
 - Push new commit with updated `VERSION` and `CHANGELOG.md` files
 
