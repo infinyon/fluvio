@@ -183,7 +183,7 @@ pub struct EnvironmentSetup {
 
     /// K8: use sc address
     #[structopt(long)]
-    pub sc_addr: Option<String>,
+    pub proxy_addr: Option<String>,
 }
 
 #[allow(clippy::unnecessary_wraps)]

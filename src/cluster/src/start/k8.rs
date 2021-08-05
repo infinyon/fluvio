@@ -315,8 +315,8 @@ pub struct ClusterConfig {
     render_checks: bool,
 
     /// Use specified SC address
-    #[builder(setter(into, strip_option), default)]
-    sc_addr: Option<String>,
+    #[builder(setter(into), default)]
+    proxy_addr: Option<String>,
 }
 
 impl ClusterConfig {
@@ -930,7 +930,7 @@ impl ClusterInstaller {
                                         LoadBalancerType::NodePort => {
                                             let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
-                                            let host_addr = if let Some(addr) = &self.config.sc_addr {
+                                            let host_addr = if let Some(addr) = &self.config.proxy_addr {
                                                 addr.to_owned()
                                             } else {
 
