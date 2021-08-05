@@ -5,7 +5,6 @@ use std::path::PathBuf;
 use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
-use std::net::SocketAddr;
 use std::env;
 
 use derive_builder::Builder;
@@ -19,7 +18,7 @@ use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
 use fluvio_future::timer::sleep;
-use fluvio_future::net::{TcpStream, resolve};
+use fluvio_future::net::{TcpStream};
 use k8_client::K8Client;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
@@ -316,6 +315,11 @@ pub struct ClusterConfig {
     /// ```
     #[builder(default = "false")]
     render_checks: bool,
+
+    /// Use specified SC address
+    #[builder(setter(into, strip_option), default)]
+    sc_addr: Option<String>
+    
 }
 
 impl ClusterConfig {
@@ -917,20 +921,26 @@ impl ClusterInstaller {
                                         LoadBalancerType::NodePort => {
                                             let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
-                                            debug!("k8 node query");
-                                            let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
-                                            debug!("Output from k8 node query: {:#?}", &nodes);
+                                            let host_addr = if let Some(addr) = &self.config.sc_addr {
+                                                addr.to_owned() 
+                                            } else {
 
-                                            let mut node_addr : Vec<NodeAddress> = Vec::new();
-                                            for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
-                                                node_addr.extend(n)
-                                            }
+                                                debug!("k8 node query");
+                                                let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
+                                                debug!("Output from k8 node query: {:#?}", &nodes);
 
-                                            // Return the first node with type "InternalIP"
-                                            let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP")
-                                            .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+                                                let mut node_addr : Vec<NodeAddress> = Vec::new();
+                                                for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
+                                                    node_addr.extend(n)
+                                                }
 
-                                            return Ok(Some((format!("{}:{}",external_addr.address,node_port),node_port)))
+                                                // Return the first node with type "InternalIP"
+                                                let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP")
+                                                .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+                                                external_addr.address
+                                            };
+
+                                            return Ok(Some((format!("{}:{}",host_addr,node_port),node_port)))
                                         },
                                         LoadBalancerType::LoadBalancer => {
                                             let ingress_addr = service
@@ -1007,9 +1017,9 @@ impl ClusterInstaller {
     /// return address and port
     #[instrument(skip(self, ns))]
     async fn wait_for_sc_service(&self, ns: &str) -> Result<(String, u16), K8InstallError> {
-        debug!("waiting for SC service");
+        println!("waiting for SC service");
         if let Some((sock_addr, port)) = self.discover_sc_address(ns).await? {
-            debug!(%sock_addr, "found SC service addr");
+            println!("found SC service addr: {:#?}",sock_addr);
             self.wait_for_sc_port_check(&sock_addr).await?;
             Ok((sock_addr, port))
         } else {
@@ -1019,10 +1029,11 @@ impl ClusterInstaller {
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), K8InstallError> {
-        info!(sock_addr = %sock_addr_str, "waiting for SC port check");
+        println!("trying to connect sc port {} at ..",sock_addr_str);
         for i in 0..*MAX_SC_NETWORK_LOOP {
-            let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
-            if TcpStream::connect(&*sock_addr).await.is_ok() {
+           // let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
+           // println!("got SC address: {:#?}",sock_addr);
+            if TcpStream::connect(&sock_addr_str).await.is_ok() {
                 info!(sock_addr = %sock_addr_str, "finished SC port check");
                 return Ok(());
             }
@@ -1036,31 +1047,7 @@ impl ClusterInstaller {
         Err(K8InstallError::SCPortCheckTimeout)
     }
 
-    /// Wait until the Fluvio SC public service appears in Kubernetes
-    async fn wait_for_sc_dns(
-        &self,
-        sock_addr_string: &str,
-    ) -> Result<Vec<SocketAddr>, K8InstallError> {
-        debug!("waiting for SC dns resolution: {}", sock_addr_string);
-        for i in 0..*MAX_SC_NETWORK_LOOP {
-            match resolve(sock_addr_string).await {
-                Ok(sock_addr) => {
-                    debug!("finished SC dns resolution: {}", sock_addr_string);
-                    return Ok(sock_addr);
-                }
-                Err(err) => {
-                    info!(
-                        attempt = i,
-                        "SC dns resoultion failed {}, sleeping for {} ms", err, NETWORK_SLEEP_MS
-                    );
-                    sleep(Duration::from_millis(NETWORK_SLEEP_MS)).await;
-                }
-            }
-        }
-
-        error!("timedout sc dns: {}", sock_addr_string);
-        Err(K8InstallError::SCDNSTimeout)
-    }
+    
 
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
@@ -1233,7 +1220,7 @@ impl ClusterInstaller {
     fields(cluster_endpoint = & * cluster.endpoint)
     )]
     async fn create_managed_spu_group(&self, cluster: &FluvioConfig) -> Result<(), K8InstallError> {
-        debug!("trying to create managed spu: {:#?}", cluster);
+        println!("Trying to create managed {} spus", self.config.spu_replicas);
         let name = self.config.group_name.clone();
         let fluvio = Fluvio::connect_with_config(cluster).await?;
         let admin = fluvio.admin().await;

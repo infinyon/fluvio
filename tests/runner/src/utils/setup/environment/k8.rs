@@ -28,7 +28,17 @@ impl TestEnvironmentDriver for K8EnvironmentDriver {
         let mut builder = ClusterConfig::builder(version);
         if self.option.develop_mode() {
             builder.development().expect("should test in develop mode");
+        } else {
+            // check if image version is specified
+            if let Some(image) = &self.option.image_version {
+                builder.image_tag(image);
+            }
         }
+
+        if let Some(addr) = &self.option.sc_addr {
+            builder.sc_addr(addr);
+        }
+
         builder
             .spu_replicas(self.option.spu())
             .skip_checks(self.option.skip_checks())
