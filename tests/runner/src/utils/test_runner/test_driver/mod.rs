@@ -1,6 +1,7 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
-use crate::test_meta::{TestCase, TestResult};
+use crate::test_meta::TestCase;
+use crate::test_meta::test_result::TestResult;
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::{Fluvio, FluvioError};

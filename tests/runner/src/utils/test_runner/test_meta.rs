@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use async_lock::RwLock;
-use crate::test_meta::{TestCase, TestOption, TestResult};
+use crate::test_meta::{TestCase, TestOption};
+use crate::test_meta::test_result::TestResult;
 use super::test_driver::TestDriver;
 use crate::test_meta::derive_attr::TestRequirements;
 use crate::test_meta::environment::EnvDetail;

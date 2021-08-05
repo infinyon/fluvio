@@ -2,14 +2,15 @@ use std::sync::Arc;
 use std::process::exit;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption, TestResult};
+use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-use fluvio_test_util::test_meta::TestTimer;
+use fluvio_test_util::test_meta::test_timer::TestTimer;
 use hdrhistogram::Histogram;
 
 // This is important for `inventory` crate

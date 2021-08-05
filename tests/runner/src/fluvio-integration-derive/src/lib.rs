@@ -119,10 +119,11 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
         pub async fn #async_inner_fn_iden(mut test_driver: Arc<RwLock<TestDriver>>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
-            use fluvio_test_util::test_meta::{TestCase, TestResult};
+            use fluvio_test_util::test_meta::TestCase;
+            use fluvio_test_util::test_meta::test_result::TestResult;
             use fluvio_test_util::test_meta::environment::{EnvDetail};
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
-            use fluvio_test_util::test_meta::TestTimer;
+            use fluvio_test_util::test_meta::test_timer::TestTimer;
             use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
             use fluvio_test_util::setup::environment::EnvironmentType;
