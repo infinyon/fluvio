@@ -39,7 +39,7 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio fluvio-run, flv-test]
+        binary: [fluvio, fluvio-run, flv-test]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
