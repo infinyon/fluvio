@@ -7,7 +7,7 @@ use tracing::{error, debug};
 use fluvio::{Fluvio, TopicProducer, RecordKey};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
-use crate::consumer::error::ConsumerError;
+use crate::{Result, CliError};
 
 const DEFAULT_BATCH_SIZE: usize = 50;
 
@@ -57,7 +57,7 @@ fn validate_key_separator(separator: String) -> std::result::Result<(), String> 
 }
 
 impl ProduceOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let producer = fluvio.topic_producer(&self.topic).await?;
 
         if self.raw {
@@ -83,7 +83,7 @@ impl ProduceOpt {
         Ok(())
     }
 
-    async fn produce_lines(&self, producer: &TopicProducer) -> Result<(), ConsumerError> {
+    async fn produce_lines(&self, producer: &TopicProducer) -> Result<()> {
         match &self.file {
             Some(path) => {
                 let reader = BufReader::new(File::open(path)?);
@@ -112,11 +112,7 @@ impl ProduceOpt {
         Ok(())
     }
 
-    async fn produce_strs(
-        &self,
-        producer: &TopicProducer,
-        strings: &[&str],
-    ) -> Result<(), ConsumerError> {
+    async fn produce_strs(&self, producer: &TopicProducer, strings: &[&str]) -> Result<()> {
         if self.kv_mode() {
             self.produce_key_values(producer, strings).await?;
         } else {
@@ -139,18 +135,14 @@ impl ProduceOpt {
         self.file.is_none() && atty::is(atty::Stream::Stdin)
     }
 
-    async fn produce_key_values(
-        &self,
-        producer: &TopicProducer,
-        strings: &[&str],
-    ) -> Result<(), ConsumerError> {
+    async fn produce_key_values(&self, producer: &TopicProducer, strings: &[&str]) -> Result<()> {
         if let Some(separator) = &self.key_separator {
             self.produce_key_value_via_separator(producer, strings, separator)
                 .await?;
             return Ok(());
         }
 
-        Err(ConsumerError::Other(
+        Err(CliError::Other(
             "Failed to send key-value record".to_string(),
         ))
     }
@@ -160,7 +152,7 @@ impl ProduceOpt {
         producer: &TopicProducer,
         strings: &[&str],
         separator: &str,
-    ) -> Result<(), ConsumerError> {
+    ) -> Result<()> {
         debug!(?separator, "Producing Key/Value:");
 
         let pairs: Vec<_> = strings

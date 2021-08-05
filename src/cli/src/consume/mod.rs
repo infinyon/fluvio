@@ -18,7 +18,7 @@ use fluvio::{Fluvio, PartitionConsumer, Offset, ConsumerConfig, FluvioError};
 use fluvio_sc_schema::ApiError;
 use fluvio::consumer::Record;
 
-use crate::consumer::error::ConsumerError;
+use crate::{Result, CliError};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
@@ -89,7 +89,7 @@ impl ConsumeOpt {
         name = "Consume",
         fields(topic = %self.topic, partition = self.partition),
     )]
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let consumer = fluvio
             .partition_consumer(&self.topic, self.partition)
             .await?;
@@ -106,7 +106,7 @@ impl ConsumeOpt {
         }
     }
 
-    pub async fn consume_records(&self, consumer: PartitionConsumer) -> Result<(), ConsumerError> {
+    pub async fn consume_records(&self, consumer: PartitionConsumer) -> Result<()> {
         trace!(config = ?self, "Starting consumer:");
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
@@ -146,7 +146,7 @@ impl ConsumeOpt {
         consumer: &PartitionConsumer,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<(), ConsumerError> {
+    ) -> Result<()> {
         let response = consumer.fetch_with_config(offset, config).await?;
 
         debug!(
@@ -170,7 +170,7 @@ impl ConsumeOpt {
         consumer: &PartitionConsumer,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<(), ConsumerError> {
+    ) -> Result<()> {
         self.print_status();
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
@@ -278,7 +278,7 @@ impl ConsumeOpt {
     }
 
     /// Initialize Ctrl-C event handler
-    fn init_ctrlc(&self) -> Result<(), ConsumerError> {
+    fn init_ctrlc(&self) -> Result<()> {
         let result = ctrlc::set_handler(move || {
             debug!("detected control c, setting end");
             std::process::exit(0);
@@ -295,7 +295,7 @@ impl ConsumeOpt {
     }
 
     /// Calculate the Offset to use with the consumer based on the provided offset number
-    fn calculate_offset(&self) -> Result<Offset, ConsumerError> {
+    fn calculate_offset(&self) -> Result<Offset> {
         let maybe_initial_offset = if self.from_beginning {
             let big_offset = self.offset.unwrap_or(0);
             // Try to convert to u32
@@ -313,7 +313,7 @@ impl ConsumeOpt {
         };
 
         let offset = maybe_initial_offset
-            .ok_or_else(|| ConsumerError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()))?;
+            .ok_or_else(|| CliError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()))?;
         Ok(offset)
     }
 }

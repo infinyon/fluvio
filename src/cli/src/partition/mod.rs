@@ -2,12 +2,12 @@ use std::sync::Arc;
 use structopt::StructOpt;
 use fluvio::Fluvio;
 
+mod list;
+
 use crate::Result;
 use crate::common::output::Terminal;
 use crate::common::FluvioExtensionMetadata;
-use crate::consumer::partition::list::ListPartitionOpt;
-
-mod list;
+use self::list::ListPartitionOpt;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "partition", about = "Partition operations")]

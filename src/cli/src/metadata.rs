@@ -3,10 +3,10 @@ use std::process::Command;
 use structopt::StructOpt;
 
 use crate::Result;
-use crate::consumer::TopicCmd;
-use crate::consumer::PartitionCmd;
-use crate::consumer::ConsumeOpt;
-use crate::consumer::ProduceOpt;
+use crate::TopicCmd;
+use crate::PartitionCmd;
+use crate::ConsumeOpt;
+use crate::ProduceOpt;
 use fluvio_command::CommandExt;
 use fluvio_extension_common::FluvioExtensionMetadata;
 
