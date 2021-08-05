@@ -3,9 +3,7 @@ RUSTV?=stable
 GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
-DOCKER_REGISTRY=infinyon
 K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
-DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_MUSL=x86_64-unknown-linux-musl
 TARGET?=
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
@@ -236,16 +234,17 @@ endif
 
 
 # Build docker image for Fluvio.
-# This use musl target
-fluvio_image: fluvio_bin_musl
-	echo "Building Fluvio musl image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
-	k8-util/docker/build.sh $(GIT_COMMIT) "./target/$(TARGET_MUSL)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
+ifndef TARGET
+fluvio_image: TARGET=$(TARGET_MUSL)
+endif
+fluvio_image: fluvio_run_bin
+	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
+	k8-util/docker/build.sh $(TARGET) $(GIT_COMMIT) "./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
 
 
 
-fluvio_bin_musl:
-	rustup target add $(TARGET_MUSL)
-	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET_MUSL)
+fluvio_run_bin: install_rustup_target
+	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET)
 
 
 # upgrade existing cluster

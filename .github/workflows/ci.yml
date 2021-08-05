@@ -29,7 +29,7 @@ env:
 
 jobs:
 
-  # build binaries for linux musl which is primary OS for testing clusters
+  # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
   build_primary_binaries:
     name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -37,21 +37,13 @@ jobs:
       matrix:
         rust-target:
           - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio]
+        binary: [fluvio-run]
+        os: [ubuntu-latest]
         include:
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-unknown-linux-musl
-            binary: fluvio
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-unknown-linux-musl
-            binary: fluvio-run
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: x86_64-unknown-linux-musl
-            binary: flv-test
+          - rust-target: x86_64-unknown-linux-musl
+            binary: [fluvio, flv-test]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -366,6 +358,9 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
+        rust-target:
+          - x86_64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
         rust: [stable]
     steps:
       # Needed for k8-util/docker/build.sh
@@ -375,7 +370,7 @@ jobs:
       - name: Download fluvio-run
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-run-x86_64-unknown-linux-musl
+          name: fluvio-run-${{ matrix.rust-target }}
           path: .
 
       - name: Print fluvio-run path
@@ -383,14 +378,14 @@ jobs:
 
       # Build and upload docker image
       - name: Build Docker image
-        run: k8-util/docker/build.sh ${{ github.sha }} "$(pwd)/fluvio-run"
+        run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
       - name: Export Docker Image to tarball
-        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+        run: docker image save infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
       - name: Upload tarball as artifact
         uses: actions/upload-artifact@v2
         with:
-          name: infinyon-fluvio
-          path: /tmp/infinyon-fluvio.tar
+          name: infinyon-fluvio-${{ matrix.rust-target }}
+          path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
     name: Kubernetes cluster test
@@ -419,8 +414,8 @@ jobs:
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio
-          path: /tmp
+          name: infinyon-fluvio-x86_64-unknown-linux-musl
+          path: /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
 
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
@@ -432,7 +427,7 @@ jobs:
           max_attempts: 3
           command: |
             ./k8-util/cluster/reset-k3d.sh
-            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
+            k3d image import -k /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar -c fluvio 
             make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
 
       - name: Save logs
@@ -477,8 +472,8 @@ jobs:
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio
-          path: /tmp
+          name: infinyon-fluvio-x86_64-unknown-linux-musl
+          path: /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
 
@@ -491,7 +486,7 @@ jobs:
           max_attempts: 3
           command: |
             ./k8-util/cluster/reset-k3d.sh
-            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
+            k3d image import -k /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar -c fluvio 
             export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test
 
@@ -531,18 +526,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Download Docker Image as Artifact
+      - name: Download x86_64-unknown-linux-musl Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio
-          path: /tmp
+          name: infinyon-fluvio-x86_64-unknown-linux-musl
+          path: /tmp/images/infinyon-fluvio-x86_64-unknown-linux-musl.tar
+      - name: Download aarch64-unknown-linux-musl Docker Image as Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio-aarch64-unknown-linux-musl
+          path: /tmp/images/infinyon-fluvio-aarch64-unknown-linux-musl.tar
 
         # Load image infinyon/fluvio:SHA
       - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
-          docker image load --input /tmp/infinyon-fluvio.tar
+          docker image load --input /tmp/images/*.tar
           docker image ls -a
+
+      - name: Create docker manifest
+        run: |
+          docker manifest create infinyon/fluvio:${{ github.sha }} \
+            --amend infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl \
+            --amend infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl 
 
         # Tag image as infinyon/fluvio:VERSION-SHA and push
       - name: Publish Fluvio Docker Image
