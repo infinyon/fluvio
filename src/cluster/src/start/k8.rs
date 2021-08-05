@@ -318,8 +318,7 @@ pub struct ClusterConfig {
 
     /// Use specified SC address
     #[builder(setter(into, strip_option), default)]
-    sc_addr: Option<String>
-    
+    sc_addr: Option<String>,
 }
 
 impl ClusterConfig {
@@ -922,7 +921,7 @@ impl ClusterInstaller {
                                             let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
                                             let host_addr = if let Some(addr) = &self.config.sc_addr {
-                                                addr.to_owned() 
+                                                addr.to_owned()
                                             } else {
 
                                                 debug!("k8 node query");
@@ -1019,7 +1018,7 @@ impl ClusterInstaller {
     async fn wait_for_sc_service(&self, ns: &str) -> Result<(String, u16), K8InstallError> {
         println!("waiting for SC service");
         if let Some((sock_addr, port)) = self.discover_sc_address(ns).await? {
-            println!("found SC service addr: {:#?}",sock_addr);
+            println!("found SC service addr: {:#?}", sock_addr);
             self.wait_for_sc_port_check(&sock_addr).await?;
             Ok((sock_addr, port))
         } else {
@@ -1029,10 +1028,10 @@ impl ClusterInstaller {
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), K8InstallError> {
-        println!("trying to connect sc port {} at ..",sock_addr_str);
+        println!("trying to connect sc port {} at ..", sock_addr_str);
         for i in 0..*MAX_SC_NETWORK_LOOP {
-           // let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
-           // println!("got SC address: {:#?}",sock_addr);
+            // let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
+            // println!("got SC address: {:#?}",sock_addr);
             if TcpStream::connect(&sock_addr_str).await.is_ok() {
                 info!(sock_addr = %sock_addr_str, "finished SC port check");
                 return Ok(());
@@ -1046,8 +1045,6 @@ impl ClusterInstaller {
         error!(sock_addr = %sock_addr_str, "timeout for SC port check");
         Err(K8InstallError::SCPortCheckTimeout)
     }
-
-    
 
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
