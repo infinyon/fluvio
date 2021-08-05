@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.1 - UNRELEASED
+* Add Apple M1 as Tier2 platform for `fluvio-run` ([#1382](https://github.com/infinyon/fluvio/pull/1382))
 
 ## Platform Version 0.9.0 - 2021-08-03
 * Add k8s feature flag to cli. ([#1257](https://github.com/infinyon/fluvio/pull/1257))
