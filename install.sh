@@ -564,18 +564,16 @@ main() {
     ensure chmod +x "${_install_file}"
     say "✅ Successfully installed ~/.fluvio/bin/fluvio"
 
-    # If a VERSION env variable is set:
+    # If a VERSION env variable is set, use it for fluvio-run:
     if [ -n "${VERSION:-""}" ]; then
-        local _fluvio_cloud="fluvio-cloud:${VERSION}"
         local _fluvio_run="fluvio-run:${VERSION}"
     else
-        local _fluvio_cloud="fluvio-cloud"
         local _fluvio_run="fluvio-run"
     fi
 
     # Let fluvio know it is invoked from installer
     say "☁️ Installing Fluvio Cloud..."
-    FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install "${_fluvio_cloud}"
+    FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio-cloud
 
     set +e
     _output=$(assert_supported_cluster_target "${_target}")
