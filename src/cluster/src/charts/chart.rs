@@ -26,7 +26,7 @@ pub struct ChartConfig {
     #[builder(setter(into))]
     pub location: ChartLocation,
     /// chart version
-    #[builder(setter(into))]
+    #[builder(setter(into), default)]
     pub version: Option<Version>,
 
     /// set chart name
@@ -174,5 +174,19 @@ impl ChartInstaller {
 
         info!(chart = %self.config.name," has been installed");
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_sys() {
+        let _config: ChartConfig = ChartConfig::sys_builder()
+            .namespace("default")
+            .build()
+            .expect("should build");
     }
 }
