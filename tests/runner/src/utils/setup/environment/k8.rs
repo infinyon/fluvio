@@ -35,9 +35,7 @@ impl TestEnvironmentDriver for K8EnvironmentDriver {
             }
         }
 
-        if let Some(addr) = &self.option.sc_addr {
-            builder.sc_addr(addr);
-        }
+        builder.proxy_addr(self.option.proxy_addr.clone());        
 
         builder
             .spu_replicas(self.option.spu())
