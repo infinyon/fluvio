@@ -8,7 +8,8 @@ use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
-use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+use fluvio_test_util::test_runner::test_driver::TestDriver;
+use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
@@ -106,7 +107,7 @@ pub async fn run(
     let lock = test_driver.read().await;
     println!(
         "Producer latency 99%: {:?}",
-        lock.produce_latency.value_at_quantile(0.999)
+        lock.producer_latency.value_at_quantile(0.999)
     );
     drop(lock);
 }

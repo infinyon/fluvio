@@ -37,19 +37,18 @@ impl TestDriver {
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
     pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
-        if let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref() {
-            match fluvio_client.topic_producer(topic).await {
-                Ok(client) => {
-                    self.producer_num += 1;
-                    return client;
-                }
-                Err(err) => {
-                    println!(
-                        "unable to get producer to topic: {}, error: {} sleeping 10 second ",
-                        topic, err
-                    );
-                    sleep(Duration::from_secs(10)).await;
-                }
+        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
+        match fluvio_client.topic_producer(topic).await {
+            Ok(client) => {
+                self.producer_num += 1;
+                return client;
+            }
+            Err(err) => {
+                println!(
+                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
             }
         }
 
@@ -84,21 +83,21 @@ impl TestDriver {
     }
 
     pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
-        if let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref() {
-            match fluvio_client.partition_consumer(topic.to_string(), 0).await {
-                Ok(client) => {
-                    self.consumer_num += 1;
-                    return client;
-                }
-                Err(err) => {
-                    println!(
-                        "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
-                        topic, err
-                    );
-                    sleep(Duration::from_secs(10)).await;
-                }
+        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
+        match fluvio_client.partition_consumer(topic.to_string(), 0).await {
+            Ok(client) => {
+                self.consumer_num += 1;
+                return client;
+            }
+            Err(err) => {
+                println!(
+                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
+                    topic, err
+                );
+                sleep(Duration::from_secs(10)).await;
             }
         }
+
         panic!("can't get consumer");
     }
 
@@ -148,28 +147,27 @@ impl TestDriver {
 
         println!("Creating the topic: {}", &option.topic_name);
 
-        if let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref() {
-            let admin = fluvio_client.admin().await;
+        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
+        let admin = fluvio_client.admin().await;
 
-            let topic_spec =
-                TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
+        let topic_spec =
+            TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
 
-            // Create topic and record how long it takes
-            let now = SystemTime::now();
+        // Create topic and record how long it takes
+        let now = SystemTime::now();
 
-            let topic_create = admin
-                .create(option.topic_name.clone(), false, topic_spec)
-                .await;
+        let topic_create = admin
+            .create(option.topic_name.clone(), false, topic_spec)
+            .await;
 
-            let topic_time = now.elapsed().unwrap().as_nanos();
+        let topic_time = now.elapsed().unwrap().as_nanos();
 
-            if topic_create.is_ok() {
-                println!("topic \"{}\" created", option.topic_name);
-                self.topic_create_latency.record(topic_time as u64).unwrap();
-                self.topic_num += 1;
-            } else {
-                println!("topic \"{}\" already exists", option.topic_name);
-            }
+        if topic_create.is_ok() {
+            println!("topic \"{}\" created", option.topic_name);
+            self.topic_create_latency.record(topic_time as u64).unwrap();
+            self.topic_num += 1;
+        } else {
+            println!("topic \"{}\" already exists", option.topic_name);
         }
         Ok(())
     }
