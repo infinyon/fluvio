@@ -31,19 +31,15 @@ jobs:
 
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
   build_primary_binaries:
-    name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
-    runs-on: ${{ matrix.os }}
+    name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         rust-target:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio-run]
-        os: [ubuntu-latest]
-        include:
-          - rust-target: x86_64-unknown-linux-musl
-            binary: [fluvio, flv-test]
+        binary: [fluvio fluvio-run, flv-test]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -111,10 +107,6 @@ jobs:
         rust: [stable]
         binary: [fluvio]
         include:
-          - os: ubuntu-latest
-            rust: stable
-            rust-target: aarch64-unknown-linux-musl
-            binary: fluvio
           - os: ubuntu-latest
             rust: stable
             rust-target: arm-unknown-linux-gnueabihf
@@ -518,8 +510,7 @@ jobs:
       - check
       - check_wasm
       - check_windows
-      - build_primary_binaries 
-      - build_binaries
+      - build_image
       - local_cluster_test
       - k8_cluster_test
       - k8_upgrade_test
