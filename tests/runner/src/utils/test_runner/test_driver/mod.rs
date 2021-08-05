@@ -14,17 +14,19 @@ use tracing::debug;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
 
-// Rename: *_latency, *_num, *_bytes
+pub enum TestDriverType {
+    Fluvio(Fluvio),
+}
 #[derive(Clone)]
 pub struct TestDriver {
-    pub client: Arc<Fluvio>,
-    pub num_topics: usize,
-    pub num_producers: usize,
-    pub num_consumers: usize,
-    pub bytes_produced: usize,
-    pub bytes_consumed: usize,
-    pub produce_latency: Histogram<u64>,
-    pub consume_latency: Histogram<u64>,
+    pub client: Arc<TestDriverType>,
+    pub topic_num: usize,
+    pub producer_num: usize,
+    pub consumer_num: usize,
+    pub producer_bytes: usize,
+    pub consumer_bytes: usize,
+    pub producer_latency: Histogram<u64>,
+    pub consumer_latency: Histogram<u64>,
     pub topic_create_latency: Histogram<u64>,
 }
 
@@ -35,17 +37,19 @@ impl TestDriver {
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
     pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
-        match self.client.topic_producer(topic).await {
-            Ok(client) => {
-                self.num_producers += 1;
-                return client;
-            }
-            Err(err) => {
-                println!(
-                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
+        if let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref() {
+            match fluvio_client.topic_producer(topic).await {
+                Ok(client) => {
+                    self.producer_num += 1;
+                    return client;
+                }
+                Err(err) => {
+                    println!(
+                        "unable to get producer to topic: {}, error: {} sleeping 10 second ",
+                        topic, err
+                    );
+                    sleep(Duration::from_secs(10)).await;
+                }
             }
         }
 
@@ -68,32 +72,33 @@ impl TestDriver {
 
         debug!(
             "(#{}) Produce latency (ns): {:?}",
-            self.produce_latency.len() + 1,
+            self.producer_latency.len() + 1,
             produce_time as u64
         );
 
-        self.produce_latency.record(produce_time as u64).unwrap();
+        self.producer_latency.record(produce_time as u64).unwrap();
 
-        self.bytes_produced += message.len();
+        self.consumer_bytes += message.len();
 
         result
     }
 
     pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
-        match self.client.partition_consumer(topic.to_string(), 0).await {
-            Ok(client) => {
-                self.num_consumers += 1;
-                return client;
-            }
-            Err(err) => {
-                println!(
-                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
+        if let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref() {
+            match fluvio_client.partition_consumer(topic.to_string(), 0).await {
+                Ok(client) => {
+                    self.consumer_num += 1;
+                    return client;
+                }
+                Err(err) => {
+                    println!(
+                        "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
+                        topic, err
+                    );
+                    sleep(Duration::from_secs(10)).await;
+                }
             }
         }
-
         panic!("can't get consumer");
     }
 
@@ -108,10 +113,10 @@ impl TestDriver {
             if let Some(Ok(record)) = stream.next().await {
                 // Record latency
                 let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                self.consume_latency.record(consume_time as u64).unwrap();
+                self.consumer_latency.record(consume_time as u64).unwrap();
 
                 // Record bytes consumed
-                self.bytes_consumed += record.as_ref().len();
+                self.consumer_bytes += record.as_ref().len();
             } else {
                 debug!("No more bytes left to consume");
                 break;
@@ -121,20 +126,20 @@ impl TestDriver {
 
     // TODO: This is a workaround. Handle stream inside impl
     pub async fn consume_latency_record(&mut self, latency: u64) {
-        self.consume_latency.record(latency).unwrap();
+        self.consumer_latency.record(latency).unwrap();
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
-            self.consume_latency.len(),
+            self.consumer_latency.len(),
             latency
         );
     }
 
     // TODO: This is a workaround. Handle stream inside impl
     pub async fn consume_bytes_record(&mut self, bytes_len: usize) {
-        self.bytes_consumed += bytes_len;
+        self.consumer_bytes += bytes_len;
         debug!(
             "Recording consumer bytes len: {:?} (total: {})",
-            bytes_len, self.bytes_consumed
+            bytes_len, self.consumer_bytes
         );
     }
 
@@ -143,28 +148,29 @@ impl TestDriver {
 
         println!("Creating the topic: {}", &option.topic_name);
 
-        let admin = self.client.admin().await;
+        if let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref() {
+            let admin = fluvio_client.admin().await;
 
-        let topic_spec =
-            TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
+            let topic_spec =
+                TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
 
-        // Create topic and record how long it takes
-        let now = SystemTime::now();
+            // Create topic and record how long it takes
+            let now = SystemTime::now();
 
-        let topic_create = admin
-            .create(option.topic_name.clone(), false, topic_spec)
-            .await;
+            let topic_create = admin
+                .create(option.topic_name.clone(), false, topic_spec)
+                .await;
 
-        let topic_time = now.elapsed().unwrap().as_nanos();
+            let topic_time = now.elapsed().unwrap().as_nanos();
 
-        if topic_create.is_ok() {
-            println!("topic \"{}\" created", option.topic_name);
-            self.topic_create_latency.record(topic_time as u64).unwrap();
-            self.num_topics += 1;
-        } else {
-            println!("topic \"{}\" already exists", option.topic_name);
+            if topic_create.is_ok() {
+                println!("topic \"{}\" created", option.topic_name);
+                self.topic_create_latency.record(topic_time as u64).unwrap();
+                self.topic_num += 1;
+            } else {
+                println!("topic \"{}\" already exists", option.topic_name);
+            }
         }
-
         Ok(())
     }
 
