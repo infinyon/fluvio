@@ -32,7 +32,7 @@ jobs:
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
   build_primary_binaries:
     name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         rust-target:
@@ -40,6 +40,7 @@ jobs:
           - aarch64-unknown-linux-musl
         rust: [stable]
         binary: [fluvio, fluvio-run, flv-test]
+        os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
