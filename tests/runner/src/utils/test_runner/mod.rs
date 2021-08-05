@@ -1,6 +1,9 @@
+pub mod test_meta;
+pub mod test_driver;
+
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
-use crate::test_meta::{TestCase, TestOption, TestResult};
+use crate::test_meta::{TestCase, TestResult};
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 use fluvio::{Fluvio, FluvioError};
@@ -9,7 +12,6 @@ use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
 use std::time::Duration;
-use async_lock::RwLock;
 use futures_lite::stream::StreamExt;
 use tracing::debug;
 use fluvio::Offset;
@@ -189,48 +191,5 @@ impl FluvioTestDriver {
         }
 
         true
-    }
-}
-
-#[derive(Debug)]
-pub struct FluvioTestMeta {
-    pub name: String,
-    pub test_fn: fn(Arc<RwLock<FluvioTestDriver>>, TestCase) -> Result<TestResult, TestResult>,
-    pub validate_fn: fn(Vec<String>) -> Box<dyn TestOption>,
-    pub requirements: fn() -> TestRequirements,
-}
-
-inventory::collect!(FluvioTestMeta);
-
-impl FluvioTestMeta {
-    pub fn all_test_names() -> Vec<&'static str> {
-        inventory::iter::<Self>
-            .into_iter()
-            .map(|x| x.name.as_str())
-            .collect::<Vec<&str>>()
-    }
-
-    pub fn from_name<S: AsRef<str>>(test_name: S) -> Option<&'static Self> {
-        inventory::iter::<Self>
-            .into_iter()
-            .find(|t| t.name == test_name.as_ref())
-    }
-
-    pub fn set_topic(test_reqs: &TestRequirements, test_case: &mut TestCase) {
-        if let Some(topic) = &test_reqs.topic {
-            test_case.environment.set_topic_name(topic.to_string());
-        }
-    }
-
-    pub fn set_timeout(test_reqs: &TestRequirements, test_case: &mut TestCase) {
-        // Set timer
-        if let Some(timeout) = test_reqs.timeout {
-            test_case.environment.set_timeout(timeout)
-        }
-    }
-
-    pub fn customize_test(test_reqs: &TestRequirements, test_case: &mut TestCase) {
-        Self::set_topic(test_reqs, test_case);
-        Self::set_timeout(test_reqs, test_case);
     }
 }
