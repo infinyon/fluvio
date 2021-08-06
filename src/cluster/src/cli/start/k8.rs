@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
 use semver::Version;
 
-use crate::{ClusterInstaller, K8InstallError, StartStatus, ClusterConfig,ClusterError};
+use crate::{ClusterInstaller, K8InstallError, StartStatus, ClusterConfig, ClusterError};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
 use crate::check::render::{
@@ -62,9 +62,9 @@ pub async fn process_k8(
     if opt.setup {
         setup_k8(&installer).await?;
     } else {
-        let k8_install: Result<_,ClusterError> = start_k8(&installer).await.map_err(|err| err.into());
+        let k8_install: Result<_, ClusterError> =
+            start_k8(&installer).await.map_err(|err| err.into());
         k8_install?
-        
     }
 
     Ok(())

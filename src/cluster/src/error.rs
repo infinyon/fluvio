@@ -9,7 +9,6 @@ use fluvio_command::CommandError;
 use crate::check::{CheckResults, CheckStatuses};
 use crate::charts::ChartInstallError;
 
-
 /// The types of errors that can occur during cluster management
 #[derive(thiserror::Error, Debug)]
 pub enum ClusterError {

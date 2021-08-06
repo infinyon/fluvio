@@ -35,7 +35,7 @@ impl TestEnvironmentDriver for K8EnvironmentDriver {
             }
         }
 
-        builder.proxy_addr(self.option.proxy_addr.clone());        
+        builder.proxy_addr(self.option.proxy_addr.clone());
 
         builder
             .spu_replicas(self.option.spu())

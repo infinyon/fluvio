@@ -685,37 +685,38 @@ impl ClusterInstaller {
 
         let namespace = &self.config.namespace;
 
-        let (address, port) = self.discover_sc_address(namespace)
+        let (address, port) = self
+            .discover_sc_address(namespace)
             .await
             .map_err(|_| K8InstallError::SCServiceTimeout)?;
-           
-        println!("found SC service addr: {}:{}", address, port);
-        let cluster_config = FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
+
+        let end_point = format!("{}:{}", address, port);
+
+        println!("found SC service addr: {}", end_point);
+        let cluster_config =
+            FluvioConfig::new(end_point.clone()).with_tls(self.config.client_tls_policy.clone());
+
         let fluvio = connect_to_sc(&cluster_config).await?;
 
         let platform_version = fluvio.platform_version();
-        println!("Connect to SC with platform version: {}",&platform_version);
+        println!("Connect to SC with platform version: {}", &platform_version);
 
         // check if platform is not compatible with  cluster installer
         if !versions_compatible(
             platform_version.clone(),
             self.config.platform_version.clone(),
-        ){
+        ) {
             return Err(K8InstallError::FailedPlatformVersion(
                 self.config.platform_version.to_string(),
             ));
         }
 
         if self.config.save_profile {
-            self.update_profile(address.clone())?;
+            self.update_profile(end_point.clone())?;
         }
-
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-       
-
-        
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
@@ -732,7 +733,6 @@ impl ClusterInstaller {
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
     async fn install_app(&self) -> Result<(), K8InstallError> {
-
         println!("Installing Fluvio app");
         debug!(
             "Installing fluvio with the following configuration: {:#?}",
@@ -978,8 +978,6 @@ impl ClusterInstaller {
         }
     }
 
-    
-    
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
@@ -1146,12 +1144,8 @@ impl ClusterInstaller {
     }
 
     /// Provisions a SPU group for the given cluster according to internal config
-    #[instrument(
-    skip(self, fluvio),
-    )]
+    #[instrument(skip(self, fluvio))]
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<(), K8InstallError> {
-       
-        
         let name = self.config.group_name.clone();
         let admin = fluvio.admin().await;
 
@@ -1159,8 +1153,8 @@ impl ClusterInstaller {
         let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
 
         if !lists.is_empty() {
-            println!("spu group: {} exists, skipping",lists[0].name);
-            return Ok(())
+            println!("spu group: {} exists, skipping", lists[0].name);
+            return Ok(());
         }
 
         println!("Trying to create managed {} spus", self.config.spu_replicas);
@@ -1182,35 +1176,31 @@ fn versions_compatible(a: Version, b: Version) -> bool {
 
 /// Check if the SC service is up and running
 async fn connect_to_sc(config: &FluvioConfig) -> Result<Fluvio, K8InstallError> {
-
-    async fn try_connect_sc(fluvio_config: &FluvioConfig) -> Option<Fluvio>  {
+    async fn try_connect_sc(fluvio_config: &FluvioConfig) -> Option<Fluvio> {
+        println!("trying to connec to sc: {}", fluvio_config.endpoint);
         match Fluvio::connect_with_config(fluvio_config).await {
             Ok(fluvio) => Some(fluvio),
             Err(err) => {
-                debug!("couldn't connect: {:#?}",err);
-                return None
+                debug!("couldn't connect: {:#?}", err);
+                println!("fail to connect to sc");
+                return None;
             }
         }
     }
 
     for attempt in 0..*MAX_SC_VERSION_LOOP {
-
         if let Some(fluvio) = try_connect_sc(config).await {
-            return Ok(fluvio)
+            return Ok(fluvio);
         } else {
             if attempt < *MAX_SC_VERSION_LOOP - 1 {
-                sleep(Duration::from_secs(1)).await;
-            }        
-            
+                println!("sleeping 5 seconds. attemp: {}", attempt);
+                sleep(Duration::from_secs(5)).await;
+            }
         }
-       
     }
 
     Err(K8InstallError::SCServiceTimeout)
-
-    
 }
-
 
 #[cfg(test)]
 mod tests {
