@@ -19,7 +19,7 @@ pub enum ClusterCliError {
     #[error("Target Error")]
     TargetError(#[from] TargetError),
     /// An error occurred with a cluster operation
-    #[error("Fluvio cluster error")]
+    #[error(transparent)]
     ClusterError(#[from] ClusterError),
     /// An error occurred while communicating with Fluvio
     #[error("Fluvio client error")]
