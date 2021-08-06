@@ -22,26 +22,27 @@ use crate::k8::objects::spu_service::SpuServiceSpec;
 use crate::k8::objects::spg_group::SpuGroupObj;
 use crate::stores::spg::{SpuGroupSpec};
 
-/// Sync SPU from SPG Group
-pub struct SpgSpuController {
+/// Update SPU from changes in SPU Group and SPU Services
+/// This is only place where we make changes to SPU
+pub struct K8SpuController {
     services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
 }
 
-impl fmt::Display for SpgSpuController {
+impl fmt::Display for K8SpuController {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SpgSpuController")
     }
 }
 
-impl fmt::Debug for SpgSpuController {
+impl fmt::Debug for K8SpuController {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SpgSpuController")
     }
 }
 
-impl SpgSpuController {
+impl K8SpuController {
     pub fn start(
         spus: StoreContext<SpuSpec>,
         services: StoreContext<SpuServiceSpec>,
@@ -71,12 +72,12 @@ impl SpgSpuController {
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
-        //     let mut service_listener = self.services.change_listener();
+        let mut service_listener = self.services.change_listener();
         let mut spg_listener = self.groups.change_listener();
         //    let mut spu_listener = self.spus.change_listener();
 
         self.sync_with_spg(&mut spg_listener).await?;
-        //     self.sync_from_spu_services(&mut service_listener).await?;
+        self.sync_from_spu_services(&mut service_listener).await?;
         //    self.sync_spus(&mut spu_listener).await?;
 
         loop {
@@ -84,12 +85,12 @@ impl SpgSpuController {
 
             select! {
 
-                /*
+                
                 _ = service_listener.listen() => {
                     debug!("detected spu service changes");
                     self.sync_from_spu_services(&mut service_listener).await?;
                 },
-                */
+                
 
                 _ = spg_listener.listen() => {
                     debug!("detected spg changes");
