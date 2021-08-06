@@ -54,6 +54,7 @@ helm_pkg:
 build-cli: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
+
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
 	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer --manifest-path ./src/cli/Cargo.toml

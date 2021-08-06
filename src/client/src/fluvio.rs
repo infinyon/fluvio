@@ -77,6 +77,7 @@ impl Fluvio {
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
+        debug!(version = ?versions.platform_version(),"checking platform version");
         check_platform_compatible(versions.platform_version())?;
         let socket = MultiplexerSocket::shared(socket);
         let metadata = MetadataStores::start(socket.clone()).await?;
@@ -90,6 +91,7 @@ impl Fluvio {
             metadata,
         })
     }
+
 
     /// lazy get spu pool
     async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
