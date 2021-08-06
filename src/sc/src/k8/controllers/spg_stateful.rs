@@ -22,7 +22,7 @@ use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::statefulset::StatefulsetSpec;
 use crate::k8::objects::spg_service::SpgServiceSpec;
 
-/// Reconcile Statefulsets with SPG
+/// Update Statefulset and Service from SPG
 pub struct SpgStatefulSetController {
     client: SharedK8Client,
     namespace: String,
@@ -146,7 +146,7 @@ impl SpgStatefulSetController {
             }
 
             debug!("continue");
-            let (spg_service_key, spg_service_action) = spu_group.generate_service();
+            let (spg_service_key, spg_service_action) = spu_group.as_service();
 
             trace!("spg_service_actions: {:#?}", spg_service_action);
             self.spg_services
@@ -154,7 +154,7 @@ impl SpgStatefulSetController {
                 .await?;
 
             let (stateful_key, stateful_action) =
-                spu_group.statefulset_action(&self.namespace, spu_k8_config, self.tls.as_ref());
+                spu_group.as_statefulset(&self.namespace, spu_k8_config, self.tls.as_ref());
 
             debug!(?stateful_action, "applying statefulset");
             self.statefulsets

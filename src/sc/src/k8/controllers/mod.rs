@@ -1,6 +1,6 @@
 pub mod spg_stateful;
 pub mod spu_service;
-pub mod spu;
+pub mod spg_spu;
 
 pub use k8_operator::run_k8_operators;
 
@@ -19,7 +19,7 @@ mod k8_operator {
     use crate::k8::objects::spg_service::SpgServiceSpec;
     use crate::k8::controllers::spg_stateful::SpgStatefulSetController;
     use crate::k8::controllers::spu_service::SpuServiceController;
-    use crate::k8::controllers::spu::SpuController;
+    use crate::k8::controllers::spg_spu::SpgSpuController;
 
     pub async fn run_k8_operators(
         namespace: String,
@@ -66,7 +66,7 @@ mod k8_operator {
         });
 
         whitelist!(config, "k8_spu", {
-            SpuController::start(
+            SpgSpuController::start(
                 global_ctx.spus().clone(),
                 spu_service_ctx.clone(),
                 global_ctx.spgs().clone(),
