@@ -1,12 +1,10 @@
 use std::{fmt, net::IpAddr, time::Duration};
 
 use fluvio_controlplane_metadata::{
-    spg::SpuEndpointTemplate,
-    spu::{Endpoint, IngressPort, SpuType},
+    spu::{IngressPort},
     store::{MetadataStoreObject, k8::K8MetaItem},
 };
-use fluvio_stream_dispatcher::actions::WSAction;
-use fluvio_types::SpuId;
+
 use k8_client::ClientError;
 use tracing::{debug, trace, error, instrument, info};
 
@@ -110,6 +108,8 @@ impl K8SpuController {
         }
     }
 
+    /* This handles case where SPU it self has been changed 
+       
     /// spu has been changed, update service
     async fn sync_spus(
         &mut self,
@@ -146,6 +146,7 @@ impl K8SpuController {
 
         Ok(())
     }
+    */
 
     /// svc has been changed, update spu
     async fn sync_from_spu_services(
