@@ -761,6 +761,7 @@ impl ClusterInstaller {
             chart_values.push(np_conf_path.to_path_buf());
 
             let external_addr = if let Some(addr) = &self.config.proxy_addr {
+                debug!(?addr, "use proxying");
                 addr.to_owned()
             } else {
                 debug!("Using NodePort service type");
@@ -796,6 +797,8 @@ impl ClusterInstaller {
 
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);
+
+            debug!(?helm_lb_config, "helm_lb_config");
 
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .map_err(|err| K8InstallError::Other(err.to_string()))?;
@@ -928,6 +931,7 @@ impl ClusterInstaller {
                                             let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
                                             let host_addr = if let Some(addr) = &self.config.proxy_addr {
+                                                debug!(?addr,"using proxy");
                                                 addr.to_owned()
                                             } else {
 
