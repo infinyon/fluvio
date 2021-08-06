@@ -715,11 +715,6 @@ impl ClusterInstaller {
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
 
-        // Wait for the SPU cluster to spin up
-        if !self.config.skip_spu_liveness_check {
-            self.wait_for_spu(namespace).await?;
-        }
-
         Ok(StartStatus {
             address,
             port,
@@ -730,7 +725,6 @@ impl ClusterInstaller {
     /// Install Fluvio Core chart on the configured cluster
     #[instrument(skip(self))]
     async fn install_app(&self) -> Result<(), K8InstallError> {
-        println!("Installing Fluvio app");
         debug!(
             "Installing fluvio with the following configuration: {:#?}",
             &self.config
@@ -1172,6 +1166,12 @@ impl ClusterInstaller {
         };
 
         admin.create(name, false, spu_spec).await?;
+
+        // Wait for the SPU cluster to spin up
+        if !self.config.skip_spu_liveness_check {
+            self.wait_for_spu(&self.config.namespace).await?;
+        }
+
         Ok(())
     }
 }
