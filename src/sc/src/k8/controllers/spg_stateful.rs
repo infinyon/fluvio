@@ -22,7 +22,7 @@ use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::statefulset::StatefulsetSpec;
 use crate::k8::objects::spg_service::SpgServiceSpec;
 
-/// reconcile between SPG and Statefulset
+/// Reconcile Statefulsets with SPG
 pub struct SpgStatefulSetController {
     client: SharedK8Client,
     namespace: String,

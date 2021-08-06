@@ -268,6 +268,7 @@ impl SpuController {
         Ok(())
     }
 
+    /// synchronize change from spg to spu
     async fn sync_with_spg(
         &mut self,
         listener: &mut K8ChangeListener<SpuGroupSpec>,
@@ -333,9 +334,16 @@ impl SpuController {
             rack: None,
         };
 
+        // add spu as children of spg
+        let mut ctx = spg_obj
+            .ctx()
+            .create_child()
+            .set_labels(vec![("fluvio.io/spu-group", "spu")]);
+       
+
         let action = WSAction::Apply(
             MetadataStoreObject::with_spec(spu_name, spu_spec)
-                .with_context(spg_obj.ctx().create_child()),
+                .with_context(ctx),
         );
 
         let spu_count = self.spus.store().count().await;

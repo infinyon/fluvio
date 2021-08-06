@@ -3,10 +3,7 @@ use std::{collections::HashMap, fmt, time::Duration};
 use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use fluvio_stream_dispatcher::actions::WSAction;
 use k8_client::{ClientError, SharedK8Client};
-use tracing::debug;
-use tracing::trace;
-use tracing::error;
-use tracing::instrument;
+use tracing::{ debug,trace,error,instrument};
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
