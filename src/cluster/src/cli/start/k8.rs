@@ -2,7 +2,7 @@ use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
 use semver::Version;
 
-use crate::{ClusterInstaller, ClusterError, K8InstallError, StartStatus, ClusterConfig};
+use crate::{ClusterInstaller, K8InstallError, StartStatus, ClusterConfig,ClusterError};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
 use crate::check::render::{
@@ -66,13 +66,15 @@ pub async fn process_k8(
     if opt.setup {
         setup_k8(&installer).await?;
     } else {
-        start_k8(&installer).await?;
+        let k8_install: Result<_,ClusterError> = start_k8(&installer).await.map_err(|err| err.into());
+        k8_install?
+        
     }
 
     Ok(())
 }
 
-pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), ClusterCliError> {
+pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), K8InstallError> {
     match installer.install_fluvio().await {
         // Successfully performed startup without pre-checks
         Ok(StartStatus { checks: None, .. }) => {
@@ -87,7 +89,7 @@ pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), ClusterCliErro
             println!("Successfully installed Fluvio!");
         }
         // Aborted startup because pre-checks failed
-        Err(ClusterError::InstallK8(K8InstallError::FailedPrecheck(check_statuses))) => {
+        Err(K8InstallError::FailedPrecheck(check_statuses)) => {
             render_statuses_next_steps(&check_statuses);
         }
         // Another type of error occurred during checking or startup
