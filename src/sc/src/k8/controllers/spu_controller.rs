@@ -192,7 +192,7 @@ impl K8SpuController {
 
     async fn apply_ingress_from_svc(
         &mut self,
-        spu_md: MetadataStoreObject<SpuSpec, K8MetaItem>,
+        mut spu_md: MetadataStoreObject<SpuSpec, K8MetaItem>,
         svc_md: MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
     ) -> Result<(), ClientError> {
         let spu_id = spu_md.key();
@@ -259,7 +259,10 @@ impl K8SpuController {
             );
             update_spu.public_endpoint.ingress = computed_spu_ingressport.ingress;
             update_spu.public_endpoint.port = computed_spu_ingressport.port;
-            self.spus.create_spec(spu_id.to_owned(), update_spu).await?;
+
+            spu_md.set_spec(update_spu);
+
+            self.spus.apply(spu_md).await?;
         } else {
             debug!(
                 "detected no spu: {} ingress changes with svc: {}",
