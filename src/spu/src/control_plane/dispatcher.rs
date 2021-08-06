@@ -35,10 +35,7 @@ use super::message_sink::{SharedStatusUpdate};
 struct DispatcherCounter {
     pub replica_changes: u64, // replica changes received from sc
     pub spu_changes: u64,     // spu changes received from sc
-    // TODO remove dead code: https://github.com/infinyon/fluvio/issues/1332
-    #[allow(dead_code)]
-    pub status_send: u64, // number of status send to sc
-    pub reconnect: u64, // number of reconnect to sc
+    pub reconnect: u64,       // number of reconnect to sc
 }
 
 /// Controller for handling connection to SC
