@@ -825,7 +825,11 @@ impl ClusterInstaller {
 
         debug!("Using helm install settings: {:#?}", &install_settings);
 
-        println!("installing fluvio chart");
+        if self.config.upgrade {
+            println!("Upgrading fluvio chart");
+        } else {
+            println!("installing fluvio chart");
+        }
 
         let mut config = ChartConfig::app_builder()
             .namespace(&self.config.namespace)

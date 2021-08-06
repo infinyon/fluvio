@@ -9,7 +9,11 @@ pub fn process_sys(opt: StartOpt, upgrade: bool) -> Result<(), ClusterCliError> 
 }
 
 fn install_sys_impl(opt: StartOpt, upgrade: bool) -> Result<(), ChartInstallError> {
-    println!("installing sys chart");
+    if upgrade {
+        println!("upgrading sys chart");
+    } else {
+        println!("installing sys chart");
+    }
 
     let config = ChartConfig::sys_builder()
         .namespace(&opt.k8_config.namespace)
