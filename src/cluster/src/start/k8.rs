@@ -685,16 +685,13 @@ impl ClusterInstaller {
 
         let namespace = &self.config.namespace;
 
-        let (address, port) = self
-            .discover_sc_address(namespace)
-            .await
-            .map_err(|_| K8InstallError::SCServiceTimeout)?;
+        let (host_name, port) = self.discover_sc_address(namespace).await?;
 
-        let end_point = format!("{}:{}", address, port);
+        let address = format!("{}:{}", host_name, port);
 
-        println!("found SC service addr: {}", end_point);
+        println!("found SC service addr: {}", address);
         let cluster_config =
-            FluvioConfig::new(end_point.clone()).with_tls(self.config.client_tls_policy.clone());
+            FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
         let fluvio = connect_to_sc(&cluster_config).await?;
 
@@ -712,7 +709,7 @@ impl ClusterInstaller {
         }
 
         if self.config.save_profile {
-            self.update_profile(end_point.clone())?;
+            self.update_profile(address.clone())?;
         }
 
         // Create a managed SPU cluster
@@ -1193,8 +1190,8 @@ async fn connect_to_sc(config: &FluvioConfig) -> Result<Fluvio, K8InstallError> 
             return Ok(fluvio);
         } else {
             if attempt < *MAX_SC_VERSION_LOOP - 1 {
-                println!("sleeping 5 seconds. attemp: {}", attempt);
-                sleep(Duration::from_secs(5)).await;
+                println!("sleeping 10 seconds. attemp: {}", attempt);
+                sleep(Duration::from_secs(10)).await;
             }
         }
     }
