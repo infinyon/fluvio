@@ -760,31 +760,36 @@ impl ClusterInstaller {
             let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
             chart_values.push(np_conf_path.to_path_buf());
 
-            debug!("Using NodePort service type");
-            debug!("Getting external IP from K8s node");
-            let kube_client = &self.kube_client;
+            let external_addr = if let Some(addr) = &self.config.proxy_addr {
+                addr.to_owned()
+            } else {
+                debug!("Using NodePort service type");
+                debug!("Getting external IP from K8s node");
+                let kube_client = &self.kube_client;
 
-            debug!("Trying to query for Nodes");
+                debug!("Trying to query for Nodes");
 
-            let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
+                let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
 
-            debug!("Results from Node query: {:#?}", &nodes);
+                debug!("Results from Node query: {:#?}", &nodes);
 
-            let mut node_addr: Vec<NodeAddress> = Vec::new();
-            for n in nodes.items.into_iter().map(|x| x.status.addresses) {
-                node_addr.extend(n)
-            }
+                let mut node_addr: Vec<NodeAddress> = Vec::new();
+                for n in nodes.items.into_iter().map(|x| x.status.addresses) {
+                    node_addr.extend(n)
+                }
 
-            debug!("Node Addresses: {:#?}", node_addr);
+                debug!("Node Addresses: {:#?}", node_addr);
 
-            let external_addr = node_addr
-                .into_iter()
-                .find(|a| a.r#type == "InternalIP")
-                .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+                node_addr
+                    .into_iter()
+                    .find(|a| a.r#type == "InternalIP")
+                    .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?
+                    .address
+            };
 
             // Set this annotation w/ the external address by overriding this Helm chart value:
             let mut ingress_address = BTreeMap::new();
-            ingress_address.insert("fluvio.io/ingress-address", external_addr.address);
+            ingress_address.insert("fluvio.io/ingress-address", external_addr);
 
             let mut service_annotation = BTreeMap::new();
             service_annotation.insert("serviceAnnotations", ingress_address);
