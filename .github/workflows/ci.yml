@@ -413,16 +413,13 @@ jobs:
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
 
+        # Load image infinyon/fluvio:SHA
       - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
           docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
           docker image ls -a
-
-      - name: Create docker manifest
-        run: |
-          docker manifest create infinyon/fluvio:${{ github.sha }} \
-            --amend infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl
 
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
@@ -484,6 +481,8 @@ jobs:
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
 
+
+        # Load image infinyon/fluvio:SHA
       - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
@@ -503,7 +502,7 @@ jobs:
           max_attempts: 3
           command: |
             ./k8-util/cluster/reset-k3d.sh
-            k3d image import -k /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar -c fluvio 
+            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test
 
@@ -557,12 +556,14 @@ jobs:
       - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
-          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
+          docker image load --input /tmp/images/*.tar
           docker image ls -a
 
-      - name: Export Docker Image to tarball
-        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+      - name: Create docker manifest
+        run: |
+          docker manifest create infinyon/fluvio:${{ github.sha }} \
+            --amend infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl \
+            --amend infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl 
 
         # Tag image as infinyon/fluvio:VERSION-SHA and push
       - name: Publish Fluvio Docker Image
