@@ -95,7 +95,6 @@ impl Fluvio {
         })
     }
 
-
     /// lazy get spu pool
     async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
         self.spu_pool
