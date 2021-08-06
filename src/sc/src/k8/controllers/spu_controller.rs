@@ -83,12 +83,12 @@ impl K8SpuController {
 
             select! {
 
-                
+
                 _ = service_listener.listen() => {
                     debug!("detected spu service changes");
                     self.sync_from_spu_services(&mut service_listener).await?;
                 },
-                
+
 
                 _ = spg_listener.listen() => {
                     debug!("detected spg changes");
@@ -108,8 +108,8 @@ impl K8SpuController {
         }
     }
 
-    /* This handles case where SPU it self has been changed 
-       
+    /* This handles case where SPU it self has been changed
+
     /// spu has been changed, update service
     async fn sync_spus(
         &mut self,
