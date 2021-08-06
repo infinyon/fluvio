@@ -130,7 +130,7 @@ impl SpuGroupObj {
         */
 
         (
-            spu_name,
+            spu_name.clone(),
             WSAction::Apply(
                 MetadataStoreObject::with_spec(spu_name, spu_spec)
                     .with_context(self.ctx().create_child()),

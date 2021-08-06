@@ -297,7 +297,7 @@ impl SpgSpuController {
             for i in 0..replicas {
                 let (spu_name, action) = spg_obj.as_spu(i);
 
-                //  trace!("spu action: {:#?}", meta_obj);
+                debug!(?spu_name, "applying action");
                 self.spus.wait_action(&spu_name, action).await?;
             }
         }
