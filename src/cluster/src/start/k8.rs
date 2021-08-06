@@ -758,12 +758,10 @@ impl ClusterInstaller {
             let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
             chart_values.push(np_conf_path.to_path_buf());
 
-            debug!("Using NodePort service type");
-
             let external_addr = if let Some(addr) = &self.config.proxy_addr {
-                debug!(?addr, "use proxying");
                 addr.to_owned()
             } else {
+                debug!("Using NodePort service type");
                 debug!("Getting external IP from K8s node");
                 let kube_client = &self.kube_client;
 
