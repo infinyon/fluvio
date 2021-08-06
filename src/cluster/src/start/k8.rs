@@ -759,6 +759,7 @@ impl ClusterInstaller {
             chart_values.push(np_conf_path.to_path_buf());
 
             let external_addr = if let Some(addr) = &self.config.proxy_addr {
+                debug!(?addr, "use proxying");
                 addr.to_owned()
             } else {
                 debug!("Using NodePort service type");
@@ -928,6 +929,7 @@ impl ClusterInstaller {
                                             let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
                                             let host_addr = if let Some(addr) = &self.config.proxy_addr {
+                                                debug!(?addr,"using proxy");
                                                 addr.to_owned()
                                             } else {
 
