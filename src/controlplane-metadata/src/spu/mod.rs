@@ -14,6 +14,7 @@ pub use k8::*;
 mod metadata {
 
     use crate::core::{Spec, Status};
+    use crate::spg::SpuGroupSpec;
     use crate::extended::{ObjectType, SpecExt};
 
     use super::*;
@@ -21,7 +22,7 @@ mod metadata {
     impl Spec for SpuSpec {
         const LABEL: &'static str = "SPU";
         type IndexKey = String;
-        type Owner = Self;
+        type Owner = SpuGroupSpec;
         type Status = SpuStatus;
     }
 

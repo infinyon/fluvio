@@ -1,17 +1,12 @@
 use std::{fmt, net::IpAddr, time::Duration};
 
 use fluvio_controlplane_metadata::{
-    spg::SpuEndpointTemplate,
-    spu::{Endpoint, IngressPort, SpuType},
+    spu::{IngressPort},
     store::{MetadataStoreObject, k8::K8MetaItem},
 };
-use fluvio_stream_dispatcher::actions::WSAction;
-use fluvio_types::SpuId;
+
 use k8_client::ClientError;
-use tracing::debug;
-use tracing::trace;
-use tracing::error;
-use tracing::instrument;
+use tracing::{debug, trace, error, instrument, info};
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
@@ -25,27 +20,27 @@ use crate::k8::objects::spu_service::SpuServiceSpec;
 use crate::k8::objects::spg_group::SpuGroupObj;
 use crate::stores::spg::{SpuGroupSpec};
 
-/// Maintain Managed SPU
-/// sync from spu services and statefulset
-pub struct SpuController {
+/// Update SPU from changes in SPU Group and SPU Services
+/// This is only place where we make changes to SPU
+pub struct K8SpuController {
     services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
     spus: StoreContext<SpuSpec>,
 }
 
-impl fmt::Display for SpuController {
+impl fmt::Display for K8SpuController {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SpuController")
+        write!(f, "SpgSpuController")
     }
 }
 
-impl fmt::Debug for SpuController {
+impl fmt::Debug for K8SpuController {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SpuController")
+        write!(f, "SpgSpuController")
     }
 }
 
-impl SpuController {
+impl K8SpuController {
     pub fn start(
         spus: StoreContext<SpuSpec>,
         services: StoreContext<SpuServiceSpec>,
@@ -60,7 +55,9 @@ impl SpuController {
         spawn(controller.dispatch_loop());
     }
 
+    #[instrument(skip(self), name = "SpgSpuController")]
     async fn dispatch_loop(mut self) {
+        info!("started");
         loop {
             if let Err(err) = self.inner_loop().await {
                 error!("error with inner loop: {:#?}", err);
@@ -70,17 +67,16 @@ impl SpuController {
         }
     }
 
-    #[instrument(skip(self), name = "SpuSpecLoop")]
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
         let mut service_listener = self.services.change_listener();
         let mut spg_listener = self.groups.change_listener();
-        let mut spu_listener = self.spus.change_listener();
+        //    let mut spu_listener = self.spus.change_listener();
 
         self.sync_with_spg(&mut spg_listener).await?;
         self.sync_from_spu_services(&mut service_listener).await?;
-        self.sync_spus(&mut spu_listener).await?;
+        //    self.sync_spus(&mut spu_listener).await?;
 
         loop {
             trace!("waiting events");
@@ -93,21 +89,26 @@ impl SpuController {
                     self.sync_from_spu_services(&mut service_listener).await?;
                 },
 
+
                 _ = spg_listener.listen() => {
                     debug!("detected spg changes");
                     self.sync_with_spg(&mut spg_listener).await?;
                 },
 
 
+                /*
                 _ = spu_listener.listen() => {
                     debug!("detected spu changes");
                     self.sync_spus(&mut spu_listener).await?;
                 }
+                */
 
 
             }
         }
     }
+
+    /* This handles case where SPU it self has been changed
 
     /// spu has been changed, update service
     async fn sync_spus(
@@ -145,6 +146,7 @@ impl SpuController {
 
         Ok(())
     }
+    */
 
     /// svc has been changed, update spu
     async fn sync_from_spu_services(
@@ -190,7 +192,7 @@ impl SpuController {
 
     async fn apply_ingress_from_svc(
         &mut self,
-        spu_md: MetadataStoreObject<SpuSpec, K8MetaItem>,
+        mut spu_md: MetadataStoreObject<SpuSpec, K8MetaItem>,
         svc_md: MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
     ) -> Result<(), ClientError> {
         let spu_id = spu_md.key();
@@ -257,7 +259,10 @@ impl SpuController {
             );
             update_spu.public_endpoint.ingress = computed_spu_ingressport.ingress;
             update_spu.public_endpoint.port = computed_spu_ingressport.port;
-            self.spus.create_spec(spu_id.to_owned(), update_spu).await?;
+
+            spu_md.set_spec(update_spu);
+
+            self.spus.apply(spu_md).await?;
         } else {
             debug!(
                 "detected no spu: {} ingress changes with svc: {}",
@@ -268,6 +273,7 @@ impl SpuController {
         Ok(())
     }
 
+    /// synchronize change from spg to spu
     async fn sync_with_spg(
         &mut self,
         listener: &mut K8ChangeListener<SpuGroupSpec>,
@@ -282,7 +288,7 @@ impl SpuController {
         let (updates, deletes) = changes.parts();
 
         debug!(
-            "received statefulset changes updates: {},deletes: {},epoch: {}",
+            "received spg group changes updates: {},deletes: {},epoch: {}",
             updates.len(),
             deletes.len(),
             epoch,
@@ -294,56 +300,12 @@ impl SpuController {
             let spec = spg_obj.spec();
             let replicas = spec.replicas;
             for i in 0..replicas {
-                let spu_id = compute_spu_id(spec.min_id, i);
-                let spu_name = format!("{}-{}", spg_obj.key(), i);
+                let (spu_name, action) = spg_obj.as_spu(i);
 
-                // assume that if spu exists, it will have necessary attribute for now
-                self.apply_spu(&spg_obj, &spu_name, spu_id).await?;
+                debug!(?spu_name, "applying action");
+                self.spus.wait_action(&spu_name, action).await?;
             }
         }
-
-        Ok(())
-    }
-
-    #[allow(clippy::ptr_arg)]
-    async fn apply_spu(
-        &self,
-        spg_obj: &SpuGroupObj,
-        spu_name: &String,
-        id: SpuId,
-    ) -> Result<(), ClientError> {
-        let spu_private_ep = SpuEndpointTemplate::default_private();
-        let spu_public_ep = SpuEndpointTemplate::default_public();
-
-        let full_group_name = format!("fluvio-spg-{}", spg_obj.key());
-        let full_spu_name = format!("fluvio-spg-{}", spu_name);
-        let spu_spec = SpuSpec {
-            id,
-            spu_type: SpuType::Managed,
-            public_endpoint: IngressPort {
-                port: spu_public_ep.port,
-                encryption: spu_public_ep.encryption,
-                ingress: vec![],
-            },
-            private_endpoint: Endpoint {
-                host: format!("{}.{}", full_spu_name, full_group_name),
-                port: spu_private_ep.port,
-                encryption: spu_private_ep.encryption,
-            },
-            rack: None,
-        };
-
-        let action = WSAction::Apply(
-            MetadataStoreObject::with_spec(spu_name, spu_spec)
-                .with_context(spg_obj.ctx().create_child()),
-        );
-
-        let spu_count = self.spus.store().count().await;
-        debug!(%spu_name,spu_count,"applying spu");
-        trace!("spu action: {:#?}", action);
-        self.spus.wait_action(spu_name, action).await?;
-        let spu_count = self.spus.store().count().await;
-        debug!(spu_count, "finished applying spu");
 
         Ok(())
     }
@@ -374,9 +336,4 @@ fn convert(ingress_addr: &LoadBalancerIngress) -> IngressAddr {
         hostname: ingress_addr.hostname.clone(),
         ip: ingress_addr.ip.clone(),
     }
-}
-
-/// compute spu id with min_id as base
-fn compute_spu_id(min_id: i32, replica_index: u16) -> i32 {
-    replica_index as i32 + min_id
 }

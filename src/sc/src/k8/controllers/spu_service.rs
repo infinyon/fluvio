@@ -3,10 +3,7 @@ use std::{collections::HashMap, fmt, time::Duration};
 use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use fluvio_stream_dispatcher::actions::WSAction;
 use k8_client::{ClientError, SharedK8Client};
-use tracing::debug;
-use tracing::trace;
-use tracing::error;
-use tracing::instrument;
+use tracing::{debug, trace, error, instrument};
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
@@ -17,9 +14,7 @@ use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::spg_group::SpuGroupObj;
 use crate::k8::objects::spu_service::SpuServiceSpec;
 
-/// Manages SpuService
-/// It is used to update SPU's public ip address from external load balancer service.
-/// External load balancer update external ip or hostname out of band.
+/// Sync individual SPU services from SPU Group
 pub struct SpuServiceController {
     client: SharedK8Client,
     namespace: String,
