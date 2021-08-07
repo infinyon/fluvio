@@ -566,7 +566,7 @@ jobs:
             --amend infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl 
 
         # Tag image as infinyon/fluvio:VERSION-SHA and push
-      - name: Publish Fluvio Docker Image
+      - name: Publish Fluvio Docker manifest image
         run: |
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
           export TAG="$(cat VERSION)-${{ github.sha }}"
