@@ -2,21 +2,43 @@ use std::any::Any;
 use std::time::Duration;
 use std::fmt::{self, Debug, Display, Formatter};
 
+use hdrhistogram::Histogram;
 use prettytable::{table, row, cell};
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct TestResult {
     pub success: bool,
     pub duration: Duration,
     // stats
-    pub bytes_produced: u64,
-    pub produce_latency: u64,
-    pub num_producers: u64,
-    pub bytes_consumed: u64,
-    pub consume_latency: u64,
-    pub num_consumers: u64,
-    pub num_topics: u64,
-    pub topic_create_latency: u64,
+    pub producer_bytes: u64,
+    pub producer_latency_histogram: Histogram<u64>,
+    pub producer_num: u64,
+    pub consumer_bytes: u64,
+    pub consumer_latency_histogram: Histogram<u64>,
+    pub consumer_num: u64,
+    pub topic_num: u64,
+    pub topic_create_latency_histogram: Histogram<u64>,
+}
+
+impl Default for TestResult {
+    fn default() -> Self {
+        Self {
+            success: false,
+            duration: Duration::new(0, 0),
+
+            producer_num: 0,
+            consumer_num: 0,
+            topic_num: 0,
+
+            producer_bytes: 0,
+            consumer_bytes: 0,
+
+            producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
+                .unwrap(),
+        }
+    }
 }
 
 impl TestResult {
@@ -30,27 +52,109 @@ impl Display for TestResult {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let success_str = format!("{}", self.success);
         let duration_str = format!("{:?}", self.duration);
-        let producer_latency_str = format!("{:?}", Duration::from_nanos(self.produce_latency));
-        let consumer_latency_str = format!("{:?}", Duration::from_nanos(self.consume_latency));
-        let topic_create_latency_str =
-            format!("{:?}", Duration::from_nanos(self.topic_create_latency));
 
-        let table = table!(
+        let basic_results_table = table!(
             [b->"Test Results"],
             ["Pass?", b->success_str],
-            ["Duration", duration_str],
-            //
-
-            ["# topics created", self.num_topics],
-            ["topic create latency 99.9%", topic_create_latency_str],
-            ["# producers created", self.num_producers],
-            ["bytes produced", self.bytes_produced],
-            ["producer latency 99.9%", producer_latency_str],
-            ["# consumers created", self.num_consumers],
-            ["bytes consumed", self.bytes_consumed],
-            ["consumer latency 99.9%", consumer_latency_str]
+            ["Duration", duration_str]
         );
 
-        write!(f, "{}", table)
+        let topic_create_latency_avg = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.topic_create_latency_histogram.mean() as u64)
+        );
+        let topic_create_latency_p50 = format!(
+            "{:.2?}",
+            Duration::from_nanos(
+                self.topic_create_latency_histogram
+                    .value_at_percentile(50.0)
+            )
+        );
+        let topic_create_latency_p90 = format!(
+            "{:.2?}",
+            Duration::from_nanos(
+                self.topic_create_latency_histogram
+                    .value_at_percentile(90.0)
+            )
+        );
+        let topic_create_latency_p99 = format!(
+            "{:.2?}",
+            Duration::from_nanos(
+                self.topic_create_latency_histogram
+                    .value_at_percentile(99.0)
+            )
+        );
+        let topic_create_latency_p999 = format!(
+            "{:.2?}",
+            Duration::from_nanos(
+                self.topic_create_latency_histogram
+                    .value_at_percentile(99.9)
+            )
+        );
+
+        let producer_latency_avg = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.producer_latency_histogram.mean() as u64)
+        );
+        let producer_latency_p50 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(50.0))
+        );
+        let producer_latency_p90 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(90.0))
+        );
+        let producer_latency_p99 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(99.0))
+        );
+        let producer_latency_p999 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(99.9))
+        );
+
+        let consumer_latency_avg = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.consumer_latency_histogram.mean() as u64)
+        );
+        let consumer_latency_p50 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(50.0))
+        );
+        let consumer_latency_p90 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(90.0))
+        );
+        let consumer_latency_p99 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(99.0))
+        );
+        let consumer_latency_p999 = format!(
+            "{:.2?}",
+            Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(99.9))
+        );
+
+        let perf_results_header = table!(
+            [b->"Perf Results"]
+        );
+
+        let perf_created_table = table!(
+            [b->"Created", "#"],
+            ["Topic", self.topic_num],
+            ["Producer", self.producer_num],
+            ["Consumer", self.consumer_num]
+        );
+
+        let perf_latency_table = table!(
+            [b->"Latency", b->"Average", b->"P50", b->"P90", b->"P99", b->"P999"],
+            ["Topic create", topic_create_latency_avg, topic_create_latency_p50, topic_create_latency_p90, topic_create_latency_p99, topic_create_latency_p999],
+            ["Producer", producer_latency_avg, producer_latency_p50, producer_latency_p90, producer_latency_p99, producer_latency_p999],
+            ["Consumer", consumer_latency_avg, consumer_latency_p50, consumer_latency_p90, consumer_latency_p99, consumer_latency_p999]
+        );
+
+        write!(f, "{}", basic_results_table)?;
+        write!(f, "\n{}", perf_results_header)?;
+        write!(f, "\n{}", perf_created_table)?;
+        write!(f, "\n{}", perf_latency_table)
     }
 }

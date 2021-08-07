@@ -108,7 +108,7 @@ pub async fn run(
     let lock = test_driver.read().await;
     println!(
         "Producer latency 99%: {:?}",
-        lock.producer_latency.value_at_quantile(0.999)
+        lock.producer_latency_histogram.value_at_quantile(0.99)
     );
     drop(lock);
 }

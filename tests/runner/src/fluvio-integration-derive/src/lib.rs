@@ -105,14 +105,14 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             let lock = test_driver.read().await;
 
             TestResult {
-                num_topics: lock.topic_num as u64,
-                num_producers: lock.producer_num as u64,
-                num_consumers: lock.consumer_num as u64,
-                bytes_produced: lock.producer_bytes as u64,
-                bytes_consumed: lock.consumer_bytes as u64,
-                topic_create_latency: lock.topic_create_latency.value_at_quantile(0.999),
-                produce_latency: lock.producer_latency.value_at_quantile(0.999),
-                consume_latency: lock.consumer_latency.value_at_quantile(0.999),
+                topic_num: lock.topic_num as u64,
+                producer_num: lock.producer_num as u64,
+                consumer_num: lock.consumer_num as u64,
+                producer_bytes: lock.producer_bytes as u64,
+                consumer_bytes: lock.consumer_bytes as u64,
+                topic_create_latency_histogram: lock.topic_create_latency_histogram.clone(),
+                producer_latency_histogram: lock.producer_latency_histogram.clone(),
+                consumer_latency_histogram: lock.consumer_latency_histogram.clone(),
                 ..Default::default()
             }
         }
@@ -180,14 +180,14 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         Ok(TestResult {
                             success: true,
                             duration: test_timer.duration(),
-                            num_topics: test_result_tmp.num_topics,
-                            topic_create_latency: test_result_tmp.topic_create_latency,
-                            num_producers: test_result_tmp.num_producers,
-                            bytes_produced: test_result_tmp.bytes_produced,
-                            produce_latency: test_result_tmp.produce_latency,
-                            num_consumers: test_result_tmp.num_consumers,
-                            bytes_consumed: test_result_tmp.bytes_consumed,
-                            consume_latency: test_result_tmp.consume_latency,
+                            topic_num: test_result_tmp.topic_num,
+                            topic_create_latency_histogram: test_result_tmp.topic_create_latency_histogram,
+                            producer_num: test_result_tmp.producer_num,
+                            producer_bytes: test_result_tmp.producer_bytes,
+                            producer_latency_histogram: test_result_tmp.producer_latency_histogram,
+                            consumer_num: test_result_tmp.consumer_num,
+                            consumer_bytes: test_result_tmp.consumer_bytes,
+                            consumer_latency_histogram: test_result_tmp.consumer_latency_histogram,
                         })
                     }
                 }

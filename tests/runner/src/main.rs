@@ -139,9 +139,9 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<TestDriver>> {
         consumer_num: 0,
         producer_bytes: 0,
         consumer_bytes: 0,
-        producer_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        consumer_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
     }))
 }
 

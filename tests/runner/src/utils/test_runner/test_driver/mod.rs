@@ -26,9 +26,9 @@ pub struct TestDriver {
     pub consumer_num: usize,
     pub producer_bytes: usize,
     pub consumer_bytes: usize,
-    pub producer_latency: Histogram<u64>,
-    pub consumer_latency: Histogram<u64>,
-    pub topic_create_latency: Histogram<u64>,
+    pub producer_latency_histogram: Histogram<u64>,
+    pub consumer_latency_histogram: Histogram<u64>,
+    pub topic_create_latency_histogram: Histogram<u64>,
 }
 
 impl TestDriver {
@@ -72,11 +72,13 @@ impl TestDriver {
 
         debug!(
             "(#{}) Produce latency (ns): {:?}",
-            self.producer_latency.len() + 1,
+            self.producer_latency_histogram.len() + 1,
             produce_time as u64
         );
 
-        self.producer_latency.record(produce_time as u64).unwrap();
+        self.producer_latency_histogram
+            .record(produce_time as u64)
+            .unwrap();
 
         self.consumer_bytes += message.len();
 
@@ -113,7 +115,9 @@ impl TestDriver {
             if let Some(Ok(record)) = stream.next().await {
                 // Record latency
                 let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                self.consumer_latency.record(consume_time as u64).unwrap();
+                self.consumer_latency_histogram
+                    .record(consume_time as u64)
+                    .unwrap();
 
                 // Record bytes consumed
                 self.consumer_bytes += record.as_ref().len();
@@ -126,10 +130,10 @@ impl TestDriver {
 
     // TODO: This is a workaround. Handle stream inside impl
     pub async fn consume_latency_record(&mut self, latency: u64) {
-        self.consumer_latency.record(latency).unwrap();
+        self.consumer_latency_histogram.record(latency).unwrap();
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
-            self.consumer_latency.len(),
+            self.consumer_latency_histogram.len(),
             latency
         );
     }
@@ -165,7 +169,9 @@ impl TestDriver {
 
         if topic_create.is_ok() {
             println!("topic \"{}\" created", option.topic_name);
-            self.topic_create_latency.record(topic_time as u64).unwrap();
+            self.topic_create_latency_histogram
+                .record(topic_time as u64)
+                .unwrap();
             self.topic_num += 1;
         } else {
             println!("topic \"{}\" already exists", option.topic_name);
