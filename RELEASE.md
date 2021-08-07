@@ -9,13 +9,15 @@ Prior to releasing, the release manager should check the following:
 
 To actually perform the release, the core steps are:
 
-- Run the `release.yml` workflow on GitHub Actions
-- Wait for workflow to complete successfully and apply `vX.Y.Z` tag to git
-- Publish any crates `fluvio` client depends on, followed by `fluvio` crate itself
-- Publish any updates to `fluvio-smartstream` if needed
-- Update `infinyon/fluvio-smartstream-template` if needed
-- Fast-forward `stable` branch to match `master` (may become automated)
-- Push new commit with updated `VERSION` and `CHANGELOG.md` files
+- Publish all public crates.
+- Ensure fluvio website doc is up to date with latest API changes and they are accurate.
+- Run the `release.yml` workflow on GitHub Actions.
+- Wait for workflow to complete successfully and apply `vX.Y.Z` tag to git.
+- Publish any updates to `fluvio-smartstream` if needed.
+- Update `infinyon/fluvio-smartstream-template` if needed.
+- Fast-forward `stable` branch to match `master` (may become automated).
+- Push new commit with updated `VERSION` and `CHANGELOG.md` files.
+- Update fluvio website to stable.
 
 After performing the release, the release manager should do the following in order
 to prepare for the next release and announce the current release to the community:
