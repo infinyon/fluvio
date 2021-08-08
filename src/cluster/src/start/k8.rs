@@ -684,6 +684,9 @@ impl ClusterInstaller {
             }
         };
 
+        if let Some(proxy) = &self.config.proxy_addr {
+            println!("Using proxy addr: {}", proxy);
+        }
         self.install_app().await?;
         let namespace = &self.config.namespace;
         let (address, port) = self
