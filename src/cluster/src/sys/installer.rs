@@ -5,9 +5,11 @@ use tracing::{info, debug, instrument};
 use derive_builder::Builder;
 use semver::Version;
 
+use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::charts::{ChartConfig, ChartInstaller,ChartInstallation};
 use crate::UserChartLocation;
-use crate::DEFAULT_NAMESPACE;
+use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
+
 
 use super::SysInstallError;
 
@@ -36,22 +38,33 @@ pub struct SysConfig {
 }
 
 impl SysConfig {
-    /// Creates a default [`SysConfigBuilder`].
+
+    /// Creates a new builder [`SysConfigBuilder`].
     ///
-    /// The required argument `chart_version` must be provdied when
-    /// constructing the builder.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use fluvio_cluster::SysConfig;
-    /// use semver::Version;
-    /// let builder = SysConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
-    /// ```
+    /// Required platform version
     pub fn builder(platform_version: Version) -> SysConfigBuilder {
         let mut builder = SysConfigBuilder::default();
         builder.platform_version(platform_version);
         builder
+    }
+
+
+    /// create sys installer
+    async fn as_installer(self) -> Result<SysInstaller,SysInstallError> {
+
+        self.check().await;
+        SysInstaller::initialize_from(self)
+    }
+
+    /// perform system check to ensure system is ready
+    /// 
+    async fn check(&self) -> CheckResults {
+
+        let checker = ClusterChecker::empty()
+            .with_k8_checks();
+
+        checker.run_wait_and_fix().await
+        
     }
 }
 
@@ -89,8 +102,9 @@ pub struct SysInstaller {
 }
 
 impl SysInstaller {
-    /// Create a new `SysInstaller` using the given config
-    pub fn from_config(config: SysConfig) -> Result<Self, SysInstallError> {
+    /// Create new SysInstaller and make it ready
+    /// This requires we perform sanity check
+    pub fn initialize_from(config: SysConfig) -> Result<Self, SysInstallError> {
         let chart_config = ChartConfig::sys_builder()
             .namespace(&config.namespace)
             .version(config.chart_version.clone())
@@ -122,11 +136,14 @@ impl SysInstaller {
     /// is same version as our platform?
     pub fn is_sys_chart_same_version(&self) -> bool {
 
+        /* 
         if let Some(chart) = self.sys_chart {
             chart.app_version() == self.config.platform_version
         } else {
             false
         }
+        */
+        false
     }
 
     /// run installation
@@ -141,6 +158,8 @@ impl SysInstaller {
         Ok(())
     }
 }
+
+
 
 #[cfg(test)]
 mod tests {
