@@ -316,6 +316,10 @@ pub struct ClusterConfig {
     /// ```
     #[builder(default = "false")]
     render_checks: bool,
+
+    /// Use proxy address for communicating with kubernetes cluster
+    #[builder(setter(into), default)]
+    proxy_addr: Option<String>,
 }
 
 impl ClusterConfig {
