@@ -1042,12 +1042,20 @@ impl ClusterInstaller {
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), K8InstallError> {
-        info!(sock_addr = %sock_addr_str, "waiting for SC port check");
         for i in 0..*MAX_SC_NETWORK_LOOP {
-            let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
-            if TcpStream::connect(&*sock_addr).await.is_ok() {
-                info!(sock_addr = %sock_addr_str, "finished SC port check");
-                return Ok(());
+            if self.config.proxy_addr.is_none() {
+                debug!("resolving socket addr: {}", sock_addr_str);
+                let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
+                if TcpStream::connect(&*sock_addr).await.is_ok() {
+                    info!(sock_addr = %sock_addr_str, "finished SC port check");
+                    return Ok(());
+                }
+            } else {
+                debug!("trying to connect to proxy: {}", sock_addr_str);
+                if TcpStream::connect(&*sock_addr_str).await.is_ok() {
+                    info!(sock_addr = %sock_addr_str, "finished SC port check");
+                    return Ok(());
+                }
             }
             info!(
                 attempt = i,
@@ -1064,13 +1072,6 @@ impl ClusterInstaller {
         &self,
         sock_addr_string: &str,
     ) -> Result<Vec<SocketAddr>, K8InstallError> {
-        /*
-        if self.config.proxy_addr.is_some() {
-            debug!("using proxy addre, skipping");
-
-        }
-        */
-
         debug!("waiting for SC dns resolution: {}", sock_addr_string);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             match resolve(sock_addr_string).await {
