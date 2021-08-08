@@ -1061,6 +1061,13 @@ impl ClusterInstaller {
         &self,
         sock_addr_string: &str,
     ) -> Result<Vec<SocketAddr>, K8InstallError> {
+        /*
+        if self.config.proxy_addr.is_some() {
+            debug!("using proxy addre, skipping");
+
+        }
+        */
+
         debug!("waiting for SC dns resolution: {}", sock_addr_string);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             match resolve(sock_addr_string).await {
