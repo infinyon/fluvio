@@ -760,36 +760,45 @@ impl ClusterInstaller {
             chart_values.push(np_conf_path.to_path_buf());
 
             debug!("Using NodePort service type");
-            debug!("Getting external IP from K8s node");
-            let kube_client = &self.kube_client;
 
-            debug!("Trying to query for Nodes");
+            let external_addr = if let Some(addr) = &self.config.proxy_addr {
+                debug!(?addr, "use proxying");
+                addr.to_owned()
+            } else {
+                debug!("Getting external IP from K8s node");
+                let kube_client = &self.kube_client;
 
-            let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
+                debug!("Trying to query for Nodes");
 
-            debug!("Results from Node query: {:#?}", &nodes);
+                let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
 
-            let mut node_addr: Vec<NodeAddress> = Vec::new();
-            for n in nodes.items.into_iter().map(|x| x.status.addresses) {
-                node_addr.extend(n)
-            }
+                debug!("Results from Node query: {:#?}", &nodes);
 
-            debug!("Node Addresses: {:#?}", node_addr);
+                let mut node_addr: Vec<NodeAddress> = Vec::new();
+                for n in nodes.items.into_iter().map(|x| x.status.addresses) {
+                    node_addr.extend(n)
+                }
 
-            let external_addr = node_addr
-                .into_iter()
-                .find(|a| a.r#type == "InternalIP")
-                .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+                debug!("Node Addresses: {:#?}", node_addr);
+
+                node_addr
+                    .into_iter()
+                    .find(|a| a.r#type == "InternalIP")
+                    .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?
+                    .address
+            };
 
             // Set this annotation w/ the external address by overriding this Helm chart value:
             let mut ingress_address = BTreeMap::new();
-            ingress_address.insert("fluvio.io/ingress-address", external_addr.address);
+            ingress_address.insert("fluvio.io/ingress-address", external_addr);
 
             let mut service_annotation = BTreeMap::new();
             service_annotation.insert("serviceAnnotations", ingress_address);
 
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);
+
+            debug!(?helm_lb_config, "helm_lb_config");
 
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .map_err(|err| K8InstallError::Other(err.to_string()))?;
@@ -921,20 +930,27 @@ impl ClusterInstaller {
                                         LoadBalancerType::NodePort => {
                                             let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
-                                            debug!("k8 node query");
-                                            let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
-                                            debug!("Output from k8 node query: {:#?}", &nodes);
+                                            let extern_addr = if let Some(addr) = &self.config.proxy_addr {
+                                                debug!(?addr,"using proxy");
+                                                addr.to_owned()
+                                            } else {
 
-                                            let mut node_addr : Vec<NodeAddress> = Vec::new();
-                                            for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
-                                                node_addr.extend(n)
-                                            }
+                                                debug!("k8 node query");
+                                                let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
+                                                debug!("Output from k8 node query: {:#?}", &nodes);
 
-                                            // Return the first node with type "InternalIP"
-                                            let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP")
-                                            .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+                                                let mut node_addr : Vec<NodeAddress> = Vec::new();
+                                                for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
+                                                    node_addr.extend(n)
+                                                }
 
-                                            return Ok(Some((format!("{}:{}",external_addr.address,node_port),node_port)))
+                                                // Return the first node with type "InternalIP"
+                                                node_addr.into_iter().find(|a| a.r#type == "InternalIP")
+                                                    .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?.address
+                                            };
+
+                                            return Ok(Some((format!("{}:{}",extern_addr,node_port),node_port)))
+
                                         },
                                         LoadBalancerType::LoadBalancer => {
                                             let ingress_addr = service
