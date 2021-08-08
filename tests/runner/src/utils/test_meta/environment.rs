@@ -176,6 +176,14 @@ pub struct EnvironmentSetup {
     /// In seconds, the maximum time a test will run before considered a fail (default: 1 hour)
     #[structopt(long, parse(try_from_str = parse_timeout_seconds), default_value = "3600")]
     pub timeout: Duration,
+
+    /// K8: use specific image version
+    #[structopt(long)]
+    pub image_version: Option<String>,
+
+    /// K8: use sc address
+    #[structopt(long)]
+    pub proxy_addr: Option<String>,
 }
 
 #[allow(clippy::unnecessary_wraps)]
