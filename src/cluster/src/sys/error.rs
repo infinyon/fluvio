@@ -1,4 +1,4 @@
-use fluvio_helm::HelmError;
+use semver::Error as VersionError;
 
 use crate::charts::ChartInstallError;
 
@@ -11,4 +11,8 @@ pub enum SysInstallError {
     /// An error occurred while trying to install Fluvio system charts
     #[error("Chart Installation Error")]
     ChartError(#[from] ChartInstallError),
+    #[error("Version Error")]
+    VersionError(#[from] VersionError),
+    #[error("Other System Error {0}")]
+    Other(String),
 }

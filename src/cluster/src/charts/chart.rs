@@ -2,10 +2,9 @@ use std::path::{PathBuf};
 
 use tracing::{info, debug, instrument};
 use derive_builder::Builder;
+use semver::{Version,Error as  VersionError};
 
-use semver::Version;
-
-use fluvio_helm::{HelmClient, InstallArg};
+use fluvio_helm::{HelmClient, InstallArg,InstalledChart};
 
 use crate::DEFAULT_NAMESPACE;
 
@@ -147,6 +146,14 @@ impl ChartInstaller {
         Ok(!installed_charts.is_empty())
     }
 
+    /// find chart installations
+    pub fn retrieve_installations(&self) -> Result<Vec<InstalledChart>, ChartInstallError> {
+        self
+            .helm_client
+            .get_installed_chart_by_name(&self.config.name, None)
+            .map_err(|err| err.into())
+    }
+
     /// install or upgrade
     #[instrument(skip(self))]
     pub fn process(&self, upgrade: bool) -> Result<(), ChartInstallError> {
@@ -176,6 +183,32 @@ impl ChartInstaller {
         Ok(())
     }
 }
+
+
+/// Installation information
+#[derive(Debug)]
+pub struct ChartInstallation {
+    chart: InstalledChart,
+    app_version: Version
+}
+
+
+impl ChartInstallation {
+
+    pub fn from(chart: InstalledChart) -> Result<Self,VersionError>  {
+        let app_version = Version::parse(&chart.app_version)?;
+        Ok(Self {
+            chart,
+            app_version
+        })
+    }
+
+    pub fn app_version(&self) -> &Version {
+        &self.app_version
+    }
+}
+
+
 
 #[cfg(test)]
 mod test {

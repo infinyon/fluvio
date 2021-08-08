@@ -1,10 +1,11 @@
-use std::path::{Path, PathBuf};
+use std::path::{ PathBuf};
 
+use fluvio_helm::InstalledChart;
 use tracing::{info, debug, instrument};
 use derive_builder::Builder;
 use semver::Version;
 
-use crate::charts::{ChartConfig, ChartInstaller};
+use crate::charts::{ChartConfig, ChartInstaller,ChartInstallation};
 use crate::UserChartLocation;
 use crate::DEFAULT_NAMESPACE;
 
@@ -83,27 +84,58 @@ impl SysConfigBuilder {
 #[derive(Debug)]
 pub struct SysInstaller {
     config: SysConfig,
+    chart_installer: ChartInstaller,
+    sys_chart: Option<ChartInstallation>
 }
 
 impl SysInstaller {
     /// Create a new `SysInstaller` using the given config
     pub fn from_config(config: SysConfig) -> Result<Self, SysInstallError> {
-        Ok(Self { config })
+        let chart_config = ChartConfig::sys_builder()
+            .namespace(&config.namespace)
+            .version(config.chart_version.clone())
+            .build()?;
+
+        let chart_installer = ChartInstaller::from_config(chart_config)?;
+
+        // retrieve charts
+        let mut sys_charts = chart_installer.retrieve_installations()?;
+        // there should be only be 1 sys charts
+        let sys_chart = if sys_charts.len() > 1 {
+            return Err(SysInstallError::Other("there are more than 1 sys chart".to_owned()));
+        } else {
+            if let Some(chart) = sys_charts.pop() {
+                Some(ChartInstallation::from(chart)?)
+            } else {
+                None
+            }
+        };
+
+        Ok(Self {
+            config,
+            chart_installer,
+            sys_chart
+
+        })
+    }
+
+    /// is same version as our platform?
+    pub fn is_sys_chart_same_version(&self) -> bool {
+
+        if let Some(chart) = self.sys_chart {
+            chart.app_version() == self.config.platform_version
+        } else {
+            false
+        }
     }
 
     /// run installation
     #[instrument(skip(self))]
     fn run(&self) -> Result<(), SysInstallError> {
-        println!("Start Sys Configuration");
+        println!("Start System Installation");
 
-        let config = ChartConfig::sys_builder()
-            .namespace(&self.config.namespace)
-            .version(self.config.chart_version.clone())
-            .build()?;
 
-        let installer = ChartInstaller::from_config(config)?;
-
-        
+        // first
 
         info!("Fluvio sys chart has been installed");
         Ok(())

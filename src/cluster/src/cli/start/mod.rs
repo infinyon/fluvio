@@ -141,7 +141,7 @@ impl StartOpt {
         use crate::cli::start::k8::process_k8;
 
         if self.sys {
-            process_sys(self, upgrade)?;
+            process_sys(self, platform_version)?;
         } else if self.local {
             process_local(self, platform_version).await?;
         } else {
