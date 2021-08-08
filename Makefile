@@ -5,9 +5,9 @@ GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
 DOCKER_REGISTRY=infinyon
 K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
-DOCKER_IMAGE=$(DOCKER_REGISTRY)/fluvio
 TARGET_MUSL=x86_64-unknown-linux-musl
 TARGET?=
+IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and should not be built
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 CARGO_BUILDER=$(if $(findstring arm,$(TARGET)),cross,cargo) # If TARGET contains the substring "arm"
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
@@ -33,7 +33,7 @@ TEST_ENV_FLV_SPU_DELAY=
 TEST_ARG_SPU=--spu ${DEFAULT_SPU}
 TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 TEST_ARG_REPLICATION=-r ${REPL}
-TEST_ARG_DEVELOP=--develop
+TEST_ARG_DEVELOP=$(if $(IMAGE_VERSION),--image-version ${IMAGE_VERSION}, --develop)
 TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
@@ -53,6 +53,7 @@ helm_pkg:
 
 build-cli: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
@@ -125,7 +126,7 @@ k8-setup:
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
-smoke-test-k8: build_k8_image smoke-test
+smoke-test-k8: smoke-test build_k8_image
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
 smoke-test-k8-tls: build_k8_image smoke-test
@@ -229,6 +230,8 @@ run-client-doc-test: install_rustup_target
 
 # In CI mode, do not build k8 image
 ifeq (${CI},true)
+build_k8_image:
+else ifeq (${IMAGE_VERSION},true)
 build_k8_image:
 else
 # When not in CI (i.e. development), build image before testing
