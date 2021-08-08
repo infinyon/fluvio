@@ -96,12 +96,14 @@ impl SysInstaller {
     fn run(&self) -> Result<(), SysInstallError> {
         println!("Start Sys Configuration");
 
-        let mut config = ChartConfig::sys_builder()
+        let config = ChartConfig::sys_builder()
             .namespace(&self.config.namespace)
             .version(self.config.chart_version.clone())
             .build()?;
 
         let installer = ChartInstaller::from_config(config)?;
+
+        
 
         info!("Fluvio sys chart has been installed");
         Ok(())
