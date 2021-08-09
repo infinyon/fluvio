@@ -38,20 +38,17 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install Fluvio CLI
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-      - name: Set up K3d
+      - name: Set up K3d for Ubuntu
         uses: nolar/setup-k3d-k3s@v1
         if: ${{ matrix.os == 'ubuntu-latest' }}
-      - name: Set up Minikube
+      - name: Set up K8 for ubuntu(kind)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: ./k8-util/cluster/reset-k3d.sh
+      - name: Set up Minikube for Mac
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           brew install hyperkit
           brew install minikube
-      - name: Set up K8 for ubuntu(kind)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: ./k8-util/cluster/reset-k3d.sh
-      - name: Set up K8 for MacOs(minikube)
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: |
           minikube start --driver hyperkit --kubernetes-version=1.21.2
       - name: Create Fluvio cluster and run E2E Test
         uses: nick-invision/retry@v2
