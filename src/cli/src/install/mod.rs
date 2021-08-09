@@ -67,6 +67,7 @@ async fn fetch_latest_version<T>(
     prerelease: bool,
 ) -> Result<Version, CliError> {
     let request = agent.request_package(id)?;
+    println!("GETTING REQUEST FROM {:?}", request.url());
     debug!(
         url = %request.url(),
         "Requesting package manifest:",
@@ -178,7 +179,7 @@ fn make_executable(file: &mut File) -> Result<(), IoError> {
 
 #[cfg(not(unix))]
 fn make_executable(_file: &mut File) -> Result<(), IoError> {
-    unimplemented!();
+    Ok(())
 }
 
 pub fn install_println<S: AsRef<str>>(string: S) {
