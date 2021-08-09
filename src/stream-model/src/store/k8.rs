@@ -189,12 +189,7 @@ where
                 Ok(ctx_item) => {
                     //   trace!("k8 revision: {}, meta revision: {}",ctx_item.revision(),ctx_item.inner().resource_version);
                     let owner = ctx_item.owner_owned();
-                    let ctx = MetadataContext::new(ctx_item, owner);
-
-                    let local_kv =
-                        MetadataStoreObject::new(key, local_spec, local_status).with_context(ctx);
-
-                    Ok(local_kv)
+                    Ok(MetadataStoreObject::new(key, local_spec, local_status).with_context(MetadataContext::new(ctx_item, owner)))
                 }
                 Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
                     ErrorKind::InvalidData,

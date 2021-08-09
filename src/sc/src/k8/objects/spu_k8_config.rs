@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 
 use tracing::{debug, info};
 use serde::{Deserialize};
@@ -10,6 +10,7 @@ use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
 use k8_types::core::config_map::ConfigMapSpec;
 use k8_types::InputObjectMeta;
 use k8_types::core::service::ServiceSpec;
+use fluvio_controlplane_metadata::core::MetadataContext;
 
 use crate::dispatcher::core::{Spec,Status};
 
@@ -35,11 +36,10 @@ pub struct ScK8Config {
     pub spu_pod_config: PodConfig,
 }
 
+
 impl ScK8Config {
-    pub async fn load(client: &SharedK8Client, namespace: &str) -> Result<Self, ClientError> {
-        let meta = InputObjectMeta::named(CONFIG_MAP_NAME, namespace);
-        let k8_obj = client.retrieve_item::<ConfigMapSpec, _>(&meta).await?;
-        let mut data = k8_obj.header.data;
+
+    fn from(mut data: BTreeMap<String,String>) -> Result<Self,ClientError> {
 
         debug!("ConfigMap {} data: {:?}", CONFIG_MAP_NAME, data);
 
@@ -78,13 +78,21 @@ impl ScK8Config {
 
         info!(?spu_pod_config, "spu pod config");
 
-        Ok(Self {
+        Ok(Self{
             image,
             pod_security_context,
             lb_service_annotations,
             service,
             spu_pod_config,
         })
+    }
+
+    pub async fn load(client: &SharedK8Client, namespace: &str) -> Result<Self, ClientError> {
+        let meta = InputObjectMeta::named(CONFIG_MAP_NAME, namespace);
+        let k8_obj = client.retrieve_item::<ConfigMapSpec, _>(&meta).await?;
+
+        Self::from(k8_obj.header.data)
+        
     }
 
     /// apply service config to service
@@ -107,27 +115,82 @@ impl ScK8Config {
 }
 
 
-/// Fluvio plaform K8 spec
-#[derive(Debug,  Default, Clone)]
-pub struct FluvioConfigSpec {
-    spec: ConfigMapSpec,
-    data: ScK8Config
-}
-
-impl PartialEq for FluvioConfigSpec {
-    fn eq(&self, other: &Self) -> bool {
-        self.data == other.data
-    }
-}
-
-impl Spec for FluvioConfigSpec {
+impl Spec for ScK8Config {
     const LABEL: &'static str = "FluvioConfig";
     type IndexKey = String;
     type Status = FluvioConfigStatus;
     type Owner = Self;
 }
 
+
+
 #[derive(Deserialize, Debug, PartialEq, Default, Clone)]
 pub struct FluvioConfigStatus{}
 
 impl Status for FluvioConfigStatus {}
+
+
+
+mod extended {
+
+
+    use std::convert::TryInto;
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+
+    use tracing::debug;
+    use tracing::trace;
+
+    use k8_types::K8Obj;
+    use k8_types::core::config_map::{ConfigMapSpec,ConfigMapStatus};
+
+    use crate::stores::k8::K8ConvertError;
+    use crate::stores::k8::K8ExtendedSpec;
+    use crate::stores::k8::K8MetaItem;
+    use crate::stores::{MetadataStoreObject};
+
+
+    use super::*;
+
+    impl K8ExtendedSpec for ScK8Config  {
+        type K8Spec = ConfigMapSpec;
+        type K8Status = ConfigMapStatus;
+
+        fn convert_from_k8(
+            k8_obj: K8Obj<Self::K8Spec>,
+        ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
+
+            if k8_obj.metadata.name == "spu-k8" {
+            
+                debug!(k8_name = %k8_obj.metadata.name,
+                    "detected fluvio config");
+                trace!("converting k8 spu service: {:#?}", k8_obj);
+
+                match ScK8Config::from(k8_obj.header.data) {
+                    Ok(config) => {
+                        match k8_obj.metadata.try_into() {
+                            Ok(ctx_item) => {
+                                let ctx = MetadataContext::new(ctx_item,None);
+                                Ok(MetadataStoreObject::new("fluvio", config, FluvioConfigStatus{}).with_context(ctx))
+                            },
+                            Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
+                                ErrorKind::InvalidData,
+                                format!("error converting metadata: {:#?}", err),
+                            ))),
+                        }
+                        
+                    },
+                    Err(err) => Err(K8ConvertError::Other(std::io::Error::new(
+                        std::io::ErrorKind::Interrupted,
+                        err.to_string()
+                    )))
+                }
+            } else {
+                trace!(
+                    name = %k8_obj.metadata.name,
+                    "skipping non spu service");
+                Err(K8ConvertError::Skip(k8_obj))
+            }
+        }
+    }
+}
