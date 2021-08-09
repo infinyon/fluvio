@@ -110,7 +110,7 @@ jobs:
             echo "PACKAGE=$PACKAGE"
 
             ${HOME}/.fluvio/bin/fluvio package publish \
-              --package="${PACKAGE}"
+              --package="${PACKAGE}" \
               --version="${VERSION}+${{ github.sha }}" \
               --target="${TARGET}" \
               "${UNZIP_DIR}/${ARTIFACT}"
