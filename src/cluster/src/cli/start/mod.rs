@@ -127,6 +127,10 @@ pub struct StartOpt {
     /// Proxy address
     #[structopt(long)]
     pub proxy_addr: Option<String>,
+
+    /// Service Type
+    #[structopt(long)]
+    pub service_type: Option<String>,
 }
 
 impl StartOpt {

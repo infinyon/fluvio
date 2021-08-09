@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use tracing::{debug, info};
 use serde::{Deserialize};
 
+
 use k8_client::{ClientError, SharedK8Client};
 use k8_metadata_client::MetadataClient;
 use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
@@ -10,10 +11,13 @@ use k8_types::core::config_map::ConfigMapSpec;
 use k8_types::InputObjectMeta;
 use k8_types::core::service::ServiceSpec;
 
+use crate::dispatcher::core::{Spec,Status};
+
+
 const CONFIG_MAP_NAME: &str = "spu-k8";
 
 // this is same struct as in helm config
-#[derive(Deserialize, Debug, Clone, Default)]
+#[derive(Deserialize, Debug, Clone, PartialEq,Default)]
 #[serde(rename_all = "camelCase")]
 pub struct PodConfig {
     #[serde(default)]
@@ -22,7 +26,7 @@ pub struct PodConfig {
     pub storage_class: Option<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug,PartialEq,Default,Clone)]
 pub struct ScK8Config {
     pub image: String,
     pub pod_security_context: Option<PodSecurityContext>,
@@ -101,3 +105,29 @@ impl ScK8Config {
         }
     }
 }
+
+
+/// Fluvio plaform K8 spec
+#[derive(Debug,  Default, Clone)]
+pub struct FluvioConfigSpec {
+    spec: ConfigMapSpec,
+    data: ScK8Config
+}
+
+impl PartialEq for FluvioConfigSpec {
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+    }
+}
+
+impl Spec for FluvioConfigSpec {
+    const LABEL: &'static str = "FluvioConfig";
+    type IndexKey = String;
+    type Status = FluvioConfigStatus;
+    type Owner = Self;
+}
+
+#[derive(Deserialize, Debug, PartialEq, Default, Clone)]
+pub struct FluvioConfigStatus{}
+
+impl Status for FluvioConfigStatus {}
