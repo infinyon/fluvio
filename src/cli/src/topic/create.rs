@@ -13,7 +13,7 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
-use crate::consumer::error::ConsumerError;
+use crate::{Result, CliError};
 
 // -----------------------------------
 // CLI Options
@@ -83,7 +83,7 @@ pub struct CreateTopicOpt {
 }
 
 impl CreateTopicOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConsumerError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let dry_run = self.dry_run;
         let (name, topic_spec) = self.validate()?;
 
@@ -96,7 +96,7 @@ impl CreateTopicOpt {
     }
 
     /// Validate cli options. Generate target-server and create-topic configuration.
-    fn validate(self) -> Result<(String, TopicSpec), ConsumerError> {
+    fn validate(self) -> Result<(String, TopicSpec)> {
         use fluvio::metadata::topic::PartitionMaps;
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
@@ -123,7 +123,7 @@ impl CreateTopicOpt {
 
         let is_valid = hostname_validator::is_valid(&self.topic);
         if !is_valid {
-            return Err(ConsumerError::InvalidArg(
+            return Err(CliError::InvalidArg(
                 "Topic name must only contain alphanumeric characters, '-', or '.'".to_string(),
             ));
         }

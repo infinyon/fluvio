@@ -7,9 +7,7 @@ use fluvio_cluster::cli::ClusterCliError;
 use fluvio_sc_schema::ApiError;
 use fluvio_sc_schema::errors::ErrorCode;
 use fluvio_extension_common::output::OutputError;
-
 use crate::common::target::TargetError;
-use crate::consumer::error::ConsumerError;
 
 pub type Result<T> = std::result::Result<T, CliError>;
 
@@ -26,8 +24,6 @@ pub enum CliError {
 
     #[error("Target Error")]
     TargetError(#[from] TargetError),
-    #[error("Consumer Error")]
-    ConsumerError(#[from] ConsumerError),
     #[error("Fluvio client error")]
     ClientError(#[from] FluvioError),
 
@@ -89,19 +85,17 @@ impl CliError {
     /// program should return when exiting after those errors.
     pub fn print(self) -> Result<()> {
         match &self {
-            Self::ConsumerError(ConsumerError::ClientError(FluvioError::AdminApi(api))) => {
-                match api {
-                    ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
-                        println!("Topic already exists");
-                        Ok(())
-                    }
-                    ApiError::Code(ErrorCode::TopicNotFound, _) => {
-                        println!("Topic not found");
-                        Ok(())
-                    }
-                    _ => Err(self),
+            Self::ClientError(FluvioError::AdminApi(api)) => match api {
+                ApiError::Code(ErrorCode::TopicAlreadyExists, _) => {
+                    println!("Topic already exists");
+                    Ok(())
                 }
-            }
+                ApiError::Code(ErrorCode::TopicNotFound, _) => {
+                    println!("Topic not found");
+                    Ok(())
+                }
+                _ => Err(self),
+            },
             _ => Err(self),
         }
     }
