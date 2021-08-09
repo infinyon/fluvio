@@ -36,12 +36,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
       - name: Install Fluvio CLI
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+      - name: Set up K3d
+        uses: nolar/setup-k3d-k3s@v1
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+      - name: Set up Minikube
+        if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
+          sudo install minikube-darwin-amd64 /usr/local/bin/minikube
       - name: Set up K8
-        if: ${{ matrix.os == 'ubuntu' }}
+        if: ${{ matrix.os == 'ubuntu-latest' }}
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Set up K8
         if: ${{ matrix.os == 'macos-latest' }}
