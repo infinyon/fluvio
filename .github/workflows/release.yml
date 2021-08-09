@@ -229,7 +229,7 @@ jobs:
 
             ${HOME}/.fluvio/bin/fluvio package publish \
               --force \
-              --package="${PACKAGE}"
+              --package="${PACKAGE}" \
               --version="${VERSION}" \
               --target="${TARGET}" \
               "${UNZIP_DIR}/${ARTIFACT}"
