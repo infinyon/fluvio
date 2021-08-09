@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest,macos-latest]
         cluster_type: [local,k8]
     env:
       SLEEP: 10
@@ -40,21 +40,29 @@ jobs:
       - name: Install Fluvio CLI
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+      - name: Set up K8
+        if: ${{ matrix.os == 'ubuntu' }}
+        run: ./k8-util/cluster/reset-k3d.sh
+      - name: Set up K8
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+          brew install hyperkit
+          ./k8-util/cluster/reset-minikube.sh
       - name: Create Fluvio cluster and run E2E Test
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 7
           max_attempts: 3
           command: |
-            ./k8-util/cluster/reset-k3d.sh 
             export PATH=~/.fluvio/bin:$PATH
             if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
               echo "Installing local cluster"
+              fluvio cluster delete
               fluvio cluster start --local
             else
               echo "Installing k8 cluster"
+              fluvio cluster delete
               fluvio cluster start --image-version latest
-              
             fi
             sleep 30
             fluvio version
