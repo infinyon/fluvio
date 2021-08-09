@@ -1,0 +1,3 @@
+loadBalancer:
+  serviceAnnotations:
+    cloud.fluvio.io/hostname: xyz
