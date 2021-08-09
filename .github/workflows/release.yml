@@ -266,7 +266,7 @@ jobs:
         continue-on-error: true
         run: |
           ${HOME}/.fluvio/bin/fluvio package bump dynamic "${{ env.VERSION }}"
-          ${HOME}/.fluvio/bin/fluvio package tag "fluvio:${{ env.VERSION }}" --tag=stable
+          ${HOME}/.fluvio/bin/fluvio package tag "fluvio:${{ env.VERSION }}" --tag=stable --force
 
       - uses: actions/checkout@v2
 
