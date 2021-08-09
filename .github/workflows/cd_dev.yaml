@@ -50,6 +50,7 @@ jobs:
           brew install hyperkit
           brew install minikube
           minikube start --driver hyperkit --kubernetes-version=1.21.2
+          kubect get nodes
       - name: Create Fluvio cluster and run E2E Test
         uses: nick-invision/retry@v2
         with:
