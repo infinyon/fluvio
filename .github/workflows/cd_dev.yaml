@@ -45,15 +45,14 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
           brew install hyperkit
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64
-          sudo install minikube-darwin-amd64 /usr/local/bin/minikube
+          brew install minikube
       - name: Set up K8 for ubuntu(kind)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Set up K8 for MacOs(minikube)
         if: ${{ matrix.os == 'macos-latest' }}
         run: |
-          ./k8-util/cluster/reset-minikube.sh
+          minikube start --driver hyperkit --kubernetes-version=1.21.2
       - name: Create Fluvio cluster and run E2E Test
         uses: nick-invision/retry@v2
         with:
