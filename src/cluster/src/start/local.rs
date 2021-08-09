@@ -450,7 +450,8 @@ impl LocalInstaller {
     /// Returns the address of the SC if successful
     #[instrument(skip(self))]
     fn launch_sc(&self) -> Result<(String, u16), LocalInstallError> {
-        let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
+        let log_sc = format!("{}/flv_sc.log", self.config.log_dir.display());
+        let outputs = File::create(&log_sc)?;
         let errors = outputs.try_clone()?;
         debug!("starting sc server");
         let mut binary = {
@@ -471,6 +472,8 @@ impl LocalInstaller {
             .stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
             .spawn()?;
+
+        let _ = self.launch_syslog_connector(log_sc)?;
 
         Ok((LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT))
     }
@@ -644,7 +647,12 @@ impl LocalInstaller {
             .stderr(Stdio::from(errors))
             .spawn()
             .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
+        let _ = self.launch_syslog_connector(log_spu)?;
         Ok(())
+    }
+
+    fn launch_syslog_connector(&self, _log_file: String) -> Result<(), LocalInstallError> {
+        todo!();
     }
 
     /// Check to ensure SPUs are all running
