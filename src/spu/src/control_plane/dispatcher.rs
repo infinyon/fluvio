@@ -4,9 +4,6 @@ use std::io::Error as IoError;
 use tracing::{info, trace, error, debug, warn, instrument};
 use flv_util::print_cli_err;
 
-use async_channel::Receiver;
-use async_channel::Sender;
-use async_channel::bounded;
 use tokio::select;
 use futures_util::stream::StreamExt;
 
@@ -27,7 +24,6 @@ use crate::core::SharedGlobalContext;
 use crate::core::SpecChange;
 use crate::InternalServerError;
 
-use super::SupervisorCommand;
 use super::message_sink::{SharedStatusUpdate};
 
 // keep track of various internal state of dispatcher
@@ -35,20 +31,12 @@ use super::message_sink::{SharedStatusUpdate};
 struct DispatcherCounter {
     pub replica_changes: u64, // replica changes received from sc
     pub spu_changes: u64,     // spu changes received from sc
-    // TODO remove dead code: https://github.com/infinyon/fluvio/issues/1332
-    #[allow(dead_code)]
-    pub status_send: u64, // number of status send to sc
-    pub reconnect: u64, // number of reconnect to sc
+    pub reconnect: u64,       // number of reconnect to sc
 }
 
 /// Controller for handling connection to SC
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
-    termination_receiver: Receiver<bool>,
-    #[allow(dead_code)]
-    termination_sender: Sender<bool>,
-    #[allow(dead_code)]
-    supervisor_command_sender: Sender<SupervisorCommand>,
     ctx: SharedGlobalContext<S>,
     max_bytes: u32,
     status_update: SharedStatusUpdate,
@@ -57,12 +45,7 @@ pub struct ScDispatcher<S> {
 
 impl ScDispatcher<FileReplica> {
     pub fn new(ctx: SharedGlobalContext<FileReplica>, max_bytes: u32) -> Self {
-        let (termination_sender, termination_receiver) = bounded(1);
-        let (supervisor_command_sender, _supervisor_command_receiver) = bounded(100);
         Self {
-            termination_receiver,
-            termination_sender,
-            supervisor_command_sender,
             status_update: ctx.status_update_owned(),
             ctx,
             max_bytes,
@@ -286,10 +269,6 @@ impl ScDispatcher<FileReplica> {
 
                     trace!("sleeping {} ms to connect to sc: {}",wait_interval,spu_id);
                     sleep(Duration::from_millis(wait_interval as u64)).await;
-                },
-                _ = self.termination_receiver.next() => {
-                    info!("termination message received");
-                    return None
                 }
             }
         }
