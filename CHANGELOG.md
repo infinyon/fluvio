@@ -1,7 +1,8 @@
 # Release Notes
 
 ## Platform Version 0.9.2 - UNRELEASED
-* 
+* Make Cluster installation more reliable. ([#1395](https://github.com/infinyon/fluvio/pull/1395))
+  
 ## Platform Version 0.9.1 - 2021-08-06
 * Add Apple M1 as Tier2 platform for `fluvio-run` ([#1382](https://github.com/infinyon/fluvio/pull/1382))
 
