@@ -17,6 +17,13 @@
 
 set -e
 
+# On Mac, use 'greadlink' instead of 'readlink'
+if [[ "$(uname)" == "Darwin" ]]; then
+    [[ -x "$(command -v greadlink)" ]] || brew install coreutils
+    readonly READLINK="greadlink"
+else
+    readonly READLINK="readlink"
+fi
 
 readonly STABLE=${1:-stable}
 readonly PRERELEASE=${2:-$(cat VERSION)-$(git rev-parse HEAD)}
@@ -25,19 +32,18 @@ readonly CI=${CI:-}
 readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
 readonly USE_LATEST=${USE_LATEST:-}
-readonly FLUVIO_BIN=$(readlink -f ${FLUVIO_BIN:-"$(which fluvio)"})
+readonly FLUVIO_BIN=$(${READLINK} -f ${FLUVIO_BIN:-"$(which fluvio)"})
 
 # Change to this script's directory 
-pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
+pushd "$(dirname "$(${READLINK} -f "$0")")" > /dev/null
 
 function cleanup() {
     echo Clean up test data
-    rm -f --verbose ./*.txt.tmp;
-    rm -f --verbose ./*.checksum;
+    rm -fv ./*.txt.tmp;
+    rm -fv ./*.checksum;
     echo Delete cluster if possible
     $FLUVIO_BIN cluster delete || true
     $FLUVIO_BIN cluster delete --sys || true
-
 }
 
 # If we're in CI, we want to slow down execution
@@ -107,7 +113,7 @@ function validate_cluster_stable() {
 # Then we produce + consume on the Stable + Stable-1 topic and validate the checksums on each of those topics
 function validate_upgrade_cluster_to_prerelease() {
 
-    local FLUVIO_BIN_ABS_PATH=$(readlink -f $FLUVIO_BIN)
+    local FLUVIO_BIN_ABS_PATH=$(${READLINK} -f $FLUVIO_BIN)
     local TARGET_VERSION=${PRERELEASE}
 
     # Change dir to get access to Helm charts
