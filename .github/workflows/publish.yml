@@ -104,7 +104,7 @@ jobs:
 
             TARGET="$(cat ${UNZIP_DIR}/.target)"
             ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
-            PACKAGE="${ARTIFACT//.exe/}"
+            PACKAGE="$(echo ${ARTIFACT} | sed -e "s/^\.\///" -e "s/\.exe$//")"
             echo "TARGET=$TARGET"
             echo "ARTIFACT=$ARTIFACT"
             echo "PACKAGE=$PACKAGE"
