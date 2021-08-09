@@ -222,11 +222,14 @@ jobs:
 
             TARGET="$(cat ${UNZIP_DIR}/.target)"
             ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
+            PACKAGE="${ARTIFACT//.exe/}"
             echo "TARGET=$TARGET"
             echo "ARTIFACT=$ARTIFACT"
+            echo "PACKAGE=$PACKAGE"
 
             ${HOME}/.fluvio/bin/fluvio package publish \
               --force \
+              --package="${PACKAGE}"
               --version="${VERSION}" \
               --target="${TARGET}" \
               "${UNZIP_DIR}/${ARTIFACT}"

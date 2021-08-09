@@ -104,10 +104,13 @@ jobs:
 
             TARGET="$(cat ${UNZIP_DIR}/.target)"
             ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
+            PACKAGE="${ARTIFACT//.exe/}"
             echo "TARGET=$TARGET"
             echo "ARTIFACT=$ARTIFACT"
+            echo "PACKAGE=$PACKAGE"
 
             ${HOME}/.fluvio/bin/fluvio package publish \
+              --package="${PACKAGE}"
               --version="${VERSION}+${{ github.sha }}" \
               --target="${TARGET}" \
               "${UNZIP_DIR}/${ARTIFACT}"
