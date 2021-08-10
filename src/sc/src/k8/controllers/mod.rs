@@ -55,15 +55,11 @@ mod k8_operator {
             spg_service_ctx.clone(),
         );
 
-        K8ClusterStateDispatcher::<_, _>::start(
-            namespace.clone(),
-            k8_client.clone(),
-            config_ctx.clone(),
-        );
+        K8ClusterStateDispatcher::<_, _>::start(namespace.clone(), k8_client, config_ctx.clone());
 
         whitelist!(config, "k8_spg", {
             SpgStatefulSetController::start(
-                namespace.clone(),
+                namespace,
                 config_ctx.clone(),
                 global_ctx.spgs().clone(),
                 statefulset_ctx,
