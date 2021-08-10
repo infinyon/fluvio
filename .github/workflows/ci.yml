@@ -25,6 +25,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
+  CI_BUILD: false
+  CI_K8: false
 
 
 jobs:
@@ -108,7 +110,7 @@ jobs:
   # build other binaries which doesn't need test
   build_binaries:
     name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
-    if: ${{ false }}
+    if: ${{ env.CI_BUILD }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -208,7 +210,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
-    if: ${{ false }}
+    if: ${{ env.CI_BUILD }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -251,7 +253,7 @@ jobs:
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
-    if: ${{ false }}
+    if: ${{ env.CI_BUILD }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -283,7 +285,7 @@ jobs:
 
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
-    if: ${{ false }}
+    if: ${{ env.CI_BUILD }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -318,6 +320,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     needs: build_primary_binaries
     strategy:
+      fail-fast: false
+      max-parallel: 5      
       matrix:
         os: [ubuntu-latest]
         run: [r1,r2,r3,r4,r5]
@@ -352,7 +356,7 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 1
-          command: RUST_LOG=fluvio=trace make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Upload SC log
         uses: actions/upload-artifact@v2
@@ -364,6 +368,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
+    if: ${{ CI.K8 }}
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
@@ -397,6 +402,7 @@ jobs:
 
   k8_cluster_test:
     name: Kubernetes cluster test
+    if: ${{ CI.K8 }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
