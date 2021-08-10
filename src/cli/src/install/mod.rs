@@ -67,7 +67,6 @@ async fn fetch_latest_version<T>(
     prerelease: bool,
 ) -> Result<Version, CliError> {
     let request = agent.request_package(id)?;
-    println!("GETTING REQUEST FROM {:?}", request.url());
     debug!(
         url = %request.url(),
         "Requesting package manifest:",
