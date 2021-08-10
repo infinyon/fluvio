@@ -1,6 +1,6 @@
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
-use tracing::{trace, instrument};
+use tracing::{trace, instrument,debug};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 use fluvio_types::SpuId;
@@ -95,24 +95,32 @@ impl SpuGroupObj {
 
     /// generate as SPU spec
     #[instrument(skip(self))]
-    pub fn as_spu(&self, spu: u16) -> (String, WSAction<SpuSpec>) {
+    pub fn as_spu(&self, spu: u16,services: &HashMap<String,IngressPort>) -> (String, WSAction<SpuSpec>) {
         let spec = self.spec();
         let spu_id = compute_spu_id(spec.min_id, spu);
         let spu_name = format!("{}-{}", self.key(), spu);
 
         let spu_private_ep = SpuEndpointTemplate::default_private();
-        let spu_public_ep = SpuEndpointTemplate::default_public();
 
+        let public_endpoint = if let Some(ingress) = services.get(&spu_name) {
+            debug!(%ingress);
+            ingress.clone()
+        } else {
+            let spu_public_ep = SpuEndpointTemplate::default_public();
+            IngressPort {
+                port: spu_public_ep.port,
+                encryption: spu_public_ep.encryption,
+                ingress: vec![],
+            }
+        };
+
+    
         let full_group_name = format!("fluvio-spg-{}", self.key());
         let full_spu_name = format!("fluvio-spg-{}", spu_name);
         let spu_spec = SpuSpec {
             id: spu_id,
             spu_type: SpuType::Managed,
-            public_endpoint: IngressPort {
-                port: spu_public_ep.port,
-                encryption: spu_public_ep.encryption,
-                ingress: vec![],
-            },
+            public_endpoint,
             private_endpoint: Endpoint {
                 host: format!("{}.{}", full_spu_name, full_group_name),
                 port: spu_private_ep.port,
