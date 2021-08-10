@@ -57,6 +57,10 @@ pub async fn process_k8(
         builder.image_tag(image_tag.trim());
     }
 
+    if let Some(service_type) = opt.service_type {
+        builder.service_type(service_type);
+    }
+
     let config = builder.build()?;
     let installer = ClusterInstaller::from_config(config)?;
     if opt.setup {
