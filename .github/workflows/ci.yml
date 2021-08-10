@@ -314,12 +314,13 @@ jobs:
         run: cargo test --manifest-path ./src/${{matrix.crate}}/Cargo.toml
 
   local_cluster_test:
-    name: Local cluster test
+    name: Local cluster test run (${{ matrix.run }})
     runs-on: ${{ matrix.os }}
     needs: build_primary_binaries
     strategy:
       matrix:
         os: [ubuntu-latest]
+        run: [r1,r2,r3,r4,r5]
         rust: [stable]
     env:
       FLV_SOCKET_WAIT: 600
@@ -344,14 +345,14 @@ jobs:
           path: .
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
+      - name: Set up cluster
+        run: ./k8-util/cluster/reset-k3d.sh 
       - name: Run smoke-test
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 5
-          max_attempts: 3
-          command: |
-            ./k8-util/cluster/reset-k3d.sh 
-            RUST_LOG=fluvio=trace make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          max_attempts: 1
+          command: RUST_LOG=fluvio=trace make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Upload SC log
         uses: actions/upload-artifact@v2
