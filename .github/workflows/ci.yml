@@ -347,7 +347,7 @@ jobs:
           max_attempts: 3
           command: |
             ./k8-util/cluster/reset-k3d.sh 
-            make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+            RUST_LOG=fluvio=trace make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Upload SC log
         uses: actions/upload-artifact@v2
