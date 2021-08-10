@@ -5,8 +5,9 @@ use fluvio_controlplane_metadata::{
     store::{MetadataStoreObject, k8::K8MetaItem},
 };
 
+use fluvio_stream_dispatcher::actions::WSAction;
 use k8_client::ClientError;
-use tracing::{debug,  error, instrument, info};
+use tracing::{debug, error, instrument, info};
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
@@ -86,39 +87,78 @@ impl K8SpuController {
 
                 _ = service_listener.listen() => {
                     debug!("detected spu service changes");
+
+                    let changes = service_listener.sync_changes().await;
+                    let epoch = changes.epoch;
+                    let (updates, deletes) = changes.parts();
+
+                    debug!(
+                        "received spu service changes updates: {}, deletes: {}, epoch: {}",
+                        updates.len(),
+                        deletes.len(),
+                        epoch,
+                    );
+
+
                     service_init = true;
                     if service_init && spg_init && spu_init  {
                         self.sync_spu().await?;
                     } else {
-                        
+
                         debug!(
                             service_init,
                             spg_init,
                             spu_init,
                             "not ready");
-                        
+
                     }
                 },
 
                 _ = spg_listener.listen() => {
                     debug!("detected spg changes");
+
+                    let changes = spg_listener.sync_changes().await;
+                    let epoch = changes.epoch;
+                    let (updates, deletes) = changes.parts();
+
+                    debug!(
+                        "received spg group changes updates: {},deletes: {},epoch: {}",
+                        updates.len(),
+                        deletes.len(),
+                        epoch,
+                    );
+
+
                     spg_init = true;
                     if service_init && spg_init && spu_init  {
                         self.sync_spu().await?;
                     } else {
-                        
+
                         debug!(
                             service_init,
                             spg_init,
                             spu_init,
                             "not ready");
-                        
+
                     }
                 },
 
 
                 _ = spu_listener.listen() => {
                     debug!("detected spu changes");
+
+                    // only care about spec changes
+                    let changes = spu_listener.sync_spec_changes().await;
+                    let epoch = changes.epoch;
+                    let (updates, deletes) = changes.parts();
+
+                    debug!(
+                        "received spu changes updates: {}, deletes: {}, epoch: {}",
+                        updates.len(),
+                        deletes.len(),
+                        epoch,
+                    );
+
                     if !spu_init {
                         debug!("spu initialized");
                         spu_init = true;
@@ -127,18 +167,18 @@ impl K8SpuController {
                         if service_init && spg_init && spu_init  {
                             self.sync_spu().await?;
                         } else {
-                            
+
                             debug!(
                                 service_init,
                                 spg_init,
                                 spu_init,
                                 "not ready");
-                            
+
                         }
                     } else {
                         debug!("spu was already initialized, ignoring");
                     }
-                    
+
                 }
 
 
@@ -147,30 +187,25 @@ impl K8SpuController {
         }
     }
 
-    
-
-    
     /// synchronize change from spg to spu
-    async fn sync_spu(
-        &mut self,
-    ) -> Result<(), ClientError> {
-        
+    async fn sync_spu(&mut self) -> Result<(), ClientError> {
         // get all models
         let spg = self.groups.store().clone_values().await;
         let services = self.get_spu_services().await;
-        
+
         for group_item in spg.into_iter() {
             let spg_obj = SpuGroupObj::new(group_item);
 
             let spec = spg_obj.spec();
             let replicas = spec.replicas;
             for i in 0..replicas {
+                let (spu_name, spu) = spg_obj.as_spu(i, &services);
 
-                let (spu_name, action) = spg_obj.as_spu(i,&services);
+                debug!(id=i,spu=?spu);
 
-                debug!(?spu_name, "applying action");
-                
-                self.spus.wait_action(&spu_name, action).await?;
+                self.spus
+                    .wait_action(&spu_name, WSAction::Apply(spu))
+                    .await?;
             }
         }
 
@@ -178,20 +213,18 @@ impl K8SpuController {
     }
 
     /// map spu services to hashmap
-    async fn get_spu_services(&self) -> HashMap<String,IngressPort> {
-
+    async fn get_spu_services(&self) -> HashMap<String, IngressPort> {
         let services = self.services.store().clone_values().await;
         let mut spu_services = HashMap::new();
 
         for svc_md in services.into_iter() {
-            
             if let Some(spu_name) = SpuServiceSpec::spu_name(svc_md.ctx().item().inner()) {
                 match get_ingress_from_service(&svc_md) {
                     Ok(ingress) => {
-                        spu_services.insert(spu_name.to_owned(),ingress);
-                    },
+                        spu_services.insert(spu_name.to_owned(), ingress);
+                    }
                     Err(err) => {
-                        error!("error reading ingress: {}",err);
+                        error!("error reading ingress: {}", err);
                     }
                 }
             } else {
@@ -209,8 +242,6 @@ impl K8SpuController {
 fn get_ingress_from_service(
     svc_md: &MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
 ) -> Result<IngressPort, ClientError> {
-
-
     // Get the external ingress from the service
     // Look at svc_md to identify if LoadBalancer
     let lb_type = svc_md.spec().inner().r#type.as_ref();
@@ -249,15 +280,12 @@ fn get_ingress_from_service(
     );
 
     Ok(computed_spu_ingressport)
-
 }
-
 
 fn add_ingress_from_svc_annotation(
     svc_md: &MetadataStoreObject<SpuServiceSpec, K8MetaItem>,
     computed_spu_ingress: &mut Vec<IngressAddr>,
 ) {
-    debug!("Checking ingress for annotations: {:#?}", &svc_md);
     if let Some(address) = SpuServiceSpec::ingress_annotation(svc_md.ctx().item()) {
         if let Ok(ip_addr) = address.parse::<IpAddr>() {
             computed_spu_ingress.push(IngressAddr {

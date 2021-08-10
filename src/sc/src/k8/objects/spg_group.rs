@@ -1,6 +1,6 @@
 use std::{collections::HashMap, ops::Deref};
 
-use tracing::{trace, instrument,debug};
+use tracing::{trace, instrument, debug};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 use fluvio_types::SpuId;
@@ -95,7 +95,11 @@ impl SpuGroupObj {
 
     /// generate as SPU spec
     #[instrument(skip(self))]
-    pub fn as_spu(&self, spu: u16,services: &HashMap<String,IngressPort>) -> (String, WSAction<SpuSpec>) {
+    pub fn as_spu(
+        &self,
+        spu: u16,
+        services: &HashMap<String, IngressPort>,
+    ) -> (String, MetadataStoreObject<SpuSpec, K8MetaItem>) {
         let spec = self.spec();
         let spu_id = compute_spu_id(spec.min_id, spu);
         let spu_name = format!("{}-{}", self.key(), spu);
@@ -114,7 +118,6 @@ impl SpuGroupObj {
             }
         };
 
-    
         let full_group_name = format!("fluvio-spg-{}", self.key());
         let full_spu_name = format!("fluvio-spg-{}", spu_name);
         let spu_spec = SpuSpec {
@@ -139,10 +142,8 @@ impl SpuGroupObj {
 
         (
             spu_name.clone(),
-            WSAction::Apply(
-                MetadataStoreObject::with_spec(spu_name, spu_spec)
-                    .with_context(self.ctx().create_child()),
-            ),
+            MetadataStoreObject::with_spec(spu_name, spu_spec)
+                .with_context(self.ctx().create_child()),
         )
     }
 
