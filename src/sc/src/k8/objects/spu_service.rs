@@ -9,7 +9,7 @@ use k8_types::{
 };
 use k8_types::core::service::LoadBalancerIngress;
 
-use crate::dispatcher::core::{Spec,Status};
+use crate::dispatcher::core::{Spec, Status};
 use crate::stores::spg::SpuGroupSpec;
 
 /// Service associated with SPU
