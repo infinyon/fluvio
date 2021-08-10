@@ -272,7 +272,7 @@ fn get_ingress_from_service(
     };
 
     // Add additional ingress via annotation value
-    add_ingress_from_svc_annotation(&svc_md, &mut computed_spu_ingressport.ingress);
+    add_ingress_from_svc_annotation(svc_md, &mut computed_spu_ingressport.ingress);
 
     debug!(
         "Computed SPU ingress after applying any svc annotation: {:?}",
