@@ -607,9 +607,12 @@ impl LocalInstaller {
                 ..Default::default()
             },
         );
+
+        debug!(input=?input,"creating spu");
         client.create_item(input).await?;
+        debug!("sleeping 1 sec");
         // sleep 1 seconds for sc to connect
-        sleep(Duration::from_millis(300)).await;
+        sleep(Duration::from_millis(1000)).await;
         let log_spu = format!("{}/spu_log_{}.log", log_dir.display(), spu_id);
         let outputs = File::create(&log_spu)?;
         let errors = outputs.try_clone()?;
