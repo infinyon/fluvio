@@ -457,14 +457,14 @@ impl LocalInstaller {
     // hack
     async fn check_spu(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         for i in 0..100 {
-            println!("checking spu attempt: {}", i);
+            println!("checking if crd is installed: {}", i);
             // check if spu is installed
             if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
-                println!("problem retrieving spu crd {}", err);
+                println!("problem retrieving crd {}", err);
                 println!("sleeping 1 seconds");
                 sleep(Duration::from_secs(10)).await;
             } else {
-                println!("spu crd checked");
+                println!("crd installed");
                 return Ok(());
             }
         }
