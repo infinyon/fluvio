@@ -449,10 +449,25 @@ impl LocalInstaller {
     }
 
     // hack
-    async fn check_spu(&self) -> Result<(),LocalInstallError> {
-        println!("sleeping 10 seconds to ensure crd is installed. this should be done using checking API ");
-        sleep(Duration::from_secs(10)).await;
-        Ok(())
+    async fn check_spu(&self) -> Result<(), LocalInstallError> {
+        for i in 0..100 {
+            println!("checking spu attempt: {}", i);
+            // check if spu is installed
+            if let Err(err) = Command::new("kubectl")
+                .args(&["get", "spu"])
+                .inherit()
+                .result()
+            {
+                println!("spu crd doesn't exists: {}", err);
+                println!("sleeping 1 seconds");
+                sleep(Duration::from_secs(10)).await;
+            } else {
+                println!("spu crd check.");
+                return Ok(());
+            }
+        }
+
+        Err(LocalInstallError::Other("Fluvio CRD not ready".to_string()))
     }
 
     /// Launches an SC on the local machine
