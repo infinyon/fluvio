@@ -368,7 +368,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
-    if: ${{ CI.K8 }}
+    if: ${{ false }}
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
