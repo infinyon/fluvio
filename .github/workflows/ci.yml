@@ -528,7 +528,7 @@ jobs:
       - build_binaries
       - local_cluster_test
       - k8_cluster_test
-      - k8_upgrade_test
+ #     - k8_upgrade_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
