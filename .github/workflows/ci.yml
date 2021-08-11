@@ -432,6 +432,8 @@ jobs:
             ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
+      - name: Print version
+        run: ./fluvio version
 
       - name: Save logs
         if: failure()
