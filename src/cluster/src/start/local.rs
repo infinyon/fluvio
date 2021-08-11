@@ -416,6 +416,9 @@ impl LocalInstaller {
             }
         };
 
+        // before we do let's try make sure SPU are installed.
+        self.check_spu().await?;
+
         debug!("using log dir: {}", self.config.log_dir.display());
         if !self.config.log_dir.exists() {
             create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
@@ -443,6 +446,13 @@ impl LocalInstaller {
             port,
             checks,
         })
+    }
+
+    // hack
+    async fn check_spu(&self) -> Result<(),LocalInstallError> {
+        println!("sleeping 10 seconds to ensure crd is installed. this should be done using checking API ");
+        sleep(Duration::from_secs(10)).await;
+        Ok(())
     }
 
     /// Launches an SC on the local machine
