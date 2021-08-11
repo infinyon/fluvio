@@ -354,12 +354,14 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 1
-          command: RUST_LOG=fluvio_cluster=debug,fluvio_command=debug make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          command: RUST_BACKTRACE=1 RUST_LOG=fluvio_cluster=debug,fluvio_command=debug make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
         if: failure()
         run: |
+          ps -ef | grep fluvio
           helm list
+          uname -a
           kubectl get spu
           kubectl get statefulset
           kubectl get topics
