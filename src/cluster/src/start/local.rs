@@ -464,7 +464,7 @@ impl LocalInstaller {
                 println!("sleeping 1 seconds");
                 sleep(Duration::from_secs(10)).await;
             } else {
-                println!("spu crd check. worked");
+                println!("spu crd checked");
                 return Ok(());
             }
         }
