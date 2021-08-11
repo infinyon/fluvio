@@ -1,6 +1,9 @@
 # Release Notes
 
-## Platform Version 0.9.2 - UNRELEASED
+## Platform Version 0.9.3 - UNRELEASED
+*
+
+## Platform Version 0.9.2 - 2021-08-10
 * Make Cluster installation more reliable. ([#1395](https://github.com/infinyon/fluvio/pull/1395))
 * Reliabiility improvement in SC's SPU controller. ([#1413](https://github.com/infinyon/fluvio/pull/1413))
   
