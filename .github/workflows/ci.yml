@@ -402,7 +402,7 @@ jobs:
 
   k8_cluster_test:
     name: Kubernetes cluster test
-    if: ${{ CI.K8 }}
+    if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
