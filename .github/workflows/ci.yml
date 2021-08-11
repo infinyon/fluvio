@@ -354,7 +354,7 @@ jobs:
         with:
           timeout_minutes: 5
           max_attempts: 1
-          command: RUST_BACKTRACE=1 RUST_LOG=fluvio_cluster=debug,fluvio_command=debug make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
         if: failure()
