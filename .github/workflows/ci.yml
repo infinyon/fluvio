@@ -25,8 +25,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-  CI_BUILD: false
-  CI_K8: false
+
 
 jobs:
   # build binaries for linux musl which is primary OS for testing clusters
@@ -208,7 +207,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
-    if: ${{ false }}
+#    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -323,7 +322,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
  #       run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
-        run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
+        run: [r1]
         rust: [stable]
     env:
       FLV_SOCKET_WAIT: 600
@@ -348,14 +347,15 @@ jobs:
           path: .
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
-      - name: Set up cluster
-        run: ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
         uses: nick-invision/retry@v2
         with:
-          timeout_minutes: 5
-          max_attempts: 1
-          command: make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          timeout_minutes: 3
+          max_attempts: 3
+          command: |
+            ./k8-util/cluster/reset-k3d.sh
+            sleep 10
+            make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
         if: failure()
@@ -419,7 +419,7 @@ jobs:
       max-parallel: 10
       matrix:
         os: [ubuntu-latest]
-        run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
+        run: [r1]
  #       run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
         rust: [stable]
     env:
@@ -450,8 +450,8 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         uses: nick-invision/retry@v2
         with:
-          timeout_minutes: 5
-          max_attempts: 1
+          timeout_minutes: 3
+          max_attempts: 3
           command: |
             ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
