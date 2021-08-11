@@ -34,6 +34,7 @@ jobs:
   # build binaries for linux musl which is primary OS for testing clusters
   build_primary_binaries:
     name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -318,7 +319,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})
     runs-on: ${{ matrix.os }}
-    needs: build_primary_binaries
+ #   needs: build_primary_binaries
     strategy:
       fail-fast: false
       max-parallel: 5      
