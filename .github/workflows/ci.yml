@@ -457,6 +457,7 @@ jobs:
 
   k8_upgrade_test:
     name: Upgrade cluster test
+    if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
