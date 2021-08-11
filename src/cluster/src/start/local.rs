@@ -4,6 +4,7 @@ use std::fs::{File, create_dir_all};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use fluvio::{FluvioConfig};
+use k8_metadata_client::MetadataClient;
 use semver::Version;
 
 use derive_builder::Builder;
@@ -449,10 +450,11 @@ impl LocalInstaller {
     }
 
     // hack
-    async fn check_spu(&self) -> Result<(), LocalInstallError> {
+    async fn check_spu(&self,client: SharedK8Client,) -> Result<(), LocalInstallError> {
         for i in 0..100 {
             println!("checking spu attempt: {}", i);
             // check if spu is installed
+            let nodes = kube_client.retrieve_items::<SpuSpec, _>().await?;
             if let Err(err) = Command::new("kubectl")
                 .args(&["get", "spu"])
                 .inherit()
