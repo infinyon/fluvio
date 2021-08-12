@@ -176,7 +176,7 @@ async fn validate_consume_message_api(
     if replication > 1 {
         println!("waiting 5 seconds to verify replication status...");
         // wait 5 seconds to get status and ensure replication is done
-        sleep(Duration::from_secs(5)).await;
+        sleep(Duration::from_secs(10)).await;
 
         let lock = test_driver.write().await;
         let admin = lock.client.admin().await;

@@ -366,12 +366,12 @@ jobs:
           kubectl get topics
           kubectl get partitions
 
-      - name: Upload SC log
+      - name: Upload Logs
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: failure()
         with:
-          name: fluvio-logs
+          name: fluvio-${{ matrix.run }}-logs
           path: /tmp/*.log
 
   build_image:
