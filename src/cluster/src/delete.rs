@@ -207,6 +207,11 @@ impl ClusterUninstaller {
             .arg("fluvio-run")
             .output()
             .map_err(UninstallError::IoError)?;
+        Command::new("pkill")
+            .arg("-f")
+            .arg("fluvio-syslog")
+            .output()
+            .map_err(UninstallError::IoError)?;
 
         // delete fluvio file
         debug!("Removing fluvio directory");

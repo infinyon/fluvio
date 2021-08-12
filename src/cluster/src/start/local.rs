@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::borrow::Cow;
 use std::fs::{File, create_dir_all};
+use std::io::Write;
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use fluvio::{FluvioConfig};
@@ -651,8 +652,61 @@ impl LocalInstaller {
         Ok(())
     }
 
-    fn launch_syslog_connector(&self, _log_file: String) -> Result<(), LocalInstallError> {
-        todo!();
+    fn launch_syslog_connector(&self, log_file: String) -> Result<(), LocalInstallError> {
+        let topic = if log_file.contains("spu_log") {
+            "fluvio-spu-syslog"
+        } else {
+            "fluvio-sc-syslog"
+        };
+        let log_file = Path::new(&log_file);
+        let file_stem = log_file.file_stem().unwrap().to_str().unwrap();
+
+        let toml = format!(r#"
+[[source]]
+name = "{}"
+type = "syslog"
+filter_prefix = "fluvio"
+topic = "{}"
+create_topic = true
+input_file = "{}"
+"#,
+        file_stem,
+        topic,
+        log_file.display()
+        );
+
+        let config_file = format!("{}.toml", log_file.display());
+        let mut toml_file = File::create(&config_file)?;
+        toml_file.write(toml.as_bytes())?;
+
+
+        let mut binary = {
+            let base = self
+                .config
+                .launcher_path()
+                .ok_or(LocalInstallError::MissingFluvioRunner)?;
+
+            let mut cmd = Command::new(base);
+            cmd
+                .arg("syslog")
+                .arg("produce")
+                .arg("--config").arg(&config_file);
+            cmd
+        };
+        binary.env("RUST_LOG", &self.config.rust_log);
+        debug!("Invoking command: \"{}\"", binary.display());
+        println!("SYSLOG_CONNECTOR <{}> cmd: {:#?}", toml, binary);
+
+        let syslog_connector_log = format!("{}/{}_syslog.log", self.config.log_dir.display(), file_stem);
+        let outputs = File::create(&syslog_connector_log)?;
+        let errors = outputs.try_clone()?;
+
+        binary.stdout(Stdio::from(outputs))
+            .stderr(Stdio::from(errors))
+            .spawn()
+            .map_err(|_| LocalInstallError::Other("Syslog connector failed to start".to_string()))?;
+        Ok(())
+
     }
 
     /// Check to ensure SPUs are all running
