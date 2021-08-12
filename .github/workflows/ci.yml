@@ -359,9 +359,7 @@ jobs:
       - name: Save logs
         if: failure()
         run: |
-          kubectl get crd
           ps -ef | grep fluvio
-          helm list
           uname -a
           kubectl get spu
           kubectl get statefulset
