@@ -4,12 +4,12 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
-use crate::CliError;
+use crate::{Result, CliError};
 
 pub mod update;
 pub mod plugins;
 
-fn fluvio_base_dir() -> Result<PathBuf, CliError> {
+fn fluvio_base_dir() -> Result<PathBuf> {
     if let Ok(dir) = std::env::var("FLUVIO_DIR") {
         // Assume this is like `~/.fluvio
         let path = PathBuf::from(dir);
@@ -22,7 +22,7 @@ fn fluvio_base_dir() -> Result<PathBuf, CliError> {
     fluvio_base_dir_create(path)
 }
 
-fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf, CliError> {
+fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf> {
     if !path.exists() {
         // Create the base dir if it doesn't exist yet (#718)
         std::fs::create_dir_all(&path)?
@@ -30,7 +30,7 @@ fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf, CliError> {
     Ok(path)
 }
 
-pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
+pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf> {
     let base_dir = fluvio_base_dir()?;
     let path = base_dir.join("extensions");
 
@@ -40,7 +40,7 @@ pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf, CliError> {
     Ok(path)
 }
 
-pub(crate) fn get_extensions() -> Result<Vec<PathBuf>, CliError> {
+pub(crate) fn get_extensions() -> Result<Vec<PathBuf>> {
     use std::fs;
     let mut extensions = Vec::new();
     let fluvio_dir = fluvio_extensions_dir()?;
@@ -65,7 +65,7 @@ async fn fetch_latest_version<T>(
     id: &PackageId<T>,
     target: &Target,
     prerelease: bool,
-) -> Result<Version, CliError> {
+) -> Result<Version> {
     let request = agent.request_package(id)?;
     debug!(
         url = %request.url(),
@@ -90,7 +90,7 @@ async fn fetch_package_file(
     agent: &HttpAgent,
     id: &PackageId<WithVersion>,
     target: &Target,
-) -> Result<Vec<u8>, CliError> {
+) -> Result<Vec<u8>> {
     // If the PackageVersion is a tag, try to resolve it to a semver::Version
     let version = match id.version() {
         PackageVersion::Semver(version) => version.clone(),
@@ -110,6 +110,13 @@ async fn fetch_package_file(
     let download_request = agent.request_release_download(id, &version, target)?;
     debug!(url = %download_request.url(), "Requesting package download:");
     let response = crate::http::execute(download_request).await?;
+    if !response.status().is_success() {
+        return Err(CliError::PackageNotFound {
+            package: id.clone().into_unversioned(),
+            version: version.clone(),
+            target: target.clone(),
+        });
+    }
     let package_file = agent.release_from_response(response).await?;
 
     // Download the package checksum from the package registry
@@ -136,7 +143,7 @@ fn verify_checksum<B: AsRef<[u8]>>(buffer: B, checksum: &str) -> bool {
     &*buffer_checksum == checksum
 }
 
-pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Result<(), CliError> {
+pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Result<()> {
     use std::io::Write as _;
 
     let bin_path = bin_path.as_ref();
@@ -163,7 +170,7 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
 }
 
 #[cfg(unix)]
-fn make_executable(file: &mut File) -> Result<(), IoError> {
+fn make_executable(file: &mut File) -> std::result::Result<(), IoError> {
     use std::os::unix::fs::PermissionsExt;
 
     // Add u+rwx mode to the existing file permissions, leaving others unchanged
@@ -177,7 +184,7 @@ fn make_executable(file: &mut File) -> Result<(), IoError> {
 }
 
 #[cfg(not(unix))]
-fn make_executable(_file: &mut File) -> Result<(), IoError> {
+fn make_executable(_file: &mut File) -> std::result::Result<(), IoError> {
     Ok(())
 }
 

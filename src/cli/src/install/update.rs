@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
-use crate::CliError;
+use crate::Result;
 use crate::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 };
@@ -23,7 +23,7 @@ pub struct UpdateOpt {
 }
 
 impl UpdateOpt {
-    pub async fn process(self) -> Result<(), CliError> {
+    pub async fn process(self) -> Result<()> {
         let agent = HttpAgent::default();
         let plugin_meta = subcommand_metadata()?;
 
@@ -76,7 +76,7 @@ impl UpdateOpt {
     }
 
     #[instrument(skip(self, agent))]
-    async fn update_self(&self, agent: &HttpAgent) -> Result<(), CliError> {
+    async fn update_self(&self, agent: &HttpAgent) -> Result<()> {
         let target = fluvio_index::package_target()?;
         let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
         debug!(%target, %id, "Fluvio CLI updating self:");
@@ -106,12 +106,7 @@ impl UpdateOpt {
     }
 
     #[instrument(skip(self, agent))]
-    async fn update_plugin(
-        &self,
-        agent: &HttpAgent,
-        id: &PackageId,
-        path: &Path,
-    ) -> Result<(), CliError> {
+    async fn update_plugin(&self, agent: &HttpAgent, id: &PackageId, path: &Path) -> Result<()> {
         let target = fluvio_index::package_target()?;
         debug!(%target, %id, "Fluvio CLI updating plugin:");
 
@@ -140,7 +135,7 @@ impl UpdateOpt {
     skip(agent),
     fields(prefix = agent.base_url())
 )]
-pub async fn check_update_required(agent: &HttpAgent) -> Result<bool, CliError> {
+pub async fn check_update_required(agent: &HttpAgent) -> Result<bool> {
     debug!("Checking for a required CLI update");
     let request = agent.request_index()?;
     let response = crate::http::execute(request).await?;
@@ -156,7 +151,7 @@ pub async fn check_update_required(agent: &HttpAgent) -> Result<bool, CliError> 
 pub async fn check_update_available(
     agent: &HttpAgent,
     prerelease: bool,
-) -> Result<Option<Version>, CliError> {
+) -> Result<Option<Version>> {
     let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
@@ -182,7 +177,7 @@ pub async fn check_update_available(
     skip(agent),
     fields(prefix = agent.base_url())
 )]
-pub async fn prompt_required_update(agent: &HttpAgent) -> Result<(), CliError> {
+pub async fn prompt_required_update(agent: &HttpAgent) -> Result<()> {
     let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fetching latest package version:");
