@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
-use crate::Result;
+use crate::{Result, CliError};
 use crate::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 };
@@ -91,7 +91,20 @@ impl UpdateOpt {
             "⏳ Downloading Fluvio CLI with latest version: {}...",
             &id.version()
         ));
-        let package_file = fetch_package_file(agent, &id, &target).await?;
+        let package_result = fetch_package_file(agent, &id, &target).await;
+        let package_file = match package_result {
+            Ok(pf) => pf,
+            Err(CliError::PackageNotFound {
+                version, target, ..
+            }) => {
+                install_println(format!(
+                    "❕ Fluvio is not published at version {} for {}, skipping self-update",
+                    version, target
+                ));
+                return Ok(());
+            }
+            Err(other) => return Err(other.into()),
+        };
         install_println("🔑 Downloaded and verified package file");
 
         // Install the update over the current executable
