@@ -128,16 +128,23 @@ mod replica_test {
             format!("{}:{}", HOST, self.base_port)
         }
 
-        pub async fn leader_replica(
-            &self,
-        ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
+        // just create new leader
+        pub async fn new_ctx(&self) -> DefaultSharedGlobalContext {
             let leader_config = self.leader_config();
-            let replica = self.replica();
 
             let gctx = GlobalContext::new_shared_context(leader_config);
             gctx.spu_localstore().sync_all(self.spu_specs());
             gctx.sync_follower_update().await;
 
+            gctx
+        }
+
+        pub async fn leader_replica(
+            &self,
+        ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
+            let replica = self.replica();
+
+            let gctx = self.new_ctx().await;
             let leader_replica = gctx
                 .leaders_state()
                 .add_leader_replica(
@@ -542,6 +549,82 @@ mod replica_test {
 
         // ensure leader ctx is there
         assert!(follower_ctx.leaders_state().get(&new_replica.id).is_some());
+
+        sleep(Duration::from_millis(WAIT_TERMINATE)).await;
+
+        spu_server.notify();
+    }
+
+    /// Testing of 2 replicas
+    /// In this case, follower receives replica metadata before leader
+    #[fluvio_future::test(ignore)]
+    async fn test_replication2_late_leader() {
+        let builder = TestConfig::builder()
+            .followers(1_u16)
+            .base_port(13020_u16)
+            .generate("replication2_new");
+
+        let leader_gctx = builder.new_ctx().await;
+        /*
+        let (leader_gctx, leader_replica) = builder.leader_replica().await;
+        assert_eq!(leader_replica.leo(), 0);
+        assert_eq!(leader_replica.hw(), 0);
+
+        let follower_info = leader_replica.followers_info().await;
+        assert_eq!(follower_info.get(&5002).unwrap().leo, -1);
+        */
+
+        let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
+
+        // give leader controller time to startup
+        sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
+
+        /*
+        let (_, follower_replica) = builder.follower_replica(0).await;
+
+        // at this point, follower replica should be empty since we didn't have time to sync up with leader
+        assert_eq!(follower_replica.leo(), 0);
+        assert_eq!(follower_replica.hw(), 0);
+
+        sleep(Duration::from_millis(MAX_WAIT_FOLLOWER)).await;
+        // leader should have actual follower info not just init
+        let follower_info = leader_replica.followers_info().await;
+        assert_eq!(follower_info.get(&5002).unwrap().leo, 0);
+
+        // write records
+        leader_replica
+            .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+            .await
+            .expect("write");
+
+        assert_eq!(leader_replica.leo(), 2);
+        assert_eq!(leader_replica.hw(), 0);
+
+        // wait until follower sync up with leader
+        sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
+
+        debug!("done waiting. checking result");
+
+        // all records has been fully replicated
+        assert_eq!(follower_replica.leo(), 2);
+
+        // hw has been replicated
+        assert_eq!(follower_replica.hw(), 2);
+        assert_eq!(leader_replica.hw(), 2);
+
+        let status = leader_gctx.status_update().remove_all().await;
+        debug!(?status);
+        assert!(!status.is_empty());
+        let lrs = &status[0];
+        assert_eq!(lrs.id, (TOPIC, 0).into());
+        assert_eq!(lrs.leader.spu, LEADER);
+        assert_eq!(lrs.leader.hw, 2);
+        assert_eq!(lrs.leader.leo, 2);
+        let f_status = &lrs.replicas[0];
+        assert_eq!(f_status.spu, FOLLOWER1);
+        assert_eq!(f_status.hw, 2);
+        assert_eq!(f_status.leo, 2);
+        */
 
         sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 

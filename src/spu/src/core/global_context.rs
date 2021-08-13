@@ -117,7 +117,7 @@ where
         self.status_update.clone()
     }
 
-    // sync follower pending updates with
+    /// notify all follower handlers with SPU changes
     pub async fn sync_follower_update(&self) {
         self.spu_followers
             .sync_from_spus(self.spu_localstore(), self.local_spu_id())
