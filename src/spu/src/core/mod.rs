@@ -4,7 +4,7 @@ mod store;
 pub mod spus;
 pub mod replica;
 
-pub use self::global_context::GlobalContext;
+pub use self::global_context::{GlobalContext, ReplicaChange};
 pub use self::store::Spec;
 pub use self::store::LocalStore;
 pub use self::store::SpecChange;
@@ -19,3 +19,4 @@ use crate::config::SpuConfig;
 pub type SharedGlobalContext<S> = Arc<GlobalContext<S>>;
 pub type DefaultSharedGlobalContext = SharedGlobalContext<FileReplica>;
 pub type SharedSpuConfig = Arc<SpuConfig>;
+pub type FileGlobalContext = GlobalContext<FileReplica>;

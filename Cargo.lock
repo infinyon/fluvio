@@ -1797,7 +1797,6 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "log",
  "nix 0.22.0",
  "once_cell",
  "pin-utils",

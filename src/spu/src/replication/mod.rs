@@ -30,7 +30,6 @@ mod replica_test {
     const TOPIC: &str = "test";
     const HOST: &str = "127.0.0.1";
 
-    const MAX_BYTES: u32 = 100000;
     const MAX_WAIT_LEADER: u64 = 100;
     const MAX_WAIT_FOLLOWER: u64 = 100;
     const WAIT_TERMINATE: u64 = 1000;
@@ -147,12 +146,7 @@ mod replica_test {
             let gctx = self.new_ctx().await;
             let leader_replica = gctx
                 .leaders_state()
-                .add_leader_replica(
-                    gctx.clone(),
-                    replica.clone(),
-                    MAX_BYTES,
-                    gctx.status_update_owned(),
-                )
+                .add_leader_replica(&gctx, replica.clone(), gctx.status_update_owned())
                 .await
                 .expect("leader");
 
@@ -173,7 +167,7 @@ mod replica_test {
             let gctx = GlobalContext::new_shared_context(follower_config);
             gctx.spu_localstore().sync_all(self.spu_specs());
             gctx.followers_state_owned()
-                .add_replica(gctx.clone(), replica.clone())
+                .add_replica(&gctx, replica.clone())
                 .await
                 .expect("create");
 

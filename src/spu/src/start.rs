@@ -70,7 +70,7 @@ pub fn create_services(
         None
     };
 
-    let sc_dispatcher = ScDispatcher::new(ctx.clone(), ctx.config().peer_max_bytes);
+    let sc_dispatcher = ScDispatcher::new(ctx.clone());
     sc_dispatcher.run();
 
     (ctx, internal_server, public_server)
