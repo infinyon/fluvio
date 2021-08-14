@@ -1,6 +1,3 @@
-use std::ops::Deref;
-use std::sync::Arc;
-
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
@@ -21,19 +18,4 @@ impl Spec for Replica {
     }
 }
 
-#[derive(Default, Debug)]
-pub struct ReplicaStore(LocalStore<Replica>);
-
-impl Deref for ReplicaStore {
-    type Target = LocalStore<Replica>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl ReplicaStore {
-    pub fn new_shared() -> Arc<Self> {
-        Arc::new(Self::default())
-    }
-}
+pub type ReplicaStore = LocalStore<Replica>;
