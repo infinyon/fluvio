@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  pull_request:
-    branches: [master]
+#  pull_request:
+#    branches: [master]
 #  push:
 #    branches: [master]
   workflow_dispatch:
