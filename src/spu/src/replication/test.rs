@@ -2,6 +2,7 @@ use std::path::{PathBuf};
 use std::time::Duration;
 use std::env::temp_dir;
 
+use fluvio_controlplane::UpdateReplicaRequest;
 use fluvio_storage::FileReplica;
 use tracing::debug;
 use derive_builder::Builder;
@@ -108,6 +109,7 @@ impl TestConfig {
         specs
     }
 
+    /// generate test replica with assigned SPU
     fn replica(&self) -> Replica {
         let mut followers = vec![LEADER];
         for i in 0..self.followers {
@@ -120,8 +122,8 @@ impl TestConfig {
         format!("{}:{}", HOST, self.base_port)
     }
 
-    // just create new leader
-    pub async fn new_ctx(&self) -> DefaultSharedGlobalContext {
+    /// create new context with SPU populated
+    pub async fn leader_ctx(&self) -> DefaultSharedGlobalContext {
         let leader_config = self.leader_config();
 
         let gctx = GlobalContext::new_shared_context(leader_config);
@@ -131,12 +133,13 @@ impl TestConfig {
         gctx
     }
 
+    /// starts new leader
     pub async fn leader_replica(
         &self,
     ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
         let replica = self.replica();
 
-        let gctx = self.new_ctx().await;
+        let gctx = self.leader_ctx().await;
         let leader_replica = gctx
             .leaders_state()
             .add_leader_replica(&gctx, replica.clone(), gctx.status_update_owned())
@@ -146,6 +149,14 @@ impl TestConfig {
         (gctx, leader_replica)
     }
 
+    /// create new follower context witj SPU
+    pub async fn follower_ctx(&self, follower_index: u16) -> DefaultSharedGlobalContext {
+        let follower_config = self.follower_config(follower_index);
+        let gctx = GlobalContext::new_shared_context(follower_config);
+        gctx.spu_localstore().sync_all(self.spu_specs());
+        gctx
+    }
+
     pub async fn follower_replica(
         &self,
         follower_index: u16,
@@ -153,12 +164,8 @@ impl TestConfig {
         DefaultSharedGlobalContext,
         FollowerReplicaState<FileReplica>,
     ) {
-        let follower_config = self.follower_config(follower_index);
-        //debug!(?follower_config);
-
         let replica = self.replica();
-        let gctx = GlobalContext::new_shared_context(follower_config);
-        gctx.spu_localstore().sync_all(self.spu_specs());
+        let gctx = self.follower_ctx(follower_index).await;
         gctx.followers_state_owned()
             .add_replica(&gctx, replica.clone())
             .await
@@ -542,29 +549,46 @@ async fn test_replication2_promote() {
     spu_server.notify();
 }
 
-/// Testing of 2 replicas
-/// In this case, follower receives replica metadata before leader
+/// Test receipt of request from SC
 #[fluvio_future::test(ignore)]
-async fn test_replication2_late_leader() {
+async fn test_replication_dispatch() {
     let builder = TestConfig::builder()
         .followers(1_u16)
         .base_port(13020_u16)
         .generate("replication2_new");
 
-    let leader_gctx = builder.new_ctx().await;
-    /*
-    let (leader_gctx, leader_replica) = builder.leader_replica().await;
-    assert_eq!(leader_replica.leo(), 0);
-    assert_eq!(leader_replica.hw(), 0);
-
-    let follower_info = leader_replica.followers_info().await;
-    assert_eq!(follower_info.get(&5002).unwrap().leo, -1);
-    */
+    let leader_gctx = builder.leader_ctx().await;
 
     let spu_server = create_internal_server(builder.leader_addr(), leader_gctx.clone()).run();
 
+    let replica = builder.replica();
+
+    let actions = leader_gctx
+        .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
+        .await;
+    assert!(actions.is_empty());
+
     // give leader controller time to startup
     sleep(Duration::from_millis(MAX_WAIT_LEADER)).await;
+
+    let leader = leader_gctx
+        .leaders_state()
+        .get(&replica.id)
+        .expect("replica");
+    assert!(leader_gctx
+        .followers_state()
+        .get(&replica.id)
+        .await
+        .is_none());
+    // should be new
+    assert_eq!(leader.leo(), 0);
+    assert_eq!(leader.hw(), 0);
+
+    let follower_gctx = builder.leader_ctx().await;
+    let actions = follower_gctx
+        .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
+        .await;
+    assert!(actions.is_empty());
 
     /*
     let (_, follower_replica) = builder.follower_replica(0).await;
