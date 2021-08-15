@@ -584,11 +584,13 @@ async fn test_replication_dispatch() {
     assert_eq!(leader.leo(), 0);
     assert_eq!(leader.hw(), 0);
 
-    let follower_gctx = builder.leader_ctx().await;
+    let follower_gctx = builder.follower_ctx(0).await;
     let actions = follower_gctx
         .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
         .await;
     assert!(actions.is_empty());
+    let follower = follower_gctx.followers_state().get(&replica.id).await.expect("follower");
+    assert_eq!(follower.leader(),LEADER);
 
     /*
     let (_, follower_replica) = builder.follower_replica(0).await;
