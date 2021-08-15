@@ -9,7 +9,10 @@ use tracing::{error, instrument};
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use fluvio_storage::{FileReplica, StorageError};
 
-use crate::{control_plane::SharedStatusUpdate, core::SharedGlobalContext};
+use crate::{
+    control_plane::SharedStatusUpdate,
+    core::{GlobalContext},
+};
 use crate::config::ReplicationConfig;
 use crate::replication::follower::FollowerReplicaState;
 
@@ -71,9 +74,8 @@ impl ReplicaLeadersState<FileReplica> {
     )]
     pub async fn add_leader_replica(
         &self,
-        ctx: SharedGlobalContext<FileReplica>,
+        ctx: &GlobalContext<FileReplica>,
         replica: Replica,
-        max_bytes: u32,
         status_update: SharedStatusUpdate,
     ) -> Result<LeaderReplicaState<FileReplica>, StorageError> {
         let replica_id = replica.id.clone();

@@ -108,6 +108,19 @@ where
     S: Spec + Clone + PartialEq + Debug + Encoder + Decoder,
     S::Key: Display,
 {
+    /// apply either all or changes, all takes precedent
+    /// TODO: this should be convert to enum
+    #[instrument(skip(self,all,changes), fields(spec = S::LABEL, all = all.len()))]
+    pub fn apply(&self, all: Vec<S>, changes: Vec<Message<S>>) -> Actions<SpecChange<S>> {
+        if !all.is_empty() {
+            trace!("received spu all items: {:#?}", all);
+            self.sync_all(all)
+        } else {
+            trace!("received spu change items: {:#?}", changes);
+            self.apply_changes(changes)
+        }
+    }
+
     /// Sync with source of truth.
     /// Returns diff as Change
     #[instrument(skip(self, source_specs), fields(spec = S::LABEL, command_count = source_specs.len()))]

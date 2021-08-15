@@ -6,7 +6,7 @@ use adaptive_backoff::prelude::*;
 
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
-use crate::core::{DefaultSharedGlobalContext};
+use crate::core::{FileGlobalContext};
 
 use super::{FollowersState};
 use super::state::{SharedFollowersState, FollowerReplicaState};
@@ -27,7 +27,7 @@ impl FollowerGroups {
 
     /// new follower replica has been added in the group
     /// ensure that controller exists if not spawn controller
-    pub async fn check_new(&self, ctx: &DefaultSharedGlobalContext, leader: SpuId) {
+    pub async fn check_new(&self, ctx: &FileGlobalContext, leader: SpuId) {
         // check if leader controller exist
         let mut leaders = self.0.write().await;
         // check if we have controllers
