@@ -549,7 +549,8 @@ async fn test_replication2_promote() {
     spu_server.notify();
 }
 
-/// Test receipt of request from SC
+/// Test leader and follower starts in sequence
+/// receiving request from SC
 #[fluvio_future::test(ignore)]
 async fn test_replication_dispatch() {
     let builder = TestConfig::builder()
@@ -584,6 +585,15 @@ async fn test_replication_dispatch() {
     assert_eq!(leader.leo(), 0);
     assert_eq!(leader.hw(), 0);
 
+    leader
+        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
+        .await
+        .expect("write");
+
+    assert_eq!(leader.leo(), 2);
+    assert_eq!(leader.hw(), 0);
+
+
     let follower_gctx = builder.follower_ctx(0).await;
     let actions = follower_gctx
         .apply_replica_update(UpdateReplicaRequest::with_all(1, vec![replica.clone()]))
@@ -591,54 +601,17 @@ async fn test_replication_dispatch() {
     assert!(actions.is_empty());
     let follower = follower_gctx.followers_state().get(&replica.id).await.expect("follower");
     assert_eq!(follower.leader(),LEADER);
-
-    /*
-    let (_, follower_replica) = builder.follower_replica(0).await;
-
-    // at this point, follower replica should be empty since we didn't have time to sync up with leader
-    assert_eq!(follower_replica.leo(), 0);
-    assert_eq!(follower_replica.hw(), 0);
-
-    sleep(Duration::from_millis(MAX_WAIT_FOLLOWER)).await;
-    // leader should have actual follower info not just init
-    let follower_info = leader_replica.followers_info().await;
-    assert_eq!(follower_info.get(&5002).unwrap().leo, 0);
-
-    // write records
-    leader_replica
-        .write_record_set(&mut create_recordset(2), leader_gctx.follower_notifier())
-        .await
-        .expect("write");
-
-    assert_eq!(leader_replica.leo(), 2);
-    assert_eq!(leader_replica.hw(), 0);
-
+    assert_eq!(follower.leo(), 0);
+    assert_eq!(follower.hw(), 0);
+    
     // wait until follower sync up with leader
     sleep(Duration::from_millis(*MAX_WAIT_REPLICATION)).await;
-
-    debug!("done waiting. checking result");
-
-    // all records has been fully replicated
-    assert_eq!(follower_replica.leo(), 2);
+    assert_eq!(follower.leo(), 2);
 
     // hw has been replicated
-    assert_eq!(follower_replica.hw(), 2);
-    assert_eq!(leader_replica.hw(), 2);
-
-    let status = leader_gctx.status_update().remove_all().await;
-    debug!(?status);
-    assert!(!status.is_empty());
-    let lrs = &status[0];
-    assert_eq!(lrs.id, (TOPIC, 0).into());
-    assert_eq!(lrs.leader.spu, LEADER);
-    assert_eq!(lrs.leader.hw, 2);
-    assert_eq!(lrs.leader.leo, 2);
-    let f_status = &lrs.replicas[0];
-    assert_eq!(f_status.spu, FOLLOWER1);
-    assert_eq!(f_status.hw, 2);
-    assert_eq!(f_status.leo, 2);
-    */
-
+    assert_eq!(follower.hw(), 2);
+    assert_eq!(leader.hw(), 2);
+    
     sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
     spu_server.notify();
