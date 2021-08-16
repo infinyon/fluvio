@@ -681,7 +681,7 @@ async fn test_replication_dispatch_out_of_sequence() {
         .expect("write");
 
     // wait until follower sync up with leader
-    sleep(Duration::from_secs(30)).await;
+    sleep(Duration::from_secs(15)).await;
     assert_eq!(follower.leo(), 2);
 
     // hw has been replicated
