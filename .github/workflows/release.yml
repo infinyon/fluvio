@@ -306,8 +306,6 @@ jobs:
     needs: [bump_stable_fluvio]
     runs-on: ubuntu-latest
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
       TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
     steps:
