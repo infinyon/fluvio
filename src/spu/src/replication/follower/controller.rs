@@ -73,11 +73,12 @@ impl FollowerGroups {
     }
 }
 
-use controller::*;
-mod controller {
+use inner::*;
+mod inner {
 
     use tokio::select;
     use futures_util::StreamExt;
+    use once_cell::sync::Lazy;
 
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
@@ -92,6 +93,11 @@ mod controller {
     use crate::{replication::leader::UpdateOffsetRequest, core::SharedSpuConfig};
     use crate::services::internal::FetchStreamRequest;
     use crate::core::spus::SharedSpuLocalStore;
+
+    static SHORT_RECONCILLATION: Lazy<u64> = Lazy::new(|| {
+        let var_value = std::env::var("FLV_SHORT_RECONCILLATION").unwrap_or_default();
+        var_value.parse().unwrap_or(10)
+    });
 
     use super::*;
 
@@ -191,13 +197,16 @@ mod controller {
 
             let mut counter: i32 = 0;
 
+            let mut timer = sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
+
             loop {
                 debug!(counter, "waiting request from leader");
 
                 select! {
-                    _ = (sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC))) => {
+                    _ = &mut timer => {
                         debug!("timer fired - kickoff sync offsets to leader");
                         self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
+                        timer= sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
                     },
 
                     offset_value = event_listener.listen() => {
@@ -216,8 +225,12 @@ mod controller {
                             let req_msg = req_msg_res?;
 
                             match req_msg {
-                                FollowerPeerRequest::SyncRecords(sync_request) => self.sync_from_leader(&mut sink,sync_request.request).await?,
-                            }
+                                FollowerPeerRequest::SyncRecords(sync_request)=> self.sync_from_leader(&mut sink,sync_request.request).await?,
+                                 FollowerPeerRequest::RejectedOffsetRequest(requests) => {
+                                     debug!(fail_req = ?requests,"leader rejected these requests");
+                                     timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
+                                 },
+                             }
 
                         } else {
                             debug!("leader socket has terminated");

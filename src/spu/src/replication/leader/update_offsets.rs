@@ -18,7 +18,7 @@ impl Request for UpdateOffsetRequest {
     type Response = UpdateOffsetResponse;
 }
 
-#[derive(Decoder, Encoder, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Clone, Debug)]
 pub struct ReplicaOffsetRequest {
     pub replica: ReplicaKey,
     pub leo: Offset,
