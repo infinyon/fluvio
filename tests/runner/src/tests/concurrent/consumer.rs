@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use async_lock::RwLock;
 use std::sync::mpsc::Receiver;
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 use futures_lite::StreamExt;
 use fluvio::Offset;
 
@@ -9,7 +9,7 @@ use super::ConcurrentTestCase;
 use super::util::*;
 
 pub async fn consumer_stream(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     option: ConcurrentTestCase,
     digests: Receiver<String>,
 ) {

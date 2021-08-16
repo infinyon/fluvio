@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use tracing::info;
 
 use super::SmokeTestCase;
@@ -13,7 +13,7 @@ use async_lock::RwLock;
 type Offsets = HashMap<String, i64>;
 
 pub async fn produce_message(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     test_case: &SmokeTestCase,
 ) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
@@ -49,10 +49,10 @@ mod offsets {
     use fluvio_controlplane_metadata::partition::ReplicaKey;
 
     use super::SmokeTestCase;
-    use super::FluvioTestDriver;
+    use super::{TestDriver, TestDriverType};
 
     pub async fn find_offsets(
-        test_driver: &FluvioTestDriver,
+        test_driver: &TestDriver,
         test_case: &SmokeTestCase,
     ) -> HashMap<String, i64> {
         let partition = test_case.environment.partition;
@@ -61,8 +61,8 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let client = test_driver.client.clone();
-        let mut admin = client.admin().await;
+        let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
+        let mut admin = fluvio_client.admin().await;
 
         for _i in 0..partition {
             let topic_name = test_case.environment.topic_name.clone();
@@ -100,7 +100,7 @@ mod offsets {
 }
 
 pub async fn produce_message_with_api(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {

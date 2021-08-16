@@ -2,13 +2,15 @@ use std::sync::Arc;
 use std::process::exit;
 use structopt::StructOpt;
 use fluvio::Fluvio;
-use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption, TestResult};
+use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
+use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
-use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
-use fluvio_test_util::test_meta::TestTimer;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
+use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
+use fluvio_test_util::test_meta::test_timer::TestTimer;
 use hdrhistogram::Histogram;
 
 // This is important for `inventory` crate
@@ -50,7 +52,7 @@ fn main() {
         let fluvio_client = cluster_setup(&option.environment).await;
 
         // Check on test requirements before running the test
-        if !FluvioTestDriver::is_env_acceptable(
+        if !TestDriver::is_env_acceptable(
             &(test_meta.requirements)(),
             &TestCase::new(option.environment.clone(), test_opt.clone()),
         ) {
@@ -91,7 +93,7 @@ async fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
 ) -> TestResult {
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
@@ -111,35 +113,35 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
     }
 }
 
-async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<FluvioTestDriver>> {
+async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<TestDriver>> {
     let fluvio_client = if option.skip_cluster_start() {
         println!("skipping cluster start");
         // Connect to cluster in profile
-        Arc::new(
+        Arc::new(TestDriverType::Fluvio(
             Fluvio::connect()
                 .await
                 .expect("Unable to connect to Fluvio test cluster via profile"),
-        )
+        ))
     } else {
         let mut test_cluster = TestCluster::new(option.clone());
-        Arc::new(
+        Arc::new(TestDriverType::Fluvio(
             test_cluster
                 .start()
                 .await
                 .expect("Unable to connect to fresh test cluster"),
-        )
+        ))
     };
 
-    Arc::new(RwLock::new(FluvioTestDriver {
+    Arc::new(RwLock::new(TestDriver {
         client: fluvio_client,
-        num_topics: 0,
-        num_producers: 0,
-        num_consumers: 0,
-        bytes_produced: 0,
-        bytes_consumed: 0,
-        produce_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        consume_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        topic_create_latency: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        topic_num: 0,
+        producer_num: 0,
+        consumer_num: 0,
+        producer_bytes: 0,
+        consumer_bytes: 0,
+        producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
     }))
 }
 

@@ -11,9 +11,11 @@ use fluvio_future::task::spawn;
 use fluvio_integration_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
+use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_util::test_meta::test_result::TestResult;
 
-use fluvio_test_util::test_runner::{FluvioTestDriver, FluvioTestMeta};
+use fluvio_test_util::test_runner::test_driver::TestDriver;
+use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 #[derive(Debug, Clone)]
 pub struct ConcurrentTestCase {
     pub environment: EnvironmentSetup,
@@ -54,7 +56,7 @@ pub async fn concurrent(
 }
 
 pub async fn test_concurrent_consume_produce(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     option: ConcurrentTestCase,
 ) {
     println!("Testing concurrent consumer and producer");
