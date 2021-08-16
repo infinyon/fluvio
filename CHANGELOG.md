@@ -1,7 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.3 - UNRELEASED
-*
+* Fixs Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))
 
 ## Platform Version 0.9.2 - 2021-08-10
 * Make Cluster installation more reliable. ([#1395](https://github.com/infinyon/fluvio/pull/1395))
