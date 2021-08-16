@@ -1,0 +1,133 @@
+name: Post-Release
+
+permissions:
+  contents: read
+
+on:
+
+  workflow_run:
+    workflows: ["Release"]
+    types:
+      - completed
+  workflow_dispatch:
+    inputs:
+      alt_version:
+        required: false
+        description: Provide expected semver. If empty VERSION in repo will be used
+        default: ''
+
+env:
+  USE_VERSION: ${{ github.event.inputs.alt_version }}
+
+jobs:
+  installer_check:
+    name: Installer check
+    strategy:
+      matrix:
+        version: [none, stable, semver]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set the expected fluvio version
+        run: |
+          if [[ -z "${{ env.USE_VERSION }}" ]]; then
+            echo "EXPECTED_VERSION=$(cat VERSION)" | tee -a $GITHUB_ENV
+          else
+            echo "EXPECTED_VERSION=${{ github.event.inputs.alt_version }}" | tee -a $GITHUB_ENV
+          fi
+          echo "EXPECTED_VERSION: $EXPECTED_VERSION"
+
+      - name: Set the VERSION env var for installer script
+        if: matrix.version == 'none'
+        run: echo "Leave VERSION unset"
+      - name: Curl Install - stable 
+        if: matrix.version == 'stable'
+        run: echo "VERSION=stable" | tee -a $GITHUB_ENV
+      - name: Curl Install - Version number
+        if: matrix.version == 'semver'
+        run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
+
+        # Utilizes the env var set in the previous step 
+      - name: Curl Install
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.version
+
+      - name: Verify installer output
+        run: |
+            INSTALLER_VERSION=$(cat /tmp/installer.version | grep "Downloading Fluvio" | awk '{print $5}')
+            if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
+              echo "✅ Installer version check passed: $EXPECTED_VERSION";
+            else
+              echo "❌ Installer version check failed";
+              echo "Version reported by installer: $INSTALLER_VERSION";
+              echo "Expected version: $EXPECTED_VERSION";
+              exit 1;
+            fi
+
+  start_cluster:
+    name: Start cluster test
+    needs: installer_check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        cluster_type: [local, k8s]
+    env:
+      FLV_SOCKET_WAIT: 600
+    steps:
+      - uses: nolar/setup-k3d-k3s@v1
+      - name: Install Fluvio
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+      - name: Pre-Start - local cluster
+        if: matrix.cluster_type == 'local'
+        run: echo "IF_LOCAL=--local" | tee -a $GITHUB_ENV
+      - name: Pre-Start - Kubernetes cluster
+        if: matrix.cluster_type == 'k8s'
+        run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
+ 
+      - name: Start cluster
+        run: ~/.fluvio/bin/fluvio cluster start ${IF_LOCAL} 
+      # TODO: Verify platform version
+
+  upgrade_prev_stable:
+    name: Upgrade cluster test
+    needs: installer_check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+    env:
+      FLV_SOCKET_WAIT: 600
+    steps:
+      - uses: actions/checkout@v2
+      - uses: nolar/setup-k3d-k3s@v1
+
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+
+      - name: Get previous stable version number
+        run: |
+          echo "PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' | grep "v" | head -2 | tail -1)" | tee -a $GITHUB_ENV
+          PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' | grep "v" | head -2 | tail -1)
+
+      - name: Install last stable Fluvio CLI and start cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=$PREV_STABLE_VERSION bash
+          ~/.fluvio/bin/fluvio cluster start
+          ~/.fluvio/bin/fluvio version
+
+      - name: Set the expected fluvio version for upgrade
+        run: |
+          if [[ -z "${{ env.USE_VERSION }}" ]]; then
+            echo "EXPECTED_VERSION=$(cat VERSION)" | tee -a $GITHUB_ENV
+          else
+            echo "EXPECTED_VERSION=${{ github.event.inputs.alt_version }}" | tee -a $GITHUB_ENV
+          fi
+          echo "EXPECTED_VERSION: $EXPECTED_VERSION"
+
+      - name: Install current stable Fluvio CLI and upgrade cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          ~/.fluvio/bin/fluvio cluster upgrade 
+          ~/.fluvio/bin/fluvio version
+
+      # TODO: Verify platform version
