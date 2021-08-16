@@ -141,8 +141,15 @@ impl ConsumeOpt {
                 let acc = std::fs::read(acc_path)?;
                 builder.wasm_aggregate(wasm, acc);
             }
+            (Some(wasm_path), None) => {
+                let wasm = std::fs::read(wasm_path)?;
+                builder.wasm_aggregate(wasm, Vec::new());
+            }
+            (None, Some(_)) => {
+                println!("In order to use --accumulator, you must also specify --aggregate");
+                return Ok(());
+            }
             (None, None) => (),
-            _ => println!("Need both aggregator WASM and Accumulator"),
         }
 
         let consume_config = builder.build()?;

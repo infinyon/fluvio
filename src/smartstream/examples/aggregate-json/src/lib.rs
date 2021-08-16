@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use fluvio_smartstream::{smartstream, Result, Record, RecordData};
 use serde::{Serialize, Deserialize};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 struct GithubStars(HashMap<String, u32>);
 
 impl std::ops::Add for GithubStars {
@@ -22,7 +22,8 @@ impl std::ops::Add for GithubStars {
 #[smartstream(aggregate)]
 pub fn aggregate(accumulator: RecordData, next: &Record) -> Result<RecordData> {
     // Parse accumulator
-    let accumulated_stars = serde_json::from_slice::<GithubStars>(accumulator.as_ref())?;
+    let accumulated_stars = serde_json::from_slice::<GithubStars>(accumulator.as_ref())
+        .unwrap_or_else(|_| GithubStars::default());
 
     // Parse next record
     let new_stars = serde_json::from_slice::<GithubStars>(next.value.as_ref())?;
