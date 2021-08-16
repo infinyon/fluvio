@@ -155,6 +155,9 @@ upgrade-test: build-cli build_k8_image
 	./tests/upgrade-test.sh
 endif
 
+# When running in development, might need to run `cargo clean` to ensure correct fluvio binary is used
+validate-release-stable:
+	./tests/fluvio-validate-release.sh $(VERSION) $(GIT_COMMIT)
 
 # test rbac
 #
