@@ -1,9 +1,9 @@
-use fluvio_smartstream::{smartstream, Record, RecordData};
+use fluvio_smartstream::{smartstream, Result, Record, RecordData};
 
 #[smartstream(aggregate)]
-pub fn aggregate(accumulator: RecordData, next: &Record) -> RecordData {
-    let mut acc = String::from_utf8_lossy(accumulator.as_ref()).to_string();
-    let next = String::from_utf8_lossy(next.value.as_ref()).to_string();
-    acc.push_str(&next);
-    acc.into()
+pub fn aggregate(accumulator: RecordData, next: &Record) -> Result<RecordData> {
+    let mut acc = String::from_utf8(accumulator.as_ref().to_vec())?;
+    let next = std::str::from_utf8(next.value.as_ref())?;
+    acc.push_str(next);
+    Ok(acc.into())
 }

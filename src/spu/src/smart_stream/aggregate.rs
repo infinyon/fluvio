@@ -13,7 +13,7 @@ use dataplane::batch::MemoryRecords;
 use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
 use crate::smart_stream::file_batch::FileBatchIterator;
 use dataplane::smartstream::{
-    SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamBaseInput, SmartStreamOutput,
+    SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
@@ -100,7 +100,7 @@ impl SmartStreamAggregate {
             self.records_cb.clear();
 
             let smartstream_input = SmartStreamAggregateInput {
-                base: SmartStreamBaseInput {
+                base: SmartStreamInput {
                     base_offset: file_batch.batch.base_offset,
                     record_data: file_batch.records.clone(),
                 },
@@ -140,7 +140,7 @@ impl SmartStreamAggregate {
 
             // there are filtered records!!
             if records.is_empty() {
-                debug!("filters records empty");
+                debug!("Aggregate records empty");
             } else {
                 // If any records came back, take the last one and set it as
                 // the new accumulator state.
@@ -190,6 +190,11 @@ impl SmartStreamAggregate {
                     "adding to offset delta"
                 );
                 aggregate_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
+            }
+
+            // If we had a filtering error, return current batch and error
+            if maybe_error.is_some() {
+                return Ok((aggregate_batch, maybe_error));
             }
         }
     }

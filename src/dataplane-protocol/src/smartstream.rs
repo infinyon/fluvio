@@ -1,5 +1,5 @@
 pub use encoding::{
-    SmartStreamRuntimeError, SmartStreamType, SmartStreamBaseInput, SmartStreamAggregateInput,
+    SmartStreamRuntimeError, SmartStreamType, SmartStreamInput, SmartStreamAggregateInput,
     SmartStreamOutput,
 };
 
@@ -11,7 +11,7 @@ mod encoding {
 
     /// Common data that gets passed as input to every SmartStream WASM module
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
-    pub struct SmartStreamBaseInput {
+    pub struct SmartStreamInput {
         /// The base offset of this batch of records
         pub base_offset: Offset,
         /// The records for the SmartStream to process
@@ -22,7 +22,7 @@ mod encoding {
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
     pub struct SmartStreamAggregateInput {
         /// The base input required by all SmartStreams
-        pub base: SmartStreamBaseInput,
+        pub base: SmartStreamInput,
         /// The current value of the Aggregate's accumulator
         pub accumulator: Vec<u8>,
     }
@@ -104,6 +104,7 @@ mod encoding {
     pub enum SmartStreamType {
         Filter,
         Map,
+        Aggregate,
     }
 
     impl Default for SmartStreamType {

@@ -382,7 +382,7 @@ impl StreamFetchHandler {
                         })?
                 };
 
-                self.assemble_processed_response(
+                self.send_processed_response(
                     file_partition_response,
                     next_offset,
                     batch,
@@ -403,7 +403,7 @@ impl StreamFetchHandler {
                         .map_err(|err| IoError::new(ErrorKind::Other, format!("map err {}", err)))?
                 };
 
-                self.assemble_processed_response(
+                self.send_processed_response(
                     file_partition_response,
                     next_offset,
                     batch,
@@ -424,7 +424,7 @@ impl StreamFetchHandler {
                         IoError::new(ErrorKind::Other, format!("aggregate err: {}", err))
                     })?;
 
-                self.assemble_processed_response(
+                self.send_processed_response(
                     file_partition_response,
                     next_offset,
                     batch,
@@ -463,7 +463,7 @@ impl StreamFetchHandler {
         }
     }
 
-    async fn assemble_processed_response(
+    async fn send_processed_response(
         &self,
         file_partition_response: FilePartitionResponse,
         mut next_offset: Offset,

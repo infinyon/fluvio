@@ -69,9 +69,7 @@ pub fn generate_filter_smartstream(func: &SmartStreamFn) -> TokenStream {
                 let out_len = out.len();
                 let ptr = out.as_mut_ptr();
                 std::mem::forget(out);
-
                 copy_records(ptr as i32, out_len as i32);
-
                 output.successes.len() as i32
             }
         }
