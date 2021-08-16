@@ -624,6 +624,7 @@ async fn test_replication_dispatch_in_sequence() {
 /// receiving request from SC
 #[fluvio_future::test(ignore)]
 async fn test_replication_dispatch_out_of_sequence() {
+    //std::env::set_var("FLV_SHORT_RECONCILLATION", "1");
     let builder = TestConfig::builder()
         .followers(1_u16)
         .base_port(13020_u16)

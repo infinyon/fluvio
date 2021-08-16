@@ -78,6 +78,7 @@ mod controller {
 
     use tokio::select;
     use futures_util::StreamExt;
+    use once_cell::sync::Lazy;
 
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
@@ -92,6 +93,11 @@ mod controller {
     use crate::{replication::leader::UpdateOffsetRequest, core::SharedSpuConfig};
     use crate::services::internal::FetchStreamRequest;
     use crate::core::spus::SharedSpuLocalStore;
+
+    static SHORT_RECONCILLATION: Lazy<u64> = Lazy::new(|| {
+        let var_value = std::env::var("FLV_SHORT_RECONCILLATION").unwrap_or_default();
+        var_value.parse().unwrap_or(10)
+    });
 
     use super::*;
 
@@ -220,9 +226,9 @@ mod controller {
 
                             match req_msg {
                                 FollowerPeerRequest::SyncRecords(sync_request)=> self.sync_from_leader(&mut sink,sync_request.request).await?,
-                                 FollowerPeerRequest::InvalidOffsetRequest(requests) => {
+                                 FollowerPeerRequest::RejectedOffsetRequest(requests) => {
                                      debug!(fail_req = ?requests,"leader rejected these requests");
-                                     timer= sleep(Duration::from_secs(10));
+                                     timer= sleep(Duration::from_secs(*SHORT_RECONCILLATION));
                                  },
                              }
 
