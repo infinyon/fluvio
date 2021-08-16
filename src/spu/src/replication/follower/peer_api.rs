@@ -7,12 +7,15 @@ use dataplane::bytes::Buf;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
+use crate::replication::leader::UpdateOffsetRequest;
+
 use super::api_key::FollowerPeerApiEnum;
 use super::sync::DefaultSyncRequest;
 
 #[derive(Debug, Encoder)]
 pub enum FollowerPeerRequest {
     SyncRecords(RequestMessage<DefaultSyncRequest>),
+    InvalidOffsetRequest(RequestMessage<UpdateOffsetRequest>)
 }
 
 impl Default for FollowerPeerRequest {
@@ -35,6 +38,9 @@ impl ApiMessage for FollowerPeerRequest {
         match header.api_key().try_into()? {
             FollowerPeerApiEnum::SyncRecords => Ok(FollowerPeerRequest::SyncRecords(
                 RequestMessage::new(header, DefaultSyncRequest::decode_from(src, version)?),
+            )),
+            FollowerPeerApiEnum::InvalidOffsetRequest => Ok(FollowerPeerRequest::InvalidOffsetRequest(
+                RequestMessage::new(header, UpdateOffsetRequest::decode_from(src, version)?),
             )),
         }
     }

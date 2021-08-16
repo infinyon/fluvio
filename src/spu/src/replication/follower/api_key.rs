@@ -5,6 +5,7 @@ use dataplane::core::{Encoder, Decoder};
 #[fluvio(encode_discriminant)]
 pub enum FollowerPeerApiEnum {
     SyncRecords = 0,
+    InvalidOffsetRequest = 1
 }
 
 impl Default for FollowerPeerApiEnum {
