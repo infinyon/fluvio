@@ -73,8 +73,8 @@ impl FollowerGroups {
     }
 }
 
-use controller::*;
-mod controller {
+use inner::*;
+mod inner {
 
     use tokio::select;
     use futures_util::StreamExt;

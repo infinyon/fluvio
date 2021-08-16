@@ -198,11 +198,10 @@ impl FollowerHandler {
 
         if !rejects.is_empty() {
             debug!(reject_count = rejects.len());
-            let mut request =
-                RequestMessage::new_request(RejectOffsetRequest { replicas: rejects })
-                    .set_client_id(format!("leader: {}", self.ctx.local_spu_id()));
+            let request = RequestMessage::new_request(RejectOffsetRequest { replicas: rejects })
+                .set_client_id(format!("leader: {}", self.ctx.local_spu_id()));
 
-            sink.send_request(&mut request).await?;
+            sink.send_request(&request).await?;
         }
 
         Ok(())
