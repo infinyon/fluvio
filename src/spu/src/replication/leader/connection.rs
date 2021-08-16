@@ -122,7 +122,7 @@ impl FollowerHandler {
         Ok(())
     }
 
-    // updates form other SPU trigger this
+    // send out any updates from other leaders to this followers
     #[instrument(skip(self))]
     async fn update_from_leaders(&mut self, sink: &mut FluvioSink) -> Result<(), SocketError> {
         let replicas = self.spu_update.drain_replicas().await;
@@ -164,6 +164,7 @@ impl FollowerHandler {
         Ok(())
     }
 
+    /// process updates from followers
     #[instrument(skip(self, request))]
     async fn update_from_follower(&self, request: UpdateOffsetRequest) -> Result<(), SocketError> {
         for update in request.replicas {
@@ -182,7 +183,9 @@ impl FollowerHandler {
                     .await;
                 debug!(status, replica = %leader.id(), "leader updated");
             } else {
-                error!(%replica_key,"no such replica");
+                // if we didn't find it replica that means leader doesn't have upto date replicas.
+                // we need to send back 
+                warn!(%replica_key,"no such replica");
             }
         }
         Ok(())

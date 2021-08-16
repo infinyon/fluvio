@@ -15,7 +15,7 @@ use crate::replication::leader::ReplicaOffsetRequest;
 use crate::core::{FileGlobalContext};
 use crate::storage::SharableReplicaStorage;
 
-use super::group::FollowerGroups;
+use super::controller::FollowerGroups;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 
