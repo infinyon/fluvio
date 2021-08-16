@@ -76,12 +76,16 @@ jobs:
       - uses: nolar/setup-k3d-k3s@v1
       - name: Install Fluvio
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-      - name: Start local cluster
+
+      - name: Pre-Start - local cluster
         if: matrix.cluster_type == 'local'
-        run: ~/.fluvio/bin/fluvio cluster start --local
-      - name: Start Kubernetes cluster
+        run: echo "IF_LOCAL=--local" | tee -a $GITHUB_ENV
+      - name: Pre-Start - Kubernetes cluster
         if: matrix.cluster_type == 'k8s'
-        run: ~/.fluvio/bin/fluvio cluster start
+        run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
+ 
+      - name: Start cluster
+        run: ~/.fluvio/bin/fluvio cluster start ${IF_LOCAL} 
       # TODO: Verify platform version
 
   upgrade_prev_stable:
