@@ -36,15 +36,19 @@ jobs:
           fi
           echo "EXPECTED_VERSION: $EXPECTED_VERSION"
 
-      - name: Curl Install - no version
+      - name: Set the VERSION env var for installer script
         if: matrix.version == 'none'
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.version
+        run: echo "Leave VERSION unset"
       - name: Curl Install - stable 
         if: matrix.version == 'stable'
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=stable bash | tee /tmp/installer.version
+        run: echo "VERSION=stable" | tee -a $GITHUB_ENV
       - name: Curl Install - Version number
         if: matrix.version == 'semver'
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=$EXPECTED_VERSION bash | tee /tmp/installer.version
+        run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
+
+        # Utilizes the env var set in the previous step 
+      - name: Curl Install
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
