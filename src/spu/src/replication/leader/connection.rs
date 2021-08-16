@@ -184,7 +184,7 @@ impl FollowerHandler {
                 debug!(status, replica = %leader.id(), "leader updated");
             } else {
                 // if we didn't find it replica that means leader doesn't have upto date replicas.
-                // we need to send back 
+                // we need to send back
                 warn!(%replica_key,"no such replica");
             }
         }

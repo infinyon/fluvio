@@ -191,41 +191,47 @@ mod controller {
 
             let mut counter: i32 = 0;
 
-            let mut timer= sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
+            let mut timer = sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
 
             loop {
                 debug!(counter, "waiting request from leader");
 
                 select! {
-                                _ = &mut timer => {
-                                    debug!("timer fired - kickoff sync offsets to leader");
-                                    self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
-                                },
+                    _ = &mut timer => {
+                        debug!("timer fired - kickoff sync offsets to leader");
+                        self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
+                        timer= sleep(Duration::from_secs(LEADER_RECONCILIATION_INTERVAL_SEC));
+                    },
 
-                                offset_value = event_listener.listen() => {
-                                    if offset_value == -1 {
-                                        debug!("terminate signal");
-                                        return Ok(true);
-                                    }
-                                    // if sync counter changes, then we need to re-compute replicas and send offsets again
-                                    replicas = FollowerGroup::filter_from(&self.states,self.leader).await;
-                                    self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
-                                }
+                    offset_value = event_listener.listen() => {
+                        if offset_value == -1 {
+                            debug!("terminate signal");
+                            return Ok(true);
+                        }
+                        // if sync counter changes, then we need to re-compute replicas and send offsets again
+                        replicas = FollowerGroup::filter_from(&self.states,self.leader).await;
+                        self.sync_all_offsets_to_leader(&mut sink,&replicas).await?;
+                    }
 
 
-                                api_msg = api_stream.next() => {
-                                    if let Some(req_msg_res) = api_msg {
-                                        let req_msg = req_msg_res?;
+                    api_msg = api_stream.next() => {
+                        if let Some(req_msg_res) = api_msg {
+                            let req_msg = req_msg_res?;
 
-                                        match req_msg {FollowerPeerRequest::SyncRecords(sync_request)=>self.sync_from_leader(&mut sink,sync_request.request).await?,
-                FollowerPeerRequest::InvalidOffsetRequest(_) => todo!(), }
+                            match req_msg {
+                                FollowerPeerRequest::SyncRecords(sync_request)=> self.sync_from_leader(&mut sink,sync_request.request).await?,
+                                 FollowerPeerRequest::InvalidOffsetRequest(requests) => {
+                                     debug!(fail_req = ?requests,"leader rejected these requests");
+                                     timer= sleep(Duration::from_secs(10));
+                                 },
+                             }
 
-                                    } else {
-                                        debug!("leader socket has terminated");
-                                        return Ok(false);
-                                    }
-                                }
-                            }
+                        } else {
+                            debug!("leader socket has terminated");
+                            return Ok(false);
+                        }
+                    }
+                }
 
                 counter += 1;
             }

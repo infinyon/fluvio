@@ -15,7 +15,7 @@ use super::sync::DefaultSyncRequest;
 #[derive(Debug, Encoder)]
 pub enum FollowerPeerRequest {
     SyncRecords(RequestMessage<DefaultSyncRequest>),
-    InvalidOffsetRequest(RequestMessage<UpdateOffsetRequest>)
+    InvalidOffsetRequest(RequestMessage<UpdateOffsetRequest>),
 }
 
 impl Default for FollowerPeerRequest {
@@ -39,9 +39,11 @@ impl ApiMessage for FollowerPeerRequest {
             FollowerPeerApiEnum::SyncRecords => Ok(FollowerPeerRequest::SyncRecords(
                 RequestMessage::new(header, DefaultSyncRequest::decode_from(src, version)?),
             )),
-            FollowerPeerApiEnum::InvalidOffsetRequest => Ok(FollowerPeerRequest::InvalidOffsetRequest(
-                RequestMessage::new(header, UpdateOffsetRequest::decode_from(src, version)?),
-            )),
+            FollowerPeerApiEnum::InvalidOffsetRequest => {
+                Ok(FollowerPeerRequest::InvalidOffsetRequest(
+                    RequestMessage::new(header, UpdateOffsetRequest::decode_from(src, version)?),
+                ))
+            }
         }
     }
 }
