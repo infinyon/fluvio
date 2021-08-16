@@ -73,7 +73,7 @@ impl FluvioStream {
                         &mut Cursor::new(&req_bytes),
                         req_msg.header.api_version(),
                     )?;
-                    trace!("received {} bytes: {:#?}", req_bytes.len(), &response);
+                    trace!( len = req_bytes.len(), response = ?response,"received");
                     Ok(response)
                 }
                 Err(source) => {

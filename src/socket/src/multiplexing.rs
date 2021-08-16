@@ -186,7 +186,7 @@ impl MultiplexerSocket {
     }
 
     /// create stream response
-    #[instrument(skip(self, req_msg, queue_len))]
+    #[instrument(level = "trace",skip(self), fields(req = ?req_msg))]
     pub async fn create_stream<R>(
         &self,
         mut req_msg: RequestMessage<R>,
@@ -198,11 +198,6 @@ impl MultiplexerSocket {
         let correlation_id = self.next_correlation_id().await;
         req_msg.header.set_correlation_id(correlation_id);
 
-        debug!(
-            "send request: {} correlation_id: {}",
-            R::API_KEY,
-            correlation_id
-        );
         self.sink.send_request(&req_msg).await?;
 
         // it is possible that msg have received by dispatcher before channel is inserted into senders
