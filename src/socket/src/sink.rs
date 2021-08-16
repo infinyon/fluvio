@@ -2,7 +2,7 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use tracing::trace;
+use tracing::{trace, instrument};
 use futures_util::{SinkExt};
 use async_lock::Mutex;
 use async_lock::MutexGuard;
@@ -54,15 +54,16 @@ impl FluvioSink {
     }
 
     /// as client, send request to server
+    #[instrument(level = "trace",skip(req_msg),fields(req=?req_msg))]
     pub async fn send_request<R>(&mut self, req_msg: &RequestMessage<R>) -> Result<(), SocketError>
     where
         RequestMessage<R>: FlvEncoder + Default + Debug,
     {
-        trace!("sending one way request: {:#?}", &req_msg,);
         (&mut self.inner).send((req_msg, 0)).await?;
         Ok(())
     }
 
+    #[instrument(level = "trace",skip(resp_msg),fields(resp=?resp_msg))]
     /// as server, send back response
     pub async fn send_response<P>(
         &mut self,

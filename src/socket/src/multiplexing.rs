@@ -308,11 +308,12 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
+    #[instrument(skip(self, stream))]
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {
-            trace!("dispatcher: waiting for next response from stream ");
+            trace!("waiting");
 
             select! {
                 frame = frame_stream.next() => {
@@ -330,11 +331,11 @@ impl MultiPlexingResponseDispatcher {
                                 Err(err) => error!("error decoding response, {}", err),
                             }
                         } else {
-                            debug!("dispatcher: problem getting frame from stream. terminating");
+                            debug!("problem getting frame from stream. terminating");
                             break;
                         }
                     } else {
-                        debug!("dispatcher: inner stream has terminated ");
+                        debug!("inner stream has terminated ");
 
                         let guard = self.senders.lock().await;
                         for sender in guard.values() {
@@ -377,13 +378,14 @@ impl MultiPlexingResponseDispatcher {
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {
                 SharedSender::Serial(serial_sender) => {
+                    trace!("found serial");
                     // this should always succeed since nobody should lock
                     match serial_sender.0.try_lock() {
                         Some(mut guard) => {
                             *guard = Some(msg);
-                            trace!("send back msg with correlation: {}", correlation_id);
                             drop(guard); // unlock
                             serial_sender.1.notify(1);
+
                             Ok(())
                         }
                         None => Err(IoError::new(
@@ -397,6 +399,7 @@ impl MultiPlexingResponseDispatcher {
                     }
                 }
                 SharedSender::Queue(queue_sender) => {
+                    trace!("found queue");
                     queue_sender.send(Some(msg)).await.map_err(|err| {
                         IoError::new(
                             ErrorKind::BrokenPipe,
