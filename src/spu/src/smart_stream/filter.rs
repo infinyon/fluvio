@@ -9,7 +9,7 @@ use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError};
+use dataplane::smartstream::{SmartStreamBaseInput, SmartStreamOutput, SmartStreamRuntimeError};
 use fluvio_protocol::{Encoder, Decoder};
 use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
 use crate::smart_stream::file_batch::FileBatchIterator;
@@ -94,7 +94,7 @@ impl SmartStreamFilter {
             let now = Instant::now();
 
             let mut input_data = Vec::new();
-            let smartstream_input = SmartStreamInput {
+            let smartstream_input = SmartStreamBaseInput {
                 base_offset: file_batch.batch.base_offset,
                 record_data: file_batch.records.clone(),
             };

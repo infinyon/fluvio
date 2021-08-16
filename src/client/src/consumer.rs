@@ -634,10 +634,10 @@ impl ConsumerConfigBuilder {
 
     /// Set a WASM aggregator function and initial accumulator value
     pub fn wasm_aggregate<T: Into<Vec<u8>>, U: Into<Vec<u8>>>(
-        mut self,
+        &mut self,
         aggregate: T,
         accumulator: U,
-    ) -> Self {
+    ) -> &mut Self {
         self.wasm_module(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(aggregate.into()),
             kind: SmartStreamKind::Aggregate {

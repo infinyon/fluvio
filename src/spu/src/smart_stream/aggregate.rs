@@ -12,7 +12,9 @@ use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
 use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
 use crate::smart_stream::file_batch::FileBatchIterator;
-use dataplane::smartstream::Aggregate;
+use dataplane::smartstream::{
+    SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamBaseInput, SmartStreamOutput,
+};
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
 type AggregateFn = TypedFunc<(i32, i32), i32>;
@@ -66,7 +68,7 @@ impl SmartStreamAggregate {
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-    ) -> Result<Batch, Error> {
+    ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
         let mut aggregate_batch = Batch::<MemoryRecords>::default();
         aggregate_batch.base_offset = -1; // indicate this is uninitialized
         aggregate_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
@@ -81,7 +83,7 @@ impl SmartStreamAggregate {
                         total_records = aggregate_batch.records().len(),
                         "no more batches filter end"
                     );
-                    return Ok(aggregate_batch);
+                    return Ok((aggregate_batch, None));
                 }
             };
 
@@ -97,19 +99,23 @@ impl SmartStreamAggregate {
             let now = Instant::now();
             self.records_cb.clear();
 
-            let aggregate_data = Aggregate {
-                accumulator: Vec::from(accumulator),
-                records: file_batch.records.clone(),
+            let smartstream_input = SmartStreamAggregateInput {
+                base: SmartStreamBaseInput {
+                    base_offset: file_batch.batch.base_offset,
+                    record_data: file_batch.records.clone(),
+                },
+                accumulator: self.accumulator.clone(),
             };
-            let mut aggregator_bytes = vec![];
-            fluvio_protocol::Encoder::encode(&aggregate_data, &mut aggregator_bytes, 0)?;
+
+            let mut input_data = vec![];
+            fluvio_protocol::Encoder::encode(&smartstream_input, &mut input_data, 0)?;
 
             let aggregate_ptr = super::memory::copy_memory_to_instance(
                 &mut self.store,
                 &self.instance,
-                &file_batch.records,
+                &input_data,
             )?;
-            let aggregate_args = (aggregate_ptr as i32, aggregator_bytes.len() as i32);
+            let aggregate_args = (aggregate_ptr as i32, input_data.len() as i32);
 
             let aggregate_record_count = self.aggregate_fn.call(&mut self.store, aggregate_args)?;
             debug!(aggregate_record_count, filter_execution_time = %now.elapsed().as_millis());
@@ -118,21 +124,32 @@ impl SmartStreamAggregate {
                 return Err(anyhow!("aggregate failed"));
             }
 
-            let record_bytes = self
+            let output_bytes = self
                 .records_cb
                 .get()
                 .and_then(|m| m.copy_memory_from(&mut self.store).ok())
                 .unwrap_or_default();
-            debug!(out_filter_bytes = record_bytes.len());
+            debug!(out_filter_bytes = output_bytes.len());
 
             // this is inefficient for now
-            let mut records: MemoryRecords = vec![];
-            records.decode(&mut Cursor::new(record_bytes), 0)?;
+            let mut output = SmartStreamOutput::default();
+            output.decode(&mut Cursor::new(output_bytes), 0)?;
+
+            let maybe_error = output.error;
+            let mut records = output.successes;
 
             // there are filtered records!!
             if records.is_empty() {
                 debug!("filters records empty");
             } else {
+                // If any records came back, take the last one and set it as
+                // the new accumulator state.
+                let latest_accumulator = records.iter().last();
+                if let Some(latest) = latest_accumulator {
+                    debug!(?latest, "Got most recent accumulator:");
+                    self.accumulator = Vec::from(latest.value.as_ref());
+                }
+
                 // set base offset if this is first time
                 if aggregate_batch.base_offset == -1 {
                     aggregate_batch.base_offset = file_batch.base_offset();
@@ -154,7 +171,7 @@ impl SmartStreamAggregate {
                         total_bytes = total_bytes + record_bytes,
                         max_bytes, "total filter bytes reached"
                     );
-                    return Ok(aggregate_batch);
+                    return Ok((aggregate_batch, maybe_error));
                 }
 
                 total_bytes += record_bytes;

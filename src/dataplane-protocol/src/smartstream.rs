@@ -1,4 +1,7 @@
-pub use encoding::{SmartStreamRuntimeError, SmartStreamType, SmartStreamInput, SmartStreamOutput};
+pub use encoding::{
+    SmartStreamRuntimeError, SmartStreamType, SmartStreamBaseInput, SmartStreamAggregateInput,
+    SmartStreamOutput,
+};
 
 mod encoding {
     use std::fmt;
@@ -6,13 +9,22 @@ mod encoding {
     use crate::record::{Record, RecordData};
     use fluvio_protocol::{Encoder, Decoder};
 
-    /// A type used to pass data into a SmartStream WASM module
+    /// Common data that gets passed as input to every SmartStream WASM module
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
-    pub struct SmartStreamInput {
+    pub struct SmartStreamBaseInput {
         /// The base offset of this batch of records
         pub base_offset: Offset,
         /// The records for the SmartStream to process
         pub record_data: Vec<u8>,
+    }
+
+    /// A type to pass input to an Aggregate SmartStream WASM module
+    #[derive(Debug, Default, Clone, Encoder, Decoder)]
+    pub struct SmartStreamAggregateInput {
+        /// The base input required by all SmartStreams
+        pub base: SmartStreamBaseInput,
+        /// The current value of the Aggregate's accumulator
+        pub accumulator: Vec<u8>,
     }
 
     /// A type used to return processed records and/or an error from a SmartStream
@@ -105,12 +117,5 @@ mod encoding {
             // Use Debug for Display to print variant name
             fmt::Debug::fmt(self, f)
         }
-    }
-
-    /// Used to pass both the accumulator and records to an Aggregate smartstream
-    #[derive(Debug, Default, Encoder, Decoder)]
-    pub struct Aggregate {
-        pub accumulator: Vec<u8>,
-        pub records: Vec<u8>,
     }
 }
