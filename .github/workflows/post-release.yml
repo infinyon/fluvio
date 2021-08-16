@@ -70,7 +70,6 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: nolar/setup-k3d-k3s@v1
-        if: matrix.cluster_type == 'k8s'
       - name: Install Fluvio
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
       - name: Start local cluster
