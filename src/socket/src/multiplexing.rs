@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
+use std::fmt::Debug;
 
 use async_channel::bounded;
 use async_channel::Receiver;
@@ -58,6 +59,12 @@ pub struct MultiplexerSocket {
     senders: Senders,
     sink: ExclusiveFlvSink,
     terminate: Arc<Event>,
+}
+
+impl Debug for MultiplexerSocket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MultiplexerSocket {}", self.sink.id())
+    }
 }
 
 impl Drop for MultiplexerSocket {

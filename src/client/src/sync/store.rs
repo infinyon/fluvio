@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use tracing::debug;
+use tracing::{debug, instrument};
 
 use fluvio_socket::SharedMultiplexerSocket;
 use fluvio_socket::SocketError;
@@ -24,6 +24,8 @@ pub struct MetadataStores {
 
 impl MetadataStores {
     /// start synchronization
+
+    #[instrument()]
     pub async fn start(socket: SharedMultiplexerSocket) -> Result<Self, SocketError> {
         let store = Self {
             shutdown: SimpleEvent::shared(),
@@ -57,11 +59,10 @@ impl MetadataStores {
     }
 
     /// start watch for spu
+    #[instrument(skip(self))]
     pub async fn start_watch_for_spu(&self) -> Result<(), SocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
-
-        debug!("start watch for spu");
 
         let req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
         let async_response = self.socket.create_stream(req_msg, 10).await?;
@@ -75,6 +76,7 @@ impl MetadataStores {
         Ok(())
     }
 
+    #[instrument(skip(self))]
     pub async fn start_watch_for_partition(&self) -> Result<(), SocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
@@ -93,6 +95,7 @@ impl MetadataStores {
         Ok(())
     }
 
+    #[instrument(skip(sel)f)]
     pub async fn start_watch_for_topic(&self) -> Result<(), SocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
