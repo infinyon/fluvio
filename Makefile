@@ -159,6 +159,10 @@ endif
 validate-release-stable:
 	./tests/fluvio-validate-release.sh $(VERSION) $(GIT_COMMIT)
 
+
+longevity-producer-test:
+	./tests/longevity-producer.sh
+
 # test rbac
 #
 #
