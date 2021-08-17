@@ -463,6 +463,7 @@ impl StreamFetchHandler {
         }
     }
 
+    #[instrument(skip(self, file_partition_response, batch, smartstream_error))]
     async fn send_processed_response(
         &self,
         file_partition_response: FilePartitionResponse,
@@ -476,18 +477,18 @@ impl StreamFetchHandler {
             Some(error) => ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)),
             None => file_partition_response.error_code,
         };
-        debug!("Filter error code output: {:#?}", &error_code);
+        trace!(?error_code, "Smartstream error code output:");
 
         let has_error = !matches!(error_code, ErrorCode::None);
         let has_records = !batch.records().is_empty();
 
         if !has_records && !has_error {
-            debug!(next_offset, "filter, no records send back, skipping");
+            debug!(next_offset, "No records to send back, skipping");
             return Ok((next_offset, false));
         }
 
         if has_records {
-            trace!("filter batch: {:#?}", batch);
+            trace!(?batch, "Smartstream batch:");
             next_offset = batch.get_last_offset() + 1;
         }
 
