@@ -195,7 +195,7 @@ impl MultiplexerSocket {
     }
 
     /// create stream response
-    #[instrument(level = "trace",skip(self), fields(req = ?req_msg))]
+    #[instrument(level = "trace",skip(self), fields(api = R::API_KEY,msg = ?req_msg.request))]
     pub async fn create_stream<R>(
         &self,
         mut req_msg: RequestMessage<R>,
