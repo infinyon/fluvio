@@ -95,7 +95,7 @@ impl MetadataStores {
         Ok(())
     }
 
-    #[instrument(skip(sel)f)]
+    #[instrument(skip(self))]
     pub async fn start_watch_for_topic(&self) -> Result<(), SocketError> {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
