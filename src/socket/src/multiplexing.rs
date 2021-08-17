@@ -310,7 +310,7 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    #[instrument(skip(self, stream))]
+    #[instrument(name = "loop",skip(self, stream))]
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
@@ -324,7 +324,7 @@ impl MultiPlexingResponseDispatcher {
                             let mut correlation_id: i32 = 0;
                             match correlation_id.decode(&mut msg, 0) {
                                 Ok(_) => {
-                                    trace!(correlation_id,"decoded correlation");
+                                    trace!(correlation_id,"received frame");
 
                                     if let Err(err) = self.send(correlation_id, msg).await {
                                         error!("error sending to socket, {}", err)
@@ -374,7 +374,7 @@ impl MultiPlexingResponseDispatcher {
     }
 
     /// send message to correct receiver
-    #[instrument(skip(self, msg))]
+    #[instrument(skip(self, msg),fields( msg = msg.len()))]
     pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
