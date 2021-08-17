@@ -88,7 +88,7 @@ pub struct ConsumeOpt {
 
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
     #[structopt(long)]
-    pub accumulator: Option<PathBuf>,
+    pub initial: Option<PathBuf>,
 }
 
 impl ConsumeOpt {
@@ -136,7 +136,7 @@ impl ConsumeOpt {
             builder.wasm_map(buffer);
         }
 
-        match (&self.aggregate, &self.accumulator) {
+        match (&self.aggregate, &self.initial) {
             (Some(wasm_path), Some(acc_path)) => {
                 let wasm = std::fs::read(wasm_path)?;
                 let acc = std::fs::read(acc_path)?;
