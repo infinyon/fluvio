@@ -90,7 +90,7 @@ jobs:
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
-          ARTIFACTS=(*.zip)
+          ARTIFACTS=(./*)
           gh release create -R infinyon/fluvio \
             --title="v${{ env.VERSION }}" \
             -F ./CHANGELOG.md \
