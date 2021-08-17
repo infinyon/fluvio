@@ -205,12 +205,11 @@ impl MultiplexerSocket {
         R: Request,
     {
         let correlation_id = self.next_correlation_id().await;
+
+        debug!(correlation_id, "new correlation id for stream");
         req_msg.header.set_correlation_id(correlation_id);
 
-        self.sink.send_request(&req_msg).await?;
-
-        // it is possible that msg have received by dispatcher before channel is inserted into senders
-        // but it is easier to clean up
+        // set up new channel
         let (sender, receiver) = bounded(queue_len);
         let mut senders = self.senders.lock().await;
 
@@ -221,6 +220,13 @@ impl MultiplexerSocket {
         });
         senders.insert(correlation_id, SharedSender::Queue(sender));
         drop(senders);
+
+        trace!(correlation_id, "created new channel");
+
+        self.sink.send_request(&req_msg).await?;
+
+        // it is possible that msg have received by dispatcher before channel is inserted into senders
+        // but it is easier to clean up
 
         Ok(AsyncResponse {
             receiver,
