@@ -8,31 +8,36 @@ use anyhow::{Result, Error};
 use tracing::debug;
 use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 
+use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use dataplane::smartstream::{
-    SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
-};
-use fluvio_protocol::{Encoder, Decoder};
-use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
+use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
 use crate::smart_stream::file_batch::FileBatchIterator;
+use dataplane::smartstream::{
+    SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput,
+    SmartStreamInternalError,
+};
 
-const FILTER_FN_NAME: &str = "filter";
-type FilterFn = TypedFunc<(i32, i32), i32>;
+const AGGREGATE_FN_NAME: &str = "aggregate";
+type AggregateFn = TypedFunc<(i32, i32), i32>;
 
-pub struct SmartStreamFilter {
+pub struct SmartStreamAggregate {
     store: Store<()>,
     instance: Instance,
-    filter_fn: FilterFn,
+    aggregate_fn: AggregateFn,
     records_cb: Arc<RecordsCallBack>,
+    accumulator: Vec<u8>,
 }
 
-impl SmartStreamFilter {
-    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
+impl SmartStreamAggregate {
+    pub fn new(
+        engine: &SmartStreamEngine,
+        module: &SmartStreamModule,
+        accumulator: Vec<u8>,
+    ) -> Result<Self> {
         let mut store = Store::new(&engine.0, ());
         let cb = Arc::new(RecordsCallBack::new());
-        let callback = cb.clone();
-
+        let records_cb = cb.clone();
         let copy_records = Func::wrap(
             &mut store,
             move |mut caller: Caller<'_, ()>, ptr: i32, len: i32| {
@@ -49,106 +54,114 @@ impl SmartStreamFilter {
         );
 
         let instance = Instance::new(&mut store, &module.0, &[copy_records.into()])?;
-        let filter_fn: FilterFn = instance.get_typed_func(&mut store, FILTER_FN_NAME)?;
+        let aggregate_fn: AggregateFn = instance.get_typed_func(&mut store, AGGREGATE_FN_NAME)?;
 
         Ok(Self {
             store,
+            aggregate_fn,
             instance,
-            filter_fn,
-            records_cb: callback,
+            records_cb,
+            accumulator,
         })
     }
 
     /// filter batches with maximum bytes to be send back consumer
-    pub fn filter(
+    pub fn aggregate(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
     ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
-        let mut memory_filter_batch = Batch::<MemoryRecords>::default();
-        memory_filter_batch.base_offset = -1; // indicate this is unitialized
-        memory_filter_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
-
+        let mut aggregate_batch = Batch::<MemoryRecords>::default();
+        aggregate_batch.base_offset = -1; // indicate this is uninitialized
+        aggregate_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
         let mut total_bytes = 0;
 
         loop {
+            // Aggregate entire batches. Entire batches are process as group
             let file_batch = match iter.next() {
-                // we filter-map entire batches.  entire batches are process as group
-                // if we can't fit current batch into max bytes then it is discarded
                 Some(batch_result) => batch_result?,
                 None => {
                     debug!(
-                        total_records = memory_filter_batch.records().len(),
+                        total_records = aggregate_batch.records().len(),
                         "no more batches filter end"
                     );
-                    return Ok((memory_filter_batch, None));
+                    return Ok((aggregate_batch, None));
                 }
             };
 
             debug!(
                 current_batch_offset = file_batch.batch.base_offset,
                 current_batch_offset_delta = file_batch.offset_delta(),
-                filter_offset_delta = memory_filter_batch.get_header().last_offset_delta,
-                filter_base_offset = memory_filter_batch.base_offset,
-                filter_records = memory_filter_batch.records().len(),
-                "starting filter processing"
+                agg_offset_delta = aggregate_batch.get_header().last_offset_delta,
+                agg_base_offset = aggregate_batch.base_offset,
+                agg_records = aggregate_batch.records().len(),
+                "starting aggregate processing"
             );
 
             let now = Instant::now();
+            self.records_cb.clear();
 
-            let mut input_data = Vec::new();
-            let smartstream_input = SmartStreamInput {
-                base_offset: file_batch.batch.base_offset,
-                record_data: file_batch.records.clone(),
+            let smartstream_input = SmartStreamAggregateInput {
+                base: SmartStreamInput {
+                    base_offset: file_batch.batch.base_offset,
+                    record_data: file_batch.records.clone(),
+                },
+                accumulator: self.accumulator.clone(),
             };
+
+            let mut input_data = vec![];
             fluvio_protocol::Encoder::encode(&smartstream_input, &mut input_data, 0)?;
 
-            self.records_cb.clear();
-            let array_ptr = super::memory::copy_memory_to_instance(
+            let aggregate_ptr = super::memory::copy_memory_to_instance(
                 &mut self.store,
                 &self.instance,
                 &input_data,
             )?;
+            let aggregate_args = (aggregate_ptr as i32, input_data.len() as i32);
 
-            let filter_output = self
-                .filter_fn
-                .call(&mut self.store, (array_ptr as i32, input_data.len() as i32))?;
+            let aggregate_output = self.aggregate_fn.call(&mut self.store, aggregate_args)?;
+            debug!(aggregate_output, filter_execution_time = %now.elapsed().as_millis());
 
-            debug!(filter_output,filter_execution_time = %now.elapsed().as_millis());
-
-            if filter_output < 0 {
-                let internal_error = SmartStreamInternalError::try_from(filter_output)
+            if aggregate_output < 0 {
+                let internal_error = SmartStreamInternalError::try_from(aggregate_output)
                     .unwrap_or(SmartStreamInternalError::UnknownError);
                 return Err(internal_error.into());
             }
 
-            let bytes = self
+            let output_bytes = self
                 .records_cb
                 .get()
                 .and_then(|m| m.copy_memory_from(&mut self.store).ok())
                 .unwrap_or_default();
-            debug!(out_filter_bytes = bytes.len());
+            debug!(out_filter_bytes = output_bytes.len());
 
             // this is inefficient for now
             let mut output = SmartStreamOutput::default();
-            output.decode(&mut Cursor::new(bytes), 0)?;
+            output.decode(&mut Cursor::new(output_bytes), 0)?;
 
             let maybe_error = output.error;
             let mut records = output.successes;
 
             // there are filtered records!!
             if records.is_empty() {
-                debug!("filters records empty");
+                debug!("Aggregate records empty");
             } else {
+                // If any records came back, take the last one and set it as
+                // the new accumulator state.
+                let latest_accumulator = records.iter().last();
+                if let Some(latest) = latest_accumulator {
+                    debug!(?latest, "Got most recent accumulator:");
+                    self.accumulator = Vec::from(latest.value.as_ref());
+                }
+
                 // set base offset if this is first time
-                if memory_filter_batch.base_offset == -1 {
-                    memory_filter_batch.base_offset = file_batch.base_offset();
+                if aggregate_batch.base_offset == -1 {
+                    aggregate_batch.base_offset = file_batch.base_offset();
                 }
 
                 // difference between filter batch and and current batch
                 // since base are different we need update delta offset for each records
-                let relative_base_offset =
-                    memory_filter_batch.base_offset - file_batch.base_offset();
+                let relative_base_offset = aggregate_batch.base_offset - file_batch.base_offset();
 
                 for record in &mut records {
                     record.add_base_offset(relative_base_offset);
@@ -162,7 +175,7 @@ impl SmartStreamFilter {
                         total_bytes = total_bytes + record_bytes,
                         max_bytes, "total filter bytes reached"
                     );
-                    return Ok((memory_filter_batch, maybe_error));
+                    return Ok((aggregate_batch, maybe_error));
                 }
 
                 total_bytes += record_bytes;
@@ -171,21 +184,21 @@ impl SmartStreamFilter {
                     filter_records = records.len(),
                     total_bytes, "finished filtering"
                 );
-                memory_filter_batch.mut_records().append(&mut records);
+                aggregate_batch.mut_records().append(&mut records);
             }
 
             // only increment filter offset delta if filter_batch has been initialized
-            if memory_filter_batch.base_offset != -1 {
+            if aggregate_batch.base_offset != -1 {
                 debug!(
                     offset_delta = file_batch.offset_delta(),
                     "adding to offset delta"
                 );
-                memory_filter_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
+                aggregate_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
             }
 
             // If we had a filtering error, return current batch and error
             if maybe_error.is_some() {
-                return Ok((memory_filter_batch, maybe_error));
+                return Ok((aggregate_batch, maybe_error));
             }
         }
     }

@@ -1,4 +1,7 @@
-pub use encoding::{SmartStreamRuntimeError, SmartStreamType, SmartStreamInput, SmartStreamOutput};
+pub use encoding::{
+    SmartStreamRuntimeError, SmartStreamInternalError, SmartStreamType, SmartStreamInput,
+    SmartStreamAggregateInput, SmartStreamOutput,
+};
 
 mod encoding {
     use std::fmt;
@@ -6,13 +9,22 @@ mod encoding {
     use crate::record::{Record, RecordData};
     use fluvio_protocol::{Encoder, Decoder};
 
-    /// A type used to pass data into a SmartStream WASM module
+    /// Common data that gets passed as input to every SmartStream WASM module
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
     pub struct SmartStreamInput {
         /// The base offset of this batch of records
         pub base_offset: Offset,
         /// The records for the SmartStream to process
         pub record_data: Vec<u8>,
+    }
+
+    /// A type to pass input to an Aggregate SmartStream WASM module
+    #[derive(Debug, Default, Clone, Encoder, Decoder)]
+    pub struct SmartStreamAggregateInput {
+        /// The base input required by all SmartStreams
+        pub base: SmartStreamInput,
+        /// The current value of the Aggregate's accumulator
+        pub accumulator: Vec<u8>,
     }
 
     /// A type used to return processed records and/or an error from a SmartStream
@@ -22,6 +34,36 @@ mod encoding {
         pub successes: Vec<Record>,
         /// Any runtime error if one was encountered
         pub error: Option<SmartStreamRuntimeError>,
+    }
+
+    /// Indicates an internal error from within a SmartStream.
+    //
+    // The presence of one of these errors most likely indicates a logic bug.
+    // This error type is `#[repr(i32)]` because these errors are returned
+    // as the raw return type of a Smartstream WASM function, i.e. the return
+    // type in `extern "C" fn filter(ptr, len) -> i32`. Positive return values
+    // indicate the numbers of records, and negative values indicate various
+    // types of errors.
+    //
+    // THEREFORE, THE DISCRIMINANTS FOR ALL VARIANTS ON THIS TYPE MUST BE NEGATIVE
+    #[repr(i32)]
+    #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
+    #[fluvio(encode_discriminant)]
+    pub enum SmartStreamInternalError {
+        #[error("encountered unknown error during Smartstream processing")]
+        UnknownError = -1,
+        #[error("failed to decode Smartstream base input")]
+        DecodingBaseInput = -11,
+        #[error("failed to decode Smartstream record input")]
+        DecodingRecords = -22,
+        #[error("failed to encode Smartstream output")]
+        EncodingOutput = -33,
+    }
+
+    impl Default for SmartStreamInternalError {
+        fn default() -> Self {
+            Self::UnknownError
+        }
     }
 
     /// A type used to capture and serialize errors from within a SmartStream
@@ -92,6 +134,7 @@ mod encoding {
     pub enum SmartStreamType {
         Filter,
         Map,
+        Aggregate,
     }
 
     impl Default for SmartStreamType {

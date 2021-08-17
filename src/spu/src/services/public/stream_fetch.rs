@@ -3,7 +3,7 @@ use std::time::{Instant};
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use tracing::{error, debug, trace, instrument};
+use tracing::{info, error, debug, trace, instrument};
 use tokio::select;
 
 use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
@@ -28,6 +28,9 @@ use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use publishers::INIT_OFFSET;
 use crate::smart_stream::{SmartStreamEngine, SmartStream};
+use crate::smart_stream::file_batch::FileBatchIterator;
+use dataplane::batch::Batch;
+use dataplane::smartstream::SmartStreamRuntimeError;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -67,7 +70,6 @@ impl StreamFetchHandler {
             let offset_listener = offset_publisher.change_listner();
 
             debug!(
-
                 sink = sink.id(),
                 %replica,
                 current_offset,
@@ -78,7 +80,7 @@ impl StreamFetchHandler {
             let sm_engine = SmartStreamEngine::default();
             debug!("Has WASM payload: {}", msg.wasm_payload.is_some());
 
-            let smartstream = if let Some(payload) = &msg.wasm_payload {
+            let smartstream = if let Some(payload) = msg.wasm_payload {
                 let SmartStreamWasm::Raw(wasm) = &payload.wasm;
                 let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
                     SocketError::Io(IoError::new(
@@ -107,6 +109,18 @@ impl StreamFetchHandler {
                             ))
                         })?;
                         SmartStream::Map(map)
+                    }
+                    SmartStreamKind::Aggregate { accumulator } => {
+                        let aggregator =
+                            module
+                                .create_aggregate(&sm_engine, accumulator)
+                                .map_err(|err| {
+                                    SocketError::Io(IoError::new(
+                                        ErrorKind::Other,
+                                        format!("Failed to instantiate SmartStreamMap {}", err),
+                                    ))
+                                })?;
+                        SmartStream::Aggregate(aggregator)
                     }
                 };
 
@@ -318,7 +332,10 @@ impl StreamFetchHandler {
             ..Default::default()
         };
 
-        let offset = self
+        // Read records from the leader starting from `offset`
+        // Returns with the HW/LEO of the latest records available in the leader
+        // This describes the range of records that can be read in this request
+        let read_end_offset = self
             .leader_state
             .read_records(
                 starting_offset,
@@ -329,15 +346,15 @@ impl StreamFetchHandler {
             .await;
 
         debug!(
-            hw = offset.hw,
-            leo = offset.leo,
+            hw = read_end_offset.hw,
+            leo = read_end_offset.leo,
             slice_start = file_partition_response.records.position(),
             slice_end = file_partition_response.records.len(),
             read_records_ms = %now.elapsed().as_millis(),
             "Starting send_back_records",
         );
 
-        let mut next_offset = offset.isolation(&self.isolation);
+        let next_offset = read_end_offset.isolation(&self.isolation);
 
         // We were unable to read any records from this starting offset,
         // therefore the next offset we should try to read is the same starting offset
@@ -351,10 +368,8 @@ impl StreamFetchHandler {
         match smartstream {
             Some(SmartStream::Filter(filter)) => {
                 debug!("Handling SmartStreamFilter logic");
-                type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
-                use crate::smart_stream::file_batch::FileBatchIterator;
 
-                let (filter_batch, smartstream_error) = {
+                let (batch, smartstream_error) = {
                     let records = &file_partition_response.records;
                     let mut file_batch_iterator =
                         FileBatchIterator::from_raw_slice(records.raw_slice());
@@ -367,69 +382,18 @@ impl StreamFetchHandler {
                         })?
                 };
 
-                let error_code = match smartstream_error {
-                    Some(error) => ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)),
-                    None => file_partition_response.error_code,
-                };
-                debug!("Filter error code output: {:#?}", &error_code);
-
-                let has_error = !matches!(error_code, ErrorCode::None);
-                let has_records = !filter_batch.records().is_empty();
-
-                if !has_records && !has_error {
-                    debug!(next_offset, "filter, no records send back, skipping");
-                    return Ok((next_offset, false));
-                }
-
-                if has_records {
-                    trace!("filter batch: {:#?}", filter_batch);
-                    next_offset = filter_batch.get_last_offset() + 1;
-                }
-
-                debug!(
+                self.send_processed_response(
+                    file_partition_response,
                     next_offset,
-                    records = filter_batch.records().len(),
-                    "sending back to consumer"
-                );
-                let records = RecordSet::default().add(filter_batch);
-                let filter_partition_response = DefaultPartitionResponse {
-                    partition_index: self.replica.partition,
-                    error_code,
-                    high_watermark: file_partition_response.high_watermark,
-                    log_start_offset: file_partition_response.log_start_offset,
-                    records,
-                    next_filter_offset: next_offset,
-                    // we mark last offset in the response that we should sync up
-                    ..Default::default()
-                };
-
-                let filter_response = StreamFetchResponse {
-                    topic: self.replica.topic.clone(),
-                    stream_id: self.stream_id,
-                    partition: filter_partition_response,
-                };
-
-                let filter_response_msg =
-                    RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
-                        &self.header,
-                        filter_response,
-                    );
-
-                trace!("sending back filter respone: {:#?}", filter_response_msg);
-
-                let mut inner_sink = self.sink.lock().await;
-                inner_sink
-                    .send_response(&filter_response_msg, self.header.api_version())
-                    .await?;
-
-                Ok((next_offset, true))
+                    batch,
+                    smartstream_error,
+                )
+                .await
             }
             Some(SmartStream::Map(map)) => {
                 debug!("Handling SmartStreamMap logic");
-                type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
-                use crate::smart_stream::file_batch::FileBatchIterator;
 
-                let (map_batch, smartstream_error) = {
+                let (batch, smartstream_error) = {
                     let records = &file_partition_response.records;
                     let mut file_batch_iterator =
                         FileBatchIterator::from_raw_slice(records.raw_slice());
@@ -439,61 +403,34 @@ impl StreamFetchHandler {
                         .map_err(|err| IoError::new(ErrorKind::Other, format!("map err {}", err)))?
                 };
 
-                let error_code = match smartstream_error {
-                    Some(error) => ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)),
-                    None => file_partition_response.error_code,
-                };
-                debug!("Map error code output: {:#?}", &error_code);
-
-                let has_error = !matches!(error_code, ErrorCode::None);
-                let has_records = !map_batch.records().is_empty();
-
-                if !has_records && !has_error {
-                    debug!(next_offset, "Map, no records send back, skipping");
-                    return Ok((next_offset, false));
-                }
-
-                if has_records {
-                    trace!("map batch: {:#?}", map_batch);
-                    next_offset = map_batch.get_last_offset() + 1;
-                }
-
-                debug!(
+                self.send_processed_response(
+                    file_partition_response,
                     next_offset,
-                    records = map_batch.records().len(),
-                    "sending back to consumer"
-                );
-                let records = RecordSet::default().add(map_batch);
-                let filter_partition_response = DefaultPartitionResponse {
-                    partition_index: self.replica.partition,
-                    error_code,
-                    high_watermark: file_partition_response.high_watermark,
-                    log_start_offset: file_partition_response.log_start_offset,
-                    records,
-                    next_filter_offset: next_offset,
-                    // we mark last offset in the response that we should sync up
-                    ..Default::default()
-                };
+                    batch,
+                    smartstream_error,
+                )
+                .await
+            }
+            Some(SmartStream::Aggregate(aggregator)) => {
+                info!("Creating Smart Aggregator");
 
-                let filter_response = StreamFetchResponse {
-                    topic: self.replica.topic.clone(),
-                    stream_id: self.stream_id,
-                    partition: filter_partition_response,
-                };
+                let records = &file_partition_response.records;
+                let slice = records.raw_slice();
+                let mut file_batch_iterator = FileBatchIterator::from_raw_slice(slice);
 
-                let filter_response_msg =
-                    RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
-                        &self.header,
-                        filter_response,
-                    );
+                let (batch, smartstream_error) = aggregator
+                    .aggregate(&mut file_batch_iterator, self.max_bytes as usize)
+                    .map_err(|err| {
+                        IoError::new(ErrorKind::Other, format!("aggregate err: {}", err))
+                    })?;
 
-                trace!("sending back Map response: {:#?}", filter_response_msg);
-                let mut inner_sink = self.sink.lock().await;
-                inner_sink
-                    .send_response(&filter_response_msg, self.header.api_version())
-                    .await?;
-
-                Ok((next_offset, true))
+                self.send_processed_response(
+                    file_partition_response,
+                    next_offset,
+                    batch,
+                    smartstream_error,
+                )
+                .await
             }
             None => {
                 // If no smartstream is provided, respond using raw file records
@@ -521,9 +458,76 @@ impl StreamFetchHandler {
 
                 debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
 
-                Ok((offset.isolation(&self.isolation), true))
+                Ok((read_end_offset.isolation(&self.isolation), true))
             }
         }
+    }
+
+    #[instrument(skip(self, file_partition_response, batch, smartstream_error))]
+    async fn send_processed_response(
+        &self,
+        file_partition_response: FilePartitionResponse,
+        mut next_offset: Offset,
+        batch: Batch,
+        smartstream_error: Option<SmartStreamRuntimeError>,
+    ) -> Result<(Offset, bool), SocketError> {
+        type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+
+        let error_code = match smartstream_error {
+            Some(error) => ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)),
+            None => file_partition_response.error_code,
+        };
+        trace!(?error_code, "Smartstream error code output:");
+
+        let has_error = !matches!(error_code, ErrorCode::None);
+        let has_records = !batch.records().is_empty();
+
+        if !has_records && !has_error {
+            debug!(next_offset, "No records to send back, skipping");
+            return Ok((next_offset, false));
+        }
+
+        if has_records {
+            trace!(?batch, "Smartstream batch:");
+            next_offset = batch.get_last_offset() + 1;
+        }
+
+        debug!(
+            next_offset,
+            records = batch.records().len(),
+            "sending back to consumer"
+        );
+        let records = RecordSet::default().add(batch);
+        let partition_response = DefaultPartitionResponse {
+            partition_index: self.replica.partition,
+            error_code,
+            high_watermark: file_partition_response.high_watermark,
+            log_start_offset: file_partition_response.log_start_offset,
+            records,
+            next_filter_offset: next_offset,
+            // we mark last offset in the response that we should sync up
+            ..Default::default()
+        };
+
+        let stream_response = StreamFetchResponse {
+            topic: self.replica.topic.clone(),
+            stream_id: self.stream_id,
+            partition: partition_response,
+        };
+
+        let response_msg = RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
+            &self.header,
+            stream_response,
+        );
+
+        trace!("Sending SmartStream response: {:#?}", response_msg);
+
+        let mut inner_sink = self.sink.lock().await;
+        inner_sink
+            .send_response(&response_msg, self.header.api_version())
+            .await?;
+
+        Ok((next_offset, true))
     }
 }
 
@@ -1379,5 +1383,115 @@ mod test {
 
         server_end_event.notify();
         debug!("terminated controller");
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_aggregate_fetch() {
+        let test_path = temp_dir().join("aggregate_stream_fetch");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12007";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::new(FluvioSocket::connect(addr).await.expect("connect"));
+
+        let topic = "testaggregate";
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        // Providing an accumulator causes SPU to run aggregator
+        let wasm = load_wasm_module("fluvio_wasm_aggregate");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Aggregate {
+                accumulator: Vec::from("789".repeat(100)),
+            },
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        // Aggregate 10 records
+        // These records look like:
+        //
+        // 000000000000000000... x100
+        // 111111111111111111... x100
+        // 222222222222222222... x100
+        let mut records = BatchProducer::builder()
+            .records(10u16)
+            .record_generator(Arc::new(|i, _| Record::new(i.to_string().repeat(100))))
+            .build()
+            .expect("batch")
+            .records();
+        debug!("records: {:#?}", records);
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
+
+        debug!("first aggregate fetch");
+        let response = stream.next().await.expect("first").expect("response");
+        let stream_id = response.stream_id;
+
+        {
+            debug!("received first message");
+            assert_eq!(response.topic, topic);
+
+            let partition = &response.partition;
+            assert_eq!(partition.error_code, ErrorCode::None);
+            assert_eq!(partition.high_watermark, 10);
+            assert_eq!(partition.next_offset_for_fetch(), Some(10)); // shoule be same as HW
+
+            assert_eq!(partition.records.batches.len(), 1);
+            let batch = &partition.records.batches[0];
+            assert_eq!(batch.base_offset, 0);
+            assert_eq!(batch.records().len(), 10);
+
+            let mut accumulator = "789".repeat(100);
+            for i in 0..10 {
+                accumulator.push_str(&i.to_string().repeat(100));
+                assert_eq!(batch.records()[i].value().as_ref(), accumulator.as_bytes());
+                assert_eq!(batch.records()[i].get_offset_delta(), i as i64);
+            }
+        }
+
+        // consumer can send back to same offset to read back again
+        debug!("send back offset ack to SPU");
+        client_socket
+            .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
+                offsets: vec![OffsetUpdate {
+                    offset: 20,
+                    session_id: stream_id,
+                }],
+            }))
+            .await
+            .expect("send offset");
+
+        server_end_event.notify();
     }
 }

@@ -308,7 +308,7 @@ impl Encoder for RecordSet {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug)]
+#[derive(Decoder, Encoder, Default, Debug, Clone)]
 pub struct RecordHeader {
     attributes: i8,
     #[varint]
@@ -327,7 +327,7 @@ impl RecordHeader {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct Record<B = RecordData> {
     pub preamble: RecordHeader,
     pub key: Option<B>,

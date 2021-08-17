@@ -13,6 +13,12 @@ pub fn generate_map_smartstream(func: &SmartStreamFn) -> TokenStream {
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
             pub unsafe fn map(ptr: *mut u8, len: usize) -> i32 {
+                use fluvio_smartstream::dataplane::smartstream::{
+                    SmartStreamInput, SmartStreamInternalError,
+                    SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,
+                };
+                use fluvio_smartstream::dataplane::core::{Encoder, Decoder};
+                use fluvio_smartstream::dataplane::record::{Record, RecordData};
 
                 // DECODING
                 extern "C" {
@@ -20,19 +26,19 @@ pub fn generate_map_smartstream(func: &SmartStreamFn) -> TokenStream {
                 }
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
-                let mut smartstream_input = fluvio_smartstream::dataplane::smartstream::SmartStreamInput::default();
-                if let Err(_err) = fluvio_smartstream::dataplane::core::Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), 0) {
-                    return fluvio_smartstream::ENCODING_ERROR;
+                let mut smartstream_input = SmartStreamInput::default();
+                if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), 0) {
+                    return SmartStreamInternalError::DecodingBaseInput as i32;
                 }
 
                 let records_input = smartstream_input.record_data;
-                let mut records: Vec<fluvio_smartstream::dataplane::record::Record> = vec![];
-                if let Err(_err) = fluvio_smartstream::dataplane::core::Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 0) {
-                    return fluvio_smartstream::ENCODING_ERROR;
+                let mut records: Vec<Record> = vec![];
+                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 0) {
+                    return SmartStreamInternalError::DecodingRecords as i32;
                 };
 
                 // PROCESSING
-                let mut output = fluvio_smartstream::dataplane::smartstream::SmartStreamOutput {
+                let mut output = SmartStreamOutput {
                     successes: Vec::with_capacity(records.len()),
                     error: None,
                 };
@@ -46,10 +52,10 @@ pub fn generate_map_smartstream(func: &SmartStreamFn) -> TokenStream {
                             output.successes.push(record);
                         }
                         Err(err) => {
-                            let error = fluvio_smartstream::dataplane::smartstream::SmartStreamRuntimeError::new(
+                            let error = SmartStreamRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
-                                fluvio_smartstream::dataplane::smartstream::SmartStreamType::Map,
+                                SmartStreamType::Map,
                                 err,
                             );
                             output.error = Some(error);
@@ -60,16 +66,14 @@ pub fn generate_map_smartstream(func: &SmartStreamFn) -> TokenStream {
 
                 // ENCODING
                 let mut out = vec![];
-                if let Err(_) = fluvio_smartstream::dataplane::core::Encoder::encode(&mut output, &mut out, 0) {
-                    return fluvio_smartstream::ENCODING_ERROR;
+                if let Err(_) = Encoder::encode(&mut output, &mut out, 0) {
+                    return SmartStreamInternalError::EncodingOutput as i32;
                 }
 
                 let out_len = out.len();
                 let ptr = out.as_mut_ptr();
                 std::mem::forget(out);
-
                 copy_records(ptr as i32, out_len as i32);
-
                 output.successes.len() as i32
             }
         }

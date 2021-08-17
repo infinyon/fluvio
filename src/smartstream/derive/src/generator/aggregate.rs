@@ -2,9 +2,9 @@ use quote::quote;
 use proc_macro2::TokenStream;
 use crate::SmartStreamFn;
 
-pub fn generate_filter_smartstream(func: &SmartStreamFn) -> TokenStream {
+pub fn generate_aggregate_smartstream(func: &SmartStreamFn) -> TokenStream {
+    let user_code = &func.func;
     let user_fn = &func.name;
-    let user_code = func.func;
 
     quote! {
         #user_code
@@ -12,26 +12,26 @@ pub fn generate_filter_smartstream(func: &SmartStreamFn) -> TokenStream {
         mod __system {
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
-            pub unsafe fn filter(ptr: *mut u8, len: usize) -> i32 {
+            pub unsafe fn aggregate(ptr: &mut u8, len: usize) -> i32 {
                 use fluvio_smartstream::dataplane::smartstream::{
-                    SmartStreamInput, SmartStreamInternalError,
+                    SmartStreamAggregateInput, SmartStreamInternalError,
                     SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,
                 };
                 use fluvio_smartstream::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartstream::dataplane::record::{Record, RecordData};
 
-                // DECODING
                 extern "C" {
                     fn copy_records(putr: i32, len: i32);
                 }
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
-                let mut smartstream_input = SmartStreamInput::default();
+                let mut smartstream_input = SmartStreamAggregateInput::default();
                 if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), 0) {
                     return SmartStreamInternalError::DecodingBaseInput as i32;
                 }
 
-                let records_input = smartstream_input.record_data;
+                let mut accumulator = smartstream_input.accumulator;
+                let records_input = smartstream_input.base.record_data;
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 0) {
                     return SmartStreamInternalError::DecodingRecords as i32;
@@ -44,18 +44,20 @@ pub fn generate_filter_smartstream(func: &SmartStreamFn) -> TokenStream {
                 };
 
                 for mut record in records.into_iter() {
-                    let result = super:: #user_fn(&record);
+                    let acc_data = RecordData::from(accumulator);
+                    let result = super:: #user_fn(acc_data, &record);
+
                     match result {
                         Ok(value) => {
-                            if value {
-                                output.successes.push(record);
-                            }
+                            accumulator = Vec::from(value.as_ref());
+                            record.value = RecordData::from(accumulator.clone());
+                            output.successes.push(record);
                         }
                         Err(err) => {
                             let error = SmartStreamRuntimeError::new(
                                 &record,
-                                smartstream_input.base_offset,
-                                SmartStreamType::Filter,
+                                smartstream_input.base.base_offset,
+                                SmartStreamType::Aggregate,
                                 err,
                             );
                             output.error = Some(error);

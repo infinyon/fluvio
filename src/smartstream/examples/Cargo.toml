@@ -1,5 +1,7 @@
 [workspace]
 members = [
+    "aggregate",
+    "aggregate-json",
     "filter",
     "filter_odd",
     "filter_json",

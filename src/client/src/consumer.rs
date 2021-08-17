@@ -631,6 +631,21 @@ impl ConsumerConfigBuilder {
         });
         self
     }
+
+    /// Set a WASM aggregator function and initial accumulator value
+    pub fn wasm_aggregate<T: Into<Vec<u8>>, U: Into<Vec<u8>>>(
+        &mut self,
+        aggregate: T,
+        accumulator: U,
+    ) -> &mut Self {
+        self.wasm_module(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(aggregate.into()),
+            kind: SmartStreamKind::Aggregate {
+                accumulator: accumulator.into(),
+            },
+        });
+        self
+    }
 }
 
 /// The individual record for a given stream.
