@@ -137,10 +137,12 @@ impl MultiplexerSocket {
         );
         self.sink.send_request(&req_msg).await?;
 
+        trace!("senders trying lock");
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
         drop(senders);
 
+        trace!("inserts shared sender");
         let (msg, msg_event) = bytes_lock;
 
         select! {
@@ -324,7 +326,7 @@ impl MultiPlexingResponseDispatcher {
                             let mut correlation_id: i32 = 0;
                             match correlation_id.decode(&mut msg, 0) {
                                 Ok(_) => {
-                                    trace!(correlation_id,"received frame");
+                                    trace!(correlation_id,len = msg.len(), "received frame");
 
                                     if let Err(err) = self.send(correlation_id, msg).await {
                                         error!("error sending to socket, {}", err)
@@ -376,6 +378,7 @@ impl MultiPlexingResponseDispatcher {
     /// send message to correct receiver
     #[instrument(skip(self, msg),fields( msg = msg.len()))]
     pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
+        trace!("looking up senders lock");
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {
