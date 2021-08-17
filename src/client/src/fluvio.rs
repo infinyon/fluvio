@@ -81,6 +81,7 @@ impl Fluvio {
         debug!(platform = %versions.platform_version(),"checking platform version");
         check_platform_compatible(versions.platform_version())?;
 
+        debug!("creating multiplexor socket");
         let socket = MultiplexerSocket::shared(socket);
 
         let metadata = MetadataStores::start(socket.clone()).await?;

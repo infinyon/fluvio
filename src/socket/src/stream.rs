@@ -64,7 +64,7 @@ impl FluvioStream {
     where
         R: Request,
     {
-        trace!("waiting for response");
+        trace!(api = R::API_KEY,"waiting for response");
         let next = self.0.next().await;
         if let Some(result) = next {
             match result {
