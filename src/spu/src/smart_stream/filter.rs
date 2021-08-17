@@ -1,15 +1,18 @@
 use std::sync::Arc;
 use std::time::Instant;
 use std::io::Cursor;
+use std::convert::TryFrom;
 
-use anyhow::{Result, Error, anyhow};
+use anyhow::{Result, Error};
 
 use tracing::debug;
 use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError};
+use dataplane::smartstream::{
+    SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
+};
 use fluvio_protocol::{Encoder, Decoder};
 use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
 use crate::smart_stream::file_batch::FileBatchIterator;
@@ -107,14 +110,16 @@ impl SmartStreamFilter {
                 &input_data,
             )?;
 
-            let filter_record_count = self
+            let filter_output = self
                 .filter_fn
                 .call(&mut self.store, (array_ptr as i32, input_data.len() as i32))?;
 
-            debug!(filter_record_count,filter_execution_time = %now.elapsed().as_millis());
+            debug!(filter_output,filter_execution_time = %now.elapsed().as_millis());
 
-            if filter_record_count < 0 {
-                return Err(anyhow!("filter failed: {}", filter_record_count));
+            if filter_output < 0 {
+                let internal_error = SmartStreamInternalError::try_from(filter_output)
+                    .unwrap_or(SmartStreamInternalError::UnknownError);
+                return Err(internal_error.into());
             }
 
             let bytes = self

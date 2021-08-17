@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use std::time::Instant;
 use std::io::Cursor;
+use std::convert::TryFrom;
 
-use anyhow::{Result, Error, anyhow};
+use anyhow::{Result, Error};
 
 use tracing::debug;
 use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
@@ -14,6 +15,7 @@ use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, Sma
 use crate::smart_stream::file_batch::FileBatchIterator;
 use dataplane::smartstream::{
     SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput,
+    SmartStreamInternalError,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
@@ -117,11 +119,13 @@ impl SmartStreamAggregate {
             )?;
             let aggregate_args = (aggregate_ptr as i32, input_data.len() as i32);
 
-            let aggregate_record_count = self.aggregate_fn.call(&mut self.store, aggregate_args)?;
-            debug!(aggregate_record_count, filter_execution_time = %now.elapsed().as_millis());
+            let aggregate_output = self.aggregate_fn.call(&mut self.store, aggregate_args)?;
+            debug!(aggregate_output, filter_execution_time = %now.elapsed().as_millis());
 
-            if aggregate_record_count == -1 {
-                return Err(anyhow!("aggregate failed"));
+            if aggregate_output < 0 {
+                let internal_error = SmartStreamInternalError::try_from(aggregate_output)
+                    .unwrap_or(SmartStreamInternalError::UnknownError);
+                return Err(internal_error.into());
             }
 
             let output_bytes = self
