@@ -27,6 +27,7 @@ impl MetadataStores {
 
     #[instrument()]
     pub async fn start(socket: SharedMultiplexerSocket) -> Result<Self, SocketError> {
+        debug!("starting metadata store");
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
@@ -65,6 +66,7 @@ impl MetadataStores {
         use fluvio_sc_schema::objects::WatchRequest;
 
         let req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
+        debug!("create spu metadata stream");
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<SpuSpec>::start(

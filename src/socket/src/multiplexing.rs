@@ -312,7 +312,7 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    #[instrument(name = "loop",skip(self, stream))]
+    #[instrument(name = "loop", skip(self, stream))]
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 

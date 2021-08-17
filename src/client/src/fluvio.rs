@@ -68,6 +68,7 @@ impl Fluvio {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         Self::connect_with_connector(connector, config).await
     }
+
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
@@ -77,8 +78,11 @@ impl Fluvio {
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
+        debug!(platform = %versions.platform_version(),"checking platform version");
         check_platform_compatible(versions.platform_version())?;
+
         let socket = MultiplexerSocket::shared(socket);
+
         let metadata = MetadataStores::start(socket.clone()).await?;
 
         let spu_pool = OnceCell::new();

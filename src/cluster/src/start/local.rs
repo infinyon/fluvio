@@ -689,7 +689,9 @@ impl LocalInstaller {
 
         sleep(Duration::from_secs(delay)).await;
 
+        debug!("try connecting to fluvio sc");
         let client = Fluvio::connect().await?;
+        debug!("try connectiong to admin");
         let admin = client.admin().await;
 
         // wait for list of spu
