@@ -6,7 +6,6 @@
 
 use std::{io::Error as IoError, path::PathBuf};
 use std::io::ErrorKind;
-use std::convert::TryFrom;
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -18,11 +17,13 @@ use fluvio::{Fluvio, PartitionConsumer, Offset, ConsumerConfig, FluvioError};
 use fluvio_sc_schema::ApiError;
 use fluvio::consumer::Record;
 
-use crate::{Result, CliError};
+use crate::Result;
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
 };
+
+const DEFAULT_TAIL: u32 = 10;
 
 /// Read messages from a topic/partition
 ///
@@ -39,10 +40,6 @@ pub struct ConsumeOpt {
     #[structopt(short = "p", long, default_value = "0", value_name = "integer")]
     pub partition: i32,
 
-    /// Start reading from beginning
-    #[structopt(short = "B", long = "from-beginning")]
-    pub from_beginning: bool,
-
     /// disable continuous processing of messages
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
@@ -51,9 +48,17 @@ pub struct ConsumeOpt {
     #[structopt(short, long)]
     pub key_value: bool,
 
-    /// Offsets can be positive or negative. (Syntax for negative offset: --offset="-1")
-    #[structopt(short, long, value_name = "integer")]
-    pub offset: Option<i64>,
+    /// Consume records starting X from the beginning of the log (default: 0)
+    #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
+    pub from_beginning: Option<Option<u32>>,
+
+    /// The offset of the first record to begin consuming from
+    #[structopt(short, long, value_name = "integer", conflicts_with_all = &["from_beginning", "tail"])]
+    pub offset: Option<u32>,
+
+    /// Consume records starting X from the end of the log (default: 10)
+    #[structopt(long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
+    pub tail: Option<Option<u32>>,
 
     /// Maximum number of bytes to be retrieved
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
@@ -254,8 +259,18 @@ impl ConsumeOpt {
             return;
         }
 
-        // If -B or --beginning
-        if self.from_beginning {
+        // If --from-beginning=X
+        if let Some(Some(offset)) = self.from_beginning {
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records starting {} from the beginning of topic '{}'",
+                    offset, &self.topic
+                )
+                .bold()
+            );
+        // If --from-beginning
+        } else if let Some(None) = self.from_beginning {
             eprintln!(
                 "{}",
                 format!(
@@ -264,42 +279,38 @@ impl ConsumeOpt {
                 )
                 .bold()
             );
-            return;
-        }
-
-        // If -o or --offset was given
-        if let Some(offset) = &self.offset {
-            if *offset > 0 {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records from offset {} in topic '{}'",
-                        offset, &self.topic
-                    )
-                    .bold()
-                );
-            } else {
-                eprintln!(
-                    "{}",
-                    format!(
-                        "Consuming records starting {} from the end of topic '{}'",
-                        -offset, &self.topic
-                    )
-                    .bold()
-                );
-            }
-            return;
-        }
-
+        // If --offset=X
+        } else if let Some(offset) = self.offset {
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records from offset {} in topic '{}'",
+                    offset, &self.topic
+                )
+                .bold()
+            );
+        // If --tail or --tail=X
+        } else if let Some(maybe_tail) = self.tail {
+            let tail = maybe_tail.unwrap_or(DEFAULT_TAIL);
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records starting {} from the end of topic '{}'",
+                    tail, &self.topic
+                )
+                .bold()
+            );
         // If no offset config is given, read from the end
-        eprintln!(
-            "{}",
-            format!(
-                "Consuming records from the end of topic '{}'. This will wait for new records",
-                &self.topic
-            )
-            .bold()
-        )
+        } else {
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records from the end of topic '{}'. This will wait for new records",
+                    &self.topic
+                )
+                .bold()
+            );
+        }
     }
 
     /// Initialize Ctrl-C event handler
@@ -321,24 +332,18 @@ impl ConsumeOpt {
 
     /// Calculate the Offset to use with the consumer based on the provided offset number
     fn calculate_offset(&self) -> Result<Offset> {
-        let maybe_initial_offset = if self.from_beginning {
-            let big_offset = self.offset.unwrap_or(0);
-            // Try to convert to u32
-            u32::try_from(big_offset).ok().map(Offset::from_beginning)
-        } else if let Some(big_offset) = self.offset {
-            // if it is negative, we start from end
-            if big_offset < 0 {
-                // Try to convert to u32
-                u32::try_from(-big_offset).ok().map(Offset::from_end)
-            } else {
-                Offset::absolute(big_offset).ok()
-            }
+        let offset = if let Some(maybe_offset) = self.from_beginning {
+            let offset = maybe_offset.unwrap_or(0);
+            Offset::from_beginning(offset)
+        } else if let Some(offset) = self.offset {
+            Offset::absolute(offset as i64).unwrap()
+        } else if let Some(maybe_tail) = self.tail {
+            let tail = maybe_tail.unwrap_or(DEFAULT_TAIL);
+            Offset::from_end(tail)
         } else {
-            Some(Offset::end())
+            Offset::end()
         };
 
-        let offset = maybe_initial_offset
-            .ok_or_else(|| CliError::InvalidArg("Illegal offset. Relative offsets must be u32 and absolute offsets must be positive".to_string()))?;
         Ok(offset)
     }
 }
