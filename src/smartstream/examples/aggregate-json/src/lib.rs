@@ -20,13 +20,13 @@ impl std::ops::Add for GithubStars {
 }
 
 #[smartstream(aggregate)]
-pub fn aggregate(accumulator: RecordData, next: &Record) -> Result<RecordData> {
+pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     // Parse accumulator
     let accumulated_stars = serde_json::from_slice::<GithubStars>(accumulator.as_ref())
         .unwrap_or_else(|_| GithubStars::default());
 
     // Parse next record
-    let new_stars = serde_json::from_slice::<GithubStars>(next.value.as_ref())?;
+    let new_stars = serde_json::from_slice::<GithubStars>(current.value.as_ref())?;
 
     // Add stars and serialize
     let summed_stars = accumulated_stars + new_stars;

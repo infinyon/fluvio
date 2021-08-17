@@ -86,6 +86,7 @@ pub struct ConsumeOpt {
     #[structopt(long, group("smartstream"))]
     pub aggregate: Option<PathBuf>,
 
+    /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
     #[structopt(long)]
     pub accumulator: Option<PathBuf>,
 }
