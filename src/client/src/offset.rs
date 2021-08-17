@@ -16,6 +16,22 @@ pub(crate) enum OffsetInner {
     FromEnd(i64),
 }
 
+impl OffsetInner {
+    fn resolve(&self, offsets: &FetchOffsetPartitionResponse) -> i64 {
+        match self {
+            Self::Absolute(offset) => *offset,
+            Self::FromBeginning(offset) => {
+                let resolved = offsets.start_offset + offset;
+                resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
+            }
+            Self::FromEnd(offset) => {
+                let resolved = offsets.last_stable_offset - offset;
+                resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
+            }
+        }
+    }
+}
+
 /// Describes the location of an event stored in a Fluvio partition
 ///
 /// All Fluvio events are stored as a log inside a partition. A log
@@ -278,20 +294,17 @@ impl Offset {
         topic: S,
         partition: i32,
     ) -> Result<i64, FluvioError> {
-        let offset = match self.inner {
-            OffsetInner::Absolute(offset) => offset,
-            OffsetInner::FromBeginning(offset) => {
+        let offset = match &self.inner {
+            OffsetInner::Absolute(offset) => *offset,
+            inner => {
                 let replica = ReplicaKey::new(topic, partition);
                 let offsets = fetch_offsets(client, &replica).await?;
-                offsets.start_offset + offset
-            }
-            OffsetInner::FromEnd(offset) => {
-                let replica = ReplicaKey::new(topic, partition);
-                let offsets = fetch_offsets(client, &replica).await?;
-                offsets.last_stable_offset - offset
+                inner.resolve(&offsets)
             }
         };
 
+        // Offset should never be less than 0, even for absolute
+        let offset = offset.max(0);
         Ok(offset)
     }
 }
@@ -325,5 +338,108 @@ async fn fetch_offsets(
             format!("no replica offset for: {}", replica),
         )
         .into()),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_offset_beginning() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::FromBeginning(3);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 3);
+    }
+
+    #[test]
+    fn test_offset_beginning_start_nonzero() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 5,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::FromBeginning(3);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 8);
+    }
+
+    #[test]
+    fn test_offset_beginning_end_short() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::FromBeginning(15);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 10);
+    }
+
+    #[test]
+    fn test_offset_beginning_end_short_nonzero() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 5,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::FromBeginning(15);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 10);
+    }
+
+    #[test]
+    fn test_offset_end() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::FromEnd(3);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 7);
+    }
+
+    #[test]
+    fn test_offset_end_start_nonzero() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 6,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::FromEnd(6);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 6);
+    }
+
+    #[test]
+    fn test_offset_end_short() {
+        let offsets = FetchOffsetPartitionResponse {
+            error_code: Default::default(),
+            partition_index: 0,
+            start_offset: 0,
+            last_stable_offset: 10,
+        };
+
+        let offset_inner = OffsetInner::FromEnd(100);
+        let absolute = offset_inner.resolve(&offsets);
+        assert_eq!(absolute, 0);
     }
 }
