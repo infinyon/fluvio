@@ -283,15 +283,23 @@ impl Offset {
             OffsetInner::FromBeginning(offset) => {
                 let replica = ReplicaKey::new(topic, partition);
                 let offsets = fetch_offsets(client, &replica).await?;
-                offsets.start_offset + offset
+                let resolved = offsets.start_offset + offset;
+
+                // Resolved offset should be between 0 and the last offset
+                resolved.clamp(0, offsets.last_stable_offset)
             }
             OffsetInner::FromEnd(offset) => {
                 let replica = ReplicaKey::new(topic, partition);
                 let offsets = fetch_offsets(client, &replica).await?;
-                offsets.last_stable_offset - offset
+                let resolved = offsets.last_stable_offset - offset;
+
+                // Resolved offset should be between 0 and the last offset
+                resolved.clamp(0, offsets.last_stable_offset)
             }
         };
 
+        // Offset should never be less than 0, even for absolute
+        let offset = offset.max(0);
         Ok(offset)
     }
 }
