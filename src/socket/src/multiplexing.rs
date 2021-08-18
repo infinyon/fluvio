@@ -195,7 +195,7 @@ impl MultiplexerSocket {
     }
 
     /// create stream response
-    #[instrument(skip(self), fields(api = R::API_KEY))]
+    #[instrument(skip(self,req_msg), fields(api = R::API_KEY))]
     pub async fn create_stream<R>(
         &self,
         mut req_msg: RequestMessage<R>,
@@ -225,6 +225,8 @@ impl MultiplexerSocket {
         trace!(correlation_id, "created new channel");
 
         self.sink.send_request(&req_msg).await?;
+
+        trace!(correlation_id, "request send");
 
         // it is possible that msg have received by dispatcher before channel is inserted into senders
         // but it is easier to clean up
