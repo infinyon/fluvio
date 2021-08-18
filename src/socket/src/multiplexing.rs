@@ -130,17 +130,17 @@ impl MultiplexerSocket {
 
         req_msg.header.set_correlation_id(correlation_id);
 
+        trace!("senders trying lock");
+        let mut senders = self.senders.lock().await;
+        senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
+        drop(senders);
+
         debug!(
             "serial multiplexing: sending request: {} id: {}",
             R::API_KEY,
             correlation_id
         );
         self.sink.send_request(&req_msg).await?;
-
-        trace!("senders trying lock");
-        let mut senders = self.senders.lock().await;
-        senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
-        drop(senders);
 
         trace!("inserts shared sender");
         let (msg, msg_event) = bytes_lock;
