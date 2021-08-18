@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 pub use fluvio_dataplane_protocol as dataplane;
 pub use dataplane::record::{Record, RecordData};
 

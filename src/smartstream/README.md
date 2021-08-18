@@ -8,12 +8,12 @@ from a stream.
 
 ## Writing SmartStreams
 
-See the `examples` directory for full examples.
+> See the `examples` directory for full examples.
 
-### Filtering
+All SmartStreams require adding `crate-type = ['cdylib']` to the Cargo.toml.
+For a quick setup using `cargo-generate`, see [the SmartStream template].
 
-Create a new cargo project and add `fluvio-smartstream` as a dependency,
-along with the following `Cargo.toml` changes.
+[the SmartStream template]: https://github.com/infinyon/fluvio-smartstream-template
 
 ```toml
 [package]
@@ -26,23 +26,70 @@ edition = "2018"
 crate-type = ['cdylib']
 
 [dependencies]
-fluvio-smartstream = { path = "../../" }
+fluvio-smartstream = "0.2.0"
 ```
 
-Then, write your smartstream using `#[smartstream(filter)]` on your
+### Filtering
+
+For filtering, write your smartstream using `#[smartstream(filter)]` on your
 top-level function. Consider this the "main" function of your SmartStream.
 
 ```rust
-use fluvio_smartstream::{smartstream, SimpleRecord};
+use fluvio_smartstream::{smartstream, Record, Result};
 
 #[smartstream(filter)]
-pub fn my_filter(record: &SimpleRecord) -> bool {
-    let value = String::from_utf8_lossy(record.value.as_ref());
-    value.contains('z')
+pub fn filter(record: &Record) -> Result<bool> {
+    let string = std::str::from_utf8(record.value.as_ref())?;
+    Ok(string.contains('a'))
 }
 ```
 
-This filter will keep only records whose contents contain the letter `z`.
+This filter will keep only records whose contents contain the letter `a`.
+
+### Mapping
+
+Mapping functions use `#[smartstream(map)]`, and are also a top-level entrypoint.
+
+```rust
+use fluvio_smartstream::{smartstream, Record, RecordData, Result};
+
+#[smartstream(map)]
+pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
+    let key = record.key.clone();
+
+    let string = std::str::from_utf8(record.value.as_ref())?;
+    let int = string.parse::<i32>()?;
+    let value = (int * 2).to_string();
+
+    Ok((key, value.into()))
+}
+```
+
+This SmartStream will read each input Record as an integer (`i32`), then multiply it by 2.
+
+### Aggregate
+
+Aggregate functions are a way to combine the data from many input records.
+Each time the aggregate function is called, it receives an "accumulated" value
+as well as the value of the current record in the stream, and is expected to
+combine the accumulator with the value to produce a new accumulator. This new
+accumulator value will be passed to the next invocation of `aggregate` with
+the next record value. The resulting stream of values is the output accumulator
+from each step.
+
+```rust
+use fluvio_smartstream::{smartstream, Result, Record, RecordData};
+
+#[smartstream(aggregate)]
+pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
+    let mut acc = String::from_utf8(accumulator.as_ref().to_vec())?;
+    let next = std::str::from_utf8(current.value.as_ref())?;
+    acc.push_str(next);
+    Ok(acc.into())
+}
+```
+
+This SmartStream reads each record as a string and appends it to the accumulator string.
 
 ## License
 
