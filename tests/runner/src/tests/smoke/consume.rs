@@ -156,6 +156,10 @@ async fn validate_consume_message_api(
 
                         drop(lock);
 
+                        // for each
+                        if total_records % 100 == 0 {
+                            println!("processed records: {}",total_records);
+                        }
 
                         if total_records == producer_iteration {
                             println!("consume message validated!, records: {}",total_records);
