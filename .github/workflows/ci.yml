@@ -25,7 +25,8 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-
+  CI_BUILD: false
+  CI_K8: false
 
 jobs:
 
@@ -449,8 +450,8 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         uses: nick-invision/retry@v2
         with:
-          timeout_minutes: 7
-          max_attempts: 3
+          timeout_minutes: 5
+          max_attempts: 1
           command: |
             ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
