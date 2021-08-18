@@ -389,7 +389,6 @@ impl MultiPlexingResponseDispatcher {
     /// send message to correct receiver
     #[instrument(skip(self, msg),fields( msg = msg.len()))]
     pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
-        trace!("looking up senders lock");
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {
