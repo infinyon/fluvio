@@ -121,7 +121,7 @@ async fn validate_consume_message_api(
                 },
 
                 // max time for each read
-                _ = sleep(Duration::from_millis(5000)) => {
+                _ = sleep(Duration::from_secs(30)) => {
                     println!("Timeout in read");
                     panic!("no consumer read iter: current {}",producer_iteration);
                 },
