@@ -188,6 +188,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-wasm-aggregate-sum"
+version = "0.1.0"
+dependencies = [
+ "fluvio-smartstream",
+]
+
+[[package]]
 name = "fluvio-wasm-filter"
 version = "0.1.0"
 dependencies = [
