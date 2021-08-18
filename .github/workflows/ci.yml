@@ -208,7 +208,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
-    # if: ${{ false }}
+    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
