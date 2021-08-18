@@ -1,21 +1,7 @@
 #!/usr/bin/env bash
 
 set -exu
-
-# Proof of concept. Might need to implement in Rust
-
-# This longevity test will test a producer's ability to send data over a longer period of time
-
-# We know we're going to be running for X seconds/minutes
-
-# So we want to produce an upper limit of Y records per second
-
-# The idea is that we'll always use the same topic and we'll send basically the same type of payload
-# One record at a time until the upper limit is met
-# Then we basically sit idle, waiting for the next tick
-
-# Repeat until we've used up all of the time
-
+#set -eu
 
 readonly HOUR_IN_SECONDS=3600
 readonly MIN_IN_SECONDS=60
@@ -37,7 +23,7 @@ function setup() {
 
     # Create a topic
     $FLUVIO_BIN topic create $NEW_TOPIC_NAME || true
-    $FLUVIO_BIN topic create $EXISTING_TOPIC_NAME || true
+    #$FLUVIO_BIN topic create $EXISTING_TOPIC_NAME || true
 
     # TODO: Announce the test vars
 }
@@ -51,7 +37,9 @@ function longevity_loop() {
         # Produce a message.
         # Provide current second tick as ID
         test_produce $NEW_TOPIC_NAME $SECONDS;
-        test_produce $EXISTING_TOPIC_NAME $SECONDS;
+
+        # Uncomment when running outside of github
+        #test_produce $EXISTING_TOPIC_NAME $SECONDS;
 
         sleep 1
     done
