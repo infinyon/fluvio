@@ -350,11 +350,7 @@ jobs:
       - name: Set up cluster
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 10
-          max_attempts: 1
-          command: RUST_LOG=info make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+        run: RUST_LOG=info make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
         if: failure()
