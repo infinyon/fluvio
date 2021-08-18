@@ -5,6 +5,7 @@ use tracing::{debug, error, trace, instrument};
 use once_cell::sync::Lazy;
 use futures_util::future::{Either, err};
 use futures_util::stream::{StreamExt, once, iter};
+use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, SmartStreamPayload, SmartStreamWasm,
@@ -441,81 +442,84 @@ impl PartitionConsumer {
                 stream_request.wasm_payload = Some(module);
             }
         }
-
         let mut stream = self
             .pool
             .create_stream_with_version(&replica, stream_request, stream_fetch_version)
             .await?;
 
-        if let Some(Ok(response)) = stream.next().await {
-            let stream_id = response.stream_id;
+        let ft_stream = async move {
+            if let Some(Ok(response)) = stream.next().await {
+                let stream_id = response.stream_id;
 
-            trace!("first stream response: {:#?}", response);
-            debug!(
-                stream_id,
-                last_offset = ?response.partition.next_offset_for_fetch(),
-                "first stream response"
-            );
+                trace!("first stream response: {:#?}", response);
+                debug!(
+                    stream_id,
+                    last_offset = ?response.partition.next_offset_for_fetch(),
+                    "first stream response"
+                );
 
-            let publisher = OffsetPublisher::shared(0);
-            let mut listener = publisher.change_listner();
+                let publisher = OffsetPublisher::shared(0);
+                let mut listener = publisher.change_listner();
 
-            // update stream with received offsets
-            spawn(async move {
-                use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
+                // update stream with received offsets
+                spawn(async move {
+                    use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
 
-                loop {
-                    let fetch_last_value = listener.listen().await;
-                    debug!(fetch_last_value, stream_id, "received end fetch");
-                    if fetch_last_value < 0 {
-                        debug!("fetch last is end, terminating");
-                        break;
-                    } else {
-                        debug!(
-                            offset = fetch_last_value,
-                            session_id = stream_id,
-                            "sending back offset to spu"
-                        );
-                        let request = UpdateOffsetsRequest {
-                            offsets: vec![OffsetUpdate {
-                                offset: fetch_last_value,
-                                session_id: stream_id,
-                            }],
-                        };
-                        debug!(?request, "Sending offset update request:");
-                        let response = serial_socket.send_receive(request).await;
-                        if let Err(err) = response {
-                            error!("error sending offset: {:#?}", err);
+                    loop {
+                        let fetch_last_value = listener.listen().await;
+                        debug!(fetch_last_value, stream_id, "received end fetch");
+                        if fetch_last_value < 0 {
+                            debug!("fetch last is end, terminating");
                             break;
+                        } else {
+                            debug!(
+                                offset = fetch_last_value,
+                                session_id = stream_id,
+                                "sending back offset to spu"
+                            );
+                            let request = UpdateOffsetsRequest {
+                                offsets: vec![OffsetUpdate {
+                                    offset: fetch_last_value,
+                                    session_id: stream_id,
+                                }],
+                            };
+                            debug!(?request, "Sending offset update request:");
+                            let response = serial_socket.send_receive(request).await;
+                            if let Err(err) = response {
+                                error!("error sending offset: {:#?}", err);
+                                break;
+                            }
                         }
                     }
+                    debug!(stream_id, "offset fetch update loop end");
+                });
+
+                // send back first offset records exists
+                if let Some(last_offset) = response.partition.next_offset_for_fetch() {
+                    debug!(last_offset, "notify new last offset");
+                    publisher.update(last_offset);
                 }
-                debug!(stream_id, "offset fetch update loop end");
-            });
 
-            // send back first offset records exists
-            if let Some(last_offset) = response.partition.next_offset_for_fetch() {
-                debug!(last_offset, "notify new last offset");
-                publisher.update(last_offset);
+                let response_publisher = publisher.clone();
+                let update_stream = stream.map(move |item| {
+                    item.map(|response| {
+                        if let Some(last_offset) = response.partition.next_offset_for_fetch() {
+                            debug!(last_offset, stream_id, "received last offset from spu");
+                            response_publisher.update(last_offset);
+                        }
+                        response
+                    })
+                    .map_err(|e| e.into())
+                });
+                Either::Left(
+                    iter(vec![Ok(response)])
+                        .chain(publish_stream::EndPublishSt::new(update_stream, publisher)),
+                )
+            } else {
+                Either::Right(empty())
             }
-
-            let response_publisher = publisher.clone();
-            let update_stream = stream.map(move |item| {
-                item.map(|response| {
-                    if let Some(last_offset) = response.partition.next_offset_for_fetch() {
-                        debug!(last_offset, stream_id, "received last offset from spu");
-                        response_publisher.update(last_offset);
-                    }
-                    response
-                })
-                .map_err(|e| e.into())
-            });
-            Ok(Either::Left(iter(vec![Ok(response)]).chain(
-                publish_stream::EndPublishSt::new(update_stream, publisher),
-            )))
-        } else {
-            Ok(Either::Right(empty()))
-        }
+        };
+        Ok(ft_stream.flatten_stream().boxed())
     }
 }
 
