@@ -64,7 +64,7 @@ impl FluvioStream {
     where
         R: Request,
     {
-        trace!("waiting for response");
+        trace!(api = R::API_KEY, "waiting for response");
         let next = self.0.next().await;
         if let Some(result) = next {
             match result {
@@ -73,7 +73,7 @@ impl FluvioStream {
                         &mut Cursor::new(&req_bytes),
                         req_msg.header.api_version(),
                     )?;
-                    trace!("received {} bytes: {:#?}", req_bytes.len(), &response);
+                    trace!( len = req_bytes.len(), response = ?response,"received");
                     Ok(response)
                 }
                 Err(source) => {

@@ -3,7 +3,7 @@
 use std::convert::TryInto;
 use std::io::Error as IoError;
 
-use log::debug;
+use tracing::{debug};
 
 use fluvio_protocol::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
 use fluvio_protocol::bytes::Buf;
