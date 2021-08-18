@@ -27,6 +27,8 @@ use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 
+use super::constants::*;
+
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
     Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
 
@@ -695,17 +697,21 @@ impl LocalInstaller {
         let admin = client.admin().await;
 
         // wait for list of spu
-        for _ in 0..30u16 {
-            let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
-            let live_spus = spus.iter().filter(|spu| spu.status.is_online()).count();
-            if live_spus == spu as usize {
-                info!("{} SPUs provisioned", spus.len());
+        for _ in 0..*MAX_SC_NETWORK_LOOP {
+            let spus = admin.list::<SpuSpec, _>(vec![]).await?;
+            let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
+            if ready_spu == spu as usize {
+                println!("All SPUs({}) are ready", spu);
                 drop(client);
                 sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
                 return Ok(());
             } else {
-                debug!("{} out of {} SPUs up, waiting 5 sec", live_spus, spu);
-                sleep(Duration::from_secs(5)).await;
+                println!(
+                    "{} of {} spu are ready, sleeping 10 seconds...",
+                    ready_spu, spu,
+                );
+                debug!("{} out of {} SPUs up, waiting 10 sec", ready_spu, spu);
+                sleep(Duration::from_secs(10)).await;
             }
         }
 

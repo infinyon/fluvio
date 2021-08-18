@@ -121,7 +121,7 @@ async fn validate_consume_message_api(
                 },
 
                 // max time for each read
-                _ = sleep(Duration::from_millis(5000)) => {
+                _ = sleep(Duration::from_secs(30)) => {
                     println!("Timeout in read");
                     panic!("no consumer read iter: current {}",producer_iteration);
                 },
@@ -156,6 +156,11 @@ async fn validate_consume_message_api(
 
                         drop(lock);
 
+                        // for each
+                        if total_records % 100 == 0 {
+                            println!("processed records: {}",total_records);
+                            info!(total_records,"processed records");
+                        }
 
                         if total_records == producer_iteration {
                             println!("consume message validated!, records: {}",total_records);

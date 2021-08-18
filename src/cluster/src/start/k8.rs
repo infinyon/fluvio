@@ -35,6 +35,8 @@ use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress;
 use crate::UserChartLocation;
 
+use super::constants::*;
+
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
@@ -46,11 +48,7 @@ static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_SERVICE_WAIT").unwrap_or_default();
     var_value.parse().unwrap_or(60)
 });
-/// maximum time waiting for network check, DNS or network
-static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
-    let var_value = env::var("FLV_CLUSTER_MAX_SC_NETWORK_LOOP").unwrap_or_default();
-    var_value.parse().unwrap_or(60)
-});
+
 const NETWORK_SLEEP_MS: u64 = 2000;
 /// maximum tiime for VERSION CHECK
 static MAX_SC_VERSION_LOOP: Lazy<u8> = Lazy::new(|| {
