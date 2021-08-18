@@ -204,11 +204,11 @@ impl MultiplexerSocket {
     where
         R: Request,
     {
-        trace!(request = ?req_msg,"request");
         let correlation_id = self.next_correlation_id().await;
 
-        trace!(correlation_id, "new correlation id for stream");
         req_msg.header.set_correlation_id(correlation_id);
+
+        trace!(correlation_id,request = ?req_msg, "new correlation id");
 
         // set up new channel
         let (sender, receiver) = bounded(queue_len);
