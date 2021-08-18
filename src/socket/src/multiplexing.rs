@@ -195,7 +195,7 @@ impl MultiplexerSocket {
     }
 
     /// create stream response
-    #[instrument(level = "trace",skip(self), fields(api = R::API_KEY,msg = ?req_msg.request))]
+    #[instrument(skip(self), fields(api = R::API_KEY))]
     pub async fn create_stream<R>(
         &self,
         mut req_msg: RequestMessage<R>,
@@ -204,9 +204,10 @@ impl MultiplexerSocket {
     where
         R: Request,
     {
+        trace!(request = ?req_msg,"request");
         let correlation_id = self.next_correlation_id().await;
 
-        debug!(correlation_id, "new correlation id for stream");
+        trace!(correlation_id, "new correlation id for stream");
         req_msg.header.set_correlation_id(correlation_id);
 
         // set up new channel
