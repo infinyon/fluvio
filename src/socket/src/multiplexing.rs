@@ -215,12 +215,12 @@ impl MultiplexerSocket {
         let mut senders = self.senders.lock().await;
 
         // remove any closed channel, this is not optimal but should do trick for now
-        /*
+
         senders.retain(|_, shared_sender| match shared_sender {
             SharedSender::Serial(_) => true,
             SharedSender::Queue(sender) => !sender.is_closed(),
         });
-        */
+
         senders.insert(correlation_id, SharedSender::Queue(sender));
         drop(senders);
 
