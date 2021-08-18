@@ -698,7 +698,7 @@ impl LocalInstaller {
 
         // wait for list of spu
         for _ in 0..*MAX_SC_NETWORK_LOOP {
-            let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
+            let spus = admin.list::<SpuSpec, _>(vec![]).await?;
             let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
             if ready_spu == spu as usize {
                 println!("All SPUs({}) are ready", spu);
