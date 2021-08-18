@@ -7,7 +7,7 @@ pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData
     let current_string = std::str::from_utf8(current.value.as_ref())?;
 
     // Parse the strings into integers
-    let accumulator_int = accumulator_string.parse::<i32>()?;
+    let accumulator_int = accumulator_string.parse::<i32>().unwrap_or(0);
     let current_int = current_string.parse::<i32>()?;
 
     // Take the sum of the two integers and return it as a string
