@@ -65,10 +65,17 @@ impl HttpAgent {
         version: &semver::Version,
         target: &Target,
     ) -> Result<Request> {
+        let file_name = if target.to_string().contains("windows") {
+            format!("{}.exe", id.name())
+        } else {
+            id.name().to_string()
+        };
+
         let url = self.base_url.join(&format!(
-            "packages/{group}/{name}/{version}/{target}/{name}",
+            "packages/{group}/{name}/{version}/{target}/{file_name}",
             group = &id.group(),
             name = &id.name(),
+            file_name = file_name,
             version = version,
             target = target.as_str(),
         ))?;
@@ -82,10 +89,16 @@ impl HttpAgent {
         version: &semver::Version,
         target: &Target,
     ) -> Result<Request> {
+        let file_name = if target.to_string().contains("windows") {
+            format!("{}.exe", id.name())
+        } else {
+            id.name().to_string()
+        };
         let url = self.base_url.join(&format!(
-            "packages/{group}/{name}/{version}/{target}/{name}.sha256",
+            "packages/{group}/{name}/{version}/{target}/{file_name}.sha256",
             group = &id.group(),
             name = &id.name(),
+            file_name = file_name,
             version = version,
             target = target.as_str(),
         ))?;
