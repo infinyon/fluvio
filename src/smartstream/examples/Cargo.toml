@@ -3,6 +3,7 @@ members = [
     "aggregate",
     "aggregate-sum",
     "aggregate-json",
+    "aggregate-average",
     "filter",
     "filter_odd",
     "filter_json",
