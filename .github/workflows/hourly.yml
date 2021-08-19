@@ -14,8 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [infinyon-ubuntu-bionic]
-        rust: [stable]
+        os: [ubuntu-latest]
     steps:
 
       - uses: actions/checkout@v2
@@ -27,11 +26,6 @@ jobs:
       # If they don't match, then let's run the test
 
       - uses: nolar/setup-k3d-k3s@v1
-
-      - name: Install and start Fluvio
-        run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-          ~/.fluvio/bin/fluvio cluster start
 
       - name: Run longevity test
         run: make longevity-producer-test
