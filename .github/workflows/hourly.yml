@@ -11,6 +11,7 @@ jobs:
   longevity:
     name: Longevity test 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
