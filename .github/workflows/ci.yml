@@ -562,18 +562,21 @@ jobs:
 
       - name: Push Fluvio Docker arch images
         run: |
-          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }} && \
-          docker push "infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl" && \
-          docker push "infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl"
+          export TAG="$(cat VERSION)-${{ github.sha }}"
+          docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
+          docker tag "infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl" "docker.io/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl"
+          docker tag "infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl" "docker.io/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl"
+          docker push "docker.io/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl"
+          docker push "docker.io/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl"
 
       # Create manifest image as infinyon/fluvio:VERSION-SHA
       - name: Create and publish Fluvio Docker manifest image
         run: |
           export TAG="$(cat VERSION)-${{ github.sha }}"
-          docker manifest create infinyon/fluvio:${TAG} \
-            --amend infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl \
-            --amend infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl 
-          docker push "infinyon/fluvio:${TAG}"
+          docker manifest create "docker.io/infinyon/fluvio:${TAG}" \
+            "docker.io/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl" \
+            "docker.io/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl" 
+          docker manifest push "docker.io/infinyon/fluvio:${TAG}"
 
   # When all required jobs pass, bump the `dev` GH prerelease to this commit
   bump_github_release:
