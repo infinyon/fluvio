@@ -159,9 +159,11 @@ endif
 validate-release-stable:
 	./tests/fluvio-validate-release.sh $(VERSION) $(GIT_COMMIT)
 
-
 longevity-producer-test:
 	./tests/longevity-producer.sh
+
+cli-platform-cross-version-test:
+	./tests/cli-platform-cross-version-test.sh $(CLI_VERSION) $(CLUSTER_VERSION)
 
 # test rbac
 #

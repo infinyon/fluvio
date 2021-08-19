@@ -140,3 +140,18 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  cli-platform-cross-version-test:
+    name: CLI x Platform version test 
+    #if: false
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        cluster_version: [stable, latest]
+        cli_version: [stable, latest]
+    env:
+    steps:
+      - uses: nolar/setup-k3d-k3s@v1
+      - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
+        run: make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
