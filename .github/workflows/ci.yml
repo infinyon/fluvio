@@ -356,6 +356,7 @@ jobs:
       - name: Save logs
         if: failure()
         run: |
+          date
           uname -a
           kubectl get spu
           kubectl get statefulset
