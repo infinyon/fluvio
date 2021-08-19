@@ -6,6 +6,7 @@
 * Deprecate consumer fetch API ([#957](https://github.com/infinyon/fluvio/issues/957))
 * Gracefully handle error when trying to install plugins or update. ([#1434](https://github.com/infinyon/fluvio/pull/1434))
 * Fix timing issue in Multiplexor Socket ([#1484](https://github.com/infinyon/fluvio/pull/1484))
+* Compress WASM binaries. ([#1468](https://github.com/infinyon/fluvio/pull/1468))
 
 ## Platform Version 0.9.3 - 2021-08-19
 * Fix Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))

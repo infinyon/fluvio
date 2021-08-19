@@ -5,12 +5,19 @@
 //!
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::io::{self, Read};
+use std::borrow::Cow;
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;
+
+use flate2::{
+    Compression,
+    bufread::{GzEncoder, GzDecoder},
+};
 
 pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
 
@@ -24,6 +31,9 @@ pub const WASM_MODULE_V2_API: i16 = 12;
 
 // version for aggregator smartstream
 pub const AGGREGATOR_API: i16 = 13;
+
+// version for gzipped WASM payloads
+pub const GZIP_WASM_API: i16 = 14;
 
 /// Fetch records continuously
 /// Output will be send back as stream
@@ -49,7 +59,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = AGGREGATOR_API;
+    const DEFAULT_API_VERSION: i16 = GZIP_WASM_API;
     type Response = StreamFetchResponse<R>;
 }
 
@@ -86,8 +96,51 @@ impl Default for SmartStreamKind {
 #[derive(Debug, Clone, Encoder, Decoder)]
 pub enum SmartStreamWasm {
     Raw(Vec<u8>),
+    /// compressed WASM module payload using Gzip
+    #[fluvio(min_version = 14)]
+    Gzip(Vec<u8>),
     // TODO implement named WASM modules once we have a WASM store
     // Url(String),
+}
+
+fn zip(raw: &[u8]) -> io::Result<Vec<u8>> {
+    let mut encoder = GzEncoder::new(raw, Compression::default());
+    let mut buffer = Vec::with_capacity(raw.len());
+    encoder.read_to_end(&mut buffer)?;
+    Ok(buffer)
+}
+
+fn unzip(compressed: &[u8]) -> io::Result<Vec<u8>> {
+    let mut decoder = GzDecoder::new(compressed);
+    let mut buffer = Vec::with_capacity(compressed.len());
+    decoder.read_to_end(&mut buffer)?;
+    Ok(buffer)
+}
+
+impl SmartStreamWasm {
+    /// returns the gzip-compressed WASM module bytes
+    pub fn to_gzip(&mut self) -> io::Result<()> {
+        if let Self::Raw(raw) = self {
+            *self = Self::Gzip(zip(raw.as_ref())?);
+        }
+        Ok(())
+    }
+
+    /// returns the raw WASM module bytes
+    pub fn to_raw(&mut self) -> io::Result<()> {
+        if let Self::Gzip(gzipped) = self {
+            *self = Self::Raw(unzip(gzipped)?);
+        }
+        Ok(())
+    }
+
+    /// get the raw bytes of the WASM module
+    pub fn get_raw(&self) -> io::Result<Cow<[u8]>> {
+        Ok(match self {
+            Self::Raw(raw) => Cow::Borrowed(raw),
+            Self::Gzip(gzipped) => Cow::Owned(unzip(gzipped.as_ref())?),
+        })
+    }
 }
 
 impl Default for SmartStreamWasm {
@@ -246,5 +299,20 @@ mod tests {
         };
         assert_eq!(wasm, vec![0xde, 0xad, 0xbe, 0xef]);
         assert!(matches!(smartstream.kind, SmartStreamKind::Filter));
+    }
+
+    #[test]
+    fn test_zip_unzip_works() {
+        const ORIG_LEN: usize = 1024;
+        let orig = SmartStreamWasm::Raw(vec![0x01; ORIG_LEN]);
+        let mut compressed = orig.clone();
+        compressed.to_gzip().unwrap();
+        assert!(matches!(&compressed, &SmartStreamWasm::Gzip(ref x) if x.len() < ORIG_LEN));
+        let mut uncompressed = compressed.clone();
+        uncompressed.to_raw().unwrap();
+        assert!(
+            matches!((&uncompressed, &orig), (&SmartStreamWasm::Raw(ref x), &SmartStreamWasm::Raw(ref y)) if x == y )
+        );
+        assert_eq!(orig.get_raw().unwrap(), compressed.get_raw().unwrap());
     }
 }
