@@ -179,6 +179,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-wasm-aggregate-average"
+version = "0.1.0"
+dependencies = [
+ "fluvio-smartstream",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "fluvio-wasm-aggregate-json"
 version = "0.1.0"
 dependencies = [
