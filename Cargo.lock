@@ -1450,7 +1450,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1466,7 +1466,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bytes",
  "cfg-if 1.0.0",
@@ -1726,7 +1726,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
@@ -1735,7 +1735,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream-derive"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "fluvio-smartstream",
  "proc-macro2",
@@ -1746,7 +1746,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1759,7 +1759,6 @@ dependencies = [
  "fluvio-protocol",
  "flv-util",
  "futures-util",
- "log",
  "once_cell",
  "pin-project",
  "thiserror",
@@ -1797,7 +1796,6 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "log",
  "nix 0.22.0",
  "once_cell",
  "pin-utils",

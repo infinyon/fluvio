@@ -1,9 +1,13 @@
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref};
 
-use tracing::trace;
+use tracing::{trace, instrument, debug};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 use fluvio_types::SpuId;
+use fluvio_controlplane_metadata::{
+    spg::SpuEndpointTemplate,
+    spu::{Endpoint, IngressPort, SpuType},
+};
 
 use crate::stores::MetadataStoreObject;
 use crate::stores::spg::SpuGroupSpec;
@@ -12,7 +16,6 @@ use crate::stores::k8::K8MetaItem;
 use crate::stores::spu::{SpuSpec};
 use crate::stores::{LocalStore};
 use crate::stores::actions::WSAction;
-
 use crate::cli::TlsConfig;
 
 use super::spu_k8_config::ScK8Config;
@@ -63,7 +66,7 @@ impl SpuGroupObj {
     }
 
     /// convert SpuGroup to Statefulset Name and Spec
-    pub fn statefulset_action(
+    pub fn as_statefulset(
         &self,
         namespace: &str,
         spu_k8_config: &ScK8Config,
@@ -90,7 +93,61 @@ impl SpuGroupObj {
         )
     }
 
-    pub fn generate_service(&self) -> (String, WSAction<SpgServiceSpec>) {
+    /// generate as SPU spec
+    #[instrument(skip(self))]
+    pub fn as_spu(
+        &self,
+        spu: u16,
+        services: &HashMap<String, IngressPort>,
+    ) -> (String, MetadataStoreObject<SpuSpec, K8MetaItem>) {
+        let spec = self.spec();
+        let spu_id = compute_spu_id(spec.min_id, spu);
+        let spu_name = format!("{}-{}", self.key(), spu);
+
+        let spu_private_ep = SpuEndpointTemplate::default_private();
+
+        let public_endpoint = if let Some(ingress) = services.get(&spu_name) {
+            debug!(%ingress);
+            ingress.clone()
+        } else {
+            let spu_public_ep = SpuEndpointTemplate::default_public();
+            IngressPort {
+                port: spu_public_ep.port,
+                encryption: spu_public_ep.encryption,
+                ingress: vec![],
+            }
+        };
+
+        let full_group_name = format!("fluvio-spg-{}", self.key());
+        let full_spu_name = format!("fluvio-spg-{}", spu_name);
+        let spu_spec = SpuSpec {
+            id: spu_id,
+            spu_type: SpuType::Managed,
+            public_endpoint,
+            private_endpoint: Endpoint {
+                host: format!("{}.{}", full_spu_name, full_group_name),
+                port: spu_private_ep.port,
+                encryption: spu_private_ep.encryption,
+            },
+            rack: None,
+        };
+
+        /*
+        // add spu as children of spg
+        let mut ctx = spg_obj.ctx().create_child().set_labels(vec![(
+            "fluvio.io/spu-group".to_string(),
+            spg_obj.key().to_string(),
+        )]);
+        */
+
+        (
+            spu_name.clone(),
+            MetadataStoreObject::with_spec(spu_name, spu_spec)
+                .with_context(self.ctx().create_child()),
+        )
+    }
+
+    pub fn as_service(&self) -> (String, WSAction<SpgServiceSpec>) {
         let svc_name = self.svc_name.to_owned();
         let k8_service = k8_convert::generate_service(self.spec(), self.key());
 
@@ -102,6 +159,11 @@ impl SpuGroupObj {
             ),
         )
     }
+}
+
+/// compute spu id with min_id as base
+fn compute_spu_id(min_id: i32, replica_index: u16) -> i32 {
+    replica_index as i32 + min_id
 }
 
 mod k8_convert {

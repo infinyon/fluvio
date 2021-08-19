@@ -35,6 +35,8 @@ use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress;
 use crate::UserChartLocation;
 
+use super::constants::*;
+
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_GROUP_NAME: &str = "main";
 const DEFAULT_SPU_REPLICAS: u16 = 1;
@@ -46,11 +48,7 @@ static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_SERVICE_WAIT").unwrap_or_default();
     var_value.parse().unwrap_or(60)
 });
-/// maximum time waiting for network check, DNS or network
-static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
-    let var_value = env::var("FLV_CLUSTER_MAX_SC_NETWORK_LOOP").unwrap_or_default();
-    var_value.parse().unwrap_or(60)
-});
+
 const NETWORK_SLEEP_MS: u64 = 2000;
 /// maximum tiime for VERSION CHECK
 static MAX_SC_VERSION_LOOP: Lazy<u8> = Lazy::new(|| {
@@ -316,6 +314,10 @@ pub struct ClusterConfig {
     /// ```
     #[builder(default = "false")]
     render_checks: bool,
+
+    /// Use proxy address for communicating with kubernetes cluster
+    #[builder(setter(into), default)]
+    proxy_addr: Option<String>,
 }
 
 impl ClusterConfig {
@@ -680,6 +682,9 @@ impl ClusterInstaller {
             }
         };
 
+        if let Some(proxy) = &self.config.proxy_addr {
+            println!("Using proxy addr: {}", proxy);
+        }
         self.install_app().await?;
         let namespace = &self.config.namespace;
         let (address, port) = self
@@ -756,36 +761,45 @@ impl ClusterInstaller {
             chart_values.push(np_conf_path.to_path_buf());
 
             debug!("Using NodePort service type");
-            debug!("Getting external IP from K8s node");
-            let kube_client = &self.kube_client;
 
-            debug!("Trying to query for Nodes");
+            let external_addr = if let Some(addr) = &self.config.proxy_addr {
+                debug!(?addr, "use proxying");
+                addr.to_owned()
+            } else {
+                debug!("Getting external IP from K8s node");
+                let kube_client = &self.kube_client;
 
-            let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
+                debug!("Trying to query for Nodes");
 
-            debug!("Results from Node query: {:#?}", &nodes);
+                let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
 
-            let mut node_addr: Vec<NodeAddress> = Vec::new();
-            for n in nodes.items.into_iter().map(|x| x.status.addresses) {
-                node_addr.extend(n)
-            }
+                debug!("Results from Node query: {:#?}", &nodes);
 
-            debug!("Node Addresses: {:#?}", node_addr);
+                let mut node_addr: Vec<NodeAddress> = Vec::new();
+                for n in nodes.items.into_iter().map(|x| x.status.addresses) {
+                    node_addr.extend(n)
+                }
 
-            let external_addr = node_addr
-                .into_iter()
-                .find(|a| a.r#type == "InternalIP")
-                .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+                debug!("Node Addresses: {:#?}", node_addr);
+
+                node_addr
+                    .into_iter()
+                    .find(|a| a.r#type == "InternalIP")
+                    .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?
+                    .address
+            };
 
             // Set this annotation w/ the external address by overriding this Helm chart value:
             let mut ingress_address = BTreeMap::new();
-            ingress_address.insert("fluvio.io/ingress-address", external_addr.address);
+            ingress_address.insert("fluvio.io/ingress-address", external_addr);
 
             let mut service_annotation = BTreeMap::new();
             service_annotation.insert("serviceAnnotations", ingress_address);
 
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);
+
+            debug!(?helm_lb_config, "helm_lb_config");
 
             serde_yaml::to_writer(&np_addr_fd, &helm_lb_config)
                 .map_err(|err| K8InstallError::Other(err.to_string()))?;
@@ -917,20 +931,27 @@ impl ClusterInstaller {
                                         LoadBalancerType::NodePort => {
                                             let node_port = node_port.ok_or_else(|| K8InstallError::Other("Expecting a NodePort port".into()))?;
 
-                                            debug!("k8 node query");
-                                            let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
-                                            debug!("Output from k8 node query: {:#?}", &nodes);
+                                            let extern_addr = if let Some(addr) = &self.config.proxy_addr {
+                                                debug!(?addr,"using proxy");
+                                                addr.to_owned()
+                                            } else {
 
-                                            let mut node_addr : Vec<NodeAddress> = Vec::new();
-                                            for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
-                                                node_addr.extend(n)
-                                            }
+                                                debug!("k8 node query");
+                                                let nodes = self.kube_client.retrieve_items::<NodeSpec, _>(ns).await?;
+                                                debug!("Output from k8 node query: {:#?}", &nodes);
 
-                                            // Return the first node with type "InternalIP"
-                                            let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP")
-                                            .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
+                                                let mut node_addr : Vec<NodeAddress> = Vec::new();
+                                                for n in nodes.items.into_iter().map(|x| x.status.addresses ) {
+                                                    node_addr.extend(n)
+                                                }
 
-                                            return Ok(Some((format!("{}:{}",external_addr.address,node_port),node_port)))
+                                                // Return the first node with type "InternalIP"
+                                                node_addr.into_iter().find(|a| a.r#type == "InternalIP")
+                                                    .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?.address
+                                            };
+
+                                            return Ok(Some((format!("{}:{}",extern_addr,node_port),node_port)))
+
                                         },
                                         LoadBalancerType::LoadBalancer => {
                                             let ingress_addr = service
@@ -1019,12 +1040,20 @@ impl ClusterInstaller {
 
     /// Wait until the Fluvio SC public service appears in Kubernetes
     async fn wait_for_sc_port_check(&self, sock_addr_str: &str) -> Result<(), K8InstallError> {
-        info!(sock_addr = %sock_addr_str, "waiting for SC port check");
         for i in 0..*MAX_SC_NETWORK_LOOP {
-            let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
-            if TcpStream::connect(&*sock_addr).await.is_ok() {
-                info!(sock_addr = %sock_addr_str, "finished SC port check");
-                return Ok(());
+            if self.config.proxy_addr.is_none() {
+                debug!("resolving socket addr: {}", sock_addr_str);
+                let sock_addr = self.wait_for_sc_dns(sock_addr_str).await?;
+                if TcpStream::connect(&*sock_addr).await.is_ok() {
+                    info!(sock_addr = %sock_addr_str, "finished SC port check");
+                    return Ok(());
+                }
+            } else {
+                debug!("trying to connect to proxy: {}", sock_addr_str);
+                if TcpStream::connect(&*sock_addr_str).await.is_ok() {
+                    info!(sock_addr = %sock_addr_str, "finished SC port check");
+                    return Ok(());
+                }
             }
             info!(
                 attempt = i,

@@ -4,13 +4,14 @@ use std::fs::{File, create_dir_all};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use fluvio::{FluvioConfig};
+use k8_metadata_client::MetadataClient;
 use semver::Version;
 
 use derive_builder::Builder;
 use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
-use fluvio::metadata::spu::{SpuSpec, SpuType};
+use fluvio_controlplane_metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
 use fluvio::metadata::spu::Endpoint;
 use fluvio::metadata::spu::IngressAddr;
@@ -19,10 +20,14 @@ use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::{ClusterChecker, ClusterError, LocalInstallError, StartStatus, UserChartLocation};
+use crate::{
+    ClusterChecker, ClusterError, K8InstallError, LocalInstallError, StartStatus, UserChartLocation,
+};
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
+
+use super::constants::*;
 
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
     Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
@@ -416,6 +421,12 @@ impl LocalInstaller {
             }
         };
 
+        use k8_client::load_and_share;
+        let client = load_and_share().map_err(K8InstallError::from)?;
+
+        // before we do let's try make sure SPU are installed.
+        self.check_spu(client.clone()).await?;
+
         debug!("using log dir: {}", self.config.log_dir.display());
         if !self.config.log_dir.exists() {
             create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
@@ -434,7 +445,7 @@ impl LocalInstaller {
             "launching spu group with size: {}",
             &self.config.spu_replicas
         );
-        self.launch_spu_group().await?;
+        self.launch_spu_group(client.clone()).await?;
         sleep(Duration::from_secs(1)).await;
         self.confirm_spu(self.config.spu_replicas).await?;
 
@@ -443,6 +454,24 @@ impl LocalInstaller {
             port,
             checks,
         })
+    }
+
+    // hack
+    async fn check_spu(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
+        for i in 0..100 {
+            println!("checking fluvio crd attempt: {}", i);
+            // check if spu is installed
+            if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
+                println!("problem retrieving fljuvio crd {}", err);
+                println!("sleeping 1 seconds");
+                sleep(Duration::from_secs(10)).await;
+            } else {
+                println!("fluvio crd installed");
+                return Ok(());
+            }
+        }
+
+        Err(LocalInstallError::Other("Fluvio CRD not ready".to_string()))
     }
 
     /// Launches an SC on the local machine
@@ -551,9 +580,7 @@ impl LocalInstaller {
     }
 
     #[instrument(skip(self))]
-    async fn launch_spu_group(&self) -> Result<(), LocalInstallError> {
-        use k8_client::load_and_share;
-        let client = load_and_share()?;
+    async fn launch_spu_group(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         let count = self.config.spu_replicas;
         for i in 0..count {
             debug!("launching SPU ({} of {})", i + 1, count);
@@ -607,9 +634,12 @@ impl LocalInstaller {
                 ..Default::default()
             },
         );
+
+        debug!(input=?input,"creating spu");
         client.create_item(input).await?;
+        debug!("sleeping 1 sec");
         // sleep 1 seconds for sc to connect
-        sleep(Duration::from_millis(300)).await;
+        sleep(Duration::from_millis(1000)).await;
         let log_spu = format!("{}/spu_log_{}.log", log_dir.display(), spu_id);
         let outputs = File::create(&log_spu)?;
         let errors = outputs.try_clone()?;
@@ -661,21 +691,27 @@ impl LocalInstaller {
 
         sleep(Duration::from_secs(delay)).await;
 
+        debug!("try connecting to fluvio sc");
         let client = Fluvio::connect().await?;
+        debug!("try connectiong to admin");
         let admin = client.admin().await;
 
         // wait for list of spu
-        for _ in 0..30u16 {
-            let spus = admin.list::<SpuSpec, _>(vec![]).await.expect("no spu list");
-            let live_spus = spus.iter().filter(|spu| spu.status.is_online()).count();
-            if live_spus == spu as usize {
-                info!("{} SPUs provisioned", spus.len());
+        for _ in 0..*MAX_SC_NETWORK_LOOP {
+            let spus = admin.list::<SpuSpec, _>(vec![]).await?;
+            let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
+            if ready_spu == spu as usize {
+                println!("All SPUs({}) are ready", spu);
                 drop(client);
                 sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
                 return Ok(());
             } else {
-                debug!("{} out of {} SPUs up, waiting 5 sec", live_spus, spu);
-                sleep(Duration::from_secs(5)).await;
+                println!(
+                    "{} of {} spu are ready, sleeping 10 seconds...",
+                    ready_spu, spu,
+                );
+                debug!("{} out of {} SPUs up, waiting 10 sec", ready_spu, spu);
+                sleep(Duration::from_secs(10)).await;
             }
         }
 

@@ -80,6 +80,7 @@ where
 
         let controller = Self { store, shutdown };
 
+        debug!(spec = %S::LABEL, "spawning sync controller");
         spawn(controller.dispatch_loop(watch_response));
     }
 

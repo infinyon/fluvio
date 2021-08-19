@@ -127,15 +127,15 @@ jobs:
           - os: macos-latest
             rust: stable
             rust-target: x86_64-apple-darwin
-            binary: fluvio
-          - os: macos-latest
-            rust: stable
-            rust-target: x86_64-apple-darwin
             binary: fluvio-run
           - os: macos-11
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio
+          - os: macos-11
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fluvio-run
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -288,8 +288,6 @@ jobs:
         with:
           key: ${{ matrix.os }}-${{ matrix.crate }}
 
-      - name: set up helm
-        run:  make helm_pkg
       - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
         run: cargo build --manifest-path ./src/${{matrix.crate}}/Cargo.toml
 
@@ -433,6 +431,8 @@ jobs:
             ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
+      - name: Print version
+        run: ./fluvio version
 
       - name: Save logs
         if: failure()
@@ -633,8 +633,10 @@ jobs:
             artifact: fluvio-run
           - rust-target: x86_64-apple-darwin
             artifact: fluvio-run
-#          - rust-target: x86_64-pc-windows-msvc
-#            artifact: fluvio.exe
+          - rust-target: aarch64-apple-darwin
+            artifact: fluvio-run
+          - rust-target: x86_64-pc-windows-msvc
+            artifact: fluvio.exe
     permissions: write-all
     steps:
       - name: Login GH CLI

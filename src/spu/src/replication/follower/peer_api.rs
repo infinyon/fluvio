@@ -9,10 +9,12 @@ use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::api_key::FollowerPeerApiEnum;
 use super::sync::DefaultSyncRequest;
+use super::reject_request::RejectOffsetRequest;
 
 #[derive(Debug, Encoder)]
 pub enum FollowerPeerRequest {
     SyncRecords(RequestMessage<DefaultSyncRequest>),
+    RejectedOffsetRequest(RequestMessage<RejectOffsetRequest>),
 }
 
 impl Default for FollowerPeerRequest {
@@ -36,6 +38,11 @@ impl ApiMessage for FollowerPeerRequest {
             FollowerPeerApiEnum::SyncRecords => Ok(FollowerPeerRequest::SyncRecords(
                 RequestMessage::new(header, DefaultSyncRequest::decode_from(src, version)?),
             )),
+            FollowerPeerApiEnum::RejectedOffsetRequest => {
+                Ok(FollowerPeerRequest::RejectedOffsetRequest(
+                    RequestMessage::new(header, RejectOffsetRequest::decode_from(src, version)?),
+                ))
+            }
         }
     }
 }

@@ -4,9 +4,6 @@ use std::io::Error as IoError;
 use tracing::{info, trace, error, debug, warn, instrument};
 use flv_util::print_cli_err;
 
-use async_channel::Receiver;
-use async_channel::Sender;
-use async_channel::bounded;
 use tokio::select;
 use futures_util::stream::StreamExt;
 
@@ -17,17 +14,12 @@ use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;
 use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
 use fluvio_controlplane::UpdateReplicaRequest;
-use fluvio_controlplane_metadata::partition::Replica;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_storage::FileReplica;
-use flv_util::actions::Actions;
-
 use crate::core::SharedGlobalContext;
-use crate::core::SpecChange;
 use crate::InternalServerError;
 
-use super::SupervisorCommand;
 use super::message_sink::{SharedStatusUpdate};
 
 // keep track of various internal state of dispatcher
@@ -35,37 +27,22 @@ use super::message_sink::{SharedStatusUpdate};
 struct DispatcherCounter {
     pub replica_changes: u64, // replica changes received from sc
     pub spu_changes: u64,     // spu changes received from sc
-    // TODO remove dead code: https://github.com/infinyon/fluvio/issues/1332
-    #[allow(dead_code)]
-    pub status_send: u64, // number of status send to sc
-    pub reconnect: u64, // number of reconnect to sc
+    pub reconnect: u64,       // number of reconnect to sc
 }
 
 /// Controller for handling connection to SC
 /// including registering and reconnect
 pub struct ScDispatcher<S> {
-    termination_receiver: Receiver<bool>,
-    #[allow(dead_code)]
-    termination_sender: Sender<bool>,
-    #[allow(dead_code)]
-    supervisor_command_sender: Sender<SupervisorCommand>,
     ctx: SharedGlobalContext<S>,
-    max_bytes: u32,
     status_update: SharedStatusUpdate,
     counter: DispatcherCounter,
 }
 
 impl ScDispatcher<FileReplica> {
-    pub fn new(ctx: SharedGlobalContext<FileReplica>, max_bytes: u32) -> Self {
-        let (termination_sender, termination_receiver) = bounded(1);
-        let (supervisor_command_sender, _supervisor_command_receiver) = bounded(100);
+    pub fn new(ctx: SharedGlobalContext<FileReplica>) -> Self {
         Self {
-            termination_receiver,
-            termination_sender,
-            supervisor_command_sender,
             status_update: ctx.status_update_owned(),
             ctx,
-            max_bytes,
             counter: DispatcherCounter::default(),
         }
     }
@@ -166,10 +143,7 @@ impl ScDispatcher<FileReplica> {
                     match sc_request {
                         Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
                             self.counter.replica_changes += 1;
-                            if let Err(err) = self.handle_update_replica_request(request,&mut sink).await {
-                                error!("error handling update replica request: {}", err);
-                                break;
-                            }
+                            self.handle_update_replica_request(request,&mut sink).await;
                         },
                         Some(Ok(InternalSpuRequest::UpdateSpuRequest(request))) => {
                             self.counter.spu_changes += 1;
@@ -286,10 +260,6 @@ impl ScDispatcher<FileReplica> {
 
                     trace!("sleeping {} ms to connect to sc: {}",wait_interval,spu_id);
                     sleep(Duration::from_millis(wait_interval as u64)).await;
-                },
-                _ = self.termination_receiver.next() => {
-                    info!("termination message received");
-                    return None
                 }
             }
         }
@@ -302,20 +272,26 @@ impl ScDispatcher<FileReplica> {
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
         sc_sink: &mut FluvioSink,
-    ) -> Result<(), SocketError> {
+    ) {
+        use crate::core::ReplicaChange;
+
         let (_, request) = req_msg.get_header_request();
 
         debug!( message = ?request,"replica request");
 
-        let actions = if !request.all.is_empty() {
-            trace!("received replica all items: {:#?}", request.all);
-            self.ctx.replica_localstore().sync_all(request.all)
-        } else {
-            trace!("received replica change items: {:#?}", request.changes);
-            self.ctx.replica_localstore().apply_changes(request.changes)
-        };
-
-        self.apply_replica_actions(actions, sc_sink).await
+        for action in self.ctx.apply_replica_update(request).await.into_iter() {
+            match action {
+                ReplicaChange::Remove(remove) => {
+                    let message = RequestMessage::new_request(remove);
+                    if let Err(err) = sc_sink.send_request(&message).await {
+                        error!("error sending back to sc {}", err);
+                    }
+                }
+                ReplicaChange::StorageError(err) => {
+                    error!("error storage {}", err);
+                }
+            }
+        }
     }
 
     ///
@@ -351,231 +327,5 @@ impl ScDispatcher<FileReplica> {
         self.ctx.sync_follower_update().await;
 
         Ok(())
-    }
-
-    #[instrument(skip(self, actions, sc_sink))]
-    async fn apply_replica_actions(
-        &self,
-        actions: Actions<SpecChange<Replica>>,
-        sc_sink: &mut FluvioSink,
-    ) -> Result<(), SocketError> {
-        trace!( actions = ?actions,"replica actions");
-
-        if actions.count() == 0 {
-            debug!("no replica actions to process. ignoring");
-            return Ok(());
-        }
-
-        trace!("applying replica leader actions");
-
-        let local_id = self.ctx.local_spu_id();
-
-        for replica_action in actions.into_iter() {
-            trace!("applying action: {:#?}", replica_action);
-
-            match replica_action {
-                SpecChange::Add(new_replica) => {
-                    if new_replica.leader == local_id {
-                        if new_replica.is_being_deleted {
-                            self.remove_leader_replica(new_replica, sc_sink).await?;
-                        } else if let Err(err) = self
-                            .ctx
-                            .leaders_state()
-                            .add_leader_replica(
-                                self.ctx.clone(),
-                                new_replica,
-                                self.max_bytes,
-                                self.status_update.clone(),
-                            )
-                            .await
-                        {
-                            error!("error creating leader replica: {}", err);
-                        }
-                    } else if new_replica.is_being_deleted {
-                        self.remove_follower_replica(new_replica).await;
-                    } else if let Err(err) = self
-                        .ctx
-                        .followers_state_owned()
-                        .add_replica(self.ctx.clone(), new_replica)
-                        .await
-                    {
-                        error!("adding replica failed: {}", err);
-                    }
-                }
-                SpecChange::Delete(deleted_replica) => {
-                    if deleted_replica.leader == local_id {
-                        self.remove_leader_replica(deleted_replica, sc_sink).await?;
-                    } else {
-                        self.remove_follower_replica(deleted_replica).await;
-                    }
-                }
-                SpecChange::Mod(new_replica, old_replica) => {
-                    trace!(
-                        "replica changed, old: {:#?}, new: {:#?}",
-                        new_replica,
-                        old_replica
-                    );
-
-                    if new_replica.is_being_deleted {
-                        if new_replica.leader == local_id {
-                            self.remove_leader_replica(new_replica, sc_sink).await?;
-                        } else {
-                            self.remove_follower_replica(new_replica).await;
-                        }
-                    } else {
-                        // check for leader change
-                        if new_replica.leader != old_replica.leader {
-                            if new_replica.leader == local_id {
-                                self.ctx.promote(&new_replica, &old_replica).await;
-                            } else {
-                                // we are follower
-                                // if we were leader before, we demote out self
-                                if old_replica.leader == local_id {
-                                    self.demote_replica(new_replica).await;
-                                } else {
-                                    // we stay as follower but we switch to new leader
-                                    debug!("still follower but switching leader: {}", new_replica);
-                                    self.switch_leader_for_follower(new_replica, old_replica)
-                                        .await;
-                                }
-                            }
-                        } else if new_replica.leader == local_id {
-                            self.update_leader_replica(new_replica).await;
-                        } else {
-                            self.update_follower_replica(new_replica).await;
-                        }
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
-    #[instrument(skip(self, replica),
-        fields(replica = %replica.id)
-    )]
-    async fn update_leader_replica(&self, replica: Replica) {
-        debug!("updating leader controller");
-
-        if self.ctx.leaders_state().get(&replica.id).is_some() {
-            debug!(
-                %replica,
-                "leader replica was found"
-            );
-        } else {
-            error!("leader controller was not found: {}", replica.id);
-        }
-    }
-
-    /// reemove leader replica
-    #[instrument(
-        skip(self,replica,sc_sink),
-        fields(
-            replica = %replica.id,
-        )
-    )]
-    async fn remove_leader_replica(
-        &self,
-        replica: Replica,
-        sc_sink: &mut FluvioSink,
-    ) -> Result<(), SocketError> {
-        use fluvio_controlplane::ReplicaRemovedRequest;
-
-        // try to send message to leader controller if still exists
-        debug!("sending terminate message to leader controller");
-        let confirm = if let Some(previous_state) = self.ctx.leaders_state().remove(&replica.id) {
-            if let Err(err) = previous_state.remove().await {
-                error!("error: {} removing replica: {}", err, replica);
-            } else {
-                debug!(
-                    replica = %replica.id,
-                    "leader remove was removed"
-                );
-            }
-            true
-        } else {
-            // if we don't find existing replica, just warning
-            warn!("no existing replica found {}", replica);
-
-            //LeaderReplicaState::clear_file_replica(&replica, &self.ctx.config().log).await;
-
-            true
-        };
-
-        let confirm_request = ReplicaRemovedRequest::new(replica.id, confirm);
-        debug!(
-            sc_message = ?confirm_request,
-            "sending back delete confirmation to sc"
-        );
-
-        let message = RequestMessage::new_request(confirm_request);
-
-        sc_sink.send_request(&message).await
-    }
-
-    /// Demote leader replica as follower.
-    /// This only happens on manual election
-    pub async fn demote_replica(&self, replica: Replica) {
-        debug!("demoting replica: {}", replica);
-
-        if let Some(leader_replica_state) = self.ctx.leaders_state().remove(&replica.id) {
-            drop(leader_replica_state);
-            if let Err(err) = self
-                .ctx
-                .followers_state_owned()
-                .add_replica(self.ctx.clone(), replica)
-                .await
-            {
-                error!("demotion failed: {}", err);
-            }
-        } else {
-            error!("leader controller was not found: {}", replica.id)
-        }
-    }
-
-    /// update follower replida
-    async fn update_follower_replica(&self, replica: Replica) {
-        debug!("trying to adding follower replica: {}", &replica.leader);
-
-        self.ctx.followers_state().update_replica(replica).await;
-    }
-
-    async fn remove_follower_replica(&self, replica: Replica) {
-        debug!("removing follower replica: {}", replica);
-        if let Some(replica_state) = self
-            .ctx
-            .followers_state()
-            .remove_replica(replica.leader, &replica.id)
-            .await
-        {
-            if let Err(err) = replica_state.remove().await {
-                error!("error {}, removing replica: {}", err, replica);
-            }
-        } else {
-            error!("there was no follower replica: {} to remove", replica);
-        }
-    }
-
-    async fn switch_leader_for_follower(&self, new: Replica, old: Replica) {
-        // we stay as follower but we switch to new leader
-        debug!("still follower but switching leader: {}", new);
-        if self
-            .ctx
-            .followers_state()
-            .remove_replica(old.leader, &old.id)
-            .await
-            .is_none()
-        {
-            error!("there was no follower replica: {} to switch", new);
-        }
-        if let Err(err) = self
-            .ctx
-            .followers_state_owned()
-            .add_replica(self.ctx.clone(), new)
-            .await
-        {
-            error!("leader switch failed: {}", err);
-        }
     }
 }

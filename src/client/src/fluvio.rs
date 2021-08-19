@@ -68,6 +68,7 @@ impl Fluvio {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         Self::connect_with_connector(connector, config).await
     }
+
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
@@ -77,8 +78,11 @@ impl Fluvio {
         debug!("connected to cluster at: {}", inner_client.config().addr());
 
         let (socket, config, versions) = inner_client.split();
+        debug!(platform = %versions.platform_version(),"checking platform version");
         check_platform_compatible(versions.platform_version())?;
+
         let socket = MultiplexerSocket::shared(socket);
+
         let metadata = MetadataStores::start(socket.clone()).await?;
 
         let spu_pool = OnceCell::new();
@@ -212,11 +216,20 @@ impl Fluvio {
 fn check_platform_compatible(cluster_version: &Version) -> Result<(), FluvioError> {
     let client_minimum_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
         .expect("MINIMUM_PLATFORM_VERSION must be semver");
+    let client_maximum_version = Version::parse(crate::MAXIMUM_PLATFORM_VERSION)
+        .expect("MAXIMUM_PLATFORM_VERSION must be semver");
 
     if *cluster_version < client_minimum_version {
         return Err(FluvioError::MinimumPlatformVersion {
             cluster_version: cluster_version.clone(),
             client_minimum_version,
+        });
+    }
+
+    if *cluster_version >= client_maximum_version {
+        return Err(FluvioError::MaximumPlatformVersion {
+            cluster_version: cluster_version.clone(),
+            client_maximum_version,
         });
     }
 

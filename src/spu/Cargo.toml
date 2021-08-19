@@ -18,7 +18,6 @@ path = "src/main.rs"
 doc = false
 
 [dependencies]
-log = "0.4.8"
 cfg-if = "1.0.0"
 anyhow = "1.0.38"
 tracing = "0.1.14"
@@ -43,6 +42,7 @@ wasmtime = "0.28.0"
 nix = "0.22.0"
 adaptive_backoff = "0.2.1"
 thiserror = "1"
+once_cell = "1.5"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.3", features = ["events"], path = "../types" }

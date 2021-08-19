@@ -123,6 +123,14 @@ pub struct StartOpt {
     /// Tries to setup necessary environment for cluster startup
     #[structopt(long)]
     pub setup: bool,
+
+    /// Proxy address
+    #[structopt(long)]
+    pub proxy_addr: Option<String>,
+
+    /// Service Type
+    #[structopt(long)]
+    pub service_type: Option<String>,
 }
 
 impl StartOpt {

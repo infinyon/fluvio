@@ -17,6 +17,13 @@
 
 set -e
 
+# On Mac, use 'greadlink' instead of 'readlink'
+if [[ "$(uname)" == "Darwin" ]]; then
+    [[ -x "$(command -v greadlink)" ]] || brew install coreutils
+    readonly READLINK="greadlink"
+else
+    readonly READLINK="readlink"
+fi
 
 readonly STABLE=${1:-stable}
 readonly PRERELEASE=${2:-$(cat VERSION)-$(git rev-parse HEAD)}
@@ -25,19 +32,18 @@ readonly CI=${CI:-}
 readonly STABLE_TOPIC=${STABLE_TOPIC:-stable}
 readonly PRERELEASE_TOPIC=${PRERELEASE_TOPIC:-prerelease}
 readonly USE_LATEST=${USE_LATEST:-}
-readonly FLUVIO_BIN=$(readlink -f ${FLUVIO_BIN:-"$(which fluvio)"})
+readonly FLUVIO_BIN=$(${READLINK} -f ${FLUVIO_BIN:-"$(which fluvio)"})
 
 # Change to this script's directory 
-pushd "$(dirname "$(readlink -f "$0")")" > /dev/null
+pushd "$(dirname "$(${READLINK} -f "$0")")" > /dev/null
 
 function cleanup() {
     echo Clean up test data
-    rm -f --verbose ./*.txt.tmp;
-    rm -f --verbose ./*.checksum;
+    rm -fv ./*.txt.tmp;
+    rm -fv ./*.checksum;
     echo Delete cluster if possible
     $FLUVIO_BIN cluster delete || true
     $FLUVIO_BIN cluster delete --sys || true
-
 }
 
 # If we're in CI, we want to slow down execution
@@ -59,7 +65,9 @@ function validate_cluster_stable() {
 
     echo "Install (current stable) CLI"
     unset VERSION
-    curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+    curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.output 
+    STABLE_VERSION=$(cat /tmp/installer.output | grep "Downloading Fluvio" | awk '{print $5}')
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
@@ -67,7 +75,11 @@ function validate_cluster_stable() {
     $STABLE_FLUVIO cluster start 
     ci_check;
 
+    # Baseline: CLI version and platform version are expected to be the same
+
     $STABLE_FLUVIO version
+    validate_cli_version $STABLE_FLUVIO $STABLE_VERSION
+    validate_platform_version $STABLE_FLUVIO $STABLE_VERSION
     ci_check;
 
 
@@ -107,7 +119,7 @@ function validate_cluster_stable() {
 # Then we produce + consume on the Stable + Stable-1 topic and validate the checksums on each of those topics
 function validate_upgrade_cluster_to_prerelease() {
 
-    local FLUVIO_BIN_ABS_PATH=$(readlink -f $FLUVIO_BIN)
+    local FLUVIO_BIN_ABS_PATH=$(${READLINK} -f $FLUVIO_BIN)
     local TARGET_VERSION=${PRERELEASE}
 
     # Change dir to get access to Helm charts
@@ -115,16 +127,20 @@ function validate_upgrade_cluster_to_prerelease() {
     if [[ ! -z "$USE_LATEST" ]];
     then
         echo "Download the latest published dev CLI"
-        TARGET_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
-        echo "Installed CLI version ${TARGET_VERSION}"
+
+        # Split this up into version (and commit too?)
+        DEV_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
+        TARGET_VERSION=${DEV_VERSION::-41}
+        echo "Installed CLI version ${DEV_VERSION}"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
-        echo "Upgrading cluster to ${TARGET_VERSION}"
+        echo "Upgrading cluster to ${DEV_VERSION}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
         sleep 60
     else
         echo "Test local image v${PRERELEASE}"
+        TARGET_VERSION=${PRERELEASE::-41}
         # This should use the binary that the Makefile set
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
@@ -142,7 +158,11 @@ function validate_upgrade_cluster_to_prerelease() {
 
     ci_check;
 
+    # Validate that the development version output matches the expected version from installer output
     $FLUVIO_BIN_ABS_PATH version
+    validate_cli_version $FLUVIO_BIN_ABS_PATH $TARGET_VERSION
+    validate_platform_version $FLUVIO_BIN_ABS_PATH $TARGET_VERSION
+
     ci_check;
 
     echo "Create test topic: ${PRERELEASE_TOPIC}"
@@ -185,6 +205,48 @@ function validate_upgrade_cluster_to_prerelease() {
 
     # echo "Validate deleting topic created by v${TARGET_VERSION} CLI"
     #$FLUVIO_BIN_ABS_PATH topic delete ${PRERELEASE_TOPIC} 
+}
+
+
+# Do I need to compare SHAs here?
+function validate_cli_version() {
+    CUR_FLUVIO_BIN=$1;
+    FLUVIO_SEMVER=$2;
+
+    # Get the fluvio version output
+    # Parse out CLI version
+    CLI_VERSION=$($CUR_FLUVIO_BIN version | grep "Fluvio CLI" | head -1 | awk '{print $4}')
+
+    if [ "$CLI_VERSION" = "$FLUVIO_SEMVER" ]; then
+      echo "✅ CLI Version verified: $CLI_VERSION";
+    else
+      echo "❌ CLI Version check failed";
+      echo "Version reported by fluvio version: $CLI_VERSION";
+      echo "Expected version : $FLUVIO_SEMVER";
+      exit 1;
+    fi
+
+}
+
+function validate_platform_version() {
+    CUR_FLUVIO_BIN=$1;
+    FLUVIO_SEMVER=$2;
+
+    # Get the fluvio version output
+    # Parse out Platform version
+    PLATFORM_VERSION=$($CUR_FLUVIO_BIN version | grep "Fluvio Platform" | head -1 | awk '{print $4}')
+
+    # Compare Platform == FLUVIO_SEMVER
+    if [ "$PLATFORM_VERSION" = "$FLUVIO_SEMVER" ]; then
+      echo "✅ Platform Version verified: $PLATFORM_VERSION";
+    else
+      echo "❌ Platform Version check failed";
+      echo "Version reported by fluvio version: $PLATFORM_VERSION";
+      echo "Expected version : $FLUVIO_SEMVER";
+      exit 1;
+    fi
+
+
 }
 
 # Create 2 base data files and calculate checksums for the expected states of each of our testing topics
@@ -239,3 +301,4 @@ function main() {
 }
 
 main;
+

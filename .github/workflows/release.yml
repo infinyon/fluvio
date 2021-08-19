@@ -90,7 +90,7 @@ jobs:
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
-          ARTIFACTS=(*.zip)
+          ARTIFACTS=(./*)
           gh release create -R infinyon/fluvio \
             --title="v${{ env.VERSION }}" \
             -F ./CHANGELOG.md \
@@ -222,11 +222,14 @@ jobs:
 
             TARGET="$(cat ${UNZIP_DIR}/.target)"
             ARTIFACT="$(echo ${UNZIP_DIR} | sed -e "s/-$TARGET$//")"
+            PACKAGE="$(echo ${ARTIFACT} | sed -e "s/^\.\///" -e "s/\.exe$//")"
             echo "TARGET=$TARGET"
             echo "ARTIFACT=$ARTIFACT"
+            echo "PACKAGE=$PACKAGE"
 
             ${HOME}/.fluvio/bin/fluvio package publish \
               --force \
+              --package="${PACKAGE}" \
               --version="${VERSION}" \
               --target="${TARGET}" \
               "${UNZIP_DIR}/${ARTIFACT}"
@@ -266,7 +269,7 @@ jobs:
         continue-on-error: true
         run: |
           ${HOME}/.fluvio/bin/fluvio package bump dynamic "${{ env.VERSION }}"
-          ${HOME}/.fluvio/bin/fluvio package tag "fluvio:${{ env.VERSION }}" --tag=stable
+          ${HOME}/.fluvio/bin/fluvio package tag "fluvio:${{ env.VERSION }}" --tag=stable --force
 
       - uses: actions/checkout@v2
 
@@ -297,3 +300,17 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  validate_fluvio_release:
+    name: Validate Fluvio release 
+    needs: [bump_stable_fluvio]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.setup_job.outputs.VERSION }}
+      TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: 
+        run: |
+          make VERSION=${{ env.VERSION }} GIT_COMMIT=${{ env.TARGET_SHA }} validate-release-stable

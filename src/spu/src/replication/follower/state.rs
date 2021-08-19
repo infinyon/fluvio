@@ -12,10 +12,10 @@ use dataplane::Offset;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
 use fluvio_types::SpuId;
 use crate::replication::leader::ReplicaOffsetRequest;
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::{FileGlobalContext};
 use crate::storage::SharableReplicaStorage;
 
-use super::group::FollowerGroups;
+use super::controller::FollowerGroups;
 
 pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
 
@@ -72,7 +72,7 @@ impl FollowersState<FileReplica> {
     /// otherwise check if there is existing state, if exists return none otherwise create new
     pub async fn add_replica(
         self: Arc<Self>,
-        ctx: DefaultSharedGlobalContext,
+        ctx: &FileGlobalContext,
         replica: Replica,
     ) -> Result<Option<FollowerReplicaState<FileReplica>>, StorageError> {
         let leader = replica.leader;
@@ -94,7 +94,7 @@ impl FollowersState<FileReplica> {
                     FollowerReplicaState::create(leader, replica.id, ctx.config().into()).await?;
 
                 entry.insert(replica_state.clone());
-                self.groups.check_new(&ctx, leader).await;
+                self.groups.check_new(ctx, leader).await;
                 Ok(Some(replica_state))
             }
         }

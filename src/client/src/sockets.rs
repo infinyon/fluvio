@@ -49,9 +49,11 @@ impl VersionedSocket {
     ) -> Result<Self, FluvioError> {
         // now get versions
         // Query for API versions
+
         let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
         req_msg.get_mut_header().set_client_id(&config.client_id);
 
+        debug!("querying versions");
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
         let versions = Versions::new(response);
 
@@ -124,6 +126,7 @@ impl ClientConfig {
         debug!(add = %self.addr, "Connection to");
         let socket =
             FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+        debug!(add = %self.addr, "creating version socket");
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 

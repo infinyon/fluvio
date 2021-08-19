@@ -1,6 +1,14 @@
 # Release Notes
 
-## Platform Version 0.9.1 - UNRELEASED
+## Platform Version 0.9.3 - UNRELEASED
+* Fixs Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))
+
+## Platform Version 0.9.2 - 2021-08-10
+* Make Cluster installation more reliable. ([#1395](https://github.com/infinyon/fluvio/pull/1395))
+* Reliabiility improvement in SC's SPU controller. ([#1413](https://github.com/infinyon/fluvio/pull/1413))
+  
+## Platform Version 0.9.1 - 2021-08-06
+* Add Apple M1 as Tier2 platform for `fluvio-run` ([#1382](https://github.com/infinyon/fluvio/pull/1382))
 
 ## Platform Version 0.9.0 - 2021-08-03
 * Add k8s feature flag to cli. ([#1257](https://github.com/infinyon/fluvio/pull/1257))

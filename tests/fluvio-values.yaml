@@ -1,0 +1,5 @@
+loadBalancer:
+  serviceAnnotations:
+    cloud.fluvio.io/hostname: xyz
+service:
+  type: ClusterIP

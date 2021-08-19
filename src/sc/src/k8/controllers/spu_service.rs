@@ -1,15 +1,13 @@
 use std::{collections::HashMap, fmt, time::Duration};
 
-use fluvio_controlplane_metadata::store::MetadataStoreObject;
-use fluvio_stream_dispatcher::actions::WSAction;
-use k8_client::{ClientError, SharedK8Client};
-use tracing::debug;
-use tracing::trace;
-use tracing::error;
-use tracing::instrument;
+use tracing::{debug, trace, error, instrument};
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
+use fluvio_controlplane_metadata::store::MetadataStoreObject;
+use fluvio_controlplane_metadata::store::k8::K8MetaItem;
+use fluvio_stream_dispatcher::actions::WSAction;
+use k8_client::{ClientError};
 
 use crate::stores::spg::{SpuGroupSpec};
 use crate::stores::{StoreContext, K8ChangeListener};
@@ -17,14 +15,11 @@ use crate::k8::objects::spu_k8_config::ScK8Config;
 use crate::k8::objects::spg_group::SpuGroupObj;
 use crate::k8::objects::spu_service::SpuServiceSpec;
 
-/// Manages SpuService
-/// It is used to update SPU's public ip address from external load balancer service.
-/// External load balancer update external ip or hostname out of band.
+/// Sync individual SPU services from SPU Group
 pub struct SpuServiceController {
-    client: SharedK8Client,
-    namespace: String,
     services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
+    configs: StoreContext<ScK8Config>,
 }
 
 impl fmt::Display for SpuServiceController {
@@ -41,14 +36,12 @@ impl fmt::Debug for SpuServiceController {
 
 impl SpuServiceController {
     pub fn start(
-        client: SharedK8Client,
-        namespace: String,
+        configs: StoreContext<ScK8Config>,
         services: StoreContext<SpuServiceSpec>,
         groups: StoreContext<SpuGroupSpec>,
     ) {
         let controller = Self {
-            client,
-            namespace,
+            configs,
             services,
             groups,
         };
@@ -71,8 +64,10 @@ impl SpuServiceController {
         use tokio::select;
 
         let mut spg_listener = self.groups.change_listener();
+        let mut config_listener = self.configs.change_listener();
 
         self.sync_with_spg(&mut spg_listener).await?;
+        self.sync_with_config(&mut config_listener).await?;
 
         loop {
             trace!("waiting events");
@@ -83,8 +78,42 @@ impl SpuServiceController {
                     self.sync_with_spg(&mut spg_listener).await?;
                 },
 
+                _ = config_listener.listen() => {
+                    debug!("detected config changes");
+                    self.sync_with_config(&mut config_listener).await?;
+                }
+
             }
         }
+    }
+
+    async fn sync_with_config(
+        &mut self,
+        listener: &mut K8ChangeListener<ScK8Config>,
+    ) -> Result<(), ClientError> {
+        if !listener.has_change() {
+            trace!("no config change, skipping");
+            return Ok(());
+        }
+
+        let changes = listener.sync_changes().await;
+        let epoch = changes.epoch;
+        let (updates, deletes) = changes.parts();
+
+        debug!(
+            "received config changes updates: {},deletes: {},epoch: {}",
+            updates.len(),
+            deletes.len(),
+            epoch,
+        );
+
+        for config in updates.into_iter() {
+            // iterate over all spg
+            self.update_services(self.groups.store().clone_values().await, config.spec)
+                .await?;
+        }
+
+        Ok(())
     }
 
     async fn sync_with_spg(
@@ -92,7 +121,7 @@ impl SpuServiceController {
         listener: &mut K8ChangeListener<SpuGroupSpec>,
     ) -> Result<(), ClientError> {
         if !listener.has_change() {
-            trace!("no service change, skipping");
+            trace!("no spg changes, skipping");
             return Ok(());
         }
 
@@ -107,8 +136,22 @@ impl SpuServiceController {
             epoch,
         );
 
-        let spu_k8_config = ScK8Config::load(&self.client, &self.namespace).await?;
+        if let Some(config) = self.configs.store().value("fluvio").await {
+            self.update_services(updates, config.inner_owned().spec)
+                .await?;
+        } else {
+            error!("config map is not loaded, skipping");
+        }
 
+        Ok(())
+    }
+
+    /// update spu
+    async fn update_services(
+        &self,
+        updates: Vec<MetadataStoreObject<SpuGroupSpec, K8MetaItem>>,
+        config: ScK8Config,
+    ) -> Result<(), ClientError> {
         for group_item in updates.into_iter() {
             let spg_obj = SpuGroupObj::new(group_item);
 
@@ -118,7 +161,7 @@ impl SpuServiceController {
                 let spu_name = format!("{}-{}", spg_obj.key(), i);
                 debug!(%spu_name,"generating spu with name");
 
-                self.apply_spu_load_balancers(&spg_obj, &spu_name, &spu_k8_config)
+                self.apply_spu_load_balancers(&spg_obj, &spu_name, &config)
                     .await?;
             }
         }

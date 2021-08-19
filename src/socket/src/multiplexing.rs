@@ -7,6 +7,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
+use std::fmt::Debug;
 
 use async_channel::bounded;
 use async_channel::Receiver;
@@ -58,6 +59,12 @@ pub struct MultiplexerSocket {
     senders: Senders,
     sink: ExclusiveFlvSink,
     terminate: Arc<Event>,
+}
+
+impl Debug for MultiplexerSocket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "MultiplexerSocket {}", self.sink.id())
+    }
 }
 
 impl Drop for MultiplexerSocket {
@@ -123,6 +130,11 @@ impl MultiplexerSocket {
 
         req_msg.header.set_correlation_id(correlation_id);
 
+        trace!("senders trying lock");
+        let mut senders = self.senders.lock().await;
+        senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
+        drop(senders);
+
         debug!(
             "serial multiplexing: sending request: {} id: {}",
             R::API_KEY,
@@ -130,10 +142,7 @@ impl MultiplexerSocket {
         );
         self.sink.send_request(&req_msg).await?;
 
-        let mut senders = self.senders.lock().await;
-        senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
-        drop(senders);
-
+        trace!("inserts shared sender");
         let (msg, msg_event) = bytes_lock;
 
         select! {
@@ -186,7 +195,7 @@ impl MultiplexerSocket {
     }
 
     /// create stream response
-    #[instrument(skip(self, req_msg, queue_len))]
+    #[instrument(skip(self,req_msg), fields(api = R::API_KEY))]
     pub async fn create_stream<R>(
         &self,
         mut req_msg: RequestMessage<R>,
@@ -196,27 +205,33 @@ impl MultiplexerSocket {
         R: Request,
     {
         let correlation_id = self.next_correlation_id().await;
+
         req_msg.header.set_correlation_id(correlation_id);
 
-        debug!(
-            "send request: {} correlation_id: {}",
-            R::API_KEY,
-            correlation_id
-        );
-        self.sink.send_request(&req_msg).await?;
+        trace!(correlation_id,request = ?req_msg, "new correlation id");
 
-        // it is possible that msg have received by dispatcher before channel is inserted into senders
-        // but it is easier to clean up
+        // set up new channel
         let (sender, receiver) = bounded(queue_len);
         let mut senders = self.senders.lock().await;
 
         // remove any closed channel, this is not optimal but should do trick for now
+
         senders.retain(|_, shared_sender| match shared_sender {
             SharedSender::Serial(_) => true,
             SharedSender::Queue(sender) => !sender.is_closed(),
         });
+
         senders.insert(correlation_id, SharedSender::Queue(sender));
         drop(senders);
+
+        trace!(correlation_id, "created new channel");
+
+        self.sink.send_request(&req_msg).await?;
+
+        trace!(correlation_id, "request send");
+
+        // it is possible that msg have received by dispatcher before channel is inserted into senders
+        // but it is easier to clean up
 
         Ok(AsyncResponse {
             receiver,
@@ -308,11 +323,12 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
+    #[instrument(name = "loop", skip(self, stream))]
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
         loop {
-            trace!("dispatcher: waiting for next response from stream ");
+            trace!("waiting");
 
             select! {
                 frame = frame_stream.next() => {
@@ -321,7 +337,7 @@ impl MultiPlexingResponseDispatcher {
                             let mut correlation_id: i32 = 0;
                             match correlation_id.decode(&mut msg, 0) {
                                 Ok(_) => {
-                                    trace!(correlation_id,"decoded correlation");
+                                    trace!(correlation_id,len = msg.len(), "received frame");
 
                                     if let Err(err) = self.send(correlation_id, msg).await {
                                         error!("error sending to socket, {}", err)
@@ -330,11 +346,11 @@ impl MultiPlexingResponseDispatcher {
                                 Err(err) => error!("error decoding response, {}", err),
                             }
                         } else {
-                            debug!("dispatcher: problem getting frame from stream. terminating");
+                            debug!("problem getting frame from stream. terminating");
                             break;
                         }
                     } else {
-                        debug!("dispatcher: inner stream has terminated ");
+                        debug!("inner stream has terminated ");
 
                         let guard = self.senders.lock().await;
                         for sender in guard.values() {
@@ -371,19 +387,20 @@ impl MultiPlexingResponseDispatcher {
     }
 
     /// send message to correct receiver
-    #[instrument(skip(self, msg))]
+    #[instrument(skip(self, msg),fields( msg = msg.len()))]
     pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {
                 SharedSender::Serial(serial_sender) => {
+                    trace!("found serial");
                     // this should always succeed since nobody should lock
                     match serial_sender.0.try_lock() {
                         Some(mut guard) => {
                             *guard = Some(msg);
-                            trace!("send back msg with correlation: {}", correlation_id);
                             drop(guard); // unlock
                             serial_sender.1.notify(1);
+
                             Ok(())
                         }
                         None => Err(IoError::new(
@@ -397,6 +414,7 @@ impl MultiPlexingResponseDispatcher {
                     }
                 }
                 SharedSender::Queue(queue_sender) => {
+                    trace!("found queue");
                     queue_sender.send(Some(msg)).await.map_err(|err| {
                         IoError::new(
                             ErrorKind::BrokenPipe,

@@ -1,0 +1,11 @@
+[package]
+name = "fluvio-wasm-aggregate"
+version = "0.1.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2018"
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fluvio-smartstream = { path = "../../" }

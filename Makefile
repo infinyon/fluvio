@@ -6,6 +6,7 @@ DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
 K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
 TARGET_MUSL=x86_64-unknown-linux-musl
 TARGET?=
+IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and should not be built
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 CARGO_BUILDER=$(if $(findstring arm,$(TARGET)),cross,cargo) # If TARGET contains the substring "arm"
 FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
@@ -31,7 +32,7 @@ TEST_ENV_FLV_SPU_DELAY=
 TEST_ARG_SPU=--spu ${DEFAULT_SPU}
 TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 TEST_ARG_REPLICATION=-r ${REPL}
-TEST_ARG_DEVELOP=--develop
+TEST_ARG_DEVELOP=$(if $(IMAGE_VERSION),--image-version ${IMAGE_VERSION}, --develop)
 TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
@@ -48,8 +49,10 @@ install_tools_mac:
 helm_pkg:	
 	make -C k8-util/helm package
 
-build-cli: install_rustup_target helm_pkg
+
+build-cli: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
@@ -59,7 +62,7 @@ build-cli-minimal: install_rustup_target
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-build-test:	install_rustup_target helm_pkg
+build-test:	install_rustup_target 
 	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
@@ -122,7 +125,7 @@ k8-setup:
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
-smoke-test-k8: build_k8_image smoke-test
+smoke-test-k8: build_k8_image smoke-test 
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
 smoke-test-k8-tls: build_k8_image smoke-test
@@ -151,6 +154,13 @@ upgrade-test: build-cli build_k8_image
 	./tests/upgrade-test.sh
 endif
 
+# When running in development, might need to run `cargo clean` to ensure correct fluvio binary is used
+validate-release-stable:
+	./tests/fluvio-validate-release.sh $(VERSION) $(GIT_COMMIT)
+
+
+longevity-producer-test:
+	./tests/longevity-producer.sh
 
 # test rbac
 #
@@ -200,25 +210,25 @@ install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
 # Use check first to leverage sccache, the clippy piggybacks
-check-clippy: install-clippy install_rustup_target helm_pkg
+check-clippy: install-clippy install_rustup_target 
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
 build_smartstreams:
 	make -C src/smartstream/examples build
 
-run-all-unit-test: build_smartstreams install_rustup_target helm_pkg
+run-all-unit-test: build_smartstreams install_rustup_target 
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C src/protocol
 
-run-integration-test:build_smartstreams install_rustup_target helm_pkg
+run-integration-test:build_smartstreams install_rustup_target 
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored --test-threads=1
 
-run-all-doc-test: install_rustup_target helm_pkg
+run-all-doc-test: install_rustup_target 
 	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-run-client-doc-test: install_rustup_target helm_pkg
+run-client-doc-test: install_rustup_target 
 	cargo test --all-features --doc -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 	cargo test --all-features --doc -p fluvio-cluster $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
@@ -226,6 +236,8 @@ run-client-doc-test: install_rustup_target helm_pkg
 
 # In CI mode, do not build k8 image
 ifeq (${CI},true)
+build_k8_image:
+else ifeq (${IMAGE_VERSION},true)
 build_k8_image:
 else
 # When not in CI (i.e. development), build image before testing
@@ -251,6 +263,11 @@ fluvio_run_bin: install_rustup_target
 upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --sys
 	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
+
+
+clean:
+	cargo clean
+	make -C k8-util/helm clean
 
 
 .EXPORT_ALL_VARIABLES:

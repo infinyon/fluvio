@@ -18,6 +18,7 @@ use super::LeaderPeerApiEnum;
 use super::LeaderPeerRequest;
 use super::UpdateOffsetRequest;
 use super::spu::SharedSpuPendingUpdate;
+use super::super::follower::RejectOffsetRequest;
 
 /// Handle connection request from follower
 /// This follows similar arch as Consumer Stream Fetch Handler
@@ -99,7 +100,7 @@ impl FollowerHandler {
                             match req_message {
 
                                 LeaderPeerRequest::UpdateOffsets(request) => {
-                                    self.update_from_follower(request.request).await?;
+                                    self.update_from_follower(request.request,&mut sink).await?;
                                 }
                             }
                         } else {
@@ -122,7 +123,7 @@ impl FollowerHandler {
         Ok(())
     }
 
-    // updates form other SPU trigger this
+    // send out any updates from other leaders to this followers
     #[instrument(skip(self))]
     async fn update_from_leaders(&mut self, sink: &mut FluvioSink) -> Result<(), SocketError> {
         let replicas = self.spu_update.drain_replicas().await;
@@ -164,9 +165,15 @@ impl FollowerHandler {
         Ok(())
     }
 
+    /// process updates from followers
     #[instrument(skip(self, request))]
-    async fn update_from_follower(&self, request: UpdateOffsetRequest) -> Result<(), SocketError> {
-        for update in request.replicas {
+    async fn update_from_follower(
+        &self,
+        request: UpdateOffsetRequest,
+        sink: &mut FluvioSink,
+    ) -> Result<(), SocketError> {
+        let mut rejects = vec![];
+        for update in request.replicas.into_iter() {
             debug!(?update, "request");
             let replica_key = update.replica;
             if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
@@ -182,9 +189,21 @@ impl FollowerHandler {
                     .await;
                 debug!(status, replica = %leader.id(), "leader updated");
             } else {
-                error!(%replica_key,"no such replica");
+                // if we didn't find it replica that means leader doesn't have upto date replicas.
+                // we need to send back
+                warn!(%replica_key,"no such replica");
+                rejects.push(replica_key.clone());
             }
         }
+
+        if !rejects.is_empty() {
+            debug!(reject_count = rejects.len());
+            let request = RequestMessage::new_request(RejectOffsetRequest { replicas: rejects })
+                .set_client_id(format!("leader: {}", self.ctx.local_spu_id()));
+
+            sink.send_request(&request).await?;
+        }
+
         Ok(())
     }
 }

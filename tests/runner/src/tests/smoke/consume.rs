@@ -10,7 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio::Offset;
 use fluvio_command::CommandExt;
 
@@ -27,7 +27,7 @@ fn consume_wait_timeout() -> u64 {
 
 /// verify consumers
 pub async fn validate_consume_message(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
@@ -68,7 +68,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
 }
 
 async fn validate_consume_message_api(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     offsets: Offsets,
     test_case: &SmokeTestCase,
 ) {
@@ -121,7 +121,7 @@ async fn validate_consume_message_api(
                 },
 
                 // max time for each read
-                _ = sleep(Duration::from_millis(5000)) => {
+                _ = sleep(Duration::from_secs(30)) => {
                     println!("Timeout in read");
                     panic!("no consumer read iter: current {}",producer_iteration);
                 },
@@ -152,10 +152,15 @@ async fn validate_consume_message_api(
                         lock.consume_latency_record(consume_time as u64).await;
                         lock.consume_bytes_record(bytes.len()).await;
 
-                        debug!("Consume stat updates: {:?} {:?}", lock.consume_latency, lock.bytes_consumed);
+                        debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
 
                         drop(lock);
 
+                        // for each
+                        if total_records % 100 == 0 {
+                            println!("processed records: {}",total_records);
+                            info!(total_records,"processed records");
+                        }
 
                         if total_records == producer_iteration {
                             println!("consume message validated!, records: {}",total_records);
@@ -179,7 +184,8 @@ async fn validate_consume_message_api(
         sleep(Duration::from_secs(5)).await;
 
         let lock = test_driver.write().await;
-        let admin = lock.client.admin().await;
+        let TestDriverType::Fluvio(fluvio_client) = lock.client.as_ref();
+        let admin = fluvio_client.admin().await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])
             .await

@@ -2,13 +2,13 @@ use std::sync::Arc;
 use async_lock::RwLock;
 use std::sync::mpsc::Sender;
 use fluvio::RecordKey;
-use fluvio_test_util::test_runner::FluvioTestDriver;
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 
 use super::ConcurrentTestCase;
 use super::util::*;
 
 pub async fn producer(
-    test_driver: Arc<RwLock<FluvioTestDriver>>,
+    test_driver: Arc<RwLock<TestDriver>>,
     option: ConcurrentTestCase,
     digests: Sender<String>,
 ) {

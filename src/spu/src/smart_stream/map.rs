@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use std::time::Instant;
 use std::io::Cursor;
+use std::convert::TryFrom;
 
-use anyhow::{Result, Error, anyhow};
+use anyhow::{Result, Error};
 
 use tracing::debug;
 use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
@@ -10,7 +11,9 @@ use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError};
+use dataplane::smartstream::{
+    SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
+};
 use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
 use crate::smart_stream::file_batch::FileBatchIterator;
 
@@ -108,14 +111,16 @@ impl SmartStreamMap {
                 &input_data,
             )?;
 
-            let map_record_count = self
+            let map_output = self
                 .map_fn
                 .call(&mut self.store, (array_ptr as i32, input_data.len() as i32))?;
 
-            debug!(map_record_count, map_execution_time = %now.elapsed().as_millis());
+            debug!(map_output, map_execution_time = %now.elapsed().as_millis());
 
-            if map_record_count == -1 {
-                return Err(anyhow!("map failed"));
+            if map_output < 0 {
+                let internal_error = SmartStreamInternalError::try_from(map_output)
+                    .unwrap_or(SmartStreamInternalError::UnknownError);
+                return Err(internal_error.into());
             }
 
             let bytes = self
