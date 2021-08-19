@@ -4,9 +4,9 @@ name: CI
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.head_ref }}
-  cancel-in-progress: true
+# concurrency:
+  # group: ${{ github.head_ref || 'ci_staging' }}
+  # cancel-in-progress: true
 
 on:
   push:
