@@ -57,7 +57,7 @@ pub struct ConsumeOpt {
     pub offset: Option<u32>,
 
     /// Consume records starting X from the end of the log (default: 10)
-    #[structopt(long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
+    #[structopt(short = "T", long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
     pub tail: Option<Option<u32>>,
 
     /// Maximum number of bytes to be retrieved
