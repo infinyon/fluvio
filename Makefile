@@ -3,7 +3,6 @@ RUSTV?=stable
 GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
 DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
-K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
 TARGET_MUSL=x86_64-unknown-linux-musl
 TARGET?=
 IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and should not be built
@@ -233,6 +232,9 @@ run-client-doc-test: install_rustup_target
 	cargo test --all-features --doc -p fluvio-cluster $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
+
+
+build_k8_image: K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
 
 # In CI mode, do not build k8 image
 ifeq (${CI},true)
