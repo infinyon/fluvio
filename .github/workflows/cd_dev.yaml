@@ -142,10 +142,11 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   cli-platform-cross-version-test:
-    name: CLI x Platform version test 
+    name: CLI (${{ matrix.cli_version }}) x Platform (${{ matrix.cluster_version }}) version test 
     #if: false
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         cluster_version: [stable, latest]
@@ -154,4 +155,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
-        run: make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+        uses: nick-invision/retry@v2
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          command: |
+            run: make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
