@@ -425,7 +425,7 @@ impl LocalInstaller {
         let client = load_and_share().map_err(K8InstallError::from)?;
 
         // before we do let's try make sure SPU are installed.
-        self.check_spu(client.clone()).await?;
+        self.check_crd(client.clone()).await?;
 
         debug!("using log dir: {}", self.config.log_dir.display());
         if !self.config.log_dir.exists() {
@@ -441,8 +441,8 @@ impl LocalInstaller {
         info!("setting local profile");
         self.set_profile()?;
 
-        info!(
-            "launching spu group with size: {}",
+        println!(
+            "launching spu group with: {}",
             &self.config.spu_replicas
         );
         self.launch_spu_group(client.clone()).await?;
@@ -457,7 +457,7 @@ impl LocalInstaller {
     }
 
     // hack
-    async fn check_spu(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
+    async fn check_crd(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         for i in 0..100 {
             println!("checking fluvio crd attempt: {}", i);
             // check if spu is installed
@@ -583,7 +583,7 @@ impl LocalInstaller {
     async fn launch_spu_group(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         let count = self.config.spu_replicas;
         for i in 0..count {
-            debug!("launching SPU ({} of {})", i + 1, count);
+            println!("launching SPU ({} of {})", i + 1, count);
             self.launch_spu(i, client.clone(), &self.config.log_dir)
                 .await?;
         }
