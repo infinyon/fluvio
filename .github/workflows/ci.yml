@@ -539,6 +539,11 @@ jobs:
       - k8_cluster_test
       - k8_upgrade_test
     runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
     steps:
       - uses: actions/checkout@v2
       - name: Download x86_64-unknown-linux-musl Docker Image as Artifact
@@ -564,13 +569,13 @@ jobs:
         run: |
           export TAG="$(cat VERSION)-${{ github.sha }}"
           docker login --username=${{ secrets.DOCKER_USERNAME }} --password=${{ secrets.DOCKER_PASSWORD }}
-          docker tag "infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl" "docker.io/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl"
-          docker tag "infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl" "docker.io/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl"
-          docker push "docker.io/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl"
-          docker push "docker.io/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl"
+          docker tag "infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl" "localhost:5000/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl"
+          docker tag "infinyon/fluvio:${{ github.sha }}-aarch64-unknown-linux-musl" "localhost:5000/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl"
+          docker push "localhost:5000/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl"
+          docker push "localhost:5000/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl"
           docker manifest create "docker.io/infinyon/fluvio:${TAG}" \
-            "docker.io/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl" \
-            "docker.io/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl" 
+            "localhost:5000/infinyon/fluvio:${TAG}-x86_64-unknown-linux-musl" \
+            "localhost:5000/infinyon/fluvio:${TAG}-aarch64-unknown-linux-musl" 
           docker manifest push "docker.io/infinyon/fluvio:${TAG}"
 
   # When all required jobs pass, bump the `dev` GH prerelease to this commit
