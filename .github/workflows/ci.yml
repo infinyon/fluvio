@@ -351,7 +351,7 @@ jobs:
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
         timeout-minutes: 5
-        run: RUST_LOG=fluvio=debug make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+        run: RUST_LOG=fluvio_socket=trace make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
         if: failure()
