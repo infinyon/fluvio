@@ -82,8 +82,6 @@ jobs:
         run: gh release download -R infinyon/fluvio "v${{ env.VERSION }}"
 
       # If this release does not already exist (i.e. the release_check failed), create it
-      - uses: actions/checkout@v2
-        if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
