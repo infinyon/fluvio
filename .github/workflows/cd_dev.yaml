@@ -150,7 +150,6 @@ jobs:
         os: [ubuntu-latest]
         cluster_version: [stable, latest]
         cli_version: [stable, latest]
-    env:
     steps:
       - uses: nolar/setup-k3d-k3s@v1
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
