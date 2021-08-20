@@ -28,6 +28,9 @@ jobs:
 
       - uses: nolar/setup-k3d-k3s@v1
 
+      - name: Install Fluvio CLI
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
       - name: Run longevity test
         run: make longevity-producer-test
 
