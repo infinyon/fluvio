@@ -4,9 +4,11 @@ set -exu
 #set -eu
 
 readonly HOUR_IN_SECONDS=3600
-readonly MIN_IN_SECONDS=60
-readonly TOTAL_TEST_TIME=${HOUR_IN_SECONDS}
-readonly PAYLOAD_SIZE=1000
+readonly TEN_MIN_IN_SECONDS=600
+
+# This var controls the expected test duration
+readonly TOTAL_TEST_TIME=${TEN_MIN_IN_SECONDS}
+#readonly PAYLOAD_SIZE=1000
 readonly NEW_TOPIC_NAME=longevity-new
 readonly EXISTING_TOPIC_NAME=longevity-existing
 readonly PRODUCER_RATE=10
@@ -20,6 +22,9 @@ readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
 # Configure the payload length
 # Connect to cluster
 function setup() {
+
+    # Start a cluster
+    $FLUVIO_BIN cluster start
 
     # Create a topic
     $FLUVIO_BIN topic create $NEW_TOPIC_NAME || true
@@ -53,13 +58,14 @@ function test_produce() {
     TOPIC_NAME=$1
     MESSAGE_ID=$(($2+1))
     local TIMESTAMP_EPOCH=$(date +%s)
-    local RANDOM_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${PAYLOAD_SIZE} | head -n1)
+    #local TEST_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${PAYLOAD_SIZE} | head -n1)
+    local TEST_DATA="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
     
     MSG_NUM=1;
     while [ $MSG_NUM -lt $(($PRODUCER_RATE+1)) ]
     do
-        # Timestamp, CurrentMsg#/ProducerPerSecond, SecondTimestamp/TotalSeconds, RandomData
-        PRODUCER_PAYLOAD="$TIMESTAMP_EPOCH,${MSG_NUM}/${PRODUCER_RATE},${MESSAGE_ID}/${TOTAL_TEST_TIME},${RANDOM_DATA}";
+        # Timestamp, CurrentMsg#/ProducerPerSecond, SecondTimestamp/TotalSeconds, TestData
+        PRODUCER_PAYLOAD="$TIMESTAMP_EPOCH,${MSG_NUM}/${PRODUCER_RATE},${MESSAGE_ID}/${TOTAL_TEST_TIME},${TEST_DATA}";
         echo ${PRODUCER_PAYLOAD} | $FLUVIO_BIN produce ${TOPIC_NAME} 
         let MSG_NUM=MSG_NUM+1;
     done
