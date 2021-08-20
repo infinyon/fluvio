@@ -462,7 +462,7 @@ impl LocalInstaller {
             println!("checking fluvio crd attempt: {}", i);
             // check if spu is installed
             if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
-                println!("problem retrieving fljuvio crd {}", err);
+                println!("problem retrieving fluvio crd {}", err);
                 println!("sleeping 1 seconds");
                 sleep(Duration::from_secs(10)).await;
             } else {
