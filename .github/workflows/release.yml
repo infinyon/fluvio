@@ -82,16 +82,22 @@ jobs:
         run: gh release download -R infinyon/fluvio "v${{ env.VERSION }}"
 
       # If this release does not already exist (i.e. the release_check failed), create it
+      - uses: actions/checkout@v2
+        if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
+          # Create temporary directory to download all artifacts
+          mkdir tmp-release && cd tmp-release
+          gh release download -R infinyon/fluvio dev
+
           ARTIFACTS=(./*)
           gh release create -R infinyon/fluvio \
             --title="v${{ env.VERSION }}" \
-            -F ./CHANGELOG.md \
+            -F ../CHANGELOG.md \
             "v${{ env.VERSION }}" \
             "${ARTIFACTS[@]}"
 
