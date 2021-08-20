@@ -305,16 +305,16 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  validate_fluvio_release:
-    name: Validate Fluvio release 
-    needs: [bump_stable_fluvio]
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.setup_job.outputs.VERSION }}
-      TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
-    steps:
-      - uses: actions/checkout@v2
+  #validate_fluvio_release:
+  #  name: Validate Fluvio release 
+  #  needs: [bump_stable_fluvio]
+  #  runs-on: ubuntu-latest
+  #  env:
+  #    VERSION: ${{ needs.setup_job.outputs.VERSION }}
+  #    TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
+  #  steps:
+  #    - uses: actions/checkout@v2
 
-      - name: 
-        run: |
-          make VERSION=${{ env.VERSION }} GIT_COMMIT=${{ env.TARGET_SHA }} validate-release-stable
+  #    - name: 
+  #      run: |
+  #        make VERSION=${{ env.VERSION }} GIT_COMMIT=${{ env.TARGET_SHA }} validate-release-stable
