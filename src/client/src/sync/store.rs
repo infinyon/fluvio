@@ -25,7 +25,7 @@ pub struct MetadataStores {
 impl MetadataStores {
     /// start synchronization
 
-    #[instrument()]
+    #[instrument(skip(socket))]
     pub async fn start(socket: SharedMultiplexerSocket) -> Result<Self, SocketError> {
         debug!("starting metadata store");
         let store = Self {

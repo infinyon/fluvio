@@ -11,11 +11,11 @@ jobs:
   longevity:
     name: Longevity test 
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        os: [infinyon-ubuntu-bionic]
-        rust: [stable]
+        os: [ubuntu-latest]
     steps:
 
       - uses: actions/checkout@v2
@@ -28,10 +28,8 @@ jobs:
 
       - uses: nolar/setup-k3d-k3s@v1
 
-      - name: Install and start Fluvio
-        run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-          ~/.fluvio/bin/fluvio cluster start
+      - name: Install Fluvio CLI
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
 
       - name: Run longevity test
         run: make longevity-producer-test

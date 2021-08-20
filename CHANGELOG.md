@@ -1,12 +1,20 @@
 # Release Notes
 
-## Platform Version 0.9.3 - UNRELEASED
-* Fixs Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))
+## Platform Version 0.9.4 - UNRELEASED 
+
+## Platform Version 0.9.3 - 2021-08-19
+* Fix Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))
+* Fix release workflow to include Helm charts ([#1361](https://github.com/infinyon/fluvio/issues/1361))
+* Implement SmartStream Aggregates (`#[smartstream(aggregate)]`) API ([#1173](https://github.com/infinyon/fluvio/issues/1173))
+* Fix bounds when resolving relative Offsets ([#1210](https://github.com/infinyon/fluvio/issues/1210))
+* Add `--tail` CLI option for reading recent records from a stream ([#1216](https://github.com/infinyon/fluvio/issues/1210))
+* Fix consumer stream API that waited for records before initializing ([#986](https://github.com/infinyon/fluvio/issues/986))
+* Fixed `fluvio install` for windows CLI ([#1461](https://github.com/infinyon/fluvio/pull/1461))
 
 ## Platform Version 0.9.2 - 2021-08-10
 * Make Cluster installation more reliable. ([#1395](https://github.com/infinyon/fluvio/pull/1395))
 * Reliabiility improvement in SC's SPU controller. ([#1413](https://github.com/infinyon/fluvio/pull/1413))
-  
+
 ## Platform Version 0.9.1 - 2021-08-06
 * Add Apple M1 as Tier2 platform for `fluvio-run` ([#1382](https://github.com/infinyon/fluvio/pull/1382))
 

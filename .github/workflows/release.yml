@@ -90,10 +90,14 @@ jobs:
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
+          # Create temporary directory to download all artifacts
+          mkdir tmp-release && cd tmp-release
+          gh release download -R infinyon/fluvio dev
+
           ARTIFACTS=(./*)
           gh release create -R infinyon/fluvio \
             --title="v${{ env.VERSION }}" \
-            -F ./CHANGELOG.md \
+            -F ../CHANGELOG.md \
             "v${{ env.VERSION }}" \
             "${ARTIFACTS[@]}"
 
@@ -301,16 +305,16 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  validate_fluvio_release:
-    name: Validate Fluvio release 
-    needs: [bump_stable_fluvio]
-    runs-on: ubuntu-latest
-    env:
-      VERSION: ${{ needs.setup_job.outputs.VERSION }}
-      TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
-    steps:
-      - uses: actions/checkout@v2
+  #validate_fluvio_release:
+  #  name: Validate Fluvio release 
+  #  needs: [bump_stable_fluvio]
+  #  runs-on: ubuntu-latest
+  #  env:
+  #    VERSION: ${{ needs.setup_job.outputs.VERSION }}
+  #    TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
+  #  steps:
+  #    - uses: actions/checkout@v2
 
-      - name: 
-        run: |
-          make VERSION=${{ env.VERSION }} GIT_COMMIT=${{ env.TARGET_SHA }} validate-release-stable
+  #    - name: 
+  #      run: |
+  #        make VERSION=${{ env.VERSION }} GIT_COMMIT=${{ env.TARGET_SHA }} validate-release-stable
