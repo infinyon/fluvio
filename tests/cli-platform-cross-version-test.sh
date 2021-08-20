@@ -6,7 +6,7 @@ readonly CLI_VERSION=${1-stable}
 readonly CLUSTER_VERSION=${2-latest}
 readonly TEST_TOPIC=$CLI_VERSION-x-$CLUSTER_VERSION
 readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
-readonly PAYLOAD_SIZE=1000
+readonly PAYLOAD_SIZE=${PAYLOAD_SIZE:-100}
 
 function setup_cluster() {
     echo "Installing cluster @ VERSION: $CLUSTER_VERSION"
