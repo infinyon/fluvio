@@ -41,7 +41,13 @@ function cleanup() {
 }
 
 function main() {
-    cleanup;
+
+    # Run initial cleanup if we're not in CI.
+    if [[ -z "$CI" ]];
+    then
+        cleanup;
+    fi
+
     setup_cluster $CLUSTER_VERSION;
     setup_cli $CLI_VERSION;
     run_test;
