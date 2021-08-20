@@ -11,7 +11,7 @@ on:
         description: 'If non-empty, extra force will be used push this release'
         default: ''
       commit:
-        required: false 
+        required: false
         description: 'Fluvio git commit override (latest `master` by default)'
         default: ''
       installer_version:
@@ -76,14 +76,10 @@ jobs:
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       # Check that this release does not already exist by trying to download it
-      - name: Attempt to download release by version number 
+      - name: Attempt to download release by version number
         id: release_check
         continue-on-error: true
         run: gh release download -R infinyon/fluvio "v${{ env.VERSION }}"
-
-      # If this release does not already exist (i.e. the release_check failed), create it
-      - uses: actions/checkout@v2
-        if: ${{ steps.release_check.outcome == 'failure' }}
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
@@ -302,7 +298,7 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
   validate_fluvio_release:
-    name: Validate Fluvio release 
+    name: Validate Fluvio release
     needs: [bump_stable_fluvio]
     runs-on: ubuntu-latest
     env:
@@ -311,6 +307,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: 
+      - name:
         run: |
           make VERSION=${{ env.VERSION }} GIT_COMMIT=${{ env.TARGET_SHA }} validate-release-stable
