@@ -160,4 +160,4 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           command: |
-            run: make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+            make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
