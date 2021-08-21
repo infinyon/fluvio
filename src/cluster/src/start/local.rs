@@ -448,7 +448,7 @@ impl LocalInstaller {
 
         self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
 
-        println!("setting local profile");
+        println!("Setting local profile");
         self.set_profile()?;
 
         Ok(StartStatus {
