@@ -121,8 +121,8 @@ pub async fn produce_message_with_api(
         let producer = lock.get_producer(&topic_name).await;
         drop(lock);
 
+        let mut chunk_time = SystemTime::now();
         for i in 0..produce_iteration {
-            let chunk_time = SystemTime::now();
             let offset = base_offset + i as i64;
             let message = generate_message(offset, &test_case);
             let len = message.len();
@@ -144,6 +144,7 @@ pub async fn produce_message_with_api(
                     "total records sent: {} chunk time: {:.1} secs",
                     i, elapsed_chunk_time
                 );
+                chunk_time = SystemTime::now();
             }
             info!(
                 "completed send iter: {}, offset: {},len: {}",
