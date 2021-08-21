@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 readonly PROGDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
@@ -18,7 +18,7 @@ main() {
   local -r fluvio_run=$1; shift
   local -r K8=$1
   local -r tmp_dir=$(mktemp -d -t fluvio-docker-image-XXXXXX)
-  local -r docker_tag="infinyon/fluvio:${commit_hash}-$target"
+  local -r docker_repo="infinyon/fluvio"
   local build_args
 
   if [ "$K8" = "minikube" ]; then
@@ -35,17 +35,17 @@ main() {
   fi
 
   pushd "${tmp_dir}"
-  docker build -t $docker_tag $build_args .
+  docker build -t "$docker_repo:$commit_hash" -t "$docker_repo:$commit_hash-$target" $build_args .
 
   if [ "$K8" = "k3d" ]; then
     echo "export image to k3d cluster"
-    docker image save infinyon/fluvio:${docker_tag} --output /tmp/infinyon-fluvio.tar
+    docker image save "$docker_repo:$commit_hash" --output /tmp/infinyon-fluvio.tar
     k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
   fi
 
   if [ "$K8" = "kind" ]; then
     echo "export image to kind cluster"
-    kind load docker-image infinyon/fluvio:${docker_tag}
+    kind load docker-image $docker_repo:$commit_hash
   fi    
 
   popd || true

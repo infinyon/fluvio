@@ -1,9 +1,6 @@
 VERSION := $(shell cat VERSION)
 RUSTV?=stable
-GITHUB_TAG=v$(VERSION)
 GIT_COMMIT=$(shell git rev-parse HEAD)
-DOCKER_TAG=$(VERSION)-$(GIT_COMMIT)
-TARGET_MUSL=x86_64-unknown-linux-musl
 TARGET?=
 IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and should not be built
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
@@ -15,7 +12,6 @@ VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
 CLIENT_LOG=warn
 SERVER_LOG=fluvio=debug
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/flv-test,./target/$(BUILD_PROFILE)/flv-test)
-TEST_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 DEFAULT_SPU=2
 REPL=2
 DEFAULT_ITERATION=1000
@@ -251,7 +247,7 @@ endif
 
 # Build docker image for Fluvio.
 ifndef TARGET
-fluvio_image: TARGET=$(TARGET_MUSL)
+fluvio_image: TARGET=x86_64-unknown-linux-musl
 endif
 fluvio_image: fluvio_run_bin
 	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
