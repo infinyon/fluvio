@@ -110,6 +110,8 @@ async fn validate_consume_message_api(
         info!("total cycle: {}, timer wait: {}", cycle, timer_wait);
         let mut timer = sleep(Duration::from_millis(timer_wait));
 
+        let mut chunk_time = SystemTime::now();
+
         loop {
             let now = SystemTime::now();
             select! {
@@ -158,7 +160,9 @@ async fn validate_consume_message_api(
 
                         // for each
                         if total_records % 100 == 0 {
-                            println!("processed records: {}",total_records);
+                            let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
+                            chunk_time = SystemTime::now();
+                            println!("total processed records: {} chunk time: {:.1}",total_records,elapsed_chunk_time);
                             info!(total_records,"processed records");
                         }
 
