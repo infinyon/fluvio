@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use std::fs::{File, create_dir_all};
 use std::process::{Command, Stdio};
 use std::time::Duration;
-use fluvio::{FluvioConfig};
+use fluvio::{Fluvio, FluvioConfig};
 use k8_metadata_client::MetadataClient;
 use semver::Version;
 
@@ -436,15 +436,16 @@ impl LocalInstaller {
             .inherit()
             .result()
             .map_err(|e| ClusterError::InstallLocal(e.into()))?;
-        info!("launching sc");
-        let (address, port) = self.launch_sc()?;
-        info!("setting local profile");
+
+        // set host name and port for SC
+        // this should mirror K8
+        let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
+
+        let fluvio = self.launch_sc(&address, port).await?;
+        println!("setting local profile");
         self.set_profile()?;
 
-        println!(
-            "launching spu group with: {}",
-            &self.config.spu_replicas
-        );
+        println!("launching spu group with: {}", &self.config.spu_replicas);
         self.launch_spu_group(client.clone()).await?;
         sleep(Duration::from_secs(1)).await;
         self.confirm_spu(self.config.spu_replicas).await?;
@@ -478,10 +479,12 @@ impl LocalInstaller {
     ///
     /// Returns the address of the SC if successful
     #[instrument(skip(self))]
-    fn launch_sc(&self) -> Result<(String, u16), LocalInstallError> {
+    async fn launch_sc(&self, host_name: &str, port: u16) -> Result<Fluvio, LocalInstallError> {
+        use super::common::try_connect_to_sc;
+
         let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
-        debug!("starting sc server");
+        println!("starting sc server");
         let mut binary = {
             let base = self
                 .config
@@ -495,13 +498,21 @@ impl LocalInstaller {
             self.set_server_tls(&mut binary, tls, 9005)?;
         }
         binary.env("RUST_LOG", &self.config.rust_log);
-        debug!("Invoking command: \"{}\"", binary.display());
+
         binary
             .stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
             .spawn()?;
 
-        Ok((LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT))
+        // construct config to connect to SC
+        let cluster_config = FluvioConfig::new(LOCAL_SC_ADDRESS.clone())
+            .with_tls(self.config.client_tls_policy.clone());
+
+        if let Some(fluvio) = try_connect_to_sc(&cluster_config).await {
+            Ok(fluvio)
+        } else {
+            Err(LocalInstallError::SCServiceTimeout)
+        }
     }
 
     #[instrument(skip(self, cmd, tls, port))]
