@@ -376,6 +376,7 @@ jobs:
       - name: Upload tarball as artifact
         uses: actions/upload-artifact@v2
         with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
