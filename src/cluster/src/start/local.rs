@@ -505,6 +505,9 @@ impl LocalInstaller {
             .stderr(Stdio::from(errors))
             .spawn()?;
 
+        // wait little bit to spin up SC
+        sleep(Duration::from_secs(2)).await;
+
         // construct config to connect to SC
         let cluster_config = FluvioConfig::new(LOCAL_SC_ADDRESS.clone())
             .with_tls(self.config.client_tls_policy.clone());
