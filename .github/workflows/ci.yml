@@ -54,7 +54,7 @@ jobs:
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
       - name: Set RELEASE mode
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    #    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
@@ -340,7 +340,7 @@ jobs:
         timeout-minutes: 5
         run: |
           date
-          make RUST_LOG=flv-test=debug FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          make RUST_LOG=flv_test=debug FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
         if: failure()
