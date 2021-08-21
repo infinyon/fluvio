@@ -509,8 +509,8 @@ impl LocalInstaller {
         sleep(Duration::from_secs(2)).await;
 
         // construct config to connect to SC
-        let cluster_config = FluvioConfig::new(LOCAL_SC_ADDRESS.clone())
-            .with_tls(self.config.client_tls_policy.clone());
+        let cluster_config =
+            FluvioConfig::new(&(*LOCAL_SC_ADDRESS)).with_tls(self.config.client_tls_policy.clone());
 
         if let Some(fluvio) = try_connect_to_sc(&cluster_config).await {
             Ok(fluvio)
@@ -703,7 +703,6 @@ impl LocalInstaller {
             let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
             if ready_spu == spu as usize {
                 println!("All SPUs({}) are ready", spu);
-                drop(client);
                 sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
                 return Ok(());
             } else {

@@ -20,7 +20,7 @@ pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
             Ok(fluvio) => Some(fluvio),
             Err(err) => {
                 debug!("couldn't connect: {:#?}", err);
-                return None;
+                None
             }
         }
     }
@@ -33,11 +33,9 @@ pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
         if let Some(fluvio) = try_connect_sc(config).await {
             println!("Connection to sc suceed!");
             return Some(fluvio);
-        } else {
-            if attempt < *MAX_SC_LOOP - 1 {
-                println!("Connection failed.  sleeping 10 seconds");
-                sleep(Duration::from_secs(10)).await;
-            }
+        } else if attempt < *MAX_SC_LOOP - 1 {
+            println!("Connection failed.  sleeping 10 seconds");
+            sleep(Duration::from_secs(10)).await;
         }
     }
 
