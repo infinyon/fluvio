@@ -485,7 +485,7 @@ impl LocalInstaller {
 
         let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
-        println!("starting sc server");
+        println!("Starting sc server");
         let mut binary = {
             let base = self
                 .config
