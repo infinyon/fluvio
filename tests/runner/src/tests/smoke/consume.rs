@@ -162,7 +162,7 @@ async fn validate_consume_message_api(
                         if total_records % 100 == 0 {
                             let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
                             chunk_time = SystemTime::now();
-                            println!("total processed records: {} chunk time: {:.1}",total_records,elapsed_chunk_time);
+                            println!("total processed records: {} chunk time: {:.1} secs",total_records,elapsed_chunk_time);
                             info!(total_records,"processed records");
                         }
 

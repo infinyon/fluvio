@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use tracing::info;
@@ -121,6 +122,7 @@ pub async fn produce_message_with_api(
         drop(lock);
 
         for i in 0..produce_iteration {
+            let chunk_time = SystemTime::now();
             let offset = base_offset + i as i64;
             let message = generate_message(offset, &test_case);
             let len = message.len();
@@ -136,10 +138,18 @@ pub async fn produce_message_with_api(
                 panic!("send record failed for replication: {} iteration: {}", r, i)
             });
             drop(lock);
+            if i % 100 == 0 {
+                let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
+                println!(
+                    "total records sent: {} chunk time: {:.1} secs",
+                    i, elapsed_chunk_time
+                );
+            }
             info!(
                 "completed send iter: {}, offset: {},len: {}",
                 topic_name, offset, len
             );
+
             sleep(Duration::from_millis(10)).await;
         }
     }
