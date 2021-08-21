@@ -154,7 +154,8 @@ async fn validate_consume_message_api(
                         lock.consume_latency_record(consume_time as u64).await;
                         lock.consume_bytes_record(bytes.len()).await;
 
-                        debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
+                       // debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
+                        debug!(consumer_bytes = lock.consumer_bytes, "Consume stat updates");
 
                         drop(lock);
 
