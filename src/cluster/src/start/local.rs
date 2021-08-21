@@ -442,13 +442,14 @@ impl LocalInstaller {
         let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
 
         let fluvio = self.launch_sc(&address, port).await?;
+
+        println!("Launching spu group with: {}", &self.config.spu_replicas);
+        self.launch_spu_group(client.clone()).await?;
+
+        self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
+
         println!("setting local profile");
         self.set_profile()?;
-
-        println!("launching spu group with: {}", &self.config.spu_replicas);
-        self.launch_spu_group(client.clone()).await?;
-        sleep(Duration::from_secs(1)).await;
-        self.confirm_spu(self.config.spu_replicas).await?;
 
         Ok(StartStatus {
             address,
@@ -594,7 +595,7 @@ impl LocalInstaller {
     async fn launch_spu_group(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         let count = self.config.spu_replicas;
         for i in 0..count {
-            println!("launching SPU ({} of {})", i + 1, count);
+            println!("Starting SPU ({} of {})", i + 1, count);
             self.launch_spu(i, client.clone(), &self.config.log_dir)
                 .await?;
         }
@@ -689,22 +690,8 @@ impl LocalInstaller {
     }
 
     /// Check to ensure SPUs are all running
-    #[instrument(skip(self))]
-    async fn confirm_spu(&self, spu: u16) -> Result<(), LocalInstallError> {
-        use fluvio::Fluvio;
-
-        let delay: u64 = std::env::var("FLV_SPU_DELAY")
-            .unwrap_or_else(|_| "1".to_string())
-            .parse()
-            .unwrap_or(1);
-
-        debug!("waiting for spu to be provisioned for: {} seconds", delay);
-
-        sleep(Duration::from_secs(delay)).await;
-
-        println!("try connecting to fluvio sc");
-        let client = Fluvio::connect().await?;
-        debug!("try connectiong to admin");
+    #[instrument(skip(self, client))]
+    async fn confirm_spu(&self, spu: u16, client: &Fluvio) -> Result<(), LocalInstallError> {
         let admin = client.admin().await;
 
         // wait for list of spu

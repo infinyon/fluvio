@@ -1,7 +1,7 @@
 use std::{env, time::Duration};
 
 use once_cell::sync::Lazy;
-use tracing::{instrument};
+use tracing::{debug, instrument};
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_future::timer::sleep;
@@ -16,24 +16,26 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
 #[instrument]
 pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
     async fn try_connect_sc(fluvio_config: &FluvioConfig) -> Option<Fluvio> {
-        println!("trying to connec to sc: {}", fluvio_config.endpoint);
         match Fluvio::connect_with_config(fluvio_config).await {
             Ok(fluvio) => Some(fluvio),
             Err(err) => {
-                println!("couldn't connect: {:#?}", err);
+                debug!("couldn't connect: {:#?}", err);
                 return None;
             }
         }
     }
 
-    println!("trying to connec to sc at {}", config.endpoint);
-
     for attempt in 0..*MAX_SC_LOOP {
+        println!(
+            "trying to connect to sc at: {}, attempt: {}",
+            config.endpoint, attempt
+        );
         if let Some(fluvio) = try_connect_sc(config).await {
+            println!("connection to sc suceed!");
             return Some(fluvio);
         } else {
             if attempt < *MAX_SC_LOOP - 1 {
-                println!("sleeping 10 seconds. attemp: {}", attempt);
+                println!("connection failed.  sleeping 10 seconds");
                 sleep(Duration::from_secs(10)).await;
             }
         }
