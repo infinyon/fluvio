@@ -1,23 +1,19 @@
 use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::marker::PhantomData;
-
 use std::process;
 use std::sync::Arc;
-
 use std::os::unix::io::AsRawFd;
 
 use futures_util::StreamExt;
-
 use async_trait::async_trait;
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 use tracing::instrument;
 use tracing::trace;
 
 use fluvio_types::event::SimpleEvent;
 use fluvio_future::net::{TcpListener, TcpStream};
 use fluvio_future::task::spawn;
-
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
 use fluvio_socket::{FluvioSocket, SocketError};
@@ -164,17 +160,22 @@ where
                             .peer_addr()
                             .map(|addr| addr.to_string())
                             .unwrap_or_else(|_| "".to_owned());
-                        debug!(peer = &*address, "new peer connection");
+                        info!(peer = &*address, "new peer connection");
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {
                             Ok(socket) => {
                                 if let Err(err) = service.respond(context.clone(), socket).await {
-                                    error!("error handling stream: {}", err);
+                                    error!(
+                                        "error handling stream: {}, shutdown on: {}",
+                                        err, address
+                                    );
+                                } else {
+                                    info!(peer = &*address, "connection terminated");
                                 }
                             }
                             Err(err) => {
-                                error!("error on tls handshake: {}", err);
+                                error!("error on tls handshake: {}, addr: {}", err, address);
                             }
                         }
                     };

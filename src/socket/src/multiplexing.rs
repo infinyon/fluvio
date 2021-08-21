@@ -147,6 +147,8 @@ impl MultiplexerSocket {
 
         select! {
             _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
+
+                // clean channel
                 let mut senders = self.senders.lock().await;
                 senders.remove(&correlation_id);
                 drop(senders);
@@ -160,6 +162,7 @@ impl MultiplexerSocket {
 
             _ = msg_event.listen() => {
 
+                // clean channel
                 let mut senders = self.senders.lock().await;
                 senders.remove(&correlation_id);
                 drop(senders);
