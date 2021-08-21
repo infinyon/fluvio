@@ -400,7 +400,6 @@ jobs:
 
   k8_cluster_test:
     name: Kubernetes cluster test run (${{ matrix.run }})
-    if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
@@ -410,8 +409,6 @@ jobs:
         os: [ubuntu-latest]
         run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
         rust: [stable]
-    env:
-      FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
