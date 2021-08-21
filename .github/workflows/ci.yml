@@ -477,7 +477,7 @@ jobs:
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio-x86_64-unknown-linux-musl
+          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
           path: /tmp
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
@@ -545,12 +545,12 @@ jobs:
       - name: Download x86_64-unknown-linux-musl Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio-x86_64-unknown-linux-musl
+          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
           path: /tmp
       - name: Download aarch64-unknown-linux-musl Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio-aarch64-unknown-linux-musl
+          name: infinyon-fluvio-aarch64-unknown-linux-musl.tar
           path: /tmp
 
         # Load image infinyon/fluvio:SHA-ARCH
