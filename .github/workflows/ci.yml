@@ -340,7 +340,7 @@ jobs:
         timeout-minutes: 5
         run: |
           date
-          make RUST_LOG=fluvio=trace FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          make RUST_LOG=fluvio=debug FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
         if: failure()
