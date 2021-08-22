@@ -73,7 +73,6 @@ pub async fn smoke(
     mut test_driver: Arc<RwLock<FluvioTestDriver>>,
     mut test_case: TestCase,
 ) -> TestResult {
-
     println!("Starting smoke test");
     let smoke_test_case = test_case.into();
 

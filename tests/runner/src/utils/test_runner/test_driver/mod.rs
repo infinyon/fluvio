@@ -9,18 +9,16 @@ use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
-use std::time::Duration;
 use futures_lite::stream::StreamExt;
 use tracing::debug;
 use fluvio::Offset;
-use fluvio_future::timer::sleep;
 
 pub enum TestDriverType {
     Fluvio(Fluvio),
 }
 #[derive(Clone)]
 pub struct TestDriver {
-    pub client: Arc<TestDriverType>,
+    pub admin_client: Arc<TestDriverType>,
     pub topic_num: usize,
     pub producer_num: usize,
     pub consumer_num: usize,
@@ -38,22 +36,16 @@ impl TestDriver {
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
     pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
-        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
+        let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.topic_producer(topic).await {
             Ok(client) => {
                 self.producer_num += 1;
-                return client;
+                client
             }
             Err(err) => {
-                println!(
-                    "unable to get producer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
+                panic!("could not create producer: {:#?}", err);
             }
         }
-
-        panic!("can't get producer");
     }
 
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
@@ -86,22 +78,16 @@ impl TestDriver {
     }
 
     pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
-        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
+        let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.partition_consumer(topic.to_string(), 0).await {
             Ok(client) => {
                 self.consumer_num += 1;
-                return client;
+                client
             }
             Err(err) => {
-                println!(
-                    "unable to get consumer to topic: {}, error: {} sleeping 10 second ",
-                    topic, err
-                );
-                sleep(Duration::from_secs(10)).await;
+                panic!("can't create consumer: {:#?}", err);
             }
         }
-
-        panic!("can't get consumer");
     }
 
     pub async fn stream_count(&mut self, consumer: PartitionConsumer, offset: Offset) {
@@ -152,7 +138,7 @@ impl TestDriver {
 
         println!("Creating the topic: {}", &option.topic_name);
 
-        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = self.admin_client.as_ref();
         let admin = fluvio_client.admin().await;
 
         let topic_spec =
@@ -199,5 +185,10 @@ impl TestDriver {
         }
 
         true
+    }
+
+    /// create new fluvio client
+    async fn create_client(&self) -> Result<Fluvio, FluvioError> {
+        Fluvio::connect().await
     }
 }

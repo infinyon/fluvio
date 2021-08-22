@@ -189,7 +189,7 @@ async fn validate_consume_message_api(
         sleep(Duration::from_secs(5)).await;
 
         let lock = test_driver.write().await;
-        let TestDriverType::Fluvio(fluvio_client) = lock.client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = lock.admin_client.as_ref();
         let admin = fluvio_client.admin().await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])

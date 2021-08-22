@@ -133,7 +133,7 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<TestDriver>> {
     };
 
     Arc::new(RwLock::new(TestDriver {
-        client: fluvio_client,
+        admin_client: fluvio_client,
         topic_num: 0,
         producer_num: 0,
         consumer_num: 0,

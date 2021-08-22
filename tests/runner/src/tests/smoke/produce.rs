@@ -62,7 +62,7 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = test_driver.admin_client.as_ref();
         let mut admin = fluvio_client.admin().await;
 
         for _i in 0..partition {

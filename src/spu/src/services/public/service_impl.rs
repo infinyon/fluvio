@@ -60,7 +60,7 @@ impl FlvService for PublicService {
                     if let Some(msg) = api_msg {
 
                         if let Ok(req_message) = msg {
-                            debug!(sink = s_sink.id(),"received request");
+                            debug!("received request");
                             trace!("conn: {}, received request: {:#?}",s_sink.id(),req_message);
                             match req_message {
                                 SpuServerRequest::ApiVersionsRequest(request) => call_service!(
