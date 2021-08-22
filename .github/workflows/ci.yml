@@ -333,7 +333,7 @@ jobs:
           name: flv-test-x86_64-unknown-linux-musl
           path: .
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
+        run: chmod +x ./fluvio ./flv-test && ./fluvio version
       - name: Set up cluster
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
