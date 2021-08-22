@@ -16,7 +16,7 @@ macro_rules! call_service {
             let response = $handler.await?;
             tracing::trace!("send back response: {:#?}", &response);
             $sink.send_response(&response, version).await?;
-            tracing::trace!("finish send");
+            tracing::debug!("finished handler");
         }
     }};
 

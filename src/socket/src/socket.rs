@@ -23,7 +23,7 @@ pub struct FluvioSocket {
 
 impl fmt::Debug for FluvioSocket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "fd({})", self.id())
+        write!(f, "FluvioSocket({})", self.id())
     }
 }
 

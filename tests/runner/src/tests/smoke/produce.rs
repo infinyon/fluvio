@@ -126,7 +126,7 @@ pub async fn produce_message_with_api(
             let offset = base_offset + i as i64;
             let message = generate_message(offset, &test_case);
             let len = message.len();
-            info!("trying send: {}, iteration: {}", topic_name, i);
+            info!(topic = %topic_name, iteration = i, "trying send");
             let mut lock = test_driver.write().await;
             lock.send_count(
                 &producer,
