@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
-use tracing::info;
+use tracing::{info, debug};
 
 use super::SmokeTestCase;
 use super::message::*;
@@ -120,6 +120,8 @@ pub async fn produce_message_with_api(
         let mut lock = test_driver.write().await;
         let producer = lock.get_producer(&topic_name).await;
         drop(lock);
+
+        debug!(base_offset, "created producer");
 
         let mut chunk_time = SystemTime::now();
         for i in 0..produce_iteration {

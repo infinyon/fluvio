@@ -36,6 +36,7 @@ impl TestDriver {
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
     pub async fn get_producer(&mut self, topic: &str) -> TopicProducer {
+        debug!(topic, "creating producer");
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.topic_producer(topic).await {
             Ok(client) => {
