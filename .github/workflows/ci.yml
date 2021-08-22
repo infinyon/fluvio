@@ -340,7 +340,8 @@ jobs:
         timeout-minutes: 5
         run: |
           date
-          make DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+          make DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
+    #      make DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
    #       make RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio=trace DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio SERVER_LOG=fluvio_spu=trace,fluvio_socket=trace TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
 
       - name: Save logs
@@ -364,6 +365,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
+    if: ${{ false }}
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
@@ -400,6 +402,7 @@ jobs:
 
   k8_cluster_test:
     name: Kubernetes cluster test run (${{ matrix.run }})
+    if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
