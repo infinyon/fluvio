@@ -304,7 +304,7 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
-        debug!( message = ?request,"spu request");
+        debug!( message = ?request,"starting spu update");
 
         let _actions = if !request.all.is_empty() {
             debug!(
@@ -325,6 +325,8 @@ impl ScDispatcher<FileReplica> {
         };
 
         self.ctx.sync_follower_update().await;
+
+        trace!("finish spu update");
 
         Ok(())
     }
