@@ -20,6 +20,8 @@ Other dependent repos:
 First Lock master branch (TBD)
 
 - [ ] Publish all public crates.
+  - [ ] `fluvio` and any dependencies
+  - [ ] `fluvio-smartstream`
 - [ ] Update `CHANGELOG.md` with release date.
 - [ ] Run the `release.yml` workflow on GitHub Actions.
 - [ ] Wait for workflow to complete successfully and apply `vX.Y.Z` tag to git.
