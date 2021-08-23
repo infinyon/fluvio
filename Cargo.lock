@@ -2678,9 +2678,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "5.1.4"
+version = "5.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe974c8d9e521200ca4fc72dfbd91d2a8b7e6fbb3e257f3f51165edce4054315"
+checksum = "c0f8da365014c5799a69e58a50d0414f1476aadc1cbf5f94188f5b01e7dba8b3"
 dependencies = [
  "async-trait",
  "base64",
