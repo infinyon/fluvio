@@ -3,6 +3,7 @@
 ## Platform Version 0.9.4 - UNRELEASED 
 * Publish docker image for aarch64 #1389 ([#1389](https://github.com/infinyon/fluvio/pull/1389))
 * Do not panic when trying to create topic with space in the name. ([#1448](https://github.com/infinyon/fluvio/pull/1448))
+* Deprecate consumer fetch API ([#957](https://github.com/infinyon/fluvio/issues/957))
 
 ## Platform Version 0.9.3 - 2021-08-19
 * Fix Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))

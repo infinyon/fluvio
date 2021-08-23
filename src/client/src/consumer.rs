@@ -109,7 +109,7 @@ impl PartitionConsumer {
     ///
     /// [`Offset`]: struct.Offset.html
     /// [`fetch_with_config`]: struct.PartitionConsumer.html#method.fetch_with_config
-    #[deprecated(note = "Use 'stream' instead", since = "0.9.4")]
+    #[deprecated(note = "Use 'stream' instead", since = "0.9.2")]
     #[instrument(skip(self, offset))]
     pub async fn fetch(
         &self,
@@ -157,7 +157,7 @@ impl PartitionConsumer {
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`fetch`]: struct.PartitionConsumer.html#method.fetch
     /// [`Offset`]: struct.Offset.html
-    #[deprecated(note = "Use 'stream_with_config' instead", since = "0.9.4")]
+    #[deprecated(note = "Use 'stream_with_config' instead", since = "0.9.2")]
     #[instrument(skip(self, offset, option))]
     pub async fn fetch_with_config(
         &self,
