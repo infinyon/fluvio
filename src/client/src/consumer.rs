@@ -575,13 +575,13 @@ where
         match next {
             Some(Ok(response)) => {
                 // Count how many records are present in this batch's response
-                let count = response
+                let count: usize = response
                     .partition
                     .records
                     .batches
                     .iter()
                     .map(|it| it.records().len())
-                    .fold(0, |a, b| a + b);
+                    .sum();
                 let diff = self.remaining - count as i64;
                 self.remaining = diff.max(0);
                 Poll::Ready(Some(Ok(response)))

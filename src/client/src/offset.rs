@@ -292,7 +292,7 @@ impl Offset {
         &self,
         offsets: &FetchOffsetPartitionResponse,
     ) -> Result<i64, FluvioError> {
-        let offset = self.inner.resolve(&offsets);
+        let offset = self.inner.resolve(offsets);
 
         // Offset should never be less than 0, even for absolute
         let offset = offset.max(0);
