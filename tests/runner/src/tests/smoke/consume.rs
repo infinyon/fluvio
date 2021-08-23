@@ -104,23 +104,11 @@ async fn validate_consume_message_api(
 
         let mut total_records: u16 = 0;
 
-        // add 30 seconds per 1000
-        let cycle = producer_iteration / 1000 + 1;
-        let timer_wait = cycle as u64 * consume_wait_timeout();
-        info!("total cycle: {}, timer wait: {}", cycle, timer_wait);
-        let mut timer = sleep(Duration::from_millis(timer_wait));
-
         let mut chunk_time = SystemTime::now();
 
         loop {
             let now = SystemTime::now();
             select! {
-
-                _ = &mut timer => {
-                    println!("Timeout in timer");
-                    debug!("timer expired");
-                    panic!("timer expired");
-                },
 
                 // max time for each read
                 _ = sleep(Duration::from_secs(30)) => {

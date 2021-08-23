@@ -82,6 +82,9 @@ impl MultiplexerSocket {
     /// create new multiplexer socket, this always starts with correlation id of 1
     /// correlation id of 0 means shared
     pub fn new(socket: FluvioSocket) -> Self {
+
+        debug!(socket=socket.id(),"spawning dispatcher");
+
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
@@ -90,7 +93,7 @@ impl MultiplexerSocket {
             sink: ExclusiveFlvSink::new(sink),
             terminate: Arc::new(Event::new()),
         };
-
+        
         MultiPlexingResponseDispatcher::run(
             stream,
             multiplexer.senders.clone(),
@@ -107,7 +110,7 @@ impl MultiplexerSocket {
     }
 
     /// create socket to perform request and response
-    #[instrument(skip(self, req_msg))]
+    #[instrument(skip(req_msg))]
     pub async fn send_and_receive<R>(
         &self,
         mut req_msg: RequestMessage<R>,
@@ -322,7 +325,6 @@ impl MultiPlexingResponseDispatcher {
 
         let dispatcher = Self { senders, terminate };
 
-        debug!("dispatcher: spawning dispatcher loop");
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
