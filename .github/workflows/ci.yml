@@ -302,7 +302,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})
     runs-on: ${{ matrix.os }}
-    if: ${{ false }}
+ #   if: ${{ false }}
     needs: build_primary_binaries
     strategy:
       fail-fast: false
@@ -560,7 +560,7 @@ jobs:
       - check_wasm
       - check_windows
       - build_image
-#       - local_cluster_test
+      - local_cluster_test
       - k8_cluster_test
     #     - k8_upgrade_test
     runs-on: ubuntu-latest
