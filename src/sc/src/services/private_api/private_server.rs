@@ -92,6 +92,7 @@ impl FlvService for ScInternalService {
                     format!("unable to send health status: {}", err),
                 )
             })?;
+        debug!("send connection health up");
 
         if let Err(err) =
             dispatch_loop(context, spu_id, api_stream, sink, health_sender.clone()).await
@@ -99,7 +100,7 @@ impl FlvService for ScInternalService {
             error!("error with SPU <{}>, error: {}", spu_id, err);
         }
 
-        info!(spu_id, "SPU connection will terminate");
+        info!(spu_id, "SPU terminated");
 
         health_sender
             .send(SpuAction::down(spu_id))
@@ -111,6 +112,8 @@ impl FlvService for ScInternalService {
                 )
             })?;
 
+        debug!("send connection health down");
+
         Ok(())
     }
 }
@@ -118,7 +121,7 @@ impl FlvService for ScInternalService {
 // perform internal dispatch
 #[instrument(
     name = "ScInternalService",
-    skip(context, api_stream, sink, health_sender)
+    skip(context, api_stream, health_sender)
 )]
 async fn dispatch_loop(
     context: SharedContext,
@@ -147,7 +150,7 @@ async fn dispatch_loop(
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
-        trace!("waiting for events");
+        debug!("waiting for events");
 
         select! {
 
@@ -315,10 +318,10 @@ async fn send_spu_spec_changes(
     message.get_mut_header().set_client_id("sc");
 
     debug!(
-        "sending to spu: {}, all: {}, changes: {}",
         spu_id,
-        message.request.all.len(),
-        message.request.changes.len()
+        all = message.request.all.len(),
+        changes =message.request.changes.len(),
+        "sending to spu",
     );
     sink.send_request(&message).await?;
     Ok(())

@@ -5,8 +5,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 use std::time::Duration;
 
-use tracing::{debug, error, warn, info};
-use tracing::instrument;
+use tracing::{debug, error, warn, info,instrument};
 
 use async_channel::Receiver;
 
@@ -35,7 +34,7 @@ impl SpuOnlineStatus {
     }
 }
 
-/// Keep track of SPU status.  This only updates SPU status.
+/// Reconcile SPU health status with Meta data
 /// if SPU has not send heart beat within a period, it is considered down
 pub struct SpuController {
     spus: StoreContext<SpuSpec>,
@@ -51,11 +50,13 @@ impl SpuController {
             status: HashMap::new(),
         };
 
+        debug!("starting spu controller");
         spawn(async move {
             controller.dispatch_loop().await;
         });
     }
 
+    #[instrument(skip(self))]
     async fn dispatch_loop(mut self) {
         use tokio::select;
         use fluvio_future::timer::sleep;
