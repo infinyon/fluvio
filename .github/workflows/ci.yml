@@ -38,7 +38,7 @@ jobs:
       matrix:
         rust-target:
           - x86_64-unknown-linux-musl
-#          - aarch64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
         rust: [stable]
         binary: [fluvio, fluvio-run, flv-test]
         os: [ubuntu-latest]
@@ -309,7 +309,8 @@ jobs:
       max-parallel: 10
       matrix:
         os: [ubuntu-latest]
-        run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10,r11,r12,r13,r14,r15,r16,r17]
+       # run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10,r11,r12,r13,r14,r15,r16,r17]
+        run: [r1]
         rust: [stable]
     env:
       FLV_SOCKET_WAIT: 600
