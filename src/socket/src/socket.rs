@@ -82,8 +82,8 @@ impl FluvioSocket {
         fd: ConnectionFd,
     ) -> Self {
         Self::new(
-            FluvioSink::new(write, fd),
-            FluvioStream::new(fd.clone(), read),
+            FluvioSink::new(write, fd.clone()),
+            FluvioStream::new(fd, read),
         )
     }
 
