@@ -107,7 +107,7 @@ impl InstallOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(other.into()),
+            Err(other) => return Err(other),
         };
         install_println("🔑 Downloaded and verified package file");
 
