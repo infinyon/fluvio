@@ -527,6 +527,7 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           command: |
+            ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test
