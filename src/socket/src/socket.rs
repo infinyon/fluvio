@@ -75,6 +75,7 @@ impl FluvioSocket {
 }
 
 impl FluvioSocket {
+    #[allow(clippy::clone_on_copy)]
     pub fn from_stream(
         write: BoxWriteConnection,
         read: BoxReadConnection,

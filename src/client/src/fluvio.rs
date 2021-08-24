@@ -15,7 +15,7 @@ use crate::PartitionConsumer;
 use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::spu::SpuPool;
-use crate::sockets::{ClientConfig, Versions, SerialFrame, VersionedSerialSocket};
+use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
 use crate::sync::MetadataStores;
 
 /// An interface for interacting with Fluvio streaming

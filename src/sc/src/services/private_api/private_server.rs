@@ -6,7 +6,7 @@ use std::time::Duration;
 use std::time::Instant;
 
 use tracing::error;
-use tracing::{debug, info, trace, instrument};
+use tracing::{debug, info, instrument};
 use async_trait::async_trait;
 use async_channel::Sender;
 use futures_util::stream::Stream;

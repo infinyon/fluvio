@@ -19,12 +19,6 @@ use super::message::*;
 
 type Offsets = HashMap<String, i64>;
 
-/// total time allotted for consumer test
-fn consume_wait_timeout() -> u64 {
-    let var_value = std::env::var("FLV_TEST_CONSUMER_WAIT").unwrap_or_default();
-    var_value.parse().unwrap_or(30000) // 30 seconds
-}
-
 /// verify consumers
 pub async fn validate_consume_message(
     test_driver: Arc<RwLock<TestDriver>>,
@@ -110,7 +104,7 @@ async fn validate_consume_message_api(
             let now = SystemTime::now();
             select! {
 
-                
+
                 _ = sleep(Duration::from_millis(5000)) => {
                     println!("Timeout in read");
                     panic!("no consumer read iter: current {}",producer_iteration);

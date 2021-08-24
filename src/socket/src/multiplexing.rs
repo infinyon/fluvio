@@ -82,6 +82,7 @@ impl MultiplexerSocket {
 
     /// create new multiplexer socket, this always starts with correlation id of 1
     /// correlation id of 0 means shared
+    #[allow(clippy::clone_on_copy)]
     pub fn new(socket: FluvioSocket) -> Self {
         let id = socket.id().clone();
         debug!(socket = id, "spawning dispatcher");
@@ -135,11 +136,10 @@ impl MultiplexerSocket {
 
         req_msg.header.set_correlation_id(correlation_id);
 
-        trace!(correlation_id,"senders trying lock");
+        trace!(correlation_id, "senders trying lock");
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
         drop(senders);
-
 
         let (msg, msg_event) = bytes_lock;
         // make sure we set up listener, otherwise dispatcher may notify before
@@ -147,10 +147,10 @@ impl MultiplexerSocket {
 
         debug!(api = R::API_KEY, correlation_id, "sending request");
         self.sink.send_request(&req_msg).await?;
-        trace!(correlation_id,"waiting");
-        
+        trace!(correlation_id, "waiting");
+
         select! {
-            
+
             _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
 
                 trace!("serial socket for: {}  timeout happen, id: {}", R::API_KEY, correlation_id);

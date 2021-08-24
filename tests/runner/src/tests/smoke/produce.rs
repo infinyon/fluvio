@@ -130,14 +130,8 @@ pub async fn produce_message_with_api(
             let len = message.len();
             info!(topic = %topic_name, iteration = i, "trying send");
 
-            producer
-                .send(RecordKey::NULL, String::from_utf8(message.clone()).unwrap())
-                .await
-                .expect("produce");
-
-            /*
             let mut lock = test_driver.write().await;
-            producer
+
             lock.send_count(
                 &producer,
                 RecordKey::NULL,
@@ -148,7 +142,7 @@ pub async fn produce_message_with_api(
                 panic!("send record failed for replication: {} iteration: {}", r, i)
             });
             drop(lock);
-            */
+
             if i % 100 == 0 {
                 let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
                 println!(
