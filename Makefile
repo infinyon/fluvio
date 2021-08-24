@@ -106,8 +106,7 @@ SC_PORT=9003
 test-permission-user1:
 	rm -f /tmp/topic.err
 	sleep 10
-	date
-	- RUST_LOG=fluvio=debug $(FLUVIO_BIN) --cluster ${SC_HOST}:${SC_PORT} \
+	- $(FLUVIO_BIN) --cluster ${SC_HOST}:${SC_PORT} \
 		--tls --enable-client-cert --domain fluvio.local \
 		--ca-cert tls/certs/ca.crt \
 		--client-cert tls/certs/client-user1.crt \

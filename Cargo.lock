@@ -1681,7 +1681,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-run"
-version = "0.2.1"
+version = "0.0.0"
 dependencies = [
  "fluvio-extension-common",
  "fluvio-future",
@@ -1697,7 +1697,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc"
-version = "0.6.5"
+version = "0.0.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1753,7 +1753,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-service"
-version = "0.6.1"
+version = "0.0.0"
 dependencies = [
  "async-trait",
  "fluvio-future",
@@ -1812,7 +1812,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu"
-version = "0.5.1"
+version = "0.0.0"
 dependencies = [
  "adaptive_backoff",
  "anyhow",
