@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Duration;
-use std::fmt::Debug;
+use std::fmt;
 
 use async_channel::bounded;
 use async_channel::Receiver;
@@ -15,6 +15,7 @@ use async_channel::Sender;
 use async_lock::Mutex;
 use bytes::BytesMut;
 use event_listener::Event;
+use fluvio_future::net::ConnectionFd;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
@@ -61,8 +62,8 @@ pub struct MultiplexerSocket {
     terminate: Arc<Event>,
 }
 
-impl Debug for MultiplexerSocket {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Debug for MultiplexerSocket {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "MultiplexerSocket {}", self.sink.id())
     }
 }
@@ -83,7 +84,8 @@ impl MultiplexerSocket {
     /// correlation id of 0 means shared
     pub fn new(socket: FluvioSocket) -> Self {
 
-        debug!(socket=socket.id(),"spawning dispatcher");
+        let id = socket.id().clone();
+        debug!(socket = id, "spawning dispatcher");
 
         let (sink, stream) = socket.split();
 
@@ -93,8 +95,9 @@ impl MultiplexerSocket {
             sink: ExclusiveFlvSink::new(sink),
             terminate: Arc::new(Event::new()),
         };
-        
+
         MultiPlexingResponseDispatcher::run(
+            id,
             stream,
             multiplexer.senders.clone(),
             multiplexer.terminate.clone(),
@@ -315,20 +318,31 @@ impl<R: Request> Stream for AsyncResponse<R> {
 
 /// This decodes fluvio protocol based streams and multiplex into different slots
 struct MultiPlexingResponseDispatcher {
+    id: ConnectionFd,
     senders: Senders,
     terminate: Arc<Event>,
 }
 
+impl fmt::Debug for MultiPlexingResponseDispatcher {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "MultiplexDisp({})", self.id)
+    }
+}
+
 impl MultiPlexingResponseDispatcher {
-    pub fn run(stream: FluvioStream, senders: Senders, terminate: Arc<Event>) {
+    pub fn run(id: ConnectionFd, stream: FluvioStream, senders: Senders, terminate: Arc<Event>) {
         use fluvio_future::task::spawn;
 
-        let dispatcher = Self { senders, terminate };
+        let dispatcher = Self {
+            id,
+            senders,
+            terminate,
+        };
 
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    #[instrument(name = "loop", skip(self, stream))]
+    #[instrument(skip(self, stream))]
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
@@ -419,7 +433,7 @@ impl MultiPlexingResponseDispatcher {
                     }
                 }
                 SharedSender::Queue(queue_sender) => {
-                    trace!("found queue");
+                    trace!("found stream");
                     queue_sender.send(Some(msg)).await.map_err(|err| {
                         IoError::new(
                             ErrorKind::BrokenPipe,

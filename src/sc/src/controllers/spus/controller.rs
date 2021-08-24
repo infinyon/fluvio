@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 use std::time::Duration;
 
-use tracing::{debug, error, warn, info,instrument};
+use tracing::{debug, error, warn, info, instrument};
 
 use async_channel::Receiver;
 

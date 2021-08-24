@@ -119,10 +119,7 @@ impl FlvService for ScInternalService {
 }
 
 // perform internal dispatch
-#[instrument(
-    name = "ScInternalService",
-    skip(context, api_stream, health_sender)
-)]
+#[instrument(name = "ScInternalService", skip(context, api_stream, health_sender))]
 async fn dispatch_loop(
     context: SharedContext,
     spu_id: SpuId,
@@ -320,7 +317,7 @@ async fn send_spu_spec_changes(
     debug!(
         spu_id,
         all = message.request.all.len(),
-        changes =message.request.changes.len(),
+        changes = message.request.changes.len(),
         "sending to spu",
     );
     sink.send_request(&message).await?;
