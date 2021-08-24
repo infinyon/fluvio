@@ -513,13 +513,13 @@ jobs:
 
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-
+      - name: Set up k3d
+        run: ./k8-util/cluster/reset-k3d.sh
       - name: Run upgrade test with CI artifacts
-        timeout-minutes: 2
+        timeout-minutes: 5
         env:
           TEST_DATA_BYTES: 10000
         run: |
-            ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test
