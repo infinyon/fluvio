@@ -340,7 +340,7 @@ jobs:
         timeout-minutes: 3
         run: |
           date
-          make  RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consume=debug DEFAULT_ITERATION=20 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
+          make  RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consume=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
       #   make RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=debug DEFAULT_ITERATION=20 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
       #      make DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
       #       make RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio=trace DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio SERVER_LOG=fluvio_spu=trace,fluvio_socket=trace TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
