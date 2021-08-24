@@ -288,20 +288,11 @@ impl Offset {
     ///
     /// Note that calculating relative offsets requires connecting to Fluvio, and
     /// therefore it is `async` and returns a `Result`.
-    pub(crate) async fn to_absolute<S: Into<String>>(
+    pub(crate) async fn resolve(
         &self,
-        client: &mut VersionedSerialSocket,
-        topic: S,
-        partition: i32,
+        offsets: &FetchOffsetPartitionResponse,
     ) -> Result<i64, FluvioError> {
-        let offset = match &self.inner {
-            OffsetInner::Absolute(offset) => *offset,
-            inner => {
-                let replica = ReplicaKey::new(topic, partition);
-                let offsets = fetch_offsets(client, &replica).await?;
-                inner.resolve(&offsets)
-            }
-        };
+        let offset = self.inner.resolve(offsets);
 
         // Offset should never be less than 0, even for absolute
         let offset = offset.max(0);
@@ -309,7 +300,7 @@ impl Offset {
     }
 }
 
-async fn fetch_offsets(
+pub(crate) async fn fetch_offsets(
     client: &mut VersionedSerialSocket,
     replica: &ReplicaKey,
 ) -> Result<FetchOffsetPartitionResponse, FluvioError> {

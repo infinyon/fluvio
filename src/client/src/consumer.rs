@@ -24,7 +24,7 @@ use dataplane::batch::Batch;
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
-use crate::offset::Offset;
+use crate::offset::{Offset, fetch_offsets};
 use crate::spu::SpuPool;
 use derive_builder::Builder;
 
@@ -109,12 +109,14 @@ impl PartitionConsumer {
     ///
     /// [`Offset`]: struct.Offset.html
     /// [`fetch_with_config`]: struct.PartitionConsumer.html#method.fetch_with_config
+    #[deprecated(note = "Use 'stream' instead", since = "0.9.2")]
     #[instrument(skip(self, offset))]
     pub async fn fetch(
         &self,
         offset: Offset,
     ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
         let config = ConsumerConfig::builder().build()?;
+        #[allow(deprecated)]
         let records = self.fetch_with_config(offset, config).await?;
         Ok(records)
     }
@@ -155,6 +157,7 @@ impl PartitionConsumer {
     /// [`ConsumerConfig`]: struct.ConsumerConfig.html
     /// [`fetch`]: struct.PartitionConsumer.html#method.fetch
     /// [`Offset`]: struct.Offset.html
+    #[deprecated(note = "Use 'stream_with_config' instead", since = "0.9.2")]
     #[instrument(skip(self, offset, option))]
     pub async fn fetch_with_config(
         &self,
@@ -168,12 +171,9 @@ impl PartitionConsumer {
         );
 
         let mut leader = self.pool.create_serial_socket(&replica).await?;
-
+        let offsets = fetch_offsets(&mut leader, &replica).await?;
         debug!("found spu leader {}", leader);
-
-        let offset = offset
-            .to_absolute(&mut leader, &self.topic, self.partition)
-            .await?;
+        let offset = offset.resolve(&offsets).await?;
 
         let partition = FetchPartition {
             partition_index: self.partition,
@@ -402,14 +402,14 @@ impl PartitionConsumer {
         use fluvio_protocol::api::Request;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
-
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
+        let offsets = fetch_offsets(&mut serial_socket, &replica).await?;
 
-        let start_absolute_offset = offset
-            .to_absolute(&mut serial_socket, &self.topic, self.partition)
-            .await?;
+        let start_absolute_offset = offset.resolve(&offsets).await?;
+        let end_absolute_offset = offsets.last_stable_offset;
+        let record_count = end_absolute_offset - start_absolute_offset;
 
-        debug!(start_absolute_offset);
+        debug!(start_absolute_offset, end_absolute_offset, record_count);
 
         let mut stream_request = DefaultStreamFetchRequest {
             topic: self.topic.to_owned(),
@@ -519,7 +519,75 @@ impl PartitionConsumer {
                 Either::Right(empty())
             }
         };
-        Ok(ft_stream.flatten_stream().boxed())
+
+        let stream = if config.disable_continuous {
+            TakeRecords::new(ft_stream.flatten_stream().boxed(), record_count).boxed()
+        } else {
+            ft_stream.flatten_stream().boxed()
+        };
+
+        Ok(stream)
+    }
+}
+
+/// Wrap an inner record stream and only stream until a given number of records have been fetched.
+///
+/// This is used for "disable continuous" mode. In this mode, we first make a FetchOffsetPartitionResponse
+/// in order to see the starting and ending offsets currently available for this partition.
+/// Based on the starting offset the caller asks for, we can figure out the "record count", or
+/// how many records from the start onward we know for sure we can stream without waiting.
+/// We then use `TakeRecords` to stop the stream as soon as we reach that point, so the user
+/// (e.g. on the CLI) does not spend any time waiting for new records to be produced, they are
+/// simply given all the records that are already available.
+struct TakeRecords<S> {
+    remaining: i64,
+    stream: S,
+}
+
+impl<S> TakeRecords<S>
+where
+    S: Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>> + std::marker::Unpin,
+{
+    pub fn new(stream: S, until: i64) -> Self {
+        Self {
+            remaining: until,
+            stream,
+        }
+    }
+}
+
+impl<S> Stream for TakeRecords<S>
+where
+    S: Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>> + std::marker::Unpin,
+{
+    type Item = S::Item;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        use std::{pin::Pin, task::Poll};
+        use futures_util::ready;
+        if self.remaining <= 0 {
+            return Poll::Ready(None);
+        }
+        let next = ready!(Pin::new(&mut self.as_mut().stream).poll_next(cx));
+        match next {
+            Some(Ok(response)) => {
+                // Count how many records are present in this batch's response
+                let count: usize = response
+                    .partition
+                    .records
+                    .batches
+                    .iter()
+                    .map(|it| it.records().len())
+                    .sum();
+                let diff = self.remaining - count as i64;
+                self.remaining = diff.max(0);
+                Poll::Ready(Some(Ok(response)))
+            }
+            other => Poll::Ready(other),
+        }
     }
 }
 
@@ -596,6 +664,8 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
 #[derive(Debug, Builder)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ConsumerConfig {
+    #[builder(default)]
+    disable_continuous: bool,
     #[builder(default = "*MAX_FETCH_BYTES")]
     pub(crate) max_bytes: i32,
     #[builder(default)]

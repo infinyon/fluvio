@@ -158,39 +158,18 @@ impl ConsumeOpt {
             (None, None) => (),
         }
 
-        let consume_config = builder.build()?;
         if self.disable_continuous {
-            self.consume_records_batch(&consumer, offset, consume_config)
-                .await?;
-        } else {
-            self.consume_records_stream(&consumer, offset, consume_config)
-                .await?;
+            builder.disable_continuous(true);
         }
 
-        Ok(())
-    }
+        let consume_config = builder.build()?;
+        self.consume_records_stream(&consumer, offset, consume_config)
+            .await?;
 
-    /// Consume records in a single batch, then exit
-    async fn consume_records_batch(
-        &self,
-        consumer: &PartitionConsumer,
-        offset: Offset,
-        config: ConsumerConfig,
-    ) -> Result<()> {
-        let response = consumer.fetch_with_config(offset, config).await?;
-
-        debug!(
-            "got a single response: LSO: {} batches: {}",
-            response.log_start_offset,
-            response.records.batches.len(),
-        );
-
-        for batch in response.records.batches.iter() {
-            for record in batch.records().iter() {
-                let key = record.key.as_ref().map(|it| it.as_ref());
-                self.print_record(key, record.value.as_ref());
-            }
+        if !self.disable_continuous {
+            eprintln!("Consumer stream has closed");
         }
+
         Ok(())
     }
 
@@ -219,7 +198,6 @@ impl ConsumeOpt {
         }
 
         debug!("fetch loop exited");
-        eprintln!("Consumer stream has closed");
         Ok(())
     }
 
