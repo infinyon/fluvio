@@ -54,7 +54,7 @@ jobs:
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
       - name: Set RELEASE mode
-     #   if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
@@ -346,10 +346,7 @@ jobs:
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
           echo "done"
       #    make  RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
-      #    make  RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
-      #   make RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=debug DEFAULT_ITERATION=20 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
-      #      make DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
-      #       make RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio=trace DEFAULT_ITERATION=100 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio SERVER_LOG=fluvio_spu=trace,fluvio_socket=trace TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+
 
       - name: Save logs
         if: failure()
