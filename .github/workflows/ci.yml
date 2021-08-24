@@ -518,7 +518,6 @@ jobs:
         timeout-minutes: 2
         env:
           TEST_DATA_BYTES: 10000
-        uses: nick-invision/retry@v2
         run: |
             ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
