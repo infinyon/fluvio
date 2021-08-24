@@ -36,6 +36,9 @@ pub async fn handle_create_request<AC: AuthContext>(
             )
             .await
         }
+        AllCreatableSpec::ManagedConnector(spec) => {
+            super::managed_connectors::handle_create_managed_connector_request(name, spec, dry_run, auth_context).await?
+        }
     };
 
     Ok(ResponseMessage::from_header(&header, status))

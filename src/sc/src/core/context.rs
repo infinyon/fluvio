@@ -10,6 +10,7 @@ use crate::stores::spu::*;
 use crate::stores::partition::*;
 use crate::stores::topic::*;
 use crate::stores::spg::*;
+use crate::stores::managed_connector::*;
 use crate::stores::*;
 use crate::controllers::spus::SpuStatusChannel;
 
@@ -23,6 +24,7 @@ pub struct Context {
     partitions: StoreContext<PartitionSpec>,
     topics: StoreContext<TopicSpec>,
     spgs: StoreContext<SpuGroupSpec>,
+    managed_connectors: StoreContext<ManagedConnectorSpec>,
     health: SpuStatusChannel,
     config: ScConfig,
 }
@@ -43,6 +45,7 @@ impl Context {
             partitions: StoreContext::new(),
             topics: StoreContext::new(),
             spgs: StoreContext::new(),
+            managed_connectors: StoreContext::new(),
             health: SpuStatusChannel::new(),
             config,
         }
@@ -65,6 +68,10 @@ impl Context {
 
     pub fn spgs(&self) -> &StoreContext<SpuGroupSpec> {
         &self.spgs
+    }
+
+    pub fn managed_connectors(&self) -> &StoreContext<ManagedConnectorSpec> {
+        &self.managed_connectors
     }
 
     /// spu health channel
