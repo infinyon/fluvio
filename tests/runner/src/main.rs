@@ -58,8 +58,8 @@ fn main() {
             exit(-1);
         }
 
-        let _panic_timer = TestTimer::new();
-        /*
+        let mut panic_timer = TestTimer::new();
+        panic_timer.start();
         std::panic::set_hook(Box::new(move |panic_info| {
             let mut panic_timer = panic_timer.clone();
             panic_timer.stop();
@@ -70,10 +70,20 @@ fn main() {
                 ..Default::default()
             };
             //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
-            eprintln!("Test panicked: {:#?}",panic_info);
+            eprintln!("Test panicked: {:#?}", panic_info);
             eprintln!("{}", test_result);
+            if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+                eprintln!("{:?}", s);
+            } else {
+                eprintln!("There was no string error message provided in panic.");
+            }
+
+            if let Some(l) = panic_info.location() {
+                eprintln!("file: {} @ line {}", l.file(), l.line());
+            } else {
+                eprintln!("There was no location information from panic.");
+            }
         }));
-        */
 
         let test_result = run_test(
             option.environment.clone(),
