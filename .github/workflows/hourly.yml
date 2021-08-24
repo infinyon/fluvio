@@ -29,11 +29,12 @@ jobs:
       - uses: nolar/setup-k3d-k3s@v1
 
       - name: Install Fluvio CLI
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
 
       - name: Run longevity test
         run: make longevity-producer-test
 
+      # Uncomment when test is more stable
       #- name: Slack Notification
       #  uses: 8398a7/action-slack@v3
       #  if: failure()
