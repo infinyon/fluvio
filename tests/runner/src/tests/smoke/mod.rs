@@ -78,10 +78,10 @@ pub async fn smoke(
     println!("Starting smoke test");
     let smoke_test_case = test_case.into();
 
-    let _start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
-    println!("start sleeping");
-    fluvio_future::timer::sleep(Duration::from_secs(40)).await;
+    let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
+   // println!("start sleeping");
+   // fluvio_future::timer::sleep(Duration::from_secs(40)).await;
     // sleep(Duration::from_secs(40));
-    println!("end sleeping");
-    //consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;
+   // println!("end sleeping");
+    consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;
 }
