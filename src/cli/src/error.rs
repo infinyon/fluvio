@@ -8,6 +8,8 @@ use fluvio_sc_schema::ApiError;
 use fluvio_sc_schema::errors::ErrorCode;
 use fluvio_extension_common::output::OutputError;
 use crate::common::target::TargetError;
+use fluvio_index::{PackageId, Target};
+use semver::Version;
 
 pub type Result<T> = std::result::Result<T, CliError>;
 
@@ -41,6 +43,12 @@ pub enum CliError {
     WhichError(#[from] which::Error),
     #[error(transparent)]
     HttpError(#[from] HttpError),
+    #[error("Package {package} is not published at version {version} for target {target}")]
+    PackageNotFound {
+        package: PackageId,
+        version: Version,
+        target: Target,
+    },
 
     #[error(transparent)]
     TlsError(#[from] fluvio_future::openssl::TlsError),
@@ -54,7 +62,7 @@ pub enum CliError {
 #[derive(thiserror::Error, Debug)]
 #[error("Http Error: {}", inner)]
 pub struct HttpError {
-    inner: http_types::Error,
+    pub(crate) inner: http_types::Error,
 }
 
 impl From<http_types::Error> for CliError {

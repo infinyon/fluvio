@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 
-use crate::CliError;
+use crate::{Result, CliError};
 use crate::install::{
     fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
 };
@@ -24,7 +24,7 @@ pub struct InstallOpt {
 }
 
 impl InstallOpt {
-    pub async fn process(self) -> Result<(), CliError> {
+    pub async fn process(self) -> Result<()> {
         let agent = match &self.prefix {
             Some(prefix) => HttpAgent::with_prefix(prefix)?,
             None => HttpAgent::default(),
@@ -41,7 +41,7 @@ impl InstallOpt {
         let result = self.install_plugin(&agent).await;
         match result {
             Ok(_) => (),
-            Err(CliError::IndexError(fluvio_index::Error::MissingTarget(target))) => {
+            Err(crate::CliError::IndexError(fluvio_index::Error::MissingTarget(target))) => {
                 install_println(format!(
                     "❕ Package '{}' is not available for target {}, skipping",
                     self.package.name(),
@@ -66,7 +66,7 @@ impl InstallOpt {
         Ok(())
     }
 
-    async fn install_plugin(&self, agent: &HttpAgent) -> Result<(), CliError> {
+    async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
         let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
@@ -93,7 +93,22 @@ impl InstallOpt {
         };
 
         // Download the package file from the package registry
-        let package_file = fetch_package_file(agent, &id, &target).await?;
+        let package_result = fetch_package_file(agent, &id, &target).await;
+        let package_file = match package_result {
+            Ok(pf) => pf,
+            Err(CliError::PackageNotFound {
+                package,
+                version,
+                target,
+            }) => {
+                install_println(format!(
+                    "❕ Package {} is not published at {} for {}, skipping",
+                    package, version, target
+                ));
+                return Ok(());
+            }
+            Err(other) => return Err(other),
+        };
         install_println("🔑 Downloaded and verified package file");
 
         // Install the package to the ~/.fluvio/bin/ dir

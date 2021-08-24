@@ -266,6 +266,26 @@ impl PackageId<WithVersion> {
     pub fn into_version(self) -> PackageVersion {
         self.version
     }
+
+    /// Convert to a `PackageId<WithVersion>` preserving the inner `Version`
+    pub fn into_maybe_versioned(self) -> PackageId<MaybeVersion> {
+        PackageId {
+            name: self.name,
+            group: self.group,
+            registry: self.registry,
+            version: Some(self.version),
+        }
+    }
+
+    /// Convert to a `PackageId<WithVersion>`, dropping the inner `Version`
+    pub fn into_unversioned(self) -> PackageId<MaybeVersion> {
+        PackageId {
+            name: self.name,
+            group: self.group,
+            registry: self.registry,
+            version: None,
+        }
+    }
 }
 
 impl PackageId<MaybeVersion> {
