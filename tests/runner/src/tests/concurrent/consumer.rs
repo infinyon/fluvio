@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use async_lock::RwLock;
 use std::sync::mpsc::Receiver;
-use fluvio_test_util::test_runner::test_driver::TestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestConsumer};
 use futures_lite::StreamExt;
 use fluvio::Offset;
 
@@ -18,7 +18,9 @@ pub async fn consumer_stream(
     let consumer = lock
         .get_consumer(option.environment.topic_name.as_str())
         .await;
-    let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
+
+    let TestConsumer::Fluvio(fluvio_consumer) = consumer;
+    let mut stream = fluvio_consumer.stream(Offset::beginning()).await.unwrap();
 
     let mut index: i32 = 0;
     while let Some(Ok(record)) = stream.next().await {

@@ -9,7 +9,7 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::TestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestProducer};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use async_lock::RwLock;
 
@@ -85,7 +85,9 @@ pub async fn run(
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
                     let mut lock = test_driver.write().await;
-                    lock.send_count(p, RecordKey::NULL, message)
+
+                    let TestProducer::Fluvio(fluvio_producer) = p;
+                    lock.send_count(fluvio_producer, RecordKey::NULL, message)
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -96,7 +98,9 @@ pub async fn run(
                 }
             } else {
                 let mut lock = test_driver.write().await;
-                lock.send_count(p, RecordKey::NULL, message)
+
+                let TestProducer::Fluvio(fluvio_producer) = p;
+                lock.send_count(fluvio_producer, RecordKey::NULL, message)
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)

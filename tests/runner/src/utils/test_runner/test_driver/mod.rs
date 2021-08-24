@@ -9,13 +9,22 @@ use std::sync::Arc;
 use fluvio::metadata::topic::TopicSpec;
 use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
-use futures_lite::stream::StreamExt;
+use std::time::Duration;
 use tracing::debug;
-use fluvio::Offset;
+use fluvio_future::timer::sleep;
 
 pub enum TestDriverType {
     Fluvio(Fluvio),
 }
+
+pub enum TestProducer {
+    Fluvio(TopicProducer),
+}
+
+pub enum TestConsumer {
+    Fluvio(PartitionConsumer),
+}
+
 #[derive(Clone)]
 pub struct TestDriver {
     pub admin_client: Arc<TestDriverType>,
@@ -35,13 +44,12 @@ impl TestDriver {
     }
 
     // Wrapper to getting a producer. We keep track of the number of producers we create
-    pub async fn create_producer(&mut self, topic: &str) -> TopicProducer {
-        debug!(topic, "creating producer");
-        let fluvio_client = self.create_client().await.expect("cant' create client");
+    pub async fn get_producer(&mut self, topic: &str) -> TestProducer {
+        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
         match fluvio_client.topic_producer(topic).await {
-            Ok(client) => {
+            Ok(producer) => {
                 self.producer_num += 1;
-                client
+                return TestProducer::Fluvio(producer);
             }
             Err(err) => {
                 panic!("could not create producer: {:#?}", err);
@@ -78,39 +86,15 @@ impl TestDriver {
         result
     }
 
-    pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
-        let fluvio_client = self.create_client().await.expect("cant' create client");
+    pub async fn get_consumer(&mut self, topic: &str) -> TestConsumer {
+        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
         match fluvio_client.partition_consumer(topic.to_string(), 0).await {
-            Ok(client) => {
+            Ok(consumer) => {
                 self.consumer_num += 1;
-                client
+                return TestConsumer::Fluvio(consumer);
             }
             Err(err) => {
                 panic!("can't create consumer: {:#?}", err);
-            }
-        }
-    }
-
-    pub async fn stream_count(&mut self, consumer: PartitionConsumer, offset: Offset) {
-        use std::time::SystemTime;
-        let mut stream = consumer.stream(offset).await.expect("stream");
-
-        loop {
-            // Take a timestamp
-            let now = SystemTime::now();
-
-            if let Some(Ok(record)) = stream.next().await {
-                // Record latency
-                let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                self.consumer_latency_histogram
-                    .record(consume_time as u64)
-                    .unwrap();
-
-                // Record bytes consumed
-                self.consumer_bytes += record.as_ref().len();
-            } else {
-                debug!("No more bytes left to consume");
-                break;
             }
         }
     }

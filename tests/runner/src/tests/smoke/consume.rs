@@ -10,7 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_system_util::bin::get_fluvio;
-use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType, TestConsumer};
 use fluvio::Offset;
 use fluvio_command::CommandExt;
 
@@ -88,7 +88,9 @@ async fn validate_consume_message_api(
         let consumer = lock.get_consumer(&topic_name).await;
         drop(lock);
 
-        let mut stream = consumer
+        let TestConsumer::Fluvio(fluvio_consumer) = consumer;
+
+        let mut stream = fluvio_consumer
             .stream(
                 Offset::absolute(*base_offset)
                     .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),
@@ -206,9 +208,10 @@ async fn validate_consume_message_api(
         let mut lock = test_driver.write().await;
 
         let consumer = lock.get_consumer(&topic_name).await;
+        let TestConsumer::Fluvio(fluvio_consumer) = consumer;
         drop(lock);
 
-        let mut stream = consumer
+        let mut stream = fluvio_consumer
             .stream(
                 Offset::absolute(*base_offset)
                     .unwrap_or_else(|_| panic!("creating stream for iteration: {}", i)),

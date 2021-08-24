@@ -2,8 +2,8 @@ use std::sync::Arc;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
-use tracing::{info, debug};
+use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType, TestProducer};
+use tracing::info;
 
 use super::SmokeTestCase;
 use super::message::*;
@@ -132,8 +132,9 @@ pub async fn produce_message_with_api(
 
             let mut lock = test_driver.write().await;
 
+            let TestProducer::Fluvio(ref fluvio_producer) = producer;
             lock.send_count(
-                &producer,
+                &fluvio_producer,
                 RecordKey::NULL,
                 String::from_utf8(message.clone()).unwrap(),
             )
