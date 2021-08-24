@@ -36,3 +36,28 @@ to prepare for the next release and announce the current release to the communit
 - [ ] Bump up the version in the `VERSION` file.
 - [ ] Add UNRELEASED section for new version to `CHANGELOG.md`.
 - [ ] Announce the release on Discord and Twitter.
+
+# Release recovery process
+
+## Cleanup failed Release
+In the event that the release automation fails, there is manual cleanup required before re-running the automation.
+
+### Delete artifacts:
+- Docker Hub
+  - Delete the image tag corresponding to the release VERSION  
+- S3
+  - Delete the version directory for `fluvio` and `fluvio-run` artifacts
+  - s3://packages.fluvio.io/v1/packages/fluvio/fluvio/<VERSION>
+  - s3://packages.fluvio.io/v1/packages/fluvio/fluvio-run/<VERSION>
+- Github Releases
+  - Delete the latest release
+  - Delete any DRAFT releases
+
+### Fix the installer
+- `fluvio install fluvio-package`
+- `fluvio package tag fluvio:x.y.z --tag=stable --force`
+- Remove last entry in fluvio-run meta.json
+  - s3://packages.fluvio.io/v1/packages/fluvio/fluvio-run/meta.json 
+  - This should be a regular release tag (x.y.z), not a dev tag (x.y.z+gitcommit)
+  - Confirm that the installation script works
+    - `curl -fsS https://packages.fluvio.io/v1/install.sh | bash`
