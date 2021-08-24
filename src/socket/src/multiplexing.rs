@@ -83,7 +83,6 @@ impl MultiplexerSocket {
     /// create new multiplexer socket, this always starts with correlation id of 1
     /// correlation id of 0 means shared
     pub fn new(socket: FluvioSocket) -> Self {
-
         let id = socket.id().clone();
         debug!(socket = id, "spawning dispatcher");
 
@@ -141,11 +140,7 @@ impl MultiplexerSocket {
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
         drop(senders);
 
-        debug!(
-            api = R::API_KEY,
-            correlation_id,
-            "serial"            
-        );
+        debug!(api = R::API_KEY, correlation_id, "serial");
         self.sink.send_request(&req_msg).await?;
 
         trace!("inserts shared sender");
@@ -154,11 +149,12 @@ impl MultiplexerSocket {
         select! {
             _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
 
+                trace!("serial socket for: {}  timeout happen, id: {}", R::API_KEY, correlation_id);
                 // clean channel
                 let mut senders = self.senders.lock().await;
                 senders.remove(&correlation_id);
                 drop(senders);
-                debug!("serial socket for: {}  timeout happen, id: {}", R::API_KEY, correlation_id);
+
 
                 Err(IoError::new(
                     ErrorKind::TimedOut,
@@ -169,6 +165,7 @@ impl MultiplexerSocket {
             _ = msg_event.listen() => {
 
                 // clean channel
+                trace!(correlation_id,"msg event");
                 let mut senders = self.senders.lock().await;
                 senders.remove(&correlation_id);
                 drop(senders);
@@ -178,7 +175,7 @@ impl MultiplexerSocket {
 
                         if let Some(response_bytes) =  &*guard {
 
-                            debug!("receive serial socket id: {}, bytes: {}", correlation_id, response_bytes.len());
+                            debug!(correlation_id, len = response_bytes.len(),"receive serial message");
                             let response = R::Response::decode_from(
                                 &mut Cursor::new(&response_bytes),
                                 req_msg.header.api_version(),

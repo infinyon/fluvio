@@ -23,7 +23,7 @@ pub struct FluvioSocket {
 
 impl fmt::Debug for FluvioSocket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "FluvioSocket({})", self.id())
+        write!(f, "Socket({})", self.id())
     }
 }
 
@@ -80,7 +80,10 @@ impl FluvioSocket {
         read: BoxReadConnection,
         fd: ConnectionFd,
     ) -> Self {
-        Self::new(FluvioSink::new(write, fd), FluvioStream::new(read))
+        Self::new(
+            FluvioSink::new(write, fd),
+            FluvioStream::new(fd.clone(), read),
+        )
     }
 
     /// connect to target address with connector

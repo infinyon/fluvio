@@ -1,8 +1,10 @@
+use std::fmt;
 use std::fmt::Debug;
 use std::io::Cursor;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
+use fluvio_future::net::ConnectionFd;
 use fluvio_future::net::{BoxReadConnection};
 use fluvio_protocol::api::{ApiMessage, Request, RequestMessage, ResponseMessage};
 use fluvio_protocol::codec::FluvioCodec;
@@ -19,15 +21,27 @@ use crate::SocketError;
 type FrameStream = FramedRead<Compat<BoxReadConnection>, FluvioCodec>;
 
 /// inner flv stream which is generic over stream
-pub struct FluvioStream(FrameStream);
+pub struct FluvioStream {
+    inner: FrameStream,
+    id: ConnectionFd,
+}
+
+impl Debug for FluvioStream {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Stream({})", self.id)
+    }
+}
 
 impl FluvioStream {
-    pub fn new(stream: BoxReadConnection) -> Self {
-        Self(FramedRead::new(stream.compat(), FluvioCodec::new()))
+    pub fn new(id: ConnectionFd, stream: BoxReadConnection) -> Self {
+        Self {
+            inner: FramedRead::new(stream.compat(), FluvioCodec::new()),
+            id,
+        }
     }
 
     pub fn get_mut_tcp_stream(&mut self) -> &mut FrameStream {
-        &mut self.0
+        &mut self.inner
     }
 
     /// as server, get stream of request coming from client
@@ -37,7 +51,7 @@ impl FluvioStream {
     where
         RequestMessage<R>: FluvioDecoder + Debug,
     {
-        (&mut self.0).map(|req_bytes_r| match req_bytes_r {
+        (&mut self.inner).map(|req_bytes_r| match req_bytes_r {
             Ok(req_bytes) => {
                 let mut src = Cursor::new(&req_bytes);
                 let msg: RequestMessage<R> = RequestMessage::decode_from(&mut src, 0)?;
@@ -65,7 +79,7 @@ impl FluvioStream {
         R: Request,
     {
         trace!(api = R::API_KEY, "waiting for response");
-        let next = self.0.next().await;
+        let next = self.inner.next().await;
         if let Some(result) = next {
             match result {
                 Ok(req_bytes) => {
@@ -93,7 +107,7 @@ impl FluvioStream {
         R: ApiMessage<ApiKey = A>,
         A: FluvioDecoder + Debug,
     {
-        (&mut self.0).map(|req_bytes_r| match req_bytes_r {
+        (&mut self.inner).map(|req_bytes_r| match req_bytes_r {
             Ok(req_bytes) => {
                 trace!("received bytes from client len: {}", req_bytes.len());
                 let mut src = Cursor::new(&req_bytes);
@@ -120,7 +134,7 @@ impl FluvioStream {
         R: Request,
     {
         let version = req_msg.header.api_version();
-        (&mut self.0).filter_map(move |req_bytes| async move {
+        (&mut self.inner).filter_map(move |req_bytes| async move {
             match req_bytes {
                 Ok(mut bytes) => match ResponseMessage::decode_from(&mut bytes, version) {
                     Ok(res_msg) => {
@@ -141,8 +155,10 @@ impl FluvioStream {
     }
 }
 
+/*
 impl From<FrameStream> for FluvioStream {
     fn from(stream: FrameStream) -> Self {
-        FluvioStream(stream)
+        FluvioStream {stream)
     }
 }
+*/

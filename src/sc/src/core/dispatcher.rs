@@ -28,7 +28,7 @@ pub fn run<K,C>(receiver: Receiver<ScRequest>, sc_controller: ScController<K,C>)
 {
     info!("start SC[{}] dispatcher", sc_controller.id());
 
-    spawn(sc_request_loop(receiver, sc_controller);
+    spawn(sc_request_loop(receiver, sc_controller));
 }
 
 /// SC dispatcher request loop, waits for a request request and dispatchers

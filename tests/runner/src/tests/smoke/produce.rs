@@ -117,7 +117,6 @@ pub async fn produce_message_with_api(
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
-        
         let mut lock = test_driver.write().await;
         let producer = lock.create_producer(&topic_name).await;
         drop(lock);
@@ -131,9 +130,12 @@ pub async fn produce_message_with_api(
             let len = message.len();
             info!(topic = %topic_name, iteration = i, "trying send");
 
-            producer.send(RecordKey::NULL, String::from_utf8(message.clone()).unwrap()).await.expect("produce");
+            producer
+                .send(RecordKey::NULL, String::from_utf8(message.clone()).unwrap())
+                .await
+                .expect("produce");
 
-            /* 
+            /*
             let mut lock = test_driver.write().await;
             producer
             lock.send_count(
