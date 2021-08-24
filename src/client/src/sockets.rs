@@ -188,7 +188,7 @@ pub struct VersionedSerialSocket {
 
 impl fmt::Display for VersionedSerialSocket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "config {}", self.config)
+        write!(f, "config: {}, {:?}", self.config, self.socket)
     }
 }
 unsafe impl Send for VersionedSerialSocket {}

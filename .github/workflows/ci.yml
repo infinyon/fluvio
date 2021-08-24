@@ -73,7 +73,7 @@ jobs:
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
         with:
-          key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
+          key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
 
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
@@ -193,6 +193,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
+  #  if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -235,6 +236,7 @@ jobs:
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
+ #   if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -266,6 +268,7 @@ jobs:
 
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
+ #   if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -296,16 +299,17 @@ jobs:
         run: cargo test --manifest-path ./src/${{matrix.crate}}/Cargo.toml
 
   local_cluster_test:
-    name: Local cluster test
+    name: Local cluster test run (${{ matrix.run }})
     runs-on: ${{ matrix.os }}
-    if: ${{ false }}
+ #   if: ${{ false }}
     needs: build_primary_binaries
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
+       # run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10,r11,r12,r13,r14,r15,r16,r17]
+        run: [r1]
         rust: [stable]
-    env:
-      FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
@@ -326,26 +330,43 @@ jobs:
           name: flv-test-x86_64-unknown-linux-musl
           path: .
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio ./flv-test && ./fluvio version && ./flv-test -h
+        run: chmod +x ./fluvio ./flv-test && ./fluvio version
+      - name: Set up cluster
+        run: ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 5
-          max_attempts: 3
-          command: |
-            ./k8-util/cluster/reset-k3d.sh 
-            make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-tls-root
+        timeout-minutes: 2
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./flv-test SERVER_LOG=info UNINSTALL=noclean EXTRA_ARG=--keep-cluster smoke-test-tls-root
+          date
+          kubectl get partitions
+          kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
+          echo "done"
+      #    make  RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
 
-      - name: Upload SC log
+
+      - name: Save logs
+        if: failure()
+        run: |
+          date
+          uname -a
+          kubectl get spu
+          kubectl get statefulset
+          kubectl get topics
+          kubectl get partitions
+          ps -ef | grep fluvio
+
+      - name: Upload Logs
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: failure()
         with:
-          name: fluvio-sc-logs
-          path: /tmp/flv_sc.log
+          name: fluvio-${{ matrix.run }}-logs
+          path: /tmp/*.log
 
   build_image:
     name: Build Fluvio Docker image
+  #  if: ${{ false }}
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
@@ -381,15 +402,16 @@ jobs:
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
-    name: Kubernetes cluster test
+    name: Kubernetes cluster test run (${{ matrix.run }})
+  #  if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        run: [r1]
         rust: [stable]
-    env:
-      FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
@@ -457,15 +479,15 @@ jobs:
           path: /tmp/flv_sc.log
 
   k8_upgrade_test:
-    name: Upgrade cluster test
+    name: Upgrade cluster test on (${{ matrix.run }})
+ #   if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
-    env:
-      FLV_SOCKET_WAIT: 600
+        run: [r1]
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
@@ -494,8 +516,10 @@ jobs:
 
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-
+      - name: Set up k3d
+        run: ./k8-util/cluster/reset-k3d.sh
       - name: Run upgrade test with CI artifacts
+        timeout-minutes: 5
         env:
           TEST_DATA_BYTES: 10000
         uses: nick-invision/retry@v2
@@ -537,9 +561,9 @@ jobs:
       - check_wasm
       - check_windows
       - build_image
-#       - local_cluster_test
+      - local_cluster_test
       - k8_cluster_test
-      - k8_upgrade_test
+    #     - k8_upgrade_test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -579,7 +603,7 @@ jobs:
   bump_github_release:
     name: Bump dev tag
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: 
+    needs:
       - docker_push
     runs-on: ubuntu-latest
     permissions: write-all
@@ -608,7 +632,7 @@ jobs:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: package helm
-        run:  make helm_pkg
+        run: make helm_pkg
       - name: Publish artifact
         run: |
           gh release upload -R infinyon/fluvio --clobber dev k8-util/helm/pkg_app/*.*
@@ -617,7 +641,7 @@ jobs:
   publish_github_binaries:
     name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.rust-target }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: 
+    needs:
       - bump_github_release
     runs-on: ubuntu-latest
     strategy:
@@ -659,7 +683,7 @@ jobs:
   done:
     name: Done
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-    needs: [publish_github_binaries,publish_github_helm_pkg]
+    needs: [publish_github_binaries, publish_github_helm_pkg]
     runs-on: ubuntu-latest
     steps:
       - name: Done

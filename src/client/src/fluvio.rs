@@ -15,7 +15,7 @@ use crate::PartitionConsumer;
 use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::spu::SpuPool;
-use crate::sockets::{ClientConfig, Versions, SerialFrame, VersionedSerialSocket};
+use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
 use crate::sync::MetadataStores;
 
 /// An interface for interacting with Fluvio streaming
@@ -63,19 +63,19 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
-    #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         Self::connect_with_connector(connector, config).await
     }
 
+    #[instrument(skip(connector))]
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
         let config = ClientConfig::new(&config.endpoint, connector);
         let inner_client = config.connect().await?;
-        debug!("connected to cluster at: {}", inner_client.config().addr());
+        debug!("connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
         debug!(platform = %versions.platform_version(),"checking platform version");

@@ -1,12 +1,13 @@
 [package]
 edition = "2018"
 name = "fluvio-service"
-version = "0.6.1"
+version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP service wrapper over fluvio protocol"
 repository = "https://github.com/infinyon/fluvio-socket"
 license = "Apache-2.0"
 categories = ["encoding"]
+publish = false
 
 [lib]
 name = "fluvio_service"

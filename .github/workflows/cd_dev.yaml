@@ -74,11 +74,8 @@ jobs:
             fi
             sleep 30
             fluvio version
-            sleep ${{ env.SLEEP }}
             fluvio topic create ${{ env.TOPIC }}
-            sleep ${{ env.SLEEP }}
             echo foo | fluvio produce ${{ env.TOPIC }}
-            sleep ${{ env.SLEEP }}
             fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"

@@ -15,7 +15,7 @@ pub async fn producer(
     let mut lock = test_driver.write().await;
 
     let producer = lock
-        .get_producer(option.environment.topic_name.as_str())
+        .create_producer(option.environment.topic_name.as_str())
         .await;
 
     // Iterations ranging approx. 5000 - 20_000

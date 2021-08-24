@@ -73,7 +73,7 @@ pub async fn run(
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
         let mut lock = test_driver.write().await;
-        let producer = lock.get_producer(&topic_name).await;
+        let producer = lock.create_producer(&topic_name).await;
         producers.push(producer);
     }
 

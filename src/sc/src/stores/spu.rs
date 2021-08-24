@@ -22,3 +22,21 @@ pub async fn is_conflict(
     }
     None
 }
+
+mod health_check {
+    use std::{collections::HashMap, ops::Deref};
+
+    use async_lock::RwLock;
+    use fluvio_types::SpuId;
+
+    /// Stores Curret Health Check Data
+    pub struct HealthCheck(RwLock<HashMap<SpuId, bool>>);
+
+    impl Deref for HealthCheck {
+        type Target = RwLock<HashMap<SpuId, bool>>;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+}

@@ -19,12 +19,6 @@ use super::message::*;
 
 type Offsets = HashMap<String, i64>;
 
-/// total time allotted for consumer test
-fn consume_wait_timeout() -> u64 {
-    let var_value = std::env::var("FLV_TEST_CONSUMER_WAIT").unwrap_or_default();
-    var_value.parse().unwrap_or(30000) // 30 seconds
-}
-
 /// verify consumers
 pub async fn validate_consume_message(
     test_driver: Arc<RwLock<TestDriver>>,
@@ -104,27 +98,11 @@ async fn validate_consume_message_api(
 
         let mut total_records: u16 = 0;
 
-        // add 30 seconds per 1000
-        let cycle = producer_iteration / 1000 + 1;
-        let timer_wait = cycle as u64 * consume_wait_timeout();
-        info!("total cycle: {}, timer wait: {}", cycle, timer_wait);
-        let mut timer = sleep(Duration::from_millis(timer_wait));
+        let mut chunk_time = SystemTime::now();
 
         loop {
             let now = SystemTime::now();
             select! {
-
-                _ = &mut timer => {
-                    println!("Timeout in timer");
-                    debug!("timer expired");
-                    panic!("timer expired");
-                },
-
-                // max time for each read
-                _ = sleep(Duration::from_secs(30)) => {
-                    println!("Timeout in read");
-                    panic!("no consumer read iter: current {}",producer_iteration);
-                },
 
                 stream_next = stream.next() => {
 
@@ -152,14 +130,17 @@ async fn validate_consume_message_api(
                         lock.consume_latency_record(consume_time as u64).await;
                         lock.consume_bytes_record(bytes.len()).await;
 
-                        debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
+                       // debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
+                        debug!(consumer_bytes = lock.consumer_bytes, "Consume stat updates");
 
                         drop(lock);
 
                         // for each
                         if total_records % 100 == 0 {
-                            println!("processed records: {}",total_records);
+                            let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
+                            println!("total processed records: {} chunk time: {:.1} secs",total_records,elapsed_chunk_time);
                             info!(total_records,"processed records");
+                            chunk_time = SystemTime::now();
                         }
 
                         if total_records == producer_iteration {
@@ -184,7 +165,7 @@ async fn validate_consume_message_api(
         sleep(Duration::from_secs(5)).await;
 
         let lock = test_driver.write().await;
-        let TestDriverType::Fluvio(fluvio_client) = lock.client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = lock.admin_client.as_ref();
         let admin = fluvio_client.admin().await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])
@@ -239,12 +220,6 @@ async fn validate_consume_message_api(
 
         loop {
             select! {
-
-                // max time for each read
-                _ = sleep(Duration::from_millis(5000)) => {
-                    println!("Timeout in read");
-                    panic!("no consumer read iter: current {}",producer_iteration);
-                },
 
                 stream_next = stream.next() => {
 

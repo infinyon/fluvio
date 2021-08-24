@@ -128,6 +128,8 @@ impl ScDispatcher<FileReplica> {
         let mut status_timer = Timer::interval(MIN_SC_SINK_TIME);
 
         loop {
+            debug!("waiting");
+
             select! {
 
                 _ = status_timer.next() =>  {
@@ -139,7 +141,7 @@ impl ScDispatcher<FileReplica> {
                 },
 
                 sc_request = api_stream.next() => {
-                    trace!("got requests from sc");
+                    debug!("got requests from sc");
                     match sc_request {
                         Some(Ok(InternalSpuRequest::UpdateReplicaRequest(request))) => {
                             self.counter.replica_changes += 1;
@@ -172,10 +174,11 @@ impl ScDispatcher<FileReplica> {
     }
 
     /// send status back to sc, if there is error return false
+    #[instrument(skip(self))]
     async fn send_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> bool {
         let requests = self.status_update.remove_all().await;
         if !requests.is_empty() {
-            trace!(requests = ?requests, "sending status back to sc");
+            debug!(requests = ?requests, "sending status back to sc");
             let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
             if let Err(err) = sc_sink.send_request(&message).await {
@@ -268,6 +271,7 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Follower Update Handler sent by a peer Spu
     ///
+    #[instrument(skip(self, req_msg))]
     async fn handle_update_replica_request(
         &mut self,
         req_msg: RequestMessage<UpdateReplicaRequest>,
@@ -304,7 +308,7 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
-        debug!( message = ?request,"spu request");
+        debug!( message = ?request,"starting spu update");
 
         let _actions = if !request.all.is_empty() {
             debug!(
@@ -325,6 +329,8 @@ impl ScDispatcher<FileReplica> {
         };
 
         self.ctx.sync_follower_update().await;
+
+        trace!("finish spu update");
 
         Ok(())
     }

@@ -1,8 +1,9 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::time::SystemTime;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
-use tracing::info;
+use tracing::{info, debug};
 
 use super::SmokeTestCase;
 use super::message::*;
@@ -61,7 +62,7 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = test_driver.admin_client.as_ref();
         let mut admin = fluvio_client.admin().await;
 
         for _i in 0..partition {
@@ -117,15 +118,20 @@ pub async fn produce_message_with_api(
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
         let mut lock = test_driver.write().await;
-        let producer = lock.get_producer(&topic_name).await;
+        let producer = lock.create_producer(&topic_name).await;
         drop(lock);
 
+        debug!(base_offset, "created producer");
+
+        let mut chunk_time = SystemTime::now();
         for i in 0..produce_iteration {
             let offset = base_offset + i as i64;
             let message = generate_message(offset, &test_case);
             let len = message.len();
-            info!("trying send: {}, iteration: {}", topic_name, i);
+            info!(topic = %topic_name, iteration = i, "trying send");
+
             let mut lock = test_driver.write().await;
+
             lock.send_count(
                 &producer,
                 RecordKey::NULL,
@@ -136,10 +142,20 @@ pub async fn produce_message_with_api(
                 panic!("send record failed for replication: {} iteration: {}", r, i)
             });
             drop(lock);
+
+            if i % 100 == 0 {
+                let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
+                println!(
+                    "total records sent: {} chunk time: {:.1} secs",
+                    i, elapsed_chunk_time
+                );
+                chunk_time = SystemTime::now();
+            }
             info!(
                 "completed send iter: {}, offset: {},len: {}",
                 topic_name, offset, len
             );
+
             sleep(Duration::from_millis(10)).await;
         }
     }

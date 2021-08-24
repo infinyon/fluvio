@@ -23,7 +23,7 @@ pub struct FluvioSocket {
 
 impl fmt::Debug for FluvioSocket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "fd({})", self.id())
+        write!(f, "Socket({})", self.id())
     }
 }
 
@@ -75,12 +75,16 @@ impl FluvioSocket {
 }
 
 impl FluvioSocket {
+    #[allow(clippy::clone_on_copy)]
     pub fn from_stream(
         write: BoxWriteConnection,
         read: BoxReadConnection,
         fd: ConnectionFd,
     ) -> Self {
-        Self::new(FluvioSink::new(write, fd), FluvioStream::new(read))
+        Self::new(
+            FluvioSink::new(write, fd.clone()),
+            FluvioStream::new(fd, read),
+        )
     }
 
     /// connect to target address with connector

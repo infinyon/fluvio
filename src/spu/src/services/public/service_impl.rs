@@ -33,7 +33,7 @@ impl FlvService for PublicService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuServerRequest;
 
-    #[instrument(skip(self, context, socket))]
+    #[instrument(skip(self, context))]
     async fn respond(
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
@@ -47,6 +47,7 @@ impl FlvService for PublicService {
         let end_event = SimpleEvent::shared();
 
         loop {
+            debug!("waiting");
             select! {
 
                 _ = end_event.listen() => {
@@ -59,7 +60,7 @@ impl FlvService for PublicService {
                     if let Some(msg) = api_msg {
 
                         if let Ok(req_message) = msg {
-                            debug!(sink = s_sink.id(),"received request");
+                            debug!("received request");
                             trace!("conn: {}, received request: {:#?}",s_sink.id(),req_message);
                             match req_message {
                                 SpuServerRequest::ApiVersionsRequest(request) => call_service!(
@@ -74,7 +75,7 @@ impl FlvService for PublicService {
                                     request,
                                     handle_produce_request(request,context.clone()),
                                     s_sink,
-                                    "roduce request handler"
+                                    "produce"
                                 ),
                                 SpuServerRequest::FileFetchRequest(request) => handle_fetch_request(request,context.clone(),s_sink.clone()).await?,
 
@@ -106,11 +107,11 @@ impl FlvService for PublicService {
 
                             }
                         } else {
-                            tracing::debug!("conn: {} msg can't be decoded, ending connection",s_sink.id());
+                            debug!("conn: {} msg can't be decoded, ending connection",s_sink.id());
                             break;
                         }
                     } else {
-                        tracing::debug!("conn: {}, no content, end of connection", s_sink.id());
+                        debug!("conn: {}, no content, end of connection", s_sink.id());
                         break;
                     }
 
@@ -121,7 +122,7 @@ impl FlvService for PublicService {
 
         end_event.notify();
 
-        debug!("conn: {}, loop terminated ", s_sink.id());
+        debug!("service terminated");
         Ok(())
     }
 }

@@ -110,7 +110,7 @@ where
     async fn run_shutdown(self, shutdown_signal: Arc<SimpleEvent>) {
         match TcpListener::bind(&self.addr).await {
             Ok(listener) => {
-                debug!("starting event loop");
+                debug!(addr = %self.addr, "starting event loop");
                 self.event_loop(listener, shutdown_signal).await;
             }
             Err(err) => {

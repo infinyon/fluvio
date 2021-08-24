@@ -129,7 +129,7 @@ where
         let mut local_keys = self.all_keys();
         let mut actions = Actions::default();
 
-        debug!("sync all");
+        debug!(local_keys = local_keys.len(), "sync all");
         // debug!(
         //     spec_label = S::LABEL,
         //     command_count = source_specs.len(),

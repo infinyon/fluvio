@@ -120,6 +120,7 @@ where
     }
 
     /// notify all follower handlers with SPU changes
+    #[instrument(skip(self))]
     pub async fn sync_follower_update(&self) {
         self.spu_followers
             .sync_from_spus(self.spu_localstore(), self.local_spu_id())
