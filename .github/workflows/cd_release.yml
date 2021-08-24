@@ -1,4 +1,4 @@
-name: Post-Release
+name: CD_Release
 
 permissions:
   contents: read
