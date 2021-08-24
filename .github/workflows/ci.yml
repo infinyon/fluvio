@@ -340,7 +340,7 @@ jobs:
         timeout-minutes: 1
         run: |
           date
-          make RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster smoke-test-local
+          RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debugn make  DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster smoke-test-local
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 10
