@@ -369,7 +369,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
-    if: ${{ false }}
+  #  if: ${{ false }}
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
@@ -406,7 +406,7 @@ jobs:
 
   k8_cluster_test:
     name: Kubernetes cluster test run (${{ matrix.run }})
-    if: ${{ false }}
+  #  if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
@@ -484,7 +484,7 @@ jobs:
 
   k8_upgrade_test:
     name: Upgrade cluster test
-    if: ${{ false }}
+ #   if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
