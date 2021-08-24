@@ -24,8 +24,8 @@ impl IncrementalAverage {
 #[smartstream(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     // Parse the average from JSON
-    let mut average = serde_json::from_slice(accumulator.as_ref())
-        .unwrap_or_else(|_| IncrementalAverage::default());
+    let mut average: IncrementalAverage =
+        serde_json::from_slice(accumulator.as_ref()).unwrap_or_default();
 
     // Parse the new value as a 64-bit float
     let value = std::str::from_utf8(current.value.as_ref())?.parse::<f64>()?;
