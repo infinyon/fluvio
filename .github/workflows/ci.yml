@@ -337,7 +337,7 @@ jobs:
       - name: Set up cluster
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
-        timeout-minutes: 2
+        timeout-minutes: 10
         run: |
           date
           make  RUST_LOG=flv_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consume=debug DEFAULT_ITERATION=20 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./flv-test UNINSTALL=noclean smoke-test-local
