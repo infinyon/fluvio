@@ -157,29 +157,42 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 let mut timeout_timer = sleep(timeout_duration.clone());
 
                 // Start a test timer for the user's test now that setup is done
-                let mut test_timer = TestTimer::start();
                 let test_driver_clone = test_driver.clone();
+
+                let mut lock = test_driver.write().await;
+                lock.start_timer();
+                drop(lock);
 
                 select! {
                     _ = &mut timeout_timer => {
-                        test_timer.stop();
+
+                        // Stop the clock
+                        let mut lock = test_driver.write().await;
+                        lock.stop_timer();
+                        let test_duration = lock.timer.duration();
+                        drop(lock);
+
                         eprintln!("\nTest timed out ({:?})", timeout_duration);
                         //let _ = std::panic::take_hook();
                         Err(TestResult {
                             success: false,
-                            duration: test_timer.duration(),
+                            duration: test_duration,
                             ..Default::default()
                         })
                     },
 
                     // Change this to use the return value
                     test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
-                        test_timer.stop();
+                        // Stop the clock
+                        let mut lock = test_driver.write().await;
+                        lock.stop_timer();
+                        let test_duration = lock.timer.duration();
+                        drop(lock);
 
                         // This is the final version of TestResult before it renders to stdout
                         Ok(TestResult {
                             success: true,
-                            duration: test_timer.duration(),
+                            duration: test_duration,
                             topic_num: test_result_tmp.topic_num,
                             topic_create_latency_histogram: test_result_tmp.topic_create_latency_histogram,
                             producer_num: test_result_tmp.producer_num,

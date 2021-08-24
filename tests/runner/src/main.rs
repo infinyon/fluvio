@@ -11,7 +11,6 @@ use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
-use hdrhistogram::Histogram;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -59,7 +58,7 @@ fn main() {
             exit(-1);
         }
 
-        let _panic_timer = TestTimer::start();
+        let _panic_timer = TestTimer::new();
         /*
         std::panic::set_hook(Box::new(move |panic_info| {
             let mut panic_timer = panic_timer.clone();
@@ -132,17 +131,7 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<TestDriver>> {
         ))
     };
 
-    Arc::new(RwLock::new(TestDriver {
-        admin_client: fluvio_client,
-        topic_num: 0,
-        producer_num: 0,
-        consumer_num: 0,
-        producer_bytes: 0,
-        consumer_bytes: 0,
-        producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    }))
+    Arc::new(RwLock::new(TestDriver::new(fluvio_client)))
 }
 
 #[cfg(test)]

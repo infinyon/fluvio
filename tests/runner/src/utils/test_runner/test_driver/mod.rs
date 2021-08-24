@@ -1,6 +1,7 @@
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
 use crate::test_meta::TestCase;
+use crate::test_meta::test_timer::TestTimer;
 use crate::test_meta::test_result::TestResult;
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
@@ -27,7 +28,8 @@ pub enum TestConsumer {
 
 #[derive(Clone)]
 pub struct TestDriver {
-    pub admin_client: Arc<TestDriverType>,
+    pub client: Arc<TestDriverType>,
+    pub timer: TestTimer,
     pub topic_num: usize,
     pub producer_num: usize,
     pub consumer_num: usize,
@@ -39,8 +41,40 @@ pub struct TestDriver {
 }
 
 impl TestDriver {
+    pub fn new(client: Arc<TestDriverType>) -> Self {
+        Self {
+            client,
+            timer: TestTimer::new(),
+            topic_num: 0,
+            producer_num: 0,
+            consumer_num: 0,
+            producer_bytes: 0,
+            consumer_bytes: 0,
+            producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
+                .unwrap(),
+        }
+    }
+
     pub fn get_results(&self) -> TestResult {
         TestResult::default()
+    }
+
+    pub fn start_timer(&mut self) {
+        self.timer.start()
+    }
+
+    pub fn stop_timer(&mut self) {
+        self.timer.stop()
+    }
+
+    pub fn is_test_running(&self) -> bool {
+        self.timer.is_running()
+    }
+
+    pub fn test_elapsed(&self) -> Duration {
+        self.timer.elapsed()
     }
 
     // Wrapper to getting a producer. We keep track of the number of producers we create

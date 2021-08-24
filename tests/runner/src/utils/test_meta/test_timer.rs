@@ -21,11 +21,9 @@ impl TestTimer {
         TestTimer::default()
     }
 
-    pub fn start() -> Self {
-        TestTimer {
-            start_time: Some(Instant::now()),
-            duration: None,
-        }
+    pub fn start(&mut self) {
+        self.start_time = Some(Instant::now());
+        self.duration = None;
     }
 
     pub fn is_running(&self) -> bool {
