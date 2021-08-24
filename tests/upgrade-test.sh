@@ -49,12 +49,12 @@ function cleanup() {
 # If we're in CI, we want to slow down execution
 # to give CPU some time to rest, so we don't time out
 function ci_check() {
-    if [[ ! -z "$CI" ]];
-    then
-        echo "[CI MODE] Pausing for ${CI_SLEEP} second(s)";
-        w | head -1
-        sleep ${CI_SLEEP};
-    fi
+ #   if [[ ! -z "$CI" ]];
+ #   then
+ #       echo "[CI MODE] Pausing for ${CI_SLEEP} second(s)";
+ #       w | head -1
+ #       sleep ${CI_SLEEP};
+ #   fi
 }
 
 # This function is intended to be run second after the Stable-1 validation
