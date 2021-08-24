@@ -97,7 +97,7 @@ jobs:
   # build other binaries which doesn't need test
   build_binaries:
     name: Build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+ #   if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -193,7 +193,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
-  #  if: ${{ false }}
+    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -236,7 +236,7 @@ jobs:
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
- #   if: ${{ false }}
+    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -268,7 +268,7 @@ jobs:
 
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
- #   if: ${{ false }}
+    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -307,8 +307,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-       # run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10,r11,r12,r13,r14,r15,r16,r17]
-        run: [r1]
+        run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10,r11,r12,r13,r14,r15,r16,r17]
+      #  run: [r1]
         rust: [stable]
     steps:
       - uses: actions/checkout@v2
@@ -366,7 +366,7 @@ jobs:
 
   build_image:
     name: Build Fluvio Docker image
-  #  if: ${{ false }}
+ #   if: ${{ false }}
     needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     strategy:
@@ -487,7 +487,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        run: [r1]
+        run: [r1,r2,r3,r4,r5,r6,r7,r8,r9,r10]
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
