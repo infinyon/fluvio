@@ -110,13 +110,11 @@ async fn validate_consume_message_api(
             let now = SystemTime::now();
             select! {
 
-                /*
-                // max time for each read of 60 seconds
-                _ = sleep(Duration::from_secs(60)) => {
-                    println!("Timeout in read, total records: {}",total_records);
-                    panic!("expired");
+                
+                _ = sleep(Duration::from_millis(5000)) => {
+                    println!("Timeout in read");
+                    panic!("no consumer read iter: current {}",producer_iteration);
                 },
-                */
 
                 stream_next = stream.next() => {
 
