@@ -9,9 +9,9 @@ impl std::ops::Add for GithubStars {
     type Output = Self;
 
     fn add(mut self, next: Self) -> Self::Output {
-        for (key, new_stars) in next.0 {
+        for (repo, new_stars) in next.0 {
             self.0
-                .entry(key)
+                .entry(repo)
                 .and_modify(|stars| *stars += new_stars)
                 .or_insert(new_stars);
         }
@@ -22,11 +22,11 @@ impl std::ops::Add for GithubStars {
 #[smartstream(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     // Parse accumulator
-    let accumulated_stars = serde_json::from_slice::<GithubStars>(accumulator.as_ref())
-        .unwrap_or_else(|_| GithubStars::default());
+    let accumulated_stars: GithubStars =
+        serde_json::from_slice(accumulator.as_ref()).unwrap_or_default();
 
     // Parse next record
-    let new_stars = serde_json::from_slice::<GithubStars>(current.value.as_ref())?;
+    let new_stars: GithubStars = serde_json::from_slice(current.value.as_ref())?;
 
     // Add stars and serialize
     let summed_stars = accumulated_stars + new_stars;
