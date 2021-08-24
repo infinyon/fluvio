@@ -104,12 +104,6 @@ async fn validate_consume_message_api(
             let now = SystemTime::now();
             select! {
 
-
-                _ = sleep(Duration::from_millis(5000)) => {
-                    println!("Timeout in read");
-                    panic!("no consumer read iter: current {}",producer_iteration);
-                },
-
                 stream_next = stream.next() => {
 
                     if let Some(Ok(record)) = stream_next {
@@ -226,12 +220,6 @@ async fn validate_consume_message_api(
 
         loop {
             select! {
-
-                // max time for each read
-                _ = sleep(Duration::from_millis(5000)) => {
-                    println!("Timeout in read");
-                    panic!("no consumer read iter: current {}",producer_iteration);
-                },
 
                 stream_next = stream.next() => {
 
