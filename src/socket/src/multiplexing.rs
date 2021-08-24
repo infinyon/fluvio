@@ -148,6 +148,7 @@ impl MultiplexerSocket {
         debug!(api = R::API_KEY, correlation_id, "sending request");
         self.sink.send_request(&req_msg).await?;
         trace!(correlation_id,"waiting");
+        
         select! {
             
             _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
