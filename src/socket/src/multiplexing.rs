@@ -142,9 +142,9 @@ impl MultiplexerSocket {
         drop(senders);
 
         debug!(
-            "serial multiplexing: sending request: {} id: {}",
-            R::API_KEY,
-            correlation_id
+            api = R::API_KEY,
+            correlation_id,
+            "serial"            
         );
         self.sink.send_request(&req_msg).await?;
 
@@ -342,7 +342,7 @@ impl MultiPlexingResponseDispatcher {
         spawn(dispatcher.dispatcher_loop(stream));
     }
 
-    #[instrument(skip(self, stream))]
+    #[instrument(skip(stream))]
     async fn dispatcher_loop(mut self, mut stream: FluvioStream) {
         let frame_stream = stream.get_mut_tcp_stream();
 
