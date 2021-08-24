@@ -85,7 +85,7 @@ impl MultiplexerSocket {
     #[allow(clippy::clone_on_copy)]
     pub fn new(socket: FluvioSocket) -> Self {
         let id = socket.id().clone();
-        debug!(socket = id, "spawning dispatcher");
+        debug!(socket = %id, "spawning dispatcher");
 
         let (sink, stream) = socket.split();
 
