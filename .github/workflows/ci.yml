@@ -411,8 +411,7 @@ jobs:
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: true
-      max-parallel: 10
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
@@ -484,16 +483,15 @@ jobs:
           path: /tmp/flv_sc.log
 
   k8_upgrade_test:
-    name: Upgrade cluster test
+    name: Upgrade cluster test on (${{ matrix.run }})
  #   if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        rust: [stable]
-    env:
-      FLV_SOCKET_WAIT: 600
+        run: [r1, r2, r3, r4, r5, r6, r7, r8, r9, r10]
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
