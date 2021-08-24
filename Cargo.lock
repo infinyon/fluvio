@@ -1386,7 +1386,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cli"
-version = "0.6.1"
+version = "0.0.0"
 dependencies = [
  "async-h1",
  "atty",
@@ -1430,7 +1430,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-cluster"
-version = "0.9.3"
+version = "0.0.0"
 dependencies = [
  "async-channel",
  "async-trait",
