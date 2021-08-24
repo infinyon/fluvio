@@ -135,18 +135,21 @@ impl MultiplexerSocket {
 
         req_msg.header.set_correlation_id(correlation_id);
 
-        trace!("senders trying lock");
+        trace!(correlation_id,"senders trying lock");
         let mut senders = self.senders.lock().await;
         senders.insert(correlation_id, SharedSender::Serial(bytes_lock.clone()));
         drop(senders);
 
-        debug!(api = R::API_KEY, correlation_id, "serial");
-        self.sink.send_request(&req_msg).await?;
 
-        trace!("inserts shared sender");
         let (msg, msg_event) = bytes_lock;
+        // make sure we set up listener, otherwise dispatcher may notify before
+        let listener = msg_event.listen();
 
+        debug!(api = R::API_KEY, correlation_id, "sending request");
+        self.sink.send_request(&req_msg).await?;
+        trace!(correlation_id,"waiting");
         select! {
+            
             _ = sleep(Duration::from_secs(*MAX_WAIT_TIME)) => {
 
                 trace!("serial socket for: {}  timeout happen, id: {}", R::API_KEY, correlation_id);
@@ -162,7 +165,7 @@ impl MultiplexerSocket {
                 ).into())
             },
 
-            _ = msg_event.listen() => {
+            _ = listener => {
 
                 // clean channel
                 trace!(correlation_id,"msg event");
@@ -404,7 +407,7 @@ impl MultiPlexingResponseDispatcher {
 
     /// send message to correct receiver
     #[instrument(skip(self, msg),fields( msg = msg.len()))]
-    pub async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
+    async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {
@@ -416,6 +419,7 @@ impl MultiPlexingResponseDispatcher {
                             *guard = Some(msg);
                             drop(guard); // unlock
                             serial_sender.1.notify(1);
+                            trace!("found serial");
 
                             Ok(())
                         }
