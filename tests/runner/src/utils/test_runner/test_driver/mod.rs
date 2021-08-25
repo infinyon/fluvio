@@ -40,8 +40,8 @@ pub struct TestDriver {
     pub producer_latency_histogram: Histogram<u64>,
     pub consumer_latency_histogram: Histogram<u64>,
     pub topic_create_latency_histogram: Histogram<u64>,
-    pub producer_rate: Histogram<u64>,
-    pub consumer_rate: Histogram<u64>,
+    pub producer_rate_histogram: Histogram<u64>,
+    pub consumer_rate_histogram: Histogram<u64>,
 }
 
 impl TestDriver {
@@ -58,8 +58,8 @@ impl TestDriver {
             consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
                 .unwrap(),
-            producer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-            consumer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            producer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
     }
 
@@ -130,7 +130,7 @@ impl TestDriver {
 
         let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
         debug!("Producer throughput Bytes/s: {:?}", rate);
-        self.producer_rate.record(rate as u64).unwrap();
+        self.producer_rate_histogram.record(rate as u64).unwrap();
 
         result
     }
@@ -167,7 +167,7 @@ impl TestDriver {
 
         let rate = (bytes_len as f64 / consumer_latency as f64) * NS_IN_SECOND;
         debug!("Consumer throughput Bytes/s: {:?}", rate);
-        self.consumer_rate.record(rate as u64).unwrap();
+        self.consumer_rate_histogram.record(rate as u64).unwrap();
     }
 
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {

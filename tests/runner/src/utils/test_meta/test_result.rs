@@ -18,6 +18,8 @@ pub struct TestResult {
     pub consumer_num: u64,
     pub topic_num: u64,
     pub topic_create_latency_histogram: Histogram<u64>,
+    pub producer_rate_histogram: Histogram<u64>,
+    pub consumer_rate_histogram: Histogram<u64>,
 }
 
 impl Default for TestResult {
@@ -37,6 +39,8 @@ impl Default for TestResult {
             consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
                 .unwrap(),
+            producer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_rate_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
     }
 }
@@ -113,6 +117,12 @@ impl Display for TestResult {
             Duration::from_nanos(self.producer_latency_histogram.value_at_percentile(99.9))
         );
 
+        const BYTES_IN_MBYTE: f64 = 1_000_000.0;
+        let producer_rate_mbps = format!(
+            "{:.2?}",
+            self.producer_rate_histogram.max() as f64 / BYTES_IN_MBYTE
+        );
+
         let consumer_latency_avg = format!(
             "{:.2?}",
             Duration::from_nanos(self.consumer_latency_histogram.mean() as u64)
@@ -133,6 +143,10 @@ impl Display for TestResult {
             "{:.2?}",
             Duration::from_nanos(self.consumer_latency_histogram.value_at_percentile(99.9))
         );
+        let consumer_rate_mbps = format!(
+            "{:.2?}",
+            self.consumer_rate_histogram.max() as f64 / BYTES_IN_MBYTE
+        );
 
         let perf_results_header = table!(
             [b->"Perf Results"]
@@ -145,6 +159,12 @@ impl Display for TestResult {
             ["Consumer", self.consumer_num]
         );
 
+        let perf_throughput_table = table!(
+            [b->"Throughput", b->"Bytes", b->"Max rate (MBytes/s)"],
+            ["Producer", self.producer_bytes, producer_rate_mbps],
+            ["Consumer", self.consumer_bytes, consumer_rate_mbps]
+        );
+
         let perf_latency_table = table!(
             [b->"Latency", b->"Average", b->"P50", b->"P90", b->"P99", b->"P999"],
             ["Topic create", topic_create_latency_avg, topic_create_latency_p50, topic_create_latency_p90, topic_create_latency_p99, topic_create_latency_p999],
@@ -155,6 +175,7 @@ impl Display for TestResult {
         write!(f, "{}", basic_results_table)?;
         write!(f, "\n{}", perf_results_header)?;
         write!(f, "\n{}", perf_created_table)?;
+        write!(f, "\n{}", perf_throughput_table)?;
         write!(f, "\n{}", perf_latency_table)
     }
 }

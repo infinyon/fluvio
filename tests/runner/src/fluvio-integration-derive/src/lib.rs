@@ -113,6 +113,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 topic_create_latency_histogram: lock.topic_create_latency_histogram.clone(),
                 producer_latency_histogram: lock.producer_latency_histogram.clone(),
                 consumer_latency_histogram: lock.consumer_latency_histogram.clone(),
+                producer_rate_histogram: lock.producer_rate_histogram.clone(),
+                consumer_rate_histogram: lock.consumer_rate_histogram.clone(),
                 ..Default::default()
             }
         }
@@ -201,6 +203,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                             consumer_num: test_result_tmp.consumer_num,
                             consumer_bytes: test_result_tmp.consumer_bytes,
                             consumer_latency_histogram: test_result_tmp.consumer_latency_histogram,
+                            producer_rate_histogram: test_result_tmp.producer_rate_histogram,
+                            consumer_rate_histogram: test_result_tmp.consumer_rate_histogram,
                         })
                     }
                 }
