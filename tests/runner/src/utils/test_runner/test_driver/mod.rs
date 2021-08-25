@@ -12,7 +12,9 @@ use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
 use std::time::Duration;
 use tracing::debug;
-use fluvio_future::timer::sleep;
+
+const NS_IN_SECOND: f64 = 1_000_000_000.0;
+//const NANOS_IN_MILLIS: f32 = 1_000_000.0;
 
 pub enum TestDriverType {
     Fluvio(Fluvio),
@@ -38,6 +40,8 @@ pub struct TestDriver {
     pub producer_latency_histogram: Histogram<u64>,
     pub consumer_latency_histogram: Histogram<u64>,
     pub topic_create_latency_histogram: Histogram<u64>,
+    pub producer_rate: Histogram<u64>,
+    pub consumer_rate: Histogram<u64>,
 }
 
 impl TestDriver {
@@ -54,6 +58,8 @@ impl TestDriver {
             consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
             topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2)
                 .unwrap(),
+            producer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+            consumer_rate: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
         }
     }
 
@@ -92,30 +98,39 @@ impl TestDriver {
     }
 
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
-    pub async fn send_count(
+    pub async fn fluvio_send(
         &mut self,
         p: &TopicProducer,
-        key: RecordKey,
-        message: String,
+        msg_buf: Vec<(RecordKey, Vec<u8>)>,
     ) -> Result<(), FluvioError> {
         use std::time::SystemTime;
         let now = SystemTime::now();
 
-        let result = p.send(key, message.clone()).await;
+        let bytes_sent: usize = msg_buf
+            .iter()
+            .map(|m| &m.1)
+            .fold(0, |total, msg| total + msg.len());
 
-        let produce_time = now.elapsed().unwrap().as_nanos();
+        let result = p.send_all(msg_buf).await;
+
+        let produce_time_ns = now.elapsed().unwrap().as_nanos() as u64;
 
         debug!(
             "(#{}) Produce latency (ns): {:?}",
             self.producer_latency_histogram.len() + 1,
-            produce_time as u64
+            produce_time_ns
         );
 
         self.producer_latency_histogram
-            .record(produce_time as u64)
+            .record(produce_time_ns)
             .unwrap();
 
-        self.consumer_bytes += message.len();
+        self.producer_bytes += bytes_sent as usize;
+        //let timestamp = self.test_elapsed().as_nanos() as f32 / NANOS_IN_MILLIS;
+
+        let rate = (bytes_sent as f64 / produce_time_ns as f64) * NS_IN_SECOND;
+        debug!("Producer throughput Bytes/s: {:?}", rate);
+        self.producer_rate.record(rate as u64).unwrap();
 
         result
     }
@@ -134,22 +149,25 @@ impl TestDriver {
     }
 
     // TODO: This is a workaround. Handle stream inside impl
-    pub async fn consume_latency_record(&mut self, latency: u64) {
-        self.consumer_latency_histogram.record(latency).unwrap();
+    pub async fn consume_record(&mut self, bytes_len: usize, consumer_latency: u64) {
+        self.consumer_latency_histogram
+            .record(consumer_latency)
+            .unwrap();
         debug!(
             "(#{}) Recording consumer latency (ns): {:?}",
             self.consumer_latency_histogram.len(),
-            latency
+            consumer_latency
         );
-    }
 
-    // TODO: This is a workaround. Handle stream inside impl
-    pub async fn consume_bytes_record(&mut self, bytes_len: usize) {
         self.consumer_bytes += bytes_len;
         debug!(
             "Recording consumer bytes len: {:?} (total: {})",
             bytes_len, self.consumer_bytes
         );
+
+        let rate = (bytes_len as f64 / consumer_latency as f64) * NS_IN_SECOND;
+        debug!("Consumer throughput Bytes/s: {:?}", rate);
+        self.consumer_rate.record(rate as u64).unwrap();
     }
 
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
@@ -157,7 +175,7 @@ impl TestDriver {
 
         println!("Creating the topic: {}", &option.topic_name);
 
-        let TestDriverType::Fluvio(fluvio_client) = self.admin_client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
         let admin = fluvio_client.admin().await;
 
         let topic_spec =
@@ -204,10 +222,5 @@ impl TestDriver {
         }
 
         true
-    }
-
-    /// create new fluvio client
-    async fn create_client(&self) -> Result<Fluvio, FluvioError> {
-        Fluvio::connect().await
     }
 }

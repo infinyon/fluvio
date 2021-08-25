@@ -73,7 +73,7 @@ pub async fn run(
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
         let mut lock = test_driver.write().await;
-        let producer = lock.create_producer(&topic_name).await;
+        let producer = lock.get_producer(&topic_name).await;
         producers.push(producer);
     }
 
@@ -87,7 +87,7 @@ pub async fn run(
                     let mut lock = test_driver.write().await;
 
                     let TestProducer::Fluvio(fluvio_producer) = p;
-                    lock.send_count(fluvio_producer, RecordKey::NULL, message)
+                    lock.fluvio_send(fluvio_producer, vec![(RecordKey::NULL, message.into())])
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -100,7 +100,7 @@ pub async fn run(
                 let mut lock = test_driver.write().await;
 
                 let TestProducer::Fluvio(fluvio_producer) = p;
-                lock.send_count(fluvio_producer, RecordKey::NULL, message)
+                lock.fluvio_send(fluvio_producer, vec![(RecordKey::NULL, message.into())])
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)

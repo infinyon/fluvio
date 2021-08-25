@@ -129,8 +129,7 @@ async fn validate_consume_message_api(
 
                         // record latency
                         let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                        lock.consume_latency_record(consume_time as u64).await;
-                        lock.consume_bytes_record(bytes.len()).await;
+                        lock.consume_record(bytes.len(), consume_time as u64).await;
 
                        // debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
                         debug!(consumer_bytes = lock.consumer_bytes, "Consume stat updates");
@@ -167,7 +166,7 @@ async fn validate_consume_message_api(
         sleep(Duration::from_secs(5)).await;
 
         let lock = test_driver.write().await;
-        let TestDriverType::Fluvio(fluvio_client) = lock.admin_client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = lock.client.as_ref();
         let admin = fluvio_client.admin().await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])

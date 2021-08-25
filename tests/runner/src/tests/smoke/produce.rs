@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType, TestProducer};
-use tracing::info;
+use tracing::{info, debug};
 
 use super::SmokeTestCase;
 use super::message::*;
@@ -62,7 +62,7 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let TestDriverType::Fluvio(fluvio_client) = test_driver.admin_client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
         let mut admin = fluvio_client.admin().await;
 
         for _i in 0..partition {
@@ -118,7 +118,7 @@ pub async fn produce_message_with_api(
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
         let mut lock = test_driver.write().await;
-        let producer = lock.create_producer(&topic_name).await;
+        let producer = lock.get_producer(&topic_name).await;
         drop(lock);
 
         debug!(base_offset, "created producer");
@@ -133,15 +133,11 @@ pub async fn produce_message_with_api(
             let mut lock = test_driver.write().await;
 
             let TestProducer::Fluvio(ref fluvio_producer) = producer;
-            lock.send_count(
-                &fluvio_producer,
-                RecordKey::NULL,
-                String::from_utf8(message.clone()).unwrap(),
-            )
-            .await
-            .unwrap_or_else(|_| {
-                panic!("send record failed for replication: {} iteration: {}", r, i)
-            });
+            lock.fluvio_send(&fluvio_producer, vec![(RecordKey::NULL, message.into())])
+                .await
+                .unwrap_or_else(|_| {
+                    panic!("send record failed for replication: {} iteration: {}", r, i)
+                });
             drop(lock);
 
             if i % 100 == 0 {
