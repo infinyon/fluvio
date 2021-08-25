@@ -446,15 +446,15 @@ jobs:
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
 
+      - name: Set up K3d
+        run: ./k8-util/cluster/reset-k3d.sh
+
       - name: Run smoke-test-k8-tls-root
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 7
-          max_attempts: 3
-          command: |
-            ./k8-util/cluster/reset-k3d.sh
+        timeout-minutes: 2
+        run: |
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test smoke-test-k8-tls-root
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test smoke-test-k8
+        # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: ./fluvio version
 
@@ -480,7 +480,7 @@ jobs:
 
   k8_upgrade_test:
     name: Upgrade cluster test on (${{ matrix.run }})
- #   if: ${{ false }}
+    if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
