@@ -450,7 +450,7 @@ jobs:
         run: ./k8-util/cluster/reset-k3d.sh
 
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 2
+        timeout-minutes: 5
         run: |
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test smoke-test-k8
