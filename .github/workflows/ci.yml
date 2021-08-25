@@ -337,7 +337,7 @@ jobs:
         timeout-minutes: 2
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test SERVER_LOG=info UNINSTALL=noclean EXTRA_ARG=--keep-cluster smoke-test-tls-root
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster smoke-test-tls-root
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
@@ -361,7 +361,7 @@ jobs:
         timeout-minutes: 5
         if: failure()
         with:
-          name: fluvio-${{ matrix.run }}-logs
+          name: local-${{ matrix.run }}-logs
           path: /tmp/*.log
 
   build_image:
@@ -472,14 +472,16 @@ jobs:
           kubectl get svc
 
           kubectl get spg
-          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+          kubectl logs -l app=fluvio-sc > /tmp/k8_{{ matrix.run }}_sc.log
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_{{ matrix.run }}_spu0.log
+          kubectl logs fluvio-spg-main-1  > /tmp/k8_{{ matrix.run }}_spu1.log
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-k8-logs
-          path: /tmp/flv_sc.log
+          name: k8_{{ matrix.run }}_log
+          path: /tmp/k8_*.log
 
   k8_upgrade_test:
     name: Upgrade cluster test on (${{ matrix.run }})
