@@ -433,7 +433,7 @@ jobs:
           path: /tmp
 
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio ./fluvio-test && ./fluvio version && ./fluvio-test -h
+        run: chmod +x ./fluvio ./fluvio-test && ./fluvio version && ./fluvio-test -h
 
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
@@ -455,7 +455,7 @@ jobs:
         timeout-minutes: 5
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-k8
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--keep-cluster UNINSTALL=noclean smoke-test-k8
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: ./fluvio version
@@ -464,6 +464,7 @@ jobs:
         if: failure()
         run: |
           date
+          uname -a
           helm list
           kubectl get spu
           kubectl get statefulset
