@@ -11,7 +11,6 @@ use crate::stores::partition::*;
 use crate::stores::topic::*;
 use crate::stores::spg::*;
 use crate::stores::*;
-use crate::controllers::spus::SpuStatusChannel;
 
 pub type SharedContext = Arc<Context>;
 
@@ -23,7 +22,7 @@ pub struct Context {
     partitions: StoreContext<PartitionSpec>,
     topics: StoreContext<TopicSpec>,
     spgs: StoreContext<SpuGroupSpec>,
-    health: SpuStatusChannel,
+    health: SharedHealthCheck,
     config: ScConfig,
 }
 
@@ -43,7 +42,7 @@ impl Context {
             partitions: StoreContext::new(),
             topics: StoreContext::new(),
             spgs: StoreContext::new(),
-            health: SpuStatusChannel::new(),
+            health: HealthCheck::shared(),
             config,
         }
     }
@@ -68,7 +67,7 @@ impl Context {
     }
 
     /// spu health channel
-    pub fn health(&self) -> &SpuStatusChannel {
+    pub fn health(&self) -> &SharedHealthCheck {
         &self.health
     }
 

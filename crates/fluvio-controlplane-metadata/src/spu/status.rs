@@ -54,6 +54,10 @@ impl SpuStatus {
         self.resolution == SpuStatusResolution::Offline
     }
 
+    pub fn is_init(&self) -> bool {
+        self.resolution == SpuStatusResolution::Init
+    }
+
     /// Set resolution to status to online
     pub fn set_online(&mut self) {
         self.resolution = SpuStatusResolution::Online;

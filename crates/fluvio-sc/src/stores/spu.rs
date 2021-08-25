@@ -24,45 +24,58 @@ pub async fn is_conflict(
     None
 }
 
-
 mod health_check {
-    use std::{collections::HashMap,  sync::Arc};
+    use std::{collections::HashMap, ops::Deref, sync::Arc};
 
+    use tracing::instrument;
     use async_lock::RwLock;
-    use fluvio_types::{SpuId, event::offsets::{OffsetChangeListener, OffsetPublisher}};
+
+    use fluvio_types::{
+        SpuId,
+        event::offsets::{OffsetChangeListener, OffsetPublisher},
+    };
+
+    pub type SharedHealthCheck = Arc<HealthCheck>;
 
     /// Stores Curret Health Check Data
     #[derive(Debug)]
     pub struct HealthCheck {
         health: RwLock<HashMap<SpuId, bool>>,
-        event: Arc<OffsetPublisher>
+        event: Arc<OffsetPublisher>,
     }
 
+    impl Deref for HealthCheck {
+        type Target = RwLock<HashMap<SpuId, bool>>;
 
+        fn deref(&self) -> &Self::Target {
+            &self.health
+        }
+    }
 
     impl HealthCheck {
-
-        /// get current status
-        pub async fn status(&self, spu: &SpuId) -> HashMap<SpuId,bool> {
-            let read = self.health.read().await;
-            read.clone()
+        pub fn shared() -> SharedHealthCheck {
+            Arc::new(Self::new())
         }
-        
+
+        fn new() -> Self {
+            Self {
+                health: RwLock::new(HashMap::new()),
+                event: OffsetPublisher::shared(0),
+            }
+        }
+
         pub fn listener(&self) -> OffsetChangeListener {
             self.event.change_listner()
         }
-            
-        /// update health check
-        pub async fn update(&self,spu: SpuId,value: bool)  {
 
+        /// update health check
+        #[instrument(skip(self))]
+        pub async fn update(&self, spu: SpuId, value: bool) {
             let mut write = self.health.write().await;
-            write.insert(spu,value);
+            write.insert(spu, value);
             drop(write);
 
             self.event.update_increment();
         }
-
     }
-
-
 }

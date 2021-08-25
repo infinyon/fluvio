@@ -8,7 +8,6 @@ use std::time::Instant;
 use tracing::error;
 use tracing::{debug, info, instrument};
 use async_trait::async_trait;
-use async_channel::Sender;
 use futures_util::stream::Stream;
 
 use fluvio_types::SpuId;
@@ -23,10 +22,10 @@ use fluvio_controlplane::{
 use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
 use crate::core::SharedContext;
+use crate::stores::spu::SharedHealthCheck;
 use crate::stores::{K8ChangeListener};
 use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
 use crate::stores::spu::SpuSpec;
-use crate::controllers::spus::SpuAction;
 use crate::stores::actions::WSAction;
 
 const HEALTH_DURATION: u64 = 30;
@@ -81,51 +80,32 @@ impl FlvService for ScInternalService {
 
         info!(spu_id, "SPU connected");
 
-        let health_sender = context.health().sender();
+        let health_check = context.health().clone();
 
-        health_sender
-            .send(SpuAction::up(spu_id))
-            .await
-            .map_err(|err| {
-                IoError::new(
-                    ErrorKind::BrokenPipe,
-                    format!("unable to send health status: {}", err),
-                )
-            })?;
-        debug!("send connection health up");
+        health_check.update(spu_id, true).await;
 
         if let Err(err) =
-            dispatch_loop(context, spu_id, api_stream, sink, health_sender.clone()).await
+            dispatch_loop(context, spu_id, api_stream, sink, health_check.clone()).await
         {
             error!("error with SPU <{}>, error: {}", spu_id, err);
         }
 
         info!(spu_id, "SPU terminated");
 
-        health_sender
-            .send(SpuAction::down(spu_id))
-            .await
-            .map_err(|err| {
-                IoError::new(
-                    ErrorKind::BrokenPipe,
-                    format!("unable to send health status: {}", err),
-                )
-            })?;
-
-        debug!("send connection health down");
+        health_check.update(spu_id, false).await;
 
         Ok(())
     }
 }
 
 // perform internal dispatch
-#[instrument(name = "ScInternalService", skip(context, api_stream, health_sender))]
+#[instrument(name = "ScInternalService", skip(context, api_stream, health_check))]
 async fn dispatch_loop(
     context: SharedContext,
     spu_id: SpuId,
     mut api_stream: impl Stream<Item = Result<InternalScRequest, SocketError>> + Unpin,
     mut sink: FluvioSink,
-    health_sender: Sender<SpuAction>,
+    health_check: SharedHealthCheck,
 ) -> Result<(), SocketError> {
     let mut time_left = Duration::from_secs(HEALTH_DURATION);
 
@@ -153,15 +133,7 @@ async fn dispatch_loop(
 
             _ = sleep(time_left) => {
                 debug!("send spu health up");
-                health_sender
-                    .send(SpuAction::up(spu_id))
-                    .await
-                    .map_err(|err| {
-                        IoError::new(
-                            ErrorKind::BrokenPipe,
-                            format!("unable to send health status: {}", err),
-                        )
-                    })?;
+                health_check.update(spu_id,true).await;
                 time_left = Duration::from_secs(HEALTH_DURATION);
             },
 
