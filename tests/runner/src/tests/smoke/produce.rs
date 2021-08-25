@@ -133,7 +133,7 @@ pub async fn produce_message_with_api(
             let mut lock = test_driver.write().await;
 
             let TestProducer::Fluvio(ref fluvio_producer) = producer;
-            lock.fluvio_send(&fluvio_producer, vec![(RecordKey::NULL, message.into())])
+            lock.fluvio_send(fluvio_producer, vec![(RecordKey::NULL, message)])
                 .await
                 .unwrap_or_else(|_| {
                     panic!("send record failed for replication: {} iteration: {}", r, i)

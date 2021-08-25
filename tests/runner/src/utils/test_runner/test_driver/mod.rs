@@ -89,7 +89,7 @@ impl TestDriver {
         match fluvio_client.topic_producer(topic).await {
             Ok(producer) => {
                 self.producer_num += 1;
-                return TestProducer::Fluvio(producer);
+                TestProducer::Fluvio(producer)
             }
             Err(err) => {
                 panic!("could not create producer: {:#?}", err);
@@ -140,7 +140,7 @@ impl TestDriver {
         match fluvio_client.partition_consumer(topic.to_string(), 0).await {
             Ok(consumer) => {
                 self.consumer_num += 1;
-                return TestConsumer::Fluvio(consumer);
+                TestConsumer::Fluvio(consumer)
             }
             Err(err) => {
                 panic!("can't create consumer: {:#?}", err);
