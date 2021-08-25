@@ -52,8 +52,16 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
 
 /// Process custom spu, converts spu spec to K8 and sends to KV store
 #[instrument(skip(ctx, name, managed_connector_spec))]
-async fn process_managed_connector_request(ctx: &Context, name: String, managed_connector_spec: ManagedConnectorSpec) -> Status {
-    if let Err(err) = ctx.managed_connectors().create_spec(name.clone(), managed_connector_spec).await {
+async fn process_managed_connector_request(
+    ctx: &Context,
+    name: String,
+    managed_connector_spec: ManagedConnectorSpec,
+) -> Status {
+    if let Err(err) = ctx
+        .managed_connectors()
+        .create_spec(name.clone(), managed_connector_spec)
+        .await
+    {
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::None, error) // TODO: create error type
     } else {

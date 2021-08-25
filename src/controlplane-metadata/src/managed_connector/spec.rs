@@ -26,5 +26,4 @@ pub struct ManagedConnectorConfig {
     pub topic: String,
 }
 
-impl ManagedConnectorConfig {
-}
+impl ManagedConnectorConfig {}
