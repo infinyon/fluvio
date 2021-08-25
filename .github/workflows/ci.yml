@@ -461,6 +461,7 @@ jobs:
       - name: Save logs
         if: failure()
         run: |
+          date
           helm list
           kubectl get spu
           kubectl get statefulset
