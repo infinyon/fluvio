@@ -1,7 +1,7 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: managedconnector.fluvio.infinyon.com
+  name: managedconnectors.fluvio.infinyon.com
 spec:
   group: fluvio.infinyon.com
   scope: Namespaced
