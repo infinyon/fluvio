@@ -37,7 +37,7 @@ jobs:
       matrix:
         rust-target:
           - x86_64-unknown-linux-musl
- #         - aarch64-unknown-linux-musl
+          - aarch64-unknown-linux-musl
         rust: [stable]
         binary: [fluvio, fluvio-run, fluvio-test]
         os: [ubuntu-latest]
