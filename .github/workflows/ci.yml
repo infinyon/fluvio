@@ -480,7 +480,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: k8_{{ matrix.run }}_log
+          name: k8_${{ matrix.run }}_log
           path: /tmp/k8_*.log
 
   k8_upgrade_test:
