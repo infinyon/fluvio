@@ -447,13 +447,15 @@ jobs:
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
 
       - name: Set up K3d
-        run: ./k8-util/cluster/reset-k3d.sh
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
+          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
 
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test smoke-test-k8
+            date
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-k8
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: ./fluvio version
