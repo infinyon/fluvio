@@ -1,6 +1,7 @@
 pub use fluvio_controlplane_metadata::spu::store::*;
 pub use fluvio_controlplane_metadata::spu::*;
 pub use fluvio_controlplane_metadata::store::k8::K8MetaItem;
+pub use health_check::*;
 
 pub type SpuAdminMd = SpuMetadata<K8MetaItem>;
 pub type SpuAdminStore = SpuLocalStore<K8MetaItem>;
@@ -23,20 +24,45 @@ pub async fn is_conflict(
     None
 }
 
+
 mod health_check {
-    use std::{collections::HashMap, ops::Deref};
+    use std::{collections::HashMap,  sync::Arc};
 
     use async_lock::RwLock;
-    use fluvio_types::SpuId;
+    use fluvio_types::{SpuId, event::offsets::{OffsetChangeListener, OffsetPublisher}};
 
     /// Stores Curret Health Check Data
-    pub struct HealthCheck(RwLock<HashMap<SpuId, bool>>);
-
-    impl Deref for HealthCheck {
-        type Target = RwLock<HashMap<SpuId, bool>>;
-
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
+    #[derive(Debug)]
+    pub struct HealthCheck {
+        health: RwLock<HashMap<SpuId, bool>>,
+        event: Arc<OffsetPublisher>
     }
+
+
+
+    impl HealthCheck {
+
+        /// get current status
+        pub async fn status(&self, spu: &SpuId) -> HashMap<SpuId,bool> {
+            let read = self.health.read().await;
+            read.clone()
+        }
+        
+        pub fn listener(&self) -> OffsetChangeListener {
+            self.event.change_listner()
+        }
+            
+        /// update health check
+        pub async fn update(&self,spu: SpuId,value: bool)  {
+
+            let mut write = self.health.write().await;
+            write.insert(spu,value);
+            drop(write);
+
+            self.event.update_increment();
+        }
+
+    }
+
+
 }
