@@ -153,6 +153,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest]
         version: [latest]
     steps:
       - uses: actions/checkout@v2
