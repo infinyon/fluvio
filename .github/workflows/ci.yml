@@ -37,7 +37,7 @@ jobs:
       matrix:
         rust-target:
           - x86_64-unknown-linux-musl
-          - aarch64-unknown-linux-musl
+ #         - aarch64-unknown-linux-musl
         rust: [stable]
         binary: [fluvio, fluvio-run, fluvio-test]
         os: [ubuntu-latest]
@@ -472,9 +472,9 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_{{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_{{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_{{ matrix.run }}_sc.log || true
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
+          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
