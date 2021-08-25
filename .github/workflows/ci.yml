@@ -473,9 +473,9 @@ jobs:
           kubectl get svc
 
           kubectl get spg
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_{{ matrix.run }}_sc.log
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_{{ matrix.run }}_spu0.log
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_{{ matrix.run }}_spu1.log
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_{{ matrix.run }}_sc.log || true
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_{{ matrix.run }}_spu0.log || true
+          kubectl logs fluvio-spg-main-1  > /tmp/k8_{{ matrix.run }}_spu1.log || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
