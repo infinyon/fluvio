@@ -15,6 +15,7 @@ path = "src/lib.rs"
 file = ["dataplane/file"]
 
 [dependencies]
+flate2 = "1.0.20"
 log = "0.4.8"
 tracing = "0.1.19"
 bytes = "1.0.0"

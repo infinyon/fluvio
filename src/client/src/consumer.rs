@@ -9,7 +9,7 @@ use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, SmartStreamPayload, SmartStreamWasm,
-    SmartStreamKind, WASM_MODULE_V2_API,
+    SmartStreamKind, WASM_MODULE_V2_API, GZIP_WASM_API,
 };
 use dataplane::{Isolation, SmartStreamError};
 use dataplane::ReplicaKey;
@@ -426,7 +426,7 @@ impl PartitionConsumer {
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
-        if let Some(module) = config.wasm_module {
+        if let Some(mut module) = config.wasm_module {
             if stream_fetch_version < WASM_MODULE_API as i16 {
                 return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
             }
@@ -434,11 +434,17 @@ impl PartitionConsumer {
             if stream_fetch_version < WASM_MODULE_V2_API as i16 {
                 // SmartStream V1
                 debug!("Using WASM V1 API");
-                let SmartStreamWasm::Raw(wasm) = module.wasm;
-                stream_request.wasm_module = wasm;
+                let wasm = module.wasm.get_raw()?;
+                stream_request.wasm_module = wasm.into_owned();
             } else {
                 // SmartStream V2
                 debug!("Using WASM V2 API");
+                if stream_fetch_version < GZIP_WASM_API as i16 {
+                    module.wasm.to_raw()?;
+                } else {
+                    debug!("Using compressed WASM API");
+                    module.wasm.to_gzip()?;
+                }
                 stream_request.wasm_payload = Some(module);
             }
         }

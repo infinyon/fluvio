@@ -19,8 +19,7 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    FileStreamFetchRequest, DefaultStreamFetchRequest, StreamFetchResponse, SmartStreamWasm,
-    SmartStreamKind,
+    FileStreamFetchRequest, DefaultStreamFetchRequest, StreamFetchResponse, SmartStreamKind,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
@@ -81,7 +80,7 @@ impl StreamFetchHandler {
             debug!("Has WASM payload: {}", msg.wasm_payload.is_some());
 
             let smartstream = if let Some(payload) = msg.wasm_payload {
-                let SmartStreamWasm::Raw(wasm) = &payload.wasm;
+                let wasm = &payload.wasm.get_raw()?;
                 let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
                     SocketError::Io(IoError::new(
                         ErrorKind::Other,
@@ -618,7 +617,7 @@ mod test {
     };
     use dataplane::fixture::{create_batch, TEST_RECORD};
     use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
-
+    use fluvio_spu_schema::server::stream_fetch::SmartStreamWasm;
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
     use crate::replication::leader::LeaderReplicaState;
