@@ -34,6 +34,7 @@ use crate::check::render::render_check_progress;
 use crate::UserChartLocation;
 
 use super::constants::*;
+use super::common::try_connect_to_sc;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_GROUP_NAME: &str = "main";
@@ -692,7 +693,10 @@ impl ClusterInstaller {
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
-        let fluvio = connect_to_sc(&cluster_config).await?;
+        let fluvio = match try_connect_to_sc(&cluster_config).await {
+           Some(fluvio) => fluvio,
+           None => return Err(K8InstallError::SCServiceTimeout)
+        };
 
         let platform_version = fluvio.platform_version();
         println!("Connect to SC with platform version: {}", &platform_version);
@@ -1190,33 +1194,6 @@ fn versions_compatible(a: Version, b: Version) -> bool {
     Version::new(a.major, a.minor, a.patch) == Version::new(b.major, b.minor, b.patch)
 }
 
-/// Check if the SC service is up and running
-async fn connect_to_sc(config: &FluvioConfig) -> Result<Fluvio, K8InstallError> {
-    async fn try_connect_sc(fluvio_config: &FluvioConfig) -> Option<Fluvio> {
-        println!("trying to connec to sc: {}", fluvio_config.endpoint);
-        match Fluvio::connect_with_config(fluvio_config).await {
-            Ok(fluvio) => Some(fluvio),
-            Err(err) => {
-                debug!("couldn't connect: {:#?}", err);
-                println!("fail to connect to sc");
-                return None;
-            }
-        }
-    }
-
-    for attempt in 0..*MAX_SC_VERSION_LOOP {
-        if let Some(fluvio) = try_connect_sc(config).await {
-            return Ok(fluvio);
-        } else {
-            if attempt < *MAX_SC_VERSION_LOOP - 1 {
-                println!("sleeping 10 seconds. attemp: {}", attempt);
-                sleep(Duration::from_secs(10)).await;
-            }
-        }
-    }
-
-    Err(K8InstallError::SCServiceTimeout)
-}
 
 #[cfg(test)]
 mod tests {
