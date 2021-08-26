@@ -146,11 +146,14 @@ impl K8SpuController {
         }
     }
 
+    #[instrument(skip(self))]
     /// synchronize change from spg to spu
     async fn sync_spu(&mut self) -> Result<(), ClientError> {
         // get all models
         let spg = self.groups.store().clone_values().await;
         let services = self.get_spu_services().await;
+
+        debug!(spg = spg.len(), services = services.len(), "starting sync");
 
         for group_item in spg.into_iter() {
             let spg_obj = SpuGroupObj::new(group_item);
@@ -160,7 +163,7 @@ impl K8SpuController {
             for i in 0..replicas {
                 let (spu_name, spu) = spg_obj.as_spu(i, &services);
 
-                debug!(id=i,spu=?spu);
+                debug!(id=i,spu=?spu,"applying spu");
 
                 self.spus
                     .wait_action(&spu_name, WSAction::Apply(spu))
