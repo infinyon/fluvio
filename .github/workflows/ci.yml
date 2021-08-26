@@ -466,6 +466,7 @@ jobs:
           date
           uname -a
           helm list
+          kubectl get crd
           kubectl get spu
           kubectl get statefulset
           kubectl get pvc
