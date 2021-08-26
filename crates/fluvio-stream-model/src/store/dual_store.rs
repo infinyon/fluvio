@@ -391,10 +391,12 @@ mod listener {
     use std::fmt;
     use std::sync::Arc;
 
-    use tracing::trace;
+    use tracing::{trace, debug, instrument};
 
     use crate::store::event::EventPublisher;
-    use crate::store::{ChangeFlag, FULL_FILTER, SPEC_FILTER, STATUS_FILTER, META_FILTER};
+    use crate::store::{
+        ChangeFlag, FULL_FILTER, META_FILTER, MetadataStoreObject, SPEC_FILTER, STATUS_FILTER,
+    };
 
     use super::{LocalStore, Spec, MetadataItem, MetadataChanges};
 
@@ -533,6 +535,18 @@ mod listener {
             }
             self.set_last_change(changes.epoch);
             changes
+        }
+
+        /// wait for initial loading and return all as expected
+        #[instrument(skip(self))]
+        pub async fn wait_for_initial_sync(&mut self) -> Vec<MetadataStoreObject<S, C>> {
+            self.listen().await;
+
+            let changes = self.sync_changes().await;
+            assert!(changes.is_sync_all());
+
+            debug!("finished initial sync");
+            changes.parts().0
         }
     }
 }

@@ -72,14 +72,17 @@ impl K8SpuController {
         use tokio::select;
 
         let mut service_listener = self.services.change_listener();
-        let mut spg_listener = self.groups.change_listener();
-        let mut spu_listener = self.spus.change_listener();
+        let _ = service_listener.wait_for_initial_sync().await;
 
-        let mut service_init = false;
-        let mut spg_init = false;
-        let mut spu_init = false;
+        let mut spg_listener = self.groups.change_listener();
+        let _ = spg_listener.wait_for_initial_sync().await;
+
+        let mut spu_listener = self.spus.change_listener();
+        let _ = spu_listener.wait_for_initial_sync().await;
 
         loop {
+            self.sync_spu().await?;
+
             debug!("waiting events");
 
             select! {
@@ -99,19 +102,6 @@ impl K8SpuController {
                         epoch,
                     );
 
-
-                    service_init = true;
-                    if service_init && spg_init && spu_init  {
-                        self.sync_spu().await?;
-                    } else {
-
-                        debug!(
-                            service_init,
-                            spg_init,
-                            spu_init,
-                            "not ready");
-
-                    }
                 },
 
                 _ = spg_listener.listen() => {
@@ -127,20 +117,6 @@ impl K8SpuController {
                         deletes.len(),
                         epoch,
                     );
-
-
-                    spg_init = true;
-                    if service_init && spg_init && spu_init  {
-                        self.sync_spu().await?;
-                    } else {
-
-                        debug!(
-                            service_init,
-                            spg_init,
-                            spu_init,
-                            "not ready");
-
-                    }
                 },
 
 
@@ -159,25 +135,8 @@ impl K8SpuController {
                         epoch,
                     );
 
-                    if !spu_init {
-                        debug!("spu initialized");
-                        spu_init = true;
 
-                        // first time sync
-                        if service_init && spg_init && spu_init  {
-                            self.sync_spu().await?;
-                        } else {
-
-                            debug!(
-                                service_init,
-                                spg_init,
-                                spu_init,
-                                "not ready");
-
-                        }
-                    } else {
-                        debug!("spu was already initialized, ignoring");
-                    }
+                    debug!("spu was already initialized, ignoring");
 
                 }
 

@@ -29,26 +29,17 @@ impl SpuController {
 
         debug!("starting spu controller");
         spawn(async move {
-            controller.init_loop().await;
+            controller.inner_loop().await;
         });
     }
 
     #[instrument(skip(self))]
-    async fn init_loop(mut self) {
-        // first wait to
-        let mut spu_listener = self.spus.change_listener();
-        // wait for init
-        spu_listener.listen().await;
-
-        let changes = spu_listener.sync_changes().await;
-        assert!(changes.is_sync_all());
-        self.inner_loop(spu_listener).await;
-    }
-
-    #[instrument(skip(self, spu_listener))]
-    async fn inner_loop(&mut self, mut spu_listener: K8ChangeListener<SpuSpec>) {
+    async fn inner_loop(mut self) {
         use tokio::select;
         use fluvio_future::timer::sleep;
+
+        let mut spu_listener = self.spus.change_listener();
+        let _ = spu_listener.wait_for_initial_sync().await;
 
         let mut health_listener = self.health_check.listener();
 
