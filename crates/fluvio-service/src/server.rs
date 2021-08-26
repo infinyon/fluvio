@@ -125,7 +125,7 @@ where
         }
     }
 
-    #[instrument(skip(listener, shutdown), fields(address = &*self.addr))]
+    #[instrument(skip(listener, shutdown))]
     async fn event_loop(self, listener: TcpListener, shutdown: Arc<SimpleEvent>) {
         use tokio::select;
 
