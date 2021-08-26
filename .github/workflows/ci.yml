@@ -455,7 +455,7 @@ jobs:
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 5
         run: |
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--keep-cluster UNINSTALL=noclean smoke-test-k8-tls-root
+            make DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--keep-cluster UNINSTALL=noclean smoke-test-k8-tls-root
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root 
       - name: Print version
         run: |
