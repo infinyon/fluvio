@@ -477,6 +477,7 @@ jobs:
           helm list
           kubectl get crd
           kubectl get spu
+          kubectl get partitions
           kubectl get statefulset
           kubectl get pvc
           kubectl get pods
