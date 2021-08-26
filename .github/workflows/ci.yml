@@ -449,16 +449,27 @@ jobs:
       - name: Set up K3d
         run: |
           ./k8-util/cluster/reset-k3d.sh
-          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
+          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+          date
 
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 5
+        timeout-minutes: 3
         run: |
-            date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--keep-cluster UNINSTALL=noclean smoke-test-k8
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
-        run: ./fluvio version
+        run: |
+          ./fluvio version
+          date
+          uname -a
+          helm list
+          kubectl get crd
+          kubectl get spu
+          kubectl get statefulset
+          kubectl get pvc
+          kubectl get pods
+          kubectl get svc
+          kubectl get spg
 
       - name: Save logs
         if: failure()
@@ -525,7 +536,7 @@ jobs:
       - name: Set up k3d
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Run upgrade test with CI artifacts
-        timeout-minutes: 5
+        timeout-minutes: 3
         env:
           TEST_DATA_BYTES: 10000
         uses: nick-invision/retry@v2
@@ -533,6 +544,12 @@ jobs:
           timeout_minutes: 15
           max_attempts: 3
           command: |
+            ./k8-util/cluster/reset-k3d.sh
+            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
+            export PATH=~/.fluvio/bin:$PATH
+            make FLUVIO_BIN=./fluvio upgrade-test
+      - name: Diagnose
+        run:  |
             ./k8-util/cluster/reset-k3d.sh
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
             export PATH=~/.fluvio/bin:$PATH
