@@ -11,6 +11,7 @@ use std::marker::PhantomData;
 use std::fmt::Debug;
 use std::io::Error as IoError;
 
+use fluvio_service::ConnectInfo;
 use tracing::instrument;
 use async_trait::async_trait;
 
@@ -47,11 +48,12 @@ where
     type Context = AuthGlobalContext<A>;
     type Request = AdminPublicRequest;
 
-    #[instrument(skip(self, ctx, socket))]
+    #[instrument(skip(self, ctx))]
     async fn respond(
         self: Arc<Self>,
         ctx: Self::Context,
         mut socket: FluvioSocket,
+        connection: ConnectInfo
     ) -> Result<(), SocketError> {
         let auth_context = ctx
             .auth

@@ -1,4 +1,5 @@
 use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_service::ConnectInfo;
 use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
@@ -44,10 +45,12 @@ impl FlvService for ScInternalService {
     type Context = SharedContext;
     type Request = InternalScRequest;
 
+    #[instrument(skip(self, context))]
     async fn respond(
         self: Arc<Self>,
         context: SharedContext,
         socket: FluvioSocket,
+        _connection: ConnectInfo
     ) -> Result<(), SocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();
