@@ -6,7 +6,7 @@ spec:
   group: fluvio.infinyon.com
   scope: Namespaced
   names:
-    kind: ManagedConnectors
+    kind: ManagedConnector
     plural: managedconnectors
     singular: managedconnector
   versions:

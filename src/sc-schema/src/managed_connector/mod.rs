@@ -2,9 +2,9 @@ pub use fluvio_controlplane_metadata::managed_connector::*;
 
 mod convert {
 
-    // use std::io::Error;
-    // use std::io::ErrorKind;
-    // use std::convert::TryInto;
+    use std::io::Error;
+    use std::io::ErrorKind;
+    use std::convert::TryInto;
 
     use crate::objects::*;
     use super::*;
@@ -15,48 +15,50 @@ mod convert {
         }
     }
 
-    //     impl DeleteSpec for ManagedConnectorSpec {
-    //         fn into_request<K>(key: K) -> DeleteRequest
-    //         where
-    //             K: Into<Self::DeleteKey>,
-    //         {
-    //             DeleteRequest::SpuGroup(key.into())
-    //         }
-    //     }
+         impl DeleteSpec for ManagedConnectorSpec {
+             fn into_request<K>(key: K) -> DeleteRequest
+             where
+                 K: Into<Self::DeleteKey>,
+             {
+                 DeleteRequest::ManagedConnector(key.into())
+             }
+         }
 
-    //     impl ListSpec for ManagedConnectorSpec {
-    //         type Filter = NameFilter;
+         impl ListSpec for ManagedConnectorSpec {
+             type Filter = NameFilter;
 
-    //         fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
-    //             ListRequest::SpuGroup(filters)
-    //         }
-    //     }
+             fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
+                 ListRequest::ManagedConnector(filters)
+             }
+         }
 
-    //     impl TryInto<Vec<Metadata<ManagedConnectorSpec>>> for ListResponse {
-    //         type Error = Error;
+         impl TryInto<Vec<Metadata<ManagedConnectorSpec>>> for ListResponse {
+             type Error = Error;
 
-    //         fn try_into(self) -> Result<Vec<Metadata<ManagedConnectorSpec>>, Self::Error> {
-    //             match self {
-    //                 ListResponse::SpuGroup(s) => Ok(s),
-    //                 _ => Err(Error::new(ErrorKind::Other, "not spg")),
-    //             }
-    //         }
-    //     }
+             fn try_into(self) -> Result<Vec<Metadata<ManagedConnectorSpec>>, Self::Error> {
+                 match self {
+                     ListResponse::ManagedConnector(s) => Ok(s),
+                     _ => Err(Error::new(ErrorKind::Other, "not spg")),
+                 }
+             }
+         }
 
-    //     impl From<MetadataUpdate<ManagedConnectorSpec>> for WatchResponse {
-    //         fn from(update: MetadataUpdate<ManagedConnectorSpec>) -> Self {
-    //             Self::SpuGroup(update)
-    //         }
-    //     }
+         /*
+         impl From<MetadataUpdate<ManagedConnectorSpec>> for WatchResponse {
+             fn from(update: MetadataUpdate<ManagedConnectorSpec>) -> Self {
+                 Self::SpuGroup(update)
+             }
+         }
 
-    //     impl TryInto<MetadataUpdate<ManagedConnectorSpec>> for WatchResponse {
-    //         type Error = Error;
+         impl TryInto<MetadataUpdate<ManagedConnectorSpec>> for WatchResponse {
+             type Error = Error;
 
-    //         fn try_into(self) -> Result<MetadataUpdate<ManagedConnectorSpec>, Self::Error> {
-    //             match self {
-    //                 WatchResponse::SpuGroup(m) => Ok(m),
-    //                 _ => Err(Error::new(ErrorKind::Other, "not spg")),
-    //             }
-    //         }
-    //     }
+             fn try_into(self) -> Result<MetadataUpdate<ManagedConnectorSpec>, Self::Error> {
+                 match self {
+                     WatchResponse::SpuGroup(m) => Ok(m),
+                     _ => Err(Error::new(ErrorKind::Other, "not spg")),
+                 }
+             }
+         }
+         */
 }

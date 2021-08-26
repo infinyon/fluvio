@@ -16,6 +16,7 @@ use fluvio_controlplane_metadata::spu::*;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::store::*;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
+use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
@@ -43,6 +44,7 @@ pub enum ListRequest {
     SpuGroup(Vec<NameFilter>),
     CustomSpu(Vec<NameFilter>),
     Partition(Vec<NameFilter>),
+    ManagedConnector(Vec<NameFilter>),
 }
 
 impl Default for ListRequest {
@@ -66,6 +68,7 @@ pub enum ListResponse {
     CustomSpu(Vec<Metadata<CustomSpuSpec>>),
     SpuGroup(Vec<Metadata<SpuGroupSpec>>),
     Partition(Vec<Metadata<PartitionSpec>>),
+    ManagedConnector(Vec<Metadata<ManagedConnectorSpec>>),
 }
 
 impl Default for ListResponse {
@@ -155,6 +158,7 @@ mod encoding {
                 Self::SpuGroup(_) => SpuGroupSpec::LABEL,
                 Self::CustomSpu(_) => CustomSpuSpec::LABEL,
                 Self::Partition(_) => PartitionSpec::LABEL,
+                Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
             }
         }
     }
@@ -170,6 +174,7 @@ mod encoding {
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::Spu(s) => s.write_size(version),
                     Self::Partition(s) => s.write_size(version),
+                    Self::ManagedConnector(s) => s.write_size(version),
                 }
         }
 
@@ -186,6 +191,7 @@ mod encoding {
                 Self::SpuGroup(s) => s.encode(dest, version)?,
                 Self::Spu(s) => s.encode(dest, version)?,
                 Self::Partition(s) => s.encode(dest, version)?,
+                Self::ManagedConnector(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -236,6 +242,12 @@ mod encoding {
                     *self = Self::Partition(response);
                     Ok(())
                 }
+                ManagedConnectorSpec::LABEL => {
+                    let mut response: Vec<NameFilter> = vec![];
+                    response.decode(src, version)?;
+                    *self = Self::ManagedConnector(response);
+                    Ok(())
+                }
 
                 // Unexpected type
                 _ => Err(Error::new(
@@ -255,6 +267,7 @@ mod encoding {
                 Self::SpuGroup(_) => SpuGroupSpec::LABEL,
                 Self::CustomSpu(_) => CustomSpuSpec::LABEL,
                 Self::Partition(_) => PartitionSpec::LABEL,
+                Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
             }
         }
     }
@@ -270,6 +283,7 @@ mod encoding {
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::Spu(s) => s.write_size(version),
                     Self::Partition(s) => s.write_size(version),
+                    Self::ManagedConnector(s) => s.write_size(version),
                 }
         }
 
@@ -286,6 +300,7 @@ mod encoding {
                 Self::SpuGroup(s) => s.encode(dest, version)?,
                 Self::Spu(s) => s.encode(dest, version)?,
                 Self::Partition(s) => s.encode(dest, version)?,
+                Self::ManagedConnector(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -334,6 +349,12 @@ mod encoding {
                     let mut response: Vec<Metadata<PartitionSpec>> = vec![];
                     response.decode(src, version)?;
                     *self = Self::Partition(response);
+                    Ok(())
+                }
+                ManagedConnectorSpec::LABEL => {
+                    let mut response: Vec<Metadata<ManagedConnectorSpec>> = vec![];
+                    response.decode(src, version)?;
+                    *self = Self::ManagedConnector(response);
                     Ok(())
                 }
 

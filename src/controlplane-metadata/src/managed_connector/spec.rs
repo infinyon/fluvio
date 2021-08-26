@@ -11,7 +11,6 @@ use fluvio_types::defaults::{SPU_LOG_BASE_DIR, SPU_LOG_SIZE};
 )]
 pub struct ManagedConnectorSpec {
     pub name: String,
-    /// Configuration elements to be applied to each SPUs in the group
     pub config: ManagedConnectorConfig,
 }
 

@@ -140,6 +140,12 @@ mod create {
                     *self = Self::SpuGroup(response);
                     Ok(())
                 }
+                MANAGED_CONNECTOR => {
+                    let mut response = ManagedConnectorSpec::default();
+                    response.decode(src, version)?;
+                    *self = Self::ManagedConnector(response);
+                    Ok(())
+                }
 
                 // Unexpected type
                 _ => Err(Error::new(

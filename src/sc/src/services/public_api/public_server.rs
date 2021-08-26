@@ -53,6 +53,7 @@ where
         ctx: Self::Context,
         mut socket: FluvioSocket,
     ) -> Result<(), SocketError> {
+        tracing::debug!("Simlay responding");
         let auth_context = ctx
             .auth
             .create_auth_context(&mut socket)

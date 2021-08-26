@@ -1,7 +1,7 @@
 mod create;
-// mod delete;
-// mod fetch;
+mod delete;
+mod fetch;
 
 pub use create::*;
-// pub use fetch::*;
-// pub use delete::*;
+pub use fetch::*;
+pub use delete::*;

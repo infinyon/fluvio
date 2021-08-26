@@ -17,7 +17,7 @@ mod convert {
     use super::*;
 
     impl Spec for ManagedConnectorSpec {
-        const LABEL: &'static str = "SpuGroup";
+        const LABEL: &'static str = "ManagedConnector";
 
         type Status = ManagedConnectorStatus;
 
@@ -26,7 +26,7 @@ mod convert {
     }
 
     impl SpecExt for ManagedConnectorSpec {
-        const OBJECT_TYPE: ObjectType = ObjectType::SpuGroup;
+        const OBJECT_TYPE: ObjectType = ObjectType::ManagedConnector;
     }
 
     impl Removable for ManagedConnectorSpec {

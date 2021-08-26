@@ -26,6 +26,7 @@ pub mod extended {
         SpuGroup,
         Topic,
         Partition,
+        ManagedConnector,
     }
 
     pub trait SpecExt: Spec {
