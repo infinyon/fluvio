@@ -606,6 +606,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - docker_push
+      - build_binaries
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
@@ -644,7 +645,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - bump_github_release
-      - build_binaries
     runs-on: ubuntu-latest
     strategy:
       matrix:
