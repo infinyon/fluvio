@@ -159,13 +159,16 @@ where
                     let context = self.context.clone();
                     let service = self.service.clone();
                     let builder = self.builder.clone();
+                    let addr = self.addr.clone();
 
                     let ft = async move {
                         let address = stream
                             .peer_addr()
                             .map(|addr| addr.to_string())
                             .unwrap_or_else(|_| "".to_owned());
-                        info!("new peer connection");
+                            
+                        info!(server = %addr,peer = &*address, "new peer connection");
+
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {
