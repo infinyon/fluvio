@@ -14,11 +14,11 @@ Build Fluvio binaries
 cargo build
 ```
 
-Test runner can be located in: ```target/debug/flv-test```
+Test runner can be located in: ```target/debug/fluvio-test```
 
 ## Cleaning up existing cluster
 
-By default, ```flv-test``` will create new cluster.   Ensure you delete existing using fluvio:
+By default, ```fluvio-test``` will create new cluster.   Ensure you delete existing using fluvio:
 
 ```fluvio cluster delete``` for k8 or
 ```fluvio cluster delete --local``` for local cluster
@@ -28,7 +28,7 @@ By default, ```flv-test``` will create new cluster.   Ensure you delete existing
 Set following alias to reduce cmd:
 
 ```
-alias flvt='target/debug/flv-test'
+alias flvt='target/debug/fluvio-test'
 ```
 
 ## Running tests

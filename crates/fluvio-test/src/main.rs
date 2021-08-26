@@ -157,14 +157,14 @@ mod tests {
 
     #[test]
     fn valid_test_name() {
-        let args = BaseCli::from_iter_safe(vec!["flv-test", "smoke"]);
+        let args = BaseCli::from_iter_safe(vec!["fluvio-test", "smoke"]);
 
         assert!(args.is_ok());
     }
 
     #[test]
     fn invalid_test_name() {
-        let args = BaseCli::from_iter_safe(vec!["flv-test", "testdoesnotexist"]);
+        let args = BaseCli::from_iter_safe(vec!["fluvio-test", "testdoesnotexist"]);
 
         assert!(args.is_err());
     }
@@ -172,7 +172,7 @@ mod tests {
     #[test]
     fn extra_vars() {
         let args = BaseCli::from_iter(vec![
-            "flv-test",
+            "fluvio-test",
             "smoke",
             "--",
             "--producer-iteration=9000",
@@ -201,7 +201,7 @@ mod tests {
     #[test]
     fn topic() {
         let args = BaseCli::from_iter(vec![
-            "flv-test",
+            "fluvio-test",
             "smoke",
             "--topic-name",
             "not_the_default_topic_name",
@@ -212,14 +212,14 @@ mod tests {
 
     #[test]
     fn spu() {
-        let args = BaseCli::from_iter(vec!["flv-test", "smoke", "--spu", "5"]);
+        let args = BaseCli::from_iter(vec!["fluvio-test", "smoke", "--spu", "5"]);
 
         assert_eq!(args.environment.spu, 5);
     }
 
     #[test]
     fn timeout() {
-        let args = BaseCli::from_iter(vec!["flv-test", "smoke", "--timeout", "9000"]);
+        let args = BaseCli::from_iter(vec!["fluvio-test", "smoke", "--timeout", "9000"]);
 
         assert_eq!(args.environment.timeout(), Duration::from_secs(9000));
     }
@@ -242,7 +242,7 @@ mod tests {
 
     //    run_block_on(async {
     //        let skip_cluster_delete_cmd = CliArgs::from_iter(vec![
-    //            "flv-test",
+    //            "fluvio-test",
     //            "smoke",
     //            "--keep-cluster",
     //            "--local",
@@ -259,7 +259,7 @@ mod tests {
     //        cluster_cleanup(test_case).await;
 
     //        let skip_cluster_start_cmd = CliArgs::from_iter(vec![
-    //            "flv-test",
+    //            "fluvio-test",
     //            "smoke",
     //            "--disable-install",
     //            "--local",

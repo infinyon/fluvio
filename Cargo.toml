@@ -53,7 +53,7 @@ opt-level = 3
 [profile.dev.package.fluvio-test]
 incremental = false
 
-# Make flv-test release package more like dev profile. Specifically for `inventory` crate
+# Make fluvio-test release package more like dev profile. Specifically for `inventory` crate
 [profile.release.package.fluvio-test]
 opt-level = 0
 debug = true
