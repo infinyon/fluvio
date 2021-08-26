@@ -56,3 +56,6 @@ debug-assertions = true
 overflow-checks = true
 incremental = false
 codegen-units = 256
+
+[patch.crates-io]
+k8-types = { path = "../k8-api/src/k8-types/" }
