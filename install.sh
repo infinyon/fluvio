@@ -31,35 +31,6 @@ normalize_target() {
     return 0
 }
 
-# Ensure that this target is supported for cluster builds and matches the
-# naming convention of known platform releases in the registry
-#
-# @param $1: The target triple of this architecture
-# @return: Status 0 if the architecture is supported, exit if not
-assert_supported_cluster_target() {
-    local _target="$1"; shift
-
-    # Match against all supported targets
-    case $_target in
-        x86_64-unknown-linux-musl)
-            echo "x86_64-unknown-linux-musl"
-            return 0
-            ;;
-        x86_64-unknown-linux-gnu)
-            echo "x86_64-unknown-linux-musl"
-            return 0
-            ;;
-        x86_64-apple-darwin)
-            echo "x86_64-apple-darwin"
-            return 0
-            ;;
-    esac
-
-    say "🥈 Target '${_target}' is not a Tier 1 or 2 platform target"
-    say "⏭    Skipping installation of cluster executable fluvio-run"
-    return 1
-}
-
 # Fetch the tagged version of the given package
 #
 # @param $1: The name of the tag to lookup the version for
@@ -549,17 +520,8 @@ main() {
     say "☁️ Installing Fluvio Cloud..."
     FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio-cloud
 
-    set +e
-    _output=$(assert_supported_cluster_target "${_target}")
-    _status=$?
-    set -e
-
-    if [ $_status -eq 0 ]; then
-        say "☁️ Installing Fluvio Runner..."
-        FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install "${_fluvio_run}"
-    else
-        echo "${_output}"
-    fi
+    say "☁️ Installing Fluvio Runner..."
+    FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install "${_fluvio_run}"
 
     say "🎉 Install complete!"
     remind_path
