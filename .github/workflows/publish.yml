@@ -34,9 +34,10 @@ jobs:
         run: |
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
           export TAG="${VERSION}-${{ github.sha }}"
-          docker pull "infinyon/fluvio:${TAG}"
-          docker tag "infinyon/fluvio:${TAG}" "infinyon/fluvio:latest"
-          docker push "infinyon/fluvio:latest"
+          docker manifest create "docker.io/infinyon/fluvio:latest" \
+            "docker.io/infinyon/fluvio:${TAG}-amd64" \
+            "docker.io/infinyon/fluvio:${TAG}-arm64v8" 
+          docker manifest push "docker.io/infinyon/fluvio:latest"
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
