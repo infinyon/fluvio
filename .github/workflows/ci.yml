@@ -561,7 +561,6 @@ jobs:
       - check_wasm
       - check_windows
       - build_image
-      - build_binaries
       - local_cluster_test
       - k8_cluster_test
       - k8_upgrade_test
