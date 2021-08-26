@@ -144,10 +144,10 @@ jobs:
             [ ! -z "${{ env.FORCE_RELEASE }}" ] && echo "Release w/ force..."
             echo "Release image already exists";
           else
-            docker manifest create "docker.io/infinyon/fluvio:${{ env.RELEASE_TAG }}" \
-              "docker.io/infinyon/fluvio:${{ env.LATEST_TAG }}-amd64" \
-              "docker.io/infinyon/fluvio:${{ env.LATEST_TAG }}-arm64v8" 
-            docker manifest push "docker.io/infinyon/fluvio:${{ env.RELEASE_TAG }}"
+            docker manifest create "docker.io/${{ env.RELEASE_TAG }}" \
+              "docker.io/${{ env.LATEST_TAG }}-amd64" \
+              "docker.io/${{ env.LATEST_TAG }}-arm64v8" 
+            docker manifest push "docker.io/${{ env.RELEASE_TAG }}"
           fi
 
       - name: Slack Notification
