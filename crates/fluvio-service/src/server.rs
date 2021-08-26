@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::marker::PhantomData;
@@ -54,8 +55,6 @@ pub trait FlvService {
     ) -> Result<(), SocketError>;
 }
 
-/// Transform Service into Futures 01
-#[derive(Debug)]
 pub struct InnerFlvApiServer<R, A, C, S, T> {
     req: PhantomData<R>,
     api: PhantomData<A>,
@@ -63,6 +62,12 @@ pub struct InnerFlvApiServer<R, A, C, S, T> {
     service: Arc<S>,
     addr: String,
     builder: T,
+}
+
+impl <R, A, C, S, T> fmt::Debug for InnerFlvApiServer<R, A, C, S, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ApiServer({})", self.addr)
+    }
 }
 
 impl<R, A, C, S, T> InnerFlvApiServer<R, A, C, S, T>
@@ -120,7 +125,7 @@ where
         }
     }
 
-    #[instrument(skip(self, listener, shutdown), fields(address = &*self.addr))]
+    #[instrument(skip(listener, shutdown), fields(address = &*self.addr))]
     async fn event_loop(self, listener: TcpListener, shutdown: Arc<SimpleEvent>) {
         use tokio::select;
 
@@ -146,7 +151,7 @@ where
     }
 
     /// process incoming request, for each request, we create async task for serving
-    #[instrument(skip(self, incoming))]
+    #[instrument(skip(incoming))]
     fn serve_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
@@ -160,7 +165,7 @@ where
                             .peer_addr()
                             .map(|addr| addr.to_string())
                             .unwrap_or_else(|_| "".to_owned());
-                        info!(peer = &*address, "new peer connection");
+                        info!("new peer connection");
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {

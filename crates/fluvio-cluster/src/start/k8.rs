@@ -48,11 +48,6 @@ static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
     var_value.parse().unwrap_or(60)
 });
 
-/// maximum tiime for VERSION CHECK
-static MAX_SC_VERSION_LOOP: Lazy<u8> = Lazy::new(|| {
-    let var_value = env::var("FLV_CLUSTER_MAX_SC_VERSION_LOOP").unwrap_or_default();
-    var_value.parse().unwrap_or(60)
-});
 
 /// Describes how to install Fluvio onto Kubernetes
 #[derive(Builder, Debug)]
