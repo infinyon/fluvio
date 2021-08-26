@@ -412,7 +412,8 @@ jobs:
         run: [r1,r2,r3,r4,r5,r6,r7,r8,r9,r10]
     steps:
       - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       # Download artifacts
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
