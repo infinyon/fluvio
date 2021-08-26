@@ -354,7 +354,7 @@ Hang tight while we grab the latest from your chart repositories...
 ...Successfully got an update from the "fluvio" chart repository
 Update Complete. ⎈ Happy Helming!⎈ 
 Exited with status code: 1
-thread 'main' panicked at 'assertion failed: false', src/cli/src/cluster/util.rs:115:17
+thread 'main' panicked at 'assertion failed: false', crates/fluvio-cli/src/cluster/util.rs:115:17
 note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
 ```
 

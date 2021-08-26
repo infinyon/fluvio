@@ -2,7 +2,7 @@
 
 From root of the project
 ```
-cargo build --features=cli --manifest-path src/storage/Cargo.toml 
+cargo build --features=cli --manifest-path crates/fluvio-storage/Cargo.toml 
 ```
 
 # Running storage cli

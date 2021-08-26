@@ -243,13 +243,13 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         wasm-crate:
-          - client
-          - socket
-          - protocol
-          - spu-schema
-          - sc-schema
-          - dataplane-protocol
-          - types
+          - fluvio
+          - fluvio-socket
+          - fluvio-protocol
+          - fluvio-spu-schema
+          - fluvio-sc-schema
+          - fluvio-dataplane-protocol
+          - fluvio-types
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -264,7 +264,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Build WASM for ${{ matrix.wasm-crate }}
-        run: cargo check --manifest-path ./src/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
+        run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
@@ -275,8 +275,8 @@ jobs:
         os: [windows-latest]
         rust: [stable]
         crate:
-          - client
-          - cli
+          - fluvio
+          - fluvio-cli
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -293,10 +293,10 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.crate }}
 
       - name: Build ${{ matrix.crate }} for ${{ matrix.os }}
-        run: cargo build --manifest-path ./src/${{matrix.crate}}/Cargo.toml
+        run: cargo build --manifest-path ./crates/${{ matrix.crate }}/Cargo.toml
 
       - name: Test ${{ matrix.crate }} for ${{ matrix.os }}
-        run: cargo test --manifest-path ./src/${{matrix.crate}}/Cargo.toml
+        run: cargo test --manifest-path ./crates/${{ matrix.crate }}/Cargo.toml
 
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})
