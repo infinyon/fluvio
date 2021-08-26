@@ -12,6 +12,7 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
+use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
 
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
@@ -33,6 +34,7 @@ pub enum WatchRequest {
     Spu(Epoch),
     SpuGroup(Epoch),
     Partition(Epoch),
+    ManagedConnector(Epoch),
 }
 
 impl Default for WatchRequest {
@@ -55,6 +57,7 @@ pub enum WatchResponse {
     Spu(MetadataUpdate<SpuSpec>),
     SpuGroup(MetadataUpdate<SpuGroupSpec>),
     Partition(MetadataUpdate<PartitionSpec>),
+    ManagedConnector(MetadataUpdate<ManagedConnectorSpec>),
 }
 
 impl Default for WatchResponse {
@@ -120,6 +123,7 @@ mod encoding {
                 Self::Spu(_) => SpuSpec::LABEL,
                 Self::SpuGroup(_) => SpuGroupSpec::LABEL,
                 Self::Partition(_) => PartitionSpec::LABEL,
+                Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
             }
         }
     }
@@ -134,6 +138,7 @@ mod encoding {
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::Spu(s) => s.write_size(version),
                     Self::Partition(s) => s.write_size(version),
+                    Self::ManagedConnector(s) => s.write_size(version),
                 }
         }
 
@@ -149,6 +154,7 @@ mod encoding {
                 Self::SpuGroup(s) => s.encode(dest, version)?,
                 Self::Spu(s) => s.encode(dest, version)?,
                 Self::Partition(s) => s.encode(dest, version)?,
+                Self::ManagedConnector(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -210,6 +216,7 @@ mod encoding {
                 Self::Spu(_) => SpuSpec::LABEL,
                 Self::SpuGroup(_) => SpuGroupSpec::LABEL,
                 Self::Partition(_) => PartitionSpec::LABEL,
+                Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
             }
         }
     }
@@ -224,6 +231,7 @@ mod encoding {
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::Spu(s) => s.write_size(version),
                     Self::Partition(s) => s.write_size(version),
+                    Self::ManagedConnector(s) => s.write_size(version),
                 }
         }
 
@@ -239,6 +247,7 @@ mod encoding {
                 Self::SpuGroup(s) => s.encode(dest, version)?,
                 Self::Spu(s) => s.encode(dest, version)?,
                 Self::Partition(s) => s.encode(dest, version)?,
+                Self::ManagedConnector(s) => s.encode(dest, version)?,
             }
 
             Ok(())

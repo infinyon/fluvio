@@ -34,13 +34,13 @@ impl ManagedConnectorStatus {
 
     pub fn reserved() -> Self {
         Self {
-            resolution: ManagedConnectorStatusResolution::Reserved,
+            resolution: ManagedConnectorStatusResolution::Running,
             ..Default::default()
         }
     }
 
     pub fn is_already_valid(&self) -> bool {
-        self.resolution == ManagedConnectorStatusResolution::Reserved
+        self.resolution == ManagedConnectorStatusResolution::Running
     }
 }
 
@@ -49,7 +49,9 @@ impl ManagedConnectorStatus {
 pub enum ManagedConnectorStatusResolution {
     Init,
     Invalid,
-    Reserved,
+    Running,
+    Pending,
+    Failed,
 }
 
 // -----------------------------------
@@ -66,7 +68,9 @@ impl fmt::Display for ManagedConnectorStatusResolution {
         match self {
             Self::Init => write!(f, "Init"),
             Self::Invalid => write!(f, "Invalid"),
-            Self::Reserved => write!(f, "Reserved"),
+            Self::Running => write!(f, "Running"),
+            Self::Pending => write!(f, "Pending"),
+            Self::Failed => write!(f, "Failed"),
         }
     }
 }

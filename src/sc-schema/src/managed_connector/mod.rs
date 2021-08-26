@@ -38,15 +38,14 @@ mod convert {
              fn try_into(self) -> Result<Vec<Metadata<ManagedConnectorSpec>>, Self::Error> {
                  match self {
                      ListResponse::ManagedConnector(s) => Ok(s),
-                     _ => Err(Error::new(ErrorKind::Other, "not spg")),
+                     _ => Err(Error::new(ErrorKind::Other, "not managed connector")),
                  }
              }
          }
 
-         /*
          impl From<MetadataUpdate<ManagedConnectorSpec>> for WatchResponse {
              fn from(update: MetadataUpdate<ManagedConnectorSpec>) -> Self {
-                 Self::SpuGroup(update)
+                 Self::ManagedConnector(update)
              }
          }
 
@@ -55,10 +54,11 @@ mod convert {
 
              fn try_into(self) -> Result<MetadataUpdate<ManagedConnectorSpec>, Self::Error> {
                  match self {
-                     WatchResponse::SpuGroup(m) => Ok(m),
-                     _ => Err(Error::new(ErrorKind::Other, "not spg")),
+                     WatchResponse::ManagedConnector(m) => Ok(m),
+                     _ => Err(Error::new(ErrorKind::Other, "not managed connector")),
                  }
              }
          }
+         /*
          */
 }

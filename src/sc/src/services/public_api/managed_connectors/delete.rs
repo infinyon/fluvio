@@ -17,7 +17,7 @@ pub async fn handle_delete_managed_connector<AC: AuthContext>(
 ) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
-    debug!("delete spg group: {}", name);
+    debug!("delete managed connectors: {}", name);
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -53,7 +53,7 @@ pub async fn handle_delete_managed_connector<AC: AuthContext>(
         Status::new(name, ErrorCode::SpuNotFound, Some("not found".to_owned()))
     };
 
-    trace!("flv delete spu group resp {:#?}", status);
+    trace!("flv delete managed connector resp {:#?}", status);
 
     Ok(status)
 }
