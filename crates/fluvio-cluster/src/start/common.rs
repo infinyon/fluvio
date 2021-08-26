@@ -16,13 +16,29 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
 #[instrument]
 pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
     async fn try_connect_sc(fluvio_config: &FluvioConfig) -> Option<Fluvio> {
-        match Fluvio::connect_with_config(fluvio_config).await {
-            Ok(fluvio) => Some(fluvio),
-            Err(err) => {
-                debug!("couldn't connect: {:#?}", err);
+
+        use tokio::select;
+
+        select! {
+            _ = &mut sleep(Duration::from_secs(10)) => {
+                debug!("timer expired");
                 None
+            },
+
+            connection = Fluvio::connect_with_config(fluvio_config) =>  {
+
+                match connection {
+                    Ok(fluvio) => Some(fluvio),
+                    Err(err) => {
+                        debug!("couldn't connect: {:#?}", err);
+                        None
+                    }
+                }
+
             }
         }
+
+        
     }
 
     for attempt in 0..*MAX_SC_LOOP {
