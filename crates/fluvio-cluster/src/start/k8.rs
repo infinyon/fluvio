@@ -1174,6 +1174,9 @@ impl ClusterInstaller {
 
         admin.create(name, false, spu_spec).await?;
 
+
+        println!("Created {} spus", self.config.spu_replicas);
+
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
             self.wait_for_spu(&self.config.namespace).await?;
