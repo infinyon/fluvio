@@ -555,7 +555,7 @@ jobs:
   # After this, we are committed for release
   docker_push:
     name: Publish Docker Image
-    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - check
       - check_wasm
