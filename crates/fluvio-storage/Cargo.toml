@@ -1,0 +1,46 @@
+[package]
+edition = "2018"
+name = "fluvio-storage"
+version = "0.4.0"
+authors = ["fluvio.io"]
+description = "Storage for Fluvio platform"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[[bin]]
+name = "storage-cli"
+path = "src/bin/cli.rs"
+doc = false
+required-features = ["cli", "fluvio-future/subscriber"]
+
+[features]
+cli = ["structopt"]
+fixture = []
+
+[dependencies]
+tracing = "0.1.19"
+libc = "0.2.58"
+bytes = "1.0.0"
+futures-lite = "1.7.0"
+pin-utils = "0.1.0-alpha.4"
+async-channel = "1.5.1"
+async-trait = "0.1.18"
+structopt = { version = "0.3.5", optional = true }
+serde = { version = "1.0.103", features = ['derive'] }
+async-lock = "2.4.0"
+derive_builder = "0.10.2"
+thiserror = "1"
+
+# Fluvio dependencies
+fluvio-types = { version = "0.2.0", path = "../fluvio-types" }
+fluvio-future = { version = "0.3.2", features = ["fs", "mmap","zero_copy"] }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
+dataplane = { version = "0.6.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["file"] }
+
+[dev-dependencies]
+fluvio-future = { version = "0.3.0", features = ["fixture"] }
+flv-util = { version = "0.5.2", features = ["fixture"] }
+fluvio-socket = { path = "../fluvio-socket", version = "0.9",features = ["file"] }
+fluvio-storage = { path = ".", features = ["fixture"]}
+dataplane = { version = "0.6.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["fixture"] }
