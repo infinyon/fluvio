@@ -4,7 +4,6 @@
 use std::time::Instant;
 use std::time::Duration;
 
-use fluvio_stream_dispatcher::store::K8ChangeListener;
 use tracing::{debug, error, instrument};
 
 use fluvio_future::task::spawn;

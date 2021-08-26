@@ -538,8 +538,9 @@ mod listener {
         }
 
         /// wait for initial loading and return all as expected
-        #[instrument(skip(self))]
+        #[instrument()]
         pub async fn wait_for_initial_sync(&mut self) -> Vec<MetadataStoreObject<S, C>> {
+            debug!("waiting");
             self.listen().await;
 
             let changes = self.sync_changes().await;
