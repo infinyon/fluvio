@@ -166,9 +166,9 @@ mod cli {
 
     use std::io::Write;
     use std::process::Stdio;
-    use fluvio_system_util::bin::get_fluvio;
     use fluvio_future::timer::sleep;
     use std::time::Duration;
+    use crate::get_binary;
 
     pub async fn produce_message_with_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         println!("starting produce");
@@ -200,7 +200,7 @@ mod cli {
             topic_name, base_offset
         );
 
-        let mut child = get_fluvio().expect("no fluvio");
+        let mut child = get_binary("fluvio").expect("no fluvio");
         if let Some(log) = &test_case.environment.client_log {
             child.env("RUST_LOG", log);
         }

@@ -31,7 +31,6 @@ fluvio-command = { version = "0.2.0" }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../fluvio-controlplane-metadata" }
 dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
-fluvio-system-util = { version = "0.1.0", path = "../fluvio-system-util" }
 
 # Fluvio test framework Attribute macro
 fluvio-test-derive = { path = "../fluvio-test-derive" }
