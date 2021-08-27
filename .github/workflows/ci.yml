@@ -454,6 +454,8 @@ jobs:
 
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 3
+        env:
+            FLV_DISPATCHER_WAIT: 300
         run: |
             date
             make RUST_LOG=fluvio-test=debug,fluvio_test=debug,fluvio_socket=debug,fluvio::consumer=debug DEFAULT_SPU=1 REPL=1 DEFAULT_ITERATION=1000 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--keep-cluster UNINSTALL=noclean smoke-test-k8
