@@ -37,7 +37,7 @@ mod k8_operator {
         let spu_service_ctx: StoreContext<SpuServiceSpec> = StoreContext::new();
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
-        let managed_connector_service_ctx: StoreContext<ManagedConnectorDeploymentSpec> = StoreContext::new();
+        let managed_connector_deployments_ctx: StoreContext<ManagedConnectorDeploymentSpec> = StoreContext::new();
 
         let config_ctx: StoreContext<ScK8Config> = StoreContext::new();
 
@@ -64,7 +64,7 @@ mod k8_operator {
         K8ClusterStateDispatcher::<_, _>::start(
             namespace.clone(),
             k8_client.clone(),
-            managed_connector_service_ctx.clone(),
+            managed_connector_deployments_ctx.clone(),
         );
 
         K8ClusterStateDispatcher::<_, _>::start(namespace.clone(), k8_client, config_ctx.clone());
@@ -95,10 +95,8 @@ mod k8_operator {
         whitelist!(config, "k8_managed_connector_delpoyment", {
             ManagedConnectorDeploymentController::start(
                 namespace,
-                managed_connector_service_ctx,
                 global_ctx.managed_connectors().clone(),
-                config_ctx.clone(),
-                tls,
+                managed_connector_deployments_ctx
             );
         });
     }

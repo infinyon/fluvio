@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::{time::Duration};
 
 use fluvio_stream_dispatcher::{store::K8ChangeListener};
+use k8_types::LabelSelector;
 use tracing::debug;
 use tracing::error;
 use tracing::trace;
@@ -16,7 +18,6 @@ use crate::stores::spg::{SpuGroupSpec, SpuGroupStatus};
 use crate::stores::managed_connector::ManagedConnectorSpec;
 use crate::stores::spu::{SpuSpec};
 
-
 use crate::cli::TlsConfig;
 
 use crate::k8::objects::spg_group::{SpuGroupObj};
@@ -30,32 +31,23 @@ use crate::stores::k8::K8MetaItem;
 use fluvio_controlplane_metadata::store::MetadataStoreObject;
 use crate::k8::objects::managed_connector_deployment::K8DeploymentSpec;
 
-
-
 /// Update Statefulset and Service from SPG
 pub struct ManagedConnectorDeploymentController {
     namespace: String,
-    deployment: StoreContext<ManagedConnectorDeploymentSpec>,
     connectors: StoreContext<ManagedConnectorSpec>,
-
-    configs: StoreContext<ScK8Config>,
-    tls: Option<TlsConfig>,
+    deployments: StoreContext<ManagedConnectorDeploymentSpec>,
 }
 
 impl ManagedConnectorDeploymentController {
     pub fn start(
         namespace: String,
-        deployment: StoreContext<ManagedConnectorDeploymentSpec>,
         connectors: StoreContext<ManagedConnectorSpec>,
-        configs: StoreContext<ScK8Config>,
-        tls: Option<TlsConfig>,
+        deployments: StoreContext<ManagedConnectorDeploymentSpec>,
     ) {
         let controller = Self {
             namespace,
-            deployment,
             connectors,
-            configs,
-            tls,
+            deployments,
         };
 
         spawn(controller.dispatch_loop());
@@ -64,7 +56,7 @@ impl ManagedConnectorDeploymentController {
     async fn dispatch_loop(mut self) {
         loop {
             if let Err(err) = self.inner_loop().await {
-                error!("error with spg loop loop: {:#?}", err);
+                error!("error with managed connector loop: {:#?}", err);
                 debug!("sleeping 1 miniute to try again");
                 sleep(Duration::from_secs(60)).await;
             }
@@ -73,12 +65,12 @@ impl ManagedConnectorDeploymentController {
 
     #[instrument(skip(self), name = "ManagedConnectorDeploymentController")]
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
-        todo!();
         use tokio::select;
 
         let mut connector_listener = self.connectors.change_listener();
 
-        self.sync_connectors_to_deployments(&mut connector_listener).await?;
+        self.sync_connectors_to_deployments(&mut connector_listener)
+            .await?;
 
         loop {
             select! {
@@ -105,14 +97,13 @@ impl ManagedConnectorDeploymentController {
         let (updates, deletes) = changes.parts();
 
         debug!(
-            "received service changes updates: {},deletes: {},epoch: {}",
+            "received managed connector changes updates: {},deletes: {},epoch: {}",
             updates.len(),
             deletes.len(),
             epoch,
         );
 
         for mc_item in updates.into_iter() {
-
             self.sync_connector_to_deployment(mc_item).await?
         }
 
@@ -125,42 +116,34 @@ impl ManagedConnectorDeploymentController {
         managed_connector: MetadataStoreObject<ManagedConnectorSpec, K8MetaItem>,
     ) -> Result<(), ClientError> {
         let key = managed_connector.key();
-        let k8_deployment_spec = Self::generate_k8_deployment_spec(
-            &managed_connector.spec(),
-            &self.namespace,
-            key,
-        );
+        let k8_deployment_spec =
+            Self::generate_k8_deployment_spec(&managed_connector.spec(), &self.namespace, key);
         trace!(?k8_deployment_spec);
         use crate::stores::MetadataStoreObject;
         use crate::stores::actions::WSAction;
 
-        let deployment_action =
-            WSAction::Apply(
-                MetadataStoreObject::with_spec(key, k8_deployment_spec.into())
+        let deployment_action = WSAction::Apply(
+            MetadataStoreObject::with_spec(key, k8_deployment_spec.into())
                 .with_context(managed_connector.ctx().create_child()),
-            );
+        );
 
-        debug!(?deployment_action, "applying statefulset");
+        debug!(?deployment_action, "applying deployment");
 
-        self.deployment
+        self.deployments
             .wait_action(&key, deployment_action)
             .await?;
 
         Ok(())
     }
-    const DEFAULT_CONNECTOR_NAME : &'static str = "fluvio-connector";
+    const DEFAULT_CONNECTOR_NAME: &'static str = "fluvio-connector";
     pub fn generate_k8_deployment_spec(
         mc_spec: &ManagedConnectorSpec,
         namespace: &str,
         name: &str,
     ) -> K8DeploymentSpec {
         use k8_types::{
-            TemplateSpec,
-            TemplateMeta,
-            core::pod::{
-                PodSpec,
-                ContainerSpec,
-            },
+            TemplateSpec, TemplateMeta,
+            core::pod::{PodSpec, ContainerSpec},
             LabelProvider,
         };
 
@@ -172,8 +155,7 @@ impl ManagedConnectorDeploymentController {
 
         let template = TemplateSpec {
             metadata: Some(
-                TemplateMeta::default()
-                    .set_labels(vec![("app", Self::DEFAULT_CONNECTOR_NAME)]),
+                TemplateMeta::default().set_labels(vec![("app", Self::DEFAULT_CONNECTOR_NAME)]),
             ),
             spec: PodSpec {
                 termination_grace_period_seconds: Some(10),
@@ -191,11 +173,14 @@ impl ManagedConnectorDeploymentController {
                 ..Default::default()
             },
         };
+
+        let mut match_labels = HashMap::new();
+        match_labels.insert("app".to_owned(), Self::DEFAULT_CONNECTOR_NAME.to_owned());
+
         K8DeploymentSpec {
             template,
+            selector: LabelSelector { match_labels },
             ..Default::default()
         }
     }
-
 }
-
