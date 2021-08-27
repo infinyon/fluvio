@@ -32,7 +32,6 @@ members = [
     "crates/fluvio-storage",
     "crates/fluvio-stream-dispatcher",
     "crates/fluvio-stream-model",
-    "crates/fluvio-system-util",
     "crates/fluvio-test",
     "crates/fluvio-test-derive",
     "crates/fluvio-test-util",

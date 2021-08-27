@@ -9,10 +9,10 @@ use async_lock::RwLock;
 use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
-use fluvio_system_util::bin::get_fluvio;
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio::Offset;
 use fluvio_command::CommandExt;
+use crate::get_binary;
 
 use super::SmokeTestCase;
 use super::message::*;
@@ -40,7 +40,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
     for i in 0..replication {
         let topic_name = test_case.environment.topic_name.clone();
         let offset = offsets.get(&topic_name).expect("topic offset");
-        let mut command = get_fluvio().expect("fluvio not found");
+        let mut command = get_binary("fluvio").expect("fluvio not found");
         command
             .arg("consume")
             .arg(&topic_name)
