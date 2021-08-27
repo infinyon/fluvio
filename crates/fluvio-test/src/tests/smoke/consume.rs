@@ -195,8 +195,12 @@ async fn validate_consume_message_api(
     println!("replication status verified");
 
     println!("performing 2nd fetch check. waiting 5 seconds");
+    drop(fluvio_client);
+    
     // do complete fetch, since producer has completed, we should retrieve everything
     sleep(Duration::from_secs(5)).await;
+
+    let fluvio_client = Fluvio::connect().await.expect("cant' create client");
 
     for i in 0..partition {
         let consumer = fluvio_client
