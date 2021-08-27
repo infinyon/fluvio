@@ -68,7 +68,6 @@ impl K8SpuController {
         }
     }
 
-    
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 

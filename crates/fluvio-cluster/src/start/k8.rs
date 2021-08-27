@@ -646,7 +646,7 @@ impl ClusterInstaller {
             false => {
                 let check_results = self.setup().await;
                 if check_results.iter().any(|it| it.is_err()) {
-                    return Err(K8InstallError::PrecheckErrored(check_results).into());
+                    return Err(K8InstallError::PrecheckErrored(check_results));
                 }
 
                 let statuses: CheckStatuses =
@@ -667,7 +667,7 @@ impl ClusterInstaller {
 
                 // If any of the pre-checks was a straight-up failure, install should fail
                 if any_failed {
-                    return Err(K8InstallError::FailedPrecheck(statuses).into());
+                    return Err(K8InstallError::FailedPrecheck(statuses));
                 }
                 Some(statuses)
             }
@@ -680,7 +680,9 @@ impl ClusterInstaller {
         let namespace = &self.config.namespace;
 
         // before we do let's try make sure SPU are installed.
-        check_crd(self.kube_client.clone()).await.map_err(K8InstallError::from)?;
+        check_crd(self.kube_client.clone())
+            .await
+            .map_err(K8InstallError::from)?;
 
         let (host_name, port) = self.discover_sc_address(namespace).await?;
 

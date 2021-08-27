@@ -89,19 +89,16 @@ impl SpuController {
 
             let spu_id = spu.spec.id;
 
-            match health_read.get(&spu_id) {
-                Some(health_status) => {
-                    if spu.status.is_init() || spu.status.is_online() != *health_status {
-                        if *health_status {
-                            spu.status.set_online();
-                        } else {
-                            spu.status.set_offline();
-                        }
-                        debug!(id = spu.spec.id, status = %spu.status,"spu status changed");
-                        changes.push(spu);
+            if let Some(health_status) = health_read.get(&spu_id) {
+                if spu.status.is_init() || spu.status.is_online() != *health_status {
+                    if *health_status {
+                        spu.status.set_online();
+                    } else {
+                        spu.status.set_offline();
                     }
+                    debug!(id = spu.spec.id, status = %spu.status,"spu status changed");
+                    changes.push(spu);
                 }
-                None => {}
             }
         }
 

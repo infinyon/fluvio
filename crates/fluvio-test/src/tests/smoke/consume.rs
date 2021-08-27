@@ -192,7 +192,7 @@ async fn validate_consume_message_api(
         }
     }
 
-    println!("replication status verified"); 
+    println!("replication status verified");
 
     println!("performing 2nd fetch check. waiting 5 seconds");
     drop(fluvio_client);

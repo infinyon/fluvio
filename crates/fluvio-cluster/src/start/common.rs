@@ -1,7 +1,7 @@
 use std::{env, time::Duration};
 
 use fluvio_controlplane_metadata::spu::SpuSpec;
-use k8_client::{SharedK8Client,ClientError};
+use k8_client::{SharedK8Client, ClientError};
 use once_cell::sync::Lazy;
 use tracing::{debug, instrument};
 
@@ -58,10 +58,8 @@ pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
     None
 }
 
-
 // hack
 pub async fn check_crd(client: SharedK8Client) -> Result<(), ClientError> {
-
     use k8_metadata_client::MetadataClient;
 
     for i in 0..100 {

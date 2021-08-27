@@ -29,7 +29,6 @@ use crate::check::render::render_check_progress;
 use super::constants::*;
 use super::common::check_crd;
 
-
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
     Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
 
@@ -426,7 +425,9 @@ impl LocalInstaller {
         let client = load_and_share().map_err(K8InstallError::from)?;
 
         // before we do let's try make sure SPU are installed.
-        check_crd(client.clone()).await.map_err(K8InstallError::from)?;
+        check_crd(client.clone())
+            .await
+            .map_err(K8InstallError::from)?;
 
         debug!("using log dir: {}", self.config.log_dir.display());
         if !self.config.log_dir.exists() {
@@ -459,7 +460,6 @@ impl LocalInstaller {
         })
     }
 
-    
     /// Launches an SC on the local machine
     ///
     /// Returns the address of the SC if successful

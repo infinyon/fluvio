@@ -93,7 +93,7 @@ pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), K8InstallError
             render_statuses_next_steps(&check_statuses);
         }
         // Another type of error occurred during checking or startup
-        Err(other) => return Err(other.into()),
+        Err(other) => return Err(other),
     }
 
     Ok(())

@@ -196,15 +196,29 @@ mod context {
             }
         }
 
+        /// Wait for action to finish with default duration
+        pub async fn wait_action(
+            &self,
+            key: &S::IndexKey,
+            action: WSAction<S>,
+        ) -> Result<MetadataStoreObject<S, K8MetaItem>, IoError>
+        where
+            S::IndexKey: Display,
+        {
+            self.wait_action_with_timeout(key, action, Duration::from_secs(*MAX_WAIT_TIME))
+                .await
+        }
+
         /// Wait for action to finish.  There is no guarantee that the status valus has been applied.
         /// Only that status has been changed.
         ///
         /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
-        pub async fn wait_action(
+        pub async fn wait_action_with_timeout(
             &self,
             key: &S::IndexKey,
             action: WSAction<S>,
+            timeout: Duration,
         ) -> Result<MetadataStoreObject<S, K8MetaItem>, IoError>
         where
             S::IndexKey: Display,
@@ -214,7 +228,7 @@ mod context {
             let current_value = self.store.value(key).await;
 
             let mut spec_listener = self.change_listener();
-            let mut timer = sleep(Duration::from_secs(*MAX_WAIT_TIME));
+            let mut timer = sleep(timeout);
 
             match self.sender.send(action).await {
                 Ok(_) => loop {

@@ -511,7 +511,8 @@ jobs:
         run: [r1]
     steps:
       - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       # Download artifacts
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
@@ -537,8 +538,11 @@ jobs:
 
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-      - name: Set up k3d
-        run: ./k8-util/cluster/reset-k3d.sh
+      - name: Set up K3d
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
+          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+          date
       - name: Run upgrade test with CI artifacts
         timeout-minutes: 3
         env:
