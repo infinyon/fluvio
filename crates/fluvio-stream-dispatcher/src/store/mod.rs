@@ -35,7 +35,7 @@ mod context {
         use std::env;
 
         let var_value = env::var("FLV_DISPATCHER_WAIT").unwrap_or_default();
-        let wait_time: u64 = var_value.parse().unwrap_or(10);
+        let wait_time: u64 = var_value.parse().unwrap_or(60);
         wait_time
     });
 
