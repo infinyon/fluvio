@@ -62,12 +62,13 @@ impl K8SpuController {
         loop {
             if let Err(err) = self.inner_loop().await {
                 error!("error with inner loop: {:#?}", err);
-                debug!("sleeping 1 miniute to try again");
-                sleep(Duration::from_secs(60)).await;
+                debug!("sleeping 10 seconds try again");
+                sleep(Duration::from_secs(10)).await;
             }
         }
     }
 
+    
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
