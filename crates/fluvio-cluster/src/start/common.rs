@@ -1,5 +1,7 @@
 use std::{env, time::Duration};
 
+use fluvio_controlplane_metadata::spu::SpuSpec;
+use k8_client::{SharedK8Client,ClientError};
 use once_cell::sync::Lazy;
 use tracing::{debug, instrument};
 
@@ -54,4 +56,26 @@ pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
 
     println!("fail to connect to sc at: {}", config.endpoint);
     None
+}
+
+
+// hack
+pub async fn check_crd(client: SharedK8Client) -> Result<(), ClientError> {
+
+    use k8_metadata_client::MetadataClient;
+
+    for i in 0..100 {
+        println!("checking fluvio crd attempt: {}", i);
+        // check if spu is installed
+        if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
+            println!("problem retrieving fluvio crd {}", err);
+            println!("sleeping 1 seconds");
+            sleep(Duration::from_secs(10)).await;
+        } else {
+            println!("fluvio crd installed");
+            return Ok(());
+        }
+    }
+
+    Err(ClientError::Other("Fluvio CRD not ready".to_string()))
 }

@@ -53,6 +53,9 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
 /// Process custom spu, converts spu spec to K8 and sends to KV store
 #[instrument(skip(ctx, name, spg_spec))]
 async fn process_custom_spu_request(ctx: &Context, name: String, spg_spec: SpuGroupSpec) -> Status {
+
+    
+
     if let Err(err) = ctx.spgs().create_spec(name.clone(), spg_spec).await {
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::SpuError, error)

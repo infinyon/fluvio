@@ -8,6 +8,8 @@ use std::time::Duration;
 use std::env;
 
 use derive_builder::Builder;
+use k8_client::SharedK8Client;
+use k8_client::load_and_share;
 use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
@@ -18,7 +20,6 @@ use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
 use fluvio_future::timer::sleep;
-use k8_client::K8Client;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
 use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
@@ -28,6 +29,7 @@ use fluvio_command::CommandExt;
 use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
+use crate::start::common::check_crd;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress;
@@ -563,7 +565,7 @@ pub struct ClusterInstaller {
     /// Configuration options for this installation
     config: ClusterConfig,
     /// Shared Kubernetes client for install
-    kube_client: K8Client,
+    kube_client: SharedK8Client,
     /// Helm client for performing installs
     helm_client: HelmClient,
 }
@@ -583,7 +585,7 @@ impl ClusterInstaller {
     pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {
         Ok(Self {
             config,
-            kube_client: K8Client::default().map_err(K8InstallError::K8ClientError)?,
+            kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
             helm_client: HelmClient::new().map_err(K8InstallError::HelmError)?,
         })
     }
@@ -676,6 +678,9 @@ impl ClusterInstaller {
         }
 
         let namespace = &self.config.namespace;
+
+        // before we do let's try make sure SPU are installed.
+        check_crd(self.kube_client.clone()).await.map_err(K8InstallError::from)?;
 
         let (host_name, port) = self.discover_sc_address(namespace).await?;
 
