@@ -2,7 +2,7 @@ use std::path::PathBuf;
 use fluvio::config::{TlsPolicy, TlsPaths};
 
 pub fn cert_dir() -> PathBuf {
-    std::env::current_dir().unwrap().join("tls/certs")
+    std::env::current_dir().unwrap().join("tls").join("certs")
 }
 
 pub fn load_tls(client_user: &str) -> (TlsPolicy, TlsPolicy) {
