@@ -16,7 +16,6 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
 #[instrument]
 pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
     async fn try_connect_sc(fluvio_config: &FluvioConfig) -> Option<Fluvio> {
-
         use tokio::select;
 
         select! {
@@ -37,8 +36,6 @@ pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
 
             }
         }
-
-        
     }
 
     for attempt in 0..*MAX_SC_LOOP {

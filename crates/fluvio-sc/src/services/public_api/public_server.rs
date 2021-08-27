@@ -53,7 +53,7 @@ where
         self: Arc<Self>,
         ctx: Self::Context,
         mut socket: FluvioSocket,
-        _connection: ConnectInfo
+        _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
         let auth_context = ctx
             .auth

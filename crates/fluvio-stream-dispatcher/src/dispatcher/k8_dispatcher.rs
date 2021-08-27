@@ -102,17 +102,18 @@ where
         loop {
             debug!("starting rconcilation loop");
             if let Err(err) = self.reconcillation_loop().await {
-                error!("error with reconcillation loop: {:#?}, sleep 10 seconds",err);
+                error!(
+                    "error with reconcillation loop: {:#?}, sleep 10 seconds",
+                    err
+                );
                 sleep(Duration::from_secs(10)).await;
-
             }
-
         }
     }
 
     ///
     /// Main Event Loop
-    async fn reconcillation_loop(&mut self) -> Result<(),IoError> {
+    async fn reconcillation_loop(&mut self) -> Result<(), IoError> {
         use tokio::select;
 
         debug!("begin new reconcillation loop");

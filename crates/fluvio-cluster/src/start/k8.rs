@@ -8,7 +8,7 @@ use std::time::Duration;
 use std::env;
 
 use derive_builder::Builder;
-use tracing::{info, warn, debug,  instrument};
+use tracing::{info, warn, debug, instrument};
 use once_cell::sync::Lazy;
 use tempfile::NamedTempFile;
 use semver::Version;
@@ -47,7 +47,6 @@ static MAX_SC_SERVICE_WAIT: Lazy<u64> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_SERVICE_WAIT").unwrap_or_default();
     var_value.parse().unwrap_or(60)
 });
-
 
 /// Describes how to install Fluvio onto Kubernetes
 #[derive(Builder, Debug)]
@@ -636,7 +635,6 @@ impl ClusterInstaller {
         fields(namespace = &*self.config.namespace),
     )]
     pub async fn install_fluvio(&self) -> Result<StartStatus, K8InstallError> {
-
         println!("starting installing");
 
         let mut installed = false;
@@ -673,7 +671,6 @@ impl ClusterInstaller {
             }
         };
 
-
         if !installed {
             self.install_app().await?;
         }
@@ -689,8 +686,8 @@ impl ClusterInstaller {
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
         let fluvio = match try_connect_to_sc(&cluster_config).await {
-           Some(fluvio) => fluvio,
-           None => return Err(K8InstallError::SCServiceTimeout)
+            Some(fluvio) => fluvio,
+            None => return Err(K8InstallError::SCServiceTimeout),
         };
 
         let platform_version = fluvio.platform_version();
@@ -706,15 +703,12 @@ impl ClusterInstaller {
             ));
         }
 
-
         if self.config.save_profile {
             self.update_profile(address.clone())?;
         }
 
-
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-
 
         Ok(StartStatus {
             address,
@@ -754,7 +748,6 @@ impl ClusterInstaller {
             // This is a workaround. More on this later in the function.
             let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
             chart_values.push(np_conf_path.to_path_buf());
-
 
             let external_addr = if let Some(addr) = &self.config.proxy_addr {
                 debug!(?addr, "use proxying");
@@ -983,7 +976,7 @@ impl ClusterInstaller {
             }
         }
     }
-    
+
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, ns))]
     async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
@@ -1173,7 +1166,6 @@ impl ClusterInstaller {
 
         admin.create(name, false, spu_spec).await?;
 
-
         println!("Created {} spus", self.config.spu_replicas);
 
         // Wait for the SPU cluster to spin up
@@ -1188,7 +1180,6 @@ impl ClusterInstaller {
 fn versions_compatible(a: Version, b: Version) -> bool {
     Version::new(a.major, a.minor, a.patch) == Version::new(b.major, b.minor, b.patch)
 }
-
 
 #[cfg(test)]
 mod tests {

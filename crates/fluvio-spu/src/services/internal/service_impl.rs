@@ -33,7 +33,7 @@ impl FlvService for InternalService {
         self: Arc<Self>,
         ctx: DefaultSharedGlobalContext,
         socket: FluvioSocket,
-        _connection: ConnectInfo
+        _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();

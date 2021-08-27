@@ -39,11 +39,10 @@ impl SocketBuilder for DefaultSocketBuilder {
     }
 }
 
-
 #[derive(Debug)]
 pub struct ConnectInfo {
     host: String,
-    peer: String
+    peer: String,
 }
 
 /// Trait for responding to kf service
@@ -59,7 +58,7 @@ pub trait FlvService {
         self: Arc<Self>,
         context: Self::Context,
         socket: FluvioSocket,
-        connection: ConnectInfo
+        connection: ConnectInfo,
     ) -> Result<(), SocketError>;
 }
 
@@ -72,7 +71,7 @@ pub struct InnerFlvApiServer<R, A, C, S, T> {
     builder: T,
 }
 
-impl <R, A, C, S, T> fmt::Debug for InnerFlvApiServer<R, A, C, S, T> {
+impl<R, A, C, S, T> fmt::Debug for InnerFlvApiServer<R, A, C, S, T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "ApiServer({})", self.addr)
     }
@@ -176,29 +175,34 @@ where
                             .unwrap_or_else(|_| "".to_owned());
 
                         let peer = address.to_string();
-                            
-                        info!(server = %host,%peer, "new peer connection");
 
+                        info!(server = %host,%peer, "new peer connection");
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {
                             Ok(socket) => {
                                 let connection_info = ConnectInfo {
                                     peer: peer.clone(),
-                                    host: host.clone()
+                                    host: host.clone(),
                                 };
 
-                                if let Err(err) = service.respond(context.clone(), socket,connection_info).await {
+                                if let Err(err) = service
+                                    .respond(context.clone(), socket, connection_info)
+                                    .await
+                                {
                                     error!(
                                         "error handling stream: {}, shutdown on: {} from: {}",
-                                        err, host,address, 
+                                        err, host, address,
                                     );
                                 } else {
                                     info!(%host,%peer, "connection terminated");
                                 }
                             }
                             Err(err) => {
-                                error!("error on tls handshake: {}, on: {} from: addr: {}", err, host, peer);
+                                error!(
+                                    "error on tls handshake: {}, on: {} from: addr: {}",
+                                    err, host, peer
+                                );
                             }
                         }
                     };
@@ -214,8 +218,6 @@ where
         }
     }
 }
-
-
 
 #[cfg(test)]
 mod test {

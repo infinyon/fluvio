@@ -39,7 +39,7 @@ impl FlvService for PublicService {
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
         socket: FluvioSocket,
-        _connection: ConnectInfo
+        _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
         let (sink, mut stream) = socket.split();
 

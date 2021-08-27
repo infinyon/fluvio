@@ -50,7 +50,7 @@ impl FlvService for ScInternalService {
         self: Arc<Self>,
         context: SharedContext,
         socket: FluvioSocket,
-        _connection: ConnectInfo
+        _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<InternalScRequest, InternalScKey>();

@@ -10,7 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
-use fluvio::Offset;
+use fluvio::{Fluvio, Offset};
 use fluvio_command::CommandExt;
 use crate::get_binary;
 
@@ -77,16 +77,17 @@ async fn validate_consume_message_api(
     let topic_name = test_case.environment.topic_name.clone();
     let base_offset = offsets.get(&topic_name).expect("offsets");
 
+    let fluvio_client = Fluvio::connect().await.expect("cant' create client");
+
     for i in 0..partition {
+        let consumer = fluvio_client
+            .partition_consumer(topic_name.to_string(), 0)
+            .await
+            .expect("unable to create consumer");
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
             topic_name, base_offset, producer_iteration
         );
-
-        let mut lock = test_driver.write().await;
-
-        let consumer = lock.get_consumer(&topic_name).await;
-        drop(lock);
 
         let mut stream = consumer
             .stream(
@@ -198,15 +199,14 @@ async fn validate_consume_message_api(
     sleep(Duration::from_secs(5)).await;
 
     for i in 0..partition {
+        let consumer = fluvio_client
+            .partition_consumer(topic_name.to_string(), 0)
+            .await
+            .expect("unable to create consumer");
         println!(
             "performing complete  fetch stream for: {} base offset: {}, expected new records: {}",
             topic_name, base_offset, producer_iteration
         );
-
-        let mut lock = test_driver.write().await;
-
-        let consumer = lock.get_consumer(&topic_name).await;
-        drop(lock);
 
         let mut stream = consumer
             .stream(
