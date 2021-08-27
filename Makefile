@@ -11,12 +11,12 @@ TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
 CLIENT_LOG=warn
 SERVER_LOG=fluvio=debug
-TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/flv-test,./target/$(BUILD_PROFILE)/flv-test)
+TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
 DEFAULT_SPU=2
 REPL=2
 DEFAULT_ITERATION=1000
 SPU_DELAY=5
-SC_AUTH_CONFIG=./src/sc/test-data/auth_config
+SC_AUTH_CONFIG=./crates/fluvio-sc/test-data/auth_config
 EXTRA_ARG=
 
 # Test env
@@ -51,14 +51,14 @@ build-cli: install_rustup_target
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
-	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer --manifest-path ./src/cli/Cargo.toml
+	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer --manifest-path ./crates/fluvio-cli/Cargo.toml
 
 
 build-cluster: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-test:	install_rustup_target 
-	cargo build --bin flv-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo build --bin fluvio-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
 	./build-scripts/install_target.sh
@@ -212,12 +212,12 @@ check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
 build_smartstreams:
-	make -C src/smartstream/examples build
+	make -C crates/fluvio-smartstream/examples build
 
 run-all-unit-test: build_smartstreams install_rustup_target 
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
-	make test-all -C src/protocol
+	make test-all -C crates/fluvio-protocol
 
 run-integration-test:build_smartstreams install_rustup_target 
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored --test-threads=1

@@ -6,34 +6,39 @@ members = [
     "examples/02-consume",
     "examples/03-echo",
     "examples/04-admin-watch",
-    "src/auth",
-    "src/cli",
-    "src/client",
-    "src/cluster",
-    "src/controlplane",
-    "src/controlplane-metadata",
-    "src/dataplane-protocol",
-    "src/package-index",
-    "src/protocol",
-    "src/sc",
-    "src/sc-schema",
-    "src/service",
-    "src/socket",
-    "src/spu",
-    "src/spu-schema",
-    "src/storage",
-    "src/stream-dispatcher",
-    "src/stream-model",
-    "src/types",
-    "src/utils",
-    "src/extension-common",
-    "src/runner",
-    "src/smartstream",
-    "src/smartstream/derive",
-    "tests/runner",
+    "crates/fluvio",
+    "crates/fluvio-auth",
+    "crates/fluvio-cli",
+    "crates/fluvio-cluster",
+    "crates/fluvio-controlplane",
+    "crates/fluvio-controlplane-metadata",
+    "crates/fluvio-dataplane-protocol",
+    "crates/fluvio-extension-common",
+    "crates/fluvio-package-index",
+    "crates/fluvio-protocol",
+    "crates/fluvio-protocol-api",
+    "crates/fluvio-protocol-codec",
+    "crates/fluvio-protocol-core",
+    "crates/fluvio-protocol-derive",
+    "crates/fluvio-run",
+    "crates/fluvio-sc",
+    "crates/fluvio-sc-schema",
+    "crates/fluvio-service",
+    "crates/fluvio-smartstream",
+    "crates/fluvio-smartstream-derive",
+    "crates/fluvio-socket",
+    "crates/fluvio-spu",
+    "crates/fluvio-spu-schema",
+    "crates/fluvio-storage",
+    "crates/fluvio-stream-dispatcher",
+    "crates/fluvio-stream-model",
+    "crates/fluvio-system-util",
+    "crates/fluvio-test",
+    "crates/fluvio-test-derive",
+    "crates/fluvio-test-util",
+    "crates/fluvio-types",
 ]
 resolver = "2"
-
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
@@ -45,11 +50,11 @@ opt-level = 3
 opt-level = 3
 
 # Used to preserve some linker hacks used by `inventory` crate
-[profile.dev.package.flv-test]
+[profile.dev.package.fluvio-test]
 incremental = false
 
-# Make flv-test release package more like dev profile. Specifically for `inventory` crate
-[profile.release.package.flv-test]
+# Make fluvio-test release package more like dev profile. Specifically for `inventory` crate
+[profile.release.package.fluvio-test]
 opt-level = 0
 debug = true
 debug-assertions = true

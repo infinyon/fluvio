@@ -1561,7 +1561,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "cfg-if 1.0.0",
- "fluvio-test-derive",
+ "fluvio-test-derive 0.1.1",
  "fluvio-wasm-timer",
  "fluvio_ws_stream_wasm",
  "futures-lite",
@@ -1590,22 +1590,6 @@ dependencies = [
  "serde_json",
  "thiserror",
  "tracing",
-]
-
-[[package]]
-name = "fluvio-integration-derive"
-version = "0.1.0"
-dependencies = [
- "fluvio",
- "fluvio-future",
- "fluvio-test-util",
- "inflections",
- "proc-macro2",
- "quote",
- "serde_json",
- "syn",
- "tokio",
- "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
 ]
 
 [[package]]
@@ -1940,6 +1924,54 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-test"
+version = "0.0.0"
+dependencies = [
+ "async-lock",
+ "async-trait",
+ "bencher",
+ "bytes",
+ "fluvio",
+ "fluvio-cluster",
+ "fluvio-command",
+ "fluvio-controlplane-metadata",
+ "fluvio-dataplane-protocol",
+ "fluvio-future",
+ "fluvio-system-util",
+ "fluvio-test-derive 0.0.0",
+ "fluvio-test-util",
+ "fluvio-types",
+ "futures-lite",
+ "hdrhistogram",
+ "inventory",
+ "md-5",
+ "prettytable-rs",
+ "rand 0.8.4",
+ "serde",
+ "serde_json",
+ "structopt",
+ "syn",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-test-derive"
+version = "0.0.0"
+dependencies = [
+ "fluvio",
+ "fluvio-future",
+ "fluvio-test-util",
+ "inflections",
+ "proc-macro2",
+ "quote",
+ "serde_json",
+ "syn",
+ "tokio",
+ "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
+]
+
+[[package]]
 name = "fluvio-test-derive"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1952,7 +1984,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-test-util"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-lock",
  "async-trait",
@@ -2022,38 +2054,6 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
-]
-
-[[package]]
-name = "flv-test"
-version = "1.0.1"
-dependencies = [
- "async-lock",
- "async-trait",
- "bencher",
- "bytes",
- "fluvio",
- "fluvio-cluster",
- "fluvio-command",
- "fluvio-controlplane-metadata",
- "fluvio-dataplane-protocol",
- "fluvio-future",
- "fluvio-integration-derive",
- "fluvio-system-util",
- "fluvio-test-util",
- "fluvio-types",
- "futures-lite",
- "hdrhistogram",
- "inventory",
- "md-5",
- "prettytable-rs",
- "rand 0.8.4",
- "serde",
- "serde_json",
- "structopt",
- "syn",
- "tokio",
- "tracing",
 ]
 
 [[package]]
