@@ -3,6 +3,7 @@
 //!
 //! Stream records to client
 //!
+use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::io::{self, Read};
@@ -93,7 +94,7 @@ impl Default for SmartStreamKind {
 /// as raw bytes.
 ///
 // TODO ... or, it may be named and selected from the WASM store.
-#[derive(Debug, Clone, Encoder, Decoder)]
+#[derive(Clone, Encoder, Decoder)]
 pub enum SmartStreamWasm {
     Raw(Vec<u8>),
     /// compressed WASM module payload using Gzip
@@ -146,6 +147,21 @@ impl SmartStreamWasm {
 impl Default for SmartStreamWasm {
     fn default() -> Self {
         Self::Raw(Vec::new())
+    }
+}
+
+impl Debug for SmartStreamWasm {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Raw(bytes) => f
+                .debug_tuple("Raw")
+                .field(&format!("{} bytes", bytes.len()))
+                .finish(),
+            Self::Gzip(bytes) => f
+                .debug_tuple("Gzip")
+                .field(&format!("{} bytes", bytes.len()))
+                .finish(),
+        }
     }
 }
 
