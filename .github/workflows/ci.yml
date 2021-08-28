@@ -548,7 +548,7 @@ jobs:
         env:
           TEST_DATA_BYTES: 10000
           FLV_DISPATCHER_WAIT: 300 
-        run:
+        run: |
           export PATH=~/.fluvio/bin:$PATH
           make FLUVIO_BIN=./fluvio upgrade-test
 
