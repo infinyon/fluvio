@@ -30,20 +30,17 @@ env:
 jobs:
 
   # this job set up dynamic configuration shared among jobs
-  #config1:
-  #  name: Set up Config
-  #  runs-on: ubuntu-latest
-  #  env:
-  #    ENABLE_CHECK: false
-    #outputs:
-    #  enable_check: ${{ steps.check.outputs.test }}
-  #  steps:
-  #    - uses: actions/checkout@v2
-   #   - id: check
-   #     name: xxx
-   #     run: echo "::set-output name=check_enable::${{ env.ENABLE_CHECK }}"
-   #   - name: test
-   #     run: echo "test"
+  config:
+    name: Set up Config
+    runs-on: ubuntu-latest
+    env:
+      ENABLE_CHECK: false
+    outputs:
+      enable_check: ${{ steps.check.outputs.test }}
+    steps:
+      - id: check
+        run: echo "::set-output name=check_enable::${{ env.ENABLE_CHECK }}"
+
 
 
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
@@ -460,10 +457,10 @@ jobs:
           docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
           docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
           docker image ls -a
-      - name: Load Docker image for Minikube
-          eval $(minikube -p minikube docker-env)
-          docker image load --input /tmp/infinyon-fluvio.tar
-          docker image ls -a
+      #- name: Load Docker image for Minikube
+      #    eval $(minikube -p minikube docker-env)
+      #    docker image load --input /tmp/infinyon-fluvio.tar
+      #    docker image ls -a
 
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
