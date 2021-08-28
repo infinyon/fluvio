@@ -210,7 +210,7 @@ jobs:
   # Run all checks and unit test. This always run on debug mode
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
-    needs: config
+    #needs: config
     if: ${{ needs.config.enable_check == "true" }}
     runs-on: ${{ matrix.os }}
     strategy:
