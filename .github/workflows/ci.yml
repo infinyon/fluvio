@@ -208,7 +208,7 @@ jobs:
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
     needs: config
-    if: ${{ needs.config.enable_check == "true" }}
+    if: ${{ needs.config.enable_check == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
