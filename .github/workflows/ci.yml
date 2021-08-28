@@ -30,7 +30,7 @@ env:
 jobs:
 
   # this job set up dynamic configuration shared among jobs
-  config:
+  config1:
     name: Set up Config
     runs-on: ubuntu-latest
     env:
