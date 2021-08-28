@@ -692,23 +692,10 @@ impl ClusterInstaller {
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
-        let fluvio = match try_connect_to_sc(&cluster_config).await {
+        let fluvio = match try_connect_to_sc(&cluster_config, &self.config.platform_version).await {
             Some(fluvio) => fluvio,
             None => return Err(K8InstallError::SCServiceTimeout),
         };
-
-        let platform_version = fluvio.platform_version();
-        println!("Connect to SC with platform version: {}", &platform_version);
-
-        // check if platform is not compatible with  cluster installer
-        if !versions_compatible(
-            platform_version.clone(),
-            self.config.platform_version.clone(),
-        ) {
-            return Err(K8InstallError::FailedPlatformVersion(
-                self.config.platform_version.to_string(),
-            ));
-        }
 
         if self.config.save_profile {
             self.update_profile(address.clone())?;

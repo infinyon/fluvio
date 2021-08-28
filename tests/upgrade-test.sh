@@ -132,7 +132,7 @@ function validate_upgrade_cluster_to_prerelease() {
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 60
+        sleep 10
     else
         echo "Test local image v${PRERELEASE}"
         TARGET_VERSION=${PRERELEASE::-41}
@@ -147,7 +147,7 @@ function validate_upgrade_cluster_to_prerelease() {
         kubectl get pods 
         kubectl get pod -l app=fluvio-sc -o yaml
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 60
+        sleep 10
     fi
     popd
 

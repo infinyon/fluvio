@@ -3,6 +3,7 @@ use std::{env, time::Duration};
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use k8_client::{SharedK8Client, ClientError};
 use once_cell::sync::Lazy;
+use semver::Version;
 use tracing::{debug, instrument};
 
 use fluvio::{Fluvio, FluvioConfig};
@@ -16,8 +17,14 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
 
 /// try connection to SC
 #[instrument]
-pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
-    async fn try_connect_sc(fluvio_config: &FluvioConfig) -> Option<Fluvio> {
+pub async fn try_connect_to_sc(
+    config: &FluvioConfig,
+    platform_version: &Version,
+) -> Option<Fluvio> {
+    async fn try_connect_sc(
+        fluvio_config: &FluvioConfig,
+        expected_version: &Version,
+    ) -> Option<Fluvio> {
         use tokio::select;
 
         select! {
@@ -29,7 +36,16 @@ pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
             connection = Fluvio::connect_with_config(fluvio_config) =>  {
 
                 match connection {
-                    Ok(fluvio) => Some(fluvio),
+                    Ok(fluvio) => {
+                        let current_version = fluvio.platform_version();
+                        if current_version == expected_version {
+                            println!("Got updated SC Version{}", &expected_version);
+                            Some(fluvio)
+                        } else {
+                            println!("Current Version {} is not same as expected: {}",current_version,expected_version);
+                            None
+                        }
+                    }
                     Err(err) => {
                         debug!("couldn't connect: {:#?}", err);
                         None
@@ -45,7 +61,7 @@ pub async fn try_connect_to_sc(config: &FluvioConfig) -> Option<Fluvio> {
             "Trying to connect to sc at: {}, attempt: {}",
             config.endpoint, attempt
         );
-        if let Some(fluvio) = try_connect_sc(config).await {
+        if let Some(fluvio) = try_connect_sc(config, platform_version).await {
             println!("Connection to sc suceed!");
             return Some(fluvio);
         } else if attempt < *MAX_SC_LOOP - 1 {

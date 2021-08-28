@@ -45,6 +45,10 @@ static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::curre
 #[derive(Builder, Debug)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct LocalConfig {
+    /// Platform version
+    #[builder(setter(into))]
+    platform_version: Version,
+
     /// Sets the application log directory.
     ///
     /// # Example
@@ -209,8 +213,9 @@ impl LocalConfig {
     /// use semver::Version;
     /// let mut builder = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder(_platform_version: Version) -> LocalConfigBuilder {
+    pub fn builder(platform_version: Version) -> LocalConfigBuilder {
         let mut builder = LocalConfigBuilder::default();
+        builder.platform_version(platform_version);
 
         if let Some(data_dir) = &*DEFAULT_DATA_DIR {
             builder.data_dir(data_dir);
@@ -496,7 +501,9 @@ impl LocalInstaller {
         let cluster_config =
             FluvioConfig::new(&(*LOCAL_SC_ADDRESS)).with_tls(self.config.client_tls_policy.clone());
 
-        if let Some(fluvio) = try_connect_to_sc(&cluster_config).await {
+        if let Some(fluvio) =
+            try_connect_to_sc(&cluster_config, &self.config.platform_version).await
+        {
             Ok(fluvio)
         } else {
             Err(LocalInstallError::SCServiceTimeout)
