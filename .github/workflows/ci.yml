@@ -34,7 +34,7 @@ jobs:
     name: Set up Config
     runs-on: ubuntu-latest
     env:
-      ENABLE_CHECK: true
+      ENABLE_CHECK: false
     outputs:
       check: ${{ steps.check.outputs.check }}
     steps:
@@ -251,7 +251,7 @@ jobs:
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
- #   if: ${{ false }}
+    if: ${{ needs.config.outputs.check == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -283,7 +283,7 @@ jobs:
 
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
-  #  if: ${{ false }}
+    if: ${{ needs.config.outputs.check == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
