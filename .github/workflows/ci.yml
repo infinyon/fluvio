@@ -547,21 +547,10 @@ jobs:
         timeout-minutes: 3
         env:
           TEST_DATA_BYTES: 10000
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          command: |
-            ./k8-util/cluster/reset-k3d.sh
-            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
-            export PATH=~/.fluvio/bin:$PATH
-            make FLUVIO_BIN=./fluvio upgrade-test
-      - name: Diagnose
-        run:  |
-            ./k8-util/cluster/reset-k3d.sh
-            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio 
-            export PATH=~/.fluvio/bin:$PATH
-            make FLUVIO_BIN=./fluvio upgrade-test
+          FLV_DISPATCHER_WAIT: 300 
+        run:
+          export PATH=~/.fluvio/bin:$PATH
+          make FLUVIO_BIN=./fluvio upgrade-test
 
       - name: Save logs
         if: failure()
