@@ -151,25 +151,21 @@ function validate_upgrade_cluster_to_prerelease() {
     fi
     popd
 
-    ci_check;
-
     # Validate that the development version output matches the expected version from installer output
     $FLUVIO_BIN_ABS_PATH version
     validate_cli_version $FLUVIO_BIN_ABS_PATH $TARGET_VERSION
     validate_platform_version $FLUVIO_BIN_ABS_PATH $TARGET_VERSION
 
-    ci_check;
 
     echo "Create test topic: ${PRERELEASE_TOPIC}"
     $FLUVIO_BIN_ABS_PATH topic create ${PRERELEASE_TOPIC}
-    ci_check;
 
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${PRERELEASE_TOPIC}
-    ci_check;
+
 
     echo "Validate test data w/ v${TARGET_VERSION} CLI matches expected data AFTER upgrading cluster + CLI to v${TARGET_VERSION}"
     $FLUVIO_BIN_ABS_PATH consume -B -d ${PRERELEASE_TOPIC} 2>/dev/null | tee output.txt.tmp
-    ci_check;
+
 
     if cat output.txt.tmp | shasum -c prerelease-cli-prerelease-topic.checksum; then
         echo "${PRERELEASE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
@@ -181,11 +177,11 @@ function validate_upgrade_cluster_to_prerelease() {
 
     # Exercise older topics
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${STABLE_TOPIC}
-    ci_check;
+
 
     echo "Validate v${STABLE} test data w/ ${TARGET_VERSION} CLI matches expected data AFTER upgrading cluster + CLI to v${TARGET_VERSION}"
     $FLUVIO_BIN_ABS_PATH consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
-    ci_check;
+
 
     if cat output.txt.tmp | shasum -c prerelease-cli-stable-topic.checksum; then
         echo "${STABLE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
