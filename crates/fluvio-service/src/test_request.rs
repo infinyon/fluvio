@@ -18,7 +18,7 @@ use fluvio_socket::FluvioSocket;
 
 use crate::api_loop;
 use crate::call_service;
-use crate::{FlvService, ConnectInfo};
+use crate::{FluvioService, ConnectInfo};
 
 #[repr(u16)]
 #[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
@@ -124,9 +124,9 @@ async fn handle_echo_request(
 }
 
 #[async_trait]
-impl FlvService for TestService {
-    type Context = SharedTestContext;
+impl FluvioService for TestService {
     type Request = TestApiRequest;
+    type Context = SharedTestContext;
 
     async fn respond(
         self: Arc<Self>,

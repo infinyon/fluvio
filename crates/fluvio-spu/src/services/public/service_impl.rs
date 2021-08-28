@@ -9,7 +9,7 @@ use tokio::select;
 use fluvio_types::event::SimpleEvent;
 use fluvio_socket::FluvioSocket;
 use fluvio_socket::SocketError;
-use fluvio_service::{call_service, FlvService};
+use fluvio_service::{call_service, FluvioService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::{ErrorCode, api::RequestMessage};
 
@@ -30,9 +30,9 @@ impl PublicService {
 }
 
 #[async_trait]
-impl FlvService for PublicService {
-    type Context = DefaultSharedGlobalContext;
+impl FluvioService for PublicService {
     type Request = SpuServerRequest;
+    type Context = DefaultSharedGlobalContext;
 
     #[instrument(skip(self, context))]
     async fn respond(

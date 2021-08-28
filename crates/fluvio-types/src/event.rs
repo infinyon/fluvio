@@ -40,6 +40,10 @@ impl SimpleEvent {
         listener.await
     }
 
+    pub fn listen_pinned(&self) -> impl std::future::Future<Output = ()> + '_ {
+        Box::pin(self.listen())
+    }
+
     pub fn notify(&self) {
         self.flag.store(true, DEFAULT_EVENT_ORDERING);
         self.event.notify(usize::MAX);

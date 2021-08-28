@@ -4,7 +4,7 @@ use tracing::info;
 use tracing::instrument;
 
 use private_server::ScInternalService;
-use fluvio_service::FlvApiServer;
+use fluvio_service::FluvioApiServer;
 
 use crate::core::SharedContext;
 
@@ -18,6 +18,6 @@ pub fn start_internal_server(ctx: SharedContext) {
     info!("starting internal services");
 
     let addr = ctx.config().private_endpoint.clone();
-    let server = FlvApiServer::new(addr, ctx, ScInternalService::new());
+    let server = FluvioApiServer::new(addr, ctx, ScInternalService::new());
     server.run();
 }

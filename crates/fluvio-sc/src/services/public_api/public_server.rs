@@ -22,7 +22,7 @@ use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::FluvioSocket;
 use fluvio_socket::SocketError;
-use fluvio_service::FlvService;
+use fluvio_service::FluvioService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 
@@ -40,7 +40,7 @@ impl<A> PublicService<A> {
 }
 
 #[async_trait]
-impl<A> FlvService for PublicService<A>
+impl<A> FluvioService for PublicService<A>
 where
     A: Authorization + Sync + Send,
     <A as Authorization>::Context: Send + Sync,
