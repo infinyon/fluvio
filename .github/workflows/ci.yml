@@ -30,15 +30,15 @@ env:
 jobs:
 
   # this job set up dynamic configuration shared among jobs
-  config1:
-    name: Set up Config
-    runs-on: ubuntu-latest
-    env:
-      ENABLE_CHECK: false
+  #config1:
+  #  name: Set up Config
+  #  runs-on: ubuntu-latest
+  #  env:
+  #    ENABLE_CHECK: false
     #outputs:
     #  enable_check: ${{ steps.check.outputs.test }}
-    steps:
-      - uses: actions/checkout@v2
+  #  steps:
+  #    - uses: actions/checkout@v2
    #   - id: check
    #     name: xxx
    #     run: echo "::set-output name=check_enable::${{ env.ENABLE_CHECK }}"
