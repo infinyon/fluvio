@@ -253,7 +253,7 @@ function create_test_data() {
     for BASE in {1..2}
     do
         echo "Create the baseline file #${BASE}"
-        local RANDOM_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${TEST_DATA_BYTES} | head -n1)
+        local RANDOM_DATA=$(shuf -zer -n${TEST_DATA_BYTES}  {A..Z} {a..z} {0..9})
         echo ${RANDOM_DATA} | tee -a data${BASE}.txt.tmp
     done
 
