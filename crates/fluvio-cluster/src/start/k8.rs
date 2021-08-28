@@ -1171,10 +1171,6 @@ impl ClusterInstaller {
     }
 }
 
-fn versions_compatible(a: Version, b: Version) -> bool {
-    Version::new(a.major, a.minor, a.patch) == Version::new(b.major, b.minor, b.patch)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1189,26 +1185,5 @@ mod tests {
             config.platform_version,
             semver::Version::parse("0.7.0-alpha.1").unwrap()
         )
-    }
-
-    #[test]
-    fn test_compatible_prerelease() {
-        let a = Version::parse("0.8.0").unwrap();
-        let b = Version::parse("0.8.0-alpha.4").unwrap();
-        assert!(versions_compatible(a, b));
-    }
-
-    #[test]
-    fn test_compatible_commits() {
-        let a = Version::parse("0.8.0-abcdef").unwrap();
-        let b = Version::parse("0.8.0-fedcba").unwrap();
-        assert!(versions_compatible(a, b));
-    }
-
-    #[test]
-    fn test_compatible_pre_and_build() {
-        let a = Version::parse("0.8.0-alpha.2").unwrap();
-        let b = Version::parse("0.8.0-abcdef+abcdef").unwrap();
-        assert!(versions_compatible(a, b));
     }
 }
