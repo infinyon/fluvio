@@ -36,7 +36,7 @@ jobs:
     env:
       ENABLE_CHECK: true
     outputs:
-      enable_check: ${{ steps.check.outputs.test }}
+      enable_check: ${{ steps.check.outputs.check_enable }}
     steps:
       - id: check
         run: echo "::set-output name=check_enable::${{ env.ENABLE_CHECK }}"
