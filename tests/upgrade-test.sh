@@ -255,6 +255,7 @@ function create_test_data() {
         echo "Create the baseline file #${BASE}"
         local RANDOM_DATA=$(shuf -zer -n${TEST_DATA_BYTES}  {A..Z} {a..z} {0..9})
         echo ${RANDOM_DATA} | tee -a data${BASE}.txt.tmp
+        date
     done
 
     # Test stable cli against stable topic 

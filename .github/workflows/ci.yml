@@ -453,7 +453,7 @@ jobs:
           df
 
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 3
+        timeout-minutes: 10
         env:
           FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
         run: |
