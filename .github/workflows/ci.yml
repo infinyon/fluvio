@@ -35,8 +35,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENABLE_CHECK: false
-    outputs:
-      enable_check: ${{ steps.check.outputs.test }}
+    #outputs:
+    #  enable_check: ${{ steps.check.outputs.test }}
     steps:
       - uses: actions/checkout@v2
    #   - id: check
