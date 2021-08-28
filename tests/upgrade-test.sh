@@ -15,7 +15,7 @@
 # If DEBUG env var is set, the bash session will be extra verbose
 # If USE_LATEST is set, cluster will upgrade as if in CI mode, but without the pausing
 
-set -e
+set -E
 
 # On Mac, use 'greadlink' instead of 'readlink'
 if [[ "$(uname)" == "Darwin" ]]; then
