@@ -56,6 +56,9 @@ jobs:
     steps:
       - name: echo
         run: echo runs = ${{ needs.config.outputs.runs }}
+      - name: test
+        run: |
+          echo ${{ fromJson(needs.config.outputs.runs )}}
 
 
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
