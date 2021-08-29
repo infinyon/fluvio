@@ -1,5 +1,5 @@
 use std::io::Error;
-use tracing::{debug, instrument};
+use tracing::{debug, trace, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::produce::DefaultProduceRequest;
@@ -12,13 +12,12 @@ use fluvio_spu_schema::server::update_offset::UpdateOffsetsRequest;
 use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 
 #[instrument(skip(request))]
-pub async fn handle_kf_lookup_version_request(
+pub async fn handle_api_version_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
-    debug!("generating api response");
+    debug!("Handling ApiVersionsRequest");
 
     let mut response = ApiVersionsResponse::default();
-
     response.api_keys.push(make_version_key(
         SpuServerApiKey::Produce,
         DefaultProduceRequest::MIN_API_VERSION,
@@ -45,6 +44,7 @@ pub async fn handle_kf_lookup_version_request(
         UpdateOffsetsRequest::DEFAULT_API_VERSION,
     ));
 
+    trace!("Returning ApiVersionsResponse: {:#?}", &response);
     Ok(request.new_response(response))
 }
 

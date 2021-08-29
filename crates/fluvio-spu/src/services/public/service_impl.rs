@@ -14,7 +14,7 @@ use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::{ErrorCode, api::RequestMessage};
 
 use crate::core::DefaultSharedGlobalContext;
-use super::api_versions::handle_kf_lookup_version_request;
+use super::api_versions::handle_api_version_request;
 use super::produce_handler::handle_produce_request;
 use super::fetch_handler::handle_fetch_request;
 use super::offset_request::handle_offset_request;
@@ -67,7 +67,7 @@ impl FluvioService for PublicService {
                             match req_message {
                                 SpuServerRequest::ApiVersionsRequest(request) => call_service!(
                                     request,
-                                    handle_kf_lookup_version_request(request),
+                                    handle_api_version_request(request),
                                     s_sink,
                                     "api version handler"
                                 ),
