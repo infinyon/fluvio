@@ -256,6 +256,7 @@ jobs:
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
+    needs: config
     if: ${{ needs.config.outputs.check == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -288,6 +289,7 @@ jobs:
 
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
+    needs: config
     if: ${{ needs.config.outputs.check == 'true' }}
     runs-on: ${{ matrix.os }}
     strategy:
