@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENABLE_CHECK: false
-      TEST_RUNS: ${{ [r1,r2,r3,r4] }}
+      TEST_RUNS: ${{ '[r1,r2,r3,r4]'' }}
     outputs:
       check: ${{ steps.check.outputs.check }}
       runs: ${{ steps.runs.outputs.runs }}
