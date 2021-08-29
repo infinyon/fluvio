@@ -35,7 +35,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENABLE_CHECK: false
-      TEST_RUNS: '[r1,r2,r3,r4]'
+      TEST_RUNS: ${{ [r1,r2,r3,r4] }}
     outputs:
       check: ${{ steps.check.outputs.check }}
       runs: ${{ steps.runs.outputs.runs }}
@@ -322,7 +322,7 @@ jobs:
     name: Local cluster test run (${{ matrix.run }})
     runs-on: ${{ matrix.os }}
     needs: 
-      - build_primary_binaries
+     # - build_primary_binaries
       - config
     strategy:
       fail-fast: false
