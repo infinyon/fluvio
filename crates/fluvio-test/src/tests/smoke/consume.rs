@@ -10,7 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
-use fluvio::{Fluvio, Offset};
+use fluvio::{Offset};
 use fluvio_command::CommandExt;
 use crate::get_binary;
 
@@ -77,17 +77,15 @@ async fn validate_consume_message_api(
     let topic_name = test_case.environment.topic_name.clone();
     let base_offset = offsets.get(&topic_name).expect("offsets");
 
-    let fluvio_client = Fluvio::connect().await.expect("cant' create client");
-
     for i in 0..partition {
-        let consumer = fluvio_client
-            .partition_consumer(topic_name.to_string(), 0)
-            .await
-            .expect("unable to create consumer");
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
             topic_name, base_offset, producer_iteration
         );
+
+        let mut lock = test_driver.write().await;
+        let consumer = lock.get_consumer(&topic_name).await;
+        drop(lock);
 
         let mut stream = consumer
             .stream(
@@ -195,22 +193,19 @@ async fn validate_consume_message_api(
     println!("replication status verified");
 
     println!("performing 2nd fetch check. waiting 5 seconds");
-    drop(fluvio_client);
 
     // do complete fetch, since producer has completed, we should retrieve everything
     sleep(Duration::from_secs(5)).await;
 
-    let fluvio_client = Fluvio::connect().await.expect("cant' create client");
-
     for i in 0..partition {
-        let consumer = fluvio_client
-            .partition_consumer(topic_name.to_string(), 0)
-            .await
-            .expect("unable to create consumer");
         println!(
             "performing complete  fetch stream for: {} base offset: {}, expected new records: {}",
             topic_name, base_offset, producer_iteration
         );
+
+        let mut lock = test_driver.write().await;
+        let consumer = lock.get_consumer(&topic_name).await;
+        drop(lock);
 
         let mut stream = consumer
             .stream(
