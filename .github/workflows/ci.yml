@@ -47,8 +47,15 @@ jobs:
         run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
       - id: runs
         run: echo "::set-output name=runs::'[r1,r2,r3]'"
+    
 
-
+  test1:
+    name: test set variable
+    runs-on: ubuntu-latest
+    needs: config
+    steps:
+      - name: echo
+        run: echo runs = ${{ needs.config.outputs.runs }}
 
 
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
@@ -331,8 +338,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-     #   run: ${{fromJson(needs.config.outputs.runs)}}
-        run: [r1,r2,r3]
+        run: ${{ fromJson(needs.config.outputs.runs )}}
+     #   run: [r1,r2,r3]
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
