@@ -6,6 +6,8 @@ permissions:
 on:
   schedule:
     - cron: '0 * * * *'
+#  pull_request:
+#    branches: [master]
   workflow_dispatch:
 jobs:
   longevity:
@@ -26,13 +28,42 @@ jobs:
       # If the match, then we've already run a test on this build. Skip this run
       # If they don't match, then let's run the test
 
-      - uses: nolar/setup-k3d-k3s@v1
-
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Create K3d cluster
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
       - name: Install Fluvio CLI
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
 
       - name: Run longevity test
+        env:
+          FLV_DISPATCHER_WAIT: 300 
         run: make longevity-producer-test
+      - name: Save logs
+        if: failure()
+        run: |
+          date
+          uname -a
+          helm list
+          kubectl get crd
+          kubectl get spu
+          kubectl get partitions
+          kubectl get statefulset
+          kubectl get pvc
+          kubectl get pods
+          kubectl get svc
+          kubectl get spg
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
+          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+      - name: Upload logs
+        timeout-minutes: 5
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: k8_${{ matrix.run }}_log
+          path: /tmp/k8_*.log
 
       # Uncomment when test is more stable
       #- name: Slack Notification
