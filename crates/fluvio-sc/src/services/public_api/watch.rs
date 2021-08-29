@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use tracing::{debug, trace, error, instrument};
 
-use fluvio_types::event::SimpleEvent;
+use fluvio_types::event::StickyEvent;
 use fluvio_socket::ExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
@@ -24,7 +24,7 @@ pub fn handle_watch_request<AC>(
     request: RequestMessage<WatchRequest>,
     auth_ctx: &AuthServiceContext<AC>,
     sink: ExclusiveFlvSink,
-    end_event: Arc<SimpleEvent>,
+    end_event: Arc<StickyEvent>,
 ) {
     debug!("handling watch request");
     let (header, req) = request.get_header_request();
@@ -64,7 +64,7 @@ where
     response_sink: ExclusiveFlvSink,
     store: StoreContext<S>,
     header: RequestHeader,
-    end_event: Arc<SimpleEvent>,
+    end_event: Arc<StickyEvent>,
 }
 
 impl<S> WatchController<S>
@@ -78,7 +78,7 @@ where
     /// start watch controller
     fn update(
         response_sink: ExclusiveFlvSink,
-        end_event: Arc<SimpleEvent>,
+        end_event: Arc<StickyEvent>,
         store: StoreContext<S>,
         header: RequestHeader,
     ) {

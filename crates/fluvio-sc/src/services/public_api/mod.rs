@@ -17,7 +17,7 @@ mod server {
 
     use tracing::debug;
 
-    use fluvio_service::FlvApiServer;
+    use fluvio_service::FluvioApiServer;
     use fluvio_auth::Authorization;
 
     use crate::services::auth::AuthGlobalContext;
@@ -32,7 +32,7 @@ mod server {
     {
         let addr = ctx.global_ctx.config().public_endpoint.clone();
         debug!("starting public api service");
-        let server = FlvApiServer::new(addr, ctx, PublicService::new());
+        let server = FluvioApiServer::new(addr, ctx, PublicService::new());
         server.run();
     }
 }

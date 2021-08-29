@@ -1,6 +1,5 @@
 use std::fmt;
 use std::fmt::Debug;
-use std::io::Error as IoError;
 use std::marker::PhantomData;
 use std::process;
 use std::sync::Arc;
@@ -8,36 +7,14 @@ use std::os::unix::io::AsRawFd;
 
 use futures_util::StreamExt;
 use async_trait::async_trait;
-use tracing::{debug, error, info};
-use tracing::instrument;
-use tracing::trace;
+use tracing::{instrument, debug, error, info};
 
-use fluvio_types::event::SimpleEvent;
 use fluvio_future::net::{TcpListener, TcpStream};
 use fluvio_future::task::spawn;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
 use fluvio_socket::{FluvioSocket, SocketError};
-
-#[async_trait]
-pub trait SocketBuilder: Clone {
-    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FluvioSocket, IoError>;
-}
-
-#[derive(Debug, Clone)]
-pub struct DefaultSocketBuilder {}
-
-#[async_trait]
-impl SocketBuilder for DefaultSocketBuilder {
-    async fn to_socket(&self, raw_stream: TcpStream) -> Result<FluvioSocket, IoError> {
-        let fd = raw_stream.as_raw_fd();
-        Ok(FluvioSocket::from_stream(
-            Box::new(raw_stream.clone()),
-            Box::new(raw_stream),
-            fd,
-        ))
-    }
-}
+use fluvio_types::event::StickyEvent;
 
 #[derive(Debug)]
 pub struct ConnectInfo {
@@ -49,7 +26,7 @@ pub struct ConnectInfo {
 /// Request -> Response is type specific
 /// Each response is responsible for sending back to socket
 #[async_trait]
-pub trait FlvService {
+pub trait FluvioService {
     type Request;
     type Context;
 
@@ -62,159 +39,108 @@ pub trait FlvService {
     ) -> Result<(), SocketError>;
 }
 
-pub struct InnerFlvApiServer<R, A, C, S, T> {
+/// Transform Service into Futures 01
+pub struct FluvioApiServer<R, A, C, S> {
     req: PhantomData<R>,
     api: PhantomData<A>,
     context: C,
     service: Arc<S>,
     addr: String,
-    builder: T,
 }
 
-impl<R, A, C, S, T> fmt::Debug for InnerFlvApiServer<R, A, C, S, T> {
+impl<R, A, C, S> fmt::Debug for FluvioApiServer<R, A, C, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "ApiServer({})", self.addr)
+        f.debug_tuple("FluvioApiServer").field(&self.addr).finish()
     }
 }
 
-impl<R, A, C, S, T> InnerFlvApiServer<R, A, C, S, T>
+impl<R, A, C, S> FluvioApiServer<R, A, C, S>
 where
     C: Clone,
 {
-    pub fn inner_new(addr: String, context: C, service: S, builder: T) -> Self {
-        InnerFlvApiServer {
+    pub fn new(addr: String, context: C, service: S) -> Self {
+        FluvioApiServer {
             req: PhantomData,
             api: PhantomData,
             service: Arc::new(service),
             context,
             addr,
-            builder,
         }
     }
 }
 
-pub type FlvApiServer<R, A, C, S> = InnerFlvApiServer<R, A, C, S, DefaultSocketBuilder>;
-
-impl<R, A, C, S> FlvApiServer<R, A, C, S>
-where
-    C: Clone,
-{
-    pub fn new(addr: String, context: C, service: S) -> Self {
-        Self::inner_new(addr, context, service, DefaultSocketBuilder {})
-    }
-}
-
-impl<R, A, C, S, T> InnerFlvApiServer<R, A, C, S, T>
+impl<R, A, C, S> FluvioApiServer<R, A, C, S>
 where
     R: ApiMessage<ApiKey = A> + Send + Debug + 'static,
     C: Clone + Sync + Send + Debug + 'static,
     A: Send + FluvioDecoder + Debug + 'static,
-    S: FlvService<Request = R, Context = C> + Send + Sync + Debug + 'static,
-    T: SocketBuilder + Send + Debug + 'static,
+    S: FluvioService<Request = R, Context = C> + Send + Sync + Debug + 'static,
 {
-    pub fn run(self) -> Arc<SimpleEvent> {
-        let event = SimpleEvent::shared();
-        spawn(self.run_shutdown(event.clone()));
-
-        event
+    pub fn run(self) -> Arc<StickyEvent> {
+        let shutdown = StickyEvent::shared();
+        spawn(self.accept_incoming(shutdown.clone()));
+        shutdown
     }
 
-    async fn run_shutdown(self, shutdown_signal: Arc<SimpleEvent>) {
-        match TcpListener::bind(&self.addr).await {
-            Ok(listener) => {
-                debug!(addr = %self.addr, "starting event loop");
-                self.event_loop(listener, shutdown_signal).await;
-            }
+    #[instrument(skip(shutdown))]
+    async fn accept_incoming(self, shutdown: Arc<StickyEvent>) {
+        debug!("Binding TcpListener");
+        let listener = match TcpListener::bind(&self.addr).await {
+            Ok(listener) => listener,
             Err(err) => {
-                error!("error in shutting down: {}", err);
+                error!("Error binding TcpListener: {}", err);
                 process::exit(-1);
             }
-        }
-    }
+        };
 
-    #[instrument(skip(listener, shutdown))]
-    async fn event_loop(self, listener: TcpListener, shutdown: Arc<SimpleEvent>) {
-        use tokio::select;
+        info!("Opened TcpListener, waiting for connections");
+        let mut incoming = listener.incoming().take_until(shutdown.listen_pinned());
 
-        let mut incoming = listener.incoming();
-        debug!("opened connection listener");
-
-        loop {
-            debug!("waiting for client connection");
-
-            select! {
-                incoming = incoming.next() => {
-                     self.serve_incoming(incoming)
-                },
-                _ = shutdown.listen()  => {
-                    debug!("shutdown signal received");
-                    break;
-                }
-
-            }
-        }
-
-        debug!("server terminating");
-    }
-
-    /// process incoming request, for each request, we create async task for serving
-    #[instrument(skip(incoming))]
-    fn serve_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
-        if let Some(incoming_stream) = incoming {
-            match incoming_stream {
+        // Accept incoming connections until None, i.e. terminate has triggered
+        while let Some(incoming) = incoming.next().await {
+            match incoming {
                 Ok(stream) => {
+                    info!("Received connection, spawning request handler");
                     let context = self.context.clone();
                     let service = self.service.clone();
-                    let builder = self.builder.clone();
                     let host = self.addr.clone();
-
-                    let ft = async move {
-                        let address = stream
-                            .peer_addr()
-                            .map(|addr| addr.to_string())
-                            .unwrap_or_else(|_| "".to_owned());
-
-                        let peer = address.to_string();
-
-                        info!(server = %host,%peer, "new peer connection");
-
-                        let socket_res = builder.to_socket(stream);
-                        match socket_res.await {
-                            Ok(socket) => {
-                                let connection_info = ConnectInfo {
-                                    peer: peer.clone(),
-                                    host: host.clone(),
-                                };
-
-                                if let Err(err) = service
-                                    .respond(context.clone(), socket, connection_info)
-                                    .await
-                                {
-                                    error!(
-                                        "error handling stream: {}, shutdown on: {} from: {}",
-                                        err, host, address,
-                                    );
-                                } else {
-                                    info!(%host,%peer, "connection terminated");
-                                }
-                            }
-                            Err(err) => {
-                                error!(
-                                    "error on tls handshake: {}, on: {} from: addr: {}",
-                                    err, host, peer
-                                );
-                            }
-                        }
-                    };
-
-                    spawn(ft);
+                    spawn(Self::handle_request(stream, context, service, host));
                 }
-                Err(err) => {
-                    error!("error with stream: {}", err);
+                Err(e) => {
+                    error!("Error from TCP Stream: {:?}", e);
                 }
             }
-        } else {
-            trace!("no stream value, ignoring");
+        }
+
+        info!("Closed TcpListener");
+    }
+
+    #[instrument(skip(stream, context, service))]
+    async fn handle_request(stream: TcpStream, context: C, service: Arc<S>, host: String) {
+        let peer_addr = stream
+            .peer_addr()
+            .map(|addr| addr.to_string())
+            .unwrap_or_else(|_| "".to_owned());
+        debug!(%peer_addr, "Handling request");
+
+        let socket = {
+            let fd = stream.as_raw_fd();
+            FluvioSocket::from_stream(Box::new(stream.clone()), Box::new(stream), fd)
+        };
+
+        let connection_info = ConnectInfo {
+            peer: peer_addr.clone(),
+            host: host.clone(),
+        };
+
+        let result = service.respond(context, socket, connection_info).await;
+        match result {
+            Ok(_) => {
+                info!(%host, %peer_addr, "Response sent successfully, closing connection");
+            }
+            Err(err) => {
+                error!(%host, %peer_addr, "Error handling stream: {}", err);
+            }
         }
     }
 }
@@ -246,10 +172,14 @@ mod test {
 
     fn create_server(
         addr: String,
-    ) -> FlvApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> {
+    ) -> FluvioApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> {
         let ctx = Arc::new(TestContext::new());
-        let server: FlvApiServer<TestApiRequest, TestKafkaApiEnum, SharedTestContext, TestService> =
-            FlvApiServer::new(addr, ctx, TestService::new());
+        let server: FluvioApiServer<
+            TestApiRequest,
+            TestKafkaApiEnum,
+            SharedTestContext,
+            TestService,
+        > = FluvioApiServer::new(addr, ctx, TestService::new());
 
         server
     }
@@ -260,7 +190,7 @@ mod test {
         FluvioSocket::connect(&addr).await
     }
 
-    async fn test_client(addr: String, shutdown: Arc<SimpleEvent>) {
+    async fn test_client(addr: String, shutdown: Arc<StickyEvent>) {
         let mut socket = create_client(addr).await.expect("client");
 
         let request = EchoRequest::new("hello".to_owned());
@@ -286,9 +216,7 @@ mod test {
 
         let socket_addr = "127.0.0.1:30001".to_owned();
 
-        let server = create_server(socket_addr.clone());
-        let shutdown = server.run();
-
+        let shutdown = create_server(socket_addr.clone()).run();
         test_client(socket_addr.clone(), shutdown).await;
 
         Ok(())

@@ -6,12 +6,15 @@ use event_listener::Event;
 
 const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 
-pub struct SimpleEvent {
+#[deprecated(since = "0.2.5", note = "use StickyEvent instead")]
+pub use StickyEvent as SimpleEvent;
+
+pub struct StickyEvent {
     flag: AtomicBool,
     event: Event,
 }
 
-impl SimpleEvent {
+impl StickyEvent {
     pub fn shared() -> Arc<Self> {
         Arc::new(Self {
             flag: AtomicBool::new(false),
@@ -38,6 +41,10 @@ impl SimpleEvent {
         }
 
         listener.await
+    }
+
+    pub fn listen_pinned(&self) -> impl std::future::Future<Output = ()> + '_ {
+        Box::pin(self.listen())
     }
 
     pub fn notify(&self) {

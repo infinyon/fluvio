@@ -5,7 +5,7 @@ use fluvio_service::ConnectInfo;
 use tracing::instrument;
 use tracing::{debug, warn};
 
-use fluvio_service::{wait_for_request, FlvService};
+use fluvio_service::{wait_for_request, FluvioService};
 use fluvio_socket::{FluvioSocket, SocketError};
 
 use crate::core::DefaultSharedGlobalContext;
@@ -24,7 +24,7 @@ impl InternalService {
 }
 
 #[async_trait]
-impl FlvService for InternalService {
+impl FluvioService for InternalService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
 

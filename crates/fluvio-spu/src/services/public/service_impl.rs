@@ -6,10 +6,10 @@ use async_trait::async_trait;
 use futures_util::stream::StreamExt;
 use tokio::select;
 
-use fluvio_types::event::SimpleEvent;
+use fluvio_types::event::StickyEvent;
 use fluvio_socket::FluvioSocket;
 use fluvio_socket::SocketError;
-use fluvio_service::{call_service, FlvService};
+use fluvio_service::{call_service, FluvioService};
 use fluvio_spu_schema::server::{SpuServerApiKey, SpuServerRequest};
 use dataplane::{ErrorCode, api::RequestMessage};
 
@@ -30,9 +30,9 @@ impl PublicService {
 }
 
 #[async_trait]
-impl FlvService for PublicService {
-    type Context = DefaultSharedGlobalContext;
+impl FluvioService for PublicService {
     type Request = SpuServerRequest;
+    type Context = DefaultSharedGlobalContext;
 
     #[instrument(skip(self, context))]
     async fn respond(
@@ -46,7 +46,7 @@ impl FlvService for PublicService {
         let mut s_sink = sink.as_shared();
         let mut api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
 
-        let end_event = SimpleEvent::shared();
+        let end_event = StickyEvent::shared();
 
         loop {
             debug!("waiting");

@@ -15,14 +15,14 @@ use fluvio_service::ConnectInfo;
 use tracing::instrument;
 use async_trait::async_trait;
 
-use fluvio_types::event::SimpleEvent;
+use fluvio_types::event::StickyEvent;
 use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
 use fluvio_service::call_service;
 use fluvio_socket::FluvioSocket;
 use fluvio_socket::SocketError;
-use fluvio_service::FlvService;
+use fluvio_service::FluvioService;
 use fluvio_sc_schema::AdminPublicApiKey;
 use fluvio_sc_schema::AdminPublicRequest;
 
@@ -40,7 +40,7 @@ impl<A> PublicService<A> {
 }
 
 #[async_trait]
-impl<A> FlvService for PublicService<A>
+impl<A> FluvioService for PublicService<A>
 where
     A: Authorization + Sync + Send,
     <A as Authorization>::Context: Send + Sync,
@@ -72,7 +72,7 @@ where
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
 
-        let end_event = SimpleEvent::shared();
+        let end_event = StickyEvent::shared();
 
         api_loop!(
             api_stream,
