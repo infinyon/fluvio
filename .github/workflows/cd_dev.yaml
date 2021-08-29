@@ -57,6 +57,8 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: ./k8-util/cluster/start-minikube-mac.sh
       - name: Create Fluvio cluster and run E2E Test
+        env:
+          FLV_DISPATCHER_WAIT: 300  
         timeout-minutes: 5
         run: |
             export PATH=~/.fluvio/bin:$PATH

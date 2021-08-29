@@ -6,8 +6,8 @@ permissions:
 on:
   schedule:
     - cron: '0 * * * *'
-  pull_request:
-    branches: [master]
+#  pull_request:
+#    branches: [master]
   workflow_dispatch:
 jobs:
   longevity:
