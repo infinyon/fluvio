@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -114,11 +114,12 @@ jobs:
     env:
       FLV_SOCKET_WAIT: 600
     steps:
-      - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Run upgrade test
         env:
           TEST_DATA_BYTES: 10000
+          FLV_DISPATCHER_WAIT: 300 
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 15
