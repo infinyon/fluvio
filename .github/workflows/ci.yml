@@ -35,11 +35,16 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ENABLE_CHECK: false
+      TEST_RUNS: '[r1,r2,r3,r4]'
     outputs:
       check: ${{ steps.check.outputs.check }}
+      runs: ${{ steps.runs.outputs.runs }}
     steps:
       - id: check
         run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
+      - id: runs
+        run: echo "::set-output name=runs::${{ env.TEST_RUNS }}"
+
 
 
 
@@ -316,14 +321,14 @@ jobs:
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})
     runs-on: ${{ matrix.os }}
-  #  if: ${{ false }}  
-    needs: build_primary_binaries
+    needs: 
+      - build_primary_binaries
+      - config
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        run: [r1, r2, r3, r4, r5]
-      #  run: [r1]
+        run: ${{fromJson(needs.config.outputs.runs)}}
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
