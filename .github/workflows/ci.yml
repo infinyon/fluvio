@@ -46,7 +46,7 @@ jobs:
       #  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
       - id: runs
-        run: echo "::set-output name=runs::'${{ env.TEST_RUNS }}'"
+        run: echo "::set-output name=runs::'[r1,r2,r3]'"
 
 
 
