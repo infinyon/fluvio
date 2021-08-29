@@ -40,7 +40,6 @@ jobs:
         env:
           FLV_DISPATCHER_WAIT: 300 
         run: make longevity-producer-test
-        timeout-minutes: 3
       - name: Save logs
         if: failure()
         run: |
