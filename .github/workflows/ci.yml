@@ -322,7 +322,6 @@ jobs:
 
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})
-    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     needs: 
       - build_primary_binaries
