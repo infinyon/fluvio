@@ -48,8 +48,8 @@ jobs:
       - name: Install Fluvio CLI
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
       - name: Set up K3d for Ubuntu
-        uses: nolar/setup-k3d-k3s@v1
         if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: nolar/setup-k3d-k3s@v1        
       - name: Set up K8 for ubuntu(kind)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: ./k8-util/cluster/reset-k3d.sh
