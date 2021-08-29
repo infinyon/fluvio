@@ -331,7 +331,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        run: ${{fromJson(needs.config.outputs.runs)}}
+     #   run: ${{fromJson(needs.config.outputs.runs)}}
+        run: [r1,r2,r3]
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
