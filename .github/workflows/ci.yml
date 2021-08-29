@@ -424,7 +424,7 @@ jobs:
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
-    name: Kubernetes cluster test run (${{ matrix.run }})
+    name: Kubernetes cluster test run (${{ matrix.run }}) k8 (${{ matrix.k8 }})
   #  if: ${{ false }}
     needs: build_image
     runs-on: ${{ matrix.os }}
