@@ -11,13 +11,3 @@ pub struct SpuAction {
     pub id: SpuId,
     pub status: bool,
 }
-
-impl SpuAction {
-    pub fn up(id: SpuId) -> Self {
-        Self { id, status: true }
-    }
-
-    pub fn down(id: SpuId) -> Self {
-        Self { id, status: false }
-    }
-}

@@ -10,7 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
-use fluvio::Offset;
+use fluvio::{Offset};
 use fluvio_command::CommandExt;
 use crate::get_binary;
 
@@ -84,7 +84,6 @@ async fn validate_consume_message_api(
         );
 
         let mut lock = test_driver.write().await;
-
         let consumer = lock.get_consumer(&topic_name).await;
         drop(lock);
 
@@ -194,6 +193,7 @@ async fn validate_consume_message_api(
     println!("replication status verified");
 
     println!("performing 2nd fetch check. waiting 5 seconds");
+
     // do complete fetch, since producer has completed, we should retrieve everything
     sleep(Duration::from_secs(5)).await;
 
@@ -204,7 +204,6 @@ async fn validate_consume_message_api(
         );
 
         let mut lock = test_driver.write().await;
-
         let consumer = lock.get_consumer(&topic_name).await;
         drop(lock);
 

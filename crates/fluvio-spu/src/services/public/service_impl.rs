@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use fluvio_service::ConnectInfo;
 use tracing::{debug, trace, instrument};
 use async_trait::async_trait;
 use futures_util::stream::StreamExt;
@@ -38,6 +39,7 @@ impl FlvService for PublicService {
         self: Arc<Self>,
         context: DefaultSharedGlobalContext,
         socket: FluvioSocket,
+        _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
         let (sink, mut stream) = socket.split();
 

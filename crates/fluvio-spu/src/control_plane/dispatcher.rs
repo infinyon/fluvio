@@ -128,7 +128,7 @@ impl ScDispatcher<FileReplica> {
         let mut status_timer = Timer::interval(MIN_SC_SINK_TIME);
 
         loop {
-            debug!("waiting");
+            trace!("waiting");
 
             select! {
 

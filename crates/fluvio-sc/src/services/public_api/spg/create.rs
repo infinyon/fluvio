@@ -5,7 +5,9 @@
 //!
 
 use std::io::{Error, ErrorKind};
+use std::time::Duration;
 
+use fluvio_stream_dispatcher::actions::WSAction;
 use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
@@ -53,7 +55,15 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
 /// Process custom spu, converts spu spec to K8 and sends to KV store
 #[instrument(skip(ctx, name, spg_spec))]
 async fn process_custom_spu_request(ctx: &Context, name: String, spg_spec: SpuGroupSpec) -> Status {
-    if let Err(err) = ctx.spgs().create_spec(name.clone(), spg_spec).await {
+    if let Err(err) = ctx
+        .spgs()
+        .wait_action_with_timeout(
+            &name,
+            WSAction::UpdateSpec((name.clone(), spg_spec)),
+            Duration::from_secs(120), // spg may take long to create
+        )
+        .await
+    {
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::SpuError, error)
     } else {

@@ -101,25 +101,24 @@ where
     async fn outer_loop(mut self) {
         loop {
             debug!("starting rconcilation loop");
-            self.reconcillation_loop().await;
+            if let Err(err) = self.reconcillation_loop().await {
+                error!(
+                    "error with reconcillation loop: {:#?}, sleep 10 seconds",
+                    err
+                );
+                sleep(Duration::from_secs(10)).await;
+            }
         }
     }
 
     ///
     /// Main Event Loop
-    async fn reconcillation_loop(&mut self) {
+    async fn reconcillation_loop(&mut self) -> Result<(), IoError> {
         use tokio::select;
 
         debug!("begin new reconcillation loop");
 
-        let mut resume_stream: Option<String> = None;
-        // retrieve all items from K8 store first
-        match self.retrieve_all_k8_items().await {
-            Ok(items) => {
-                resume_stream = Some(items);
-            }
-            Err(err) => error!("cannot retrieve K8 store objects: {}", err),
-        };
+        let resume_stream = Some(self.retrieve_all_k8_items().await?);
 
         let client = self.client.clone();
 
@@ -179,6 +178,8 @@ where
 
             }
         }
+
+        Ok(())
     }
 
     ///

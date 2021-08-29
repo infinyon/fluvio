@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use fluvio_service::ConnectInfo;
+use tracing::instrument;
 use tracing::{debug, warn};
 
 use fluvio_service::{wait_for_request, FlvService};
@@ -26,10 +28,12 @@ impl FlvService for InternalService {
     type Context = DefaultSharedGlobalContext;
     type Request = SpuPeerRequest;
 
+    #[instrument(skip(self, ctx))]
     async fn respond(
         self: Arc<Self>,
         ctx: DefaultSharedGlobalContext,
         socket: FluvioSocket,
+        _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<SpuPeerRequest, SPUPeerApiEnum>();

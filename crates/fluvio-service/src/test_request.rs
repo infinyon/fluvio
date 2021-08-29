@@ -18,7 +18,7 @@ use fluvio_socket::FluvioSocket;
 
 use crate::api_loop;
 use crate::call_service;
-use crate::FlvService;
+use crate::{FlvService, ConnectInfo};
 
 #[repr(u16)]
 #[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
@@ -132,6 +132,7 @@ impl FlvService for TestService {
         self: Arc<Self>,
         _context: Self::Context,
         socket: FluvioSocket,
+        _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
         let (mut sink, mut stream) = socket.split();
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();

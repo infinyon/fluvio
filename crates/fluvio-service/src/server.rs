@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fmt::Debug;
 use std::io::Error as IoError;
 use std::marker::PhantomData;
@@ -38,6 +39,12 @@ impl SocketBuilder for DefaultSocketBuilder {
     }
 }
 
+#[derive(Debug)]
+pub struct ConnectInfo {
+    host: String,
+    peer: String,
+}
+
 /// Trait for responding to kf service
 /// Request -> Response is type specific
 /// Each response is responsible for sending back to socket
@@ -51,11 +58,10 @@ pub trait FlvService {
         self: Arc<Self>,
         context: Self::Context,
         socket: FluvioSocket,
+        connection: ConnectInfo,
     ) -> Result<(), SocketError>;
 }
 
-/// Transform Service into Futures 01
-#[derive(Debug)]
 pub struct InnerFlvApiServer<R, A, C, S, T> {
     req: PhantomData<R>,
     api: PhantomData<A>,
@@ -63,6 +69,12 @@ pub struct InnerFlvApiServer<R, A, C, S, T> {
     service: Arc<S>,
     addr: String,
     builder: T,
+}
+
+impl<R, A, C, S, T> fmt::Debug for InnerFlvApiServer<R, A, C, S, T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "ApiServer({})", self.addr)
+    }
 }
 
 impl<R, A, C, S, T> InnerFlvApiServer<R, A, C, S, T>
@@ -120,7 +132,7 @@ where
         }
     }
 
-    #[instrument(skip(self, listener, shutdown), fields(address = &*self.addr))]
+    #[instrument(skip(listener, shutdown))]
     async fn event_loop(self, listener: TcpListener, shutdown: Arc<SimpleEvent>) {
         use tokio::select;
 
@@ -146,7 +158,7 @@ where
     }
 
     /// process incoming request, for each request, we create async task for serving
-    #[instrument(skip(self, incoming))]
+    #[instrument(skip(incoming))]
     fn serve_incoming(&self, incoming: Option<Result<TcpStream, IoError>>) {
         if let Some(incoming_stream) = incoming {
             match incoming_stream {
@@ -154,28 +166,43 @@ where
                     let context = self.context.clone();
                     let service = self.service.clone();
                     let builder = self.builder.clone();
+                    let host = self.addr.clone();
 
                     let ft = async move {
                         let address = stream
                             .peer_addr()
                             .map(|addr| addr.to_string())
                             .unwrap_or_else(|_| "".to_owned());
-                        info!(peer = &*address, "new peer connection");
+
+                        let peer = address.to_string();
+
+                        info!(server = %host,%peer, "new peer connection");
 
                         let socket_res = builder.to_socket(stream);
                         match socket_res.await {
                             Ok(socket) => {
-                                if let Err(err) = service.respond(context.clone(), socket).await {
+                                let connection_info = ConnectInfo {
+                                    peer: peer.clone(),
+                                    host: host.clone(),
+                                };
+
+                                if let Err(err) = service
+                                    .respond(context.clone(), socket, connection_info)
+                                    .await
+                                {
                                     error!(
-                                        "error handling stream: {}, shutdown on: {}",
-                                        err, address
+                                        "error handling stream: {}, shutdown on: {} from: {}",
+                                        err, host, address,
                                     );
                                 } else {
-                                    info!(peer = &*address, "connection terminated");
+                                    info!(%host,%peer, "connection terminated");
                                 }
                             }
                             Err(err) => {
-                                error!("error on tls handshake: {}, addr: {}", err, address);
+                                error!(
+                                    "error on tls handshake: {}, on: {} from: addr: {}",
+                                    err, host, peer
+                                );
                             }
                         }
                     };

@@ -1,74 +1,52 @@
 //!
 //! # Spu Controller
 
-use std::collections::HashMap;
 use std::time::Instant;
 use std::time::Duration;
 
-use tracing::{debug, error, warn, info, instrument};
-
-use async_channel::Receiver;
+use tracing::{debug, error, instrument};
 
 use fluvio_future::task::spawn;
-use fluvio_types::SpuId;
 
-use crate::stores::actions::WSAction;
 use crate::core::SharedContext;
 use crate::stores::StoreContext;
 use crate::stores::spu::*;
-
-use super::SpuAction;
-
-struct SpuOnlineStatus {
-    online: bool,
-    // last time status was known
-    time: Instant,
-}
-
-impl SpuOnlineStatus {
-    fn new() -> Self {
-        Self {
-            online: false,
-            time: Instant::now(),
-        }
-    }
-}
 
 /// Reconcile SPU health status with Meta data
 /// if SPU has not send heart beat within a period, it is considered down
 pub struct SpuController {
     spus: StoreContext<SpuSpec>,
-    health_receiver: Receiver<SpuAction>,
-    status: HashMap<SpuId, SpuOnlineStatus>,
+    health_check: SharedHealthCheck,
 }
 
 impl SpuController {
     pub fn start(ctx: SharedContext) {
         let controller = Self {
             spus: ctx.spus().clone(),
-            health_receiver: ctx.health().receiver(),
-            status: HashMap::new(),
+            health_check: ctx.health().clone(),
         };
 
         debug!("starting spu controller");
         spawn(async move {
-            controller.dispatch_loop().await;
+            controller.inner_loop().await;
         });
     }
 
     #[instrument(skip(self))]
-    async fn dispatch_loop(mut self) {
+    async fn inner_loop(mut self) {
         use tokio::select;
         use fluvio_future::timer::sleep;
 
-        let mut listener = self.spus.change_listener();
+        let mut spu_listener = self.spus.change_listener();
+        let _ = spu_listener.wait_for_initial_sync().await;
+
+        let mut health_listener = self.health_check.listener();
 
         const HEALTH_DURATION: u64 = 90;
 
         let mut time_left = Duration::from_secs(HEALTH_DURATION);
         loop {
             self.sync_store().await;
-
             let health_time = Instant::now();
             debug!(
                 "waiting on events, health check left: {} secs",
@@ -76,27 +54,20 @@ impl SpuController {
             );
 
             select! {
-                _ = listener.listen() => {
-                    debug!("detected events in spu");
-                    listener.load_last();
+                _ = spu_listener.listen() => {
+                    debug!("detected events in spu store");
+                    spu_listener.load_last();
                     time_left -= health_time.elapsed();
-                },
-                health_msg = self.health_receiver.recv() => {
 
-                    match health_msg {
-                        Ok(health) => {
-                            debug!("received health message: {:?}",health);
-                            self.send_spu_status(health).await;
-                        },
-                        Err(err) => {
-                            error!("error receiving health msg: {}",err);
-                        }
-                    }
+                },
+                _ = health_listener.listen() => {
+                    debug!("heal check events");
+                    //health_listener.load_last();
                     time_left -= health_time.elapsed();
 
                 },
                 _ = sleep(time_left) => {
-                    self.health_check().await;
+                  //  self.health_check().await;
                     time_left = Duration::from_secs(HEALTH_DURATION);
                 },
 
@@ -107,165 +78,40 @@ impl SpuController {
     /// sync spu status with store
     #[instrument(skip(self))]
     async fn sync_store(&mut self) {
-        use std::collections::HashSet;
+        // first get status values
+        let spus = self.spus.store().clone_values().await;
 
-        debug!("performing sync with spu store");
-        // check if we need to sync spu and our health check cache
-        if self.spus.store().count().await as usize != self.status.len() {
-            let keys = self.spus.store().spu_ids().await;
-            let mut status_keys: HashSet<SpuId> = self.status.keys().copied().collect();
-            debug!(
-                "syncing store before store: {} items, health status: {} items",
-                keys.len(),
-                status_keys.len()
-            );
-            for spu_id in &keys {
-                if self.status.contains_key(spu_id) {
-                    status_keys.remove(spu_id);
-                } else {
-                    self.status.insert(*spu_id, SpuOnlineStatus::new());
-                }
-            }
+        let mut changes = vec![];
+        let health_read = self.health_check.read().await;
 
-            for spu_id in status_keys {
-                self.status.remove(&spu_id);
-            }
+        for mut spu in spus.into_iter() {
+            // check if we need to sync spu and our health check cache
 
-            assert_eq!(self.status.len(), keys.len());
-            debug!("syncing store after status: {} items", self.status.len());
-        }
+            let spu_id = spu.spec.id;
 
-        // check if any of spu are init, change to offline
-        let read_guard = self.spus.store().read().await;
-
-        // Ignore needless_collect because we are reading from a guard that we want to drop ASAP
-        #[allow(clippy::needless_collect)]
-        let spu_names: Vec<String> = read_guard
-            .values()
-            .filter_map(|spu| {
-                if spu.status.resolution == SpuStatusResolution::Init {
-                    Some(spu.key.clone())
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        drop(read_guard);
-
-        for spu_name in spu_names.into_iter() {
-            if let Err(err) = self
-                .spus
-                .send(vec![WSAction::UpdateStatus((
-                    spu_name.clone(),
-                    SpuStatus::offline(),
-                ))])
-                .await
-            {
-                error!("error sending spu status: {}", err);
-            } else {
-                debug!("set spu: {} to offline", spu_name);
-            }
-        }
-    }
-
-    async fn send_spu_status(&mut self, action: SpuAction) {
-        // first check if spu cache exists
-        if let Some(cache_status) = self.status.get_mut(&action.id) {
-            cache_status.time = Instant::now();
-            cache_status.online = action.status;
-
-            self.send_health_to_store(vec![action]).await;
-        } else {
-            warn!("not finding cache status: {}", action.id);
-        }
-    }
-
-    /// check if any spu has done health check
-    #[instrument(skip(self))]
-    async fn health_check(&mut self) {
-        debug!("performing health check");
-        let mut actions: Vec<SpuAction> = vec![];
-        for (id, status) in self.status.iter_mut() {
-            let elapsed_time = status.time.elapsed();
-            if elapsed_time >= Duration::from_secs(70) {
-                info!(
-                    id,
-                    elapsed_sec = elapsed_time.as_secs(),
-                    "setting spu to offline due to no health check",
-                );
-                status.online = false;
-                status.time = Instant::now();
-                actions.push(SpuAction::down(*id));
-            }
-        }
-
-        if !actions.is_empty() {
-            debug!("health check: {} spus needed to be offline", actions.len());
-            self.send_health_to_store(actions).await;
-        } else {
-            debug!("health check: everything is up to date, no actions needed");
-        }
-    }
-
-    // send health status to store
-    async fn send_health_to_store(&mut self, actions: Vec<SpuAction>) {
-        for action in actions.into_iter() {
-            if let Some(mut spu) = self.spus.store().get_by_id(action.id).await {
-                let mut update = false;
-                if action.status && spu.status.is_offline() {
-                    spu.status.set_online();
-                    update = true;
-                } else if !action.status && spu.status.is_online() {
-                    spu.status.set_offline();
-                    update = true;
-                }
-
-                if update {
-                    if let Err(err) = self
-                        .spus
-                        .send(vec![WSAction::UpdateStatus((
-                            spu.key_owned(),
-                            spu.status.clone(),
-                        ))])
-                        .await
-                    {
-                        error!("error sending spu status: {}", err);
+            if let Some(health_status) = health_read.get(&spu_id) {
+                if spu.status.is_init() || spu.status.is_online() != *health_status {
+                    if *health_status {
+                        spu.status.set_online();
                     } else {
-                        debug!("send spu: {}, status: {} to store", action.id, spu.status);
+                        spu.status.set_offline();
                     }
-                } else {
-                    debug!("spu: {} health, no change", action.id);
+                    debug!(id = spu.spec.id, status = %spu.status,"spu status changed");
+                    changes.push(spu);
                 }
-            } else {
-                warn!("unknown spu id: {:?}", action);
             }
         }
-    }
 
-    /*
-    /// process requests related to SPU management
-    async fn process_request(&mut self, request: SpuChangeRequest) {
-        // process SPU action; update context with new actions
-        match self.spu_reducer.process_requests(request).await {
-            Ok(actions) => {
-                debug!("SPU Controller apply actions: {}", actions);
-                // send actions to kv
-                if actions.spus.len() > 0 {
-                    for ws_action in actions.spus.into_iter() {
-                        //  log_on_err!(self.ws_service.update_spu(ws_action).await);
-                    }
-                }
-                /*
-                if actions.conns.len() > 0 {
-                    self.conn_manager.process_requests(actions.conns).await;
-                }
-                */
+        drop(health_read);
+
+        for updated_spu in changes.into_iter() {
+            let key = updated_spu.key;
+            let status = updated_spu.status;
+            if let Err(err) = self.spus.update_status(key, status).await {
+                error!("error updating status: {:#?}", err);
             }
-            Err(err) => error!("error generating spu actions from reducer: {}", err),
         }
     }
-    */
 }
 
 /*

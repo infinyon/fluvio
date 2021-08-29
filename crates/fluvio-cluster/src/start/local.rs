@@ -4,7 +4,6 @@ use std::fs::{File, create_dir_all};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 use fluvio::{Fluvio, FluvioConfig};
-use k8_metadata_client::MetadataClient;
 use semver::Version;
 
 use derive_builder::Builder;
@@ -28,6 +27,7 @@ use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress;
 
 use super::constants::*;
+use super::common::check_crd;
 
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
     Lazy::new(|| directories::BaseDirs::new().map(|it| it.home_dir().join(".fluvio/data")));
@@ -45,6 +45,10 @@ static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::curre
 #[derive(Builder, Debug)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct LocalConfig {
+    /// Platform version
+    #[builder(setter(into))]
+    platform_version: Version,
+
     /// Sets the application log directory.
     ///
     /// # Example
@@ -209,8 +213,9 @@ impl LocalConfig {
     /// use semver::Version;
     /// let mut builder = LocalConfig::builder(Version::parse("0.7.0-alpha.1").unwrap());
     /// ```
-    pub fn builder(_platform_version: Version) -> LocalConfigBuilder {
+    pub fn builder(platform_version: Version) -> LocalConfigBuilder {
         let mut builder = LocalConfigBuilder::default();
+        builder.platform_version(platform_version);
 
         if let Some(data_dir) = &*DEFAULT_DATA_DIR {
             builder.data_dir(data_dir);
@@ -425,7 +430,9 @@ impl LocalInstaller {
         let client = load_and_share().map_err(K8InstallError::from)?;
 
         // before we do let's try make sure SPU are installed.
-        self.check_crd(client.clone()).await?;
+        check_crd(client.clone())
+            .await
+            .map_err(K8InstallError::from)?;
 
         debug!("using log dir: {}", self.config.log_dir.display());
         if !self.config.log_dir.exists() {
@@ -456,24 +463,6 @@ impl LocalInstaller {
             port,
             checks,
         })
-    }
-
-    // hack
-    async fn check_crd(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
-        for i in 0..100 {
-            println!("checking fluvio crd attempt: {}", i);
-            // check if spu is installed
-            if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
-                println!("problem retrieving fluvio crd {}", err);
-                println!("sleeping 1 seconds");
-                sleep(Duration::from_secs(10)).await;
-            } else {
-                println!("fluvio crd installed");
-                return Ok(());
-            }
-        }
-
-        Err(LocalInstallError::Other("Fluvio CRD not ready".to_string()))
     }
 
     /// Launches an SC on the local machine
@@ -512,7 +501,9 @@ impl LocalInstaller {
         let cluster_config =
             FluvioConfig::new(&(*LOCAL_SC_ADDRESS)).with_tls(self.config.client_tls_policy.clone());
 
-        if let Some(fluvio) = try_connect_to_sc(&cluster_config).await {
+        if let Some(fluvio) =
+            try_connect_to_sc(&cluster_config, &self.config.platform_version).await
+        {
             Ok(fluvio)
         } else {
             Err(LocalInstallError::SCServiceTimeout)
