@@ -43,7 +43,7 @@ jobs:
       - id: check
         run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
       - id: runs
-        run: echo "::set-output name=runs::${{ env.TEST_RUNS }}"
+        run: echo "::set-output name=runs::'[r1,r2,r3]'"
 
 
 
