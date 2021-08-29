@@ -6,7 +6,7 @@ use std::io::Error as IoError;
 use tracing::{info, error, debug, trace, instrument};
 use tokio::select;
 
-use fluvio_types::event::{SimpleEvent, offsets::OffsetPublisher};
+use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
 use dataplane::{
@@ -40,7 +40,7 @@ pub struct StreamFetchHandler {
     max_fetch_bytes: u32,
     header: RequestHeader,
     sink: ExclusiveFlvSink,
-    end_event: Arc<SimpleEvent>,
+    end_event: Arc<StickyEvent>,
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
@@ -53,7 +53,7 @@ impl StreamFetchHandler {
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
-        end_event: Arc<SimpleEvent>,
+        end_event: Arc<StickyEvent>,
     ) -> Result<(), SocketError> {
         // first get receiver to offset update channel to we don't missed events
         let (header, msg) = request.get_header_request();

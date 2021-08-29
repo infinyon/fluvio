@@ -15,7 +15,7 @@ use fluvio_service::ConnectInfo;
 use tracing::instrument;
 use async_trait::async_trait;
 
-use fluvio_types::event::SimpleEvent;
+use fluvio_types::event::StickyEvent;
 use fluvio_auth::Authorization;
 //use fluvio_service::aAuthorization;
 use fluvio_service::api_loop;
@@ -72,7 +72,7 @@ where
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
 
-        let end_event = SimpleEvent::shared();
+        let end_event = StickyEvent::shared();
 
         api_loop!(
             api_stream,

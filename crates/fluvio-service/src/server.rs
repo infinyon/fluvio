@@ -14,7 +14,7 @@ use fluvio_future::task::spawn;
 use fluvio_protocol::api::ApiMessage;
 use fluvio_protocol::Decoder as FluvioDecoder;
 use fluvio_socket::{FluvioSocket, SocketError};
-use fluvio_types::event::SimpleEvent;
+use fluvio_types::event::StickyEvent;
 
 #[derive(Debug)]
 pub struct ConnectInfo {
@@ -76,17 +76,14 @@ where
     A: Send + FluvioDecoder + Debug + 'static,
     S: FluvioService<Request = R, Context = C> + Send + Sync + Debug + 'static,
 {
-    pub fn run(self) -> Arc<SimpleEvent> {
-        let shutdown = SimpleEvent::shared();
+    pub fn run(self) -> Arc<StickyEvent> {
+        let shutdown = StickyEvent::shared();
         spawn(self.accept_incoming(shutdown.clone()));
         shutdown
     }
 
-    #[instrument(
-        skip(self, shutdown),
-        fields(addr = %self.addr),
-    )]
-    async fn accept_incoming(self, shutdown: Arc<SimpleEvent>) {
+    #[instrument(skip(shutdown))]
+    async fn accept_incoming(self, shutdown: Arc<StickyEvent>) {
         debug!("Binding TcpListener");
         let listener = match TcpListener::bind(&self.addr).await {
             Ok(listener) => listener,
@@ -120,11 +117,11 @@ where
 
     #[instrument(skip(stream, context, service))]
     async fn handle_request(stream: TcpStream, context: C, service: Arc<S>, host: String) {
-        let addr = stream
+        let peer_addr = stream
             .peer_addr()
             .map(|addr| addr.to_string())
             .unwrap_or_else(|_| "".to_owned());
-        debug!(%addr, "Handling request");
+        debug!(%peer_addr, "Handling request");
 
         let socket = {
             let fd = stream.as_raw_fd();
@@ -132,17 +129,17 @@ where
         };
 
         let connection_info = ConnectInfo {
-            peer: addr.clone(),
+            peer: peer_addr.clone(),
             host: host.clone(),
         };
 
         let result = service.respond(context, socket, connection_info).await;
         match result {
             Ok(_) => {
-                info!(%host, %addr, "Response sent successfully, closing connection");
+                info!(%host, %peer_addr, "Response sent successfully, closing connection");
             }
             Err(err) => {
-                error!(%host, %addr, "Failed to send response: {}", err);
+                error!(%host, %peer_addr, "Error handling stream: {}", err);
             }
         }
     }
@@ -193,7 +190,7 @@ mod test {
         FluvioSocket::connect(&addr).await
     }
 
-    async fn test_client(addr: String) {
+    async fn test_client(addr: String, shutdown: Arc<StickyEvent>) {
         let mut socket = create_client(addr).await.expect("client");
 
         let request = EchoRequest::new("hello".to_owned());
@@ -208,6 +205,8 @@ mod test {
         let reply2 = socket.send(&msg2).await.expect("send");
         trace!("received 2nd reply from server: {:#?}", reply2);
         assert_eq!(reply2.response.msg, "hello2");
+
+        shutdown.notify();
     }
 
     #[test_async]
@@ -217,8 +216,8 @@ mod test {
 
         let socket_addr = "127.0.0.1:30001".to_owned();
 
-        create_server(socket_addr.clone()).run();
-        test_client(socket_addr.clone()).await;
+        let shutdown = create_server(socket_addr.clone()).run();
+        test_client(socket_addr.clone(), shutdown).await;
 
         Ok(())
     }
