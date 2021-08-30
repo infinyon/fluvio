@@ -48,6 +48,21 @@ pub struct StreamFetchHandler {
 
 impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
+    pub async fn spawn(
+        request: RequestMessage<FileStreamFetchRequest>,
+        ctx: DefaultSharedGlobalContext,
+        sink: ExclusiveFlvSink,
+        end_event: Arc<StickyEvent>,
+    ) -> Result<(), SocketError> {
+        spawn(async move {
+            if let Err(err) = StreamFetchHandler::start(request, ctx, sink, end_event).await {
+                error!("error starting stream fetch handler: {:#?}", err);
+            }
+        });
+        debug!("spawned stream fetch controller");
+        Ok(())
+    }
+
     #[instrument(skip(request, ctx, sink, end_event))]
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
@@ -149,8 +164,7 @@ impl StreamFetchHandler {
                 max_fetch_bytes,
             };
 
-            spawn(async move { handler.process(current_offset, smartstream).await });
-            debug!("spawned stream fetch controller");
+            handler.process(current_offset, smartstream).await;
         } else {
             debug!(topic = %replica.topic," no leader founded, returning");
             let response = StreamFetchResponse {
