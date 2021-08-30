@@ -48,6 +48,23 @@ pub struct StreamFetchHandler {
 
 impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
+    pub async fn spawn(
+        request: RequestMessage<FileStreamFetchRequest>,
+        ctx: DefaultSharedGlobalContext,
+        sink: ExclusiveFlvSink,
+        end_event: Arc<StickyEvent>,
+    ) -> Result<(), SocketError> {
+        spawn(async move {
+            if let Err(err) = StreamFetchHandler::start(request, ctx, sink, end_event.clone()).await
+            {
+                error!("error starting stream fetch handler: {:#?}", err);
+                end_event.notify();
+            }
+        });
+        debug!("spawned stream fetch controller");
+        Ok(())
+    }
+
     #[instrument(skip(request, ctx, sink, end_event))]
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
@@ -80,7 +97,6 @@ impl StreamFetchHandler {
             debug!("Has WASM payload: {}", msg.wasm_payload.is_some());
 
             let smartstream = if let Some(payload) = msg.wasm_payload {
-                std::thread::sleep(std::time::Duration::from_secs(40));
                 let wasm = &payload.wasm.get_raw()?;
                 let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
                     SocketError::Io(IoError::new(
@@ -150,8 +166,7 @@ impl StreamFetchHandler {
                 max_fetch_bytes,
             };
 
-            spawn(async move { handler.process(current_offset, smartstream).await });
-            debug!("spawned stream fetch controller");
+            handler.process(current_offset, smartstream).await;
         } else {
             debug!(topic = %replica.topic," no leader founded, returning");
             let response = StreamFetchResponse {
