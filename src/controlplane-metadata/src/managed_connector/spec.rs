@@ -23,6 +23,7 @@ pub struct ManagedConnectorSpec {
 pub struct ManagedConnectorConfig {
     pub r#type: String, // syslog, github star, slack
     pub topic: String,
+    pub args: std::collections::BTreeMap<String, String>,
 }
 
 impl ManagedConnectorConfig {}
