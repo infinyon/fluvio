@@ -7,7 +7,7 @@ cfg_if::cfg_if! {
         mod services;
         mod start;
         mod replication;
-        mod smart_stream;
+        mod smartstream;
         mod control_plane;
         mod storage;
         pub use start::main_loop;

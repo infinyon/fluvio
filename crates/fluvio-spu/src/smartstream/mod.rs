@@ -1,9 +1,9 @@
 use std::sync::Mutex;
 use anyhow::Result;
 use wasmtime::{Memory, Store, Engine, Module};
-use crate::smart_stream::filter::SmartStreamFilter;
-use crate::smart_stream::map::SmartStreamMap;
-use crate::smart_stream::aggregate::SmartStreamAggregate;
+use crate::smartstream::filter::SmartStreamFilter;
+use crate::smartstream::map::SmartStreamMap;
+use crate::smartstream::aggregate::SmartStreamAggregate;
 
 mod memory;
 pub mod filter;
