@@ -14,8 +14,8 @@ use dataplane::smartstream::{
     SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
 };
 use fluvio_protocol::{Encoder, Decoder};
-use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
-use crate::smart_stream::file_batch::FileBatchIterator;
+use crate::smartstream::{RecordsCallBack, RecordsMemory, SmartStreamModule, SmartStreamEngine};
+use crate::smartstream::file_batch::FileBatchIterator;
 
 const FILTER_FN_NAME: &str = "filter";
 type FilterFn = TypedFunc<(i32, i32), i32>;

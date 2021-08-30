@@ -14,8 +14,8 @@ use dataplane::batch::MemoryRecords;
 use dataplane::smartstream::{
     SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
 };
-use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
-use crate::smart_stream::file_batch::FileBatchIterator;
+use crate::smartstream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
+use crate::smartstream::file_batch::FileBatchIterator;
 
 const MAP_FN_NAME: &str = "map";
 type MapFn = TypedFunc<(i32, i32), i32>;

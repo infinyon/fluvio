@@ -11,8 +11,8 @@ use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
 use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use crate::smart_stream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
-use crate::smart_stream::file_batch::FileBatchIterator;
+use crate::smartstream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
+use crate::smartstream::file_batch::FileBatchIterator;
 use dataplane::smartstream::{
     SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput,
     SmartStreamInternalError,
