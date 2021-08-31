@@ -38,6 +38,7 @@ pub struct StreamFetchHandler {
     isolation: Isolation,
     max_bytes: u32,
     max_fetch_bytes: u32,
+
     header: RequestHeader,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
@@ -48,6 +49,23 @@ pub struct StreamFetchHandler {
 
 impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
+    pub async fn spawn(
+        request: RequestMessage<FileStreamFetchRequest>,
+        ctx: DefaultSharedGlobalContext,
+        sink: ExclusiveFlvSink,
+        end_event: Arc<StickyEvent>,
+    ) -> Result<(), SocketError> {
+        spawn(async move {
+            if let Err(err) = StreamFetchHandler::start(request, ctx, sink, end_event.clone()).await
+            {
+                error!("error starting stream fetch handler: {:#?}", err);
+                end_event.notify();
+            }
+        });
+        debug!("spawned stream fetch controller");
+        Ok(())
+    }
+
     #[instrument(skip(request, ctx, sink, end_event))]
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
@@ -149,8 +167,7 @@ impl StreamFetchHandler {
                 max_fetch_bytes,
             };
 
-            spawn(async move { handler.process(current_offset, smartstream).await });
-            debug!("spawned stream fetch controller");
+            handler.process(current_offset, smartstream).await;
         } else {
             debug!(topic = %replica.topic," no leader founded, returning");
             let response = StreamFetchResponse {
@@ -612,6 +629,7 @@ mod test {
     use fluvio_socket::{FluvioSocket, MultiplexerSocket};
     use dataplane::{
         Isolation,
+        fetch::DefaultFetchRequest,
         fixture::BatchProducer,
         record::{RecordData, Record},
     };
@@ -1492,5 +1510,65 @@ mod test {
             .expect("send offset");
 
         server_end_event.notify();
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_fetch_and_new_request() {
+        let test_path = temp_dir().join("test_stream_fetch_filter_new_request");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12008";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::shared(FluvioSocket::connect(addr).await.expect("connect"));
+
+        // perform for two versions
+        let topic = "testfilter";
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        let wasm = load_wasm_module("fluvio_wasm_filter");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Filter,
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        let _stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        let fetch_request = DefaultFetchRequest::default();
+        let response = client_socket
+            .send_and_receive(RequestMessage::new_request(fetch_request))
+            .await;
+
+        assert!(response.is_ok());
+
+        server_end_event.notify();
+        debug!("terminated controller");
     }
 }

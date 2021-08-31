@@ -90,7 +90,7 @@ impl FluvioService for PublicService {
 
                                 SpuServerRequest::FileStreamFetchRequest(request) =>  {
 
-                                        StreamFetchHandler::start(
+                                        StreamFetchHandler::spawn(
                                             request,
                                             context.clone(),
                                             s_sink.clone(),
