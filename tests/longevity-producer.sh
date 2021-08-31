@@ -12,7 +12,16 @@ readonly PAYLOAD_SIZE=1000
 readonly NEW_TOPIC_NAME=longevity-new
 readonly EXISTING_TOPIC_NAME=longevity-existing
 readonly PRODUCER_RATE=20 # 20 msg/s => 72K msg/hour
-readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
+
+# On Mac, use 'greadlink' instead of 'readlink'
+if [[ "$(uname)" == "Darwin" ]]; then
+    [[ -x "$(command -v greadlink)" ]] || brew install coreutils
+    readonly READLINK="greadlink"
+else
+    readonly READLINK="readlink"
+fi
+
+readonly FLUVIO_BIN=$(${READLINK} -f ${FLUVIO_BIN:-"$(which fluvio)"})
 
 ###
 

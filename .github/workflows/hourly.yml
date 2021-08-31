@@ -35,8 +35,10 @@ jobs:
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
-      - name: Install Fluvio CLI
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+      - name: Install Fluvio CLI and start cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          ~/.fluvio/bin/fluvio cluster start --image-version=latest
       - name: Look for longevity data
         run: |
           set -e
@@ -89,15 +91,14 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_producer_longevity_spu0.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_producer_longevity_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
+          name: k8_producer_longevity_log
           path: /tmp/k8_*.log
 
   consumer_longevity:
@@ -114,12 +115,16 @@ jobs:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Create K3d cluster
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
 
       - name: Install Fluvio CLI and start cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-          ~/.fluvio/bin/fluvio cluster start
+          ~/.fluvio/bin/fluvio cluster start --image-version=latest
 
       - name: Look for longevity data
         run: |
@@ -170,14 +175,14 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_consumer_longevity_spu0.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_consumer_longevity_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
+          name: k8_consumer_longevity_log
           path: /tmp/k8_*.log
+
 
