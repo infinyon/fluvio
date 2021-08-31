@@ -784,8 +784,7 @@ jobs:
       - uses: nolar/setup-k3d-k3s@v1
       - name: Install Fluvio CLI and start cluster
         run: |
-          # TODO: Change version back to latest
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=stable bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
           ~/.fluvio/bin/fluvio cluster start
       - name: Look for longevity data
         run: |
@@ -867,8 +866,7 @@ jobs:
 
       - name: Install Fluvio CLI and start cluster
         run: |
-          # TODO: Change version back to latest
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=stable bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
           ~/.fluvio/bin/fluvio cluster start
 
       - name: Look for longevity data
