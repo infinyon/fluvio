@@ -781,8 +781,10 @@ jobs:
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
-      - name: Install Fluvio CLI
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+      - name: Install Fluvio CLI and start cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          ~/.fluvio/bin/fluvio cluster start
       - name: Look for longevity data
         run: |
           set -e
