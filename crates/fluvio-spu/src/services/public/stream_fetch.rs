@@ -80,6 +80,7 @@ impl StreamFetchHandler {
             debug!("Has WASM payload: {}", msg.wasm_payload.is_some());
 
             let smartstream = if let Some(payload) = msg.wasm_payload {
+                std::thread::sleep(std::time::Duration::from_secs(40));
                 let wasm = &payload.wasm.get_raw()?;
                 let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
                     SocketError::Io(IoError::new(
@@ -613,6 +614,7 @@ mod test {
     use dataplane::{
         Isolation,
         fixture::BatchProducer,
+        produce::{DefaultProduceRequest, DefaultTopicRequest, DefaultPartitionRequest},
         record::{RecordData, Record},
     };
     use dataplane::fixture::{create_batch, TEST_RECORD};
@@ -1492,5 +1494,84 @@ mod test {
             .expect("send offset");
 
         server_end_event.notify();
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_fetch_and_new_request() {
+        let test_path = temp_dir().join("test_stream_fetch_filter_new_request");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12008";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::shared(FluvioSocket::connect(addr).await.expect("connect"));
+
+        // perform for two versions
+        let topic = "testfilter";
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        let wasm = load_wasm_module("fluvio_wasm_filter");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Filter,
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        let _stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        let mut produce_request = DefaultProduceRequest::default();
+        let mut topic_request = DefaultTopicRequest {
+            name: topic.to_string(),
+            ..Default::default()
+        };
+        let mut partition_request = DefaultPartitionRequest {
+            partition_index: 0,
+            ..Default::default()
+        };
+        partition_request.records.batches.push(Batch::from(vec![
+            Record::default(),
+            Record::default(),
+            Record::default(),
+            Record::default(),
+        ]));
+        topic_request.partitions.push(partition_request);
+        produce_request.acks = 1;
+        produce_request.timeout_ms = 1500;
+        produce_request.topics.push(topic_request);
+
+        client_socket
+            .send_and_receive(RequestMessage::new_request(produce_request))
+            .await
+            .expect("produce error");
+
+        server_end_event.notify();
+
+        debug!("terminated controller");
     }
 }
