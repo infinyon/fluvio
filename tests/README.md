@@ -27,7 +27,7 @@ Optional: Set up alias to run development version of Fluvio and Test runner CLI.
 
 ```
 cargo build
-alias flv-test=./target/debug/flv-test
+alias fluvio-test=./target/debug/fluvio-test
 ```
 
 ### Release profile
@@ -40,16 +40,16 @@ Optional: Set up alias to run release version of Fluvio and Test runner CLI.
 
 ```
 cargo build --release
-alias flv-test=./target/release/flv-test
+alias fluvio-test=./target/release/fluvio-test
 ```
 
 # Running Test runner
 
 ```
-flv-test <test-name> [FLAGS] [OPTIONS] -- [SUBCOMMAND OPTIONS]
+fluvio-test <test-name> [FLAGS] [OPTIONS] -- [SUBCOMMAND OPTIONS]
 ```
 
-> Test runner testing doesn't work when VERSION set to an unpublished version. Workaround: Run `make minikube_image` and use `--develop` flag with `flv-test` (issue #[859](https://github.com/infinyon/fluvio/issues/859))
+> Test runner testing doesn't work when VERSION set to an unpublished version. Workaround: Run `make minikube_image` and use `--develop` flag with `fluvio-test` (issue #[859](https://github.com/infinyon/fluvio/issues/859))
 
 
 Test runner can be a running in two ways:
@@ -57,7 +57,7 @@ Test runner can be a running in two ways:
 - Run tests againts existing cluster
 
 
-> Expected behavior of local clusters that flv-test start:
+> Expected behavior of local clusters that fluvio-test start:
 >
 > If you `ctrl+c`, the local cluster will also be terminated.
 >
@@ -70,10 +70,10 @@ Test runner can be a running in two ways:
 * To run a test in benchmark mode, run test with the `--benchmark` flag.
 
 ```
-cargo run --release --bin flv-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5
+cargo run --release --bin fluvio-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5
 ```
 
-> The `--benchmark` flag is specified as an option of `flv-test` (Before the `--`.)
+> The `--benchmark` flag is specified as an option of `fluvio-test` (Before the `--`.)
 
 An error message will appear when attempting to benchmark tests without `benchmark = true`.
 
@@ -88,7 +88,7 @@ Total iterations run depend on the runtime of a single test. The longer the test
 
 The smoke test can be configured with it's own CLI options:
 
-`flv-test smoke [environment vars] -- [smoke test vars]`
+`fluvio-test smoke [environment vars] -- [smoke test vars]`
 
 
 ---
@@ -98,7 +98,7 @@ This run a simple smoke test by creating new local cluster.
 It creates a simple topic: `topic` and perform produce/consume 
 
 ```
-$ flv-test smoke --local
+$ fluvio-test smoke --local
 
 Start running fluvio test runner
 deleting cluster
@@ -124,7 +124,7 @@ Smoke test can be specified with more than 1 iterations:
 Run a test with sending 10 records:
 
 ```
-$ flv-test smoke --local -- --producer-iteration 10
+$ fluvio-test smoke --local -- --producer-iteration 10
 ```
 
 ### Run test without re-installing
@@ -132,8 +132,8 @@ $ flv-test smoke --local -- --producer-iteration 10
 After initial test using `--keep-cluster`, more iteration can be tested without re-installing cluster using `--disable-install`
 
 ```
-$ flv-test smoke --local --keep-cluster -- --producer-iteration 10
-$ flv-test smoke --disable-install -- --producer-iteration 200
+$ fluvio-test smoke --local --keep-cluster -- --producer-iteration 10
+$ fluvio-test smoke --disable-install -- --producer-iteration 200
 ```
 
 ### No streaming
@@ -141,7 +141,7 @@ $ flv-test smoke --disable-install -- --producer-iteration 200
 By default, produce and consumer run in parallel, but you can force consumer to wait for all producer iteration
 
 ```
-$ flv-test smoke -- --producer-iteration=400 --consumer-wait
+$ fluvio-test smoke -- --producer-iteration=400 --consumer-wait
 ```
 
 ## Anatomy of a new test
@@ -160,7 +160,7 @@ There are 4 parts to adding new tests.
 
 ### Test stub of a new test
 
-Write new tests in the `tests` module of the `flv-test` crate. 
+Write new tests in the `tests` module of the `fluvio-test` crate. 
 
 Here's a complete stub to modify:
 ```rust
@@ -238,12 +238,12 @@ pub async fn run(client: Arc<Fluvio>, mut option: TestCase) {
 
 If this test's name was `example`, we can start this test by running:
 
-`cargo run --bin flv-test -- example`
+`cargo run --bin fluvio-test -- example`
 
 Which would be skipped, because the test requires 2 spu, and by default we only have one.
 
 But if we run it like:
 
-`cargo run --bin flv-test -- example --spu 2`
+`cargo run --bin fluvio-test -- example --spu 2`
 
 The test would start and a test topic named `test_topic` would be created because the minimum requirements were met.

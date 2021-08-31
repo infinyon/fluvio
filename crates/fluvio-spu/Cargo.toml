@@ -1,0 +1,66 @@
+[package]
+name = "fluvio-spu"
+edition = "2018"
+version = "0.0.0"
+authors = ["fluvio.io"]
+description = "Fluvio Stream Processing Unit"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "fluvio_spu"
+path = "src/lib.rs"
+
+[[bin]]
+name = "fluvio-spu"
+path = "src/main.rs"
+doc = false
+
+[dependencies]
+cfg-if = "1.0.0"
+anyhow = "1.0.38"
+tracing = "0.1.14"
+tracing-futures = "0.2.4"
+bytes = "1.0.0"
+structopt = "0.3.5"
+toml = "0.5.5"
+futures-util = { version = "0.3.5", features = ["sink"] }
+async-trait = "0.1.21"
+serde_yaml = "0.8.8"
+serde = { version = "1.0.103", features = ['derive'] }
+chrono = { version = "0.4.6", features = ["serde"] }
+pin-utils = "0.1.0-alpha.4"
+regex = "1.3.1"
+tokio = { version = "1.3.0", features = ["macros"] }
+async-channel = "1.5.1"
+async-rwlock = "1.1.0"
+async-lock = "2.4.0"
+event-listener = "2.4.0"
+async-io = "1.3.1"
+wasmtime = "0.28.0"
+nix = "0.22.0"
+adaptive_backoff = "0.2.1"
+thiserror = "1"
+once_cell = "1.5"
+
+# Fluvio dependencies
+fluvio-types = { version = "0.2.3", features = ["events"], path = "../fluvio-types" }
+fluvio-storage = { version = "0.4", path = "../fluvio-storage" }
+fluvio-controlplane = { version = "0.8.0", path = "../fluvio-controlplane" }
+fluvio-controlplane-metadata = { version = "0.10.0", path = "../fluvio-controlplane-metadata" }
+fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema", features = ["file"]}
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
+fluvio-socket = { path = "../fluvio-socket", version = "0.9", features = ["file"] }
+dataplane = { version = "0.6.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" , features=["file"]}
+fluvio-service = { path = "../fluvio-service", version = "0.0.0" }
+flv-tls-proxy = { version = "0.5.0" }
+flv-util = { version = "0.5.0" }
+fluvio-future = { version = "0.3.9", features = ["subscriber", "openssl_tls", "zero_copy"] }
+
+[dev-dependencies]
+once_cell = "1.5.2"
+flv-util = { version = "0.5.2", features = ["fixture"] }
+fluvio-future = { version = "0.3.1", features = ["fixture", "subscriber"] }
+derive_builder = { version = "0.10.0" }
+dataplane = { version = "0.6", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["fixture"] }

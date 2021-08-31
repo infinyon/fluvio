@@ -15,7 +15,7 @@
 # If DEBUG env var is set, the bash session will be extra verbose
 # If USE_LATEST is set, cluster will upgrade as if in CI mode, but without the pausing
 
-set -e
+set -E
 
 # On Mac, use 'greadlink' instead of 'readlink'
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -49,12 +49,7 @@ function cleanup() {
 # If we're in CI, we want to slow down execution
 # to give CPU some time to rest, so we don't time out
 function ci_check() {
-    if [[ ! -z "$CI" ]];
-    then
-        echo "[CI MODE] Pausing for ${CI_SLEEP} second(s)";
-        w | head -1
-        sleep ${CI_SLEEP};
-    fi
+    :
 }
 
 # This function is intended to be run second after the Stable-1 validation
@@ -137,7 +132,7 @@ function validate_upgrade_cluster_to_prerelease() {
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 60
+        sleep 10
     else
         echo "Test local image v${PRERELEASE}"
         TARGET_VERSION=${PRERELEASE::-41}
@@ -152,29 +147,25 @@ function validate_upgrade_cluster_to_prerelease() {
         kubectl get pods 
         kubectl get pod -l app=fluvio-sc -o yaml
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 60
+        sleep 10
     fi
     popd
-
-    ci_check;
 
     # Validate that the development version output matches the expected version from installer output
     $FLUVIO_BIN_ABS_PATH version
     validate_cli_version $FLUVIO_BIN_ABS_PATH $TARGET_VERSION
     validate_platform_version $FLUVIO_BIN_ABS_PATH $TARGET_VERSION
 
-    ci_check;
 
     echo "Create test topic: ${PRERELEASE_TOPIC}"
     $FLUVIO_BIN_ABS_PATH topic create ${PRERELEASE_TOPIC}
-    ci_check;
 
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${PRERELEASE_TOPIC}
-    ci_check;
+
 
     echo "Validate test data w/ v${TARGET_VERSION} CLI matches expected data AFTER upgrading cluster + CLI to v${TARGET_VERSION}"
     $FLUVIO_BIN_ABS_PATH consume -B -d ${PRERELEASE_TOPIC} 2>/dev/null | tee output.txt.tmp
-    ci_check;
+
 
     if cat output.txt.tmp | shasum -c prerelease-cli-prerelease-topic.checksum; then
         echo "${PRERELEASE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
@@ -186,11 +177,11 @@ function validate_upgrade_cluster_to_prerelease() {
 
     # Exercise older topics
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${STABLE_TOPIC}
-    ci_check;
+
 
     echo "Validate v${STABLE} test data w/ ${TARGET_VERSION} CLI matches expected data AFTER upgrading cluster + CLI to v${TARGET_VERSION}"
     $FLUVIO_BIN_ABS_PATH consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
-    ci_check;
+
 
     if cat output.txt.tmp | shasum -c prerelease-cli-stable-topic.checksum; then
         echo "${STABLE_TOPIC} topic validated with v${TARGET_VERSION} CLI"
@@ -258,8 +249,9 @@ function create_test_data() {
     for BASE in {1..2}
     do
         echo "Create the baseline file #${BASE}"
-        local RANDOM_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${TEST_DATA_BYTES} | head -n1)
+        local RANDOM_DATA=$(shuf -zer -n${TEST_DATA_BYTES}  {A..Z} {a..z} {0..9})
         echo ${RANDOM_DATA} | tee -a data${BASE}.txt.tmp
+        date
     done
 
     # Test stable cli against stable topic 

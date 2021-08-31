@@ -48,8 +48,8 @@ jobs:
       - name: Install Fluvio CLI
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
       - name: Set up K3d for Ubuntu
-        uses: nolar/setup-k3d-k3s@v1
         if: ${{ matrix.os == 'ubuntu-latest' }}
+        uses: nolar/setup-k3d-k3s@v1        
       - name: Set up K8 for ubuntu(kind)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: ./k8-util/cluster/reset-k3d.sh
@@ -57,11 +57,10 @@ jobs:
         if: ${{ matrix.os == 'macos-latest' }}
         run: ./k8-util/cluster/start-minikube-mac.sh
       - name: Create Fluvio cluster and run E2E Test
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 7
-          max_attempts: 3
-          command: |
+        env:
+          FLV_DISPATCHER_WAIT: 300  
+        timeout-minutes: 5
+        run: |
             export PATH=~/.fluvio/bin:$PATH
             if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
               echo "Installing local cluster"
@@ -74,11 +73,8 @@ jobs:
             fi
             sleep 30
             fluvio version
-            sleep ${{ env.SLEEP }}
             fluvio topic create ${{ env.TOPIC }}
-            sleep ${{ env.SLEEP }}
             echo foo | fluvio produce ${{ env.TOPIC }}
-            sleep ${{ env.SLEEP }}
             fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
@@ -118,10 +114,12 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Run upgrade test
         env:
           TEST_DATA_BYTES: 10000
+          FLV_DISPATCHER_WAIT: 300 
         uses: nick-invision/retry@v2
         with:
           timeout_minutes: 15
@@ -156,6 +154,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest]
         version: [latest]
     steps:
       - uses: actions/checkout@v2

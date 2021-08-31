@@ -144,9 +144,10 @@ jobs:
             [ ! -z "${{ env.FORCE_RELEASE }}" ] && echo "Release w/ force..."
             echo "Release image already exists";
           else
-            docker pull "${{ env.LATEST_TAG }}"
-            docker tag "${{ env.LATEST_TAG }}" "${{ env.RELEASE_TAG }}"
-            docker push "${{ env.RELEASE_TAG }}"
+            docker manifest create "docker.io/${{ env.RELEASE_TAG }}" \
+              "docker.io/${{ env.LATEST_TAG }}-amd64" \
+              "docker.io/${{ env.LATEST_TAG }}-arm64v8" 
+            docker manifest push "docker.io/${{ env.RELEASE_TAG }}"
           fi
 
       - name: Slack Notification

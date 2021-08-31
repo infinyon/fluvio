@@ -1,0 +1,28 @@
+[package]
+name = "fluvio-sc-schema"
+version = "0.9.1"
+edition = "2018"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio API for SC"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+
+[lib]
+name = "fluvio_sc_schema"
+path = "src/lib.rs"
+
+[features]
+use_serde = ["fluvio-controlplane-metadata/use_serde", "serde"]
+
+[dependencies]
+log = "0.4.8"
+tracing = "0.1.19"
+serde = { version = "1.0.0", features = ['derive'], optional = true }
+thiserror = "1.0.20"
+static_assertions = "1.1.0"
+
+# Fluvio dependencies
+fluvio-types = { version = "0.2.0", path = "../fluvio-types" }
+fluvio-controlplane-metadata = { version = "0.10.0", default-features = false, path = "../fluvio-controlplane-metadata" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
+dataplane = { version = "0.6.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }

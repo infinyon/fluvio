@@ -24,7 +24,7 @@ readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
 function setup() {
 
     # Start a cluster
-    $FLUVIO_BIN cluster start
+    $FLUVIO_BIN cluster start --image-version latest
 
     # Create a topic
     $FLUVIO_BIN topic create $NEW_TOPIC_NAME || true

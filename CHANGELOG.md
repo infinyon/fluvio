@@ -1,10 +1,16 @@
 # Release Notes
 
-## Platform Version 0.9.4 - UNRELEASED 
+## Platform Version 0.9.5 - UNRELEASED 
+* Update `Debug` printout for `SmartStreamWasm` to reduce noise ([#1524](https://github.com/infinyon/fluvio/pull/1524))
+* Increase platform stability ([#1497](https://github.com/infinyon/fluvio/pull/1497))
+
+## Platform Version 0.9.4 - 2021-08-26 
 * Publish docker image for aarch64 #1389 ([#1389](https://github.com/infinyon/fluvio/pull/1389))
 * Do not panic when trying to create topic with space in the name. ([#1448](https://github.com/infinyon/fluvio/pull/1448))
 * Deprecate consumer fetch API ([#957](https://github.com/infinyon/fluvio/issues/957))
 * Gracefully handle error when trying to install plugins or update. ([#1434](https://github.com/infinyon/fluvio/pull/1434))
+* Fix timing issue in Multiplexor Socket ([#1484](https://github.com/infinyon/fluvio/pull/1484))
+* Compress WASM binaries. ([#1468](https://github.com/infinyon/fluvio/pull/1468))
 
 ## Platform Version 0.9.3 - 2021-08-19
 * Fix Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))
