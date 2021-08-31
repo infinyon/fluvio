@@ -38,6 +38,7 @@ pub struct StreamFetchHandler {
     isolation: Isolation,
     max_bytes: u32,
     max_fetch_bytes: u32,
+
     header: RequestHeader,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
@@ -628,8 +629,8 @@ mod test {
     use fluvio_socket::{FluvioSocket, MultiplexerSocket};
     use dataplane::{
         Isolation,
+        fetch::DefaultFetchRequest,
         fixture::BatchProducer,
-        produce::{DefaultProduceRequest, DefaultTopicRequest, DefaultPartitionRequest},
         record::{RecordData, Record},
     };
     use dataplane::fixture::{create_batch, TEST_RECORD};
@@ -1560,33 +1561,14 @@ mod test {
             .await
             .expect("create stream");
 
-        let mut produce_request = DefaultProduceRequest::default();
-        let mut topic_request = DefaultTopicRequest {
-            name: topic.to_string(),
-            ..Default::default()
-        };
-        let mut partition_request = DefaultPartitionRequest {
-            partition_index: 0,
-            ..Default::default()
-        };
-        partition_request.records.batches.push(Batch::from(vec![
-            Record::default(),
-            Record::default(),
-            Record::default(),
-            Record::default(),
-        ]));
-        topic_request.partitions.push(partition_request);
-        produce_request.acks = 1;
-        produce_request.timeout_ms = 1500;
-        produce_request.topics.push(topic_request);
+        let fetch_request = DefaultFetchRequest::default();
+        let response = client_socket
+            .send_and_receive(RequestMessage::new_request(fetch_request))
+            .await;
 
-        client_socket
-            .send_and_receive(RequestMessage::new_request(produce_request))
-            .await
-            .expect("produce error");
+        assert!(response.is_ok());
 
         server_end_event.notify();
-
         debug!("terminated controller");
     }
 }
