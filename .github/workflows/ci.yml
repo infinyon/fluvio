@@ -783,7 +783,8 @@ jobs:
           ./k8-util/cluster/reset-k3d.sh
       - name: Install Fluvio CLI and start cluster
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          # TODO: Change version back to latest
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=stable bash
           ~/.fluvio/bin/fluvio cluster start
       - name: Look for longevity data
         run: |
@@ -837,15 +838,14 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_producer_longevity_spu0.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_producer_longevity_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
+          name: k8_producer_longevity_log
           path: /tmp/k8_*.log
 
   consumer_longevity:
@@ -866,7 +866,8 @@ jobs:
 
       - name: Install Fluvio CLI and start cluster
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          # TODO: Change version back to latest
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=stable bash
           ~/.fluvio/bin/fluvio cluster start
 
       - name: Look for longevity data
@@ -918,14 +919,13 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_consumer_longevity_spu0.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_consumer_longevity_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
+          name: k8_consumer_longevity_log
           path: /tmp/k8_*.log
 
