@@ -43,9 +43,9 @@ pub struct SmokeTestOption {
     #[structopt(long)]
     pub use_cli: bool,
     #[structopt(long, default_value = "1")]
-    pub producer_iteration: u16,
+    pub producer_iteration: u32,
     #[structopt(long, default_value = "100")]
-    pub producer_record_size: u16,
+    pub producer_record_size: u32,
     #[structopt(long)]
     pub consumer_wait: bool,
 }
