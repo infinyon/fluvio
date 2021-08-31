@@ -55,7 +55,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
         io::stderr().write_all(&output.stderr).unwrap();
 
         let msg = output.stdout.as_slice();
-        validate_message(i, *offset, test_case, &msg[0..msg.len() - 1]);
+        validate_message(i as u32, *offset, test_case, &msg[0..msg.len() - 1]);
 
         println!("topic: {}, consume message validated!", topic_name);
     }
@@ -95,7 +95,7 @@ async fn validate_consume_message_api(
             .await
             .expect("stream");
 
-        let mut total_records: u16 = 0;
+        let mut total_records: u32 = 0;
 
         let mut chunk_time = SystemTime::now();
 
@@ -215,7 +215,7 @@ async fn validate_consume_message_api(
             .await
             .expect("stream");
 
-        let mut total_records: u16 = 0;
+        let mut total_records: u32 = 0;
 
         loop {
             select! {

@@ -181,7 +181,7 @@ mod cli {
         }
     }
 
-    fn produce_message_replication(iteration: u16, offsets: &Offsets, test_case: &SmokeTestCase) {
+    fn produce_message_replication(iteration: u32, offsets: &Offsets, test_case: &SmokeTestCase) {
         let replication = test_case.environment.replication;
 
         for _i in 0..replication {
@@ -189,7 +189,7 @@ mod cli {
         }
     }
 
-    fn produce_message_inner(_iteration: u16, offsets: &Offsets, test_case: &SmokeTestCase) {
+    fn produce_message_inner(_iteration: u32, offsets: &Offsets, test_case: &SmokeTestCase) {
         use std::io;
         let topic_name = test_case.environment.topic_name.as_str();
 
