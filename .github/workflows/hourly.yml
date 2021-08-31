@@ -118,7 +118,7 @@ jobs:
 
       - name: Install Fluvio CLI and start cluster
         run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=stable bash
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
           ~/.fluvio/bin/fluvio cluster start
 
       - name: Look for longevity data

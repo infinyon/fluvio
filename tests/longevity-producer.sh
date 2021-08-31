@@ -4,14 +4,14 @@ set -exu
 #set -eu
 
 readonly HOUR_IN_SECONDS=3600
-readonly FIVE_MIN_IN_SECONDS=300
+readonly TEN_MIN_IN_SECONDS=600
 
 # This var controls the expected test duration
-readonly TOTAL_TEST_TIME=${FIVE_MIN_IN_SECONDS}
-#readonly PAYLOAD_SIZE=1000
+readonly TOTAL_TEST_TIME=${TEN_MIN_IN_SECONDS}
+readonly PAYLOAD_SIZE=1000
 readonly NEW_TOPIC_NAME=longevity-new
 readonly EXISTING_TOPIC_NAME=longevity-existing
-readonly PRODUCER_RATE=10
+readonly PRODUCER_RATE=20 # 20 msg/s => 72K msg/hour
 readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
 
 ###
@@ -26,9 +26,13 @@ function setup() {
     # Start a cluster
     $FLUVIO_BIN cluster start --image-version latest
 
-    # Create a topic
-    $FLUVIO_BIN topic create $NEW_TOPIC_NAME || true
-    #$FLUVIO_BIN topic create $EXISTING_TOPIC_NAME || true
+    # Create a topic to delete at the end
+    #$FLUVIO_BIN topic create $NEW_TOPIC_NAME || true
+
+    # Create a topic, if it doesn't exist, that should stick around for future tests
+    $FLUVIO_BIN topic create $EXISTING_TOPIC_NAME || true
+
+    # TODO: Load any topic data into the topic
 
     # TODO: Announce the test vars
 }
@@ -41,10 +45,10 @@ function longevity_loop() {
 
         # Produce a message.
         # Provide current second tick as ID
-        test_produce $NEW_TOPIC_NAME $SECONDS;
+        #test_produce $NEW_TOPIC_NAME $SECONDS;
 
         # Uncomment when running outside of github
-        #test_produce $EXISTING_TOPIC_NAME $SECONDS;
+        test_produce $EXISTING_TOPIC_NAME $SECONDS;
 
         sleep 1
     done
@@ -58,8 +62,8 @@ function test_produce() {
     TOPIC_NAME=$1
     MESSAGE_ID=$(($2+1))
     local TIMESTAMP_EPOCH=$(date +%s)
-    #local TEST_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${PAYLOAD_SIZE} | head -n1)
-    local TEST_DATA="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
+    local TEST_DATA=$(shuf -zer -n${PAYLOAD_SIZE}  {A..Z} {a..z} {0..9} )
+    #local TEST_DATA="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
     
     MSG_NUM=1;
     while [ $MSG_NUM -lt $(($PRODUCER_RATE+1)) ]
@@ -72,8 +76,16 @@ function test_produce() {
 }
 
 function cleanup() {
-    # Delete the new topic.
-    $FLUVIO_BIN topic delete $NEW_TOPIC_NAME || true
+
+    # TODO: Save the data from off the kubernetes pod
+
+
+    # Delete the topic.
+    #$FLUVIO_BIN topic delete $NEW_TOPIC_NAME || true
+
+    # TODO: Leave the existing topic alone so it can be used in the next test
+    # In Github runner, we'll recreate and reload data,
+    $FLUVIO_BIN topic delete $EXISTING_TOPIC_NAME || true
 }
 
 
