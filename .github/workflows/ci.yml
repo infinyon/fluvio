@@ -776,12 +776,12 @@ jobs:
       # If the match, then we've already run a test on this build. Skip this run
       # If they don't match, then let's run the test
 
-      #- name: Setup K3d
-      #  run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-      #- name: Create K3d cluster
-      #  run: |
-      #    ./k8-util/cluster/reset-k3d.sh
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Create K3d cluster
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
+      #- uses: nolar/setup-k3d-k3s@v1
       - name: Install Fluvio CLI and start cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
@@ -862,7 +862,12 @@ jobs:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Create K3d cluster
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
+      #- uses: nolar/setup-k3d-k3s@v1
 
       - name: Install Fluvio CLI and start cluster
         run: |
