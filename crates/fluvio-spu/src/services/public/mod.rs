@@ -3,6 +3,7 @@ mod service_impl;
 mod produce_handler;
 mod fetch_handler;
 mod offset_request;
+mod offset_update;
 mod stream_fetch;
 
 use tracing::info;
