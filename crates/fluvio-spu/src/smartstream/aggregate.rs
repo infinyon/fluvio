@@ -1,17 +1,15 @@
-use std::sync::Arc;
 use std::time::Instant;
-use std::io::Cursor;
 use std::convert::TryFrom;
 
 use anyhow::{Result, Error};
 
 use tracing::debug;
-use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
+use wasmtime::TypedFunc;
 
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::Encoder;
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use crate::smartstream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
+use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamBase};
 use crate::smartstream::file_batch::FileBatchIterator;
 use dataplane::smartstream::{
     SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput,
@@ -22,10 +20,8 @@ const AGGREGATE_FN_NAME: &str = "aggregate";
 type AggregateFn = TypedFunc<(i32, i32), i32>;
 
 pub struct SmartStreamAggregate {
-    store: Store<()>,
-    instance: Instance,
+    base: SmartStreamBase,
     aggregate_fn: AggregateFn,
-    records_cb: Arc<RecordsCallBack>,
     accumulator: Vec<u8>,
 }
 
@@ -35,32 +31,14 @@ impl SmartStreamAggregate {
         module: &SmartStreamModule,
         accumulator: Vec<u8>,
     ) -> Result<Self> {
-        let mut store = Store::new(&engine.0, ());
-        let cb = Arc::new(RecordsCallBack::new());
-        let records_cb = cb.clone();
-        let copy_records = Func::wrap(
-            &mut store,
-            move |mut caller: Caller<'_, ()>, ptr: i32, len: i32| {
-                debug!(len, "callback from wasm filter");
-                let memory = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
-                };
-
-                let records = RecordsMemory { ptr, len, memory };
-                cb.set(records);
-                Ok(())
-            },
-        );
-
-        let instance = Instance::new(&mut store, &module.0, &[copy_records.into()])?;
-        let aggregate_fn: AggregateFn = instance.get_typed_func(&mut store, AGGREGATE_FN_NAME)?;
+        let mut base = SmartStreamBase::new(engine, module)?;
+        let aggregate_fn: AggregateFn = base
+            .instance
+            .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)?;
 
         Ok(Self {
-            store,
+            base,
             aggregate_fn,
-            instance,
-            records_cb,
             accumulator,
         })
     }
@@ -99,27 +77,17 @@ impl SmartStreamAggregate {
             );
 
             let now = Instant::now();
-            self.records_cb.clear();
+            self.base.records_cb.clear();
 
-            let smartstream_input = SmartStreamAggregateInput {
+            let input = SmartStreamAggregateInput {
                 base: SmartStreamInput {
                     base_offset: file_batch.batch.base_offset,
                     record_data: file_batch.records.clone(),
                 },
                 accumulator: self.accumulator.clone(),
             };
-
-            let mut input_data = vec![];
-            fluvio_protocol::Encoder::encode(&smartstream_input, &mut input_data, 0)?;
-
-            let aggregate_ptr = super::memory::copy_memory_to_instance(
-                &mut self.store,
-                &self.instance,
-                &input_data,
-            )?;
-            let aggregate_args = (aggregate_ptr as i32, input_data.len() as i32);
-
-            let aggregate_output = self.aggregate_fn.call(&mut self.store, aggregate_args)?;
+            let slice = self.base.write_input(&input)?;
+            let aggregate_output = self.aggregate_fn.call(&mut self.base.store, slice)?;
             debug!(aggregate_output, filter_execution_time = %now.elapsed().as_millis());
 
             if aggregate_output < 0 {
@@ -128,17 +96,7 @@ impl SmartStreamAggregate {
                 return Err(internal_error.into());
             }
 
-            let output_bytes = self
-                .records_cb
-                .get()
-                .and_then(|m| m.copy_memory_from(&mut self.store).ok())
-                .unwrap_or_default();
-            debug!(out_filter_bytes = output_bytes.len());
-
-            // this is inefficient for now
-            let mut output = SmartStreamOutput::default();
-            output.decode(&mut Cursor::new(output_bytes), 0)?;
-
+            let output: SmartStreamOutput = self.base.read_output()?;
             let maybe_error = output.error;
             let mut records = output.successes;
 
