@@ -1,9 +1,10 @@
+use std::sync::Mutex;
+use std::collections::HashSet;
 use duct::cmd;
 use which::which;
 use color_eyre::Result;
 use color_eyre::eyre::WrapErr;
 use once_cell::sync::{OnceCell, Lazy};
-use std::collections::HashSet;
 
 const CARGO: &str = env!("CARGO");
 
@@ -38,10 +39,20 @@ pub fn build_test() -> Result<()> {
 
 /// Installs `cross` or runs `rustup target add` as needed for the given target.
 pub fn install_target(target: Option<&str>) -> Result<()> {
-    static TARGETS: Lazy<HashSet<String>> = Lazy::new(|| {
-        // TODO
-    });
     let target = target.unwrap_or(env!("BUILD_TARGET"));
+
+    {
+        // In a given task, we only ever want to run install_target
+        // once per unique target.
+        static TARGETS: Lazy<Mutex<HashSet<String>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+        let mut ts = TARGETS.lock().unwrap();
+        if ts.contains(target) {
+            return Ok(());
+        } else {
+            ts.insert(target.to_string());
+        }
+    }
+
     match target {
         "armv7-unknown-linux-gnueabihf" | "arm-unknown-linux-gnueabihf" => {
             install_cross()?;
