@@ -59,7 +59,7 @@ async fn handle_produce_topic(
     for partition_request in topic_request.partitions.into_iter() {
         let replica_id = ReplicaKey::new(topic.to_string(), partition_request.partition_index);
         let partition_response =
-            handle_produce_partition(&ctx, replica_id, partition_request).await?;
+            handle_produce_partition(ctx, replica_id, partition_request).await?;
         topic_response.partitions.push(partition_response);
     }
 
