@@ -566,6 +566,7 @@ pub mod publishers {
 #[cfg(test)]
 mod test {
 
+    use super::*;
     use std::{
         path::{Path, PathBuf},
         time::Duration,
@@ -585,15 +586,14 @@ mod test {
         record::{RecordData, Record},
     };
     use dataplane::fixture::{create_batch, TEST_RECORD};
+    use dataplane::smartstream::SmartStreamType;
     use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
     use fluvio_spu_schema::server::stream_fetch::SmartStreamWasm;
+    use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
     use crate::replication::leader::LeaderReplicaState;
-    use crate::services::create_public_server;
-    use super::*;
-    use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
-    use dataplane::smartstream::SmartStreamType;
+    use crate::services::public::SpuPublicService;
 
     #[fluvio_future::test(ignore)]
     async fn test_stream_fetch() {
@@ -605,7 +605,7 @@ mod test {
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
@@ -772,7 +772,7 @@ mod test {
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
@@ -918,7 +918,7 @@ mod test {
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
@@ -1010,7 +1010,7 @@ mod test {
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
@@ -1134,7 +1134,7 @@ mod test {
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
@@ -1264,7 +1264,7 @@ mod test {
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
@@ -1362,7 +1362,7 @@ mod test {
         let mut spu_config = SpuConfig::default();
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
@@ -1473,7 +1473,7 @@ mod test {
         spu_config.log.base_dir = test_path;
         let ctx = GlobalContext::new_shared_context(spu_config);
 
-        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+        let server_end_event = SpuPublicService::server(addr.to_owned(), ctx.clone()).run();
 
         // wait for stream controller async to start
         sleep(Duration::from_millis(100)).await;
