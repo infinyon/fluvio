@@ -810,12 +810,14 @@ jobs:
       - name: Run longevity test
         env:
           FLV_DISPATCHER_WAIT: 300 
-        run: |
-          make FLUVIO_BIN=~/.fluvio/bin/fluvio longevity-producer-test
+        run: make FLUVIO_BIN=~/.fluvio/bin/fluvio longevity-producer-test
+          
       # If the test passed, then copy the data from cluster to store into artifacts
       - name: Export data from the cluster for caching
         run: |
+          mkdir longevity-existing-0
           kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-existing-0 longevity-existing-0
+          ls
           tar -cvf longevity-data.tar longevity-existing-0
 
       - uses: actions/upload-artifact@v2
