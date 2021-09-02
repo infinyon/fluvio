@@ -70,9 +70,6 @@ impl X509Authenticator {
                     fluvio_socket::SocketError::SocketClosed => {
                         IoError::new(IoErrorKind::BrokenPipe, "connection closed")
                     }
-                    fluvio_socket::SocketError::SendFile { .. } => {
-                        panic!("shoud not be doing zero copy here")
-                    }
                 })?;
 
         Ok(response.success)
