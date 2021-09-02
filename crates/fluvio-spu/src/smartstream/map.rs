@@ -1,63 +1,34 @@
-use std::sync::Arc;
 use std::time::Instant;
-use std::io::Cursor;
 use std::convert::TryFrom;
 
 use anyhow::{Result, Error};
 
 use tracing::debug;
-use wasmtime::{Caller, Extern, Func, Instance, Trap, TypedFunc, Store};
+use wasmtime::TypedFunc;
 
-use dataplane::core::{Decoder, Encoder};
+use dataplane::core::Encoder;
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
 use dataplane::smartstream::{
     SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
 };
-use crate::smartstream::{RecordsCallBack, RecordsMemory, SmartStreamEngine, SmartStreamModule};
+use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamContext};
 use crate::smartstream::file_batch::FileBatchIterator;
 
 const MAP_FN_NAME: &str = "map";
 type MapFn = TypedFunc<(i32, i32), i32>;
 
 pub struct SmartStreamMap {
-    store: Store<()>,
-    instance: Instance,
+    base: SmartStreamContext,
     map_fn: MapFn,
-    records_cb: Arc<RecordsCallBack>,
 }
 
 impl SmartStreamMap {
     pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
-        let mut store = Store::new(&engine.0, ());
-        let cb = Arc::new(RecordsCallBack::new());
-        let records_cb = cb.clone();
-        let copy_records = Func::wrap(
-            &mut store,
-            move |mut caller: Caller<'_, ()>, ptr: i32, len: i32| {
-                debug!(len, "callback from wasm map");
-                let memory = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
-                };
+        let mut base = SmartStreamContext::new(engine, module)?;
+        let map_fn: MapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
 
-                let records = RecordsMemory { ptr, len, memory };
-
-                cb.set(records);
-
-                Ok(())
-            },
-        );
-
-        let instance = Instance::new(&mut store, &module.0, &[copy_records.into()])?;
-        let map_fn: MapFn = instance.get_typed_func(&mut store, MAP_FN_NAME)?;
-
-        Ok(Self {
-            store,
-            instance,
-            map_fn,
-            records_cb,
-        })
+        Ok(Self { base, map_fn })
     }
 
     /// map batches with maximum bytes to be send back consumer
@@ -97,23 +68,12 @@ impl SmartStreamMap {
 
             let now = Instant::now();
 
-            let mut input_data = Vec::new();
-            let smartstream_input = SmartStreamInput {
+            let input = SmartStreamInput {
                 base_offset: file_batch.batch.base_offset,
                 record_data: file_batch.records.clone(),
             };
-            smartstream_input.encode(&mut input_data, 0)?;
-
-            self.records_cb.clear();
-            let array_ptr = super::memory::copy_memory_to_instance(
-                &mut self.store,
-                &self.instance,
-                &input_data,
-            )?;
-
-            let map_output = self
-                .map_fn
-                .call(&mut self.store, (array_ptr as i32, input_data.len() as i32))?;
+            let slice = self.base.write_input(&input)?;
+            let map_output = self.map_fn.call(&mut self.base.store, slice)?;
 
             debug!(map_output, map_execution_time = %now.elapsed().as_millis());
 
@@ -123,17 +83,7 @@ impl SmartStreamMap {
                 return Err(internal_error.into());
             }
 
-            let bytes = self
-                .records_cb
-                .get()
-                .and_then(|m| m.copy_memory_from(&mut self.store).ok())
-                .unwrap_or_default();
-            debug!(out_map_bytes = bytes.len());
-
-            // this is inefficient for now
-            let mut output = SmartStreamOutput::default();
-            output.decode(&mut Cursor::new(bytes), 0)?;
-
+            let output: SmartStreamOutput = self.base.read_output()?;
             let maybe_error = output.error;
             let mut records = output.successes;
 

@@ -1,15 +1,19 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
+use tracing::debug;
 use anyhow::Result;
-use wasmtime::{Memory, Store, Engine, Module};
+use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
 use crate::smartstream::filter::SmartStreamFilter;
 use crate::smartstream::map::SmartStreamMap;
 use crate::smartstream::aggregate::SmartStreamAggregate;
+use dataplane::core::{Encoder, Decoder};
 
 mod memory;
 pub mod filter;
 pub mod map;
 pub mod aggregate;
 pub mod file_batch;
+
+pub type WasmSlice = (i32, i32);
 
 #[derive(Default)]
 pub struct SmartStreamEngine(pub(crate) Engine);
@@ -41,6 +45,62 @@ impl SmartStreamModule {
     ) -> Result<SmartStreamAggregate> {
         let aggregate = SmartStreamAggregate::new(engine, self, accumulator)?;
         Ok(aggregate)
+    }
+}
+
+pub struct SmartStreamContext {
+    store: Store<()>,
+    instance: Instance,
+    records_cb: Arc<RecordsCallBack>,
+}
+
+impl SmartStreamContext {
+    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
+        let mut store = Store::new(&engine.0, ());
+        let cb = Arc::new(RecordsCallBack::new());
+        let records_cb = cb.clone();
+        let copy_records = Func::wrap(
+            &mut store,
+            move |mut caller: Caller<'_, ()>, ptr: i32, len: i32| {
+                debug!(len, "callback from wasm filter");
+                let memory = match caller.get_export("memory") {
+                    Some(Extern::Memory(mem)) => mem,
+                    _ => return Err(Trap::new("failed to find host memory")),
+                };
+
+                let records = RecordsMemory { ptr, len, memory };
+                cb.set(records);
+                Ok(())
+            },
+        );
+
+        let instance = Instance::new(&mut store, &module.0, &[copy_records.into()])?;
+        Ok(Self {
+            store,
+            instance,
+            records_cb,
+        })
+    }
+
+    pub fn write_input<E: Encoder>(&mut self, input: &E) -> Result<WasmSlice> {
+        self.records_cb.clear();
+        let mut input_data = Vec::new();
+        input.encode(&mut input_data, 0)?;
+        let array_ptr =
+            self::memory::copy_memory_to_instance(&mut self.store, &self.instance, &input_data)?;
+        let length = input_data.len();
+        Ok((array_ptr as i32, length as i32))
+    }
+
+    pub fn read_output<D: Decoder + Default>(&mut self) -> Result<D> {
+        let bytes = self
+            .records_cb
+            .get()
+            .and_then(|m| m.copy_memory_from(&mut self.store).ok())
+            .unwrap_or_default();
+        let mut output = D::default();
+        output.decode(&mut std::io::Cursor::new(bytes), 0)?;
+        Ok(output)
     }
 }
 
