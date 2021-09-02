@@ -92,9 +92,10 @@ function cleanup() {
     # Delete the topic.
     #$FLUVIO_BIN topic delete $NEW_TOPIC_NAME || true
 
-    # TODO: Leave the existing topic alone so it can be used in the next test
+    # Leave the existing topic alone so it can be used in the next test
     # In Github runner, we'll recreate and reload data,
-    $FLUVIO_BIN topic delete $EXISTING_TOPIC_NAME || true
+    #$FLUVIO_BIN topic delete $EXISTING_TOPIC_NAME || true
+    :
 }
 
 
