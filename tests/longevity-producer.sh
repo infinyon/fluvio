@@ -7,7 +7,7 @@ readonly HOUR_IN_SECONDS=3600
 readonly TEN_MIN_IN_SECONDS=600
 
 # This var controls the expected test duration
-readonly TOTAL_TEST_TIME=${TEN_MIN_IN_SECONDS}
+readonly TOTAL_TEST_TIME=${TOTAL_TEST_TIME:-$TEN_MIN_IN_SECONDS}
 readonly PAYLOAD_SIZE=1000
 readonly NEW_TOPIC_NAME=longevity-new
 readonly EXISTING_TOPIC_NAME=longevity-existing
@@ -92,9 +92,10 @@ function cleanup() {
     # Delete the topic.
     #$FLUVIO_BIN topic delete $NEW_TOPIC_NAME || true
 
-    # TODO: Leave the existing topic alone so it can be used in the next test
+    # Leave the existing topic alone so it can be used in the next test
     # In Github runner, we'll recreate and reload data,
-    $FLUVIO_BIN topic delete $EXISTING_TOPIC_NAME || true
+    #$FLUVIO_BIN topic delete $EXISTING_TOPIC_NAME || true
+    :
 }
 
 

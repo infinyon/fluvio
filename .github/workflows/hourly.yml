@@ -52,7 +52,7 @@ jobs:
             kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/replication.chk
             k3d cluster stop --all
             k3d cluster start --all
-            sleep 15
+            sleep 30
           else
             echo "Longevity data does not exist"
           fi
@@ -65,12 +65,24 @@ jobs:
       - name: Run longevity test
         env:
           FLV_DISPATCHER_WAIT: 300 
-        run: make longevity-producer-test
+        run: make FLUVIO_BIN=~/.fluvio/bin/fluvio longevity-producer-test
+          
       # If the test passed, then copy the data from cluster to store into artifacts
       - name: Export data from the cluster for caching
         run: |
+          kubectl version
+          mkdir longevity-existing-0
+          echo Copy fluvio topic data from container
           kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-existing-0 longevity-existing-0
+          #ls
+          #echo List copied topic data
+          #ls longevity-existing-0
+          echo Make tarball from topic data
           tar -cvf longevity-data.tar longevity-existing-0
+          #echo Verify tarball
+          #cp longevity-data.tar /tmp
+          #cd /tmp
+          #tar -xvf longevity-data.tar
 
       - uses: actions/upload-artifact@v2
         with:
@@ -139,7 +151,7 @@ jobs:
             kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/replication.chk
             k3d cluster stop --all
             k3d cluster start --all
-            sleep 15
+            sleep 30
             export DATA_LOADED=true
             echo "DATA_LOADED=true" | tee -a $GITHUB_ENV
           else
@@ -184,5 +196,3 @@ jobs:
         with:
           name: k8_consumer_longevity_log
           path: /tmp/k8_*.log
-
-
