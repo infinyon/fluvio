@@ -7,7 +7,7 @@ readonly HOUR_IN_SECONDS=3600
 readonly TEN_MIN_IN_SECONDS=600
 
 # This var controls the expected test duration
-readonly TOTAL_TEST_TIME=${TEN_MIN_IN_SECONDS}
+readonly TOTAL_TEST_TIME=${TOTAL_TEST_TIME:-TEN_MIN_IN_SECONDS}
 readonly PAYLOAD_SIZE=1000
 readonly NEW_TOPIC_NAME=longevity-new
 readonly EXISTING_TOPIC_NAME=longevity-existing
