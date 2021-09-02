@@ -46,7 +46,7 @@ jobs:
       ##  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
       #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
 
-    
+
 
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
   build_primary_binaries:
@@ -136,9 +136,9 @@ jobs:
             rust: stable
             rust-target: armv7-unknown-linux-gnueabihf
             binary: fluvio
-          - os: windows-latest
+          - os: ubuntu-latest
             rust: stable
-            rust-target: x86_64-pc-windows-msvc
+            rust-target: x86_64-pc-windows-gnu
             binary: fluvio.exe
           - os: macos-latest
             rust: stable
@@ -193,6 +193,10 @@ jobs:
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
         run: make build-cli
+
+      - name: Install mingw gcc
+        if: ${{ matrix.rust-target  == 'x86_64-pc-windows-gnu' }}
+        run: sudo apt-get install gcc-mingw-w64-x86-64
 
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio.exe' }}
@@ -323,7 +327,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})
     runs-on: ${{ matrix.os }}
-    needs: 
+    needs:
       - build_primary_binaries
       - config
     strategy:
@@ -332,7 +336,7 @@ jobs:
         os: [ubuntu-latest]
         run: [r1]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
-       
+
     steps:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
@@ -486,7 +490,7 @@ jobs:
           kubernetes version: "v1.21.2"
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
-      - name: Load image to minikube 
+      - name: Load image to minikube
         if: ${{ matrix.k8 == 'minikube' }}
         run: |
           eval $(minikube -p minikube docker-env)
@@ -498,7 +502,7 @@ jobs:
         run: |
             date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--keep-cluster UNINSTALL=noclean smoke-test-k8-tls-root
-        # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root 
+        # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: |
           ./fluvio version
@@ -577,7 +581,7 @@ jobs:
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
       - name: Set up K3d
-        if: ${{ false }} # enable on 0.9.5 
+        if: ${{ false }} # enable on 0.9.5
         run: |
           ./k8-util/cluster/reset-k3d.sh
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
@@ -585,7 +589,7 @@ jobs:
       - name: Run upgrade test with CI artifacts
         env:
           TEST_DATA_BYTES: 10000
-          FLV_DISPATCHER_WAIT: 300 
+          FLV_DISPATCHER_WAIT: 300
         uses: nick-invision/retry@v2
         # temporary for 0.9.5 max_attempts
         with:
@@ -661,7 +665,7 @@ jobs:
           docker push "docker.io/infinyon/fluvio:${TAG}-arm64v8"
           docker manifest create "docker.io/infinyon/fluvio:${TAG}" \
             "docker.io/infinyon/fluvio:${TAG}-amd64" \
-            "docker.io/infinyon/fluvio:${TAG}-arm64v8" 
+            "docker.io/infinyon/fluvio:${TAG}-arm64v8"
           docker manifest push "docker.io/infinyon/fluvio:${TAG}"
 
   # When all required jobs pass, bump the `dev` GH prerelease to this commit
@@ -727,7 +731,7 @@ jobs:
             artifact: fluvio-run
           - rust-target: aarch64-apple-darwin
             artifact: fluvio-run
-          - rust-target: x86_64-pc-windows-msvc
+          - rust-target: x86_64-pc-windows-gnu
             artifact: fluvio.exe
     permissions: write-all
     steps:

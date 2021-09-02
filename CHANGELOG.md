@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.5 - UNRELEASED 
+## Platform Version 0.9.6 - UNRELEASED
+
+## Platform Version 0.9.5 - 2021-09-02
 * Update `Debug` printout for `SmartStreamWasm` to reduce noise ([#1524](https://github.com/infinyon/fluvio/pull/1524))
 * Increase platform stability ([#1497](https://github.com/infinyon/fluvio/pull/1497))
 * Spawn a thread to handle stream fetch requests ([#1522](https://github.com/infinyon/fluvio/issues/1522))
