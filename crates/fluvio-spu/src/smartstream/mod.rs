@@ -48,13 +48,13 @@ impl SmartStreamModule {
     }
 }
 
-pub struct SmartStreamBase {
+pub struct SmartStreamContext {
     store: Store<()>,
     instance: Instance,
     records_cb: Arc<RecordsCallBack>,
 }
 
-impl SmartStreamBase {
+impl SmartStreamContext {
     pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
         let mut store = Store::new(&engine.0, ());
         let cb = Arc::new(RecordsCallBack::new());

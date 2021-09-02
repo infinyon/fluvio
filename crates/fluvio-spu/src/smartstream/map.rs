@@ -12,20 +12,20 @@ use dataplane::batch::MemoryRecords;
 use dataplane::smartstream::{
     SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
 };
-use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamBase};
+use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamContext};
 use crate::smartstream::file_batch::FileBatchIterator;
 
 const MAP_FN_NAME: &str = "map";
 type MapFn = TypedFunc<(i32, i32), i32>;
 
 pub struct SmartStreamMap {
-    base: SmartStreamBase,
+    base: SmartStreamContext,
     map_fn: MapFn,
 }
 
 impl SmartStreamMap {
     pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
-        let mut base = SmartStreamBase::new(engine, module)?;
+        let mut base = SmartStreamContext::new(engine, module)?;
         let map_fn: MapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
 
         Ok(Self { base, map_fn })

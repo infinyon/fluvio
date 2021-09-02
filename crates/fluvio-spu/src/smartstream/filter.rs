@@ -12,20 +12,20 @@ use dataplane::smartstream::{
     SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError, SmartStreamInternalError,
 };
 use fluvio_protocol::Encoder;
-use crate::smartstream::{SmartStreamModule, SmartStreamEngine, SmartStreamBase};
+use crate::smartstream::{SmartStreamModule, SmartStreamEngine, SmartStreamContext};
 use crate::smartstream::file_batch::FileBatchIterator;
 
 const FILTER_FN_NAME: &str = "filter";
 type FilterFn = TypedFunc<(i32, i32), i32>;
 
 pub struct SmartStreamFilter {
-    base: SmartStreamBase,
+    base: SmartStreamContext,
     filter_fn: FilterFn,
 }
 
 impl SmartStreamFilter {
     pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
-        let mut base = SmartStreamBase::new(engine, module)?;
+        let mut base = SmartStreamContext::new(engine, module)?;
         let filter_fn: FilterFn = base
             .instance
             .get_typed_func(&mut base.store, FILTER_FN_NAME)?;

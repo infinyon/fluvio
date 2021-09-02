@@ -9,7 +9,7 @@ use wasmtime::TypedFunc;
 use dataplane::core::Encoder;
 use dataplane::batch::Batch;
 use dataplane::batch::MemoryRecords;
-use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamBase};
+use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamContext};
 use crate::smartstream::file_batch::FileBatchIterator;
 use dataplane::smartstream::{
     SmartStreamRuntimeError, SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput,
@@ -20,7 +20,7 @@ const AGGREGATE_FN_NAME: &str = "aggregate";
 type AggregateFn = TypedFunc<(i32, i32), i32>;
 
 pub struct SmartStreamAggregate {
-    base: SmartStreamBase,
+    base: SmartStreamContext,
     aggregate_fn: AggregateFn,
     accumulator: Vec<u8>,
 }
@@ -31,7 +31,7 @@ impl SmartStreamAggregate {
         module: &SmartStreamModule,
         accumulator: Vec<u8>,
     ) -> Result<Self> {
-        let mut base = SmartStreamBase::new(engine, module)?;
+        let mut base = SmartStreamContext::new(engine, module)?;
         let aggregate_fn: AggregateFn = base
             .instance
             .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)?;
