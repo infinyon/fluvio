@@ -1,8 +1,6 @@
 use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
 
 use tracing::{trace, instrument};
 use futures_util::{SinkExt};
@@ -98,6 +96,9 @@ mod fd {
 
 #[cfg(feature = "file")]
 mod file {
+
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
 
     use bytes::BytesMut;
     use futures_util::AsyncWriteExt;
