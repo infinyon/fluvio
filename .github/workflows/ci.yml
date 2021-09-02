@@ -941,5 +941,3 @@ jobs:
         with:
           name: k8_consumer_longevity_log
           path: /tmp/k8_*.log
-
-
