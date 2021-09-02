@@ -13,6 +13,7 @@ pub fn build() -> Result<()> {
     build_cli()?;
     build_cluster()?;
     build_test()?;
+    build_smartstreams()?;
     Ok(())
 }
 
@@ -34,6 +35,83 @@ pub fn build_test() -> Result<()> {
     install_target(None)?;
     println!("Building fluvio-test");
     cmd!(CARGO, "build", "--bin", "fluvio-test").run()?;
+    Ok(())
+}
+
+pub fn build_smartstreams() -> Result<()> {
+    install_target(Some("wasm32-unknown-unknown"))?;
+    cmd!(
+        CARGO,
+        "build",
+        "--target=wasm32-unknown-unknown",
+        "--manifest-path=crates/fluvio-smartstream/examples/Cargo.toml",
+    )
+    .run()?;
+    Ok(())
+}
+
+pub fn test() -> Result<()> {
+    test_units()?;
+    test_docs()?;
+    test_integration()?;
+    Ok(())
+}
+
+pub fn test_units() -> Result<()> {
+    cmd!(CARGO, "test", "--lib", "--all-features").run()?;
+    Ok(())
+}
+
+pub fn test_docs() -> Result<()> {
+    cmd!(CARGO, "test", "--doc", "--all-features").run()?;
+    Ok(())
+}
+
+pub fn test_client_docs() -> Result<()> {
+    cmd!(
+        CARGO,
+        "test",
+        "--doc",
+        "--all-features",
+        "--package=fluvio",
+        "--package=fluvio-cli",
+        "--package=fluvio-cluster"
+    )
+    .run()?;
+    Ok(())
+}
+
+pub fn test_integration() -> Result<()> {
+    cmd!(
+        CARGO,
+        "test",
+        "--lib",
+        "--all-features",
+        "--",
+        "--ignored",
+        "--test-threads=1"
+    )
+    .run()?;
+    Ok(())
+}
+
+pub fn clippy() -> Result<()> {
+    println!("Checking clippy");
+    // Use `cargo check` first to leverage any caching
+    cmd!(CARGO, "check", "--all", "--all-features", "--tests").run()?;
+    cmd!(
+        CARGO,
+        "clippy",
+        "--all",
+        "--all-features",
+        "--tests",
+        "--",
+        "-D",
+        "warnings",
+        "-A",
+        "clippy::upper_case_acronyms"
+    )
+    .run()?;
     Ok(())
 }
 
