@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 
-set -exu
-#set -eu
+trap 'report_error $? $LINENO' EXIT
+
+function report_error() {
+    if [ "$1" != "0" ]; then
+        echo "❌ Exit code $1"
+        echo "Runtime progress (seconds): $SECONDS / $TOTAL_TEST_TIME"
+    fi
+}
+
+readonly DEBUG=${DEBUG:-false}
 
 readonly HOUR_IN_SECONDS=3600
 readonly TEN_MIN_IN_SECONDS=600
@@ -23,14 +31,23 @@ fi
 
 readonly FLUVIO_BIN=$(${READLINK} -f ${FLUVIO_BIN:-"$(which fluvio)"})
 
-###
-
 ### Setup
 # Calculate time into the future (Default to one hour)
 # Configure the number of records to send per second
 # Configure the payload length
 # Connect to cluster
 function setup() {
+
+    echo "Test duration is ${TOTAL_TEST_TIME} seconds."
+
+    if ${DEBUG} ; then
+        echo "DEBUG verbosity on"
+        set -exu
+    else
+        set -eu
+        echo "Test output will be silent after setup for test duration"
+    fi
+
 
     # Start a cluster
     $FLUVIO_BIN cluster start --image-version latest
@@ -44,6 +61,8 @@ function setup() {
     # TODO: Load any topic data into the topic
 
     # TODO: Announce the test vars
+
+    echo "Setup complete"
 }
 
 ## If we've run out of time then test is done
@@ -71,7 +90,7 @@ function test_produce() {
     TOPIC_NAME=$1
     MESSAGE_ID=$(($2+1))
     local TIMESTAMP_EPOCH=$(date +%s)
-    local TEST_DATA=$(shuf -zer -n${PAYLOAD_SIZE}  {A..Z} {a..z} {0..9} )
+    local TEST_DATA=$(shuf -zer -n${PAYLOAD_SIZE}  {A..Z} {a..z} {0..9} | tr -d '\0')
     #local TEST_DATA="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua."
     
     MSG_NUM=1;
@@ -103,6 +122,7 @@ function main() {
     setup;
     longevity_loop;
     cleanup;
+    echo "✅ Test passed"
 }
 
 main;
