@@ -43,3 +43,5 @@ spec:
                       type: string
                       minimum: 2
                       maximum: 100
+                    args:
+                      type: array

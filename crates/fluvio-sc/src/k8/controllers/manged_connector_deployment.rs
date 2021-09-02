@@ -14,16 +14,9 @@ use fluvio_future::timer::sleep;
 use k8_client::ClientError;
 
 use crate::stores::{StoreContext};
-use crate::stores::spg::{SpuGroupSpec, SpuGroupStatus};
 use crate::stores::managed_connector::ManagedConnectorSpec;
-use crate::stores::spu::{SpuSpec};
 
-use crate::cli::TlsConfig;
 
-use crate::k8::objects::spg_group::{SpuGroupObj};
-use crate::k8::objects::spu_k8_config::ScK8Config;
-use crate::k8::objects::statefulset::StatefulsetSpec;
-use crate::k8::objects::spg_service::SpgServiceSpec;
 //use crate::k8::objects::deployment::DeploymentStatus;
 use crate::k8::objects::managed_connector_deployment::ManagedConnectorDeploymentSpec;
 
@@ -146,12 +139,11 @@ impl ManagedConnectorDeploymentController {
             core::pod::{PodSpec, ContainerSpec},
             LabelProvider,
         };
+        let image = format!("infinyon/fluvio-connect-{}", mc_spec.config.type_);
+        debug!("STARTING CONNECTOR FOR IMAGE {:?}", image);
+        let args = &mc_spec.config.args;
+        let args : Vec<String> = args.keys().zip(args.values()).flat_map(|(key, value)| [key.clone(), value.clone()]).collect::<Vec<_>>();
 
-        let image = format!("infinyon/fluvio-connector-{}", mc_spec.name);
-        /*
-        let env = todo!();
-        let args = todo!();
-        */
 
         let template = TemplateSpec {
             metadata: Some(
@@ -162,10 +154,11 @@ impl ManagedConnectorDeploymentController {
                 containers: vec![ContainerSpec {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image.clone()),
+                    image_pull_policy: Some("Never".to_string()),
                     /*
                     env,
-                    args,
                     */
+                    args,
                     ..Default::default()
                 }],
                 //security_context: spu_k8_config.pod_security_context.clone(),

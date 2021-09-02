@@ -6,12 +6,9 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use fluvio_types::defaults::{SPU_PUBLIC_PORT, SPU_LOG_BASE_DIR, SPU_LOG_SIZE};
-use fluvio_types::defaults::SPU_PRIVATE_PORT;
 
-use crate::spu::EncryptionEnum;
 use super::super::ManagedConnectorStatus;
-use crate::k8_types::{Spec, Crd, DefaultHeader, TemplateSpec, Env};
+use crate::k8_types::{Spec, Crd, DefaultHeader};
 
 use crd::MANAGED_CONNECTOR_API;
 mod crd {

@@ -63,4 +63,4 @@ incremental = false
 codegen-units = 256
 
 [patch.crates-io]
-k8-types = { git = "https://github.com/simlay/k8-api", branch = "add-deployment-types" }
+k8-types = { git = "https://github.com/infinyon/k8-api", branch = "master" }

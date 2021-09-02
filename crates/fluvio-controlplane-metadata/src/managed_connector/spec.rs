@@ -1,7 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
 use dataplane::core::{Encoder, Decoder};
-use fluvio_types::defaults::{SPU_LOG_BASE_DIR, SPU_LOG_SIZE};
 
 #[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
 #[cfg_attr(
@@ -21,7 +20,8 @@ pub struct ManagedConnectorSpec {
     serde(rename_all = "camelCase")
 )]
 pub struct ManagedConnectorConfig {
-    pub r#type: String, // syslog, github star, slack
+    #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
+    pub type_: String, // syslog, github star, slack
     pub topic: String,
     pub args: std::collections::BTreeMap<String, String>,
 }

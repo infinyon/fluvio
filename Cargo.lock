@@ -2740,7 +2740,7 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.2.8"
-source = "git+https://github.com/simlay/k8-api?branch=add-deployment-types#a9d27481b6b2b402cfe10abb332d9dda35d00bfb"
+source = "git+https://github.com/infinyon/k8-api?branch=master#f3cfe9fd73c909e9f1ffbb07e66b75f2716db05b"
 dependencies = [
  "serde",
  "serde_json",
