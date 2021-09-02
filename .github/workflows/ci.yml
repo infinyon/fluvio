@@ -817,13 +817,17 @@ jobs:
         run: |
           kubectl version
           mkdir longevity-existing-0
+          echo Copy fluvio topic data from container
           kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-existing-0 longevity-existing-0
-          ls
-          ls longevity-existing-0
+          #ls
+          #echo List copied topic data
+          #ls longevity-existing-0
+          echo Make tarball from topic data
           tar -cvf longevity-data.tar longevity-existing-0
-          cp longevity-data.tar /tmp
-          cd /tmp
-          tar -xvf longevity-data.tar
+          #echo Verify tarball
+          #cp longevity-data.tar /tmp
+          #cd /tmp
+          #tar -xvf longevity-data.tar
 
       - uses: actions/upload-artifact@v2
         with:
