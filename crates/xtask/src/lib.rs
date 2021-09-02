@@ -1,5 +1,6 @@
 use std::sync::Mutex;
 use std::collections::HashSet;
+use structopt::StructOpt;
 use duct::cmd;
 use which::which;
 use color_eyre::Result;
@@ -8,111 +9,187 @@ use once_cell::sync::{OnceCell, Lazy};
 
 const CARGO: &str = env!("CARGO");
 
-pub fn build() -> Result<()> {
-    println!("Building all artifacts");
-    build_cli()?;
-    build_cluster()?;
-    build_test()?;
-    build_smartstreams()?;
-    Ok(())
+#[derive(StructOpt, Debug)]
+pub struct Root {
+    #[structopt(subcommand)]
+    pub cmd: RootCmd,
 }
 
-pub fn build_cli() -> Result<()> {
-    install_target(None)?;
-    println!("Building fluvio");
-    cmd!(CARGO, "build", "--bin", "fluvio").run()?;
-    Ok(())
+#[derive(StructOpt, Debug)]
+pub enum RootCmd {
+    Build(BuildOpt),
+    Clippy(BuildOpt),
+    Test(BuildOpt),
+    #[structopt(aliases = &["test-unit", "unit-test", "unit-tests"])]
+    TestUnits(BuildOpt),
+    #[structopt(aliases = &["test-doc", "doc-test", "doc-tests"])]
+    TestDocs(BuildOpt),
+    TestClientDocs(BuildOpt),
+    #[structopt(aliases = &["integration-test", "integration-tests"])]
+    TestIntegration(BuildOpt),
+    InstallTarget(InstallTargetOpt),
 }
 
-pub fn build_cluster() -> Result<()> {
-    install_target(None)?;
-    println!("Building fluvio-run");
-    cmd!(CARGO, "build", "--bin", "fluvio-run").run()?;
-    Ok(())
+impl RootCmd {
+    pub fn process(self) -> Result<()> {
+        match self {
+            Self::Build(opt) => {
+                opt.build()?;
+            }
+            Self::Clippy(opt) => {
+                opt.clippy()?;
+            }
+            Self::Test(opt) => {
+                opt.test()?;
+            }
+            Self::TestDocs(opt) => {
+                opt.test_docs()?;
+            }
+            Self::TestClientDocs(opt) => {
+                opt.test_client_docs()?;
+            }
+            Self::TestUnits(opt) => {
+                opt.test_units()?;
+            }
+            Self::TestIntegration(opt) => {
+                opt.test_integration()?;
+            }
+            Self::InstallTarget(opt) => {
+                opt.install_target()?;
+            }
+        }
+        Ok(())
+    }
 }
 
-pub fn build_test() -> Result<()> {
-    install_target(None)?;
-    println!("Building fluvio-test");
-    cmd!(CARGO, "build", "--bin", "fluvio-test").run()?;
-    Ok(())
+#[derive(StructOpt, Debug, Default)]
+pub struct BuildOpt {
+    #[structopt(long)]
+    release: bool,
+    #[structopt(long)]
+    verbose: bool,
+    target: Option<String>,
 }
 
-pub fn build_smartstreams() -> Result<()> {
-    install_target(Some("wasm32-unknown-unknown"))?;
-    cmd!(
-        CARGO,
-        "build",
-        "--target=wasm32-unknown-unknown",
-        "--manifest-path=crates/fluvio-smartstream/examples/Cargo.toml",
-    )
-    .run()?;
-    Ok(())
+impl BuildOpt {
+    pub fn build(&self) -> Result<()> {
+        println!("Building all artifacts");
+        self.build_cli()?;
+        self.build_cluster()?;
+        self.build_test()?;
+        self.build_smartstreams()?;
+        Ok(())
+    }
+
+    pub fn build_cli(&self) -> Result<()> {
+        install_target(None)?;
+        println!("Building fluvio");
+        cmd!(CARGO, "build", "--bin", "fluvio").run()?;
+        Ok(())
+    }
+
+    pub fn build_cluster(&self) -> Result<()> {
+        install_target(None)?;
+        println!("Building fluvio-run");
+        cmd!(CARGO, "build", "--bin", "fluvio-run").run()?;
+        Ok(())
+    }
+
+    pub fn build_test(&self) -> Result<()> {
+        install_target(None)?;
+        println!("Building fluvio-test");
+        cmd!(CARGO, "build", "--bin", "fluvio-test").run()?;
+        Ok(())
+    }
+
+    pub fn build_smartstreams(&self) -> Result<()> {
+        install_target(Some("wasm32-unknown-unknown"))?;
+        cmd!(
+            CARGO,
+            "build",
+            "--target=wasm32-unknown-unknown",
+            "--manifest-path=crates/fluvio-smartstream/examples/Cargo.toml",
+        )
+        .run()?;
+        Ok(())
+    }
+
+    pub fn test(&self) -> Result<()> {
+        self.test_units()?;
+        self.test_docs()?;
+        self.test_integration()?;
+        Ok(())
+    }
+
+    pub fn test_units(&self) -> Result<()> {
+        cmd!(CARGO, "test", "--lib", "--all-features").run()?;
+        Ok(())
+    }
+
+    pub fn test_docs(&self) -> Result<()> {
+        cmd!(CARGO, "test", "--doc", "--all-features").run()?;
+        Ok(())
+    }
+
+    pub fn test_client_docs(&self) -> Result<()> {
+        cmd!(
+            CARGO,
+            "test",
+            "--doc",
+            "--all-features",
+            "--package=fluvio",
+            "--package=fluvio-cli",
+            "--package=fluvio-cluster"
+        )
+        .run()?;
+        Ok(())
+    }
+
+    pub fn test_integration(&self) -> Result<()> {
+        cmd!(
+            CARGO,
+            "test",
+            "--lib",
+            "--all-features",
+            "--",
+            "--ignored",
+            "--test-threads=1"
+        )
+        .run()?;
+        Ok(())
+    }
+
+    pub fn clippy(&self) -> Result<()> {
+        println!("Checking clippy");
+        // Use `cargo check` first to leverage any caching
+        cmd!(CARGO, "check", "--all", "--all-features", "--tests").run()?;
+        cmd!(
+            CARGO,
+            "clippy",
+            "--all",
+            "--all-features",
+            "--tests",
+            "--",
+            "-D",
+            "warnings",
+            "-A",
+            "clippy::upper_case_acronyms"
+        )
+        .run()?;
+        Ok(())
+    }
 }
 
-pub fn test() -> Result<()> {
-    test_units()?;
-    test_docs()?;
-    test_integration()?;
-    Ok(())
+#[derive(StructOpt, Debug)]
+pub struct InstallTargetOpt {
+    target: Option<String>,
 }
 
-pub fn test_units() -> Result<()> {
-    cmd!(CARGO, "test", "--lib", "--all-features").run()?;
-    Ok(())
-}
-
-pub fn test_docs() -> Result<()> {
-    cmd!(CARGO, "test", "--doc", "--all-features").run()?;
-    Ok(())
-}
-
-pub fn test_client_docs() -> Result<()> {
-    cmd!(
-        CARGO,
-        "test",
-        "--doc",
-        "--all-features",
-        "--package=fluvio",
-        "--package=fluvio-cli",
-        "--package=fluvio-cluster"
-    )
-    .run()?;
-    Ok(())
-}
-
-pub fn test_integration() -> Result<()> {
-    cmd!(
-        CARGO,
-        "test",
-        "--lib",
-        "--all-features",
-        "--",
-        "--ignored",
-        "--test-threads=1"
-    )
-    .run()?;
-    Ok(())
-}
-
-pub fn clippy() -> Result<()> {
-    println!("Checking clippy");
-    // Use `cargo check` first to leverage any caching
-    cmd!(CARGO, "check", "--all", "--all-features", "--tests").run()?;
-    cmd!(
-        CARGO,
-        "clippy",
-        "--all",
-        "--all-features",
-        "--tests",
-        "--",
-        "-D",
-        "warnings",
-        "-A",
-        "clippy::upper_case_acronyms"
-    )
-    .run()?;
-    Ok(())
+impl InstallTargetOpt {
+    pub fn install_target(&self) -> Result<()> {
+        install_target(self.target.as_deref())?;
+        Ok(())
+    }
 }
 
 /// Installs `cross` or runs `rustup target add` as needed for the given target.
