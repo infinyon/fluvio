@@ -206,8 +206,6 @@ impl SpgStatefulSetController {
     }
 }
 
-
-
 #[cfg(test)]
 mod test {
 
@@ -233,27 +231,25 @@ mod test {
         ns
     }
 
-    async fn create_ns(k8_client: &K8Client) {
-        
+    async fn create_ns(k8_client: &K8Client) -> String {
         let ns = create_unique_ns();
 
         let input_meta = InputObjectMeta {
-            name: ns,
+            name: ns.clone(),
             ..Default::default()
         };
 
         let input = InputK8Obj::new(NamespaceSpec::default(), input_meta);
         k8_client.apply(input).await.expect("ns created");
+
+        ns
     }
 
     #[fluvio_future::test(ignore)]
     async fn test_statefulset() {
-
-
         let k8_client = load_and_share().expect("creating k8 client");
 
-
-        create_ns(&k8_client).await.expect("unique");
+        let _ns = create_ns(&k8_client).await;
 
         // create unique ns
         /*
@@ -267,9 +263,5 @@ mod test {
             tls,
         );
         */
-
     }
-
-
-
 }

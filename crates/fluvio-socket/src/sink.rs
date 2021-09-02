@@ -1,6 +1,8 @@
 use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
+use std::io::Error as IoError;
+use std::io::ErrorKind;
 
 use tracing::{trace, instrument};
 use futures_util::{SinkExt};
@@ -151,7 +153,9 @@ mod file {
                                 f_slice.len()
                             );
                             let writer = ZeroCopy::raw(self.fd);
-                            writer.copy_slice(&f_slice).await?;
+                            writer.copy_slice(&f_slice).await.map_err(|err| {
+                                IoError::new(ErrorKind::Other, format!("zero copy failed: {}", err))
+                            })?;
                             trace!("finish writing file slice");
                         }
                     }
