@@ -108,8 +108,8 @@ jobs:
 
       - name: Get previous stable version number
         run: |
-          echo "PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' | grep "v" | head -2 | tail -1)" | tee -a $GITHUB_ENV
-          PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' | grep "v" | head -2 | tail -1)
+          echo "PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' |  grep "v" | sed 's/^v//' | head -2 | tail -1)" | tee -a $GITHUB_ENV
+          PREV_STABLE_VERSION=$(gh release list | awk '{print $1}' | sed 's/^dev//' |  grep "v" | sed 's/^v//' | head -2 | tail -1)
 
       - name: Install last stable Fluvio CLI and start cluster
         run: |
