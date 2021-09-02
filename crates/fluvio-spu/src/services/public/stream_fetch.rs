@@ -3,7 +3,7 @@ use std::time::{Instant};
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use tracing::{info, error, debug, trace, instrument};
+use tracing::{error, debug, trace, instrument};
 use tokio::select;
 
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
@@ -106,7 +106,7 @@ impl StreamFetchHandler {
                     ))
                 })?;
 
-                let smartstream = match payload.kind {
+                let smartstream: Box<dyn SmartStream> = match payload.kind {
                     SmartStreamKind::Filter => {
                         debug!("Instantiating SmartStreamFilter");
                         let filter = module.create_filter(&sm_engine).map_err(|err| {
@@ -115,7 +115,7 @@ impl StreamFetchHandler {
                                 format!("Failed to instantiate SmartStreamFilter {}", err),
                             ))
                         })?;
-                        SmartStream::Filter(filter)
+                        Box::new(filter)
                     }
                     SmartStreamKind::Map => {
                         debug!("Instantiating SmartStreamMap");
@@ -125,7 +125,7 @@ impl StreamFetchHandler {
                                 format!("Failed to instantiate SmartStreamMap {}", err),
                             ))
                         })?;
-                        SmartStream::Map(map)
+                        Box::new(map)
                     }
                     SmartStreamKind::Aggregate { accumulator } => {
                         let aggregator =
@@ -137,7 +137,7 @@ impl StreamFetchHandler {
                                         format!("Failed to instantiate SmartStreamMap {}", err),
                                     ))
                                 })?;
-                        SmartStream::Aggregate(aggregator)
+                        Box::new(aggregator)
                     }
                 };
 
@@ -202,7 +202,7 @@ impl StreamFetchHandler {
             sink = self.sink.id()
         )
     )]
-    async fn process(mut self, starting_offset: Offset, smartstream: Option<SmartStream>) {
+    async fn process(mut self, starting_offset: Offset, smartstream: Option<Box<dyn SmartStream>>) {
         if let Err(err) = self.inner_process(starting_offset, smartstream).await {
             error!("error: {:#?}", err);
             self.end_event.notify();
@@ -212,7 +212,7 @@ impl StreamFetchHandler {
     async fn inner_process(
         &mut self,
         starting_offset: Offset,
-        mut smartstream: Option<SmartStream>,
+        mut smartstream: Option<Box<dyn SmartStream>>,
     ) -> Result<(), SocketError> {
         let (mut last_partition_offset, consumer_wait) = self
             .send_back_records(starting_offset, smartstream.as_mut())
@@ -340,7 +340,7 @@ impl StreamFetchHandler {
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
-        smartstream: Option<&mut SmartStream>,
+        smartstream: Option<&mut Box<dyn SmartStream>>,
     ) -> Result<(Offset, bool), SocketError> {
         let now = Instant::now();
         let mut file_partition_response = FilePartitionResponse {
@@ -379,24 +379,16 @@ impl StreamFetchHandler {
             return Ok((starting_offset, false));
         }
 
+        let records = &file_partition_response.records;
+        let mut file_batch_iterator = FileBatchIterator::from_raw_slice(records.raw_slice());
+
         // If a smartstream module is provided, we need to read records from file to memory
         // In-memory records are then processed by smartstream and returned to consumer
-        match smartstream {
-            Some(SmartStream::Filter(filter)) => {
-                debug!("Handling SmartStreamFilter logic");
-
-                let (batch, smartstream_error) = {
-                    let records = &file_partition_response.records;
-                    let mut file_batch_iterator =
-                        FileBatchIterator::from_raw_slice(records.raw_slice());
-
-                    // Input: FileBatch, Output: MemoryBatch post-filter
-                    filter
-                        .filter(&mut file_batch_iterator, self.max_bytes as usize)
-                        .map_err(|err| {
-                            IoError::new(ErrorKind::Other, format!("filter err {}", err))
-                        })?
-                };
+        let output = match smartstream {
+            Some(smartstream) => {
+                let (batch, smartstream_error) = smartstream
+                    .process_batch(&mut file_batch_iterator, self.max_bytes as usize)
+                    .map_err(|err| IoError::new(ErrorKind::Other, format!("filter err {}", err)))?;
 
                 self.send_processed_response(
                     file_partition_response,
@@ -404,49 +396,7 @@ impl StreamFetchHandler {
                     batch,
                     smartstream_error,
                 )
-                .await
-            }
-            Some(SmartStream::Map(map)) => {
-                debug!("Handling SmartStreamMap logic");
-
-                let (batch, smartstream_error) = {
-                    let records = &file_partition_response.records;
-                    let mut file_batch_iterator =
-                        FileBatchIterator::from_raw_slice(records.raw_slice());
-
-                    // Input: FileBatch, Output: MemoryBatch post-filter
-                    map.map(&mut file_batch_iterator, self.max_bytes as usize)
-                        .map_err(|err| IoError::new(ErrorKind::Other, format!("map err {}", err)))?
-                };
-
-                self.send_processed_response(
-                    file_partition_response,
-                    next_offset,
-                    batch,
-                    smartstream_error,
-                )
-                .await
-            }
-            Some(SmartStream::Aggregate(aggregator)) => {
-                info!("Creating Smart Aggregator");
-
-                let records = &file_partition_response.records;
-                let slice = records.raw_slice();
-                let mut file_batch_iterator = FileBatchIterator::from_raw_slice(slice);
-
-                let (batch, smartstream_error) = aggregator
-                    .aggregate(&mut file_batch_iterator, self.max_bytes as usize)
-                    .map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("aggregate err: {}", err))
-                    })?;
-
-                self.send_processed_response(
-                    file_partition_response,
-                    next_offset,
-                    batch,
-                    smartstream_error,
-                )
-                .await
+                .await?
             }
             None => {
                 // If no smartstream is provided, respond using raw file records
@@ -474,9 +424,10 @@ impl StreamFetchHandler {
 
                 debug!(read_time_ms = %now.elapsed().as_millis(),"finish sending back records");
 
-                Ok((read_end_offset.isolation(&self.isolation), true))
+                (read_end_offset.isolation(&self.isolation), true)
             }
-        }
+        };
+        Ok(output)
     }
 
     #[instrument(skip(self, file_partition_response, batch, smartstream_error))]
