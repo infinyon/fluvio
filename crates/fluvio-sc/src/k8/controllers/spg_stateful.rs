@@ -205,3 +205,71 @@ impl SpgStatefulSetController {
         Ok(())
     }
 }
+
+
+
+#[cfg(test)]
+mod test {
+
+    use std::iter;
+
+    use k8_metadata_client::MetadataClient;
+    use k8_types::core::namespace::NamespaceSpec;
+    use k8_types::{InputK8Obj, InputObjectMeta};
+    use rand::{Rng, thread_rng};
+    use rand::distributions::Alphanumeric;
+
+    use k8_client::{K8Client, load_and_share};
+
+    use super::*;
+
+    fn create_unique_ns() -> String {
+        let mut rng = thread_rng();
+        let ns: String = iter::repeat(())
+            .map(|()| rng.sample(Alphanumeric))
+            .map(char::from)
+            .take(7)
+            .collect();
+        ns
+    }
+
+    async fn create_ns(k8_client: &K8Client) {
+        
+        let ns = create_unique_ns();
+
+        let input_meta = InputObjectMeta {
+            name: ns,
+            ..Default::default()
+        };
+
+        let input = InputK8Obj::new(NamespaceSpec::default(), input_meta);
+        k8_client.apply(input).await.expect("ns created");
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_statefulset() {
+
+
+        let k8_client = load_and_share().expect("creating k8 client");
+
+
+        create_ns(&k8_client).await.expect("unique");
+
+        // create unique ns
+        /*
+        SpgStatefulSetController::start(
+            namespace,
+            config_ctx.clone(),
+            global_ctx.spgs().clone(),
+            statefulset_ctx,
+            global_ctx.spus().clone(),
+            spg_service_ctx,
+            tls,
+        );
+        */
+
+    }
+
+
+
+}

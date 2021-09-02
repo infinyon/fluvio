@@ -61,5 +61,7 @@ fluvio-service = { path = "../fluvio-service", version = "0.0.0" }
 flv-tls-proxy = { version = "0.5.0" }
 
 [dev-dependencies]
+rand = "0.8.4"
+
 fluvio-future = { version = "0.3.0", features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }
