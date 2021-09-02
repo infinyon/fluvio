@@ -770,8 +770,12 @@ jobs:
       FLV_SOCKET_WAIT: 600
     steps:
       - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
 
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Create K3d cluster
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
