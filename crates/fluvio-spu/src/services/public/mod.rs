@@ -25,36 +25,32 @@ use self::offset_update::handle_offset_update;
 use self::stream_fetch::StreamFetchHandler;
 pub use stream_fetch::publishers::StreamPublishers;
 
-pub(crate) type SpuPublicServer = FluvioApiServer<
-    SpuServerRequest,
-    SpuServerApiKey,
-    DefaultSharedGlobalContext,
-    SpuPublicService,
->;
+pub(crate) type SpuPublicServer =
+    FluvioApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
+
+pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> SpuPublicServer {
+    info!(
+        spu_id = ctx.local_spu_id(),
+        %addr,
+        "Starting SPU public service:",
+    );
+
+    FluvioApiServer::new(addr, ctx, PublicService::new())
+}
 
 #[derive(Debug)]
-pub struct SpuPublicService {
+pub struct PublicService {
     _0: (), // Prevent construction
 }
 
-impl SpuPublicService {
+impl PublicService {
     pub fn new() -> Self {
-        SpuPublicService { _0: () }
-    }
-
-    pub fn server(addr: String, ctx: DefaultSharedGlobalContext) -> SpuPublicServer {
-        info!(
-            spu_id = ctx.local_spu_id(),
-            %addr,
-            "Starting SPU public service:",
-        );
-
-        FluvioApiServer::new(addr, ctx, SpuPublicService::new())
+        PublicService { _0: () }
     }
 }
 
 #[async_trait]
-impl FluvioService for SpuPublicService {
+impl FluvioService for PublicService {
     type Request = SpuServerRequest;
     type Context = DefaultSharedGlobalContext;
 

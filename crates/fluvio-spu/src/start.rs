@@ -3,7 +3,7 @@ use fluvio_storage::FileReplica;
 use crate::config::{SpuConfig, SpuOpt};
 use crate::services::create_internal_server;
 use crate::services::internal::InternalApiServer;
-use crate::services::public::{SpuPublicServer, SpuPublicService};
+use crate::services::public::{SpuPublicServer, create_public_server};
 use crate::core::DefaultSharedGlobalContext;
 use crate::core::GlobalContext;
 use crate::control_plane::ScDispatcher;
@@ -58,7 +58,7 @@ pub fn create_services(
     let private_ep_addr = ctx.config().private_socket_addr().to_owned();
 
     let public_server = if public {
-        Some(SpuPublicService::server(public_ep_addr, ctx.clone()))
+        Some(create_public_server(public_ep_addr, ctx.clone()))
     } else {
         None
     };
