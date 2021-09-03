@@ -41,9 +41,9 @@ function cleanup() {
     echo Clean up test data
     rm -fv ./*.txt.tmp;
     rm -fv ./*.checksum;
-    echo Delete cluster if possible
-    $FLUVIO_BIN cluster delete || true
-    $FLUVIO_BIN cluster delete --sys || true
+ #   echo Delete cluster if possible
+ #   $FLUVIO_BIN cluster delete || true
+ #   $FLUVIO_BIN cluster delete --sys || true
 }
 
 # If we're in CI, we want to slow down execution
@@ -132,7 +132,6 @@ function validate_upgrade_cluster_to_prerelease() {
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 10
     else
         echo "Test local image v${PRERELEASE}"
         TARGET_VERSION=${PRERELEASE::-41}
@@ -141,13 +140,6 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
-
-        helm list
-        kubectl get configmap spu-k8 -o yaml
-        kubectl get pods 
-        kubectl get pod -l app=fluvio-sc -o yaml
-        echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 10
     fi
     popd
 
@@ -159,6 +151,9 @@ function validate_upgrade_cluster_to_prerelease() {
 
     echo "Create test topic: ${PRERELEASE_TOPIC}"
     $FLUVIO_BIN_ABS_PATH topic create ${PRERELEASE_TOPIC}
+
+    #kubectl get pods
+    #kubectl get spu
 
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${PRERELEASE_TOPIC}
 
