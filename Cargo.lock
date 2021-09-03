@@ -1396,6 +1396,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-sc-schema",
+ "fluvio-socket",
  "fluvio-types",
  "hex",
  "home",
