@@ -977,6 +977,8 @@ impl ClusterInstaller {
     async fn wait_for_spu(&self, ns: &str,admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
         //  use k8_types::k8::objects::statefulset::StatefulsetSpec;
 
+        println!("checking spu for");
+        let expected_spu = self.config.spu_replicas as usize;
         debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
@@ -985,40 +987,12 @@ impl ClusterInstaller {
 
             println!("spu: {:#?}",spu);
 
-            let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
-            let spu_count = items.items.len();
-
-            // We want to know what kind of load balancing we're using, for liveness checks
-            let service = self
-                .kube_client
-                .retrieve_items::<ServiceSpec, _>(ns)
-                .await?;
-
-            let sc_public_svc = service
-                .items
-                .into_iter()
-                .find(|sc_lb| sc_lb.metadata.name == "fluvio-sc-public");
-
-            let lb_type = if let Some(k8svc) = sc_public_svc {
-                k8svc.spec.r#type
-            } else {
-                Some(LoadBalancerType::LoadBalancer)
-            };
-
+            
             // Check that all items have ingress
-            let ready_spu = items
-                .items
-                .iter()
+            let ready_spu = spu
+                .into_iter()
                 .filter(|spu_obj| {
-                    match lb_type {
-                        Some(LoadBalancerType::NodePort) => spu_obj.status.is_online(),
-                        _ => {
-                            // if cluster ip is used then we skip checking ingress
-                            (self.config.use_cluster_ip
-                                || !spu_obj.spec.public_endpoint.ingress.is_empty())
-                                && spu_obj.status.is_online()
-                        }
-                    }
+                    spu_obj.status.is_online()
                 })
                 .count();
 
@@ -1034,7 +1008,7 @@ impl ClusterInstaller {
                 return Ok(true);
             } else {
                 debug!(
-                    total_expected_spu = spu_count,
+                    expected_spu,
                     ready_spu,
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
