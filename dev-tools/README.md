@@ -18,5 +18,24 @@ $ flvd custom-spu register --id 5003 -p 0.0.0.0:9040 -v  0.0.0.0:9041
 $ flvd run spu -i 5003 -p 0.0.0.0:9040 -v 0.0.0.0:9041
 ```
 
-# Debugging GITHUB Actions
+# Showing TCP states in Linux
+
+This shows tcp states.
+```
+$ netstat -nat | awk '{print $6}' | sort | uniq -c | sort -r
+   2244 TIME_WAIT
+     90 ESTABLISHED
+     18 LISTEN
+      1 established)
+      1 Foreign
+      1 FIN_WAIT2
+      1 FIN_WAIT1
+```
+
+Note the high count of [`TIME_WAIT` ](https://serverfault.com/questions/23385/huge-amount-of-time-wait-connections-says-netstat)
+
+```
+IME_WAIT is normal. It's a state after a socket has closed, used by the kernel to keep track of packets which may have got lost and turned up late to the party. A high number of TIME_WAIT connections is a symptom of getting lots of short lived connections, not nothing to worry about.
+
+```
 
