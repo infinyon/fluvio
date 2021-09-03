@@ -8,6 +8,7 @@ use std::time::Duration;
 use std::env;
 
 use derive_builder::Builder;
+use fluvio::FluvioAdmin;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use tracing::{info, warn, debug, instrument};
@@ -972,46 +973,21 @@ impl ClusterInstaller {
     }
 
     /// Wait until all SPUs are ready and have ingress
-    #[instrument(skip(self, ns))]
-    async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
+    #[instrument(skip(self, admin))]
+    async fn wait_for_spu(&self, admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
+        let expected_spu = self.config.spu_replicas as usize;
         debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
-            let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
-            let spu_count = items.items.len();
 
-            // We want to know what kind of load balancing we're using, for liveness checks
-            let service = self
-                .kube_client
-                .retrieve_items::<ServiceSpec, _>(ns)
-                .await?;
+            let spu = admin.list::<SpuSpec, _>(vec![]).await?;
 
-            let sc_public_svc = service
-                .items
-                .into_iter()
-                .find(|sc_lb| sc_lb.metadata.name == "fluvio-sc-public");
-
-            let lb_type = if let Some(k8svc) = sc_public_svc {
-                k8svc.spec.r#type
-            } else {
-                Some(LoadBalancerType::LoadBalancer)
-            };
+            debug!(?spu);
 
             // Check that all items have ingress
-            let ready_spu = items
-                .items
-                .iter()
-                .filter(|spu_obj| {
-                    match lb_type {
-                        Some(LoadBalancerType::NodePort) => spu_obj.status.is_online(),
-                        _ => {
-                            // if cluster ip is used then we skip checking ingress
-                            (self.config.use_cluster_ip
-                                || !spu_obj.spec.public_endpoint.ingress.is_empty())
-                                && spu_obj.status.is_online()
-                        }
-                    }
-                })
+            let ready_spu = spu
+                .into_iter()
+                .filter(|spu_obj| spu_obj.status.is_online())
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
@@ -1019,7 +995,7 @@ impl ClusterInstaller {
                 return Ok(true);
             } else {
                 debug!(
-                    total_expected_spu = spu_count,
+                    expected_spu,
                     ready_spu,
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
@@ -1145,26 +1121,25 @@ impl ClusterInstaller {
         println!("checking if spu groups exists");
         let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
 
-        if !lists.is_empty() {
+        if lists.is_empty() {
+            println!("Trying to create managed {} spus", self.config.spu_replicas);
+
+            let spu_spec = SpuGroupSpec {
+                replicas: self.config.spu_replicas,
+                min_id: 0,
+                ..SpuGroupSpec::default()
+            };
+
+            admin.create(name, false, spu_spec).await?;
+
+            println!("Created {} spus", self.config.spu_replicas);
+        } else {
             println!("spu group: {} exists, skipping", lists[0].name);
-            return Ok(());
         }
-
-        println!("Trying to create managed {} spus", self.config.spu_replicas);
-
-        let spu_spec = SpuGroupSpec {
-            replicas: self.config.spu_replicas,
-            min_id: 0,
-            ..SpuGroupSpec::default()
-        };
-
-        admin.create(name, false, spu_spec).await?;
-
-        println!("Created {} spus", self.config.spu_replicas);
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
-            self.wait_for_spu(&self.config.namespace).await?;
+            self.wait_for_spu(&admin).await?;
         }
 
         Ok(())
