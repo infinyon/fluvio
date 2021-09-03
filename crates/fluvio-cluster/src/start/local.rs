@@ -25,6 +25,7 @@ use crate::{
 };
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
+use crate::check::render::RenderedText;
 
 use super::constants::*;
 use super::common::check_crd;
@@ -349,10 +350,57 @@ impl LocalConfigBuilder {
 
 #[derive(Debug)]
 pub enum LocalSetupProgressMessage {
-    PreFlighCheck(u64),
+    PreFlightCheck(u64),
     Check(CheckResult),
 }
 
+#[derive(Debug)]
+pub enum LocalInstallProgressMessage {
+    PreFlightCheck(u64),
+    Check(CheckResult),
+    ClientLoaded,
+    CrdChecked,
+    ClusterError(ClusterError),
+    LaunchSc,
+    LaunchSpuGroup(u16),
+    ConfirmSpu,
+    ProfileSet,
+    StartStatus(StartStatus),
+}
+
+impl RenderedText for LocalInstallProgressMessage {
+    fn text(&self) -> String {
+        match self {
+            LocalInstallProgressMessage::PreFlightCheck(_n) => "Starting pre-flight cheks".into(),
+            LocalInstallProgressMessage::Check(check) => check.text(),
+            LocalInstallProgressMessage::ClientLoaded => "✅ Client Loaded".into(),
+            LocalInstallProgressMessage::CrdChecked => "✅ CRD is Ok".into(),
+            LocalInstallProgressMessage::ClusterError(err) => err.to_string(),
+            LocalInstallProgressMessage::LaunchSc => "Launching SC".into(),
+            LocalInstallProgressMessage::LaunchSpuGroup(spu_num) => {
+                format!("Launching spu group ({})", spu_num)
+            }
+            LocalInstallProgressMessage::ConfirmSpu => "SPU confirmed".into(),
+            LocalInstallProgressMessage::ProfileSet => "✅ Profile set".into(),
+            LocalInstallProgressMessage::StartStatus(status) => {
+                format!("Start status {:?}", status)
+            }
+        }
+    }
+}
+
+impl From<LocalSetupProgressMessage> for LocalInstallProgressMessage {
+    fn from(progress: LocalSetupProgressMessage) -> Self {
+        match progress {
+            LocalSetupProgressMessage::PreFlightCheck(n) => {
+                LocalInstallProgressMessage::PreFlightCheck(n)
+            }
+            LocalSetupProgressMessage::Check(check_result) => {
+                LocalInstallProgressMessage::Check(check_result)
+            }
+        }
+    }
+}
 /// Install fluvio cluster locally
 #[derive(Debug, Clone)]
 pub struct LocalInstaller {
@@ -419,7 +467,7 @@ impl LocalInstaller {
 
         let checks_number = cluster_checker.checks_number() as u64;
         sender
-            .send(LocalSetupProgressMessage::PreFlighCheck(checks_number))
+            .send(LocalSetupProgressMessage::PreFlightCheck(checks_number))
             .await
             .map_err(LocalInstallError::ChannelSendError)?;
 
@@ -499,6 +547,104 @@ impl LocalInstaller {
             checks,
         })
     }
+    /// Install fluvio locally
+    #[instrument(skip(self))]
+    pub async fn install_with_progress(&self) -> Receiver<LocalInstallProgressMessage> {
+        let (sender, receiver) = futures_channel::mpsc::channel(100);
+        fluvio_future::task::spawn(self.clone().install_with_progress_impl(sender));
+        receiver
+    }
+
+    /// Install fluvio locally
+    #[instrument(skip(self))]
+    pub async fn install_with_progress_impl(
+        self,
+        mut sender: Sender<LocalInstallProgressMessage>,
+    ) -> Result<(), ClusterError> {
+        if !self.config.skip_checks {
+            // Try to setup environment by running pre-checks and auto-fixes
+            let mut checks_receiver = self
+                .setup_with_progress()
+                .await
+                .map(|setup_step| Ok(LocalInstallProgressMessage::from(setup_step)));
+            sender
+                .send_all(&mut checks_receiver)
+                .await
+                .map_err(LocalInstallError::ChannelSendError)?;
+        };
+
+        use k8_client::load_and_share;
+        let client = load_and_share().map_err(K8InstallError::from)?;
+
+        sender
+            .send(LocalInstallProgressMessage::ClientLoaded)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        // before we do let's try make sure SPU are installed.
+        check_crd(client.clone())
+            .await
+            .map_err(K8InstallError::from)?;
+
+        sender
+            .send(LocalInstallProgressMessage::CrdChecked)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        debug!("using log dir: {}", self.config.log_dir.display());
+        if !self.config.log_dir.exists() {
+            create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
+        }
+        // ensure we sync files before we launch servers
+        Command::new("sync")
+            .inherit()
+            .result()
+            .map_err(|e| ClusterError::InstallLocal(e.into()))?;
+
+        sender
+            .send(LocalInstallProgressMessage::LaunchSc)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        // set host name and port for SC
+        // this should mirror K8
+        let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
+
+        let fluvio = self.launch_sc(&address, port).await?;
+
+        sender
+            .send(LocalInstallProgressMessage::LaunchSpuGroup(
+                self.config.spu_replicas,
+            ))
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        self.launch_spu_group(client.clone()).await?;
+
+        self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
+        sender
+            .send(LocalInstallProgressMessage::ConfirmSpu)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        self.set_profile()?;
+
+        sender
+            .send(LocalInstallProgressMessage::ProfileSet)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        sender
+            .send(LocalInstallProgressMessage::StartStatus(StartStatus {
+                address,
+                port,
+                checks: None,
+            }))
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        Ok(())
+    }
 
     /// Launches an SC on the local machine
     ///
@@ -509,7 +655,6 @@ impl LocalInstaller {
 
         let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
-        println!("Starting sc server");
         let mut binary = {
             let base = self
                 .config
@@ -624,7 +769,7 @@ impl LocalInstaller {
     async fn launch_spu_group(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         let count = self.config.spu_replicas;
         for i in 0..count {
-            println!("Starting SPU ({} of {})", i + 1, count);
+            debug!("Starting SPU ({} of {})", i + 1, count);
             self.launch_spu(i, client.clone(), &self.config.log_dir)
                 .await?;
         }
