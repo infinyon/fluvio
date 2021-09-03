@@ -131,6 +131,10 @@ pub struct StartOpt {
     /// Service Type
     #[structopt(long)]
     pub service_type: Option<String>,
+
+    /// Whether to render check results in the stdout
+    #[structopt(long)]
+    pub render_checks: bool,
 }
 
 impl StartOpt {

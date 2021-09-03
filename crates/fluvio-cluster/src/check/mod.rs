@@ -813,6 +813,11 @@ impl ClusterChecker {
         });
         receiver
     }
+
+    /// Return the numbers of checks
+    pub fn checks_number(&self) -> usize {
+        self.checks.len()
+    }
 }
 
 fn create_dummy_service() -> Result<(), CheckError> {

@@ -22,6 +22,7 @@ cli = [
 
 [dependencies]
 colored = "2.0.0"
+indicatif = "0.16.2"
 semver = "1.0.3"
 url = "2.1.1"
 tracing = "0.1.19"

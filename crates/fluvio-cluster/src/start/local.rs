@@ -20,7 +20,8 @@ use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::{
-    ClusterChecker, ClusterError, K8InstallError, LocalInstallError, StartStatus, UserChartLocation,
+    CheckResult, CheckStatus, ClusterChecker, ClusterError, K8InstallError, LocalInstallError,
+    StartStatus, UserChartLocation,
 };
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
@@ -345,6 +346,12 @@ impl LocalConfigBuilder {
     }
 }
 
+#[derive(Debug)]
+pub enum LocalSetupProgressMessage {
+    PreFlighCheck(u64),
+    Check(CheckResult),
+}
+
 /// Install fluvio cluster locally
 #[derive(Debug)]
 pub struct LocalInstaller {
@@ -396,6 +403,64 @@ impl LocalInstaller {
                 .run_wait_and_fix()
                 .await
         }
+    }
+
+    /// Checks if all of the prerequisites for installing Fluvio locally are met
+    /// and tries to auto-fix the issues observed
+    pub async fn setup_with_progress(&self) -> async_channel::Receiver<LocalSetupProgressMessage> {
+        let (sender, receiver) = async_channel::bounded(100);
+
+        let chart_version = self.config.chart_version.clone();
+        let chart_location = self.config.chart_location.clone();
+        fluvio_future::task::spawn(async move {
+            let mut sys_config: ChartConfig = ChartConfig::sys_builder()
+                .version(chart_version)
+                .build()
+                .expect("should build config since all required arguments are given");
+
+            if let Some(location) = chart_location {
+                sys_config.location = location.into();
+            }
+
+            let cluster_checker = ClusterChecker::empty()
+                .with_local_checks()
+                .with_check(SysChartCheck::new(sys_config));
+
+            let checks_number = cluster_checker.checks_number() as u64;
+
+            if let Err(e) = sender
+                .send(LocalSetupProgressMessage::PreFlighCheck(checks_number))
+                .await
+            {
+                warn!("Failed to send progress update: {:?}", e);
+            }
+
+            let progress = cluster_checker.run_and_fix_with_progress();
+
+            while let Ok(check_result) = progress.recv().await {
+                match check_result {
+                    Ok(CheckStatus::Fail(_)) | Err(_) => {
+                        warn!("Check failed");
+                        if let Err(e) = sender
+                            .send(LocalSetupProgressMessage::Check(check_result))
+                            .await
+                        {
+                            warn!("Failed to send progress update: {:?}", e);
+                        }
+                        break;
+                    }
+                    _ => {
+                        if let Err(e) = sender
+                            .send(LocalSetupProgressMessage::Check(check_result))
+                            .await
+                        {
+                            warn!("Failed to send progress update: {:?}", e);
+                        }
+                    }
+                };
+            }
+        });
+        receiver
     }
 
     /// Install fluvio locally
