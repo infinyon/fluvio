@@ -131,8 +131,8 @@ impl ManagedConnectorDeploymentController {
     const DEFAULT_CONNECTOR_NAME: &'static str = "fluvio-connector";
     pub fn generate_k8_deployment_spec(
         mc_spec: &ManagedConnectorSpec,
-        namespace: &str,
-        name: &str,
+        _namespace: &str,
+        _name: &str,
     ) -> K8DeploymentSpec {
         use k8_types::{
             TemplateSpec, TemplateMeta,
