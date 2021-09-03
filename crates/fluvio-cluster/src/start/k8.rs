@@ -973,11 +973,8 @@ impl ClusterInstaller {
     }
 
     /// Wait until all SPUs are ready and have ingress
-    #[instrument(skip(self, ns, admin))]
-    async fn wait_for_spu(&self, ns: &str, admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
-        //  use k8_types::k8::objects::statefulset::StatefulsetSpec;
-
-        println!("checking spu for");
+    #[instrument(skip(self, admin))]
+    async fn wait_for_spu(&self, admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
         let expected_spu = self.config.spu_replicas as usize;
         debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
@@ -992,12 +989,6 @@ impl ClusterInstaller {
                 .into_iter()
                 .filter(|spu_obj| spu_obj.status.is_online())
                 .count();
-
-            // check statefulset
-            // let service = self
-            //     .kube_client
-            //     .retrieve_items::<StatefulsetSpec, _>(ns)
-            //     .await?;
 
             if self.config.spu_replicas as usize == ready_spu {
                 println!("All SPUs({}) are ready", ready_spu);
@@ -1148,7 +1139,7 @@ impl ClusterInstaller {
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
-            self.wait_for_spu(&self.config.namespace, &admin).await?;
+            self.wait_for_spu(&admin).await?;
         }
 
         Ok(())
