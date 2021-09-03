@@ -152,8 +152,8 @@ function validate_upgrade_cluster_to_prerelease() {
     echo "Create test topic: ${PRERELEASE_TOPIC}"
     $FLUVIO_BIN_ABS_PATH topic create ${PRERELEASE_TOPIC}
 
-    kubectl get pods
-    kubectl get spu
+    #kubectl get pods
+    #kubectl get spu
 
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${PRERELEASE_TOPIC}
 
