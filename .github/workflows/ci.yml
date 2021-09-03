@@ -473,7 +473,7 @@ jobs:
 
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-      - name: Install K3d and import image
+      - name: Install K3d
         if: ${{ matrix.k8 == 'k3d' }}
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
@@ -554,7 +554,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup K3d
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          ./k8-util/cluster/reset-k3d.sh
       # Download artifacts
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
@@ -580,23 +582,14 @@ jobs:
 
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
-      - name: Set up K3d
-        if: ${{ false }} # enable on 0.9.5
-        run: |
-          ./k8-util/cluster/reset-k3d.sh
-          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-          date
+
       - name: Run upgrade test with CI artifacts
+        timeout-minutes: 3
         env:
           TEST_DATA_BYTES: 10000
           FLV_DISPATCHER_WAIT: 300
-        uses: nick-invision/retry@v2
-        # temporary for 0.9.5 max_attempts
-        with:
-          timeout_minutes:  3
-          max_attempts: 3
-          command:  |
-            ./k8-util/cluster/reset-k3d.sh
+        run: |
+          date
             k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
             export PATH=~/.fluvio/bin:$PATH
             make FLUVIO_BIN=./fluvio upgrade-test

@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -115,17 +115,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup K3d
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          ./k8-util/cluster/reset-k3d.sh 
       - name: Run upgrade test
+        timeout-minutes: 3
         env:
           TEST_DATA_BYTES: 10000
           FLV_DISPATCHER_WAIT: 300 
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          command: |
-            ./k8-util/cluster/reset-k3d.sh 
+        run: |
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
       - name: Save logs
@@ -199,11 +197,10 @@ jobs:
         cli_version: [stable, latest]
     steps:
       - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
+      - name: Setup K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          ./k8-util/cluster/reset-k3d.sh
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          command: |
-            make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+        timeout-minutes: 5
+        run: make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
