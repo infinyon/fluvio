@@ -140,13 +140,6 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
-
-        #helm list
-        #kubectl get configmap spu-k8 -o yaml
-        kubectl get pods
-        kubectl get spu
-        #kubectl get pod -l app=fluvio-sc -o yaml
-        echo "Wait for SPU to be upgraded. sleeping 1 minute"
     fi
     popd
 
@@ -158,6 +151,9 @@ function validate_upgrade_cluster_to_prerelease() {
 
     echo "Create test topic: ${PRERELEASE_TOPIC}"
     $FLUVIO_BIN_ABS_PATH topic create ${PRERELEASE_TOPIC}
+
+    kubectl get pods
+    kubectl get spu
 
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${PRERELEASE_TOPIC}
 
