@@ -8,6 +8,7 @@ use std::time::Duration;
 use std::env;
 
 use derive_builder::Builder;
+use fluvio::FluvioAdmin;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use tracing::{info, warn, debug, instrument};
@@ -972,13 +973,18 @@ impl ClusterInstaller {
     }
 
     /// Wait until all SPUs are ready and have ingress
-    #[instrument(skip(self, ns))]
-    async fn wait_for_spu(&self, ns: &str) -> Result<bool, K8InstallError> {
+    #[instrument(skip(self, ns,admin))]
+    async fn wait_for_spu(&self, ns: &str,admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
         //  use k8_types::k8::objects::statefulset::StatefulsetSpec;
 
         debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
+
+            let spu = admin.list::<SpuSpec, _>(vec![]).await?;
+
+            println!("spu: {:#?}",spu);
+
             let items = self.kube_client.retrieve_items::<SpuSpec, _>(ns).await?;
             let spu_count = items.items.len();
 
@@ -1021,6 +1027,7 @@ impl ClusterInstaller {
             //     .kube_client
             //     .retrieve_items::<StatefulsetSpec, _>(ns)
             //     .await?;
+            
 
             if self.config.spu_replicas as usize == ready_spu {
                 println!("All SPUs({}) are ready", ready_spu);
@@ -1172,7 +1179,7 @@ impl ClusterInstaller {
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
-            self.wait_for_spu(&self.config.namespace).await?;
+            self.wait_for_spu(&self.config.namespace,&admin).await?;
         }
 
         Ok(())
