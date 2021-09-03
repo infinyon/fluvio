@@ -982,7 +982,7 @@ impl ClusterInstaller {
 
             let spu = admin.list::<SpuSpec, _>(vec![]).await?;
 
-            println!("spu: {:#?}", spu);
+            debug!(?spu);
 
             // Check that all items have ingress
             let ready_spu = spu
