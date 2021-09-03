@@ -589,10 +589,10 @@ jobs:
           TEST_DATA_BYTES: 10000
           FLV_DISPATCHER_WAIT: 300
         run: |
-            date
-            k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
-            export PATH=~/.fluvio/bin:$PATH
-            make FLUVIO_BIN=./fluvio upgrade-test
+          date
+          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+          export PATH=~/.fluvio/bin:$PATH
+          make FLUVIO_BIN=./fluvio upgrade-test
 
       - name: Save logs
         if: failure()

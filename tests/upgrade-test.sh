@@ -142,12 +142,12 @@ function validate_upgrade_cluster_to_prerelease() {
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
 
-        helm list
-        kubectl get configmap spu-k8 -o yaml
-        kubectl get pods 
-        kubectl get pod -l app=fluvio-sc -o yaml
+        #helm list
+        #kubectl get configmap spu-k8 -o yaml
+        #kubectl get pods 
+        #kubectl get pod -l app=fluvio-sc -o yaml
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 10
+        sleep 30
     fi
     popd
 
