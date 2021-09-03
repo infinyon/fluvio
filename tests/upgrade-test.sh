@@ -147,7 +147,7 @@ function validate_upgrade_cluster_to_prerelease() {
         #kubectl get pods 
         #kubectl get pod -l app=fluvio-sc -o yaml
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
-        sleep 10
+        sleep 5
     fi
     popd
 
