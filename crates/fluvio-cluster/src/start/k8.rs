@@ -973,8 +973,8 @@ impl ClusterInstaller {
     }
 
     /// Wait until all SPUs are ready and have ingress
-    #[instrument(skip(self, ns,admin))]
-    async fn wait_for_spu(&self, ns: &str,admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
+    #[instrument(skip(self, ns, admin))]
+    async fn wait_for_spu(&self, ns: &str, admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
         //  use k8_types::k8::objects::statefulset::StatefulsetSpec;
 
         println!("checking spu for");
@@ -985,15 +985,12 @@ impl ClusterInstaller {
 
             let spu = admin.list::<SpuSpec, _>(vec![]).await?;
 
-            println!("spu: {:#?}",spu);
+            println!("spu: {:#?}", spu);
 
-            
             // Check that all items have ingress
             let ready_spu = spu
                 .into_iter()
-                .filter(|spu_obj| {
-                    spu_obj.status.is_online()
-                })
+                .filter(|spu_obj| spu_obj.status.is_online())
                 .count();
 
             // check statefulset
@@ -1001,7 +998,6 @@ impl ClusterInstaller {
             //     .kube_client
             //     .retrieve_items::<StatefulsetSpec, _>(ns)
             //     .await?;
-            
 
             if self.config.spu_replicas as usize == ready_spu {
                 println!("All SPUs({}) are ready", ready_spu);
@@ -1134,26 +1130,25 @@ impl ClusterInstaller {
         println!("checking if spu groups exists");
         let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
 
-        if !lists.is_empty() {
+        if lists.is_empty() {
+            println!("Trying to create managed {} spus", self.config.spu_replicas);
+
+            let spu_spec = SpuGroupSpec {
+                replicas: self.config.spu_replicas,
+                min_id: 0,
+                ..SpuGroupSpec::default()
+            };
+
+            admin.create(name, false, spu_spec).await?;
+
+            println!("Created {} spus", self.config.spu_replicas);
+        } else {
             println!("spu group: {} exists, skipping", lists[0].name);
-            return Ok(());
         }
-
-        println!("Trying to create managed {} spus", self.config.spu_replicas);
-
-        let spu_spec = SpuGroupSpec {
-            replicas: self.config.spu_replicas,
-            min_id: 0,
-            ..SpuGroupSpec::default()
-        };
-
-        admin.create(name, false, spu_spec).await?;
-
-        println!("Created {} spus", self.config.spu_replicas);
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
-            self.wait_for_spu(&self.config.namespace,&admin).await?;
+            self.wait_for_spu(&self.config.namespace, &admin).await?;
         }
 
         Ok(())
