@@ -197,10 +197,8 @@ jobs:
         cli_version: [stable, latest]
     steps:
       - uses: actions/checkout@v2
-      - name: Setup K3d
-        run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-          ./k8-util/cluster/reset-k3d.sh
+      - uses: nolar/setup-k3d-k3s@v1
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
-        timeout-minutes: 10
-        run: make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+        timeout-minutes: 5
+        run: |
+          make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
