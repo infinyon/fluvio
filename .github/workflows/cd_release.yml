@@ -103,6 +103,7 @@ jobs:
         os: [ubuntu-latest]
     env:
       FLV_SOCKET_WAIT: 600
+      FLV_DISPATCHER_WAIT: 300
     steps:
       - uses: actions/checkout@v2
       - name: Setup K3d
@@ -110,7 +111,6 @@ jobs:
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
-
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
