@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -199,9 +199,6 @@ jobs:
       - uses: actions/checkout@v2
       - uses: nolar/setup-k3d-k3s@v1
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
-        uses: nick-invision/retry@v2
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          command: |
-            make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+        timeout-minutes: 15
+        run:
+          make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
