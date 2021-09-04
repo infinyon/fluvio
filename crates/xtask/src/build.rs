@@ -1,17 +1,19 @@
+use std::path::PathBuf;
 use structopt::StructOpt;
 use color_eyre::Result;
 use duct::cmd;
 
-use crate::CARGO;
+use crate::{CARGO, target_directory};
 use crate::install_target;
 
 #[derive(StructOpt, Debug, Default)]
 pub struct BuildOpt {
     #[structopt(long)]
-    release: bool,
+    pub release: bool,
     #[structopt(long)]
-    verbose: bool,
-    target: Option<String>,
+    pub verbose: bool,
+    #[structopt(long)]
+    pub target: Option<String>,
 }
 
 impl BuildOpt {
@@ -24,25 +26,52 @@ impl BuildOpt {
         Ok(())
     }
 
-    pub fn build_cli(&self) -> Result<()> {
-        install_target(None)?;
-        println!("Building fluvio");
-        cmd!(CARGO, "build", "--bin", "fluvio").run()?;
-        Ok(())
+    pub fn build_cli(&self) -> Result<PathBuf> {
+        install_target(self.target.as_deref())?;
+        let path = self.build_bin("fluvio")?;
+        Ok(path)
     }
 
-    pub fn build_cluster(&self) -> Result<()> {
-        install_target(None)?;
-        println!("Building fluvio-run");
-        cmd!(CARGO, "build", "--bin", "fluvio-run").run()?;
-        Ok(())
+    pub fn build_cluster(&self) -> Result<PathBuf> {
+        install_target(self.target.as_deref())?;
+        let path = self.build_bin("fluvio-run")?;
+        Ok(path)
     }
 
-    pub fn build_test(&self) -> Result<()> {
-        install_target(None)?;
-        println!("Building fluvio-test");
-        cmd!(CARGO, "build", "--bin", "fluvio-test").run()?;
-        Ok(())
+    pub fn build_test(&self) -> Result<PathBuf> {
+        install_target(self.target.as_deref())?;
+        let path = self.build_bin("fluvio-test")?;
+        Ok(path)
+    }
+
+    /// Builds the named binary, returning the path of the produced executable
+    pub fn build_bin(&self, bin: &str) -> Result<PathBuf> {
+        println!("Building {}", bin);
+
+        let args = vec![
+            Some("build".to_string()),
+            Some("--bin".to_string()),
+            Some(bin.to_string()),
+            self.verbose.then(|| "--verbose".to_string()),
+            self.release.then(|| "--release".to_string()),
+            self.target.as_deref().map(|t| format!("--target={}", t)),
+        ]
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
+
+        duct::cmd(CARGO, args).run()?;
+
+        // Assemble the absolute path of the binary we just built
+        let mut path = target_directory()?;
+        if let Some(target) = self.target.as_ref() {
+            path.push(target);
+        }
+        let profile = if self.release { "release" } else { "debug" };
+        path.push(profile);
+        path.push(bin);
+
+        Ok(path)
     }
 
     pub fn build_smartstreams(&self) -> Result<()> {

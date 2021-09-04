@@ -5097,7 +5097,9 @@ dependencies = [
  "color-eyre",
  "duct",
  "once_cell",
+ "serde_json",
  "structopt",
+ "tempdir",
  "which 4.2.2",
 ]
 
