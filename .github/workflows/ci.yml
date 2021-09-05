@@ -61,7 +61,9 @@ jobs:
         binary: [fluvio, fluvio-run, fluvio-test]
         os: [ubuntu-latest]
     env:
-      RUST_BACKTRACE: full
+      RUST_BACKTRACE: short
+      CARGO_INCREMENTAL: 0
+      CARGO_NET_RETRY: 10
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
