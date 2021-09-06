@@ -79,7 +79,7 @@ smoke-test: test-setup
 			${TEST_ARG_EXTRA} \
 			-- \
 			${TEST_ARG_PRODUCER_ITERATION} \
-			${TEST_ARG_SMOKE_EXTRA}
+			${SMOKE_EXTRA}
 			
 
 smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
