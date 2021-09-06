@@ -18,6 +18,7 @@ DEFAULT_ITERATION=1000
 SPU_DELAY=5
 SC_AUTH_CONFIG=./crates/fluvio-sc/test-data/auth_config
 EXTRA_ARG=
+SMOKE_EXTRA=
 
 # Test env
 TEST_ENV_AUTH_POLICY=
@@ -30,7 +31,6 @@ TEST_ARG_REPLICATION=-r ${REPL}
 TEST_ARG_DEVELOP=$(if $(IMAGE_VERSION),--image-version ${IMAGE_VERSION}, --develop)
 TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
-TEST_ARG_CONSUMER_WAIT=
 TEST_ARG_PRODUCER_ITERATION=--producer-iteration=${DEFAULT_ITERATION}
 
 export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
@@ -78,8 +78,9 @@ smoke-test: test-setup
 			${TEST_ARG_DEVELOP} \
 			${TEST_ARG_EXTRA} \
 			-- \
-			${TEST_ARG_CONSUMER_WAIT} \
-			${TEST_ARG_PRODUCER_ITERATION}
+			${TEST_ARG_PRODUCER_ITERATION} \
+			${TEST_ARG_SMOKE_EXTRA}
+			
 
 smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
 smoke-test-local: smoke-test
