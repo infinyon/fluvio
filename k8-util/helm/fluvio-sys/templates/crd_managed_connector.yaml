@@ -45,3 +45,5 @@ spec:
                       maximum: 100
                     args:
                       type: array
+                      items:
+                        type: object
