@@ -555,8 +555,6 @@ mod listener {
 #[cfg(test)]
 mod test {
 
-    use fluvio_future::test_async;
-
     use crate::store::actions::LSUpdate;
     use crate::test_fixture::{TestSpec, TestStatus, DefaultTest, TestMeta};
 
@@ -564,8 +562,8 @@ mod test {
 
     type DefaultTestStore = LocalStore<TestSpec, TestMeta>;
 
-    #[test_async]
-    async fn test_store_sync_all() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_store_sync_all() {
         let tests = vec![DefaultTest::with_spec("t1", TestSpec::default())];
         let test_store = DefaultTestStore::default();
         assert_eq!(test_store.epoch().await, 0);
@@ -601,12 +599,10 @@ mod test {
         assert_eq!(sync3.delete, 0);
         assert_eq!(sync3.update_spec, 0);
         assert_eq!(sync3.update_status, 0);
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_store_update() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_store_update() {
         let initial_topic = DefaultTest::with_spec("t1", TestSpec::default()).with_context(2);
 
         let topic_store = DefaultTestStore::default();
@@ -655,8 +651,6 @@ mod test {
         assert_eq!(sync_all.delete, 0);
         assert_eq!(sync_all.update_spec, 0);
         assert_eq!(sync_all.update_status, 0);
-
-        Ok(())
     }
 }
 
@@ -670,7 +664,6 @@ mod test_notify {
 
     use tracing::debug;
 
-    use fluvio_future::test_async;
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
@@ -739,8 +732,8 @@ mod test_notify {
         }
     }
 
-    #[test_async]
-    async fn test_store_notifications() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_store_notifications() {
         let topic_store = Arc::new(DefaultTestStore::default());
         let last_change = Arc::new(AtomicI64::new(0));
         let shutdown = SimpleEvent::shared();
@@ -764,7 +757,5 @@ mod test_notify {
         sleep(Duration::from_millis(1)).await;
 
         //  assert_eq!(last_change.load(SeqCst), 4);
-
-        Ok(())
     }
 }

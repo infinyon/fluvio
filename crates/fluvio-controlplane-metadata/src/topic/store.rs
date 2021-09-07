@@ -97,7 +97,6 @@ where
 #[cfg(test)]
 mod test {
 
-    use fluvio_future::test_async;
     use crate::topic::store::DefaultTopicMd;
     use crate::topic::TopicStatus;
     use crate::topic::TopicResolution;
@@ -151,8 +150,8 @@ mod test {
         assert_eq!(topic1, topic2);
     }
 
-    #[test_async]
-    async fn test_topics_in_pending_state() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_topics_in_pending_state() {
         use std::collections::HashSet;
 
         // resolution: Init
@@ -208,6 +207,5 @@ mod test {
         }
 
         assert_eq!(pending_state_names, expected);
-        Ok(())
     }
 }

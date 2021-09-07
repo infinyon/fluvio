@@ -213,7 +213,7 @@ check-clippy: install-clippy install_rustup_target
 build_smartstreams:
 	make -C crates/fluvio-smartstream/examples build
 
-run-all-unit-test: build_smartstreams install_rustup_target 
+run-all-unit-test: install_rustup_target 
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C crates/fluvio-protocol

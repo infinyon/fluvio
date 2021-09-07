@@ -102,7 +102,6 @@ mod tests {
 
     use fluvio_future::fs::BoundedFileSink;
     use fluvio_future::fs::BoundedFileOption;
-    use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
     use dataplane::record::Record;
     use dataplane::batch::Batch;
@@ -112,7 +111,6 @@ mod tests {
     use crate::config::ConfigOption;
 
     use super::validate;
-    use crate::StorageError;
 
     const PRODUCER: i64 = 33;
 
@@ -133,8 +131,8 @@ mod tests {
     const TEST_FILE_NAME: &str = "00000000000000000301.log"; // for offset 301
     const BASE_OFFSET: Offset = 301;
 
-    #[test_async]
-    async fn test_validate_empty() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_validate_empty() {
         let test_file = temp_dir().join(TEST_FILE_NAME);
         ensure_clean_file(&test_file);
 
@@ -144,19 +142,19 @@ mod tests {
             ..Default::default()
         };
 
-        let _ = MutFileRecords::open(BASE_OFFSET, &options).await?;
-        let next_offset = validate(&test_file).await?;
+        let _ = MutFileRecords::open(BASE_OFFSET, &options)
+            .await
+            .expect("open");
+        let next_offset = validate(&test_file).await.expect("validate");
         assert_eq!(next_offset, BASE_OFFSET);
-
-        Ok(())
     }
 
     const TEST_FILE_SUCCESS_NAME: &str = "00000000000000000601.log"; // for offset 301
     const SUCCESS_BASE_OFFSET: Offset = 601;
 
-    #[test_async]
+    #[fluvio_future::test]
     #[allow(clippy::unnecessary_mut_passed)]
-    async fn test_validate_success() -> Result<(), StorageError> {
+    async fn test_validate_success() {
         let test_file = temp_dir().join(TEST_FILE_SUCCESS_NAME);
         ensure_clean_file(&test_file);
 
@@ -166,26 +164,28 @@ mod tests {
             ..Default::default()
         };
 
-        let mut msg_sink = MutFileRecords::create(SUCCESS_BASE_OFFSET, &options).await?;
+        let mut msg_sink = MutFileRecords::create(SUCCESS_BASE_OFFSET, &options)
+            .await
+            .expect("create");
 
         msg_sink
             .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET, 2))
-            .await?;
+            .await
+            .expect("write");
         msg_sink
             .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET + 2, 3))
-            .await?;
+            .await
+            .expect("write");
 
-        let next_offset = validate(&test_file).await?;
+        let next_offset = validate(&test_file).await.expect("validate");
         assert_eq!(next_offset, SUCCESS_BASE_OFFSET + 5);
-
-        Ok(())
     }
 
     const TEST_FILE_NAME_FAIL: &str = "00000000000000000401.log"; // for offset 301
 
-    #[test_async]
+    #[fluvio_future::test]
     #[allow(clippy::unnecessary_mut_passed)]
-    async fn test_validate_offset() -> Result<(), StorageError> {
+    async fn test_validate_offset() {
         let test_file = temp_dir().join(TEST_FILE_NAME_FAIL);
         ensure_clean_file(&test_file);
 
@@ -195,21 +195,25 @@ mod tests {
             ..Default::default()
         };
 
-        let mut msg_sink = MutFileRecords::create(401, &options).await?;
+        let mut msg_sink = MutFileRecords::create(401, &options).await.expect("create");
 
-        msg_sink.write_batch(&mut create_batch(401, 0)).await?;
-        msg_sink.write_batch(&mut create_batch(111, 1)).await?;
+        msg_sink
+            .write_batch(&mut create_batch(401, 0))
+            .await
+            .expect("create");
+        msg_sink
+            .write_batch(&mut create_batch(111, 1))
+            .await
+            .expect("create");
 
         //   assert!(validate(&test_file).await.is_err());
-
-        Ok(())
     }
 
     const TEST_FILE_NAME_FAIL2: &str = "00000000000000000501.log"; // for offset 301
 
     #[allow(clippy::unnecessary_mut_passed)]
-    #[test_async]
-    async fn test_validate_invalid_contents() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_validate_invalid_contents() {
         let test_file = temp_dir().join(TEST_FILE_NAME_FAIL2);
         ensure_clean_file(&test_file);
 
@@ -235,7 +239,5 @@ mod tests {
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
         assert!(validate(&test_file).await.is_err());
-
-        Ok(())
     }
 }

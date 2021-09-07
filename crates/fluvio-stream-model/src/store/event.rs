@@ -99,7 +99,6 @@ mod test {
 
     use tracing::debug;
 
-    use fluvio_future::test_async;
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
@@ -155,8 +154,8 @@ mod test {
         }
     }
 
-    #[test_async]
-    async fn test_listener() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_listener()  {
         let publisher = Arc::new(EventPublisher::new());
         let listener = publisher.change_listener(0);
         let shutdown = SimpleEvent::shared();
@@ -180,7 +179,6 @@ mod test {
 
         // assert_eq!(last_change.load(SeqCst), 2); // there should be 2 sync happenings
 
-        Ok(())
     }
 }
 */

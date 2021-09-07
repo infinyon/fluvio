@@ -669,7 +669,6 @@ mod test_leader {
 
     use async_trait::async_trait;
 
-    use fluvio_future::test_async;
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
     use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo};
     use dataplane::Offset;
@@ -764,8 +763,8 @@ mod test_leader {
         }
     }
 
-    #[test_async]
-    async fn test_leader_in_sync_replica() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_leader_in_sync_replica() {
         let leader_config = SpuConfig {
             id: 5000,
             ..Default::default()
@@ -782,12 +781,10 @@ mod test_leader {
         .expect("state");
 
         assert_eq!(state.in_sync_replica, 1);
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_follower_update() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_follower_update() {
         let leader_config = SpuConfig {
             id: 5000,
             ..Default::default()
@@ -864,12 +861,10 @@ mod test_leader {
         drop(followers);
         assert!(state.follower_updates(&5002, MAX_BYTES).await.is_none()); // 5002 is still invalid
         assert!(state.follower_updates(&5001, MAX_BYTES).await.is_some()); // 5001 is still need to besync
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_update_leader_from_followers() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_update_leader_from_followers() {
         use crate::core::{GlobalContext};
         use fluvio_controlplane_metadata::spu::{SpuSpec};
 
@@ -1036,7 +1031,5 @@ mod test_leader {
         assert_eq!(leader.hw(), 10);
         assert!(f1.drain_replicas().await.is_empty());
         assert!(f2.drain_replicas().await.is_empty());
-
-        Ok(())
     }
 }

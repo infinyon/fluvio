@@ -191,7 +191,6 @@ mod test {
     use std::collections::HashMap;
 
     use fluvio_auth::x509::X509Identity;
-    use fluvio_future::test_async;
 
     use super::policy::*;
     use super::ObjectType;
@@ -223,8 +222,8 @@ mod test {
         )
     }
 
-    #[test_async]
-    async fn test_policy_enforcement_simple() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_policy_enforcement_simple() {
         let mut policy = BasicRbacPolicy::default();
         let identity = X509Identity::new("User".to_owned(), vec!["Default".to_owned()]);
 
@@ -249,7 +248,5 @@ mod test {
             .evaluate(Action::Delete, ObjectType::Topic, Some("test"), &identity)
             .await
             .expect("eval"));
-
-        Ok(())
     }
 }

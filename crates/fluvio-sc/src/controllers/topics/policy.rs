@@ -324,13 +324,12 @@ pub mod replica_map_test {
 
     use std::collections::BTreeMap;
 
-    use fluvio_future::test_async;
     use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 
     use super::*;
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_1x_replicas_no_rack() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_1x_replicas_no_rack() {
         let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
@@ -350,11 +349,10 @@ pub mod replica_map_test {
         map_1xi_expected.insert(2, vec![0]);
         map_1xi_expected.insert(3, vec![1]);
         assert_eq!(map_1xi, map_1xi_expected);
-        Ok(())
     }
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_2x_replicas_no_rack() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_2x_replicas_no_rack() {
         let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
@@ -372,11 +370,10 @@ pub mod replica_map_test {
         map_2xi_expected.insert(2, vec![0, 2]);
         map_2xi_expected.insert(3, vec![1, 3]);
         assert_eq!(map_2xi, map_2xi_expected);
-        Ok(())
     }
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_3x_replicas_no_rack() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_3x_replicas_no_rack() {
         let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
@@ -421,11 +418,10 @@ pub mod replica_map_test {
         map_3xi_expected.insert(2, vec![4, 2, 3]);
         map_3xi_expected.insert(3, vec![0, 1, 2]);
         assert_eq!(map_3xi, map_3xi_expected);
-        Ok(())
     }
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_4x_replicas_no_rack() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_4x_replicas_no_rack() {
         let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
@@ -443,11 +439,10 @@ pub mod replica_map_test {
         map_4xi_expected.insert(2, vec![2, 3, 4, 0]);
         map_4xi_expected.insert(3, vec![3, 4, 0, 1]);
         assert_eq!(map_4xi, map_4xi_expected);
-        Ok(())
     }
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_5x_replicas_no_rack() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_5x_replicas_no_rack() {
         let spus = SpuAdminStore::quick(vec![
             (0, true, None),
             (1, true, None),
@@ -465,11 +460,10 @@ pub mod replica_map_test {
         map_5xi_expected.insert(2, vec![1, 3, 4, 5002, 0]);
         map_5xi_expected.insert(3, vec![3, 4, 5002, 0, 1]);
         assert_eq!(map_5xi, map_5xi_expected);
-        Ok(())
     }
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_6_part_3_rep_6_brk_3_rak() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_6_part_3_rep_6_brk_3_rak() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
         let r3 = String::from("r3");
@@ -495,11 +489,10 @@ pub mod replica_map_test {
         expected.insert(5, vec![5, 3, 2]);
 
         assert_eq!(computed, expected);
-        Ok(())
     }
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_12_part_4_rep_11_brk_4_rak() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_12_part_4_rep_11_brk_4_rak() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
         let r3 = String::from("r3");
@@ -538,11 +531,10 @@ pub mod replica_map_test {
         expected.insert(11, vec![11, 0, 4, 8]);
 
         assert_eq!(computed, expected);
-        Ok(())
     }
 
-    #[test_async]
-    async fn generate_replica_map_for_topic_9_part_3_rep_9_brk_3_rak() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn generate_replica_map_for_topic_9_part_3_rep_9_brk_3_rak() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
         let r3 = String::from("r3");
@@ -574,6 +566,5 @@ pub mod replica_map_test {
         expected.insert(8, vec![7, 0, 4]);
 
         assert_eq!(computed, expected);
-        Ok(())
     }
 }

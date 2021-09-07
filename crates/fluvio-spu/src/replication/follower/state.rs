@@ -272,7 +272,6 @@ mod follower_tests {
 
     use std::path::PathBuf;
 
-    use fluvio_future::{test_async};
     use flv_util::fixture::ensure_clean_dir;
     use fluvio_types::SpuId;
     use fluvio_storage::config::ConfigOption;
@@ -283,8 +282,8 @@ mod follower_tests {
     const TOPIC: &str = "test";
     const TEST_REPLICA: (&str, i32) = (TOPIC, 0);
 
-    #[test_async]
-    async fn test_follower_creation() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_follower_creation() {
         let test_path = "/tmp/follower_init";
         ensure_clean_dir(test_path);
 
@@ -302,7 +301,5 @@ mod follower_tests {
         assert_eq!(follower_replica.leo(), 0);
         assert_eq!(follower_replica.hw(), 0);
         assert!(PathBuf::from(test_path).join("spu-5002").exists());
-
-        Ok(())
     }
 }

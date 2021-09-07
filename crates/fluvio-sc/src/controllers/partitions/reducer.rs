@@ -257,8 +257,8 @@ impl ElectionPolicy for SimplePolicy {
 pub mod test {
 
     /*
-    #[test_async]
-    async fn test_process_partition_actions_without_partitions() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_process_partition_actions_without_partitions()  {
         // utils::init_logger();
 
         let partition_reducer = PartitionReducer::default();
@@ -306,7 +306,6 @@ pub mod test {
             expected_msgs_for_select_spus
         );
 
-        Ok(())
     }
     */
 
