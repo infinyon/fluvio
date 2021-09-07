@@ -192,14 +192,12 @@ where
 #[cfg(test)]
 pub mod test {
 
-    use fluvio_future::test_async;
     use super::*;
 
-    #[test_async]
-    async fn test_partitions_to_replica_msgs() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_partitions_to_replica_msgs() {
         let partitions = DefaultPartitionStore::bulk_load(vec![(("topic1", 0), vec![10, 11, 12])]);
         let replica_msg = partitions.replica_for_spu(10).await;
         assert_eq!(replica_msg.len(), 1);
-        Ok(())
     }
 }

@@ -6,7 +6,7 @@ use tracing::debug;
 use futures::future::BoxFuture;
 use futures::future::FutureExt;
 
-use flv_future_core::test_async;
+
 use flv_future_core::sleep;
 use fluvio_socket::FlvSocketError;
 use fluvio_types::SpuId;
@@ -45,11 +45,10 @@ impl ScTest for ReplicationTest {
 }
 
 /// test spu online and offline
-#[test_async]
-async fn replication_test() -> Result<(), FlvSocketError> {
+#[fluvio_future::test]
+async fn replication_test() {
     let test = ReplicationTest {};
     ScTestRunner::run("replication test".to_owned(), test)
         .await
         .expect("test runner should not failer");
-    Ok(())
 }

@@ -122,7 +122,7 @@ mod tests {
     use futures::channel::mpsc::channel;
     use futures::channel::mpsc::Receiver;
 
-    use flv_future_core::test_async;
+    use flv_future_core::fluvio_future::test;
     use utils::actions::Actions;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
@@ -165,8 +165,8 @@ mod tests {
     }
 
     /// test add new spu
-    #[test_async]
-    async fn test_controller_basic() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_controller_basic()  {
         let (mut controller, _other) = sample_controller();
 
         let auth_token_actions: Actions<AuthTokenAction> = Actions::default();
@@ -201,7 +201,7 @@ mod tests {
         // metdata should container new spu
         assert!(metadata.spus().spu("spu-5000").is_some());
 
-        Ok(())
+
     }
 
 }

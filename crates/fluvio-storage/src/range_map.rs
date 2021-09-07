@@ -123,7 +123,6 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
@@ -158,42 +157,40 @@ mod tests {
         }
     }
 
-    #[test_async]
-    async fn test_find_segment() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_find_segment() {
         let rep_dir = temp_dir().join(TEST_SEGMENT_DIR);
-        ensure_new_dir(&rep_dir)?;
+        ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
         let option = default_option(rep_dir);
 
-        list.add_segment(create_segment(&option, 0, 500).await?);
-        list.add_segment(create_segment(&option, 500, 2000).await?);
-        list.add_segment(create_segment(&option, 2000, 1000).await?);
-        list.add_segment(create_segment(&option, 3000, 2000).await?);
+        list.add_segment(create_segment(&option, 0, 500).await.expect("create"));
+        list.add_segment(create_segment(&option, 500, 2000).await.expect("create"));
+        list.add_segment(create_segment(&option, 2000, 1000).await.expect("create"));
+        list.add_segment(create_segment(&option, 3000, 2000).await.expect("create"));
 
         let index = list.find_segment(1500);
 
         assert!(index.is_some());
         let (pos, _) = index.unwrap();
         assert_eq!(*pos, 500);
-
-        Ok(())
     }
 
     const TEST_READ_DIR: &str = "segmentlist-read-many";
 
-    #[test_async]
-    async fn test_segment_read_many() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_segment_read_many() {
         let rep_dir = temp_dir().join(TEST_READ_DIR);
-        ensure_new_dir(&rep_dir)?;
+        ensure_new_dir(&rep_dir).expect("new");
         let option = default_option(rep_dir);
 
-        create_segment(&option, 10, 500).await?;
-        create_segment(&option, 500, 2000).await?;
-        create_segment(&option, 2000, 1000).await?;
-        create_segment(&option, 3000, 2000).await?;
+        create_segment(&option, 10, 500).await.expect("create");
+        create_segment(&option, 500, 2000).await.expect("create");
+        create_segment(&option, 2000, 1000).await.expect("create");
+        create_segment(&option, 3000, 2000).await.expect("create");
 
-        let (segments, last_offset_res) = SegmentList::from_dir(&option).await?;
+        let (segments, last_offset_res) = SegmentList::from_dir(&option).await.expect("from");
 
         assert_eq!(segments.len(), 3); // 0,500,2000
         assert_eq!(segments.max_offset(), 2000);
@@ -206,22 +203,19 @@ mod tests {
             .get_segment(500)
             .expect("should have segment at 500");
         assert_eq!(segment2.get_base_offset(), 500);
-
-        Ok(())
     }
 
     const TEST_EMPTY_DIR: &str = "segmentlist-read-empty";
 
-    #[test_async]
-    async fn test_segment_read_empty() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_segment_read_empty() {
         let rep_dir = temp_dir().join(TEST_EMPTY_DIR);
-        ensure_new_dir(&rep_dir)?;
+        ensure_new_dir(&rep_dir).expect("new");
         let option = default_option(rep_dir);
 
-        let (segments, last_segment) = SegmentList::from_dir(&option).await?;
+        let (segments, last_segment) = SegmentList::from_dir(&option).await.expect("from");
 
         assert_eq!(segments.len(), 0); // 0,500,2000
         assert!(last_segment.is_none());
-        Ok(())
     }
 }

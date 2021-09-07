@@ -57,8 +57,6 @@ mod tests {
 
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
-    use crate::StorageError;
-
     use super::BatchHeaderStream;
     use super::BatchHeaderPos;
 
@@ -75,8 +73,8 @@ mod tests {
     }
 
     #[allow(unused, clippy::unnecessary_mut_passed)]
-    //#[test_async]
-    async fn test_decode_batch_header_simple() -> Result<(), StorageError> {
+    //#[fluvio_future::test]
+    async fn test_decode_batch_header_simple() {
         let test_file = temp_dir().join(TEST_FILE_NAME);
         ensure_clean_file(&test_file);
 
@@ -103,29 +101,31 @@ mod tests {
         } else {
             panic!("batch not found")
         }
-
-        Ok(())
     }
 
     #[allow(unused)]
     const TEST_FILE_NAME2: &str = "00000000000000000201.log"; // for offset 200
 
     #[allow(unused, clippy::unnecessary_mut_passed)]
-    //#[test_async]
-    async fn test_decode_batch_header_multiple() -> Result<(), StorageError> {
+    //#[fluvio_future::test]
+    async fn test_decode_batch_header_multiple() {
         let test_file = temp_dir().join(TEST_FILE_NAME2);
         ensure_clean_file(&test_file);
 
         let options = default_option();
 
-        let mut msg_sink = MutFileRecords::create(201, &options).await?;
+        let mut msg_sink = MutFileRecords::create(201, &options).await.expect("create");
 
-        msg_sink.write_batch(&mut create_batch()).await?;
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
         msg_sink
             .write_batch(&mut create_batch_with_producer(25, 2))
-            .await?;
+            .await
+            .expect("write");
 
-        let file = file_util::open(&test_file).await?;
+        let file = file_util::open(&test_file).await.expect("open");
 
         let mut stream = BatchHeaderStream::new(file);
 
@@ -136,7 +136,5 @@ mod tests {
         assert_eq!(batch_pos2.get_batch().get_header().producer_id, 25);
         assert_eq!(batch_pos2.get_pos(), 79); // 2 records
         assert!((stream.next().await).is_none());
-
-        Ok(())
     }
 }

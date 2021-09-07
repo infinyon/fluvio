@@ -236,10 +236,8 @@ impl DerefMut for MutLogIndex {
 mod tests {
 
     use std::fs::File;
-    use std::io::Error as IoError;
     use std::io::Read;
 
-    use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
 
     use super::MutLogIndex;
@@ -249,22 +247,22 @@ mod tests {
 
     const TEST_FILE: &str = "00000000000000000121.index";
 
-    #[test_async]
-    async fn test_index_write() -> Result<(), IoError> {
+    #[fluvio_future::test]
+    async fn test_index_write() {
         let option = default_option(50);
         let test_file = option.base_dir.join(TEST_FILE);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(121, &option).await?;
+        let mut index_sink = MutLogIndex::create(121, &option).await.expect("crate");
 
-        index_sink.send((5, 200, 70)).await?; // this will be ignored
-        index_sink.send((10, 100, 70)).await?; // this will be written since batch size 70 is greater than 50
+        index_sink.send((5, 200, 70)).await.expect("send"); // this will be ignored
+        index_sink.send((10, 100, 70)).await.expect("send"); // this will be written since batch size 70 is greater than 50
 
         assert_eq!(index_sink.pos, 1);
 
-        let mut f = File::open(&test_file)?;
+        let mut f = File::open(&test_file).expect("open");
         let mut buffer = vec![0; 32];
-        f.read_exact(&mut buffer)?;
+        f.read_exact(&mut buffer).expect("read");
 
         // ensure offset,position are stored in the big endian format
         assert_eq!(buffer[0], 0);
@@ -280,47 +278,43 @@ mod tests {
 
         // open same file
 
-        let index_sink = MutLogIndex::open(121, &option).await?;
+        let index_sink = MutLogIndex::open(121, &option).await.expect("open");
         assert_eq!(index_sink.pos, 1);
-
-        Ok(())
     }
 
     const TEST_FILE2: &str = "00000000000000000122.index";
 
-    #[test_async]
-    async fn test_index_shrink() -> Result<(), IoError> {
+    #[fluvio_future::test]
+    async fn test_index_shrink() {
         let option = default_option(0);
         let test_file = option.base_dir.join(TEST_FILE2);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(122, &option).await?;
+        let mut index_sink = MutLogIndex::create(122, &option).await.expect("create");
 
-        index_sink.send((5, 16, 70)).await?;
+        index_sink.send((5, 16, 70)).await.expect("send");
 
-        index_sink.shrink().await?;
+        index_sink.shrink().await.expect("shrink");
 
-        let f = File::open(&test_file)?;
-        let m = f.metadata()?;
+        let f = File::open(&test_file).expect("open");
+        let m = f.metadata().expect("meta");
         assert_eq!(m.len(), 8);
-
-        Ok(())
     }
 
     const TEST_FILE3: &str = "00000000000000000123.index";
 
-    #[test_async]
-    async fn test_mut_index_findoffset() -> Result<(), IoError> {
+    #[fluvio_future::test]
+    async fn test_mut_index_findoffset() {
         let option = default_option(0);
         let test_file = option.base_dir.join(TEST_FILE3);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(123, &option).await?;
+        let mut index_sink = MutLogIndex::create(123, &option).await.expect("create");
 
-        index_sink.send((100, 16, 70)).await?;
-        index_sink.send((500, 200, 70)).await?;
-        index_sink.send((800, 100, 70)).await?;
-        index_sink.send((1000, 200, 70)).await?;
+        index_sink.send((100, 16, 70)).await.expect("send");
+        index_sink.send((500, 200, 70)).await.expect("send");
+        index_sink.send((800, 100, 70)).await.expect("send");
+        index_sink.send((1000, 200, 70)).await.expect("send");
 
         assert_eq!(
             index_sink.find_offset(600).map(|p| p.to_be()),
@@ -330,6 +324,5 @@ mod tests {
             index_sink.find_offset(2000).map(|p| p.to_be()),
             Some((1000, 200))
         );
-        Ok(())
     }
 }

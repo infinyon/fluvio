@@ -276,8 +276,8 @@ mod tests {
         assert_eq!(key6_partition, 2);
     }
 
-    #[fluvio_future::test_async]
-    async fn test_group_by_spu() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_group_by_spu() {
         let partitions = StoreContext::new();
         let partition_specs: Vec<_> = vec![
             (ReplicaKey::new("TOPIC", 0), PartitionSpec::new(0, vec![])), // Partition 0
@@ -363,8 +363,6 @@ mod tests {
                 .any(|record| record.value.as_ref() == b"F"),
             "SPU 1/Partition 2 should contain record F",
         );
-
-        Ok(())
     }
 
     #[test]

@@ -5,7 +5,6 @@ use tracing::debug;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 
-use flv_future_core::test_async;
 use flv_future_core::sleep;
 use fluvio_socket::FlvSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
@@ -147,17 +146,15 @@ impl SpuTest for FollowReplicationTest {
     }
 }
 
-#[test_async]
-async fn follower_replication_test_2() -> Result<(), FlvSocketError> {
+#[fluvio_future::test]
+async fn follower_replication_test_2()  {
     // Todo: fix the intermittent failures (over 50%)
     //    SpuTestRunner::run("replication with 2 followers".to_owned(),FollowReplicationTest::new(2,6000)).await.expect("test runner should not failer");
 
-    Ok(())
 }
 
-#[test_async]
-async fn follower_replication_test_3() -> Result<(), FlvSocketError> {
+#[fluvio_future::test]
+async fn follower_replication_test_3() {
     // Todo: fix the intermittent failures (over 50%)
     //    SpuTestRunner::run("replication with 3 followers".to_owned(),FollowReplicationTest::new(3,6100)).await.expect("test runner should not failer");
-    Ok(())
 }

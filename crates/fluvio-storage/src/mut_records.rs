@@ -369,23 +369,21 @@ mod tests {
     use std::io::Cursor;
     use tracing::debug;
 
-    use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
     use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fixture::create_batch;
     use dataplane::fixture::read_bytes_from_file;
 
-    use super::MutFileRecords;
-    use super::StorageError;
     use crate::config::ConfigOption;
+    use super::MutFileRecords;
 
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
     const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200
 
     #[allow(clippy::unnecessary_mut_passed)]
-    #[test_async]
-    async fn test_write_records_every() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_write_records_every() {
         debug!("test_write_records_every");
 
         let test_file = temp_dir().join(TEST_FILE_NAME);
@@ -412,7 +410,8 @@ mod tests {
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
         debug!("read ok");
-        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch =
+            Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         let mut records = batch.own_records();
@@ -423,22 +422,23 @@ mod tests {
         assert_eq!(record2.value.as_ref(), vec![10, 20]);
 
         debug!("write 2");
-        msg_sink.write_batch(&mut create_batch()).await?;
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
 
-        let bytes = read_bytes_from_file(&test_file)?;
+        let bytes = read_bytes_from_file(&test_file).expect("read");
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
 
-        let old_msg_sink = MutFileRecords::open(100, &options).await?;
+        let old_msg_sink = MutFileRecords::open(100, &options).await.expect("open");
         assert_eq!(old_msg_sink.get_base_offset(), 100);
-
-        Ok(())
     }
 
     // This Test configures policy to flush after every NUM_WRITES
     // and checks to see when the flush occurs relative to the write count
     #[allow(clippy::unnecessary_mut_passed)]
-    #[test_async]
-    async fn test_write_records_count() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_write_records_count() {
         let test_file = temp_dir().join(TEST_FILE_NAMEC);
         ensure_clean_file(&test_file);
 
@@ -467,7 +467,8 @@ mod tests {
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
 
-        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch =
+            Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         let mut records = batch.own_records();
@@ -506,8 +507,6 @@ mod tests {
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);
-
-        Ok(())
     }
 
     // This test configures policy to flush after some write idle time
@@ -521,8 +520,8 @@ mod tests {
     // expected timeframe
     #[cfg(not(target_os = "macos"))]
     #[allow(clippy::unnecessary_mut_passed)]
-    #[test_async]
-    async fn test_write_records_idle_delay() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_write_records_idle_delay() {
         use std::time::Duration;
         use fluvio_future::timer;
         const TEST_FILE_NAMEI: &str = "00000000000000000300.log"; // for offset 300
@@ -559,7 +558,8 @@ mod tests {
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
 
-        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch =
+            Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         let mut records = batch.own_records();
@@ -623,7 +623,5 @@ mod tests {
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);
-
-        Ok(())
     }
 }

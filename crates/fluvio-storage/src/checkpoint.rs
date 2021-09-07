@@ -157,16 +157,14 @@ where
 mod tests {
 
     use std::env::temp_dir;
-    use std::io::Error as IoError;
 
-    use fluvio_future::test_async;
     use flv_util::fixture::ensure_clean_file;
 
     use crate::config::ConfigOption;
     use super::CheckPoint;
 
-    #[test_async]
-    async fn checkpoint_test() -> Result<(), IoError> {
+    #[fluvio_future::test]
+    async fn checkpoint_test() {
         let test_file = temp_dir().join("test.chk");
         ensure_clean_file(&test_file);
 
@@ -187,11 +185,10 @@ mod tests {
         let mut ck2: CheckPoint<u64> = CheckPoint::create(&option, "test.chk", 0)
             .await
             .expect("restore");
-        ck2.read().await?;
+        ck2.read().await.expect("read");
         assert_eq!(*ck2.get_offset(), 40);
         ck2.write(20)
             .await
             .expect("write aft er reading should work");
-        Ok(())
     }
 }

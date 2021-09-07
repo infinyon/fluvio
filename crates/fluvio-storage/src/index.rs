@@ -189,7 +189,6 @@ pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usi
 mod tests {
 
     use std::env::temp_dir;
-    use std::io::Error as IoError;
 
     use flv_util::fixture::ensure_clean_file;
 
@@ -236,20 +235,22 @@ mod tests {
     }
 
     #[allow(unused)]
-    //#[test_async]
-    async fn test_index_read_offset() -> Result<(), IoError> {
+    //#[fluvio_future::test]
+    async fn test_index_read_offset() {
         let option = default_option();
         let test_file = option.base_dir.join(TEST_FILE);
         ensure_clean_file(&test_file);
 
-        let mut mut_index = MutLogIndex::create(921, &option).await?;
+        let mut mut_index = MutLogIndex::create(921, &option).await.expect("create");
 
-        mut_index.send((5, 16, 70)).await?;
-        mut_index.send((10, 100, 70)).await?;
+        mut_index.send((5, 16, 70)).await.expect("send");
+        mut_index.send((10, 100, 70)).await.expect("send");
 
-        mut_index.shrink().await?;
+        mut_index.shrink().await.expect("shrink");
 
-        let log_index = LogIndex::open_from_offset(921, &option).await?;
+        let log_index = LogIndex::open_from_offset(921, &option)
+            .await
+            .expect("open");
         let offset1 = log_index[0];
         assert_eq!(offset1.offset(), 5);
         assert_eq!(offset1.position(), 16);
@@ -257,15 +258,13 @@ mod tests {
         let offset2 = log_index[1];
         assert_eq!(offset2.offset(), 10);
         assert_eq!(offset2.position(), 100);
-
-        Ok(())
     }
 
     /*  this is compound test which is not needed.
     const TEST_FILE3: &str = "00000000000000000922.index";
 
-    #[test_async]
-    async fn test_index_read_findoffset() -> Result<(), IoError> {
+    #[fluvio_future::test]
+    async fn test_index_read_findoffset()  {
         let option = default_option();
         let test_file = option.base_dir.join(TEST_FILE3);
         ensure_clean_file(&test_file);
@@ -282,7 +281,6 @@ mod tests {
         let log_index = LogIndex::open_from_offset(922, &option).await?;
         assert_eq!(log_index.find_offset(600), Ok(1));
         assert_eq!(log_index.find_offset(2000), Ok(3));
-        Ok(())
     }
     */
 }
