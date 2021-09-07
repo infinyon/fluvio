@@ -47,7 +47,13 @@ pub struct LongevityTestOption {
     // total time we want the producer to run, in seconds
     #[structopt(long, parse(try_from_str = parse_seconds), default_value = "3600")]
     runtime_seconds: Duration,
-    // record size
+
+    // This should be mutually exclusive with runtime_seconds
+    // num_records: u32
+
+    // record payload size used by test, in bytes
+    #[structopt(long, default_value = "1000")]
+    record_size: usize,
 
     // TODO: Support these workflows
     //#[structopt(long)]
@@ -58,10 +64,13 @@ pub struct LongevityTestOption {
     // Offset the consumer should start from
     //#[structopt(long, default_value = "0")]
     //pub consumer_offset: u32,
+    /// Opt-in to detailed output printed to stdout
+    #[structopt(long, short)]
+    verbose: bool,
 }
 
 fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
-    let seconds = u64::from_str_radix(s, 10)?;
+    let seconds = s.parse::<u64>()?;
     Ok(Duration::from_secs(seconds))
 }
 
@@ -84,6 +93,11 @@ pub async fn test_longevity_consume_produce(
     option: LongevityTestCase,
 ) {
     println!("Testing longevity consumer and producer");
+
+    if !option.option.verbose {
+        println!("Run with `--verbose` flag for more test output");
+    }
+
     let (sender, receiver) = async_channel::unbounded();
 
     let consumer_join = spawn(consumer::consumer_stream(

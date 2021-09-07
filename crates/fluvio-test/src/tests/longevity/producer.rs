@@ -24,36 +24,24 @@ pub async fn producer(
 
     // Read in the timer value we want to run for
 
-    // Iterations ranging approx. 5000 - 20_000
-    //let iterations: u16 = (rand::random::<u16>() / 2) + 20000;
-
     let mut records_sent = 0;
     let test_start = SystemTime::now();
 
     while test_start.elapsed().unwrap() <= option.option.runtime_seconds {
-        //println!("Producing {} records", iterations);
-        //for _ in 0..iterations {
-
-        let record = rand_printable_record();
+        let record = rand_printable_record(option.option.record_size);
         let record_digest = hash_record(&record);
 
-        // FIXME: Change send_count to take in a Vec<u8>
-        let record_str = std::str::from_utf8(&record).unwrap().to_owned();
-
-        // Change this to send_all
-        debug!("{:?}", &record_str);
+        debug!("{:?}", &record);
 
         // Record the latency
         let mut lock = test_driver.write().await;
-        lock.send_count(&producer, RecordKey::NULL, record_str)
+        lock.send_count(&producer, RecordKey::NULL, record)
             .await
             .expect("Producer Send failed");
         drop(lock);
-        //producer.send(RecordKey::NULL, record).await.unwrap();
 
         // Send the consumer the expected checksum for the record it just sent
-        // Note: This might be a brittle test if we have the consumer testing from a different starting offset than the producer
-
+        // Note: We don't support consumer testing from a different starting offset than the producer (i.e., a catch-up read test)
         debug!("{:?}", record_digest);
         digests.send(record_digest).await.unwrap();
 

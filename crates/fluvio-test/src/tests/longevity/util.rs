@@ -39,17 +39,16 @@ impl LongevityRecord {
     }
 }
 
-// TODO: Data size needs to be configurable
-pub fn rand_printable_record() -> Record {
+pub fn rand_printable_record(data_size: usize) -> Record {
     use rand::Rng;
 
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\
                             0123456789)(*&^%$#@!~";
-    const DATA_SIZE: usize = 1000;
+
     let mut rng = rand::thread_rng();
 
-    let data: String = (0..DATA_SIZE)
+    let data: String = (0..data_size)
         .map(|_| {
             let idx = rng.gen_range(0..CHARSET.len());
             CHARSET[idx] as char

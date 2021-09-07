@@ -1910,6 +1910,7 @@ dependencies = [
 name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
+ "async-channel",
  "async-lock",
  "async-trait",
  "bencher",
@@ -1923,6 +1924,7 @@ dependencies = [
  "fluvio-test-derive 0.0.0",
  "fluvio-test-util",
  "fluvio-types",
+ "futures",
  "futures-lite",
  "hdrhistogram",
  "inventory",
