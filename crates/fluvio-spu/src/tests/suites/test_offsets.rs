@@ -3,7 +3,6 @@ use std::sync::Arc;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 
-use flv_future_core::test_async;
 use fluvio_socket::FlvSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use kf_protocol::api::RequestMessage;
@@ -107,11 +106,10 @@ impl SpuTest for OffsetsFetchTest {
     }
 }
 
-#[test_async]
-async fn flv_offset_fetch_test() -> Result<(), FlvSocketError> {
+#[fluvio_future::test]
+async fn flv_offset_fetch_test() {
     let test = OffsetsFetchTest {};
     SpuTestRunner::run("offset fetch test".to_owned(), test)
         .await
         .expect("test runner should not failer");
-    Ok(())
 }

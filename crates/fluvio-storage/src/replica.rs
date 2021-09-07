@@ -392,7 +392,6 @@ mod tests {
     use std::fs::metadata;
     use std::io::Cursor;
 
-    use fluvio_future::test_async;
     use dataplane::{Isolation, batch::Batch};
     use dataplane::{Offset, ErrorCode};
     use dataplane::core::{Decoder, Encoder};
@@ -440,8 +439,8 @@ mod tests {
         }
     }
 
-    #[test_async]
-    async fn test_replica_simple() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_replica_simple() {
         let option = base_option("test_simple");
         let mut replica = FileReplica::create("test", 0, START_OFFSET, option.clone())
             .await
@@ -466,9 +465,10 @@ mod tests {
 
         let test_file = option.base_dir.join("test-0").join(TEST_SEG_NAME);
         debug!("using test file: {:#?}", test_file);
-        let bytes = read_bytes_from_file(&test_file)?;
+        let bytes = read_bytes_from_file(&test_file).expect("read");
 
-        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch =
+            Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.get_base_offset(), START_OFFSET);
         assert_eq!(batch.get_header().last_offset_delta, 1);
@@ -482,14 +482,12 @@ mod tests {
         assert!(replica.find_segment(20).unwrap().is_active());
         assert!(replica.find_segment(21).unwrap().is_active());
         assert!(replica.find_segment(30).is_some()); // any higher offset should result in current segment
-
-        Ok(())
     }
 
     const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
 
-    #[test_async]
-    async fn test_uncommitted_fetch() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_uncommitted_fetch() {
         let option = base_option(TEST_UNCOMMIT_DIR);
 
         let mut replica = FileReplica::create("test", 0, 0, option)
@@ -523,12 +521,12 @@ mod tests {
             .await;
         assert_eq!(partition_response.records.len(), batch_len);
 
-        replica.update_high_watermark(2).await?; // first batch
+        replica.update_high_watermark(2).await.expect("update"); // first batch
         assert_eq!(replica.get_hw(), 2);
 
         let mut batch = create_batch();
         let batch_len = batch.write_size(0);
-        replica.write_batch(&mut batch).await?;
+        replica.write_batch(&mut batch).await.expect("write");
 
         let mut partition_response = FilePartitionResponse::default();
         replica
@@ -537,7 +535,10 @@ mod tests {
         debug!("partiton response: {:#?}", partition_response);
         assert_eq!(partition_response.records.len(), batch_len);
 
-        replica.write_batch(&mut create_batch()).await?;
+        replica
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
         let mut partition_response = FilePartitionResponse::default();
         replica
             .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
@@ -549,21 +550,25 @@ mod tests {
             .read_all_uncommitted_records(50, &mut partition_response)
             .await;
         assert_eq!(partition_response.records.len(), 50);
-
-        Ok(())
     }
 
     const TEST_OFFSET_DIR: &str = "test_offset";
 
-    #[test_async]
-    async fn test_replica_end_offset() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_replica_end_offset() {
         let option = base_option(TEST_OFFSET_DIR);
 
         let mut rep_sink = FileReplica::create("test", 0, START_OFFSET, option.clone())
             .await
             .expect("test replica");
-        rep_sink.write_batch(&mut create_batch()).await?;
-        rep_sink.write_batch(&mut create_batch()).await?;
+        rep_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
+        rep_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
         drop(rep_sink);
 
         // open replica
@@ -571,16 +576,14 @@ mod tests {
             .await
             .expect("test replica");
         assert_eq!(replica2.get_leo(), START_OFFSET + 4);
-
-        Ok(())
     }
 
     const TEST_REPLICA_DIR: &str = "test_replica";
 
     // you can show log by:  RUST_LOG=commit_log=debug cargo test roll_over
 
-    #[test_async]
-    async fn test_rep_log_roll_over() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_rep_log_roll_over() {
         let option = rollover_option(TEST_REPLICA_DIR);
 
         let mut replica = FileReplica::create("test", 1, START_OFFSET, option.clone())
@@ -590,23 +593,24 @@ mod tests {
         // first batch
         debug!(">>>> sending first batch");
         let mut batches = create_batch();
-        replica.write_batch(&mut batches).await?;
+        replica.write_batch(&mut batches).await.expect("write");
 
         // second batch
         debug!(">>>> sending second batch. this should rollover");
         let mut batches = create_batch();
-        replica.write_batch(&mut batches).await?;
+        replica.write_batch(&mut batches).await.expect("write");
         debug!("finish sending next batch");
 
         assert_eq!(replica.get_log_start_offset(), START_OFFSET);
         let replica_dir = &option.base_dir.join("test-1");
-        let dir_contents = fs::read_dir(&replica_dir)?;
+        let dir_contents = fs::read_dir(&replica_dir).expect("read_dir");
         assert_eq!(dir_contents.count(), 5, "should be 5 files");
 
         let seg2_file = replica_dir.join(TEST_SE2_NAME);
-        let bytes = read_bytes_from_file(&seg2_file)?;
+        let bytes = read_bytes_from_file(&seg2_file).expect("file read");
 
-        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch =
+            Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 2);
         assert_eq!(batch.get_base_offset(), 22);
@@ -616,16 +620,14 @@ mod tests {
         let metadata2 = metadata_res.unwrap();
         assert_eq!(metadata2.len(), 1000);
 
-        let seg1_metadata = metadata(replica_dir.join(TEST_SEG_IDX))?;
+        let seg1_metadata = metadata(replica_dir.join(TEST_SEG_IDX)).expect("metadata");
         assert_eq!(seg1_metadata.len(), 8);
-
-        Ok(())
     }
 
     const TEST_COMMIT_DIR: &str = "test_commit";
 
-    #[test_async]
-    async fn test_replica_commit() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_replica_commit() {
         let option = base_option(TEST_COMMIT_DIR);
         let mut replica = FileReplica::create("test", 0, 0, option.clone())
             .await
@@ -633,7 +635,10 @@ mod tests {
 
         let mut records = RecordSet::default().add(create_batch());
 
-        replica.write_recordset(&mut records, true).await?;
+        replica
+            .write_recordset(&mut records, true)
+            .await
+            .expect("write");
 
         // record contains 2 batch
         assert_eq!(replica.get_hw(), 2);
@@ -645,15 +650,13 @@ mod tests {
             .await
             .expect("test replica");
         assert_eq!(replica.get_hw(), 2);
-
-        Ok(())
     }
 
     const TEST_COMMIT_FETCH_DIR: &str = "test_commit_fetch";
 
     /// test fetch only committed records
-    #[test_async]
-    async fn test_committed_fetch() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_committed_fetch() {
         let option = base_option(TEST_COMMIT_FETCH_DIR);
 
         let mut replica = FileReplica::create("test", 0, 0, option)
@@ -726,12 +729,10 @@ mod tests {
         debug!("partition response: {:#?}", partition_response);
         // should return same records as 1 batch since we didn't commit 2nd batch
         assert_eq!(partition_response.records.len(), batch_len);
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_replica_delete() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_replica_delete() {
         let mut option = base_option("test_delete");
         option.max_batch_size = 50; // enforce 50 length
 
@@ -746,12 +747,10 @@ mod tests {
         replica.remove().await.expect("removed");
 
         assert!(!test_file.exists());
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_replica_limit_batch() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_replica_limit_batch() {
         let mut option = base_option("test_batch_limit");
         option.max_batch_size = 100;
         option.update_hw = false;
@@ -780,7 +779,5 @@ mod tests {
                 .unwrap_err(),
             StorageError::BatchTooBig(_)
         ));
-
-        Ok(())
     }
 }

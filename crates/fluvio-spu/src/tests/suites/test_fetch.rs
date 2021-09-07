@@ -4,7 +4,6 @@ use tracing::debug;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 
-use flv_future_core::test_async;
 use fluvio_socket::FlvSocketError;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use kf_protocol::api::DefaultRecord;
@@ -94,11 +93,10 @@ impl SpuTest for SimpleFetchTest {
     }
 }
 
-#[test_async]
-async fn simple_fetch_test() -> Result<(), FlvSocketError> {
+#[fluvio_future::test]
+async fn simple_fetch_test() {
     let test = SimpleFetchTest {};
     SpuTestRunner::run("fetch test".to_owned(), test)
         .await
         .expect("test runner should not failer");
-    Ok(())
 }

@@ -154,7 +154,6 @@ mod test {
     use tracing::debug;
     use tracing::trace;
 
-    use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
 
     use fluvio_protocol::api::RequestMessage;
@@ -209,8 +208,8 @@ mod test {
         shutdown.notify();
     }
 
-    #[test_async]
-    async fn test_server() -> Result<(), SocketError> {
+    #[fluvio_future::test]
+    async fn test_server() {
         // create fake server, anything will do since we only
         // care about creating tcp stream
 
@@ -218,7 +217,5 @@ mod test {
 
         let shutdown = create_server(socket_addr.clone()).run();
         test_client(socket_addr.clone(), shutdown).await;
-
-        Ok(())
     }
 }

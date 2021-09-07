@@ -173,15 +173,15 @@ impl TopicReducer {
 
 #[cfg(test)]
 mod test2 {
-    use fluvio_future::test_async;
+
     use fluvio_controlplane_metadata::topic::{TopicResolution, TopicStatus};
     use fluvio_controlplane_metadata::topic::PENDING_REASON;
 
     use super::*;
 
     // if topic are just created, it should transitioned to pending state if config are valid
-    #[test_async]
-    async fn test_topic_reducer_init_to_pending() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_topic_reducer_init_to_pending() {
         let topic_reducer = TopicReducer::default();
         let topic_requests = vec![
             TopicAdminMd::with_spec("topic1", (1, 1).into()),
@@ -202,6 +202,5 @@ mod test2 {
             )),
         ];
         assert_eq!(actions.topics, expected_actions);
-        Ok(())
     }
 }

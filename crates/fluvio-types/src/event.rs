@@ -182,7 +182,6 @@ mod test {
 
     use tracing::debug;
 
-    use fluvio_future::test_async;
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
@@ -235,8 +234,8 @@ mod test {
         }
     }
 
-    #[test_async]
-    async fn test_offset_listener_no_wait() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_offset_listener_no_wait() {
         let publisher = OffsetPublisher::shared(0);
         let listener = publisher.change_listner();
         let status = Arc::new(AtomicBool::new(false));
@@ -260,12 +259,10 @@ mod test {
         if std::env::var("CI").is_err() {
             assert!(status.load(Ordering::SeqCst), "status should be set");
         }
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_offset_listener_wait() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_offset_listener_wait() {
         let publisher = OffsetPublisher::shared(0);
         let listener = publisher.change_listner();
         let status = Arc::new(AtomicBool::new(false));
@@ -289,7 +286,5 @@ mod test {
         if std::env::var("CI").is_err() {
             assert!(status.load(Ordering::SeqCst), "status should be set");
         }
-
-        Ok(())
     }
 }

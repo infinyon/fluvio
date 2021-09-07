@@ -245,13 +245,11 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::fixture::create_batch_with_producer;
 
     use crate::config::ConfigOption;
-    use crate::StorageError;
     use crate::segment::MutableSegment;
 
     fn default_option(base_dir: PathBuf) -> ConfigOption {
@@ -263,14 +261,14 @@ mod tests {
         }
     }
 
-    #[test_async]
-    async fn test_batch_stream_single() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_batch_stream_single() {
         let test_dir = temp_dir().join("batch-stream-single");
-        ensure_new_dir(&test_dir)?;
+        ensure_new_dir(&test_dir).expect("new");
 
         let option = default_option(test_dir.clone());
 
-        let mut active_segment = MutableSegment::create(300, &option).await?;
+        let mut active_segment = MutableSegment::create(300, &option).await.expect("segment");
 
         active_segment
             .write_batch(&mut create_batch())
@@ -286,22 +284,25 @@ mod tests {
         assert_eq!(batch.get_base_offset(), 300);
         assert_eq!(batch.get_header().producer_id, 12);
         assert_eq!(batch1.get_last_offset(), 301);
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_batch_stream_multiple() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_batch_stream_multiple() {
         let test_dir = temp_dir().join("batch-stream");
-        ensure_new_dir(&test_dir)?;
+        ensure_new_dir(&test_dir).expect("new");
 
         let option = default_option(test_dir.clone());
 
-        let mut active_segment = MutableSegment::create(300, &option).await?;
+        let mut active_segment = MutableSegment::create(300, &option).await.expect("create");
 
-        active_segment.write_batch(&mut create_batch()).await?;
+        active_segment
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
         active_segment
             .write_batch(&mut create_batch_with_producer(25, 2))
-            .await?;
+            .await
+            .expect("batch");
 
         let mut batch_stream = active_segment
             .open_batch_header_stream(0)
@@ -312,7 +313,5 @@ mod tests {
         assert_eq!(batch1.get_last_offset(), 301);
         let batch2 = batch_stream.next().await.expect("batch");
         assert_eq!(batch2.get_last_offset(), 303);
-
-        Ok(())
     }
 }

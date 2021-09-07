@@ -7,7 +7,6 @@ use futures::future::BoxFuture;
 use futures::future::FutureExt;
 use futures::SinkExt;
 
-use flv_future_core::test_async;
 use flv_future_core::sleep;
 use fluvio_socket::FlvSocketError;
 use fluvio_types::SpuId;
@@ -78,11 +77,10 @@ impl ScTest for SimpleInternalTest {
 }
 
 /// test spu online and offline
-#[test_async]
-async fn connection_test() -> Result<(), FlvSocketError> {
+#[fluvio_future::test]
+async fn connection_test()  {
     let test = SimpleInternalTest {};
     ScTestRunner::run("connection test".to_owned(), test)
         .await
         .expect("test runner should not failer");
-    Ok(())
 }

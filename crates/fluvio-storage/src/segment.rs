@@ -378,7 +378,6 @@ mod tests {
     use std::io::Cursor;
     use std::path::PathBuf;
 
-    use fluvio_future::test_async;
     use flv_util::fixture::ensure_new_dir;
     use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::Size;
@@ -390,7 +389,6 @@ mod tests {
     use super::MutableSegment;
 
     use crate::config::ConfigOption;
-    use crate::StorageError;
     use crate::index::OffsetPosition;
 
     // TODO: consolidate
@@ -408,10 +406,10 @@ mod tests {
     const TEST_FILE_NAME: &str = "00000000000000000020.log"; // offset 20 different from other test
     const SEG_INDEX: &str = "00000000000000000020.index";
 
-    #[test_async]
-    async fn test_segment_single_record() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_segment_single_record() {
         let test_dir = temp_dir().join("seg-single-record");
-        ensure_new_dir(&test_dir)?;
+        ensure_new_dir(&test_dir).expect("dir");
 
         let option = default_option(test_dir.clone(), 0);
 
@@ -450,69 +448,81 @@ mod tests {
             .expect("offset"))
         .is_none());
         let offset_position =
-            (active_segment.find_offset_position(20).await?).expect("offset exists");
+            (active_segment.find_offset_position(20).await.expect("find")).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 58);
-        assert!((active_segment.find_offset_position(30).await?).is_none());
-        Ok(())
+        assert!((active_segment.find_offset_position(30).await.expect("find")).is_none());
     }
 
-    #[test_async]
-    async fn test_segment_multiple_record() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_segment_multiple_record() {
         let test_dir = temp_dir().join("seg-multiple-record");
-        ensure_new_dir(&test_dir)?;
+        ensure_new_dir(&test_dir).expect("new");
 
         let option = default_option(test_dir.clone(), 0);
 
         let base_offset = 20;
 
-        let mut active_segment = MutableSegment::create(base_offset, &option).await?;
+        let mut active_segment = MutableSegment::create(base_offset, &option)
+            .await
+            .expect("segment");
 
         active_segment
             .write_batch(&mut create_batch_with_producer(100, 4))
-            .await?;
+            .await
+            .expect("batch");
 
         // each record contains 9 bytes
 
         // check to see if batch is written
-        let bytes = read_bytes_from_file(&test_dir.join(TEST_FILE_NAME))?;
+        let bytes = read_bytes_from_file(&test_dir.join(TEST_FILE_NAME)).expect("read");
         debug!("read {} bytes", bytes.len());
 
-        let batch = Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0)?;
+        let batch =
+            Batch::<MemoryRecords>::decode_from(&mut Cursor::new(bytes), 0).expect("decode");
         assert_eq!(batch.get_base_offset(), 20);
         assert_eq!(batch.get_header().magic, 2, "check magic");
         assert_eq!(batch.records().len(), 4);
 
-        let seg1_metadata = metadata(test_dir.join(SEG_INDEX))?;
+        let seg1_metadata = metadata(test_dir.join(SEG_INDEX)).expect("join");
         assert_eq!(seg1_metadata.len(), 1000);
 
-        assert!((active_segment.find_offset_position(10).await?).is_none());
+        assert!((active_segment.find_offset_position(10).await.expect("find")).is_none());
         let offset_position =
-            (active_segment.find_offset_position(20).await?).expect("offset exists");
+            (active_segment.find_offset_position(20).await.expect("find")).expect("offset exists");
         assert_eq!(offset_position.get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 85);
-        assert!((active_segment.find_offset_position(30).await?).is_none());
-
-        Ok(())
+        assert!((active_segment.find_offset_position(30).await.expect("find")).is_none());
     }
 
     const TEST2_FILE_NAME: &str = "00000000000000000040.log"; // offset 20 different from other test
 
-    #[test_async]
-    async fn test_segment_multiple_batch() -> Result<(), StorageError> {
+    #[fluvio_future::test]
+    async fn test_segment_multiple_batch() {
         let test_dir = temp_dir().join("multiple-segment");
-        ensure_new_dir(&test_dir)?;
+        ensure_new_dir(&test_dir).expect("new");
 
         let base_offset = 40;
 
         let option = default_option(test_dir.clone(), 50);
 
-        let mut seg_sink = MutableSegment::create(base_offset, &option).await?;
-        seg_sink.write_batch(&mut create_batch()).await?;
-        seg_sink.write_batch(&mut create_batch()).await?;
-        seg_sink.write_batch(&mut create_batch()).await?;
+        let mut seg_sink = MutableSegment::create(base_offset, &option)
+            .await
+            .expect("write");
+        seg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
+        seg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
+        seg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
 
         assert_eq!(seg_sink.get_end_offset(), 46);
 
@@ -521,28 +531,40 @@ mod tests {
         let index = seg_sink.get_index();
         assert_eq!(index[0].to_be(), (2, 79));
 
-        let bytes = read_bytes_from_file(&test_dir.join(TEST2_FILE_NAME))?;
+        let bytes = read_bytes_from_file(&test_dir.join(TEST2_FILE_NAME)).expect("read");
         debug!("read {} bytes", bytes.len());
 
         let cursor = &mut Cursor::new(bytes);
-        let batch = Batch::<MemoryRecords>::decode_from(cursor, 0)?;
+        let batch = Batch::<MemoryRecords>::decode_from(cursor, 0).expect("decode");
         assert_eq!(batch.get_base_offset(), 40);
         assert_eq!(batch.get_header().last_offset_delta, 1);
 
-        let batch2 = Batch::<MemoryRecords>::decode_from(cursor, 0)?;
+        let batch2 = Batch::<MemoryRecords>::decode_from(cursor, 0).expect("decode");
         assert_eq!(batch2.get_base_offset(), 42);
         assert_eq!(batch2.get_header().last_offset_delta, 1);
 
-        let offset_pos1 = seg_sink.find_offset_position(40).await?.expect("pos");
+        let offset_pos1 = seg_sink
+            .find_offset_position(40)
+            .await
+            .expect("pos")
+            .unwrap();
         assert_eq!(offset_pos1.get_base_offset(), 40);
         assert_eq!(offset_pos1.get_pos(), 0);
         assert_eq!(offset_pos1.len(), 67);
-        let offset_pos2 = seg_sink.find_offset_position(42).await?.expect("pos");
+        let offset_pos2 = seg_sink
+            .find_offset_position(42)
+            .await
+            .expect("pos")
+            .unwrap();
         assert_eq!(offset_pos2.get_base_offset(), 42);
         assert_eq!(offset_pos2.get_pos(), 79);
         assert_eq!(offset_pos2.len(), 67);
 
-        let offset_pos3 = seg_sink.find_offset_position(44).await?.expect("pos");
+        let offset_pos3 = seg_sink
+            .find_offset_position(44)
+            .await
+            .expect("pos")
+            .unwrap();
         assert_eq!(offset_pos3.get_base_offset(), 44);
         assert_eq!(offset_pos3.get_pos(), 158);
         assert_eq!(offset_pos3.len(), 67);
@@ -555,7 +577,5 @@ mod tests {
         let mut fail_batch = create_batch();
         fail_batch.base_offset = 45;
         assert!(seg_sink.write_batch(&mut fail_batch).await.is_err());
-
-        Ok(())
     }
 }

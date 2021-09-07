@@ -337,7 +337,6 @@ where
 #[cfg(test)]
 pub mod test {
     use crate::spu::{SpuSpec, SpuStatus};
-    use fluvio_future::test_async;
 
     use crate::store::actions::*;
     use super::DefaultSpuMd;
@@ -345,8 +344,8 @@ pub mod test {
     use super::SpuMd;
     use super::SpuLocalStorePolicy;
 
-    #[test_async]
-    async fn test_spu_inquiry_online_offline_count() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_spu_inquiry_online_offline_count() {
         let online_spu = DefaultSpuMd::quick(("spu-0", 0, true, None));
         let offline_spu = DefaultSpuMd::quick(("spu-1", 1, false, None));
         let no_status_spu = DefaultSpuMd::quick(("spu-2", 5001, false, None));
@@ -359,7 +358,6 @@ pub mod test {
 
         assert_eq!(spus.count().await, 3);
         assert_eq!(spus.online_spu_count().await, 1);
-        Ok(())
     }
 
     #[test]
@@ -374,8 +372,8 @@ pub mod test {
         assert!(!test_spu.status.is_online());
     }
 
-    #[test_async]
-    async fn test_delete_spu_from_local_cache() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_delete_spu_from_local_cache() {
         let online_spu = DefaultSpuMd::quick(("spu-0", 0, true, None));
         let offline_spu = DefaultSpuMd::quick(("spu-1", 1, false, None));
 
@@ -397,12 +395,10 @@ pub mod test {
         assert_eq!(spus.online_spu_count().await, 0);
         assert_eq!(spus.count().await, 1);
         assert_eq!(spus.epoch().await, 1);
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_update_spu_spec_in_local_cache() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_update_spu_spec_in_local_cache() {
         let spu_0 = DefaultSpuMd::quick(("spu-0", 0, false, None));
         let mut spu_1 = DefaultSpuMd::quick(("spu-1", 1, false, None));
 
@@ -429,11 +425,10 @@ pub mod test {
         // test result
         let updated_spu = spus.value("spu-1").await.expect("lookup");
         assert_eq!(updated_spu.inner_owned(), other_spu);
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_update_spu_status_in_local_cache() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn test_update_spu_status_in_local_cache() {
         let online = DefaultSpuMd::quick(("spu-0", 0, true, None));
         let offline = DefaultSpuMd::quick(("spu-1", 1, false, None));
         let offline2 = DefaultSpuMd::quick(("spu-3", 2, false, None));
@@ -476,11 +471,10 @@ pub mod test {
         assert_eq!(spus.count().await, 3);
         assert_eq!(spus.online_spu_count().await, 1);
         assert!(spu.status.is_online());
-        Ok(())
     }
 
-    #[test_async]
-    async fn rack_map_test_racks_3_spus_6_unbalanced() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn rack_map_test_racks_3_spus_6_unbalanced() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
         let r3 = String::from("r3");
@@ -510,11 +504,10 @@ pub mod test {
         assert_eq!(6, spus.online_spu_count().await);
         assert_eq!(expected_map, rack_map);
         assert_eq!(expected_list, spu_list);
-        Ok(())
     }
 
-    #[test_async]
-    async fn rack_map_test_racks_5_spus_10_unbalanced() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn rack_map_test_racks_5_spus_10_unbalanced() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
         let r3 = String::from("r3");
@@ -550,11 +543,10 @@ pub mod test {
 
         assert_eq!(rack_map, expected_map);
         assert_eq!(spu_list, expected_list);
-        Ok(())
     }
 
-    #[test_async]
-    async fn rack_map_test_racks_4_spus_10_unbalanced() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn rack_map_test_racks_4_spus_10_unbalanced() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
         let r3 = String::from("r3");
@@ -588,11 +580,10 @@ pub mod test {
 
         assert_eq!(rack_map, expected_map);
         assert_eq!(spu_list, expected_list);
-        Ok(())
     }
 
-    #[test_async]
-    async fn rack_map_test_racks_4_spus_12_full() -> Result<(), ()> {
+    #[fluvio_future::test]
+    async fn rack_map_test_racks_4_spus_12_full() {
         let r1 = String::from("r1");
         let r2 = String::from("r2");
         let r3 = String::from("r3");
@@ -628,6 +619,5 @@ pub mod test {
 
         assert_eq!(rack_map, expected_map);
         assert_eq!(spu_list, expected_list);
-        Ok(())
     }
 }

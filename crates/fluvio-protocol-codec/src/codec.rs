@@ -121,7 +121,6 @@ mod test {
     use fluvio_future::net::TcpListener;
     use fluvio_future::net::TcpStream;
     use fluvio_future::timer::sleep;
-    use fluvio_future::test_async;
     use futures::AsyncWriteExt;
     use fluvio_protocol::Decoder as FluvioDecoder;
     use fluvio_protocol::Encoder as FluvioEncoder;
@@ -228,8 +227,8 @@ mod test {
         Ok(())
     }
 
-    #[test_async]
-    async fn test_async_tcp_vec() -> Result<(), Error> {
+    #[fluvio_future::test]
+    async fn test_async_tcp_vec() {
         debug!("start running test");
 
         let addr = "127.0.0.1:11223".parse::<SocketAddr>().expect("parse");
@@ -239,12 +238,10 @@ mod test {
         let client_ft = run_client(data, &addr);
 
         let _rt = join(client_ft, server_ft).await;
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_async_tcp_string() -> Result<(), Error> {
+    #[fluvio_future::test]
+    async fn test_async_tcp_string() {
         debug!("start running test");
 
         let addr = "127.0.0.1:11224".parse::<SocketAddr>().expect("parse");
@@ -254,13 +251,11 @@ mod test {
         let client_ft = run_client(data, &addr);
 
         let _rt = join(client_ft, server_ft).await;
-
-        Ok(())
     }
 
     #[allow(clippy::clone_on_copy)]
-    #[test_async]
-    async fn test_async_tcp_i32() -> Result<(), Error> {
+    #[fluvio_future::test]
+    async fn test_async_tcp_i32() {
         debug!("start running test");
 
         let addr = "127.0.0.1:11225".parse::<SocketAddr>().expect("parse");
@@ -270,12 +265,10 @@ mod test {
         let client_ft = run_client(data, &addr);
 
         let _rt = join(client_ft, server_ft).await;
-
-        Ok(())
     }
 
-    #[test_async]
-    async fn test_async_tcp_raw_data() -> Result<(), Error> {
+    #[fluvio_future::test]
+    async fn test_async_tcp_raw_data() {
         debug!("start running test");
 
         let addr = "127.0.0.1:11226".parse::<SocketAddr>().expect("parse");
@@ -285,7 +278,5 @@ mod test {
         let client_ft = run_client(data, &addr);
 
         let _rt = join(client_ft, server_ft).await;
-
-        Ok(())
     }
 }

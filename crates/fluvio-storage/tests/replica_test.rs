@@ -7,7 +7,6 @@ use tracing::debug;
 use futures_lite::StreamExt;
 use futures_lite::future::zip;
 
-use fluvio_future::test_async;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
 use dataplane::{
@@ -191,11 +190,9 @@ async fn test_client(addr: &str) {
 }
 
 /// test replica fetch using dummy server
-#[test_async]
-async fn test_replica_fetch() -> Result<(), StorageError> {
+#[fluvio_future::test]
+async fn test_replica_fetch() {
     let addr = "127.0.0.1:9911";
 
     let _r = zip(test_client(addr), test_server(addr)).await;
-
-    Ok(())
 }

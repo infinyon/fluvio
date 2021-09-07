@@ -244,7 +244,6 @@ mod tests {
     use crate::SocketError;
     use fluvio_future::fs::util;
     use fluvio_future::fs::AsyncFileExtension;
-    use fluvio_future::test_async;
     use fluvio_future::timer::sleep;
     use fluvio_future::zero_copy::ZeroCopy;
     use fluvio_protocol::{Decoder, Encoder};
@@ -302,11 +301,10 @@ mod tests {
         Ok(())
     }
 
-    #[test_async]
-    async fn test_sink_copy() -> Result<(), SocketError> {
+    #[fluvio_future::test]
+    async fn test_sink_copy() {
         let addr = "127.0.0.1:9999";
 
         let _r = join(setup_client(addr), test_server(addr)).await;
-        Ok(())
     }
 }
