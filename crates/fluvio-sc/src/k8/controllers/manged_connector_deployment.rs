@@ -142,7 +142,6 @@ impl ManagedConnectorDeploymentController {
         let image = format!("infinyon/fluvio-connect-{}", mc_spec.config.type_);
         debug!("STARTING CONNECTOR FOR IMAGE {:?}", image);
         let args = &mc_spec.config.args;
-        let args : Vec<String> = args.keys().zip(args.values()).flat_map(|(key, value)| [key.clone(), value.clone()]).collect::<Vec<_>>();
 
 
         let template = TemplateSpec {
@@ -158,7 +157,7 @@ impl ManagedConnectorDeploymentController {
                     /*
                     env,
                     */
-                    args,
+                    args: args.to_vec(),
                     ..Default::default()
                 }],
                 //security_context: spu_k8_config.pod_security_context.clone(),

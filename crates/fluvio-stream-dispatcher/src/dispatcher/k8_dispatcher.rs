@@ -236,8 +236,8 @@ where
                     let meta = K8MetaItem::new(key.to_string(), self.namespace.named().to_owned());
                     (spec, meta)
                 };
-                if let Err(err) = self.ws_update_service.update_spec(metadata, spec).await {
-                    error!("error: {}, update spec {:?}", S::LABEL, err);
+                if let Err(err) = self.ws_update_service.update_spec(metadata.clone(), spec).await {
+                    error!("error: {}, update spec {:?}, metadata: {:#?}", S::LABEL, err, metadata);
                 }
             }
             WSAction::UpdateStatus((key, status)) => {

@@ -23,7 +23,7 @@ pub struct ManagedConnectorConfig {
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack
     pub topic: String,
-    pub args: std::collections::BTreeMap<String, String>,
+    pub args: Vec<String>,
 }
 
 impl ManagedConnectorConfig {}
