@@ -17,11 +17,11 @@ pub enum FluvioError {
     PartitionNotFound(String, i32),
     #[error("Spu not found: {0}")]
     SPUNotFound(i32),
-    #[error("Fluvio socket error")]
+    #[error("Fluvio socket error: {0}")]
     Socket(#[from] SocketError),
-    #[error("Fluvio controlplane error")]
+    #[error("Fluvio controlplane error: {0}")]
     AdminApi(#[from] ApiError),
-    #[error("Fluvio config error")]
+    #[error("Fluvio config error: {0}")]
     ClientConfig(#[from] ConfigError),
     #[error("Attempted to create negative offset: {0}")]
     NegativeOffset(i64),
@@ -43,7 +43,7 @@ To interact with this cluster, please install the matching CLI version using the
     },
     #[error("Consumer config error: {0}")]
     ConsumerConfig(String),
-    #[error("Encountered a runtime error in the user's SmartStream")]
+    #[error("Encountered a runtime error in the user's SmartStream: {0}")]
     SmartStreamRuntime(#[from] SmartStreamRuntimeError),
     #[error("Unknown error: {0}")]
     Other(String),
