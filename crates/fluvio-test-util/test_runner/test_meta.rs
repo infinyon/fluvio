@@ -32,7 +32,14 @@ impl FluvioTestMeta {
 
     pub fn set_topic(test_reqs: &TestRequirements, test_case: &mut TestCase) {
         if let Some(topic) = &test_reqs.topic {
-            test_case.environment.set_topic_name(topic.to_string());
+            // If the topic name is given over CLI, that value should override
+            if &test_case.environment.topic_name != topic {
+                test_case
+                    .environment
+                    .set_topic_name(test_case.environment.topic_name.clone());
+            } else {
+                test_case.environment.set_topic_name(topic.to_string());
+            }
         }
     }
 
