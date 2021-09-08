@@ -3,6 +3,7 @@ use std::time::SystemTime;
 use async_lock::RwLock;
 use async_channel::Receiver;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
+use fluvio_test_util::test_meta::environment::EnvDetail;
 use futures_lite::StreamExt;
 use fluvio::Offset;
 
@@ -16,14 +17,12 @@ pub async fn consumer_stream(
 ) {
     let mut lock = test_driver.write().await;
 
-    let consumer = lock
-        .get_consumer(option.environment.topic_name.as_str())
-        .await;
+    let consumer = lock.get_consumer(&option.environment.topic_name()).await;
 
     drop(lock);
 
     // TODO: Support starting stream from consumer offset
-    let mut stream = consumer.stream(Offset::end()).await.unwrap();
+    let mut stream = consumer.stream(Offset::from_end(0)).await.unwrap();
 
     let mut index: i32 = 0;
 

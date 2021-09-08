@@ -8,6 +8,7 @@ use std::time::Duration;
 pub trait EnvDetail: Debug + Clone {
     fn set_topic_name(&mut self, topic: String);
     fn topic_name(&self) -> String;
+    fn is_topic_set(&self) -> bool;
     fn replication(&self) -> u16;
     fn client_log(&self) -> Option<String>;
     fn spu(&self) -> u16;
@@ -27,11 +28,19 @@ pub trait EnvDetail: Debug + Clone {
 
 impl EnvDetail for EnvironmentSetup {
     fn set_topic_name(&mut self, topic: String) {
-        self.topic_name = topic;
+        self.topic_name = Some(topic);
     }
 
     fn topic_name(&self) -> String {
-        self.topic_name.clone()
+        if let Some(topic_name) = self.topic_name.clone() {
+            topic_name
+        } else {
+            "topic".to_string()
+        }
+    }
+
+    fn is_topic_set(&self) -> bool {
+        self.topic_name.is_some()
     }
 
     fn replication(&self) -> u16 {
@@ -122,8 +131,8 @@ pub struct EnvironmentSetup {
     pub keep_cluster: bool,
 
     /// topic name used
-    #[structopt(short("t"), long, default_value = "topic")]
-    pub topic_name: String,
+    #[structopt(short("t"), long)]
+    pub topic_name: Option<String>,
 
     /// number of spu
     #[structopt(short, long, default_value = "1")]

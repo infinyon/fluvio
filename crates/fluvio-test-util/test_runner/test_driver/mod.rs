@@ -137,7 +137,8 @@ impl TestDriver {
     pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
         use std::time::SystemTime;
 
-        println!("Creating the topic: {}", &option.topic_name);
+        let topic_name = option.topic_name();
+        println!("Creating the topic: {}", &topic_name);
 
         let TestDriverType::Fluvio(fluvio_client) = self.admin_client.as_ref();
         let admin = fluvio_client.admin().await;
@@ -148,20 +149,18 @@ impl TestDriver {
         // Create topic and record how long it takes
         let now = SystemTime::now();
 
-        let topic_create = admin
-            .create(option.topic_name.clone(), false, topic_spec)
-            .await;
+        let topic_create = admin.create(topic_name.clone(), false, topic_spec).await;
 
         let topic_time = now.elapsed().unwrap().as_nanos();
 
         if topic_create.is_ok() {
-            println!("topic \"{}\" created", option.topic_name);
+            println!("topic \"{}\" created", topic_name);
             self.topic_create_latency_histogram
                 .record(topic_time as u64)
                 .unwrap();
             self.topic_num += 1;
         } else {
-            println!("topic \"{}\" already exists", option.topic_name);
+            println!("topic \"{}\" already exists", topic_name);
         }
         Ok(())
     }

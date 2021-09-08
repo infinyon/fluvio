@@ -3,6 +3,7 @@ use async_lock::RwLock;
 use async_channel::Sender;
 use fluvio::RecordKey;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
+use fluvio_test_util::test_meta::environment::EnvDetail;
 use std::time::SystemTime;
 use tracing::debug;
 
@@ -16,9 +17,7 @@ pub async fn producer(
 ) {
     let mut lock = test_driver.write().await;
 
-    let producer = lock
-        .create_producer(option.environment.topic_name.as_str())
-        .await;
+    let producer = lock.create_producer(&option.environment.topic_name()).await;
 
     drop(lock);
 
