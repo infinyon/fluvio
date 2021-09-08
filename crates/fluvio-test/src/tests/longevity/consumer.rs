@@ -22,7 +22,7 @@ pub async fn consumer_stream(
     drop(lock);
 
     // TODO: Support starting stream from consumer offset
-    let mut stream = consumer.stream(Offset::from_end(0)).await.unwrap();
+    let mut stream = consumer.stream(Offset::from_end(1)).await.unwrap();
 
     let mut index: i32 = 0;
 
