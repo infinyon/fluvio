@@ -10,8 +10,8 @@ pub struct LongevityRecordBuilder {
     /// The producer will set this timestamp
     pub timestamp: SystemTime,
     // Index of this record wrt the longevity session, starting at 0
-    pub testrun_offset: u32, 
-    pub data: Vec<u8>
+    pub testrun_offset: u32,
+    pub data: Vec<u8>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -105,7 +105,6 @@ impl LongevityRecordBuilder {
         digest.update(format!("{}", &self.testrun_offset).as_bytes());
         digest.update(&self.data);
         digest.finalize()
-
     }
 }
 

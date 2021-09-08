@@ -31,9 +31,9 @@ pub async fn consumer_stream(
         // Take a timestamp before record consumed
         let now = SystemTime::now();
         if let Some(Ok(record_json)) = stream.next().await {
-
-            let record : LongevityRecord = serde_json::from_str(std::str::from_utf8(record_json.as_ref()).unwrap()).expect("Deserialize record failed");
-
+            let record: LongevityRecord =
+                serde_json::from_str(std::str::from_utf8(record_json.as_ref()).unwrap())
+                    .expect("Deserialize record failed");
 
             let consume_latency = now.elapsed().clone().unwrap().as_nanos();
             //let current_record_digest = hash_record(&record.data);
@@ -43,7 +43,7 @@ pub async fn consumer_stream(
                     "Consuming {:<5} (size {:<5}): consumed CRC: {}",
                     index,
                     record.data.len(),
-                    record.crc, 
+                    record.crc,
                 );
             }
 
