@@ -25,7 +25,6 @@ First Lock master branch (TBD)
 - [ ] Update `CHANGELOG.md` with release date.
 - [ ] Run the `release.yml` workflow on GitHub Actions.
 - [ ] Wait for workflow to complete successfully and apply `vX.Y.Z` tag to git.
-- [ ] Create PR from master to stable branch.  Get approval and merge it.
 - [ ] Update fluvio website to stable.
 
 Unlock Master branch (TBD)
