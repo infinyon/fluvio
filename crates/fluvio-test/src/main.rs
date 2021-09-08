@@ -207,7 +207,7 @@ mod tests {
             "not_the_default_topic_name",
         ]);
 
-        assert_eq!(args.environment.topic_name, "not_the_default_topic_name");
+        assert_eq!(args.environment.topic_name(), "not_the_default_topic_name");
     }
 
     #[test]
