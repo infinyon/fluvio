@@ -25,7 +25,6 @@ use crate::{
 };
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
-use crate::check::render::render_check_progress;
 
 use super::constants::*;
 use super::common::check_crd;
@@ -380,29 +379,15 @@ impl LocalInstaller {
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
     pub async fn setup(&self) -> CheckResults {
-        println!("Performing pre-flight checks");
-        let mut sys_config: ChartConfig = ChartConfig::sys_builder()
-            .version(self.config.chart_version.clone())
-            .build()
-            .expect("should build config since all required arguments are given");
+        let receiver = self.setup_with_progress().await;
+        let mut check_results = CheckResults::default();
 
-        if let Some(location) = &self.config.chart_location {
-            sys_config.location = location.to_owned().into();
+        while let Ok(local_progress) = receiver.recv().await {
+            if let LocalSetupProgressMessage::Check(check_result) = local_progress {
+                check_results.push(check_result);
+            }
         }
-
-        if self.config.render_checks {
-            let mut progress = ClusterChecker::empty()
-                .with_local_checks()
-                .with_check(SysChartCheck::new(sys_config))
-                .run_and_fix_with_progress();
-            render_check_progress(&mut progress).await
-        } else {
-            ClusterChecker::empty()
-                .with_local_checks()
-                .with_check(SysChartCheck::new(sys_config))
-                .run_wait_and_fix()
-                .await
-        }
+        check_results
     }
 
     /// Checks if all of the prerequisites for installing Fluvio locally are met
