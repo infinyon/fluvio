@@ -803,23 +803,23 @@ jobs:
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
           ~/.fluvio/bin/fluvio cluster start --image-version=latest
-      - name: Look for longevity data
-        run: |
-          set -e
-          if gh run download -n longevity-data -D /tmp ; then
-            echo "Longevity data exists"
-            cd /tmp
-            tar -xvf longevity-data.tar
-            ~/.fluvio/bin/fluvio topic create test
-            kubectl cp longevity-existing-0/00000000000000000000.index fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.index
-            kubectl cp longevity-existing-0/00000000000000000000.log fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.log
-            kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/replication.chk
-            k3d cluster stop --all
-            k3d cluster start --all
-            sleep 30
-          else
-            echo "Longevity data does not exist"
-          fi
+      #- name: Look for longevity data
+      #  run: |
+      #    set -e
+      #    if gh run download -n longevity-data -D /tmp ; then
+      #      echo "Longevity data exists"
+      #      cd /tmp
+      #      tar -xvf longevity-data.tar
+      #      ~/.fluvio/bin/fluvio topic create test
+      #      kubectl cp longevity-existing-0/00000000000000000000.index fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.index
+      #      kubectl cp longevity-existing-0/00000000000000000000.log fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.log
+      #      kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/replication.chk
+      #      k3d cluster stop --all
+      #      k3d cluster start --all
+      #      sleep 30
+      #    else
+      #      echo "Longevity data does not exist"
+      #    fi
 
       - name: Print partition list
         run: |
