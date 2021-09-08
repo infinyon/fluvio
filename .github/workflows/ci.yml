@@ -777,7 +777,7 @@ jobs:
         with:
           log_level: 'debug'
           artifact_name: longevity-data
-          dry_run: true
+          dry_run: false
 
       # TODO: Test optimization
       # We want to check for certain conditions for when to run this test
