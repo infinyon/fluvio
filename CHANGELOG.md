@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.6 - UNRELEASED
+* Improve display representation for some variants in FluvioError type ([#1581](https://github.com/infinyon/fluvio/issues/1581))
 
 ## Platform Version 0.9.5 - 2021-09-02
 * Update `Debug` printout for `SmartStreamWasm` to reduce noise ([#1524](https://github.com/infinyon/fluvio/pull/1524))
