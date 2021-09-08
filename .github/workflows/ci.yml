@@ -758,6 +758,7 @@ jobs:
 
   longevity:
     name: Longevity test 
+    needs: build_primary_binaries
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -770,6 +771,14 @@ jobs:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-x86_64-unknown-linux-musl
+          path: .
+
+      - name: Print artifacts and mark executable
+        run: chmod +x ./fluvio-test
       ## DEBUG: Don't forget to remove this
       ## TODO: Figure out how to add this to the hourly test
       #- name: Delete Artifact by Name
@@ -818,7 +827,7 @@ jobs:
           sleep 15
 
       - name: Run longevity test
-        run: make longevity-test
+        run: make TEST_BIN=./fluvio-test longevity-test
           
       # If the test passed, then copy the data from cluster to store into artifacts
       - name: Export data from the cluster for caching
