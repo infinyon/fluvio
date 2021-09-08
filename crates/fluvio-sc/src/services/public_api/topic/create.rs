@@ -11,6 +11,7 @@
 
 use std::io::{Error as IoError, ErrorKind};
 
+use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
@@ -74,6 +75,16 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
 /// Validate topic, takes advantage of the validation routines inside topic action workflow
 async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &Context) -> Status {
     debug!("validating topic: {}", name);
+
+    let valid_name = valid_topic_name(name);
+    if !valid_name {
+        debug!("invalid name exists");
+        return Status::new(
+            name.to_string(),
+            ErrorCode::TopicInvalidName,
+            Some(name.to_string()),
+        );
+    }
 
     let topics = metadata.topics().store();
     let spus = metadata.spus().store();

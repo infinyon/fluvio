@@ -8,6 +8,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
+use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::debug;
 use structopt::StructOpt;
 
@@ -121,10 +122,11 @@ impl CreateTopicOpt {
             })
         };
 
-        let is_valid = hostname_validator::is_valid(&self.topic);
+        let is_valid = valid_topic_name(&self.topic);
         if !is_valid {
             return Err(CliError::InvalidArg(
-                "Topic name must only contain alphanumeric characters, '-', or '.'".to_string(),
+                "Topic name must only contain lowercase alphanumeric characters or '-'."
+                    .to_string(),
             ));
         }
 
