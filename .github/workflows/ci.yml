@@ -833,18 +833,18 @@ jobs:
       - name: Export data from the cluster for caching
         run: |
           kubectl version
-          mkdir test-0
+          mkdir longevity-0
           echo Copy fluvio topic data from container
-          kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/test-0 test-0
-          #ls
-          #echo List copied topic data
-          #ls test-0
+          kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-0 longevity-0
+          ls
+          echo List copied topic data
+          ls longevity-0
           echo Make tarball from topic data
-          tar -cvf longevity-data.tar test-0
-          #echo Verify tarball
-          #cp longevity-data.tar /tmp
-          #cd /tmp
-          #tar -xvf longevity-data.tar
+          tar -cvf longevity-data.tar longevity-0
+          echo Verify tarball
+          cp longevity-data.tar /tmp
+          cd /tmp
+          tar -xvf longevity-data.tar
 
       - uses: actions/upload-artifact@v2
         with:
