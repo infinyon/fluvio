@@ -243,16 +243,16 @@ mod test {
         }
 
         fn create_unique_ns() -> String {
-            /* 
+            
             let mut rng = thread_rng();
             let ns: String = iter::repeat(())
                 .map(|()| rng.sample(Alphanumeric))
                 .map(char::from)
                 .take(7)
                 .collect();
-            ns
-            */
-            "test2".to_owned()
+            ns.to_lowercase()
+            
+            //"test2".to_owned()
         }
 
         async fn create_ns(ns: &str,k8_client: &K8Client)  {
