@@ -80,7 +80,7 @@ impl TestOption for LongevityTestOption {
     }
 }
 
-#[fluvio_test(topic = "test")]
+#[fluvio_test(topic = "longevity")]
 pub async fn longevity(
     mut test_driver: Arc<RwLock<FluvioTestDriver>>,
     mut test_case: TestCase,
