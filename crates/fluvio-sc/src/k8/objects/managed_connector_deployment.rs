@@ -51,7 +51,7 @@ impl From<ManagedConnectorDeploymentSpec> for K8DeploymentSpec {
 /// Statefulset Spec
 #[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
 #[serde(transparent)]
-pub struct DeploymentStatus(K8DeploymentStatus);
+pub struct DeploymentStatus(pub K8DeploymentStatus);
 
 impl Status for DeploymentStatus {}
 

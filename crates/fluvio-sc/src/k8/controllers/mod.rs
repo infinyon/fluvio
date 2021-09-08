@@ -1,7 +1,7 @@
 pub mod spg_stateful;
 pub mod spu_service;
 pub mod spu_controller;
-pub mod manged_connector_deployment;
+pub mod managed_connector_deployment;
 
 pub use k8_operator::run_k8_operators;
 
@@ -24,7 +24,7 @@ mod k8_operator {
     use crate::k8::controllers::spg_stateful::SpgStatefulSetController;
     use crate::k8::controllers::spu_service::SpuServiceController;
     use crate::k8::controllers::spu_controller::K8SpuController;
-    use crate::k8::controllers::manged_connector_deployment::ManagedConnectorDeploymentController;
+    use crate::k8::controllers::managed_connector_deployment::ManagedConnectorDeploymentController;
 
     pub async fn run_k8_operators(
         namespace: String,
