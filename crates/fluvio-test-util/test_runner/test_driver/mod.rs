@@ -73,7 +73,7 @@ impl TestDriver {
             .record(produce_time as u64)
             .unwrap();
 
-        self.consumer_bytes += message.len();
+        self.producer_bytes += message.len();
 
         result
     }

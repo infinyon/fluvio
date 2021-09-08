@@ -22,35 +22,40 @@ pub async fn consumer_stream(
     drop(lock);
 
     // TODO: Support starting stream from consumer offset
-    let mut stream = consumer.stream(Offset::from_end(1)).await.unwrap();
+    let mut stream = consumer.stream(Offset::from_end(0)).await.unwrap();
 
     let mut index: i32 = 0;
 
     // Run consumer while the producer is running
-    while let Ok(existing_record_digest) = digests.recv().await {
+    while let Ok(_existing_record_digest) = digests.recv().await {
         // Take a timestamp before record consumed
         let now = SystemTime::now();
-        if let Some(Ok(record)) = stream.next().await {
+        if let Some(Ok(record_json)) = stream.next().await {
+
+            let record : LongevityRecord = serde_json::from_str(std::str::from_utf8(record_json.as_ref()).unwrap()).expect("Deserialize record failed");
+
+
             let consume_latency = now.elapsed().clone().unwrap().as_nanos();
-            let current_record_digest = hash_record(record.as_ref());
+            //let current_record_digest = hash_record(&record.data);
 
             if option.option.verbose {
                 println!(
-                    "Consuming {:<5} (size {:<5}): was produced: {}, was consumed: {}",
+                    "Consuming {:<5} (size {:<5}): consumed CRC: {}",
                     index,
-                    record.as_ref().len(),
-                    existing_record_digest,
-                    current_record_digest
+                    record.data.len(),
+                    record.crc, 
                 );
             }
 
-            assert_eq!(existing_record_digest, current_record_digest);
+            //assert_eq!(existing_record_digest, current_record_digest);
+
+            assert!(record.validate_crc());
 
             let mut lock = test_driver.write().await;
 
             // record latency
             lock.consume_latency_record(consume_latency as u64).await;
-            lock.consume_bytes_record(record.as_ref().len()).await;
+            lock.consume_bytes_record(record.data.len()).await;
 
             drop(lock);
 
