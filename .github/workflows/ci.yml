@@ -770,6 +770,15 @@ jobs:
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
+      # DEBUG: Don't forget to remove this
+      # TODO: Figure out how to add this to the hourly test
+      - name: Delete Artifact by Name
+        uses: jimschubert/delete-artifacts-action@v1
+        with:
+          log_level: 'debug'
+          artifact_name: longevity-data
+          dry_run: true
+
       # TODO: Test optimization
       # We want to check for certain conditions for when to run this test
       # Check if the cached git commit matches the current git commit
