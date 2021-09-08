@@ -132,15 +132,11 @@ pub async fn produce_message_with_api(
 
             let mut lock = test_driver.write().await;
 
-            lock.send_count(
-                &producer,
-                RecordKey::NULL,
-                String::from_utf8(message.clone()).unwrap(),
-            )
-            .await
-            .unwrap_or_else(|_| {
-                panic!("send record failed for replication: {} iteration: {}", r, i)
-            });
+            lock.send_count(&producer, RecordKey::NULL, message.clone())
+                .await
+                .unwrap_or_else(|_| {
+                    panic!("send record failed for replication: {} iteration: {}", r, i)
+                });
             drop(lock);
 
             if i % 100 == 0 {

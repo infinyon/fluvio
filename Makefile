@@ -152,8 +152,8 @@ endif
 validate-release-stable:
 	./tests/fluvio-validate-release.sh $(VERSION) $(GIT_COMMIT)
 
-longevity-producer-test:
-	./tests/longevity-producer.sh
+longevity-test: build-test
+	$(TEST_BIN) -d -k longevity -- -v
 
 cli-platform-cross-version-test:
 	./tests/cli-platform-cross-version-test.sh $(CLI_VERSION) $(CLUSTER_VERSION)

@@ -54,7 +54,7 @@ impl TestDriver {
         &mut self,
         p: &TopicProducer,
         key: RecordKey,
-        message: String,
+        message: Vec<u8>,
     ) -> Result<(), FluvioError> {
         use std::time::SystemTime;
         let now = SystemTime::now();
