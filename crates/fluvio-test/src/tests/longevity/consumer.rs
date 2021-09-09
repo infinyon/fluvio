@@ -13,7 +13,7 @@ use super::util::*;
 pub async fn consumer_stream(
     test_driver: Arc<RwLock<TestDriver>>,
     option: LongevityTestCase,
-    digests: Receiver<String>,
+    heartbeat: Receiver<()>,
 ) {
     let mut lock = test_driver.write().await;
 
@@ -27,7 +27,7 @@ pub async fn consumer_stream(
     let mut index: i32 = 0;
 
     // Run consumer while the producer is running
-    while let Ok(_existing_record_digest) = digests.recv().await {
+    while heartbeat.recv().await.is_ok() {
         // Take a timestamp before record consumed
         let now = SystemTime::now();
         if let Some(Ok(record_json)) = stream.next().await {
@@ -36,7 +36,6 @@ pub async fn consumer_stream(
                     .expect("Deserialize record failed");
 
             let consume_latency = now.elapsed().clone().unwrap().as_nanos();
-            //let current_record_digest = hash_record(&record.data);
 
             if option.option.verbose {
                 println!(
@@ -46,8 +45,6 @@ pub async fn consumer_stream(
                     record.crc,
                 );
             }
-
-            //assert_eq!(existing_record_digest, current_record_digest);
 
             assert!(record.validate_crc());
 

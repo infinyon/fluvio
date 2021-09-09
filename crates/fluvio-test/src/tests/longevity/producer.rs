@@ -13,7 +13,7 @@ use super::util::*;
 pub async fn producer(
     test_driver: Arc<RwLock<TestDriver>>,
     option: LongevityTestCase,
-    digests: Sender<String>,
+    heartbeat: Sender<()>,
 ) {
     let mut lock = test_driver.write().await;
 
@@ -36,9 +36,6 @@ pub async fn producer(
             .as_bytes()
             .to_vec();
 
-        // TODO: Get rid of the channel and remove this var
-        let record_digest = hash_record(&record_json);
-
         debug!("{:?}", &record);
 
         if option.option.verbose {
@@ -57,10 +54,8 @@ pub async fn producer(
             .expect("Producer Send failed");
         drop(lock);
 
-        // Send the consumer the expected checksum for the record it just sent
-        // Note: We don't support consumer testing from a different starting offset than the producer (i.e., a catch-up read test)
-        debug!("{:?}", record_digest);
-        digests.send(record_digest).await.unwrap();
+        // Send heartbeat to consumer so it knows we're still sending data
+        heartbeat.send(()).await.unwrap();
 
         records_sent += 1;
     }
