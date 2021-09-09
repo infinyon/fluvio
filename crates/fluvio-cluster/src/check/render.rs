@@ -1,6 +1,7 @@
 #![allow(unused)]
 
-use async_channel::Receiver;
+use futures_util::StreamExt;
+use futures_channel::mpsc::Receiver;
 use crate::{CheckStatus, CheckResult, CheckResults, CheckFailed, CheckSuggestion};
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
@@ -8,7 +9,7 @@ const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
 /// Renders individual checks as they occur over time
 pub async fn render_check_progress(progress: &mut Receiver<CheckResult>) -> CheckResults {
     let mut check_results = vec![];
-    while let Ok(check_result) = progress.recv().await {
+    while let Some(check_result) = progress.next().await {
         render_check_result(&check_result);
         check_results.push(check_result);
     }

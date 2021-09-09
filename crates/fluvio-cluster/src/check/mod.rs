@@ -8,7 +8,7 @@ pub mod render;
 
 use tracing::{error, warn, debug};
 use async_trait::async_trait;
-use async_channel::Receiver;
+use futures_channel::mpsc::Receiver;
 use url::ParseError;
 use semver::Version;
 use serde_json::Error as JsonError;
@@ -26,6 +26,7 @@ use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
 use crate::{DEFAULT_NAMESPACE};
 
 use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
+use futures_util::SinkExt;
 
 const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
 const DELAY: u64 = 1000;
@@ -729,7 +730,7 @@ impl ClusterChecker {
     /// ```no_run
     /// # use fluvio_cluster::{ClusterChecker, CheckResult};
     /// # async fn do_run_with_progress() {
-    /// use async_channel::Receiver;
+    /// use futures_channel::mpsc::Receiver;
     /// let progress: Receiver<CheckResult> = ClusterChecker::empty()
     ///     .with_preflight_checks()
     ///     .run_with_progress();
@@ -741,7 +742,7 @@ impl ClusterChecker {
     ///
     /// [`run_wait`]: ClusterChecker::run_wait
     pub fn run_with_progress(self) -> Receiver<CheckResult> {
-        let (sender, receiver) = async_channel::bounded(100);
+        let (mut sender, receiver) = futures_channel::mpsc::channel(100);
         spawn(async move {
             for check in self.checks {
                 let check_result = check.perform_check().await;
@@ -768,7 +769,7 @@ impl ClusterChecker {
     ///
     /// [`run_wait`]: ClusterChecker::run_wait
     pub fn run_and_fix_with_progress(self) -> Receiver<CheckResult> {
-        let (sender, receiver) = async_channel::bounded(100);
+        let (mut sender, receiver) = futures_channel::mpsc::channel(100);
         spawn(async move {
             for check in &self.checks {
                 // Perform one individual check

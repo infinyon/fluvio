@@ -1437,7 +1437,6 @@ dependencies = [
 name = "fluvio-cluster"
 version = "0.0.0"
 dependencies = [
- "async-channel",
  "async-trait",
  "color-eyre",
  "colored",
@@ -1451,7 +1450,8 @@ dependencies = [
  "fluvio-helm",
  "fluvio-sc-schema",
  "flv-util",
- "futures-lite",
+ "futures-channel",
+ "futures-util",
  "include_dir",
  "indicatif",
  "k8-client",

@@ -854,7 +854,7 @@ impl ClusterInstaller {
     #[instrument(skip(self, ns))]
     async fn discover_sc_address(&self, ns: &str) -> Result<(String, u16), K8InstallError> {
         use tokio::select;
-        use futures_lite::stream::StreamExt;
+        use futures_util::stream::StreamExt;
 
         use fluvio_future::timer::sleep;
         use k8_types::K8Watch;

@@ -10,6 +10,7 @@ use crate::{CheckResults, ClusterError, LocalConfig, LocalInstallError, LocalIns
 
 use super::StartOpt;
 use crate::check::render::{RenderedText, render_results_next_steps, render_statuses_next_steps};
+use futures_util::StreamExt;
 
 /// Attempts to start a local Fluvio cluster
 ///
@@ -51,7 +52,7 @@ pub async fn process_local(
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
     if opt.setup {
-        setup_local_with_progress(&installer).await?;
+        setup_local_with_progress(installer).await?;
     } else {
         install_local(&installer).await?;
     }
@@ -78,7 +79,7 @@ pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliE
     Ok(())
 }
 
-pub async fn setup_local_with_progress(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
+pub async fn setup_local_with_progress(installer: LocalInstaller) -> Result<(), ClusterCliError> {
     let progress_bar = ProgressBar::new(1);
     progress_bar.set_style(
         ProgressStyle::default_bar()
@@ -86,9 +87,9 @@ pub async fn setup_local_with_progress(installer: &LocalInstaller) -> Result<(),
             .template("{spinner:.green} {wide_bar} {pos}/{len} {msg}"),
     );
 
-    let progress = installer.setup_with_progress().await;
+    let mut progress = installer.setup_with_progress().await;
     let mut check_results = CheckResults::default();
-    while let Ok(local_progress) = progress.recv().await {
+    while let Some(local_progress) = progress.next().await {
         match local_progress {
             LocalSetupProgressMessage::Check(check_result) => {
                 let text = check_result.text();
