@@ -10,8 +10,8 @@ on:
 #    branches: [master]
   workflow_dispatch:
 jobs:
-  producer_longevity:
-    name: Producer longevity test 
+  longevity:
+    name: Longevity test 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
@@ -23,6 +23,27 @@ jobs:
 
       - name: Login GH CLI
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+
+      - name: Download dev release
+        run: gh release download dev -R infinyon/fluvio -D /tmp
+
+      - name: Unpack fluvio-test
+        run: |
+          unzip "/tmp/fluvio-test-x86_64-unknown-linux-musl.zip" -d "/tmp/fluvio-test-x86_64-unknown-linux-musl"
+          chmod +x /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test
+          cp /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test .
+
+      - name: Print artifacts and mark executable
+        run: chmod +x ./fluvio-test
+
+      ## DEBUG: Don't forget to remove this
+      ## TODO: Figure out how to add this to the hourly test
+      #- name: Delete Artifact by Name
+      #  uses: jimschubert/delete-artifacts-action@v1
+      #  with:
+      #    log_level: 'debug'
+      #    artifact_name: longevity-data
+      #    dry_run: false
 
       # TODO: Test optimization
       # We want to check for certain conditions for when to run this test
@@ -39,23 +60,25 @@ jobs:
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
           ~/.fluvio/bin/fluvio cluster start --image-version=latest
-      - name: Look for longevity data
-        run: |
-          set -e
-          if gh run download -n longevity-data -D /tmp ; then
-            echo "Longevity data exists"
-            cd /tmp
-            tar -xvf longevity-data.tar
-            ~/.fluvio/bin/fluvio topic create longevity-existing
-            kubectl cp longevity-existing-0/00000000000000000000.index fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/00000000000000000000.index
-            kubectl cp longevity-existing-0/00000000000000000000.log fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/00000000000000000000.log
-            kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/replication.chk
-            k3d cluster stop --all
-            k3d cluster start --all
-            sleep 30
-          else
-            echo "Longevity data does not exist"
-          fi
+
+      # Disabled for now bc data load is unstable in CI
+      #- name: Look for longevity data
+      #  run: |
+      #    set -e
+      #    if gh run download -n longevity-data -D /tmp ; then
+      #      echo "Longevity data exists"
+      #      cd /tmp
+      #      tar -xvf longevity-data.tar
+      #      ~/.fluvio/bin/fluvio topic create test
+      #      kubectl cp longevity-existing-0/00000000000000000000.index fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.index
+      #      kubectl cp longevity-existing-0/00000000000000000000.log fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.log
+      #      kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/replication.chk
+      #      k3d cluster stop --all
+      #      k3d cluster start --all
+      #      sleep 30
+      #    else
+      #      echo "Longevity data does not exist"
+      #    fi
 
       - name: Print partition list
         run: |
@@ -63,24 +86,24 @@ jobs:
           sleep 15
 
       - name: Run longevity test
-        run: make longevity-test
+        run: make TEST_BIN=./fluvio-test longevity-test
           
       # If the test passed, then copy the data from cluster to store into artifacts
       - name: Export data from the cluster for caching
         run: |
           kubectl version
-          mkdir longevity-existing-0
+          mkdir longevity-0
           echo Copy fluvio topic data from container
-          kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-existing-0 longevity-existing-0
-          #ls
-          #echo List copied topic data
-          #ls longevity-existing-0
+          kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-0 longevity-0
+          ls
+          echo List copied topic data
+          ls longevity-0
           echo Make tarball from topic data
-          tar -cvf longevity-data.tar longevity-existing-0
-          #echo Verify tarball
-          #cp longevity-data.tar /tmp
-          #cd /tmp
-          #tar -xvf longevity-data.tar
+          tar -cvf longevity-data.tar longevity-0
+          echo Verify tarball
+          cp longevity-data.tar /tmp
+          cd /tmp
+          tar -xvf longevity-data.tar
 
       - uses: actions/upload-artifact@v2
         with:
@@ -101,96 +124,12 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_producer_longevity_spu0.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_producer_longevity_sc.log || true
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_longevity_spu0.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_longevity_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
         if: failure()
         uses: actions/upload-artifact@v2
         with:
-          name: k8_producer_longevity_log
-          path: /tmp/k8_*.log
-
-  consumer_longevity:
-    name: Consumer longevity test 
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false 
-      matrix:
-        os: [ubuntu-latest]
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
-
-      - name: Setup K3d
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-      - name: Create K3d cluster
-        run: |
-          ./k8-util/cluster/reset-k3d.sh
-
-      - name: Install Fluvio CLI and start cluster
-        run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-          ~/.fluvio/bin/fluvio cluster start --image-version=latest
-
-      - name: Look for longevity data
-        run: |
-          set -e
-          if gh run download -n longevity-data -D /tmp ; then
-            echo "Longevity data exists"
-            cd /tmp
-            tar -xvf longevity-data.tar
-            ~/.fluvio/bin/fluvio topic create longevity-existing
-            kubectl cp longevity-existing-0/00000000000000000000.index fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/00000000000000000000.index
-            kubectl cp longevity-existing-0/00000000000000000000.log fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/00000000000000000000.log
-            kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/longevity-existing-0/replication.chk
-            k3d cluster stop --all
-            k3d cluster start --all
-            sleep 30
-            export DATA_LOADED=true
-            echo "DATA_LOADED=true" | tee -a $GITHUB_ENV
-          else
-            echo "Longevity data does not exist"
-            export DATA_LOADED=false
-            echo "DATA_LOADED=false" | tee -a $GITHUB_ENV
-          fi
-
-      - name: Print partition list
-        run: |
-          ~/.fluvio/bin/fluvio partition list
-          sleep 15
-
-      - name: Consume longevity data from beginning of topic
-        run: |
-          if [ $DATA_LOADED = true ] ; then
-            ~/.fluvio/bin/fluvio consume -B -d longevity-existing
-          else
-            echo "Skipping consumer test"
-          fi
-
-      - name: Save logs
-        if: failure()
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_consumer_longevity_spu0.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_consumer_longevity_sc.log || true
-      - name: Upload logs
-        timeout-minutes: 5
-        if: failure()
-        uses: actions/upload-artifact@v2
-        with:
-          name: k8_consumer_longevity_log
+          name: k8_longevity_log
           path: /tmp/k8_*.log
