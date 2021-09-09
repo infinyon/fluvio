@@ -12,8 +12,6 @@ use std::fmt;
 
 use flv_util::socket_helpers::EndPoint as SocketEndPoint;
 use flv_util::socket_helpers::EndPointEncryption;
-use fluvio_types::defaults::{SPU_PRIVATE_HOSTNAME, SPU_PRIVATE_PORT};
-use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::SpuId;
 use flv_util::socket_helpers::ServerAddress;
 
@@ -21,7 +19,7 @@ use dataplane::core::{Encoder, Decoder};
 use dataplane::bytes::{Buf, BufMut};
 use dataplane::core::Version;
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq, Default)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -36,6 +34,9 @@ pub struct SpuSpec {
     pub private_endpoint: Endpoint,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub rack: Option<String>,
+
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
+    pub public_endpoint_local: Option<Endpoint>,
 }
 
 impl fmt::Display for SpuSpec {
@@ -45,25 +46,6 @@ impl fmt::Display for SpuSpec {
             "id: {}, type: {}, public: {}",
             self.id, self.spu_type, self.public_endpoint
         )
-    }
-}
-
-impl Default for SpuSpec {
-    fn default() -> Self {
-        SpuSpec {
-            id: -1,
-            spu_type: SpuType::default(),
-            public_endpoint: IngressPort {
-                port: SPU_PUBLIC_PORT,
-                ..Default::default()
-            },
-            private_endpoint: Endpoint {
-                port: SPU_PRIVATE_PORT,
-                host: SPU_PRIVATE_HOSTNAME.to_string(),
-                encryption: EncryptionEnum::default(),
-            },
-            rack: None,
-        }
     }
 }
 
@@ -168,6 +150,7 @@ impl From<CustomSpuSpec> for SpuSpec {
             private_endpoint: spec.private_endpoint,
             rack: spec.rack,
             spu_type: SpuType::Custom,
+            public_endpoint_local: Default::default(),
         }
     }
 }
