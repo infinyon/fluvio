@@ -777,8 +777,19 @@ jobs:
           name: fluvio-test-x86_64-unknown-linux-musl
           path: .
 
+      - name: Download dev release
+        run: gh release download dev -R infinyon/fluvio -D /tmp
+
+      - name: Unpack fluvio-test
+        run: |
+          unzip "/tmp/fluvio-test-x86_64-unknown-linux-musl.zip" -d "/tmp/fluvio-test-x86_64-unknown-linux-musl"
+          chmod +x /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test
+          #cp /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test .
+          /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test -h
+
       - name: Print artifacts and mark executable
         run: chmod +x ./fluvio-test
+
       ## DEBUG: Don't forget to remove this
       ## TODO: Figure out how to add this to the hourly test
       #- name: Delete Artifact by Name

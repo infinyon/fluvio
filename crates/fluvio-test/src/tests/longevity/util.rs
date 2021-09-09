@@ -18,6 +18,7 @@ pub struct LongevityRecordBuilder {
 pub struct LongevityRecord {
     pub timestamp: SystemTime,
     pub offset: u32,
+    #[serde(with = "serde_bytes")]
     pub data: Vec<u8>,
     pub crc: u32,
 }
