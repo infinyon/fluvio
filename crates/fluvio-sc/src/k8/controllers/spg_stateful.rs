@@ -251,6 +251,12 @@ mod test {
             ns.to_lowercase()
         }
 
+        async fn delete(&self) {
+
+            self.client.delete_item_with_option::<S::K8Spec, _>(meta.inner(), options)
+
+        }
+
         async fn create_ns(ns: &str, k8_client: &K8Client) {
             let input_meta = InputObjectMeta {
                 name: ns.to_owned(),
@@ -266,8 +272,8 @@ mod test {
             &self.ns
         }
 
-        fn client(&self) -> SharedK8Client {
-            self.client.clone()
+        fn client(&self) -> &SharedK8Client {
+            &self.client
         }
     }
 
@@ -284,7 +290,7 @@ mod test {
 
         K8ClusterStateDispatcher::<_, _>::start(
             test_env.ns().to_owned(),
-            test_env.client(),
+            test_env.client().clone(),
             statefulset_ctx.clone(),
         );
 
@@ -297,5 +303,13 @@ mod test {
             spg_service_ctx,
             None,
         );
+
+        // wait for controllers to startup
+        sleep(Duration::from_millis(10)).await;
+
+
+        
+
+
     }
 }

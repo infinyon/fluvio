@@ -231,8 +231,8 @@ run-integration-test:build_smartstreams install_rustup_target
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-spu -- --ignored --test-threads=1
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-socket -- --ignored --test-threads=1
 
-run-k8-test:	install_rustup_target
-	cargo test --lib  -p fluvio-sc -- --ignored --test-threads=1
+run-k8-test:	install_rustup_target build_k8_image
+	cargo test --lib  -p fluvio-sc  -- --ignored --test-threads=1
 
 
 run-all-doc-test: install_rustup_target 
