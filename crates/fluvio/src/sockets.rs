@@ -92,7 +92,11 @@ impl From<String> for ClientConfig {
 }
 
 impl ClientConfig {
-    pub fn new<S: Into<String>>(addr: S, connector: DomainConnector, use_spu_local_address: bool) -> Self {
+    pub fn new<S: Into<String>>(
+        addr: S,
+        connector: DomainConnector,
+        use_spu_local_address: bool,
+    ) -> Self {
         Self {
             addr: addr.into(),
             client_id: "fluvio".to_owned(),
