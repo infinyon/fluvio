@@ -52,9 +52,6 @@ impl FluvioTestMeta {
     }
 
     pub fn customize_test(test_reqs: &TestRequirements, test_case: &mut TestCase) {
-        println!("{:?}", test_reqs);
-        println!("{:?}", test_case);
-
         Self::set_topic(test_reqs, test_case);
         Self::set_timeout(test_reqs, test_case);
     }
