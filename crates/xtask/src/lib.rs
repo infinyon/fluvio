@@ -16,6 +16,7 @@ use serde_json::Value;
 pub const CARGO: &str = env!("CARGO");
 
 #[derive(StructOpt, Debug)]
+#[structopt(settings = &[structopt::clap::AppSettings::DeriveDisplayOrder])]
 pub struct Root {
     #[structopt(subcommand)]
     pub cmd: RootCmd,
@@ -23,17 +24,24 @@ pub struct Root {
 
 #[derive(StructOpt, Debug)]
 pub enum RootCmd {
+    /// Build fluvio-cli, fluvio-run, fluvio-test, and all smartstreams
     Build(BuildOpt),
+    /// Build fluvio-run and package it into a docker image
     BuildImage(DockerOpt),
+    /// Run clippy on all crates
     Clippy(BuildOpt),
+    /// Run all unit, doc, and integration tests
     Test(BuildOpt),
+    /// Run all unit tests
     #[structopt(aliases = &["test-unit", "unit-test", "unit-tests"])]
     TestUnits(BuildOpt),
+    /// Run all doc tests
     #[structopt(aliases = &["test-doc", "doc-test", "doc-tests"])]
     TestDocs(BuildOpt),
-    TestClientDocs(BuildOpt),
+    /// Run all integration tests
     #[structopt(aliases = &["integration-test", "integration-tests"])]
     TestIntegration(BuildOpt),
+    /// Install the toolchain for the given target, via rustup or cross
     InstallTarget(InstallTargetOpt),
 }
 
@@ -54,9 +62,6 @@ impl RootCmd {
             }
             Self::TestDocs(opt) => {
                 opt.test_docs()?;
-            }
-            Self::TestClientDocs(opt) => {
-                opt.test_client_docs()?;
             }
             Self::TestUnits(opt) => {
                 opt.test_units()?;

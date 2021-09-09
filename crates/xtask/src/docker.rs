@@ -10,10 +10,13 @@ use crate::dockerfile_path;
 pub struct DockerOpt {
     #[structopt(flatten)]
     build: BuildOpt,
+    /// Load the docker image into minikube after building
     #[structopt(long)]
     minikube: bool,
+    /// Load the docker image into k3d after building
     #[structopt(long)]
     k3d: bool,
+    /// Load the docker image into kind after building
     #[structopt(long)]
     kind: bool,
 }

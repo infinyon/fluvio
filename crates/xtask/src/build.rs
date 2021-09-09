@@ -8,10 +8,13 @@ use crate::install_target;
 
 #[derive(StructOpt, Debug, Default)]
 pub struct BuildOpt {
+    /// Build in release mode
     #[structopt(long)]
     pub release: bool,
+    /// Build in verbose mode
     #[structopt(long)]
     pub verbose: bool,
+    /// (Optional) A specific platform target to build for
     #[structopt(long)]
     pub target: Option<String>,
 }
@@ -100,20 +103,6 @@ impl BuildOpt {
 
     pub fn test_docs(&self) -> Result<()> {
         cmd!(CARGO, "test", "--doc", "--all-features").run()?;
-        Ok(())
-    }
-
-    pub fn test_client_docs(&self) -> Result<()> {
-        cmd!(
-            CARGO,
-            "test",
-            "--doc",
-            "--all-features",
-            "--package=fluvio",
-            "--package=fluvio-cli",
-            "--package=fluvio-cluster"
-        )
-        .run()?;
         Ok(())
     }
 
