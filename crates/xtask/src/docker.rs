@@ -1,10 +1,10 @@
+use std::path::{PathBuf, Path};
 use structopt::StructOpt;
 use color_eyre::Result;
 use duct::cmd;
 
 use crate::build::BuildOpt;
-use crate::{target_directory, dockerfile_path};
-use std::path::{PathBuf, Path};
+use crate::dockerfile_path;
 
 #[derive(StructOpt, Debug, Default)]
 pub struct DockerOpt {
@@ -19,7 +19,8 @@ pub struct DockerOpt {
 }
 
 pub struct DockerBuildStatus {
-    pub tags: Vec<String>,
+    pub tag: String,
+    pub targeted_tag: String,
     pub path: PathBuf,
 }
 
@@ -36,7 +37,7 @@ impl DockerOpt {
         }
         if self.kind {
             println!("Loading into kind");
-            self.load_image_kind(&docker_status.path)?;
+            self.load_image_kind(&docker_status)?;
         }
         Ok(())
     }
@@ -98,23 +99,38 @@ impl DockerOpt {
         .run()?;
 
         let status = DockerBuildStatus {
-            tags: vec![docker_tag, docker_tag_target],
+            tag: docker_tag,
+            targeted_tag: docker_tag_target,
             path: docker_tar,
         };
         Ok(status)
     }
 
+    /// Load the docker image tar from the given path into minikube's docker environment
     fn load_image_minikube(&self, tar: &Path) -> Result<()> {
-        cmd!("minikube", "image", "load", tar).run()?;
+        let infinyon_fluvio_tar = std::fs::File::open(tar)?;
+        // Below is equivalent to the following:
+        // eval $(minikube docker-env) && docker load < infinyon-fluvio.tar
+        cmd!(
+            "bash",
+            "-c",
+            "eval $(minikube -p minikube docker-env) && docker load"
+        )
+        .stdin_file(infinyon_fluvio_tar)
+        .run()?;
         Ok(())
     }
 
+    /// Load the docker image tar from the given path into k3d
     fn load_image_k3d(&self, tar: &Path) -> Result<()> {
-        cmd!("k3d", "image", "import", "-k", tar, "-c", "fluvio").run()?;
+        cmd!("k3d", "image", "import", "-k", tar).run()?;
         Ok(())
     }
 
-    fn load_image_kind(&self, tar: &Path) -> Result<()> {
+    /// Load the docker image by name from the docker daemon into kind
+    fn load_image_kind(&self, status: &DockerBuildStatus) -> Result<()> {
+        let image_tag = &status.tag;
+        cmd!("kind", "load", "docker-image", image_tag).run()?;
         Ok(())
     }
 }
