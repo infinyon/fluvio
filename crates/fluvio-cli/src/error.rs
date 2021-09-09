@@ -105,6 +105,7 @@ impl CliError {
                 }
                 _ => Err(self),
             },
+            #[cfg(feature = "k8s")]
             Self::ClusterCliError(ClusterCliError::TargetError(TargetError::ClientError(
                 FluvioError::Socket(SocketError::Io(io)),
             ))) => match io.kind() {
