@@ -99,7 +99,7 @@ jobs:
 
           for ZIP_FILE in ./*.zip; do
             # Don't publish `fluvio-test` artifact outside of github
-            [ "$ZIP_FILE" = "fluvio-test-x86_64-unknown-linux-musl.zip" ] && continue
+            [ "$ZIP_FILE" = "./fluvio-test-x86_64-unknown-linux-musl.zip" ] && echo "Skipping fluvio-test" && continue
 
             # Unzip all .zip files into directories with the same name (minus .zip)
             UNZIP_DIR="${ZIP_FILE//.zip/}"
