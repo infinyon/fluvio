@@ -6,6 +6,8 @@ use duct::cmd;
 use crate::{CARGO, target_directory};
 use crate::install_target;
 
+const WASM_TARGET: &str = "wasm32-unknown-unknown";
+
 #[derive(StructOpt, Debug, Default)]
 pub struct BuildOpt {
     /// Build in release mode
@@ -76,11 +78,12 @@ impl BuildOpt {
     }
 
     pub fn build_smartstreams(&self) -> Result<()> {
-        install_target(Some("wasm32-unknown-unknown"))?;
+        install_target(Some(WASM_TARGET))?;
         cmd!(
             CARGO,
             "build",
-            "--target=wasm32-unknown-unknown",
+            "--target",
+            WASM_TARGET,
             "--manifest-path=crates/fluvio-smartstream/examples/Cargo.toml",
         )
         .run()?;
