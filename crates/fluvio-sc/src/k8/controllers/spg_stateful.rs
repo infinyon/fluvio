@@ -211,6 +211,7 @@ mod test {
 
     use std::iter;
 
+    use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
     use tracing::debug;
 
     use k8_metadata_client::MetadataClient;
@@ -221,29 +222,26 @@ mod test {
 
     use k8_client::{K8Client, SharedK8Client, load_and_share};
 
+    use crate::config::ScConfig;
+    use crate::core::Context;
+
     use super::*;
 
     struct TestEnv {
         ns: String,
-        client: SharedK8Client
+        client: SharedK8Client,
     }
 
     impl TestEnv {
-
         async fn create() -> Self {
-
             let client = load_and_share().expect("creating k8 client");
             let ns = Self::create_unique_ns();
             Self::create_ns(&ns, &client).await;
 
-            Self {
-                ns,
-                client
-            }
+            Self { ns, client }
         }
 
         fn create_unique_ns() -> String {
-            
             let mut rng = thread_rng();
             let ns: String = iter::repeat(())
                 .map(|()| rng.sample(Alphanumeric))
@@ -251,12 +249,9 @@ mod test {
                 .take(7)
                 .collect();
             ns.to_lowercase()
-            
-            //"test2".to_owned()
         }
 
-        async fn create_ns(ns: &str,k8_client: &K8Client)  {
-        
+        async fn create_ns(ns: &str, k8_client: &K8Client) {
             let input_meta = InputObjectMeta {
                 name: ns.to_owned(),
                 ..Default::default()
@@ -265,25 +260,42 @@ mod test {
             debug!(%ns,"creating ns");
             let input = InputK8Obj::new(NamespaceSpec::default(), input_meta);
             k8_client.apply(input).await.expect("ns created");
-            
+        }
+
+        fn ns(&self) -> &str {
+            &self.ns
+        }
+
+        fn client(&self) -> SharedK8Client {
+            self.client.clone()
         }
     }
 
     #[fluvio_future::test(ignore)]
     async fn test_statefulset() {
-        let _test_env = TestEnv::create().await;
+        let test_env = TestEnv::create().await;
 
-        // create unique ns
-        /*
+        let sc_config = ScConfig::default();
+        let config_ctx: StoreContext<ScK8Config> = StoreContext::new();
+        let global_ctx = Context::shared_metadata(sc_config);
+
+        let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
+        let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
+
+        K8ClusterStateDispatcher::<_, _>::start(
+            test_env.ns().to_owned(),
+            test_env.client(),
+            statefulset_ctx.clone(),
+        );
+
         SpgStatefulSetController::start(
-            namespace,
+            test_env.ns().to_owned(),
             config_ctx.clone(),
             global_ctx.spgs().clone(),
             statefulset_ctx,
             global_ctx.spus().clone(),
             spg_service_ctx,
-            tls,
+            None,
         );
-        */
     }
 }
