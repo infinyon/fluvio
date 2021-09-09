@@ -80,11 +80,15 @@ pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliE
 }
 
 pub async fn setup_local_with_progress(installer: LocalInstaller) -> Result<(), ClusterCliError> {
+    use colored::*;
     let progress_bar = ProgressBar::new(1);
     progress_bar.set_style(
         ProgressStyle::default_bar()
-            .progress_chars("##-")
-            .template("{spinner:.green} {wide_bar} {pos}/{len} {msg}"),
+            .progress_chars("=> ")
+            .template(&format!(
+                "{:>12} {{spinner:.green}} [{{bar}}] {{pos}}/{{len}} {{msg}}",
+                "Checking: ".green().bold()
+            )),
     );
 
     let mut progress = installer.setup_with_progress().await;
@@ -103,7 +107,7 @@ pub async fn setup_local_with_progress(installer: LocalInstaller) -> Result<(), 
                 progress_bar.println(&text);
             }
             LocalSetupProgressMessage::PreFlighCheck(i) => {
-                println!("Running pre-flight checks ({})", i);
+                println!("{}", "Running pre-flight checks".bold());
                 progress_bar.set_length(i);
                 progress_bar.enable_steady_tick(100);
             }

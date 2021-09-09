@@ -157,18 +157,20 @@ impl RenderedText for CheckStatus {
 
         let mut text = match self {
             Pass(success) => {
-                format!("✅ {} {}", "ok:".bold().green(), success.green())
+                format!("{:>13} {}", "Ok: ✅".bold().green(), success)
             }
             Fail(e @ CheckFailed::AutoRecoverable(_)) => {
                 format!(
-                    "❕ {} {}",
+                    "{:>11} {}\n{:indent$}💡 {}",
+                    "Warn: 🟡️".bold().yellow(),
+                    e,
+                    "",
                     format!(
-                        "warning:\n   💡 {} this may be fixed automatically during startup",
-                        e
-                    )
-                    .bold()
-                    .yellow(),
-                    "note:".bold()
+                        "{:>11} {}",
+                        "note:".bold(),
+                        "This may be fixed automatically during startup"
+                    ),
+                    indent = 9,
                 )
             }
             Fail(CheckFailed::AlreadyInstalled) => {
@@ -191,9 +193,11 @@ impl RenderedText for CheckStatus {
 
         if let Some(suggestion) = self.suggestion() {
             text.push_str(&format!(
-                "\n  💡 {} {}",
+                "\n{:indent$}💡 {:>11} {}",
+                "",
                 "suggestion:".bold().cyan(),
-                suggestion
+                suggestion,
+                indent = 9,
             ));
         }
         text
