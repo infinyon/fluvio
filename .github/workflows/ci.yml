@@ -96,15 +96,15 @@ jobs:
 
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
-        run: make build-cli
+        run: cargo xtask build-cli
 
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
-        run: make build-cluster
+        run: cargo xtask build-cluster
 
       - name: Build fluvio-test
         if: ${{ matrix.binary == 'fluvio-test' }}
-        run: make build-test
+        run: cargo xtask build-test
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -192,7 +192,7 @@ jobs:
 
       - name: Build fluvio
         if: ${{ matrix.binary == 'fluvio' }}
-        run: make build-cli
+        run: cargo xtask build-cli
 
       - name: Install mingw gcc
         if: ${{ matrix.rust-target  == 'x86_64-pc-windows-gnu' }}
@@ -204,7 +204,7 @@ jobs:
 
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
-        run: make build-cluster
+        run: cargo xtask build-cluster
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -247,16 +247,16 @@ jobs:
         run: make check-fmt
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
-        run: make check-clippy
+        run: cargo xtask clippy
       - name: Doc Test
         if: ${{ matrix.check == 'doc' }}
-        run: make run-all-doc-test
+        run: cargo xtask test-docs
       - name: Unit Test
         if: ${{ matrix.check == 'test' }}
-        run: make run-all-unit-test
+        run: cargo xtask test-units
       - name: Integration test
         if: ${{ matrix.check == 'integration' }}
-        run: make run-integration-test
+        run: cargo xtask test-integration
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})

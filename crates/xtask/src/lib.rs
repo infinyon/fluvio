@@ -26,6 +26,14 @@ pub struct Root {
 pub enum RootCmd {
     /// Build fluvio-cli, fluvio-run, fluvio-test, and all smartstreams
     Build(BuildOpt),
+    /// Build fluvio-cli
+    BuildCli(BuildOpt),
+    /// Build fluvio-run
+    BuildCluster(BuildOpt),
+    /// Build fluvio-test
+    BuildTest(BuildOpt),
+    /// Build all smartstream examples
+    BuildSmartstreams(BuildOpt),
     /// Build fluvio-run and package it into a docker image
     BuildImage(DockerOpt),
     /// Run clippy on all crates
@@ -50,6 +58,18 @@ impl RootCmd {
         match self {
             Self::Build(opt) => {
                 opt.build()?;
+            }
+            Self::BuildCli(opt) => {
+                opt.build_cli()?;
+            }
+            Self::BuildCluster(opt) => {
+                opt.build_cluster()?;
+            }
+            Self::BuildTest(opt) => {
+                opt.build_test()?;
+            }
+            Self::BuildSmartstreams(opt) => {
+                opt.build_smartstreams()?;
             }
             Self::BuildImage(opt) => {
                 opt.build_image()?;
