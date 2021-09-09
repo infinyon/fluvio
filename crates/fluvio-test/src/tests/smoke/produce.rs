@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
+use fluvio_test_util::test_meta::environment::EnvDetail;
 use tracing::{info, debug};
 
 use super::SmokeTestCase;
@@ -51,6 +52,7 @@ mod offsets {
 
     use super::SmokeTestCase;
     use super::{TestDriver, TestDriverType};
+    use super::EnvDetail;
 
     pub async fn find_offsets(
         test_driver: &TestDriver,
@@ -66,11 +68,11 @@ mod offsets {
         let mut admin = fluvio_client.admin().await;
 
         for _i in 0..partition {
-            let topic_name = test_case.environment.topic_name.clone();
+            let topic_name = test_case.environment.topic_name();
             // find last offset
             let offset = last_leo(&mut admin, &topic_name).await;
-            println!("found topic: {} offset: {}", topic_name, offset);
-            offsets.insert(topic_name, offset);
+            println!("found topic: {} offset: {}", &topic_name, offset);
+            offsets.insert(topic_name.to_string(), offset);
         }
 
         offsets
@@ -112,7 +114,7 @@ pub async fn produce_message_with_api(
 
     let produce_iteration = test_case.option.producer_iteration;
 
-    let topic_name = test_case.environment.topic_name.clone();
+    let topic_name = test_case.environment.topic_name();
 
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
@@ -132,15 +134,11 @@ pub async fn produce_message_with_api(
 
             let mut lock = test_driver.write().await;
 
-            lock.send_count(
-                &producer,
-                RecordKey::NULL,
-                String::from_utf8(message.clone()).unwrap(),
-            )
-            .await
-            .unwrap_or_else(|_| {
-                panic!("send record failed for replication: {} iteration: {}", r, i)
-            });
+            lock.send_count(&producer, RecordKey::NULL, message.clone())
+                .await
+                .unwrap_or_else(|_| {
+                    panic!("send record failed for replication: {} iteration: {}", r, i)
+                });
             drop(lock);
 
             if i % 100 == 0 {
@@ -191,9 +189,9 @@ mod cli {
 
     fn produce_message_inner(_iteration: u32, offsets: &Offsets, test_case: &SmokeTestCase) {
         use std::io;
-        let topic_name = test_case.environment.topic_name.as_str();
+        let topic_name = test_case.environment.topic_name();
 
-        let base_offset = *offsets.get(topic_name).expect("offsets");
+        let base_offset = *offsets.get(&topic_name).expect("offsets");
 
         info!(
             "produce cli message: {}, offset: {}",
@@ -204,7 +202,7 @@ mod cli {
         if let Some(log) = &test_case.environment.client_log {
             child.env("RUST_LOG", log);
         }
-        child.stdin(Stdio::piped()).arg("produce").arg(topic_name);
+        child.stdin(Stdio::piped()).arg("produce").arg(&topic_name);
         println!("Executing: {}", child.display());
         let mut child = child.spawn().expect("no child");
 

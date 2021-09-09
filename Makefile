@@ -152,8 +152,17 @@ endif
 validate-release-stable:
 	./tests/fluvio-validate-release.sh $(VERSION) $(GIT_COMMIT)
 
-longevity-producer-test:
-	./tests/longevity-producer.sh
+ifeq (${CI},true)
+# In CI, we expect all artifacts to already be built and loaded for the script
+longevity-test:
+	$(TEST_BIN) -d -k longevity -- --runtime-seconds=600
+else
+# When not in CI (i.e. development), load the dev k8 image before running test
+longevity-test: build-test
+	$(TEST_BIN) -d -k longevity -- $(VERBOSE_FLAG) --runtime-seconds=60
+endif
+
+
 
 cli-platform-cross-version-test:
 	./tests/cli-platform-cross-version-test.sh $(CLI_VERSION) $(CLUSTER_VERSION)

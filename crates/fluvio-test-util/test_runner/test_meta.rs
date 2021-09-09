@@ -31,8 +31,16 @@ impl FluvioTestMeta {
     }
 
     pub fn set_topic(test_reqs: &TestRequirements, test_case: &mut TestCase) {
-        if let Some(topic) = &test_reqs.topic {
+        // If the topic name is given over CLI, that value should override
+        if test_case.environment.is_topic_set() {
+            test_case
+                .environment
+                .set_topic_name(test_case.environment.topic_name())
+        // Next, we should fall back to the value set on the macro
+        } else if let Some(topic) = &test_reqs.topic {
             test_case.environment.set_topic_name(topic.to_string());
+        } else {
+            test_case.environment.set_topic_name("topic".to_string());
         }
     }
 
