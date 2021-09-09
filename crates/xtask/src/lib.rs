@@ -156,6 +156,9 @@ pub fn workspace_directory() -> Result<PathBuf> {
 
 pub fn dockerfile_path() -> Result<PathBuf> {
     let workspace = workspace_directory()?;
-    let dockerfile = workspace.join("Dockerfile");
+    let dockerfile = workspace
+        .join("k8-util")
+        .join("docker")
+        .join("fluvio.Dockerfile");
     Ok(dockerfile)
 }
