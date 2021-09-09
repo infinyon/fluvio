@@ -98,14 +98,11 @@ pub async fn test_longevity_consume_produce(
         println!("Run with `--verbose` flag for more test output");
     }
 
-    let (sender, receiver) = async_channel::unbounded();
-
     let consumer_join = spawn(consumer::consumer_stream(
         test_driver.clone(),
         option.clone(),
-        receiver,
     ));
-    let producer_join = producer::producer(test_driver, option, sender);
+    let producer_join = producer::producer(test_driver, option);
 
     join!(consumer_join, producer_join);
 }

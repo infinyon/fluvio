@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use async_lock::RwLock;
-use async_channel::Sender;
 use fluvio::RecordKey;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
@@ -10,11 +9,7 @@ use tracing::debug;
 use super::LongevityTestCase;
 use super::util::*;
 
-pub async fn producer(
-    test_driver: Arc<RwLock<TestDriver>>,
-    option: LongevityTestCase,
-    heartbeat: Sender<()>,
-) {
+pub async fn producer(test_driver: Arc<RwLock<TestDriver>>, option: LongevityTestCase) {
     let mut lock = test_driver.write().await;
 
     let producer = lock.create_producer(&option.environment.topic_name()).await;
@@ -22,6 +17,7 @@ pub async fn producer(
     drop(lock);
 
     // Read in the timer value we want to run for
+    // Note, we're going to give the consumer a couple extra seconds since it starts its timer first
 
     let mut records_sent = 0;
     let test_start = SystemTime::now();
@@ -53,9 +49,6 @@ pub async fn producer(
             .await
             .expect("Producer Send failed");
         drop(lock);
-
-        // Send heartbeat to consumer so it knows we're still sending data
-        heartbeat.send(()).await.unwrap();
 
         records_sent += 1;
     }

@@ -24,7 +24,6 @@ bencher = "0.1"
 prettytable-rs = "0.8"
 hdrhistogram = "7.3.0"
 async-lock = "2.4.0"
-async-channel = "1.6"
 crc = "2.0"
 
 # Fluvio dependencies
