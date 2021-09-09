@@ -30,25 +30,23 @@ impl BuildOpt {
     }
 
     pub fn build_cli(&self) -> Result<PathBuf> {
-        install_target(self.target.as_deref())?;
         let path = self.build_bin("fluvio")?;
         Ok(path)
     }
 
     pub fn build_cluster(&self) -> Result<PathBuf> {
-        install_target(self.target.as_deref())?;
         let path = self.build_bin("fluvio-run")?;
         Ok(path)
     }
 
     pub fn build_test(&self) -> Result<PathBuf> {
-        install_target(self.target.as_deref())?;
         let path = self.build_bin("fluvio-test")?;
         Ok(path)
     }
 
     /// Builds the named binary, returning the path of the produced executable
     pub fn build_bin(&self, bin: &str) -> Result<PathBuf> {
+        install_target(self.target.as_deref())?;
         println!("Building {}", bin);
 
         let args = vec![
