@@ -110,6 +110,7 @@ jobs:
         with:
           name: 'longevity-data' 
           path: longevity-data.tar
+          retention-days: 5
 
       - name: Save logs
         if: failure()
