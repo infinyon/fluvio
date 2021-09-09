@@ -36,7 +36,7 @@ pub async fn producer(test_driver: Arc<RwLock<TestDriver>>, option: LongevityTes
 
         if option.option.verbose {
             println!(
-                "Producing {:<5} (size {:<5}): produced CRC: {}",
+                "Producing {:<7} (size {:<5}): produced CRC: {:<10}",
                 records_sent,
                 record.data.len(),
                 record.crc,

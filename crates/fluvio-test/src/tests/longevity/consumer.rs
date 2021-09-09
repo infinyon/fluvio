@@ -52,7 +52,7 @@ pub async fn consumer_stream(test_driver: Arc<RwLock<TestDriver>>, option: Longe
 
                             if option.option.verbose {
                                 println!(
-                                    "Consuming {:<5} (size {:<5}): consumed CRC: {}",
+                                    "Consuming {:<7} (size {:<5}): consumed CRC: {:<10}",
                                     index,
                                     record.data.len(),
                                     record.crc,
