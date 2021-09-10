@@ -106,20 +106,21 @@ impl SpuGroupObj {
 
         let spu_private_ep = SpuEndpointTemplate::default_private();
 
+        let spu_public_ep = SpuEndpointTemplate::default_public();
         let public_endpoint = if let Some(ingress) = services.get(&spu_name) {
             debug!(%ingress);
             ingress.clone()
         } else {
-            let spu_public_ep = SpuEndpointTemplate::default_public();
             IngressPort {
                 port: spu_public_ep.port,
-                encryption: spu_public_ep.encryption,
+                encryption: spu_public_ep.encryption.clone(),
                 ingress: vec![],
             }
         };
 
         let full_group_name = format!("fluvio-spg-{}", self.key());
         let full_spu_name = format!("fluvio-spg-{}", spu_name);
+
         let spu_spec = SpuSpec {
             id: spu_id,
             spu_type: SpuType::Managed,
@@ -130,6 +131,11 @@ impl SpuGroupObj {
                 encryption: spu_private_ep.encryption,
             },
             rack: None,
+            public_endpoint_local: Some(Endpoint {
+                host: format!("{}.{}", full_spu_name, full_group_name),
+                port: spu_public_ep.port,
+                encryption: spu_public_ep.encryption,
+            }),
         };
 
         /*
