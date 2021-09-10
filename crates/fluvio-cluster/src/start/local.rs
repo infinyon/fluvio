@@ -375,7 +375,7 @@ impl RenderedText for LocalInstallProgressMessage {
 
         match self {
             LocalInstallProgressMessage::PreFlightCheck(_n) => {
-                format!("🩺 {}", "Running pre-flight checks".bold())
+                format!("{}", "Running pre-flight checks".bold())
             }
             LocalInstallProgressMessage::Check(check) => check.text(),
 
@@ -384,7 +384,7 @@ impl RenderedText for LocalInstallProgressMessage {
             }
 
             LocalInstallProgressMessage::Installing => {
-                format!("🔧 {}", "Installing fluvio".bold())
+                format!("{}", "Installing fluvio".bold())
             }
             LocalInstallProgressMessage::CrdChecked => {
                 format!("{:>13} {}", "Ok: ✅".bold().green(), "CRD is ok")
@@ -415,7 +415,7 @@ impl RenderedText for LocalInstallProgressMessage {
 
             LocalInstallProgressMessage::StartStatus(status) => {
                 format!(
-                    "✅ {} {}",
+                    "{} {}",
                     "Fluvio installed with address".bold(),
                     status.address,
                 )
