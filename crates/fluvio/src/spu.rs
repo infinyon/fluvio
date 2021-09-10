@@ -79,17 +79,14 @@ impl SpuPool {
         debug!("connecting to spu: {}", spu.spec);
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
 
-        let spu_addr =
-            match spu.spec.public_endpoint_local {
-                Some(local) if self.config.use_spu_local_address => {
-                    let host = local.host;
-                    let port = local.port;
-                    format!("{}:{}", host, port)
-                }
-                _ => {
-                    spu.spec.public_endpoint.addr()
-                }
-            };
+        let spu_addr = match spu.spec.public_endpoint_local {
+            Some(local) if self.config.use_spu_local_address => {
+                let host = local.host;
+                let port = local.port;
+                format!("{}:{}", host, port)
+            }
+            _ => spu.spec.public_endpoint.addr(),
+        };
 
         debug!("spu addr: {}", spu_addr);
         client_config.set_addr(spu_addr);
