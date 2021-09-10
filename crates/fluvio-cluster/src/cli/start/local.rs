@@ -71,7 +71,7 @@ pub async fn install_local_with_progress(
             .progress_chars("=> ")
             .template(&format!(
                 "{:>12} {{spinner:.green}} [{{bar}}] {{msg}}",
-                "Checking: ".green().bold()
+                "Running: ".green().bold()
             )),
     );
 
@@ -81,6 +81,12 @@ pub async fn install_local_with_progress(
     while let Some(local_progress) = progress.next().await {
         progress_bar.inc(1);
         progress_bar.println(&local_progress.text());
+        if let Some(next_step) = local_progress.next_step_text() {
+            progress_bar.set_message(next_step);
+        } else {
+            progress_bar.set_message("");
+        }
+
         match local_progress {
             LocalInstallProgressMessage::ClusterError(e) => return Err(e.into()),
             LocalInstallProgressMessage::Check(c) => {
@@ -132,6 +138,11 @@ pub async fn setup_local_with_progress(installer: &LocalInstaller) -> Result<(),
                     progress_bar.finish_and_clear();
                     println!("{}", text);
                     break;
+                }
+                if let Some(next_step) = check_result.next_step_text() {
+                    progress_bar.set_message(next_step);
+                } else {
+                    progress_bar.set_message("");
                 }
                 check_results.push(check_result);
                 progress_bar.inc(1);

@@ -148,6 +148,9 @@ pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
 
 pub trait RenderedText {
     fn text(&self) -> String;
+    fn next_step_text(&self) -> Option<String> {
+        None
+    }
 }
 
 impl RenderedText for CheckStatus {

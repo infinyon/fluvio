@@ -362,8 +362,8 @@ pub enum LocalInstallProgressMessage {
     CrdChecked,
     ClusterError(ClusterError),
     Installing,
-    LaunchSc,
-    LaunchSpuGroup(u16),
+    ScLaunched,
+    SpuGroupLaunched(u16),
     ConfirmSpu,
     ProfileSet,
     StartStatus(StartStatus),
@@ -390,14 +390,14 @@ impl RenderedText for LocalInstallProgressMessage {
                 format!("{:>13} {}", "Ok: ✅".bold().green(), "CRD is ok")
             }
             LocalInstallProgressMessage::ClusterError(err) => err.to_string(),
-            LocalInstallProgressMessage::LaunchSc => {
-                format!("{:>13} {}", "⏳", "Launching SC".bold())
+            LocalInstallProgressMessage::ScLaunched => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "SC Launched")
             }
-            LocalInstallProgressMessage::LaunchSpuGroup(spu_num) => {
+            LocalInstallProgressMessage::SpuGroupLaunched(spu_num) => {
                 format!(
                     "{:>13} {} ({})",
-                    "⏳",
-                    "Launching SPU group".bold(),
+                    "Ok: ✅".bold().green(),
+                    "SPU group launched",
                     spu_num
                 )
             }
@@ -406,20 +406,33 @@ impl RenderedText for LocalInstallProgressMessage {
             }
 
             LocalInstallProgressMessage::ProfileSet => {
-                format!(
-                    "{:>13} {}",
-                    "Ok: ✅".bold().green(),
-                    "👥 Profile set".bold()
-                )
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "Profile set")
             }
 
             LocalInstallProgressMessage::StartStatus(status) => {
                 format!(
                     "{} {}",
-                    "Fluvio installed with address".bold(),
+                    "Fluvio installed with address:".bold(),
                     status.address,
                 )
             }
+        }
+    }
+    fn next_step_text(&self) -> Option<String> {
+        match self {
+            LocalInstallProgressMessage::PreFlightCheck(_n) => Some(format!("Running checks")),
+            LocalInstallProgressMessage::Check(_check) => None,
+            LocalInstallProgressMessage::ClientLoaded => Some("Checking CRD".into()),
+            LocalInstallProgressMessage::Installing => Some("Loading client...".into()),
+            LocalInstallProgressMessage::CrdChecked => Some("Launching SC".into()),
+            LocalInstallProgressMessage::ClusterError(_err) => None,
+            LocalInstallProgressMessage::ScLaunched => Some("Launching SPU Group".into()),
+            LocalInstallProgressMessage::SpuGroupLaunched(_spu_num) => {
+                Some("Confirming SPUs".into())
+            }
+            LocalInstallProgressMessage::ConfirmSpu => Some("Setting profile".into()),
+            LocalInstallProgressMessage::ProfileSet => None,
+            LocalInstallProgressMessage::StartStatus(_status) => None,
         }
     }
 }
@@ -641,25 +654,23 @@ impl LocalInstaller {
             .result()
             .map_err(|e| ClusterError::InstallLocal(e.into()))?;
 
-        sender
-            .send(LocalInstallProgressMessage::LaunchSc)
-            .await
-            .map_err(LocalInstallError::ChannelSendError)?;
-
         // set host name and port for SC
         // this should mirror K8
         let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
 
         let fluvio = self.launch_sc(&address, port).await?;
-
         sender
-            .send(LocalInstallProgressMessage::LaunchSpuGroup(
-                self.config.spu_replicas,
-            ))
+            .send(LocalInstallProgressMessage::ScLaunched)
             .await
             .map_err(LocalInstallError::ChannelSendError)?;
 
         self.launch_spu_group(client.clone()).await?;
+        sender
+            .send(LocalInstallProgressMessage::SpuGroupLaunched(
+                self.config.spu_replicas,
+            ))
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
 
         self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
         sender
