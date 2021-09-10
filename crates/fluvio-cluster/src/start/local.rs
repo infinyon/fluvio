@@ -7,7 +7,7 @@ use fluvio::{Fluvio, FluvioConfig};
 use semver::Version;
 
 use derive_builder::Builder;
-use tracing::{info, warn, debug, instrument};
+use tracing::{debug, error, info, instrument, warn};
 use once_cell::sync::Lazy;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec, SpuType};
@@ -361,6 +361,7 @@ pub enum LocalInstallProgressMessage {
     ClientLoaded,
     CrdChecked,
     ClusterError(ClusterError),
+    Installing,
     LaunchSc,
     LaunchSpuGroup(u16),
     ConfirmSpu,
@@ -370,20 +371,54 @@ pub enum LocalInstallProgressMessage {
 
 impl RenderedText for LocalInstallProgressMessage {
     fn text(&self) -> String {
+        use colored::*;
+
         match self {
-            LocalInstallProgressMessage::PreFlightCheck(_n) => "Starting pre-flight cheks".into(),
-            LocalInstallProgressMessage::Check(check) => check.text(),
-            LocalInstallProgressMessage::ClientLoaded => "✅ Client Loaded".into(),
-            LocalInstallProgressMessage::CrdChecked => "✅ CRD is Ok".into(),
-            LocalInstallProgressMessage::ClusterError(err) => err.to_string(),
-            LocalInstallProgressMessage::LaunchSc => "Launching SC".into(),
-            LocalInstallProgressMessage::LaunchSpuGroup(spu_num) => {
-                format!("Launching spu group ({})", spu_num)
+            LocalInstallProgressMessage::PreFlightCheck(_n) => {
+                format!("🩺 {}", "Running pre-flight checks".bold())
             }
-            LocalInstallProgressMessage::ConfirmSpu => "SPU confirmed".into(),
-            LocalInstallProgressMessage::ProfileSet => "✅ Profile set".into(),
+            LocalInstallProgressMessage::Check(check) => check.text(),
+
+            LocalInstallProgressMessage::ClientLoaded => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "Client Loaded")
+            }
+
+            LocalInstallProgressMessage::Installing => {
+                format!("🔧 {}", "Installing fluvio".bold())
+            }
+            LocalInstallProgressMessage::CrdChecked => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "CRD is ok")
+            }
+            LocalInstallProgressMessage::ClusterError(err) => err.to_string(),
+            LocalInstallProgressMessage::LaunchSc => {
+                format!("{:>13} {}", "⏳", "Launching SC".bold())
+            }
+            LocalInstallProgressMessage::LaunchSpuGroup(spu_num) => {
+                format!(
+                    "{:>13} {} ({})",
+                    "⏳",
+                    "Launching SPU group".bold(),
+                    spu_num
+                )
+            }
+            LocalInstallProgressMessage::ConfirmSpu => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "SPU confirmed")
+            }
+
+            LocalInstallProgressMessage::ProfileSet => {
+                format!(
+                    "{:>13} {}",
+                    "Ok: ✅".bold().green(),
+                    "👥 Profile set".bold()
+                )
+            }
+
             LocalInstallProgressMessage::StartStatus(status) => {
-                format!("Start status {:?}", status)
+                format!(
+                    "✅ {} {}",
+                    "Fluvio installed with address".bold(),
+                    status.address,
+                )
             }
         }
     }
@@ -572,6 +607,11 @@ impl LocalInstaller {
                 .await
                 .map_err(LocalInstallError::ChannelSendError)?;
         };
+
+        sender
+            .send(LocalInstallProgressMessage::Installing)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
 
         use k8_client::load_and_share;
         let client = load_and_share().map_err(K8InstallError::from)?;
@@ -873,20 +913,16 @@ impl LocalInstaller {
             let spus = admin.list::<SpuSpec, _>(vec![]).await?;
             let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
             if ready_spu == spu as usize {
-                println!("All SPUs({}) are ready", spu);
+                info!("All SPUs({}) are ready", spu);
                 sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
                 return Ok(());
             } else {
-                println!(
-                    "{} of {} spu are ready, sleeping 10 seconds...",
-                    ready_spu, spu,
-                );
                 debug!("{} out of {} SPUs up, waiting 10 sec", ready_spu, spu);
                 sleep(Duration::from_secs(10)).await;
             }
         }
 
-        println!("waited too long,bailing out");
+        error!("waited too long,bailing out");
         Err(LocalInstallError::Other(format!(
             "not able to provision:{} spu",
             spu

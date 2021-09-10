@@ -52,15 +52,17 @@ pub async fn process_local(
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
     if opt.setup {
-        setup_local_with_progress(installer).await?;
+        setup_local_with_progress(&installer).await?;
     } else {
-        install_local_with_progress(installer).await?;
+        install_local_with_progress(&installer).await?;
     }
 
     Ok(())
 }
 
-pub async fn install_local_with_progress(installer: LocalInstaller) -> Result<(), ClusterCliError> {
+pub async fn install_local_with_progress(
+    installer: &LocalInstaller,
+) -> Result<(), ClusterCliError> {
     let progress_bar = ProgressBar::new(0);
     progress_bar.enable_steady_tick(100);
 
@@ -71,10 +73,11 @@ pub async fn install_local_with_progress(installer: LocalInstaller) -> Result<()
     );
 
     let mut progress = installer.install_with_progress().await;
+    let mut check_statuses = vec![];
+
     while let Some(local_progress) = progress.next().await {
         progress_bar.inc(1);
         progress_bar.println(&local_progress.text());
-        let mut check_statuses = vec![];
         match local_progress {
             LocalInstallProgressMessage::ClusterError(e) => return Err(e.into()),
             LocalInstallProgressMessage::Check(c) => {
@@ -87,6 +90,7 @@ pub async fn install_local_with_progress(installer: LocalInstaller) -> Result<()
                     if let crate::CheckStatus::Fail(_) = status {
                         check_statuses.push(status);
                         render_statuses_next_steps(&check_statuses);
+                        break;
                     }
                 }
             }
@@ -98,7 +102,7 @@ pub async fn install_local_with_progress(installer: LocalInstaller) -> Result<()
     Ok(())
 }
 
-pub async fn setup_local_with_progress(installer: LocalInstaller) -> Result<(), ClusterCliError> {
+pub async fn setup_local_with_progress(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
     use colored::*;
     let progress_bar = ProgressBar::new(1);
     progress_bar.set_style(
