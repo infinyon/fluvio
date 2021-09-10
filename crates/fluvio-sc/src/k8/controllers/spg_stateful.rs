@@ -216,7 +216,7 @@ mod test {
 
     use k8_metadata_client::MetadataClient;
     use k8_types::core::namespace::NamespaceSpec;
-    use k8_types::{InputK8Obj, InputObjectMeta};
+    use k8_types::{InputK8Obj, InputObjectMeta, K8Obj};
     use rand::{Rng, thread_rng};
     use rand::distributions::Alphanumeric;
 
@@ -228,7 +228,7 @@ mod test {
     use super::*;
 
     struct TestEnv {
-        ns: String,
+        ns: K8Obj<NamespaceSpec>,
         client: SharedK8Client,
     }
 
@@ -236,9 +236,9 @@ mod test {
         async fn create() -> Self {
             let client = load_and_share().expect("creating k8 client");
             let ns = Self::create_unique_ns();
-            Self::create_ns(&ns, &client).await;
+            let ns_obj = Self::create_ns(&ns, &client).await;
 
-            Self { ns, client }
+            Self { ns: ns_obj, client }
         }
 
         fn create_unique_ns() -> String {
@@ -251,13 +251,14 @@ mod test {
             ns.to_lowercase()
         }
 
-        async fn delete(&self) {
-
-            self.client.delete_item_with_option::<S::K8Spec, _>(meta.inner(), options)
-
+        async fn delete(self) {
+            self.client
+                .delete_item_with_option::<NamespaceSpec, _>(&self.ns.metadata, None)
+                .await
+                .expect("delete");
         }
 
-        async fn create_ns(ns: &str, k8_client: &K8Client) {
+        async fn create_ns(ns: &str, k8_client: &K8Client) -> K8Obj<NamespaceSpec> {
             let input_meta = InputObjectMeta {
                 name: ns.to_owned(),
                 ..Default::default()
@@ -265,11 +266,11 @@ mod test {
 
             debug!(%ns,"creating ns");
             let input = InputK8Obj::new(NamespaceSpec::default(), input_meta);
-            k8_client.apply(input).await.expect("ns created");
+            k8_client.create_item(input).await.expect("ns created")
         }
 
         fn ns(&self) -> &str {
-            &self.ns
+            &self.ns.metadata.name
         }
 
         fn client(&self) -> &SharedK8Client {
@@ -307,9 +308,6 @@ mod test {
         // wait for controllers to startup
         sleep(Duration::from_millis(10)).await;
 
-
-        
-
-
+        test_env.delete().await;
     }
 }
