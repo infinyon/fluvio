@@ -73,7 +73,7 @@ impl Fluvio {
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
-        let config = ClientConfig::new(&config.endpoint, connector);
+        let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
         let inner_client = config.connect().await?;
         debug!("connected to cluster");
 

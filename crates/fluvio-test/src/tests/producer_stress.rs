@@ -79,7 +79,9 @@ pub async fn run(
 
     for n in 1..test_case.option.iteration + 1 {
         for (i, p) in producers.iter().enumerate() {
-            let message = format!("producer-{} line-{} {}", i, n, long_str.clone());
+            let message = format!("producer-{} line-{} {}", i, n, long_str.clone())
+                .as_bytes()
+                .to_vec();
 
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {

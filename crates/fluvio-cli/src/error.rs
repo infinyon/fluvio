@@ -1,5 +1,7 @@
-use std::io::Error as IoError;
+use std::io::{Error as IoError, ErrorKind};
 
+use semver::Version;
+use handlebars::TemplateError;
 use fluvio::FluvioError;
 
 #[cfg(feature = "k8s")]
@@ -7,9 +9,9 @@ use fluvio_cluster::cli::ClusterCliError;
 use fluvio_sc_schema::ApiError;
 use fluvio_sc_schema::errors::ErrorCode;
 use fluvio_extension_common::output::OutputError;
-use crate::common::target::TargetError;
+use fluvio_socket::SocketError;
 use fluvio_index::{PackageId, Target};
-use semver::Version;
+use crate::common::target::TargetError;
 
 pub type Result<T> = std::result::Result<T, CliError>;
 
@@ -19,6 +21,8 @@ pub enum CliError {
     IoError(#[from] IoError),
     #[error(transparent)]
     OutputError(#[from] OutputError),
+    #[error("Failed to parse format string")]
+    TemplateError(#[from] TemplateError),
 
     #[cfg(feature = "k8s")]
     #[error("Fluvio cluster error")]
@@ -100,6 +104,16 @@ impl CliError {
                 }
                 ApiError::Code(ErrorCode::TopicNotFound, _) => {
                     println!("Topic not found");
+                    Ok(())
+                }
+                _ => Err(self),
+            },
+            #[cfg(feature = "k8s")]
+            Self::ClusterCliError(ClusterCliError::TargetError(TargetError::ClientError(
+                FluvioError::Socket(SocketError::Io(io)),
+            ))) => match io.kind() {
+                ErrorKind::ConnectionRefused => {
+                    println!("Failed to connect to cluster, make sure you have started or connected to your cluster");
                     Ok(())
                 }
                 _ => Err(self),

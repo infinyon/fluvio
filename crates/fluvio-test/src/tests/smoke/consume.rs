@@ -10,6 +10,7 @@ use tracing::{info, debug};
 use futures_lite::stream::StreamExt;
 
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
+use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::{Offset};
 use fluvio_command::CommandExt;
 use crate::get_binary;
@@ -38,7 +39,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
     let replication = test_case.environment.replication;
 
     for i in 0..replication {
-        let topic_name = test_case.environment.topic_name.clone();
+        let topic_name = test_case.environment.topic_name();
         let offset = offsets.get(&topic_name).expect("topic offset");
         let mut command = get_binary("fluvio").expect("fluvio not found");
         command
@@ -74,7 +75,7 @@ async fn validate_consume_message_api(
 
     let producer_iteration = test_case.option.producer_iteration;
     let partition = test_case.environment.partition;
-    let topic_name = test_case.environment.topic_name.clone();
+    let topic_name = test_case.environment.topic_name();
     let base_offset = offsets.get(&topic_name).expect("offsets");
 
     for i in 0..partition {

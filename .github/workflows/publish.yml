@@ -98,6 +98,9 @@ jobs:
           export VERSION="$(curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ github.sha }}/VERSION)"
 
           for ZIP_FILE in ./*.zip; do
+            # Don't publish `fluvio-test` artifact outside of github
+            [ "$ZIP_FILE" = "./fluvio-test-x86_64-unknown-linux-musl.zip" ] && echo "Skipping fluvio-test" && continue
+
             # Unzip all .zip files into directories with the same name (minus .zip)
             UNZIP_DIR="${ZIP_FILE//.zip/}"
             echo "Unzipping $ZIP_FILE into $UNZIP_DIR"

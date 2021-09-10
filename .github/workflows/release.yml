@@ -220,6 +220,9 @@ jobs:
         if: ${{ steps.check_fluvio.outcome == 'failure' }}
         run: |
           for ZIP_FILE in ./*.zip; do
+            # Don't publish `fluvio-test` artifact outside of github
+            [ "$ZIP_FILE" = "./fluvio-test-x86_64-unknown-linux-musl.zip" ] && echo "Skipping fluvio-test" && continue
+
             # Unzip all .zip files into directories with the same name (minus .zip)
             UNZIP_DIR="${ZIP_FILE//.zip/}"
             echo "Unzipping $ZIP_FILE into $UNZIP_DIR"
@@ -305,17 +308,3 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-  #validate_fluvio_release:
-  #  name: Validate Fluvio release 
-  #  needs: [bump_stable_fluvio]
-  #  runs-on: ubuntu-latest
-  #  env:
-  #    VERSION: ${{ needs.setup_job.outputs.VERSION }}
-  #    TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
-  #  steps:
-  #    - uses: actions/checkout@v2
-
-  #    - name: 
-  #      run: |
-  #        make VERSION=${{ env.VERSION }} GIT_COMMIT=${{ env.TARGET_SHA }} validate-release-stable
