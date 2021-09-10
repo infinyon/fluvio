@@ -39,11 +39,13 @@ mod create {
     use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_controlplane_metadata::spu::CustomSpuSpec;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
+    use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
     use super::*;
 
     const TOPIC: u8 = 0;
     const CUSTOM_SPU: u8 = 1;
     const SPG: u8 = 2;
+    const MANAGED_CONNECTOR: u8 = 3;
 
     #[derive(Debug)]
     /// enum of spec that can be created
@@ -51,6 +53,7 @@ mod create {
         Topic(TopicSpec),
         CustomSpu(CustomSpuSpec),
         SpuGroup(SpuGroupSpec),
+        ManagedConnector(ManagedConnectorSpec),
     }
 
     impl Default for AllCreatableSpec {
@@ -68,6 +71,7 @@ mod create {
                     Self::Topic(s) => s.write_size(version),
                     Self::CustomSpu(s) => s.write_size(version),
                     Self::SpuGroup(s) => s.write_size(version),
+                    Self::ManagedConnector(s) => s.write_size(version),
                 }
         }
 
@@ -91,6 +95,12 @@ mod create {
 
                 Self::SpuGroup(s) => {
                     let typ: u8 = SPG;
+                    typ.encode(dest, version)?;
+                    s.encode(dest, version)?;
+                }
+
+                Self::ManagedConnector(s) => {
+                    let typ: u8 = MANAGED_CONNECTOR;
                     typ.encode(dest, version)?;
                     s.encode(dest, version)?;
                 }
@@ -128,6 +138,12 @@ mod create {
                     let mut response = SpuGroupSpec::default();
                     response.decode(src, version)?;
                     *self = Self::SpuGroup(response);
+                    Ok(())
+                }
+                MANAGED_CONNECTOR => {
+                    let mut response = ManagedConnectorSpec::default();
+                    response.decode(src, version)?;
+                    *self = Self::ManagedConnector(response);
                     Ok(())
                 }
 

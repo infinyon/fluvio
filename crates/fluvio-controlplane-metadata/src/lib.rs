@@ -3,6 +3,7 @@ pub mod topic;
 pub mod partition;
 pub mod spg;
 pub mod message;
+pub mod managed_connector;
 
 pub use fluvio_stream_model::core;
 
@@ -25,6 +26,7 @@ pub mod extended {
         SpuGroup,
         Topic,
         Partition,
+        ManagedConnector,
     }
 
     pub trait SpecExt: Spec {
