@@ -1,6 +1,7 @@
 #![allow(unused)]
 
-use async_channel::Receiver;
+use futures_util::StreamExt;
+use futures_channel::mpsc::Receiver;
 use crate::{CheckStatus, CheckResult, CheckResults, CheckFailed, CheckSuggestion};
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
@@ -8,7 +9,7 @@ const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
 /// Renders individual checks as they occur over time
 pub async fn render_check_progress(progress: &mut Receiver<CheckResult>) -> CheckResults {
     let mut check_results = vec![];
-    while let Ok(check_result) = progress.recv().await {
+    while let Some(check_result) = progress.next().await {
         render_check_result(&check_result);
         check_results.push(check_result);
     }
@@ -25,20 +26,7 @@ pub fn render_check_results<R: AsRef<[CheckResult]>>(check_results: R) {
 
 /// Render a single check result
 pub fn render_check_result(check_result: &CheckResult) {
-    use colored::*;
-
-    match check_result {
-        Ok(status) => render_check_status(status),
-        Err(e) => {
-            // Print one layer of source error
-            let cause = match std::error::Error::source(e) {
-                Some(underlying) => format!(": {}", underlying),
-                None => "".to_string(),
-            };
-            let msg = format!("{}{}", e, cause);
-            println!("🚨 {} {}", "[ERROR]:".bold().red(), msg.red());
-        }
-    }
+    println!("{}", check_result.text());
 }
 
 /// Render a slice of `CheckStatus`es all at once
@@ -51,41 +39,7 @@ pub fn render_check_statuses<R: AsRef<[CheckStatus]>>(check_statuses: R) {
 
 /// Render a single check status
 pub fn render_check_status(check_status: &CheckStatus) {
-    use colored::*;
-    use crate::CheckStatus::*;
-
-    match check_status {
-        Pass(success) => {
-            println!("✅ {} {}", "ok:".bold().green(), success.green());
-        }
-        Fail(e @ CheckFailed::AutoRecoverable(_)) => {
-            println!("❕ {} {}", "warning:".bold().yellow(), e);
-            println!(
-                "  💡 {} this may be fixed automatically during startup",
-                "note:".bold()
-            );
-        }
-        Fail(CheckFailed::AlreadyInstalled) => {
-            println!(
-                "💙 {} {}",
-                "note:".bold().bright_blue(),
-                "Fluvio is already running".bright_blue()
-            );
-        }
-        Fail(e @ CheckFailed::Unrecoverable(_)) => {
-            // Print one layer of source error
-            let cause = match std::error::Error::source(e) {
-                Some(underlying) => format!(": {}", underlying),
-                None => "".to_string(),
-            };
-            let msg = format!("{}{}", e, cause);
-            println!("❌ {} {}", "failed:".bold().red(), msg.red());
-        }
-    }
-
-    if let Some(suggestion) = check_status.suggestion() {
-        println!("  💡 {} {}", "suggestion:".bold().cyan(), suggestion,)
-    }
+    println!("{}", check_status.text());
 }
 
 /// Render a conclusion message based on the number of failures and warnings
@@ -190,4 +144,81 @@ pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
 
     // Print a conclusion message based on warnings and failures
     render_next_steps(failures, warnings, installed);
+}
+
+pub trait RenderedText {
+    fn text(&self) -> String;
+}
+
+impl RenderedText for CheckStatus {
+    fn text(&self) -> String {
+        use colored::*;
+        use crate::CheckStatus::*;
+
+        let mut text = match self {
+            Pass(success) => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), success)
+            }
+            Fail(e @ CheckFailed::AutoRecoverable(_)) => {
+                format!(
+                    "{:>11} {}\n{:indent$}💡 {}",
+                    "Warn: 🟡️".bold().yellow(),
+                    e,
+                    "",
+                    format!(
+                        "{:>11} {}",
+                        "note:".bold(),
+                        "This may be fixed automatically during startup"
+                    ),
+                    indent = 9,
+                )
+            }
+            Fail(CheckFailed::AlreadyInstalled) => {
+                format!(
+                    "💙 {} {}",
+                    "note:".bold().bright_blue(),
+                    "Fluvio is already running".bright_blue()
+                )
+            }
+            Fail(e @ CheckFailed::Unrecoverable(_)) => {
+                // Print one layer of source error
+                let cause = match std::error::Error::source(e) {
+                    Some(underlying) => format!(": {}", underlying),
+                    None => "".to_string(),
+                };
+                let msg = format!("{}{}", e, cause);
+                format!("❌ {} {}", "failed:".bold().red(), msg.red())
+            }
+        };
+
+        if let Some(suggestion) = self.suggestion() {
+            text.push_str(&format!(
+                "\n{:indent$}💡 {:>11} {}",
+                "",
+                "suggestion:".bold().cyan(),
+                suggestion,
+                indent = 9,
+            ));
+        }
+        text
+    }
+}
+
+impl RenderedText for CheckResult {
+    fn text(&self) -> String {
+        use colored::*;
+
+        match self {
+            Ok(status) => status.text(),
+            Err(e) => {
+                // Print one layer of source error
+                let cause = match std::error::Error::source(e) {
+                    Some(underlying) => format!(": {}", underlying),
+                    None => "".to_string(),
+                };
+                let msg = format!("{}{}", e, cause);
+                format!("🚨 {} {}", "[ERROR]:".bold().red(), msg.red())
+            }
+        }
+    }
 }

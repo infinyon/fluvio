@@ -22,7 +22,7 @@
 //! [`ClusterInstaller`]: ./struct.ClusterInstaller.html
 
 #![warn(missing_docs)]
-#![deny(broken_intra_doc_links)]
+#![deny(rustdoc::broken_intra_doc_links)]
 #![allow(clippy::upper_case_acronyms)]
 
 /// charts
