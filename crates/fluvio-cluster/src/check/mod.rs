@@ -731,10 +731,11 @@ impl ClusterChecker {
     /// # use fluvio_cluster::{ClusterChecker, CheckResult};
     /// # async fn do_run_with_progress() {
     /// use futures_channel::mpsc::Receiver;
-    /// let progress: Receiver<CheckResult> = ClusterChecker::empty()
+    /// use futures_util::StreamExt;
+    /// let mut progress: Receiver<CheckResult> = ClusterChecker::empty()
     ///     .with_preflight_checks()
     ///     .run_with_progress();
-    /// while let Ok(check_result) = progress.recv().await {
+    /// while let Some(check_result) = progress.next().await {
     ///     println!("Got check result: {:?}", check_result);
     /// }
     /// # }
