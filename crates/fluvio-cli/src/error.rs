@@ -1,6 +1,7 @@
 use std::io::{Error as IoError, ErrorKind};
 
 use semver::Version;
+use handlebars::TemplateError;
 use fluvio::FluvioError;
 
 #[cfg(feature = "k8s")]
@@ -20,6 +21,8 @@ pub enum CliError {
     IoError(#[from] IoError),
     #[error(transparent)]
     OutputError(#[from] OutputError),
+    #[error("Failed to parse format string")]
+    TemplateError(#[from] TemplateError),
 
     #[cfg(feature = "k8s")]
     #[error("Fluvio cluster error")]

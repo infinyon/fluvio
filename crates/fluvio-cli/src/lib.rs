@@ -71,11 +71,11 @@ struct RootOpt {
     about = "Fluvio Command Line Interface",
     name = "fluvio",
     template = COMMAND_TEMPLATE,
-    max_term_width = 80,
+    max_term_width = 100,
     global_settings = &[
-    AppSettings::VersionlessSubcommands,
-    AppSettings::DeriveDisplayOrder,
-    AppSettings::DisableVersion,
+        AppSettings::VersionlessSubcommands,
+        AppSettings::DeriveDisplayOrder,
+        AppSettings::DisableVersion,
     ]
 )]
 enum RootCmd {
