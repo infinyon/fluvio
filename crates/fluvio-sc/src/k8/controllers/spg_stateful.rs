@@ -211,6 +211,7 @@ mod test {
 
     use std::iter;
 
+    use fluvio_stream_dispatcher::actions::WSAction;
     use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
     use tracing::debug;
 
@@ -284,15 +285,24 @@ mod test {
 
         let sc_config = ScConfig::default();
         let config_ctx: StoreContext<ScK8Config> = StoreContext::new();
+
         let global_ctx = Context::shared_metadata(sc_config);
 
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
 
+        
+
         K8ClusterStateDispatcher::<_, _>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
             statefulset_ctx.clone(),
+        );
+
+        K8ClusterStateDispatcher::<_, _>::start(
+            test_env.ns().to_owned(),
+            test_env.client().clone(),
+            global_ctx.spgs().clone(),
         );
 
         SpgStatefulSetController::start(
@@ -308,6 +318,21 @@ mod test {
         // wait for controllers to startup
         sleep(Duration::from_millis(10)).await;
 
-        test_env.delete().await;
+        // create spu group
+        let spg_name = "test".to_string();
+        let spg_spec = SpuGroupSpec {
+            replicas: 1,
+            ..Default::default()
+        };
+        global_ctx
+            .spgs()
+            .wait_action(
+                &spg_name,
+                WSAction::UpdateSpec((spg_name.clone(), spg_spec)),
+            )
+            .await
+            .expect("create");
+
+        //test_env.delete().await;
     }
 }
