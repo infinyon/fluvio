@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-controlplane"
-version = "0.8.0"
+version = "0.0.0"
 edition = "2018"
 license = "Apache-2.0"
 description = "Fluvio control plane API"
