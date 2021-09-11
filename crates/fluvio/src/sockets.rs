@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::Display;
 use std::sync::Arc;
 
-use tracing::{debug, trace, instrument};
+use tracing::{debug, instrument};
 
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
@@ -57,7 +57,7 @@ impl VersionedSocket {
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
         let versions = Versions::new(response);
 
-        trace!("versions: {:#?}", versions);
+        debug!("versions: {:#?}", versions);
 
         Ok(Self {
             socket,

@@ -84,6 +84,12 @@ where
         spawn(controller.dispatch_loop(watch_response));
     }
 
+    #[instrument(
+        skip(self,response),
+        fields(
+            spec = S::LABEL,
+        )
+    )]
     async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest>) {
         use tokio::select;
 

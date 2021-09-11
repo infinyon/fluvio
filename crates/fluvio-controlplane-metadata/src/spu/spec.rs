@@ -35,6 +35,7 @@ pub struct SpuSpec {
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub rack: Option<String>,
 
+    #[fluvio(min_version = 1)]
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub public_endpoint_local: Option<Endpoint>,
 }
