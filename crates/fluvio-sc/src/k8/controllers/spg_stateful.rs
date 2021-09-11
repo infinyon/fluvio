@@ -291,8 +291,6 @@ mod test {
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
 
-        
-
         K8ClusterStateDispatcher::<_, _>::start(
             test_env.ns().to_owned(),
             test_env.client().clone(),
