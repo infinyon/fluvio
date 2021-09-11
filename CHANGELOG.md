@@ -1,8 +1,6 @@
 # Release Notes
 
-## Platform Version 0.9.7 - UNRELEASED
-
-## Platform Version 0.9.6 - 2021-09-10
+## Platform Version 0.9.6 - UNRELEASED
 * Improve display representation for some variants in FluvioError type ([#1581](https://github.com/infinyon/fluvio/issues/1581))
 * Add spinner to `fluvio cluster --local --setup` command ([1574](https://github.com/infinyon/fluvio/pull/1574))
 * Add `--format` string for custom Consumer printouts ([#1593](https://github.com/infinyon/fluvio/issues/1593))
