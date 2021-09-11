@@ -13,17 +13,12 @@ readonly SKIP_CLEANUP=${SKIP_CLEANUP:-}
 
 if [[ -z "$SKIP_SETUP" ]];
 then
+    # This will default to the Makefile value if not provided
     readonly FLUVIO_BIN=${FLUVIO_BIN?Set FLUVIO_BIN if skipping setup}
 else
     # We want to avoid letting Makefile set bin path to target dir
     readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
 fi
-
-# If we're in CI, we want to slow down execution
-# to give CPU some time to rest, so we don't time out
-function ci_check() {
-    :
-}
 
 function setup_cluster() {
     echo "Installing cluster @ VERSION: $CLUSTER_VERSION"
@@ -45,16 +40,12 @@ function setup_cli() {
 
 function run_test() {
     local TEST_DATA=$(shuf -zer -n${PAYLOAD_SIZE}  {A..Z} {a..z} {0..9} | tr -d '\0')
-    ci_check;
 
     $FLUVIO_BIN topic create $TEST_TOPIC || true
-    ci_check;
 
     echo $TEST_DATA | $FLUVIO_BIN produce $TEST_TOPIC
-    ci_check;
 
     $FLUVIO_BIN consume $TEST_TOPIC -B -d
-    ci_check;
     # TODO: Verify the test output matches
 }
 
@@ -76,9 +67,7 @@ function main() {
     if [[ -z "$SKIP_SETUP" ]];
     then
         setup_cluster $CLUSTER_VERSION;
-        ci_check;
         setup_cli $CLI_VERSION;
-        ci_check;
     else
         echo "Skipping setup"
     fi

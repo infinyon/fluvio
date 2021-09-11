@@ -205,5 +205,3 @@ jobs:
           max_attempts: 1
           command: |
             make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
-
-      
