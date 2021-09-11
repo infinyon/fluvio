@@ -618,7 +618,7 @@ jobs:
   k8_cli_backward_compat:
     name: Latest CLI vs Stable Cluster
     needs: build_binaries
-    if: false
+   # if: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
