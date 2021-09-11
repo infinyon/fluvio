@@ -636,7 +636,6 @@ jobs:
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ~/.fluvio/bin/fluvio cluster start
-
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
         with:
