@@ -5,7 +5,7 @@ set -e
 readonly CLI_VERSION=${1-stable}
 readonly CLUSTER_VERSION=${2-latest}
 readonly TEST_TOPIC=$CLI_VERSION-x-$CLUSTER_VERSION
-readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
+readonly FLUVIO_BIN=${FLUVIO_BIN:-~/.fluvio/bin/fluvio}
 readonly PAYLOAD_SIZE=${PAYLOAD_SIZE:-100}
 readonly CI_SLEEP=${CI_SLEEP:-5}
 readonly CI=${CI:-}

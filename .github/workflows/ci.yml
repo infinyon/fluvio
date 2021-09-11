@@ -658,7 +658,7 @@ jobs:
 
       - name: Test ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} cluster
         run: |
-          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=./fluvio cli-platform-cross-version-test
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
