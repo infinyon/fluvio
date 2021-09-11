@@ -616,32 +616,22 @@ jobs:
           path: /tmp/k8_*.log
 
   k8_cli_backward_compat:
-    name: Latest CLI vs Stable Cluster - k8 (${{ matrix.k8 }})
+    name: Latest CLI vs Stable Cluster
     needs: build_image
+    #if: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        k8: [k3d,minikube]
         cluster_version: [stable]
         cli_version: [latest]
     steps:
       - uses: actions/checkout@v2
       - name: Install K3d
-        if: ${{ matrix.k8 == 'k3d' }}
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
           ./k8-util/cluster/reset-k3d.sh
-      - name: Install Minikube
-        if: ${{ matrix.k8 == 'minikube' }}
-        uses: manusa/actions-setup-minikube@v2.4.2
-        with:
-          minikube version: "v1.22.0"
-          kubernetes version: "v1.21.2"
-          github token: ${{ secrets.GITHUB_TOKEN }}
-          driver: docker
-
       - name: Install stable CLI and start Fluvio cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
