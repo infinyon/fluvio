@@ -790,3 +790,25 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
+
+  cli-platform-cross-version-test:
+    name: CLI (${{ matrix.cli_version }}) x Platform (${{ matrix.cluster_version }}) version test 
+    #if: false
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        cluster_version: [stable, latest]
+        cli_version: [stable, latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+      - name: Create K3d cluster
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
+      - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
+        run: |
+          make CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+

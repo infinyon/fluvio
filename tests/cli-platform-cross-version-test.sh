@@ -5,12 +5,19 @@ set -e
 readonly CLI_VERSION=${1-stable}
 readonly CLUSTER_VERSION=${2-latest}
 readonly TEST_TOPIC=$CLI_VERSION-x-$CLUSTER_VERSION
-readonly FLUVIO_BIN=${FLUVIO_BIN:-~/.fluvio/bin/fluvio}
 readonly PAYLOAD_SIZE=${PAYLOAD_SIZE:-100}
 readonly CI_SLEEP=${CI_SLEEP:-5}
 readonly CI=${CI:-}
 readonly SKIP_SETUP=${SKIP_SETUP:-}
 readonly SKIP_CLEANUP=${SKIP_CLEANUP:-}
+
+if [[ -z "$SKIP_SETUP" ]];
+then
+    readonly FLUVIO_BIN=${FLUVIO_BIN?Set FLUVIO_BIN if skipping setup}
+else
+    # We want to avoid letting Makefile set bin path to target dir
+    readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
+fi
 
 # If we're in CI, we want to slow down execution
 # to give CPU some time to rest, so we don't time out
