@@ -5,10 +5,12 @@ set -e
 readonly CLI_VERSION=${1-stable}
 readonly CLUSTER_VERSION=${2-latest}
 readonly TEST_TOPIC=$CLI_VERSION-x-$CLUSTER_VERSION
-readonly FLUVIO_BIN=~/.fluvio/bin/fluvio
+readonly FLUVIO_BIN=${FLUVIO_BIN:-~/.fluvio/bin/fluvio}
 readonly PAYLOAD_SIZE=${PAYLOAD_SIZE:-100}
 readonly CI_SLEEP=${CI_SLEEP:-5}
 readonly CI=${CI:-}
+readonly SKIP_SETUP=${SKIP_SETUP:-}
+readonly SKIP_CLEANUP=${SKIP_CLEANUP:-}
 
 # If we're in CI, we want to slow down execution
 # to give CPU some time to rest, so we don't time out
@@ -35,13 +37,13 @@ function setup_cli() {
 }
 
 function run_test() {
-    local RANDOM_DATA=$(tr -cd '[:alnum:]' < /dev/urandom | fold -w${PAYLOAD_SIZE} | head -n1)
+    local TEST_DATA=$(shuf -zer -n${PAYLOAD_SIZE}  {A..Z} {a..z} {0..9} | tr -d '\0')
     ci_check;
 
-    $FLUVIO_BIN topic create $TEST_TOPIC
+    $FLUVIO_BIN topic create $TEST_TOPIC || true
     ci_check;
 
-    echo $RANDOM_DATA | $FLUVIO_BIN produce $TEST_TOPIC
+    echo $TEST_DATA | $FLUVIO_BIN produce $TEST_TOPIC
     ci_check;
 
     $FLUVIO_BIN consume $TEST_TOPIC -B -d
@@ -64,12 +66,25 @@ function main() {
         echo "[CI MODE] Skipping initial cleanup";
     fi
 
-    setup_cluster $CLUSTER_VERSION;
-    ci_check;
-    setup_cli $CLI_VERSION;
-    ci_check;
+    if [[ -z "$SKIP_SETUP" ]];
+    then
+        setup_cluster $CLUSTER_VERSION;
+        ci_check;
+        setup_cli $CLI_VERSION;
+        ci_check;
+    else
+        echo "Skipping setup"
+    fi
+
     run_test;
-    cleanup;
+
+    if [[ -z "$SKIP_CLEANUP" ]];
+    then
+        cleanup;
+    else
+        echo "Skipping cleanup"
+    fi
+
 }
 
 main;
