@@ -616,7 +616,7 @@ jobs:
           path: /tmp/k8_*.log
 
   k8_cli_backward_compat:
-    name: Latest CLI vs Stable Cluster on (${{ matrix.run }}) k8 (${{ matrix.k8 }})
+    name: Latest CLI vs Stable Cluster - k8 (${{ matrix.k8 }})
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
