@@ -43,7 +43,7 @@ impl Default for WatchRequest {
 
 impl Request for WatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
+    const DEFAULT_API_VERSION: i16 = 1;
     type Response = WatchResponse;
 }
 
