@@ -174,8 +174,8 @@ impl ProgressRenderedText for CheckStatus {
             }
             Fail(CheckFailed::AlreadyInstalled) => {
                 format!(
-                    "💙 {} {}",
-                    "note:".bold().bright_blue(),
+                    "{:>13} {}",
+                    "note: 💙".bold().bright_blue(),
                     "Fluvio is already running".bright_blue()
                 )
             }
@@ -186,7 +186,7 @@ impl ProgressRenderedText for CheckStatus {
                     None => "".to_string(),
                 };
                 let msg = format!("{}{}", e, cause);
-                format!("❌ {} {}", "failed:".bold().red(), msg.red())
+                format!("{:>13} {}", "failed: ❌".bold().red(), msg.red())
             }
         };
 
