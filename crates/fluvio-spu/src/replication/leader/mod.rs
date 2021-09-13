@@ -7,7 +7,7 @@ mod update_offsets;
 mod actions;
 mod spu;
 
-pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
+pub use self::leaders_state::ReplicaLeadersState;
 pub use self::replica_state::{SharedFileLeaderState, SharedLeaderState, LeaderReplicaState};
 pub use self::connection::FollowerHandler;
 pub use self::api_key::LeaderPeerApiEnum;

@@ -5,8 +5,6 @@ use async_lock::Mutex;
 
 use fluvio_controlplane::{LrsRequest};
 
-pub type SharedStatusUpdate = Arc<StatusMessageSink>;
-
 /// channel used to send message to sc
 #[derive(Debug)]
 pub struct StatusMessageSink(Mutex<HashSet<LrsRequest>>);

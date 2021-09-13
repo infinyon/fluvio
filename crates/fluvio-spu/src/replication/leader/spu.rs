@@ -15,7 +15,6 @@ use fluvio_types::{
 
 use crate::core::SpuLocalStore;
 
-pub type SharedSpuUpdates = Arc<FollowerNotifier>;
 pub type SharedSpuPendingUpdate = Arc<FollowerSpuPendingUpdates>;
 #[derive(Debug)]
 pub struct FollowerNotifier(RwLock<HashMap<SpuId, Arc<FollowerSpuPendingUpdates>>>);

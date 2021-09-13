@@ -17,8 +17,6 @@ use crate::storage::SharableReplicaStorage;
 use super::controller::FollowerGroups;
 use crate::core::GlobalContext;
 
-pub type SharedFollowersState<S> = Arc<FollowersState<S>>;
-
 /// Maintains state for followers
 /// Each follower controller maintains by SPU
 #[derive(Debug)]

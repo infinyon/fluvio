@@ -9,7 +9,7 @@ use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::core::GlobalContext;
 use super::{FollowersState};
-use super::state::{SharedFollowersState, FollowerReplicaState};
+use super::state::FollowerReplicaState;
 use super::api_key::{FollowerPeerApiEnum};
 use super::sync::{DefaultSyncRequest};
 use super::peer_api::FollowerPeerRequest;
@@ -75,7 +75,7 @@ impl FollowerGroups {
 
 use inner::*;
 mod inner {
-
+    use super::*;
     use tokio::select;
     use futures_util::StreamExt;
     use once_cell::sync::Lazy;
@@ -93,21 +93,19 @@ mod inner {
     use crate::config::SpuConfig;
     use crate::{replication::leader::UpdateOffsetRequest};
     use crate::services::internal::FetchStreamRequest;
-    use crate::core::spus::SharedSpuLocalStore;
+    use crate::core::SpuLocalStore;
 
     static SHORT_RECONCILLATION: Lazy<u64> = Lazy::new(|| {
         let var_value = std::env::var("FLV_SHORT_RECONCILLATION").unwrap_or_default();
         var_value.parse().unwrap_or(10)
     });
 
-    use super::*;
-
     /// Controller for managing follower replicas
     /// There is a controller for follower groups (group by leader SPU)
     pub struct FollowGroupController {
         leader: SpuId,
-        spus: SharedSpuLocalStore,
-        states: SharedFollowersState<FileReplica>,
+        spus: Arc<SpuLocalStore>,
+        states: Arc<FollowersState<FileReplica>>,
         config: Arc<SpuConfig>,
         group: Arc<GroupNotification>,
     }
@@ -115,8 +113,8 @@ mod inner {
     impl FollowGroupController {
         pub fn run(
             leader: SpuId,
-            spus: SharedSpuLocalStore,
-            states: SharedFollowersState<FileReplica>,
+            spus: Arc<SpuLocalStore>,
+            states: Arc<FollowersState<FileReplica>>,
             spu_ctx: Arc<GroupNotification>,
             config: Arc<SpuConfig>,
         ) {

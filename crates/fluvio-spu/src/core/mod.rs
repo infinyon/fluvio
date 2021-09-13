@@ -10,4 +10,3 @@ pub use self::store::LocalStore;
 pub use self::store::SpecChange;
 
 pub use self::spus::SpuLocalStore;
-pub use self::replica::SharedReplicaLocalStore;

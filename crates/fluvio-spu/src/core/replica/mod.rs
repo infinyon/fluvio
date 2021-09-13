@@ -1,7 +1,21 @@
-mod metadata;
+use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-pub use self::metadata::ReplicaStore;
+use crate::core::Spec;
+use crate::core::LocalStore;
 
-use std::sync::Arc;
+impl Spec for Replica {
+    const LABEL: &'static str = "Replica";
 
-pub type SharedReplicaLocalStore = Arc<ReplicaStore>;
+    type Key = ReplicaKey;
+
+    fn key(&self) -> &Self::Key {
+        &self.id
+    }
+
+    fn key_owned(&self) -> Self::Key {
+        self.id.clone()
+    }
+}
+
+pub type ReplicaStore = LocalStore<Replica>;

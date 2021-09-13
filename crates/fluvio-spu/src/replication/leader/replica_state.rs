@@ -18,14 +18,12 @@ use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
 use fluvio_types::{SpuId};
 
-use crate::{
-    config::{ReplicationConfig},
-    control_plane::SharedStatusUpdate,
-};
+use crate::config::ReplicationConfig;
 use crate::replication::follower::sync::{PeerFileTopicResponse, PeerFilePartitionResponse};
 use crate::storage::SharableReplicaStorage;
 
 use super::{FollowerNotifier};
+use crate::control_plane::StatusMessageSink;
 
 pub type SharedLeaderState<S> = LeaderReplicaState<S>;
 pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
@@ -37,7 +35,7 @@ pub struct LeaderReplicaState<S> {
     storage: SharableReplicaStorage<S>,
     config: ReplicationConfig,
     followers: Arc<RwLock<BTreeMap<SpuId, OffsetInfo>>>,
-    status_update: SharedStatusUpdate,
+    status_update: Arc<StatusMessageSink>,
 }
 
 impl<S> Clone for LeaderReplicaState<S> {
@@ -94,7 +92,7 @@ where
     pub fn new(
         replica: Replica,
         config: ReplicationConfig,
-        status_update: SharedStatusUpdate,
+        status_update: Arc<StatusMessageSink>,
         inner: SharableReplicaStorage<S>,
     ) -> Self {
         debug!(?replica, "replica storage");
@@ -124,7 +122,7 @@ where
     pub async fn create<'a, C>(
         replica: Replica,
         config: &'a C,
-        status_update: SharedStatusUpdate,
+        status_update: Arc<StatusMessageSink>,
     ) -> Result<LeaderReplicaState<S>, StorageError>
     where
         ReplicationConfig: From<&'a C>,

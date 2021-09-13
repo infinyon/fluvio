@@ -5,5 +5,5 @@ mod controller;
 mod reject_request;
 pub mod sync;
 
-pub use self::state::{FollowersState, SharedFollowersState, FollowerReplicaState};
+pub use self::state::{FollowersState, FollowerReplicaState};
 pub use self::reject_request::RejectOffsetRequest;

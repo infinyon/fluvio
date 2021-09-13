@@ -13,30 +13,24 @@ use fluvio_storage::{ReplicaStorage, FileReplica};
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
-use crate::replication::follower::SharedFollowersState;
-use crate::replication::leader::{
-    SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
-};
+use crate::replication::leader::{ReplicaLeadersState, FollowerNotifier};
 use crate::services::public::StreamPublishers;
-use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
+use crate::control_plane::StatusMessageSink;
 
-use super::spus::SharedSpuLocalStore;
-use super::SharedReplicaLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
-
 pub use file_replica::ReplicaChange;
 
 #[derive(Debug)]
 pub struct GlobalContext<S = FileReplica> {
     config: Arc<SpuConfig>,
-    spu_localstore: SharedSpuLocalStore,
-    replica_localstore: SharedReplicaLocalStore,
-    leaders_state: SharedReplicaLeadersState<S>,
-    followers_state: SharedFollowersState<S>,
+    spu_localstore: Arc<SpuLocalStore>,
+    replica_localstore: Arc<ReplicaStore>,
+    leaders_state: ReplicaLeadersState<S>,
+    followers_state: Arc<FollowersState<S>>,
     stream_publishers: StreamPublishers,
-    spu_followers: SharedSpuUpdates,
-    status_update: SharedStatusUpdate,
+    spu_followers: Arc<FollowerNotifier>,
+    status_update: Arc<StatusMessageSink>,
 }
 
 // -----------------------------------
@@ -64,7 +58,7 @@ where
         }
     }
 
-    pub fn spu_localstore_owned(&self) -> SharedSpuLocalStore {
+    pub fn spu_localstore_owned(&self) -> Arc<SpuLocalStore> {
         self.spu_localstore.clone()
     }
 
@@ -89,7 +83,7 @@ where
         &self.followers_state
     }
 
-    pub fn followers_state_owned(&self) -> SharedFollowersState<S> {
+    pub fn followers_state_owned(&self) -> Arc<FollowersState<S>> {
         self.followers_state.clone()
     }
 
@@ -114,7 +108,7 @@ where
         &self.status_update
     }
 
-    pub fn status_update_owned(&self) -> SharedStatusUpdate {
+    pub fn status_update_owned(&self) -> Arc<StatusMessageSink> {
         self.status_update.clone()
     }
 

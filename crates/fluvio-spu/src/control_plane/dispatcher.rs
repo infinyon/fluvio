@@ -19,8 +19,7 @@ use dataplane::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use crate::core::GlobalContext;
 use crate::InternalServerError;
-
-use super::message_sink::{SharedStatusUpdate};
+use crate::control_plane::StatusMessageSink;
 
 // keep track of various internal state of dispatcher
 #[derive(Default)]
@@ -34,7 +33,7 @@ struct DispatcherCounter {
 /// including registering and reconnect
 pub struct ScDispatcher {
     ctx: Arc<GlobalContext>,
-    status_update: SharedStatusUpdate,
+    status_update: Arc<StatusMessageSink>,
     counter: DispatcherCounter,
 }
 
