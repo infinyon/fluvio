@@ -34,7 +34,7 @@ jobs:
     name: Set up Config
     runs-on: ubuntu-latest
     env:
-      ENABLE_CHECK: true
+      ENABLE_CHECK: false
       TEST_RUNS: "[r1]"   # default runs
     outputs:
       check: ${{ steps.check.outputs.check }}
