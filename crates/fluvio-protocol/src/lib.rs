@@ -1,30 +1,22 @@
-pub use fluvio_protocol_core::Decoder;
-pub use fluvio_protocol_core::DecoderVarInt;
-pub use fluvio_protocol_core::Encoder;
-pub use fluvio_protocol_core::EncoderVarInt;
-pub use fluvio_protocol_core::Version;
-
-pub mod bytes {
-    pub use fluvio_protocol_core::bytes::*;
-}
+pub mod core;
 
 #[cfg(feature = "derive")]
 pub use fluvio_protocol_derive::{Encoder, Decoder};
 
 #[cfg(feature = "derive")]
-pub mod derive {
-    pub use fluvio_protocol_derive::*;
-}
+pub use fluvio_protocol_derive as derive;
 
 #[cfg(feature = "api")]
-pub mod api {
-    pub use fluvio_protocol_api::*;
-}
+pub mod api;
 
 #[cfg(feature = "codec")]
-pub mod codec {
-    pub use fluvio_protocol_codec::FluvioCodec;
-}
+pub mod codec;
 
 #[cfg(all(unix, feature = "store"))]
 pub mod store;
+
+pub use self::core::Decoder;
+pub use self::core::DecoderVarInt;
+pub use self::core::Encoder;
+pub use self::core::EncoderVarInt;
+pub use self::core::Version;
