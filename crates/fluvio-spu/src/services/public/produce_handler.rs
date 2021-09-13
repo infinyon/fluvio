@@ -1,4 +1,5 @@
 use std::io::Error;
+use std::sync::Arc;
 
 use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
@@ -14,7 +15,7 @@ use dataplane::api::ResponseMessage;
 use dataplane::record::RecordSet;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::GlobalContext;
 
 #[instrument(
     skip(request,ctx),
@@ -25,14 +26,14 @@ use crate::core::DefaultSharedGlobalContext;
 )]
 pub async fn handle_produce_request(
     request: RequestMessage<DefaultProduceRequest>,
-    ctx: DefaultSharedGlobalContext,
+    ctx: Arc<GlobalContext>,
 ) -> Result<ResponseMessage<ProduceResponse>, Error> {
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
     let mut response = ProduceResponse::default();
     for topic_request in produce_request.topics.into_iter() {
-        let topic_response = handle_produce_topic(&ctx, topic_request).await?;
+        let topic_response = handle_produce_topic(&*ctx, topic_request).await?;
         response.responses.push(topic_response);
     }
 
@@ -45,7 +46,7 @@ pub async fn handle_produce_request(
     fields(topic = %topic_request.name),
 )]
 async fn handle_produce_topic(
-    ctx: &DefaultSharedGlobalContext,
+    ctx: &GlobalContext,
     topic_request: TopicProduceData<RecordSet>,
 ) -> Result<TopicProduceResponse, Error> {
     trace!("Handling produce request for topic:");
@@ -71,7 +72,7 @@ async fn handle_produce_topic(
     fields(%replica_id),
 )]
 async fn handle_produce_partition(
-    ctx: &DefaultSharedGlobalContext,
+    ctx: &GlobalContext,
     replica_id: ReplicaKey,
     mut partition_request: PartitionProduceData<RecordSet>,
 ) -> Result<PartitionProduceResponse, Error> {

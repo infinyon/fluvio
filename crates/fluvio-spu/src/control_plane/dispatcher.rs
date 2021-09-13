@@ -1,5 +1,6 @@
 use std::{time::Duration};
 use std::io::Error as IoError;
+use std::sync::Arc;
 
 use tracing::{info, trace, error, debug, warn, instrument};
 use flv_util::print_cli_err;
@@ -16,8 +17,7 @@ use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
 use fluvio_controlplane::UpdateReplicaRequest;
 use dataplane::api::RequestMessage;
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
-use fluvio_storage::FileReplica;
-use crate::core::SharedGlobalContext;
+use crate::core::GlobalContext;
 use crate::InternalServerError;
 
 use super::message_sink::{SharedStatusUpdate};
@@ -32,14 +32,14 @@ struct DispatcherCounter {
 
 /// Controller for handling connection to SC
 /// including registering and reconnect
-pub struct ScDispatcher<S> {
-    ctx: SharedGlobalContext<S>,
+pub struct ScDispatcher {
+    ctx: Arc<GlobalContext>,
     status_update: SharedStatusUpdate,
     counter: DispatcherCounter,
 }
 
-impl ScDispatcher<FileReplica> {
-    pub fn new(ctx: SharedGlobalContext<FileReplica>) -> Self {
+impl ScDispatcher {
+    pub fn new(ctx: Arc<GlobalContext>) -> Self {
         Self {
             status_update: ctx.status_update_owned(),
             ctx,

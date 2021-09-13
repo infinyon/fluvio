@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use std::time::{Instant};
+use std::time::Instant;
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
@@ -23,17 +23,17 @@ use fluvio_spu_schema::server::stream_fetch::{
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::GlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
-use publishers::INIT_OFFSET;
 use crate::smartstream::{SmartStreamEngine, SmartStream};
 use crate::smartstream::file_batch::FileBatchIterator;
+use publishers::INIT_OFFSET;
 use dataplane::batch::Batch;
 use dataplane::smartstream::SmartStreamRuntimeError;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
-    ctx: DefaultSharedGlobalContext,
+    ctx: Arc<GlobalContext>,
     replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,
@@ -51,7 +51,7 @@ impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
     pub async fn spawn(
         request: RequestMessage<FileStreamFetchRequest>,
-        ctx: DefaultSharedGlobalContext,
+        ctx: Arc<GlobalContext>,
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
     ) -> Result<(), SocketError> {
@@ -69,7 +69,7 @@ impl StreamFetchHandler {
     #[instrument(skip(request, ctx, sink, end_event))]
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
-        ctx: DefaultSharedGlobalContext,
+        ctx: Arc<GlobalContext>,
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
     ) -> Result<(), SocketError> {

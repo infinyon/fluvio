@@ -1,4 +1,5 @@
 use std::io::Error as IoError;
+use std::sync::Arc;
 
 use tracing::{trace, instrument};
 
@@ -10,12 +11,12 @@ use fluvio_spu_schema::server::fetch_offset::FetchOffsetPartitionResponse;
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 use dataplane::ErrorCode;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::GlobalContext;
 
 #[instrument(skip(req_msg, ctx))]
 pub async fn handle_offset_request(
     req_msg: RequestMessage<FetchOffsetsRequest>,
-    ctx: DefaultSharedGlobalContext,
+    ctx: Arc<GlobalContext>,
 ) -> Result<ResponseMessage<FetchOffsetsResponse>, IoError> {
     let request = req_msg.request();
     trace!("handling flv fetch request: {:#?}", request);

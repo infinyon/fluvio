@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::{io::Error as IoError};
 
 use tracing::{debug, error, instrument};
@@ -6,11 +7,11 @@ use fluvio_spu_schema::server::update_offset::{
 };
 use dataplane::ErrorCode;
 use dataplane::api::{ResponseMessage, RequestMessage};
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::GlobalContext;
 
 #[instrument(skip(ctx, request))]
 pub async fn handle_offset_update(
-    ctx: &DefaultSharedGlobalContext,
+    ctx: Arc<GlobalContext>,
     request: RequestMessage<UpdateOffsetsRequest>,
 ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
     debug!("received stream updates");

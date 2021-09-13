@@ -6,8 +6,8 @@ use adaptive_backoff::prelude::*;
 
 use fluvio_types::SpuId;
 use fluvio_types::event::offsets::OffsetPublisher;
-use crate::core::{FileGlobalContext};
 
+use crate::core::GlobalContext;
 use super::{FollowersState};
 use super::state::{SharedFollowersState, FollowerReplicaState};
 use super::api_key::{FollowerPeerApiEnum};
@@ -27,7 +27,7 @@ impl FollowerGroups {
 
     /// new follower replica has been added in the group
     /// ensure that controller exists if not spawn controller
-    pub async fn check_new(&self, ctx: &FileGlobalContext, leader: SpuId) {
+    pub async fn check_new(&self, ctx: &GlobalContext, leader: SpuId) {
         // check if leader controller exist
         let mut leaders = self.0.write().await;
         // check if we have controllers
@@ -90,7 +90,8 @@ mod inner {
     use fluvio_storage::FileReplica;
     use fluvio_controlplane_metadata::spu::SpuSpec;
 
-    use crate::{replication::leader::UpdateOffsetRequest, core::SharedSpuConfig};
+    use crate::config::SpuConfig;
+    use crate::{replication::leader::UpdateOffsetRequest};
     use crate::services::internal::FetchStreamRequest;
     use crate::core::spus::SharedSpuLocalStore;
 
@@ -107,7 +108,7 @@ mod inner {
         leader: SpuId,
         spus: SharedSpuLocalStore,
         states: SharedFollowersState<FileReplica>,
-        config: SharedSpuConfig,
+        config: Arc<SpuConfig>,
         group: Arc<GroupNotification>,
     }
 
@@ -117,7 +118,7 @@ mod inner {
             spus: SharedSpuLocalStore,
             states: SharedFollowersState<FileReplica>,
             spu_ctx: Arc<GroupNotification>,
-            config: SharedSpuConfig,
+            config: Arc<SpuConfig>,
         ) {
             let controller = Self {
                 leader,

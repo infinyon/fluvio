@@ -1,4 +1,5 @@
 use std::fmt;
+use std::sync::Arc;
 
 use tracing::{debug, error, warn};
 use futures_util::stream::StreamExt;
@@ -9,11 +10,8 @@ use fluvio_socket::{FluvioSink, SocketError, FluvioStream};
 use dataplane::api::RequestMessage;
 use fluvio_types::SpuId;
 
-use crate::{
-    core::DefaultSharedGlobalContext,
-    replication::follower::sync::{FileSyncRequest},
-};
-
+use crate::core::GlobalContext;
+use crate::replication::follower::sync::FileSyncRequest;
 use super::LeaderPeerApiEnum;
 use super::LeaderPeerRequest;
 use super::UpdateOffsetRequest;
@@ -24,7 +22,7 @@ use super::super::follower::RejectOffsetRequest;
 /// This follows similar arch as Consumer Stream Fetch Handler
 /// It is reactive to offset state
 pub struct FollowerHandler {
-    ctx: DefaultSharedGlobalContext,
+    ctx: Arc<GlobalContext>,
     follower_id: SpuId,
     max_bytes: u32,
     spu_update: SharedSpuPendingUpdate,
@@ -39,7 +37,7 @@ impl fmt::Debug for FollowerHandler {
 impl FollowerHandler {
     /// manage connection from follower
     pub async fn start(
-        ctx: DefaultSharedGlobalContext,
+        ctx: Arc<GlobalContext>,
         follower_id: SpuId,
         spu_update: SharedSpuPendingUpdate,
         sink: FluvioSink,

@@ -8,7 +8,7 @@ use tracing::{debug, warn};
 use fluvio_service::{wait_for_request, FluvioService};
 use fluvio_socket::{FluvioSocket, SocketError};
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::GlobalContext;
 use crate::replication::leader::FollowerHandler;
 use super::SpuPeerRequest;
 use super::SPUPeerApiEnum;
@@ -25,13 +25,13 @@ impl InternalService {
 
 #[async_trait]
 impl FluvioService for InternalService {
-    type Context = DefaultSharedGlobalContext;
+    type Context = Arc<GlobalContext>;
     type Request = SpuPeerRequest;
 
     #[instrument(skip(self, ctx))]
     async fn respond(
         self: Arc<Self>,
-        ctx: DefaultSharedGlobalContext,
+        ctx: Arc<GlobalContext>,
         socket: FluvioSocket,
         _connection: ConnectInfo,
     ) -> Result<(), SocketError> {

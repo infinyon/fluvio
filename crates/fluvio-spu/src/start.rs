@@ -4,9 +4,9 @@ use crate::config::{SpuConfig, SpuOpt};
 use crate::services::create_internal_server;
 use crate::services::internal::InternalApiServer;
 use crate::services::public::{SpuPublicServer, create_public_server};
-use crate::core::DefaultSharedGlobalContext;
 use crate::core::GlobalContext;
 use crate::control_plane::ScDispatcher;
+use std::sync::Arc;
 
 type FileReplicaContext = GlobalContext<FileReplica>;
 
@@ -48,7 +48,7 @@ pub fn create_services(
     internal: bool,
     public: bool,
 ) -> (
-    DefaultSharedGlobalContext,
+    Arc<GlobalContext>,
     Option<InternalApiServer>,
     Option<SpuPublicServer>,
 ) {

@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use tracing::{debug, trace, instrument};
 
 use fluvio_socket::ExclusiveFlvSink;
@@ -9,7 +10,7 @@ use dataplane::fetch::{
 };
 use fluvio_controlplane_metadata::partition::ReplicaKey;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::GlobalContext;
 use dataplane::record::FileRecordSet;
 
 /// perform log fetch request using zero copy write
@@ -21,7 +22,7 @@ use dataplane::record::FileRecordSet;
 )]
 pub async fn handle_fetch_request(
     request: RequestMessage<FileFetchRequest>,
-    ctx: DefaultSharedGlobalContext,
+    ctx: Arc<GlobalContext>,
     sink: ExclusiveFlvSink,
 ) -> Result<(), SocketError> {
     let (header, fetch_request) = request.get_header_request();
@@ -52,7 +53,7 @@ pub async fn handle_fetch_request(
     fields(topic = %topic_request.name),
 )]
 async fn handle_fetch_topic(
-    ctx: &DefaultSharedGlobalContext,
+    ctx: &GlobalContext,
     fetch_request: &FileFetchRequest,
     topic_request: &FetchableTopic,
 ) -> Result<FetchableTopicResponse<FileRecordSet>, SocketError> {
@@ -78,7 +79,7 @@ skip(ctx, replica_id, partition_request),
     fields(%replica_id)
 )]
 async fn handle_fetch_partition(
-    ctx: &DefaultSharedGlobalContext,
+    ctx: &GlobalContext,
     replica_id: ReplicaKey,
     fetch_request: &FileFetchRequest,
     partition_request: &FetchPartition,

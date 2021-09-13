@@ -9,7 +9,7 @@ use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
-use fluvio_storage::{ReplicaStorage};
+use fluvio_storage::{ReplicaStorage, FileReplica};
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
@@ -24,13 +24,12 @@ use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
-use super::SharedSpuConfig;
 
 pub use file_replica::ReplicaChange;
 
 #[derive(Debug)]
-pub struct GlobalContext<S> {
-    config: SharedSpuConfig,
+pub struct GlobalContext<S = FileReplica> {
+    config: Arc<SpuConfig>,
     spu_localstore: SharedSpuLocalStore,
     replica_localstore: SharedReplicaLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
@@ -98,7 +97,7 @@ where
         &self.config
     }
 
-    pub fn config_owned(&self) -> SharedSpuConfig {
+    pub fn config_owned(&self) -> Arc<SpuConfig> {
         self.config.clone()
     }
 

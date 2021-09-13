@@ -16,7 +16,7 @@ use fluvio_spu_schema::server::SpuServerRequest;
 use fluvio_spu_schema::server::SpuServerApiKey;
 use fluvio_types::event::StickyEvent;
 
-use crate::core::DefaultSharedGlobalContext;
+use crate::core::GlobalContext;
 use self::api_versions::handle_api_version_request;
 use self::produce_handler::handle_produce_request;
 use self::fetch_handler::handle_fetch_request;
@@ -26,9 +26,9 @@ use self::stream_fetch::StreamFetchHandler;
 pub use stream_fetch::publishers::StreamPublishers;
 
 pub(crate) type SpuPublicServer =
-    FluvioApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
+    FluvioApiServer<SpuServerRequest, SpuServerApiKey, Arc<GlobalContext>, PublicService>;
 
-pub fn create_public_server(addr: String, ctx: DefaultSharedGlobalContext) -> SpuPublicServer {
+pub fn create_public_server(addr: String, ctx: Arc<GlobalContext>) -> SpuPublicServer {
     info!(
         spu_id = ctx.local_spu_id(),
         %addr,
@@ -52,12 +52,12 @@ impl PublicService {
 #[async_trait]
 impl FluvioService for PublicService {
     type Request = SpuServerRequest;
-    type Context = DefaultSharedGlobalContext;
+    type Context = Arc<GlobalContext>;
 
     #[instrument(skip(self, context))]
     async fn respond(
         self: Arc<Self>,
-        context: DefaultSharedGlobalContext,
+        context: Arc<GlobalContext>,
         socket: FluvioSocket,
         _connection: ConnectInfo,
     ) -> Result<(), SocketError> {
@@ -112,7 +112,7 @@ impl FluvioService for PublicService {
                         }
                         SpuServerRequest::UpdateOffsetsRequest(request) => call_service!(
                             request,
-                            handle_offset_update(&context, request),
+                            handle_offset_update(context.clone(), request),
                             shared_sink,
                             "roduce request handler"
                         ),
