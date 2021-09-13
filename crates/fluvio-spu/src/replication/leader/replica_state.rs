@@ -1,32 +1,26 @@
-use std::{
-    cmp::min,
-    collections::{BTreeMap, HashSet},
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
-use std::iter::FromIterator;
 use std::fmt;
+use std::sync::Arc;
+use std::cmp::min;
+use std::collections::{BTreeMap, HashSet};
+use std::ops::{Deref, DerefMut};
+use std::iter::FromIterator;
 
 use tracing::{debug, error, warn};
 use tracing::instrument;
-use async_rwlock::{RwLock};
+use async_rwlock::RwLock;
 
-use dataplane::{record::RecordSet};
+use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation, ReplicaKey};
-use fluvio_controlplane_metadata::partition::{Replica};
+use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
-use fluvio_types::{SpuId};
+use fluvio_types::SpuId;
 
+use super::FollowerNotifier;
 use crate::config::ReplicationConfig;
 use crate::replication::follower::sync::{PeerFileTopicResponse, PeerFilePartitionResponse};
 use crate::storage::SharableReplicaStorage;
-
-use super::{FollowerNotifier};
 use crate::control_plane::StatusMessageSink;
-
-pub type SharedLeaderState<S> = LeaderReplicaState<S>;
-pub type SharedFileLeaderState = LeaderReplicaState<FileReplica>;
 
 #[derive(Debug)]
 pub struct LeaderReplicaState<S> {

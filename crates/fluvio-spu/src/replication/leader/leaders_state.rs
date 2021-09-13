@@ -11,12 +11,12 @@ use crate::core::GlobalContext;
 use crate::config::ReplicationConfig;
 use crate::replication::follower::FollowerReplicaState;
 
-use super::{LeaderReplicaState, replica_state::SharedLeaderState};
+use super::LeaderReplicaState;
 use crate::control_plane::StatusMessageSink;
 
 /// Collection of replicas
 #[derive(Debug)]
-pub struct ReplicaLeadersState<S>(RwLock<HashMap<ReplicaKey, SharedLeaderState<S>>>);
+pub struct ReplicaLeadersState<S>(RwLock<HashMap<ReplicaKey, LeaderReplicaState<S>>>);
 
 impl<S> Default for ReplicaLeadersState<S> {
     fn default() -> Self {
@@ -25,7 +25,7 @@ impl<S> Default for ReplicaLeadersState<S> {
 }
 
 impl<S> Deref for ReplicaLeadersState<S> {
-    type Target = RwLock<HashMap<ReplicaKey, SharedLeaderState<S>>>;
+    type Target = RwLock<HashMap<ReplicaKey, LeaderReplicaState<S>>>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -40,12 +40,12 @@ impl<S> ReplicaLeadersState<S> {
 
 impl<S> ReplicaLeadersState<S> {
     /// get clone of state
-    pub fn get(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
+    pub fn get(&self, replica: &ReplicaKey) -> Option<LeaderReplicaState<S>> {
         let read = self.read().unwrap();
         read.get(replica).cloned()
     }
 
-    pub fn remove(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
+    pub fn remove(&self, replica: &ReplicaKey) -> Option<LeaderReplicaState<S>> {
         let mut writer = self.write().unwrap();
         writer.remove(replica)
     }
@@ -54,8 +54,8 @@ impl<S> ReplicaLeadersState<S> {
     pub fn insert(
         &self,
         replica: ReplicaKey,
-        state: SharedLeaderState<S>,
-    ) -> Option<SharedLeaderState<S>> {
+        state: LeaderReplicaState<S>,
+    ) -> Option<LeaderReplicaState<S>> {
         let mut writer = self.write().unwrap();
         writer.insert(replica, state)
     }

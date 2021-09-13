@@ -21,10 +21,11 @@ use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
     FileStreamFetchRequest, DefaultStreamFetchRequest, StreamFetchResponse, SmartStreamKind,
 };
+use fluvio_storage::FileReplica;
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::GlobalContext;
-use crate::replication::leader::SharedFileLeaderState;
+use crate::replication::leader::LeaderReplicaState;
 use crate::smartstream::{SmartStreamEngine, SmartStream};
 use crate::smartstream::file_batch::FileBatchIterator;
 use publishers::INIT_OFFSET;
@@ -43,7 +44,7 @@ pub struct StreamFetchHandler {
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
     consumer_offset_listener: OffsetChangeListener,
-    leader_state: SharedFileLeaderState,
+    leader_state: LeaderReplicaState<FileReplica>,
     stream_id: u32,
 }
 
