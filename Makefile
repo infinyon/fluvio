@@ -113,8 +113,19 @@ test-permission-user1:
 		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
 
-k8-setup:
+
+k8-setup:	ensure_fluvio_bin
 	$(FLUVIO_BIN) cluster start --setup --develop
+
+
+ifeq (${CI},true)
+ensure_fluvio_bin:
+else
+# When not in CI (i.e. development), need build cli
+ensure_fluvio_bin: build-cli
+endif
+
+
 
 # Kubernetes Tests
 
@@ -228,7 +239,13 @@ run-all-unit-test: install_rustup_target
 	make test-all -C crates/fluvio-protocol
 
 run-integration-test:build_smartstreams install_rustup_target 
-	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored --test-threads=1
+	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-spu -- --ignored --test-threads=1
+	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-socket -- --ignored --test-threads=1
+
+
+run-k8-test:	install_rustup_target k8-setup build_k8_image
+	cargo test --lib  -p fluvio-sc  -- --ignored --test-threads=1
+
 
 run-all-doc-test: install_rustup_target 
 	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
