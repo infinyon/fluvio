@@ -15,11 +15,12 @@ use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane_metadata::spu::{SpuSpec};
 use dataplane::fixture::{create_recordset};
 
-use crate::core::{DefaultSharedGlobalContext, GlobalContext};
+use crate::core::GlobalContext;
 use crate::config::SpuConfig;
 use crate::services::create_internal_server;
 
 use super::{follower::FollowerReplicaState, leader::LeaderReplicaState};
+use std::sync::Arc;
 
 const TOPIC: &str = "test";
 const HOST: &str = "127.0.0.1";
@@ -123,7 +124,7 @@ impl TestConfig {
     }
 
     /// create new context with SPU populated
-    pub async fn leader_ctx(&self) -> DefaultSharedGlobalContext {
+    pub async fn leader_ctx(&self) -> Arc<GlobalContext> {
         let leader_config = self.leader_config();
 
         let gctx = GlobalContext::new_shared_context(leader_config);
@@ -134,9 +135,7 @@ impl TestConfig {
     }
 
     /// starts new leader
-    pub async fn leader_replica(
-        &self,
-    ) -> (DefaultSharedGlobalContext, LeaderReplicaState<FileReplica>) {
+    pub async fn leader_replica(&self) -> (Arc<GlobalContext>, LeaderReplicaState<FileReplica>) {
         let replica = self.replica();
 
         let gctx = self.leader_ctx().await;
@@ -150,7 +149,7 @@ impl TestConfig {
     }
 
     /// create new follower context witj SPU
-    pub async fn follower_ctx(&self, follower_index: u16) -> DefaultSharedGlobalContext {
+    pub async fn follower_ctx(&self, follower_index: u16) -> Arc<GlobalContext> {
         let follower_config = self.follower_config(follower_index);
         let gctx = GlobalContext::new_shared_context(follower_config);
         gctx.spu_localstore().sync_all(self.spu_specs());
@@ -160,10 +159,7 @@ impl TestConfig {
     pub async fn follower_replica(
         &self,
         follower_index: u16,
-    ) -> (
-        DefaultSharedGlobalContext,
-        FollowerReplicaState<FileReplica>,
-    ) {
+    ) -> (Arc<GlobalContext>, FollowerReplicaState<FileReplica>) {
         let replica = self.replica();
         let gctx = self.follower_ctx(follower_index).await;
         gctx.followers_state_owned()
