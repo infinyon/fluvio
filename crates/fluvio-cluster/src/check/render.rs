@@ -2,7 +2,10 @@
 
 use futures_util::StreamExt;
 use futures_channel::mpsc::Receiver;
-use crate::{CheckStatus, CheckResult, CheckResults, CheckFailed, CheckSuggestion};
+use crate::{
+    CheckFailed, CheckResult, CheckResults, CheckStatus, CheckSuggestion,
+    render::ProgressRenderedText,
+};
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
 
@@ -146,14 +149,7 @@ pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
     render_next_steps(failures, warnings, installed);
 }
 
-pub trait RenderedText {
-    fn text(&self) -> String;
-    fn next_step_text(&self) -> Option<String> {
-        None
-    }
-}
-
-impl RenderedText for CheckStatus {
+impl ProgressRenderedText for CheckStatus {
     fn text(&self) -> String {
         use colored::*;
         use crate::CheckStatus::*;
@@ -207,7 +203,7 @@ impl RenderedText for CheckStatus {
     }
 }
 
-impl RenderedText for CheckResult {
+impl ProgressRenderedText for CheckResult {
     fn text(&self) -> String {
         use colored::*;
 

@@ -5,11 +5,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 use fluvio::config::TlsPolicy;
 
 use crate::cli::ClusterCliError;
+use crate::render::ProgressRenderedText;
 use crate::start::local::{LocalInstallProgressMessage, LocalSetupProgressMessage};
 use crate::{CheckResults, ClusterError, LocalConfig, LocalInstallError, LocalInstaller};
 
 use super::StartOpt;
-use crate::check::render::{RenderedText, render_results_next_steps, render_statuses_next_steps};
+use crate::check::render::{render_results_next_steps, render_statuses_next_steps};
 use futures_util::StreamExt;
 
 /// Attempts to start a local Fluvio cluster

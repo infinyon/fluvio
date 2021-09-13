@@ -29,6 +29,7 @@
 pub mod charts;
 mod check;
 mod start;
+mod render;
 mod delete;
 mod error;
 

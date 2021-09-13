@@ -25,7 +25,7 @@ use crate::{
 };
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
-use crate::check::render::RenderedText;
+use crate::render::ProgressRenderedText;
 
 use super::constants::*;
 use super::common::check_crd;
@@ -369,7 +369,7 @@ pub enum LocalInstallProgressMessage {
     StartStatus(StartStatus),
 }
 
-impl RenderedText for LocalInstallProgressMessage {
+impl ProgressRenderedText for LocalInstallProgressMessage {
     fn text(&self) -> String {
         use colored::*;
 
@@ -420,17 +420,17 @@ impl RenderedText for LocalInstallProgressMessage {
     }
     fn next_step_text(&self) -> Option<String> {
         match self {
-            LocalInstallProgressMessage::PreFlightCheck(_n) => Some(format!("Running checks")),
+            LocalInstallProgressMessage::PreFlightCheck(_n) => Some("Running checks".to_string()),
             LocalInstallProgressMessage::Check(_check) => None,
-            LocalInstallProgressMessage::ClientLoaded => Some("Checking CRD".into()),
-            LocalInstallProgressMessage::Installing => Some("Loading client...".into()),
-            LocalInstallProgressMessage::CrdChecked => Some("Launching SC".into()),
+            LocalInstallProgressMessage::ClientLoaded => Some("Checking CRD".to_string()),
+            LocalInstallProgressMessage::Installing => Some("Loading client...".to_string()),
+            LocalInstallProgressMessage::CrdChecked => Some("Launching SC".to_string()),
             LocalInstallProgressMessage::ClusterError(_err) => None,
-            LocalInstallProgressMessage::ScLaunched => Some("Launching SPU Group".into()),
+            LocalInstallProgressMessage::ScLaunched => Some("Launching SPU Group".to_string()),
             LocalInstallProgressMessage::SpuGroupLaunched(_spu_num) => {
                 Some("Confirming SPUs".into())
             }
-            LocalInstallProgressMessage::ConfirmSpu => Some("Setting profile".into()),
+            LocalInstallProgressMessage::ConfirmSpu => Some("Setting profile".to_string()),
             LocalInstallProgressMessage::ProfileSet => None,
             LocalInstallProgressMessage::StartStatus(_status) => None,
         }
