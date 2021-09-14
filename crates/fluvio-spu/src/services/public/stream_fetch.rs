@@ -95,10 +95,10 @@ impl StreamFetchHandler {
             );
 
             let sm_engine = SmartStreamEngine::default();
-            
+
             let smartstream = if let Some(payload) = msg.wasm_payload {
                 let wasm = &payload.wasm.get_raw()?;
-                debug!(len = wasm.len(),"creating WASM module with bytes");
+                debug!(len = wasm.len(), "creating WASM module with bytes");
                 let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
                     SocketError::Io(IoError::new(
                         ErrorKind::Other,
@@ -128,14 +128,20 @@ impl StreamFetchHandler {
                         Box::new(map)
                     }
                     SmartStreamKind::Aggregate { accumulator } => {
-                        debug!(accumulator_len = accumulator.len(),"Instantiating SmartStreamAggregate");
+                        debug!(
+                            accumulator_len = accumulator.len(),
+                            "Instantiating SmartStreamAggregate"
+                        );
                         let aggregator =
                             module
                                 .create_aggregate(&sm_engine, accumulator)
                                 .map_err(|err| {
                                     SocketError::Io(IoError::new(
                                         ErrorKind::Other,
-                                        format!("Failed to instantiate SmartStreamAggregate {}", err),
+                                        format!(
+                                            "Failed to instantiate SmartStreamAggregate {}",
+                                            err
+                                        ),
                                     ))
                                 })?;
                         Box::new(aggregator)
@@ -210,6 +216,7 @@ impl StreamFetchHandler {
         }
     }
 
+    #[instrument(skip(self, smartstream))]
     async fn inner_process(
         &mut self,
         starting_offset: Offset,
@@ -465,6 +472,9 @@ impl StreamFetchHandler {
             records = batch.records().len(),
             "sending back to consumer"
         );
+
+        //trace!("batch: {:#?}",batch);
+
         let records = RecordSet::default().add(batch);
         let partition_response = DefaultPartitionResponse {
             partition_index: self.replica.partition,

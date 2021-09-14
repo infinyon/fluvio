@@ -12,11 +12,11 @@ macro_rules! call_service {
     ($req:expr,$handler:expr,$sink:expr,$msg:expr) => {{
         {
             let version = $req.header.api_version();
-            tracing::debug!(api=$msg,"invoking handler");
+            tracing::debug!(api = $msg, "invoking handler");
             let response = $handler.await?;
             tracing::trace!("send back response: {:#?}", &response);
             $sink.send_response(&response, version).await?;
-            tracing::debug!(api=$msg,"finished");
+            tracing::debug!(api = $msg, "finished");
         }
     }};
 

@@ -1,5 +1,5 @@
 use std::io::Error;
-use tracing::{debug, trace, instrument};
+use tracing::{trace, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::produce::DefaultProduceRequest;
@@ -15,7 +15,6 @@ use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 pub async fn handle_api_version_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
-
     let mut response = ApiVersionsResponse::default();
     response.api_keys.push(make_version_key(
         SpuServerApiKey::Produce,

@@ -1,7 +1,6 @@
 // ApiRequest and Response that has all request and response
 // use for generic dump and client
 
-
 use std::convert::TryInto;
 use std::io::Error as IoError;
 use std::fmt;
@@ -25,7 +24,7 @@ use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
 
 /// Request to Spu Server
-#[derive(Debug,Encoder)]
+#[derive(Debug, Encoder)]
 pub enum SpuServerRequest {
     /// list of versions supported
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
@@ -40,7 +39,6 @@ pub enum SpuServerRequest {
 
 impl fmt::Display for SpuServerRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-
         match self {
             Self::ApiVersionsRequest(_) => write!(f, "ApiVersionsRequest"),
             Self::ProduceRequest(_) => write!(f, "ProduceRequest"),
@@ -49,10 +47,8 @@ impl fmt::Display for SpuServerRequest {
             Self::FileStreamFetchRequest(_) => write!(f, "FileStreamFetchRequest"),
             Self::UpdateOffsetsRequest(_) => write!(f, "UpdateOffsetsRequest"),
         }
-        
     }
 }
-
 
 impl Default for SpuServerRequest {
     fn default() -> Self {

@@ -133,7 +133,7 @@ where
         };
 
         let connection_info = ConnectInfo {
-            peer: peer_addr.clone()
+            peer: peer_addr.clone(),
         };
 
         let result = service.respond(context, socket, connection_info).await;
