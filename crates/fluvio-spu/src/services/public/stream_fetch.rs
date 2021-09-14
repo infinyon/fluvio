@@ -757,7 +757,7 @@ mod test {
             .parent()
             .expect("parent")
             .join(format!(
-                "fluvio-smartstream/examples/target/wasm32-unknown-unknown/debug/{}.wasm",
+                "fluvio-smartstream/examples/target/wasm32-unknown-unknown/release/{}.wasm",
                 module_name
             ));
         read_filter_from_path(wasm_path)
@@ -1384,7 +1384,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Aggregate {
-                accumulator: Vec::from("789".repeat(100)),
+                accumulator: Vec::from("A"),
             },
         };
 
@@ -1399,15 +1399,17 @@ mod test {
             ..Default::default()
         };
 
-        // Aggregate 10 records
+        // Aggregate 5 records
         // These records look like:
         //
-        // 000000000000000000... x100
-        // 111111111111111111... x100
-        // 222222222222222222... x100
+        // 1
+        // 2
+        // 3
+        // 4
+        // 5
         let mut records = BatchProducer::builder()
-            .records(10u16)
-            .record_generator(Arc::new(|i, _| Record::new(i.to_string().repeat(100))))
+            .records(5u16)
+            .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
             .build()
             .expect("batch")
             .records();
@@ -1433,20 +1435,21 @@ mod test {
 
             let partition = &response.partition;
             assert_eq!(partition.error_code, ErrorCode::None);
-            assert_eq!(partition.high_watermark, 10);
-            assert_eq!(partition.next_offset_for_fetch(), Some(10)); // shoule be same as HW
+            assert_eq!(partition.high_watermark, 5);
+            assert_eq!(partition.next_offset_for_fetch(), Some(5)); // shoule be same as HW
 
             assert_eq!(partition.records.batches.len(), 1);
             let batch = &partition.records.batches[0];
             assert_eq!(batch.base_offset, 0);
-            assert_eq!(batch.records().len(), 10);
+            assert_eq!(batch.records().len(), 5);
 
-            let mut accumulator = "789".repeat(100);
-            for i in 0..10 {
-                accumulator.push_str(&i.to_string().repeat(100));
-                assert_eq!(batch.records()[i].value().as_ref(), accumulator.as_bytes());
-                assert_eq!(batch.records()[i].get_offset_delta(), i as i64);
-            }
+            let records = batch.records();
+
+            assert_eq!("A0", records[0].value().as_str().expect("string"));
+            assert_eq!("A01", records[1].value().as_str().expect("string"));
+            assert_eq!("A012", records[2].value().as_str().expect("string"));
+            assert_eq!("A0123", records[3].value().as_str().expect("string"));
+            assert_eq!("A01234", records[4].value().as_str().expect("string"));
         }
 
         // consumer can send back to same offset to read back again
