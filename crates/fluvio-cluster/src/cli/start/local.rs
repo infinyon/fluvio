@@ -5,11 +5,12 @@ use indicatif::{ProgressBar, ProgressStyle};
 use fluvio::config::TlsPolicy;
 
 use crate::cli::ClusterCliError;
-use crate::start::local::LocalSetupProgressMessage;
-use crate::{CheckResults, ClusterError, LocalConfig, LocalInstallError, LocalInstaller, StartStatus};
+use crate::render::ProgressRenderedText;
+use crate::start::local::{LocalInstallProgressMessage, LocalSetupProgressMessage};
+use crate::{CheckResults, ClusterError, LocalConfig, LocalInstallError, LocalInstaller};
 
 use super::StartOpt;
-use crate::check::render::{RenderedText, render_results_next_steps, render_statuses_next_steps};
+use crate::check::render::{render_results_next_steps, render_statuses_next_steps};
 use futures_util::StreamExt;
 
 /// Attempts to start a local Fluvio cluster
@@ -52,34 +53,71 @@ pub async fn process_local(
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
     if opt.setup {
-        setup_local_with_progress(installer).await?;
+        setup_local_with_progress(&installer).await?;
     } else {
-        install_local(&installer).await?;
+        install_local_with_progress(&installer).await?;
     }
 
     Ok(())
 }
 
-pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
-    match installer.install().await {
-        // Successfully performed startup
-        Ok(StartStatus { checks, .. }) => {
-            if checks.is_none() {
-                println!("Skipped pre-start checks");
+pub async fn install_local_with_progress(
+    installer: &LocalInstaller,
+) -> Result<(), ClusterCliError> {
+    use colored::*;
+
+    let progress_bar = ProgressBar::new(1);
+    progress_bar.set_style(
+        ProgressStyle::default_bar()
+            .progress_chars("=> ")
+            .template(&format!(
+                "{:>12} {{spinner:.green}} [{{bar}}] {{msg}}",
+                "Running: ".green().bold()
+            )),
+    );
+
+    let mut progress = installer.install_with_progress().await;
+    let mut check_statuses = vec![];
+
+    while let Some(local_progress) = progress.next().await {
+        progress_bar.inc(1);
+        progress_bar.println(&local_progress.text());
+        if let Some(next_step) = local_progress.next_step_text() {
+            progress_bar.set_message(next_step);
+        } else {
+            progress_bar.set_message("");
+        }
+
+        match local_progress {
+            LocalInstallProgressMessage::ClusterError(e) => return Err(e.into()),
+            LocalInstallProgressMessage::Check(c) => {
+                // If any check results encountered an error, bubble the error
+                if c.is_err() {
+                    let err: ClusterError = LocalInstallError::PrecheckErrored(vec![c]).into();
+                    return Err(err.into());
+                }
+                if let Ok(status) = c {
+                    if let crate::CheckStatus::Fail(_) = status {
+                        check_statuses.push(status);
+                        render_statuses_next_steps(&check_statuses);
+                        break;
+                    }
+                }
             }
-            println!("Successfully installed Fluvio!");
-        }
-        // Aborted startup because pre-checks failed
-        Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_statuses))) => {
-            render_statuses_next_steps(&check_statuses);
-        }
-        // Another type of error occurred during checking or startup
-        Err(other) => return Err(other.into()),
+            LocalInstallProgressMessage::PreFlightCheck(i) => {
+                progress_bar.set_length(i + 8);
+                progress_bar.enable_steady_tick(100);
+            }
+
+            _ => (),
+        };
     }
+    progress_bar.finish_and_clear();
+
     Ok(())
 }
 
-pub async fn setup_local_with_progress(installer: LocalInstaller) -> Result<(), ClusterCliError> {
+pub async fn setup_local_with_progress(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
     use colored::*;
     let progress_bar = ProgressBar::new(1);
     progress_bar.set_style(
@@ -102,11 +140,16 @@ pub async fn setup_local_with_progress(installer: LocalInstaller) -> Result<(), 
                     println!("{}", text);
                     break;
                 }
+                if let Some(next_step) = check_result.next_step_text() {
+                    progress_bar.set_message(next_step);
+                } else {
+                    progress_bar.set_message("");
+                }
                 check_results.push(check_result);
                 progress_bar.inc(1);
                 progress_bar.println(&text);
             }
-            LocalSetupProgressMessage::PreFlighCheck(i) => {
+            LocalSetupProgressMessage::PreFlightCheck(i) => {
                 println!("{}", "Running pre-flight checks".bold());
                 progress_bar.set_length(i);
                 progress_bar.enable_steady_tick(100);

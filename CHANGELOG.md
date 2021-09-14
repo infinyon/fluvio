@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.7 - UNRELEASED
+* Add spinner to `fluvio cluster --local` command ([1586](https://github.com/infinyon/fluvio/pull/1586))
 
 ## Platform Version 0.9.6 - 2021-09-11
 * Improve display representation for some variants in FluvioError type ([#1581](https://github.com/infinyon/fluvio/issues/1581))

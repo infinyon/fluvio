@@ -7,7 +7,7 @@ use fluvio::{Fluvio, FluvioConfig};
 use semver::Version;
 
 use derive_builder::Builder;
-use tracing::{info, warn, debug, instrument};
+use tracing::{debug, error, info, instrument, warn};
 use once_cell::sync::Lazy;
 use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec, SpuType};
@@ -25,6 +25,7 @@ use crate::{
 };
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
+use crate::render::ProgressRenderedText;
 
 use super::constants::*;
 use super::common::check_crd;
@@ -349,10 +350,105 @@ impl LocalConfigBuilder {
 
 #[derive(Debug)]
 pub enum LocalSetupProgressMessage {
-    PreFlighCheck(u64),
+    PreFlightCheck(u64),
     Check(CheckResult),
 }
 
+#[derive(Debug)]
+pub enum LocalInstallProgressMessage {
+    PreFlightCheck(u64),
+    Check(CheckResult),
+    ClientLoaded,
+    CrdChecked,
+    ClusterError(ClusterError),
+    Installing,
+    ScLaunched,
+    SpuGroupLaunched(u16),
+    ConfirmSpu,
+    ProfileSet,
+    StartStatus(StartStatus),
+}
+
+impl ProgressRenderedText for LocalInstallProgressMessage {
+    fn text(&self) -> String {
+        use colored::*;
+
+        match self {
+            LocalInstallProgressMessage::PreFlightCheck(_n) => {
+                format!("{}", "Running pre-flight checks".bold())
+            }
+            LocalInstallProgressMessage::Check(check) => check.text(),
+
+            LocalInstallProgressMessage::ClientLoaded => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "Client Loaded")
+            }
+
+            LocalInstallProgressMessage::Installing => {
+                format!("{}", "Installing fluvio".bold())
+            }
+            LocalInstallProgressMessage::CrdChecked => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "CRD is ok")
+            }
+            LocalInstallProgressMessage::ClusterError(err) => err.to_string(),
+            LocalInstallProgressMessage::ScLaunched => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "SC Launched")
+            }
+            LocalInstallProgressMessage::SpuGroupLaunched(spu_num) => {
+                format!(
+                    "{:>13} {} ({})",
+                    "Ok: ✅".bold().green(),
+                    "SPU group launched",
+                    spu_num
+                )
+            }
+            LocalInstallProgressMessage::ConfirmSpu => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "SPU confirmed")
+            }
+
+            LocalInstallProgressMessage::ProfileSet => {
+                format!("{:>13} {}", "Ok: ✅".bold().green(), "Profile set")
+            }
+
+            LocalInstallProgressMessage::StartStatus(status) => {
+                format!(
+                    "{} {}",
+                    "Fluvio installed with address:".bold(),
+                    status.address,
+                )
+            }
+        }
+    }
+    fn next_step_text(&self) -> Option<String> {
+        match self {
+            LocalInstallProgressMessage::PreFlightCheck(_n) => Some("Running checks".to_string()),
+            LocalInstallProgressMessage::Check(_check) => None,
+            LocalInstallProgressMessage::ClientLoaded => Some("Checking CRD".to_string()),
+            LocalInstallProgressMessage::Installing => Some("Loading client...".to_string()),
+            LocalInstallProgressMessage::CrdChecked => Some("Launching SC".to_string()),
+            LocalInstallProgressMessage::ClusterError(_err) => None,
+            LocalInstallProgressMessage::ScLaunched => Some("Launching SPU Group".to_string()),
+            LocalInstallProgressMessage::SpuGroupLaunched(_spu_num) => {
+                Some("Confirming SPUs".into())
+            }
+            LocalInstallProgressMessage::ConfirmSpu => Some("Setting profile".to_string()),
+            LocalInstallProgressMessage::ProfileSet => None,
+            LocalInstallProgressMessage::StartStatus(_status) => None,
+        }
+    }
+}
+
+impl From<LocalSetupProgressMessage> for LocalInstallProgressMessage {
+    fn from(progress: LocalSetupProgressMessage) -> Self {
+        match progress {
+            LocalSetupProgressMessage::PreFlightCheck(n) => {
+                LocalInstallProgressMessage::PreFlightCheck(n)
+            }
+            LocalSetupProgressMessage::Check(check_result) => {
+                LocalInstallProgressMessage::Check(check_result)
+            }
+        }
+    }
+}
 /// Install fluvio cluster locally
 #[derive(Debug, Clone)]
 pub struct LocalInstaller {
@@ -419,7 +515,7 @@ impl LocalInstaller {
 
         let checks_number = cluster_checker.checks_number() as u64;
         sender
-            .send(LocalSetupProgressMessage::PreFlighCheck(checks_number))
+            .send(LocalSetupProgressMessage::PreFlightCheck(checks_number))
             .await
             .map_err(LocalInstallError::ChannelSendError)?;
 
@@ -499,6 +595,107 @@ impl LocalInstaller {
             checks,
         })
     }
+    /// Install fluvio locally
+    #[instrument(skip(self))]
+    pub async fn install_with_progress(&self) -> Receiver<LocalInstallProgressMessage> {
+        let (sender, receiver) = futures_channel::mpsc::channel(100);
+        fluvio_future::task::spawn(self.clone().install_with_progress_impl(sender));
+        receiver
+    }
+
+    /// Install fluvio locally
+    #[instrument(skip(self))]
+    pub async fn install_with_progress_impl(
+        self,
+        mut sender: Sender<LocalInstallProgressMessage>,
+    ) -> Result<(), ClusterError> {
+        if !self.config.skip_checks {
+            // Try to setup environment by running pre-checks and auto-fixes
+            let mut checks_receiver = self
+                .setup_with_progress()
+                .await
+                .map(|setup_step| Ok(LocalInstallProgressMessage::from(setup_step)));
+            sender
+                .send_all(&mut checks_receiver)
+                .await
+                .map_err(LocalInstallError::ChannelSendError)?;
+        };
+
+        sender
+            .send(LocalInstallProgressMessage::Installing)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        use k8_client::load_and_share;
+        let client = load_and_share().map_err(K8InstallError::from)?;
+
+        sender
+            .send(LocalInstallProgressMessage::ClientLoaded)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        // before we do let's try make sure SPU are installed.
+        check_crd(client.clone())
+            .await
+            .map_err(K8InstallError::from)?;
+
+        sender
+            .send(LocalInstallProgressMessage::CrdChecked)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        debug!("using log dir: {}", self.config.log_dir.display());
+        if !self.config.log_dir.exists() {
+            create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
+        }
+        // ensure we sync files before we launch servers
+        Command::new("sync")
+            .inherit()
+            .result()
+            .map_err(|e| ClusterError::InstallLocal(e.into()))?;
+
+        // set host name and port for SC
+        // this should mirror K8
+        let (address, port) = (LOCAL_SC_ADDRESS.to_owned(), LOCAL_SC_PORT);
+
+        let fluvio = self.launch_sc(&address, port).await?;
+        sender
+            .send(LocalInstallProgressMessage::ScLaunched)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        self.launch_spu_group(client.clone()).await?;
+        sender
+            .send(LocalInstallProgressMessage::SpuGroupLaunched(
+                self.config.spu_replicas,
+            ))
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
+        sender
+            .send(LocalInstallProgressMessage::ConfirmSpu)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        self.set_profile()?;
+
+        sender
+            .send(LocalInstallProgressMessage::ProfileSet)
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        sender
+            .send(LocalInstallProgressMessage::StartStatus(StartStatus {
+                address,
+                port,
+                checks: None,
+            }))
+            .await
+            .map_err(LocalInstallError::ChannelSendError)?;
+
+        Ok(())
+    }
 
     /// Launches an SC on the local machine
     ///
@@ -509,7 +706,6 @@ impl LocalInstaller {
 
         let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
         let errors = outputs.try_clone()?;
-        println!("Starting sc server");
         let mut binary = {
             let base = self
                 .config
@@ -624,7 +820,7 @@ impl LocalInstaller {
     async fn launch_spu_group(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         let count = self.config.spu_replicas;
         for i in 0..count {
-            println!("Starting SPU ({} of {})", i + 1, count);
+            debug!("Starting SPU ({} of {})", i + 1, count);
             self.launch_spu(i, client.clone(), &self.config.log_dir)
                 .await?;
         }
@@ -728,20 +924,16 @@ impl LocalInstaller {
             let spus = admin.list::<SpuSpec, _>(vec![]).await?;
             let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
             if ready_spu == spu as usize {
-                println!("All SPUs({}) are ready", spu);
+                info!("All SPUs({}) are ready", spu);
                 sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
                 return Ok(());
             } else {
-                println!(
-                    "{} of {} spu are ready, sleeping 10 seconds...",
-                    ready_spu, spu,
-                );
                 debug!("{} out of {} SPUs up, waiting 10 sec", ready_spu, spu);
                 sleep(Duration::from_secs(10)).await;
             }
         }
 
-        println!("waited too long,bailing out");
+        error!("waited too long,bailing out");
         Err(LocalInstallError::Other(format!(
             "not able to provision:{} spu",
             spu
