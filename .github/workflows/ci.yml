@@ -799,12 +799,8 @@ jobs:
       - name: Get status of latest CD_Dev run
         id: cd_dev_check
         run: |
-          export CD_DEV_CHECK=$(gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0].status | tr -d '"')
-          echo "CD_DEV_CHECK=${CD_DEV_CHECK}" | tee -a $GITHUB_ENV
-      - name: Evaluate check
-        run: |
-          echo "${{ env.CD_DEV_CHECK }}"
-          if [[ "${{ env.CD_DEV_CHECK }}" = "success" ]]
+          CD_DEV_CHECK=$(gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0].status | tr -d '"')
+          if [[ "$CD_DEV_CHECK" = "success" ]]
           then
             echo ✅ Most recent CD_Dev run passed
             exit 0;
