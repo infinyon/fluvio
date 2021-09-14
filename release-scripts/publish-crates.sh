@@ -28,12 +28,7 @@ CRATES_UPLOADED=0
 readonly MAX_ATTEMPTS=3
 readonly VERBOSE=${VERBOSE:-false}
 
-# Might not need this. We set CARGO_REGISTRY_TOKEN externally
-#readonly CRATES_API_TOKEN${CRATES_API_TOKEN:-} 
-
-# This is the end state
 readonly CARGO_OUTPUT_TMP=$(mktemp)
-#readonly CARGO_OUTPUT_TMP=/tmp/cargo.out
 
 function check_if_crate_uploaded() {
 
@@ -41,12 +36,6 @@ function check_if_crate_uploaded() {
 
     # Check for whether the crate was already uploaded to determine if we're good to move forward
     tail -1 "$CARGO_OUTPUT_TMP" | grep "already uploaded" > /dev/null
-
-    # DEBUG. I want to see loop again in action
-    #if [[ $ATTEMPTS -lt $MAX_ATTEMPTS ]];
-    #then
-    #    (exit 123)
-    #fi
 
     # If exit code from `grep` is 0
     if [[ ${PIPESTATUS[1]} != 0 ]];
@@ -57,16 +46,11 @@ function check_if_crate_uploaded() {
 }
 
 
+# We're relying on CARGO_REGISTRY_TOKEN to be set in CI
 function cargo_publish() {
-    # We want to support two forms of this, so CI can accept an API token as input
-
-    # if CRATES_API_TOKEN
-    #if [[ -z "$CRATES_API_TOKEN" ]];
-    #then
-    #    cargo publish --token "$CRATES_API_TOKEN" 2>&1 | tee "$CARGO_OUTPUT_TMP"
-    #else
     cargo publish 2>&1 | tee "$CARGO_OUTPUT_TMP"
-    #fi
+
+    return "${PIPESTATUS[0]}"
 
 }
 
@@ -81,14 +65,13 @@ function cargo_publish_all() {
 
             # Save the `cargo publish` in case we get a non-zero exit
             cargo_publish;
+            result="$?";
 
             #echo "PUBLISH STEP HERE"
             #(exit 101)
 
             # cargo publish exit codes:
-            # 0: Successful
-            # 101: Unsuccessful - We'll get this if the crate is already uploaded
-            if [[ ${PIPESTATUS[0]} != 0 ]];
+            if [[ "$result" != 0 ]];
             then
                 check_if_crate_uploaded "$crate";
             else
