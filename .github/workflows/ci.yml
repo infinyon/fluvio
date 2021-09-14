@@ -789,25 +789,3 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
-
-  cd_dev_check:
-    name: CD_Dev check
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Login GH CLI
-        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
-      - name: Get status of latest CD_Dev run
-        id: cd_dev_check
-        run: |
-          gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt  
-          echo "Latest CD_Dev run: $(cat /tmp/cd_dev_latest.txt | jq .html_url | tr -d '"')"
-          CD_DEV_CHECK=$(cat /tmp/cd_dev_latest.txt | jq .conclusion | tr -d '"')
-          if [[ "$CD_DEV_CHECK" = "success" ]]
-          then
-            echo ✅ Most recent CD_Dev run passed
-            exit 0;
-          else
-            echo ❌ Most recent CD_Dev run failed
-            exit 1;
-          fi
