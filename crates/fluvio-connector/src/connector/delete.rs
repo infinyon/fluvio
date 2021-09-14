@@ -1,7 +1,7 @@
 //!
-//! # Delete Managed SPU Groups
+//! # Delete Managed Connectors
 //!
-//! CLI tree to generate Delete Managed SPU Groups
+//! CLI tree to generate Delete Managed Connectors
 //!
 use structopt::StructOpt;
 
@@ -16,7 +16,7 @@ use crate::error::ConnectorError;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteManagedConnectorOpt {
-    /// The name of the SPU Group to delete
+    /// The name of the connector to delete
     #[structopt(value_name = "name")]
     name: String,
 }
