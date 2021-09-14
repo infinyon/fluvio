@@ -1,4 +1,4 @@
-pub use fluvio_controlplane_metadata::managed_connector::*;
+pub use fluvio_controlplane_metadata::connector::*;
 
 mod convert {
 

@@ -1,0 +1,4 @@
+test-connector:
+  type: test-connector
+  args:
+    foo: bar

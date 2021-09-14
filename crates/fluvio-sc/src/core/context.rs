@@ -10,7 +10,7 @@ use crate::stores::spu::*;
 use crate::stores::partition::*;
 use crate::stores::topic::*;
 use crate::stores::spg::*;
-use crate::stores::managed_connector::*;
+use crate::stores::connector::*;
 use crate::stores::*;
 
 pub type SharedContext = Arc<Context>;

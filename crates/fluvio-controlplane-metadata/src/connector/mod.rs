@@ -1,6 +1,5 @@
 mod spec;
 mod status;
-pub mod store;
 
 pub use spec::*;
 pub use status::*;

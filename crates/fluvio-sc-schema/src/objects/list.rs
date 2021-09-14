@@ -16,7 +16,7 @@ use fluvio_controlplane_metadata::spu::*;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::store::*;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
-use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 

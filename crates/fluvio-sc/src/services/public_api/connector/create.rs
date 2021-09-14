@@ -10,14 +10,14 @@ use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
 
 use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
-/// Handler for spu groups request
+/// Handler for managed connector request
 #[instrument(skip(name, spec, _dry_run, auth_ctx))]
 pub async fn handle_create_managed_connector_request<AC: AuthContext>(
     name: String,
@@ -45,12 +45,12 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
     }
 
     let status = process_managed_connector_request(&auth_ctx.global_ctx, name, spec).await;
-    trace!("create spu-group response {:#?}", status);
+    trace!("create managed connector response {:#?}", status);
 
     Ok(status)
 }
 
-/// Process custom spu, converts spu spec to K8 and sends to KV store
+/// Process custom managed connector, converts managed connector spec to K8 and sends to KV store
 #[instrument(skip(ctx, name, managed_connector_spec))]
 async fn process_managed_connector_request(
     ctx: &Context,

@@ -1,13 +1,14 @@
 //!
-//! # SPU Spec
+//! # Managed Connector Spec
 //!
-//! Interface to the SPU metadata spec in K8 key value store
+//! Interface to the Managed Connector metadata spec in K8 key value store
 //!
 use serde::Deserialize;
 use serde::Serialize;
 
 use super::super::ManagedConnectorStatus;
 use crate::k8_types::{Spec, Crd, DefaultHeader};
+use std::collections::BTreeMap;
 
 use crd::MANAGED_CONNECTOR_API;
 mod crd {
@@ -32,17 +33,19 @@ impl Spec for K8ManagedConnectorSpec {
         &MANAGED_CONNECTOR_API
     }
 }
-use super::ManagedConnectorConfig;
 
 #[derive(Deserialize, Serialize, Default, Debug, Clone)]
 #[serde(rename_all = "camelCase", default)]
 pub struct K8ManagedConnectorSpec {
     pub name: String,
-    pub config: ManagedConnectorConfig,
+    #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
+    pub type_: String, // syslog, github star, slack
+    pub topic: String,
+    pub args: BTreeMap<String, String>,
 }
 mod convert {
 
-    use crate::managed_connector::*;
+    use crate::connector::*;
 
     use super::*;
 
@@ -50,28 +53,20 @@ mod convert {
         fn from(spec: K8ManagedConnectorSpec) -> Self {
             Self {
                 name: spec.name,
-                config: spec.config,
+                type_: spec.type_,
+                topic: spec.topic,
+                args: spec.args,
             }
         }
     }
-    /*
-    impl From<SpuTemplate> for SpuConfig {
-        fn from(template: SpuTemplate) -> Self {
-            Self {
-                rack: template.rack,
-                replication: template.replication.map(|r| r.into()),
-                storage: template.storage.map(|s| s.into()),
-                env: vec![], // doesn't really matter
-            }
-        }
-    }
-    */
 
     impl From<ManagedConnectorSpec> for K8ManagedConnectorSpec {
         fn from(spec: ManagedConnectorSpec) -> Self {
             Self {
                 name: spec.name,
-                config: spec.config,
+                type_: spec.type_,
+                topic: spec.topic,
+                args: spec.args,
             }
         }
     }

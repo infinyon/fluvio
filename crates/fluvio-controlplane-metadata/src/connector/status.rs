@@ -54,9 +54,6 @@ pub enum ManagedConnectorStatusResolution {
     Failed,
 }
 
-// -----------------------------------
-// Implementation - FlvSpuGroupResolution
-// -----------------------------------
 impl Default for ManagedConnectorStatusResolution {
     fn default() -> Self {
         Self::Init

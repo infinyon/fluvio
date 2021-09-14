@@ -4,12 +4,12 @@ use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::Status;
 use fluvio_auth::{AuthContext, InstanceAction};
-use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
-/// Handler for delete spu group request
+/// Handler for delete managed connector request
 #[instrument(skip(name, auth_ctx))]
 pub async fn handle_delete_managed_connector<AC: AuthContext>(
     name: String,

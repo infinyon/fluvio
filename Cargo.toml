@@ -36,6 +36,7 @@ members = [
     "crates/fluvio-test-derive",
     "crates/fluvio-test-util",
     "crates/fluvio-types",
+    "crates/fluvio-connector/",
 ]
 resolver = "2"
 

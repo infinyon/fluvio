@@ -1,6 +1,6 @@
 mod public_server;
 mod spg;
-mod managed_connectors;
+mod connector;
 mod spu;
 mod topic;
 mod partition;

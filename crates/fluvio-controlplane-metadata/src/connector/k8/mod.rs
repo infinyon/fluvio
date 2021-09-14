@@ -8,8 +8,7 @@ mod spec;
 pub use self::spec::*;
 
 use super::ManagedConnectorStatus;
-use super::ManagedConnectorConfig;
 use crate::k8_types::Status as K8Status;
 
-/// implement k8 status for spu group status because they are same
+/// implement k8 status for managed connector status because they are same
 impl K8Status for ManagedConnectorStatus {}

@@ -3,7 +3,7 @@ use std::io::{Error, ErrorKind};
 use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
-use fluvio_sc_schema::managed_connector::ManagedConnectorSpec;
+use fluvio_sc_schema::connector::ManagedConnectorSpec;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_controlplane_metadata::extended::SpecExt;
@@ -15,7 +15,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
     filters: Vec<NameFilter>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse, Error> {
-    debug!("fetching spu groups");
+    trace!("fetching managed connectors");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -23,9 +23,9 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .await
     {
         if !authorized {
-            trace!("authorization failed");
+            debug!("authorization failed");
             // If permission denied, return empty list;
-            return Ok(ListResponse::SpuGroup(vec![]));
+            return Ok(ListResponse::ManagedConnector(vec![]));
         }
     } else {
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));

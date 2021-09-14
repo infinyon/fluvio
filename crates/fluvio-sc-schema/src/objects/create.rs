@@ -39,7 +39,7 @@ mod create {
     use fluvio_controlplane_metadata::topic::TopicSpec;
     use fluvio_controlplane_metadata::spu::CustomSpuSpec;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
-    use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
+    use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
     use super::*;
 
     const TOPIC: u8 = 0;

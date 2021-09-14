@@ -15,7 +15,7 @@ use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuKey;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
-use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::core::Removable;
 

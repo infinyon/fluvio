@@ -3,7 +3,7 @@ pub mod topic;
 pub mod partition;
 pub mod spg;
 pub mod message;
-pub mod managed_connector;
+pub mod connector;
 
 pub use fluvio_stream_model::core;
 
