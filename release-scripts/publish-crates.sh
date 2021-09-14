@@ -29,7 +29,7 @@ readonly MAX_ATTEMPTS=3
 readonly VERBOSE=${VERBOSE:-false}
 
 # Might not need this. We set CARGO_REGISTRY_TOKEN externally
-readonly CRATES_API_TOKEN${CRATES_API_TOKEN:-} 
+#readonly CRATES_API_TOKEN${CRATES_API_TOKEN:-} 
 
 # This is the end state
 readonly CARGO_OUTPUT_TMP=$(mktemp)
@@ -61,12 +61,12 @@ function cargo_publish() {
     # We want to support two forms of this, so CI can accept an API token as input
 
     # if CRATES_API_TOKEN
-    if [[ -z "$CRATES_API_TOKEN" ]];
-    then
-        cargo publish --token "$CRATES_API_TOKEN" 2>&1 | tee "$CARGO_OUTPUT_TMP"
-    else
-        cargo publish 2>&1 | tee "$CARGO_OUTPUT_TMP"
-    fi
+    #if [[ -z "$CRATES_API_TOKEN" ]];
+    #then
+    #    cargo publish --token "$CRATES_API_TOKEN" 2>&1 | tee "$CARGO_OUTPUT_TMP"
+    #else
+    cargo publish 2>&1 | tee "$CARGO_OUTPUT_TMP"
+    #fi
 
 }
 
