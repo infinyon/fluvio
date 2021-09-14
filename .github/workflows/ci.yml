@@ -800,8 +800,8 @@ jobs:
       - name: Get status of latest CD_Dev run
         id: cd_dev_check
         run: |
-          CD_DEV_CHECK=$(gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0].status | tr -d '"')
-          if [[ "$CD_DEV_CHECK" = "completed" ]]
+          CD_DEV_CHECK=$(gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0].conclusion | tr -d '"')
+          if [[ "$CD_DEV_CHECK" = "success" ]]
           then
             echo ✅ Most recent CD_Dev run passed
             exit 0;
