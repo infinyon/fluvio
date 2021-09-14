@@ -28,14 +28,13 @@ impl CreateManagedConnectorOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConnectorError> {
         let configs = ConnectorConfig::from_file(&self.config)?;
         for (name, config) in configs.into_iter() {
-            let spec : ManagedConnectorSpec = config.into();
+            let spec: ManagedConnectorSpec = config.into();
 
             debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
 
             let admin = fluvio.admin().await;
             admin.create(name.to_string(), false, spec).await?;
         }
-
 
         Ok(())
     }

@@ -7,9 +7,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::{
-    ManagedConnectorSpec,
-};
+use fluvio_controlplane_metadata::connector::{ManagedConnectorSpec};
 
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;

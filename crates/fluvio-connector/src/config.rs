@@ -1,4 +1,3 @@
-
 use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -26,8 +25,7 @@ impl ConnectorConfig {
     fn default_args() -> BTreeMap<String, String> {
         BTreeMap::new()
     }
-    pub fn from_file<P: Into<PathBuf>> (path: P) -> Result<ConnectorConfigSet, ConnectorError> {
-
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfigSet, ConnectorError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -36,20 +34,18 @@ impl ConnectorConfig {
             value.name = key.to_string();
         }
         Ok(connector_configs)
-
     }
 }
-
-impl Into<ManagedConnectorSpec> for ConnectorConfig {
-    fn into(self) -> ManagedConnectorSpec {
-        let topic = self.topic.unwrap_or(self.type_.clone());
+impl From<ConnectorConfig> for ManagedConnectorSpec {
+    fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
+        let topic = config.topic.unwrap_or(config.type_.clone());
         //let args : Vec<String> = self.args.keys().zip(self.args.values()).flat_map(|(key, value)| [key.clone(), value.clone()]).collect::<Vec<_>>();
 
         ManagedConnectorSpec {
-            name: self.name,
-            type_: self.type_,
+            name: config.name,
+            type_: config.type_,
             topic,
-            args: self.args,
+            args: config.args,
         }
     }
 }

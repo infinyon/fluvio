@@ -14,7 +14,9 @@ async fn main() -> Result<(), ConnectorError> {
     fluvio_future::subscriber::init_tracer(None);
     let opts = ConnectorOpts::from_args();
     let out = Arc::new(PrintTerminal::new());
-    let fluvio = fluvio::Fluvio::connect().await.expect("Failed to connect to fluvio");
+    let fluvio = fluvio::Fluvio::connect()
+        .await
+        .expect("Failed to connect to fluvio");
 
     let _ = opts.process(out, &fluvio).await?;
 

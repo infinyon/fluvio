@@ -17,5 +17,4 @@ pub enum ConnectorError {
 
     #[error("Serde Error `{0:?}`")]
     Serde(#[from] SerdeError),
-
 }

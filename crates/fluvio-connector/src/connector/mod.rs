@@ -52,7 +52,7 @@ impl ManagedConnectorCmd {
                 delete.process(fluvio).await?;
             }
             Self::List(list) => {
-                list.process(out, &fluvio).await?;
+                list.process(out, fluvio).await?;
             }
         }
         Ok(())
