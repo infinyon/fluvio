@@ -6,20 +6,20 @@ PUBLISH_CRATES=(
     fluvio-protocol-core
     fluvio-smartstream-derive
     fluvio-types
-    fluvio-protocol-derive
-    fluvio-protocol-codec
-    fluvio-protocol
-    fluvio-dataplane-protocol
-    fluvio-socket
-    fluvio-stream-model
-    fluvio-controlplane-metadata
-    fluvio-spu-schema
-    fluvio-sc-schema
-    fluvio-smartstream
-    fluvio
-    fluvio-stream-dispatcher
-    fluvio-package-index
-    fluvio-extension-common
+ #   fluvio-protocol-derive
+ #   fluvio-protocol-codec
+ #   fluvio-protocol
+ #   fluvio-dataplane-protocol
+ #   fluvio-socket
+ #   fluvio-stream-model
+ #   fluvio-controlplane-metadata
+ #   fluvio-spu-schema
+ #   fluvio-sc-schema
+ #   fluvio-smartstream
+ #   fluvio
+ #   #fluvio-stream-dispatcher # This was actually updated, so let's remove during testing
+ #   fluvio-package-index
+ #   fluvio-extension-common
 )
 
 LOOP_AGAIN=false
@@ -27,6 +27,9 @@ ATTEMPTS=1
 CRATES_UPLOADED=0
 readonly MAX_ATTEMPTS=3
 readonly VERBOSE=${VERBOSE:-false}
+
+# Might not need this. We set CARGO_REGISTRY_TOKEN externally
+readonly CRATES_API_TOKEN${CRATES_API_TOKEN:-} 
 
 # This is the end state
 readonly CARGO_OUTPUT_TMP=$(mktemp)
@@ -53,6 +56,20 @@ function check_if_crate_uploaded() {
     fi
 }
 
+
+function cargo_publish() {
+    # We want to support two forms of this, so CI can accept an API token as input
+
+    # if CRATES_API_TOKEN
+    if [[ -z "$CRATES_API_TOKEN" ]];
+    then
+        cargo publish --token "$CRATES_API_TOKEN" 2>&1 | tee "$CARGO_OUTPUT_TMP"
+    else
+        cargo publish 2>&1 | tee "$CARGO_OUTPUT_TMP"
+    fi
+
+}
+
 function cargo_publish_all() {
     # We want to loop though each of the crates and attempt to publish.
 
@@ -63,7 +80,8 @@ function cargo_publish_all() {
             pushd crates/"$crate";
 
             # Save the `cargo publish` in case we get a non-zero exit
-            cargo publish 2>&1 | tee "$CARGO_OUTPUT_TMP"
+            cargo_publish;
+
             #echo "PUBLISH STEP HERE"
             #(exit 101)
 
