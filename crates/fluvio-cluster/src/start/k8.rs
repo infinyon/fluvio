@@ -718,7 +718,7 @@ impl ClusterInstaller {
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-        self.pb.println(InstallProgressMessage::Success.msg());f
+        self.pb.println(InstallProgressMessage::Success.msg());
         self.pb.finish_and_clear();
 
         Ok(StartStatus {
