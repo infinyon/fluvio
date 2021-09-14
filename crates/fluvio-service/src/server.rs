@@ -16,10 +16,14 @@ use fluvio_protocol::Decoder as FluvioDecoder;
 use fluvio_socket::{FluvioSocket, SocketError};
 use fluvio_types::event::StickyEvent;
 
-#[derive(Debug)]
 pub struct ConnectInfo {
-    host: String,
     peer: String,
+}
+
+impl fmt::Debug for ConnectInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_tuple("peer").field(&self.peer).finish()
+    }
 }
 
 /// Trait for responding to kf service
@@ -129,8 +133,7 @@ where
         };
 
         let connection_info = ConnectInfo {
-            peer: peer_addr.clone(),
-            host: host.clone(),
+            peer: peer_addr.clone()
         };
 
         let result = service.respond(context, socket, connection_info).await;

@@ -1,10 +1,12 @@
 // ApiRequest and Response that has all request and response
 // use for generic dump and client
 
-use tracing::trace;
+
 use std::convert::TryInto;
 use std::io::Error as IoError;
+use std::fmt;
 
+use tracing::trace;
 use dataplane::bytes::Buf;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::ApiMessage;
@@ -23,7 +25,7 @@ use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
 
 /// Request to Spu Server
-#[derive(Debug, Encoder)]
+#[derive(Debug,Encoder)]
 pub enum SpuServerRequest {
     /// list of versions supported
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
@@ -35,6 +37,22 @@ pub enum SpuServerRequest {
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
 }
+
+impl fmt::Display for SpuServerRequest {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+
+        match self {
+            Self::ApiVersionsRequest(_) => write!(f, "ApiVersionsRequest"),
+            Self::ProduceRequest(_) => write!(f, "ProduceRequest"),
+            Self::FileFetchRequest(_) => write!(f, "FileFetchRequest"),
+            Self::FetchOffsetsRequest(_) => write!(f, "FetchOffsetsRequest"),
+            Self::FileStreamFetchRequest(_) => write!(f, "FileStreamFetchRequest"),
+            Self::UpdateOffsetsRequest(_) => write!(f, "UpdateOffsetsRequest"),
+        }
+        
+    }
+}
+
 
 impl Default for SpuServerRequest {
     fn default() -> Self {

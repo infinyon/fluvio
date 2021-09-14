@@ -15,7 +15,6 @@ use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 pub async fn handle_api_version_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
-    debug!("Handling ApiVersionsRequest");
 
     let mut response = ApiVersionsResponse::default();
     response.api_keys.push(make_version_key(
