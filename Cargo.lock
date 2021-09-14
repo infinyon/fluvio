@@ -1506,37 +1506,18 @@ dependencies = [
 name = "fluvio-connector"
 version = "0.1.0"
 dependencies = [
- "async-channel",
- "async-trait",
- "color-eyre",
- "colored",
- "derive_builder",
- "directories",
  "fluvio",
- "fluvio-cluster",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",
  "fluvio-future",
- "fluvio-sc-schema",
- "futures-lite",
- "include_dir",
  "k8-client",
- "once_cell",
  "prettytable-rs",
- "remoteprocess",
- "semver 1.0.4",
  "serde",
- "serde_json",
  "serde_yaml",
  "structopt",
- "tempdir",
- "tempfile",
  "thiserror",
  "tokio",
  "tracing",
- "tracing-futures",
- "url",
- "which 4.2.2",
 ]
 
 [[package]]
