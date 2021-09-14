@@ -798,11 +798,12 @@ jobs:
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
       - name: Get status of latest CD_Dev run
         id: cd_dev_check
-        run: gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0].status | tr -d '"' 
+        run: |
+          export CD_DEV_CHECK=$(gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0].status | tr -d '"')
       - name: Evaluate check
         run: |
-          echo "${{ steps.cd_dev_check.outputs }}"
-          if [[ "${{ steps.cd_dev_check.outputs }}" = "success" ]]
+          echo "$CD_DEV_CHECK"
+          if [[ "$CD_DEV_CHECK" = "success" ]]
           then
             echo ✅ Most recent CD_Dev run passed
             exit 0;
