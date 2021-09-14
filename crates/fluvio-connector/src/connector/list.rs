@@ -1,6 +1,6 @@
-//! # List SPU Groups CLI
+//! # List Managed Connectors CLI
 //!
-//! CLI tree and processing to list SPU Groups
+//! CLI tree and processing to list Managed Connectors
 //!
 
 use std::sync::Arc;
@@ -38,7 +38,7 @@ mod output {
     //!
     //! # Fluvio SC - output processing
     //!
-    //! Format SPU Group response based on output type
+    //! Format Managed Connectors response based on output type
 
     use prettytable::Row;
     use prettytable::row;

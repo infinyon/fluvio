@@ -38,8 +38,7 @@ impl ConnectorConfig {
 }
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
-        let topic = config.topic.unwrap_or(config.type_.clone());
-        //let args : Vec<String> = self.args.keys().zip(self.args.values()).flat_map(|(key, value)| [key.clone(), value.clone()]).collect::<Vec<_>>();
+        let topic = config.topic.unwrap_or_else(|| config.type_.clone());
 
         ManagedConnectorSpec {
             name: config.name,

@@ -16,21 +16,21 @@ use list::ListManagedConnectorsOpt;
 
 #[derive(Debug, StructOpt)]
 pub enum ManagedConnectorCmd {
-    /// Create a new managed SPU Group
+    /// Create a new Managed Connector
     #[structopt(
         name = "create",
         template = COMMAND_TEMPLATE,
     )]
     Create(CreateManagedConnectorOpt),
 
-    /// Delete a managed SPU Group
+    /// Delete a Managed Connector
     #[structopt(
         name = "delete",
         template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteManagedConnectorOpt),
 
-    /// List all SPU Groups
+    /// List all Managed Connectors
     #[structopt(
         name = "list",
         template = COMMAND_TEMPLATE,
