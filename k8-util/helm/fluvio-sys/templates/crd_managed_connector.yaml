@@ -10,7 +10,7 @@ spec:
     plural: managedconnectors
     singular: managedconnector
   versions:
-    - name: v1
+    - name: v2
       served: true
       storage:  true
       subresources:
