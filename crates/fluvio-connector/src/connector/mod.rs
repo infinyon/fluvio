@@ -5,7 +5,6 @@ mod create;
 mod delete;
 mod list;
 
-use fluvio::Fluvio;
 use crate::error::ConnectorError as ClusterCliError;
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
@@ -42,17 +41,17 @@ impl ManagedConnectorCmd {
     pub async fn process<O: Terminal>(
         self,
         out: Arc<O>,
-        fluvio: &Fluvio,
     ) -> Result<(), ClusterCliError> {
+        let fluvio = fluvio::Fluvio::connect() .await?;
         match self {
             Self::Create(create) => {
-                create.process(fluvio).await?;
+                create.process(&fluvio).await?;
             }
             Self::Delete(delete) => {
-                delete.process(fluvio).await?;
+                delete.process(&fluvio).await?;
             }
             Self::List(list) => {
-                list.process(out, fluvio).await?;
+                list.process(out, &fluvio).await?;
             }
         }
         Ok(())

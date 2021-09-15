@@ -1504,7 +1504,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-connector"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fluvio",
  "fluvio-controlplane-metadata",
@@ -1516,7 +1516,6 @@ dependencies = [
  "serde_yaml",
  "structopt",
  "thiserror",
- "tokio",
  "tracing",
 ]
 
@@ -1534,7 +1533,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.10.2"
+version = "0.10.3"
 dependencies = [
  "async-trait",
  "fluvio-dataplane-protocol",
@@ -1762,7 +1761,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.9.1"
+version = "0.10.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",

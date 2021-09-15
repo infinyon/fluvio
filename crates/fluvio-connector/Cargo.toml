@@ -1,12 +1,11 @@
 [package]
 name = "fluvio-connector"
-version = "0.1.0"
+version = "0.0.0"
 edition = "2018"
 
 
 [dependencies]
 structopt = "0.3"
-tokio = { version = "1.7.1", features = ["macros", "rt", ] }
 thiserror = "1.0.25"
 k8-client = "5.1.5"
 
