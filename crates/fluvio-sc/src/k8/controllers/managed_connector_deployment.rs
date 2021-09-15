@@ -200,6 +200,8 @@ impl ManagedConnectorDeploymentController {
         let image = format!("infinyon/fluvio-connect-{}", mc_spec.config.type_);
         debug!("STARTING CONNECTOR FOR IMAGE {:?}", image);
 
+        let config_map = todo!();
+
         let args = &mc_spec.config.args;
         let template = TemplateSpec {
             metadata: Some(
@@ -214,9 +216,15 @@ impl ManagedConnectorDeploymentController {
                     /*
                     env, // TODO
                     */
+                    volume_mounts: vec![
+                        todo!()
+                    ],
                     args: args.to_vec(),
                     ..Default::default()
                 }],
+                volumes: vec![
+                    todo!()
+                ],
                 //security_context: spu_k8_config.pod_security_context.clone(),
                 //node_selector: Some(spu_pod_config.node_selector.clone()),
                 ..Default::default()
