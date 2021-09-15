@@ -1,8 +1,14 @@
 # Release Notes
 
-## Platform Version 0.9.6 - UNRELEASED
+## Platform Version 0.9.7 - UNRELEASED
+* Add spinner to `fluvio cluster --local` command ([1586](https://github.com/infinyon/fluvio/pull/1586))
+* Fix handling large stream fetch ([1630](https://github.com/infinyon/fluvio/pull/1630))
+* Create error variant and propagate that in case of attempt of creation of a topic with an invalid name. ([#1464](https://github.com/infinyon/fluvio/issues/1464))
+
+## Platform Version 0.9.6 - 2021-09-11
 * Improve display representation for some variants in FluvioError type ([#1581](https://github.com/infinyon/fluvio/issues/1581))
 * Add spinner to `fluvio cluster --local --setup` command ([1574](https://github.com/infinyon/fluvio/pull/1574))
+* Add `--format` string for custom Consumer printouts ([#1593](https://github.com/infinyon/fluvio/issues/1593))
 
 ## Platform Version 0.9.5 - 2021-09-02
 * Update `Debug` printout for `SmartStreamWasm` to reduce noise ([#1524](https://github.com/infinyon/fluvio/pull/1524))

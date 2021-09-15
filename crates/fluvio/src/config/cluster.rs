@@ -16,6 +16,10 @@ pub struct FluvioConfig {
     // We don't want to have a "" address.
     #[serde(alias = "addr")]
     pub endpoint: String,
+
+    #[serde(default)]
+    pub use_spu_local_address: bool,
+
     /// The TLS policy to use when connecting to the cluster
     // If no TLS field is present in config file,
     // use the default of NoTls
@@ -28,6 +32,7 @@ impl FluvioConfig {
     pub fn new<S: Into<String>>(addr: S) -> Self {
         Self {
             endpoint: addr.into(),
+            use_spu_local_address: false,
             tls: TlsPolicy::Disabled,
         }
     }

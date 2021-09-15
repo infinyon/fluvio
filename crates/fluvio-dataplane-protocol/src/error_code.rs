@@ -58,6 +58,8 @@ pub enum ErrorCode {
     TopicInvalidConfiguration,
     #[fluvio(tag = 2005)]
     TopicNotProvisioned,
+    #[fluvio(tag = 2006)]
+    TopicInvalidName,
 
     // Partition errors
     #[fluvio(tag = 3000)]

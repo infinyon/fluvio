@@ -20,7 +20,7 @@ pub struct CreateRequest {
 
 impl Request for CreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
+    const DEFAULT_API_VERSION: i16 = 1;
     type Response = Status;
 }
 

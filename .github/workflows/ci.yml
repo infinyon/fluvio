@@ -615,6 +615,40 @@ jobs:
           name: k8_${{ matrix.run }}_log
           path: /tmp/k8_*.log
 
+  k8_cli_backward_compat:
+    name: Latest CLI vs Stable Cluster
+    needs: build_image
+   # if: false
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        cluster_version: [stable]
+        cli_version: [latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Install stable CLI and start Fluvio cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          ~/.fluvio/bin/fluvio cluster start
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio && ./fluvio version
+
+      - name: Test ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} cluster
+        run: |
+          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=./fluvio cli-platform-cross-version-test
+
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
   docker_push:

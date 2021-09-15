@@ -22,8 +22,10 @@ use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
 };
+use handlebars::Handlebars;
 
 const DEFAULT_TAIL: u32 = 10;
+const USER_TEMPLATE: &str = "user_template";
 
 /// Read messages from a topic/partition
 ///
@@ -47,6 +49,21 @@ pub struct ConsumeOpt {
     /// Print records in "[key] value" format, with "[null]" for no key
     #[structopt(short, long)]
     pub key_value: bool,
+
+    /// Provide a template string to print records with a custom format.
+    /// See --help for details.
+    ///
+    /// Template strings may include the variables {{key}}, {{value}}, and {{offset}}
+    /// which will have each record's contents substituted in their place.
+    /// For example, the following template string:
+    ///
+    /// Offset {{offset}} has key {{key}} and value {{value}}
+    ///
+    /// Would produce a printout where records might look like this:
+    ///
+    /// Offset 0 has key A and value Apple
+    #[structopt(short = "F", long, conflicts_with_all = &["output", "key_value"])]
+    pub format: Option<String>,
 
     /// Consume records starting X from the beginning of the log (default: 0)
     #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
@@ -75,9 +92,8 @@ pub struct ConsumeOpt {
         value_name = "type",
         possible_values = &ConsumeOutputType::variants(),
         case_insensitive = true,
-        default_value
     )]
-    pub output: ConsumeOutputType,
+    pub output: Option<ConsumeOutputType>,
 
     /// Path to a SmartStream filter wasm file
     #[structopt(long, group("smartstream"))]
@@ -183,6 +199,15 @@ impl ConsumeOpt {
         self.print_status();
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
+        let templates = match self.format.as_deref() {
+            None => None,
+            Some(format) => {
+                let mut reg = Handlebars::new();
+                reg.register_template_string(USER_TEMPLATE, format)?;
+                Some(reg)
+            }
+        };
+
         while let Some(result) = stream.next().await {
             let result: std::result::Result<Record, _> = result;
             let record = match result {
@@ -194,7 +219,7 @@ impl ConsumeOpt {
                 Err(other) => return Err(other.into()),
             };
 
-            self.print_record(record.key(), record.value());
+            self.print_record(templates.as_ref(), &record);
         }
 
         debug!("fetch loop exited");
@@ -202,28 +227,40 @@ impl ConsumeOpt {
     }
 
     /// Process fetch topic response based on output type
-    pub fn print_record(&self, key: Option<&[u8]>, value: &[u8]) {
-        let formatted_key = key.map(|key| {
-            String::from_utf8(key.to_owned())
-                .unwrap_or_else(|_| "<cannot print non-UTF8 key>".to_string())
-        });
+    pub fn print_record(&self, templates: Option<&Handlebars>, record: &Record) {
+        let formatted_key = record
+            .key()
+            .map(|key| String::from_utf8_lossy(key).to_string())
+            .unwrap_or_else(|| "null".to_string());
 
-        let formatted_value = match self.output {
-            ConsumeOutputType::json => format_json(value, self.suppress_unknown),
-            ConsumeOutputType::text => Some(format_text_record(value, self.suppress_unknown)),
-            ConsumeOutputType::binary => Some(format_binary_record(value)),
-            ConsumeOutputType::dynamic => Some(format_dynamic_record(value)),
-            ConsumeOutputType::raw => Some(format_raw_record(value)),
+        let formatted_value = match (&self.output, templates) {
+            (Some(ConsumeOutputType::json), None) => {
+                format_json(record.value(), self.suppress_unknown)
+            }
+            (Some(ConsumeOutputType::text), None) => {
+                Some(format_text_record(record.value(), self.suppress_unknown))
+            }
+            (Some(ConsumeOutputType::binary), None) => Some(format_binary_record(record.value())),
+            (Some(ConsumeOutputType::dynamic) | None, None) => {
+                Some(format_dynamic_record(record.value()))
+            }
+            (Some(ConsumeOutputType::raw), None) => Some(format_raw_record(record.value())),
+            (_, Some(templates)) => {
+                let value = String::from_utf8_lossy(record.value()).to_string();
+                let object = serde_json::json!({
+                    "key": formatted_key,
+                    "value": value,
+                    "offset": record.offset(),
+                });
+                templates.render(USER_TEMPLATE, &object).ok()
+            }
         };
 
-        match (formatted_key, formatted_value) {
-            (Some(key), Some(value)) if self.key_value => {
-                println!("[{}] {}", key, value);
+        match formatted_value {
+            Some(value) if self.key_value => {
+                println!("[{}] {}", formatted_key, value);
             }
-            (None, Some(value)) if self.key_value => {
-                println!("[null] {}", value);
-            }
-            (_, Some(value)) => {
+            Some(value) => {
                 println!("{}", value);
             }
             // (Some(_), None) only if JSON cannot be printed, so skip.

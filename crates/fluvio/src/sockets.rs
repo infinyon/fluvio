@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::Display;
 use std::sync::Arc;
 
-use tracing::{debug, trace, instrument};
+use tracing::{debug, instrument};
 
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
@@ -57,7 +57,7 @@ impl VersionedSocket {
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
         let versions = Versions::new(response);
 
-        trace!("versions: {:#?}", versions);
+        debug!("versions: {:#?}", versions);
 
         Ok(Self {
             socket,
@@ -76,6 +76,7 @@ pub struct ClientConfig {
     addr: String,
     client_id: String,
     connector: DomainConnector,
+    pub(crate) use_spu_local_address: bool,
 }
 
 impl fmt::Display for ClientConfig {
@@ -91,16 +92,21 @@ impl From<String> for ClientConfig {
 }
 
 impl ClientConfig {
-    pub fn new<S: Into<String>>(addr: S, connector: DomainConnector) -> Self {
+    pub fn new<S: Into<String>>(
+        addr: S,
+        connector: DomainConnector,
+        use_spu_local_address: bool,
+    ) -> Self {
         Self {
             addr: addr.into(),
             client_id: "fluvio".to_owned(),
             connector,
+            use_spu_local_address,
         }
     }
 
     pub fn with_addr(addr: String) -> Self {
-        Self::new(addr, Box::new(DefaultDomainConnector::default()))
+        Self::new(addr, Box::new(DefaultDomainConnector::default()), false)
     }
 
     pub fn addr(&self) -> &str {
@@ -141,6 +147,7 @@ impl ClientConfig {
             addr: self.addr.clone(),
             client_id: self.client_id.clone(),
             connector,
+            use_spu_local_address: self.use_spu_local_address,
         }
     }
 }

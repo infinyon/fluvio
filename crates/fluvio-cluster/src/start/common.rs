@@ -4,7 +4,7 @@ use fluvio_controlplane_metadata::spu::SpuSpec;
 use k8_client::{SharedK8Client, ClientError};
 use once_cell::sync::Lazy;
 use semver::Version;
-use tracing::{debug, instrument};
+use tracing::{debug, error, instrument, warn};
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_future::timer::sleep;
@@ -39,10 +39,10 @@ pub async fn try_connect_to_sc(
                     Ok(fluvio) => {
                         let current_version = fluvio.platform_version();
                         if current_version == expected_version {
-                            println!("Got updated SC Version{}", &expected_version);
+                            debug!("Got updated SC Version{}", &expected_version);
                             Some(fluvio)
                         } else {
-                            println!("Current Version {} is not same as expected: {}",current_version,expected_version);
+                            warn!("Current Version {} is not same as expected: {}",current_version,expected_version);
                             None
                         }
                     }
@@ -57,20 +57,20 @@ pub async fn try_connect_to_sc(
     }
 
     for attempt in 0..*MAX_SC_LOOP {
-        println!(
+        debug!(
             "Trying to connect to sc at: {}, attempt: {}",
             config.endpoint, attempt
         );
         if let Some(fluvio) = try_connect_sc(config, platform_version).await {
-            println!("Connection to sc suceed!");
+            debug!("Connection to sc suceed!");
             return Some(fluvio);
         } else if attempt < *MAX_SC_LOOP - 1 {
-            println!("Connection failed.  sleeping 10 seconds");
+            debug!("Connection failed.  sleeping 10 seconds");
             sleep(Duration::from_secs(10)).await;
         }
     }
 
-    println!("fail to connect to sc at: {}", config.endpoint);
+    error!("fail to connect to sc at: {}", config.endpoint);
     None
 }
 
@@ -79,14 +79,13 @@ pub async fn check_crd(client: SharedK8Client) -> Result<(), ClientError> {
     use k8_metadata_client::MetadataClient;
 
     for i in 0..100 {
-        println!("checking fluvio crd attempt: {}", i);
+        debug!("checking fluvio crd attempt: {}", i);
         // check if spu is installed
         if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
-            println!("problem retrieving fluvio crd {}", err);
-            println!("sleeping 1 seconds");
+            debug!("problem retrieving fluvio crd {}", err);
             sleep(Duration::from_secs(10)).await;
         } else {
-            println!("fluvio crd installed");
+            debug!("fluvio crd installed");
             return Ok(());
         }
     }

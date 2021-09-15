@@ -1,11 +1,12 @@
 [package]
 name = "fluvio-auth"
-version = "0.6.2"
+version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
 license = "Apache-2.0"
 repository = "https://github.com/infinyon/fluvio"
 description = "Authorization framework for Fluvio"
+publish = false
 
 
 [lib]
@@ -21,7 +22,7 @@ tracing = "0.1"
 tracing-futures = "0.2.4"
 x509-parser = "0.9.1"
 
-fluvio-controlplane-metadata = { version = "0.10.0", path = "../fluvio-controlplane-metadata" }
+fluvio-controlplane-metadata = { version = "0.11.0", path = "../fluvio-controlplane-metadata" }
 dataplane = { version = "0.6.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-future = { version = "0.3.0", features = ["net", "openssl_tls"] }
 fluvio-protocol = { path = "../fluvio-protocol",  version = "0.6" }

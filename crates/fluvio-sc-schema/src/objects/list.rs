@@ -55,7 +55,7 @@ impl Default for ListRequest {
 
 impl Request for ListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
+    const DEFAULT_API_VERSION: i16 = 1;
     type Response = ListResponse;
 }
 

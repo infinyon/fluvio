@@ -29,6 +29,7 @@
 pub mod charts;
 mod check;
 mod start;
+mod render;
 mod delete;
 mod error;
 
@@ -65,6 +66,8 @@ mod common {
     /// cluster as well as the results of any pre-startup checks that
     /// were run (if any).
     /// TODO: In future release, we should return address without port
+
+    #[derive(Debug)]
     pub struct StartStatus {
         pub(crate) address: String,
         pub(crate) port: u16,

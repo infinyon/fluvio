@@ -53,10 +53,16 @@ mod context {
     where
         S: Spec,
     {
+        /// create new store context
         pub fn new() -> Self {
+            Self::new_with_store(LocalStore::new_shared())
+        }
+
+        /// create new store context with store
+        pub fn new_with_store(store: Arc<LocalStore<S, K8MetaItem>>) -> Self {
             let (sender, receiver) = bounded(100);
             Self {
-                store: LocalStore::new_shared(),
+                store,
                 sender,
                 receiver,
             }
