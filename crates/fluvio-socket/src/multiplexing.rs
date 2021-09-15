@@ -296,11 +296,11 @@ impl<R: Request> Stream for AsyncResponse<R> {
             if let Some(msg) = bytes {
                 use bytes::Buf;
                 let response_len = msg.len();
-                debug!(response_len,remaining = msg.remaining(),"response len");
+                debug!(response_len,remaining = msg.remaining(),version = this.header.api_version(),"response len>>>");
 
                 let mut cursor = Cursor::new(msg);
                 let response = R::Response::decode_from(&mut cursor, this.header.api_version());
-                debug!("decoded");
+                debug!("<<decoded");
                 let value = match response {
                     Ok(value) => {
                         trace!("Received response bytes: {},  {:#?}", response_len, &value,);
