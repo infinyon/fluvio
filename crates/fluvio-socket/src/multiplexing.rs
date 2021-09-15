@@ -292,15 +292,18 @@ impl<R: Request> Stream for AsyncResponse<R> {
         };
 
         if let Some(bytes) = next {
-
             if let Some(msg) = bytes {
                 use bytes::Buf;
                 let response_len = msg.len();
-                debug!(response_len,remaining = msg.remaining(),version = this.header.api_version(),"response len>>>");
+                debug!(
+                    response_len,
+                    remaining = msg.remaining(),
+                    version = this.header.api_version(),
+                    "response len>>>"
+                );
 
                 let mut cursor = Cursor::new(msg);
                 let response = R::Response::decode_from(&mut cursor, this.header.api_version());
-                debug!("<<decoded");
                 let value = match response {
                     Ok(value) => {
                         trace!("Received response bytes: {},  {:#?}", response_len, &value,);
@@ -310,12 +313,10 @@ impl<R: Request> Stream for AsyncResponse<R> {
                 };
                 Poll::Ready(value)
             } else {
-                return Poll::Ready(Some(Err(SocketError::SocketClosed)));
+                Poll::Ready(Some(Err(SocketError::SocketClosed)))
             }
-            
         } else {
-            return Poll::Ready(None);
-            
+            Poll::Ready(None)
         }
     }
 }
