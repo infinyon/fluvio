@@ -16,17 +16,17 @@ pub mod validate {
 
         #[test]
         fn reject_topics_with_spaces() {
-            assert_eq!(valid_topic_name("hello world"), false);
+            assert!(!valid_topic_name("hello world"));
         }
 
         #[test]
         fn reject_topics_with_uppercase() {
-            assert_eq!(valid_topic_name("helloWorld"), false);
+            assert!(!valid_topic_name("helloWorld"));
         }
 
         #[test]
         fn reject_topics_with_underscore() {
-            assert_eq!(valid_topic_name("hello_world"), false);
+            assert!(!valid_topic_name("hello_world"));
         }
 
         #[test]
@@ -35,7 +35,7 @@ pub mod validate {
         }
         #[test]
         fn reject_topics_that_start_with_hyphen() {
-            assert_eq!(valid_topic_name("-helloworld"), false);
+            assert!(!valid_topic_name("-helloworld"));
         }
     }
 }
