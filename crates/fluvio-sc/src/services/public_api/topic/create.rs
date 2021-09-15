@@ -78,11 +78,10 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 
     let valid_name = valid_topic_name(name);
     if !valid_name {
-        debug!("invalid name exists");
         return Status::new(
             name.to_string(),
             ErrorCode::TopicInvalidName,
-            Some(name.to_string()),
+            Some(format!("Invalid topic name: '{}'. Topic name can contain only lowercase alphanumeric characters or '-'.", name.to_string())),
         );
     }
 
