@@ -199,8 +199,29 @@ impl ManagedConnectorDeploymentController {
 
         let image = format!("infinyon/fluvio-connect-{}", mc_spec.config.type_);
         debug!("STARTING CONNECTOR FOR IMAGE {:?}", image);
+        use k8_types::core::pod::{
+            ConfigMapVolumeSource,
+            KeyToPath,
+            VolumeSpec,
+        };
 
-        let config_map = todo!();
+        let config_map_volume_spec = VolumeSpec {
+            name: "fluvio-config-volume".to_string(),
+            config_map: Some(
+                ConfigMapVolumeSource {
+                    name: Some("fluvio-config-map".to_string()),
+                    items: Some(vec![
+                        KeyToPath {
+                            key: "fluvioClientConfig".to_string(),
+                            path: "config".to_string(),
+
+                            ..Default::default()
+                        },
+                    ]),
+                    ..Default::default()
+                }),
+            ..Default::default()
+        };
 
         let args = &mc_spec.config.args;
         let template = TemplateSpec {
@@ -217,13 +238,17 @@ impl ManagedConnectorDeploymentController {
                     env, // TODO
                     */
                     volume_mounts: vec![
-                        todo!()
+                        VolumeMount {
+                            name: "fluvio-config-volume".to_string(),
+                            mount_path: "/home/fluvio/.fluvio".to_string(),
+                            ..Default::default()
+                        },
                     ],
                     args: args.to_vec(),
                     ..Default::default()
                 }],
                 volumes: vec![
-                    todo!()
+                    config_map_volume_spec,
                 ],
                 //security_context: spu_k8_config.pod_security_context.clone(),
                 //node_selector: Some(spu_pod_config.node_selector.clone()),
