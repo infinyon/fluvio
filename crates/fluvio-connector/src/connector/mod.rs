@@ -38,11 +38,8 @@ pub enum ManagedConnectorCmd {
 }
 
 impl ManagedConnectorCmd {
-    pub async fn process<O: Terminal>(
-        self,
-        out: Arc<O>,
-    ) -> Result<(), ClusterCliError> {
-        let fluvio = fluvio::Fluvio::connect() .await?;
+    pub async fn process<O: Terminal>(self, out: Arc<O>) -> Result<(), ClusterCliError> {
+        let fluvio = fluvio::Fluvio::connect().await?;
         match self {
             Self::Create(create) => {
                 create.process(&fluvio).await?;
