@@ -1471,7 +1471,6 @@ dependencies = [
  "handlebars",
  "hex",
  "home",
- "hostname-validator",
  "http-types",
  "k8-client",
  "k8-config",
@@ -1575,7 +1574,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "bytes",
  "cfg-if 1.0.0",
@@ -1787,7 +1786,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.9.4"
+version = "0.9.5"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2516,12 +2515,6 @@ name = "hostfile"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2733206bcc0550a15b450c64d8aa859f486d7281c4c0c36ef904b361960d658"
-
-[[package]]
-name = "hostname-validator"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be14a194c8bc9f0ce9901de058cf114bab6ae85d461adc4bfa37deb295ad89d4"
 
 [[package]]
 name = "http"
