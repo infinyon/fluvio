@@ -38,12 +38,12 @@ impl ConnectorConfig {
 }
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
-        let topic = config.topic.unwrap_or_else(|| config.type_.clone());
+        let topic = config.topic.unwrap_or(config.type_.clone());
 
         ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
-            topic,
+            topic: topic.to_string(),
             args: config.args,
         }
     }

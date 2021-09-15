@@ -54,12 +54,12 @@ pub async fn handle_delete_managed_connector<AC: AuthContext>(
             .delete(name.clone())
             .await
         {
-            Status::new(name.clone(), ErrorCode::SpuError, Some(err.to_string()))
+            Status::new(name.clone(), ErrorCode::ManagedConnectorError, Some(err.to_string()))
         } else {
             Status::new_ok(name)
         }
     } else {
-        Status::new(name, ErrorCode::SpuNotFound, Some("not found".to_owned()))
+        Status::new(name, ErrorCode::ManagedConnectorNotFound, Some("not found".to_owned()))
     };
 
     trace!("flv delete managed connector resp {:#?}", status);

@@ -23,7 +23,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .await
     {
         if !authorized {
-            debug!("authorization failed");
+            debug!("fetch connector authorization failed");
             // If permission denied, return empty list;
             return Ok(ListResponse::ManagedConnector(vec![]));
         }
@@ -31,7 +31,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let spgs: Vec<Metadata<ManagedConnectorSpec>> = auth_ctx
+    let connectors: Vec<Metadata<ManagedConnectorSpec>> = auth_ctx
         .global_ctx
         .managed_connectors()
         .store()
@@ -47,8 +47,8 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         })
         .collect();
 
-    debug!("flv fetch spgs resp: {} items", spgs.len());
-    trace!("flv fetch spgs resp {:#?}", spgs);
+    debug!("flv fetch connectors resp: {} items", connectors.len());
+    trace!("flv fetch connectors resp {:#?}", connectors);
 
-    Ok(ListResponse::ManagedConnector(spgs))
+    Ok(ListResponse::ManagedConnector(connectors))
 }

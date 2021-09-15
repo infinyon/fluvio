@@ -72,6 +72,12 @@ pub enum ErrorCode {
     // SmartStream errors
     #[fluvio(tag = 4000)]
     SmartStreamError(SmartStreamError),
+
+    // Managed Connector Errors
+    #[fluvio(tag = 5000)]
+    ManagedConnectorError,
+    #[fluvio(tag = 5001)]
+    ManagedConnectorNotFound,
 }
 
 impl Default for ErrorCode {
