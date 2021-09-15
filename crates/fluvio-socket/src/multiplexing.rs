@@ -13,7 +13,7 @@ use async_channel::bounded;
 use async_channel::Receiver;
 use async_channel::Sender;
 use async_lock::Mutex;
-use bytes::BytesMut;
+use bytes::{Bytes};
 use event_listener::Event;
 use fluvio_future::net::ConnectionFd;
 use futures_util::stream::{Stream, StreamExt};
@@ -34,14 +34,14 @@ use crate::FluvioStream;
 
 pub type SharedMultiplexerSocket = Arc<MultiplexerSocket>;
 
-type SharedMsg = (Arc<Mutex<Option<BytesMut>>>, Arc<Event>);
+type SharedMsg = (Arc<Mutex<Option<Bytes>>>, Arc<Event>);
 
 /// Handle different way to multiplex
 enum SharedSender {
     /// Serial socket
     Serial(SharedMsg),
     /// Batch Socket
-    Queue(Sender<Option<BytesMut>>),
+    Queue(Sender<Option<Bytes>>),
 }
 
 type Senders = Arc<Mutex<HashMap<i32, SharedSender>>>;
@@ -257,7 +257,7 @@ impl MultiplexerSocket {
 #[pin_project(PinnedDrop)]
 pub struct AsyncResponse<R> {
     #[pin]
-    receiver: Receiver<Option<BytesMut>>,
+    receiver: Receiver<Option<Bytes>>,
     header: RequestHeader,
     correlation_id: i32,
     data: PhantomData<R>,
@@ -291,29 +291,33 @@ impl<R: Request> Stream for AsyncResponse<R> {
             Poll::Ready(next) => next,
         };
 
-        let bytes = if let Some(bytes) = next {
-            bytes
-        } else {
-            return Poll::Ready(None);
-        };
+        if let Some(bytes) = next {
+            if let Some(msg) = bytes {
+                use bytes::Buf;
+                let response_len = msg.len();
+                debug!(
+                    response_len,
+                    remaining = msg.remaining(),
+                    version = this.header.api_version(),
+                    "response len>>>"
+                );
 
-        let bytes = if let Some(bytes) = bytes {
-            bytes
-        } else {
-            return Poll::Ready(Some(Err(SocketError::SocketClosed)));
-        };
-
-        let mut cursor = Cursor::new(&bytes);
-        let response = R::Response::decode_from(&mut cursor, this.header.api_version());
-
-        let value = match response {
-            Ok(value) => {
-                trace!("Received response bytes: {},  {:#?}", bytes.len(), &value,);
-                Some(Ok(value))
+                let mut cursor = Cursor::new(msg);
+                let response = R::Response::decode_from(&mut cursor, this.header.api_version());
+                let value = match response {
+                    Ok(value) => {
+                        trace!("Received response bytes: {},  {:#?}", response_len, &value,);
+                        Some(Ok(value))
+                    }
+                    Err(e) => Some(Err(e.into())),
+                };
+                Poll::Ready(value)
+            } else {
+                Poll::Ready(Some(Err(SocketError::SocketClosed)))
             }
-            Err(e) => Some(Err(e.into())),
-        };
-        Poll::Ready(value)
+        } else {
+            Poll::Ready(None)
+        }
     }
 }
 
@@ -357,9 +361,10 @@ impl MultiPlexingResponseDispatcher {
                             let mut correlation_id: i32 = 0;
                             match correlation_id.decode(&mut msg, 0) {
                                 Ok(_) => {
-                                    trace!(correlation_id,len = msg.len(), "received frame");
+                                    use bytes::Buf;
+                                    debug!(correlation_id,len = msg.len(), remaining = msg.remaining(), "received frame");
 
-                                    if let Err(err) = self.send(correlation_id, msg).await {
+                                    if let Err(err) = self.send(correlation_id, msg.freeze()).await {
                                         error!("error sending to socket, {}", err)
                                     }
                                 }
@@ -408,7 +413,7 @@ impl MultiPlexingResponseDispatcher {
 
     /// send message to correct receiver
     #[instrument(skip(self, msg),fields( msg = msg.len()))]
-    async fn send(&mut self, correlation_id: i32, msg: BytesMut) -> Result<(), SocketError> {
+    async fn send(&mut self, correlation_id: i32, msg: Bytes) -> Result<(), SocketError> {
         let mut senders = self.senders.lock().await;
         if let Some(sender) = senders.get_mut(&correlation_id) {
             match sender {
