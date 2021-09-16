@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.7 - UNRELEASED
+## Platform Version 0.9.8 - UNRELEASED
+
+## Platform Version 0.9.7 - 2021-09-16
 * Improve progress message in `fluvio cluster start --local` ([1586](https://github.com/infinyon/fluvio/pull/1586))
 * Fix handling large stream fetch ([1630](https://github.com/infinyon/fluvio/pull/1630))
 * Create error variant and propagate that in case of attempt of creation of a topic with an invalid name. ([#1464](https://github.com/infinyon/fluvio/issues/1464))
