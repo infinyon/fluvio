@@ -64,7 +64,6 @@ pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliE
             if checks.is_none() {
                 println!("Skipped pre-start checks");
             }
-            println!("Successfully installed Fluvio!");
         }
         // Aborted startup because pre-checks failed
         Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_statuses))) => {

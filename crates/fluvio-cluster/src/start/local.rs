@@ -364,6 +364,7 @@ enum InstallProgressMessage {
     ConfirmingSpus,
     SpusConfirmed,
     ProfileSet,
+    Success,
 }
 
 impl ProgressRenderedText for InstallProgressMessage {
@@ -379,20 +380,14 @@ impl ProgressRenderedText for InstallProgressMessage {
             }
 
             InstallProgressMessage::ScLaunched => {
-                format!("{:>6} {}", "✅ ".bold().green(), "SC Launched")
+                format!("{:>6} {}", "✅".bold().green(), "SC Launched")
             }
             InstallProgressMessage::LaunchingSPUGroup(spu_num) => {
                 format!("{} {}", "🤖 Launching SPU Group with:".bold(), spu_num)
             }
 
             InstallProgressMessage::StartSPU(spu_num, total) => {
-                format!(
-                    "{:>6} {} ({}/{})",
-                    "🤖",
-                    "Starting SPU: ".bold(),
-                    spu_num,
-                    total
-                )
+                format!("{:>6} {} ({}/{})", "🤖", "Starting SPU:", spu_num, total)
             }
 
             InstallProgressMessage::SpuGroupLaunched(spu_num) => {
@@ -404,7 +399,7 @@ impl ProgressRenderedText for InstallProgressMessage {
                 )
             }
             InstallProgressMessage::ConfirmingSpus => {
-                format!("{}", "Confirming SPUs".bold())
+                format!("💙 {}", "Confirming SPUs".bold())
             }
 
             InstallProgressMessage::SpusConfirmed => {
@@ -413,6 +408,9 @@ impl ProgressRenderedText for InstallProgressMessage {
 
             InstallProgressMessage::ProfileSet => {
                 format!("👤 {}", "Profile set".bold())
+            }
+            InstallProgressMessage::Success => {
+                format!("🎯 {}", "Successfully installed Fluvio!".bold())
             }
         }
     }
@@ -532,9 +530,9 @@ impl LocalInstaller {
 
         self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
 
-        println!("Setting local profile");
         self.set_profile()?;
-        self.render(InstallProgressMessage::ProfileSet);
+
+        self.render(InstallProgressMessage::Success);
 
         Ok(StartStatus {
             address,
@@ -659,6 +657,8 @@ impl LocalInstaller {
         assert!(config.set_current_profile(LOCAL_PROFILE));
 
         config_file.save()?;
+
+        self.render(InstallProgressMessage::ProfileSet);
 
         Ok(format!("local context is set to: {}", local_addr))
     }
