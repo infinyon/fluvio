@@ -45,6 +45,10 @@ To interact with this cluster, please install the matching CLI version using the
     ConsumerConfig(String),
     #[error("Encountered a runtime error in the user's SmartStream: {0}")]
     SmartStreamRuntime(#[from] SmartStreamRuntimeError),
+    #[error("Producer send error: {0}")]
+    ProducerSend(String),
+    #[error("Producer flush error: {0}")]
+    ProducerFlush(String),
     #[error("Unknown error: {0}")]
     Other(String),
 }

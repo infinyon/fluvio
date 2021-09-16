@@ -1,10 +1,13 @@
 use std::sync::Arc;
 use std::collections::HashMap;
-use tracing::instrument;
+use tracing::{debug, instrument};
+use async_channel::Sender;
 
+mod dispatcher;
 mod partitioning;
 
 use fluvio_types::{SpuId, PartitionId};
+use fluvio_types::event::StickyEvent;
 use dataplane::ReplicaKey;
 use dataplane::produce::DefaultProduceRequest;
 use dataplane::produce::DefaultPartitionRequest;
@@ -17,7 +20,8 @@ use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
-use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
+use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
+pub(crate) use crate::producer::dispatcher::Dispatcher;
 
 /// An interface for producing events to a particular topic
 ///
@@ -29,15 +33,45 @@ pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
+    inner: Arc<ProducerInner>,
+}
+
+/// A handle for `TopicProducer`s to communicate with the shared `ProducerDispatcher`.
+///
+/// When all `TopicProducer`s are dropped, the `ProducerInner` will drop and
+/// notify the `ProducerDispatcher` to shutdown.
+#[derive(Clone)]
+pub(crate) struct ProducerInner {
+    /// A channel for sending messages to the shared Producer Dispatcher.
+    pub(crate) dispatcher: Sender<DispatcherMessage>,
+    /// An event that can notify the Dispatcher to shutdown.
+    pub(crate) dispatcher_shutdown: StickyEvent,
+}
+
+impl Drop for ProducerInner {
+    fn drop(&mut self) {
+        debug!("Notify dispatcher shutdown");
+        self.dispatcher_shutdown.notify();
+    }
 }
 
 impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>) -> Self {
         let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
+
+        let (sender, receiver) = async_channel::unbounded();
+        let dispatcher = Dispatcher::new(pool.clone(), receiver);
+        let dispatcher_shutdown = dispatcher.start();
+        let inner = Arc::new(ProducerInner {
+            dispatcher: sender,
+            dispatcher_shutdown,
+        });
+
         Self {
             topic,
             pool,
             partitioner,
+            inner,
         }
     }
 
@@ -45,12 +79,18 @@ impl TopicProducer {
     ///
     /// The partition that the record will be sent to is derived from the Key.
     ///
+    /// The `send` function does not wait for records to be committed to the SPU,
+    /// it simply buffers them. In order to make sure that your records have all
+    /// been actually sent, be sure to call [`TopicProducer::flush`] after sending
+    /// all the records you have.
+    ///
     /// # Example
     ///
     /// ```
     /// # use fluvio::{TopicProducer, FluvioError};
     /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
     /// producer.send("Key", "Value").await?;
+    /// producer.flush().await?;
     /// # Ok(())
     /// # }
     /// ```
@@ -63,9 +103,19 @@ impl TopicProducer {
         K: Into<RecordKey>,
         V: Into<RecordData>,
     {
-        let record_key = key.into();
-        let record_value = value.into();
-        self.send_all(Some((record_key, record_value))).await?;
+        let key = key.into();
+        let value = value.into();
+        let record = Record::from((key, value));
+        let pending_record = PendingRecord {
+            partition: (),
+            record,
+            topic: self.topic.clone(),
+        };
+        let msg = DispatcherMessage::Record(pending_record);
+
+        self.inner.dispatcher.send(msg).await.map_err(|_| {
+            FluvioError::ProducerSend("failed to send record to dispatcher".to_string())
+        })?;
         Ok(())
     }
 
@@ -125,6 +175,46 @@ impl TopicProducer {
 
         Ok(())
     }
+
+    /// Flushes any buffered records to the SPU, waiting until the whole buffer has been emptied.
+    ///
+    /// This should be used when you want to be sure that records have been sent
+    /// before moving on to something else. If you are sending many records, you
+    /// should _first_ [`send`] all the records, _then_ call flush.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::FluvioError;
+    /// # async fn example() -> Result<(), FluvioError> {
+    /// # let producer = fluvio::producer("topic").await?;
+    /// for i in 0..100 {
+    ///     producer.send(i.to_string(), format!("Hello, {}", i)).await?;
+    /// }
+    /// producer.flush().await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn flush(&self) -> Result<(), FluvioError> {
+        // Create a channel for the dispatcher to notify us when flushing is done
+        let (tx, rx) = async_channel::bounded(1);
+        self.inner
+            .dispatcher
+            .send(DispatcherMessage::Flush(tx))
+            .await
+            .map_err(|_| {
+                FluvioError::ProducerFlush(
+                    "failed to send flush command to producer dispatcher".to_string(),
+                )
+            })?;
+        // Wait for flush to finish
+        rx.recv().await.map_err(|_| {
+            FluvioError::ProducerFlush(
+                "did not receive flush acknowledgement from producer dispatcher".to_string(),
+            )
+        })?;
+        Ok(())
+    }
 }
 
 async fn group_by_spu(
@@ -182,6 +272,22 @@ fn assemble_requests(
     }
 
     requests
+}
+
+pub enum DispatcherMessage {
+    Record(PendingRecord<()>),
+    Flush(Sender<()>),
+}
+
+/// Represents a Record sitting in the batch queue, waiting to be sent.
+//
+// Two type states: RecordPending<()> before we have calculated the partition, and
+// RecordPending (i.e. RecordPending<PartitionId>) after we have calculated the partition.
+// This way we avoid Option<PartitionId> and needing to unwrap.
+pub struct PendingRecord<P = PartitionId> {
+    partition: P,
+    topic: String,
+    record: Record,
 }
 
 #[cfg(test)]

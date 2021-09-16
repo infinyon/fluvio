@@ -262,7 +262,7 @@ impl PartitionConsumer {
     ///
     /// Most of the time, you shouldn't need to use a custom [`ConsumerConfig`].
     /// If you don't know what these settings do, try checking out the simpler
-    /// [`stream`] method that uses the default streaming settings.
+    /// [`PartitionConsumer::stream`] method that uses the default streaming settings.
     ///
     /// Streaming is one of the two ways to consume events in Fluvio.
     /// It is a continuous request for new records arriving in a partition,

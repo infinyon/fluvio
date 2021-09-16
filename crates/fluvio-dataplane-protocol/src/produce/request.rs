@@ -15,7 +15,7 @@ pub type DefaultPartitionRequest = PartitionProduceData<RecordSet>;
 pub type DefaultTopicRequest = TopicProduceData<RecordSet>;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct ProduceRequest<R>
+pub struct ProduceRequest<R = RecordSet>
 where
     R: Encoder + Decoder + Default + Debug,
 {
@@ -50,7 +50,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct TopicProduceData<R>
+pub struct TopicProduceData<R = RecordSet>
 where
     R: Encoder + Decoder + Default + Debug,
 {
@@ -63,7 +63,7 @@ where
 }
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
-pub struct PartitionProduceData<R>
+pub struct PartitionProduceData<R = RecordSet>
 where
     R: Encoder + Decoder + Default + Debug,
 {
