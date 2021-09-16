@@ -136,9 +136,6 @@ pub enum LocalInstallError {
     /// Attempted to launch local cluster without fluvio-run
     #[error("Local cluster requires the fluvio-run plugin to be installed")]
     MissingFluvioRunner,
-    /// An internal error where a messaged failed to send through a channel
-    #[error("Failed to send message through channel")]
-    ChannelSendError(futures_channel::mpsc::SendError),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),
