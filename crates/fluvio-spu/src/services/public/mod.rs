@@ -72,7 +72,7 @@ impl FluvioService for PublicService {
             let event = event_stream.next().await;
             match event {
                 Some(Ok(req_message)) => {
-                    debug!("received request");
+                    debug!(%req_message,"received");
                     trace!(
                         "conn: {}, received request: {:#?}",
                         shared_sink.id(),
@@ -83,13 +83,13 @@ impl FluvioService for PublicService {
                             request,
                             handle_api_version_request(request),
                             shared_sink,
-                            "api version handler"
+                            "ApiVersionsRequest"
                         ),
                         SpuServerRequest::ProduceRequest(request) => call_service!(
                             request,
                             handle_produce_request(request, context.clone()),
                             shared_sink,
-                            "produce"
+                            "ProduceRequest"
                         ),
                         SpuServerRequest::FileFetchRequest(request) => {
                             handle_fetch_request(request, context.clone(), shared_sink.clone())
@@ -99,7 +99,7 @@ impl FluvioService for PublicService {
                             request,
                             handle_offset_request(request, context.clone()),
                             shared_sink,
-                            "handling offset fetch request"
+                            "FetchOffsetsRequest"
                         ),
                         SpuServerRequest::FileStreamFetchRequest(request) => {
                             StreamFetchHandler::spawn(
@@ -114,7 +114,7 @@ impl FluvioService for PublicService {
                             request,
                             handle_offset_update(&context, request),
                             shared_sink,
-                            "roduce request handler"
+                            "UpdateOffsetsRequest"
                         ),
                     }
                 }

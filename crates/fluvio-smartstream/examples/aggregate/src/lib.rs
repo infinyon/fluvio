@@ -1,5 +1,9 @@
 use fluvio_smartstream::{smartstream, Result, Record, RecordData};
 
+/// This aggegrate concanate accumulator and current value
+/// values: "a","b"
+//  accumulator: "1",
+//  "1a","1ab"
 #[smartstream(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     let mut acc = String::from_utf8(accumulator.as_ref().to_vec())?;
