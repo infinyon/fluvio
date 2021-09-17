@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::time::{Instant};
 use std::io::ErrorKind;
 use std::io::Error as IoError;
@@ -41,7 +40,7 @@ pub struct StreamFetchHandler {
 
     header: RequestHeader,
     sink: ExclusiveFlvSink,
-    end_event: Arc<StickyEvent>,
+    shutdown: StickyEvent,
     consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
     stream_id: u32,
@@ -53,25 +52,25 @@ impl StreamFetchHandler {
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
-        end_event: Arc<StickyEvent>,
+        shutdown: StickyEvent,
     ) -> Result<(), SocketError> {
         spawn(async move {
-            if let Err(err) = StreamFetchHandler::start(request, ctx, sink, end_event.clone()).await
+            if let Err(err) = StreamFetchHandler::start(request, ctx, sink, shutdown.clone()).await
             {
                 error!("error starting stream fetch handler: {:#?}", err);
-                end_event.notify();
+                shutdown.notify();
             }
         });
         debug!("spawned stream fetch controller");
         Ok(())
     }
 
-    #[instrument(skip(request, ctx, sink, end_event))]
+    #[instrument(skip(request, ctx, sink, shutdown))]
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
-        end_event: Arc<StickyEvent>,
+        shutdown: StickyEvent,
     ) -> Result<(), SocketError> {
         // first get receiver to offset update channel to we don't missed events
         let (header, msg) = request.get_header_request();
@@ -167,7 +166,7 @@ impl StreamFetchHandler {
                 header,
                 max_bytes,
                 sink,
-                end_event,
+                shutdown,
                 consumer_offset_listener: offset_listener,
                 stream_id,
                 leader_state: leader_state.clone(),
@@ -212,7 +211,7 @@ impl StreamFetchHandler {
     async fn process(mut self, starting_offset: Offset, smartstream: Option<Box<dyn SmartStream>>) {
         if let Err(err) = self.inner_process(starting_offset, smartstream).await {
             error!("error: {:#?}", err);
-            self.end_event.notify();
+            self.shutdown.notify();
         }
     }
 
@@ -242,7 +241,7 @@ impl StreamFetchHandler {
             );
 
             select! {
-                _ = self.end_event.listen() => {
+                _ = self.shutdown.listen() => {
                     debug!("end event has been received, terminating");
                     break;
                 },
@@ -576,9 +575,10 @@ pub mod publishers {
 
 #[cfg(test)]
 mod test {
-
     use super::*;
+
     use std::{
+        sync::Arc,
         path::{Path, PathBuf},
         time::Duration,
         env::temp_dir,

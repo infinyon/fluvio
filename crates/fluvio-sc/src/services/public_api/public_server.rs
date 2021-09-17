@@ -72,7 +72,7 @@ where
         let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
 
-        let end_event = StickyEvent::shared();
+        let shutdown = StickyEvent::new();
 
         api_loop!(
             api_stream,
@@ -105,18 +105,16 @@ where
                 "list handler"
             ),
             AdminPublicRequest::WatchRequest(request) =>
-
                 super::watch::handle_watch_request(
                     request,
                     &service_context,
                     shared_sink.clone(),
-                    end_event.clone(),
+                    shutdown.clone(),
                 )
-
         );
 
         // we are done with this tcp stream, notify any controllers use this strep
-        end_event.notify();
+        shutdown.notify();
 
         Ok(())
     }

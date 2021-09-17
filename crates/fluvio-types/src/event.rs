@@ -9,47 +9,69 @@ const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 #[deprecated(since = "0.2.5", note = "use StickyEvent instead")]
 pub use StickyEvent as SimpleEvent;
 
+#[derive(Clone)]
 pub struct StickyEvent {
+    inner: Arc<StickyInner>,
+}
+
+struct StickyInner {
     flag: AtomicBool,
     event: Event,
 }
 
+impl StickyInner {
+    fn is_set(&self) -> bool {
+        self.flag.load(DEFAULT_EVENT_ORDERING)
+    }
+}
+
 impl StickyEvent {
+    #[deprecated(since = "0.2.6", note = "use 'StickyEvent::new()' instead")]
     pub fn shared() -> Arc<Self> {
-        Arc::new(Self {
-            flag: AtomicBool::new(false),
-            event: Event::new(),
-        })
+        Arc::new(Self::new())
+    }
+
+    pub fn new() -> Self {
+        Self {
+            inner: Arc::new(StickyInner {
+                flag: AtomicBool::new(false),
+                event: Event::new(),
+            }),
+        }
     }
 
     // is flag set
     pub fn is_set(&self) -> bool {
-        self.flag.load(DEFAULT_EVENT_ORDERING)
+        self.inner.is_set()
     }
 
-    pub async fn listen(&self) {
-        if self.is_set() {
-            trace!("before, flag is set");
-            return;
+    pub fn listen(&self) -> impl std::future::Future<Output = ()> {
+        let inner = self.inner.clone();
+
+        async move {
+            if inner.is_set() {
+                trace!("before, flag is set");
+                return;
+            }
+
+            let listener = inner.event.listen();
+
+            if inner.is_set() {
+                trace!("after flag is set");
+                return;
+            }
+
+            listener.await
         }
-
-        let listener = self.event.listen();
-
-        if self.is_set() {
-            trace!("after flag is set");
-            return;
-        }
-
-        listener.await
     }
 
-    pub fn listen_pinned(&self) -> impl std::future::Future<Output = ()> + '_ {
+    pub fn listen_pinned(&self) -> impl std::future::Future<Output = ()> {
         Box::pin(self.listen())
     }
 
     pub fn notify(&self) {
-        self.flag.store(true, DEFAULT_EVENT_ORDERING);
-        self.event.notify(usize::MAX);
+        self.inner.flag.store(true, DEFAULT_EVENT_ORDERING);
+        self.inner.event.notify(usize::MAX);
     }
 }
 

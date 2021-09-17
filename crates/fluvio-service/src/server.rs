@@ -80,14 +80,14 @@ where
     A: Send + FluvioDecoder + Debug + 'static,
     S: FluvioService<Request = R, Context = C> + Send + Sync + Debug + 'static,
 {
-    pub fn run(self) -> Arc<StickyEvent> {
-        let shutdown = StickyEvent::shared();
+    pub fn run(self) -> StickyEvent {
+        let shutdown = StickyEvent::new();
         spawn(self.accept_incoming(shutdown.clone()));
         shutdown
     }
 
     #[instrument(skip(shutdown))]
-    async fn accept_incoming(self, shutdown: Arc<StickyEvent>) {
+    async fn accept_incoming(self, shutdown: StickyEvent) {
         debug!("Binding TcpListener");
         let listener = match TcpListener::bind(&self.addr).await {
             Ok(listener) => listener,
@@ -192,7 +192,7 @@ mod test {
         FluvioSocket::connect(&addr).await
     }
 
-    async fn test_client(addr: String, shutdown: Arc<StickyEvent>) {
+    async fn test_client(addr: String, shutdown: StickyEvent) {
         let mut socket = create_client(addr).await.expect("client");
 
         let request = EchoRequest::new("hello".to_owned());

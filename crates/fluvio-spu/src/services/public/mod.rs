@@ -65,7 +65,7 @@ impl FluvioService for PublicService {
 
         let mut shared_sink = sink.as_shared();
         let api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
-        let shutdown = StickyEvent::shared();
+        let shutdown = StickyEvent::new();
         let mut event_stream = api_stream.take_until(shutdown.listen_pinned());
 
         loop {

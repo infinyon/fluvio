@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::fmt::Debug;
 
 use tracing::{debug, trace, error, instrument};
@@ -20,12 +19,12 @@ use crate::stores::{StoreContext, K8ChangeListener};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 
 /// handle watch request by spawning watch controller for each store
-#[instrument(skip(request, auth_ctx, sink, end_event))]
+#[instrument(skip(request, auth_ctx, sink, shutdown))]
 pub fn handle_watch_request<AC>(
     request: RequestMessage<WatchRequest>,
     auth_ctx: &AuthServiceContext<AC>,
     sink: ExclusiveFlvSink,
-    end_event: Arc<StickyEvent>,
+    shutdown: StickyEvent,
 ) {
     debug!("handling watch request");
     let (header, req) = request.get_header_request();
@@ -33,25 +32,25 @@ pub fn handle_watch_request<AC>(
     match req {
         WatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
             sink,
-            end_event,
+            shutdown,
             auth_ctx.global_ctx.topics().clone(),
             header,
         ),
         WatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
             sink,
-            end_event,
+            shutdown,
             auth_ctx.global_ctx.spus().clone(),
             header,
         ),
         WatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
             sink,
-            end_event,
+            shutdown,
             auth_ctx.global_ctx.spgs().clone(),
             header,
         ),
         WatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
             sink,
-            end_event,
+            shutdown,
             auth_ctx.global_ctx.partitions().clone(),
             header,
         ),
@@ -71,7 +70,7 @@ where
     response_sink: ExclusiveFlvSink,
     store: StoreContext<S>,
     header: RequestHeader,
-    end_event: Arc<StickyEvent>,
+    shutdown: StickyEvent,
 }
 
 impl<S> WatchController<S>
@@ -85,7 +84,7 @@ where
     /// start watch controller
     fn update(
         response_sink: ExclusiveFlvSink,
-        end_event: Arc<StickyEvent>,
+        shutdown: StickyEvent,
         store: StoreContext<S>,
         header: RequestHeader,
     ) {
@@ -95,7 +94,7 @@ where
             response_sink,
             store,
             header,
-            end_event,
+            shutdown,
         };
 
         spawn(controller.dispatch_loop());
@@ -116,14 +115,14 @@ where
 
         loop {
             if !self.sync_and_send_changes(&mut change_listener).await {
-                self.end_event.notify();
+                self.shutdown.notify();
                 break;
             }
 
             trace!("{}: waiting for changes", S::LABEL,);
             select! {
 
-                _ = self.end_event.listen() => {
+                _ = self.shutdown.listen() => {
                     debug!("connection has been terminated");
                     break;
                 },
