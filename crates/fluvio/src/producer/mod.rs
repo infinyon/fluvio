@@ -1,9 +1,10 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 use tracing::instrument;
-use siphasher::sip::SipHasher;
-use async_lock::Mutex;
 
+mod partitioning;
+
+use fluvio_types::{SpuId, PartitionId};
 use dataplane::ReplicaKey;
 use dataplane::produce::DefaultProduceRequest;
 use dataplane::produce::DefaultPartitionRequest;
@@ -14,9 +15,9 @@ pub use dataplane::record::{RecordKey, RecordData};
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use fluvio_types::{SpuId, PartitionId};
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
+use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
 
 /// An interface for producing events to a particular topic
 ///
@@ -27,13 +28,12 @@ use crate::metadata::partition::PartitionSpec;
 pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
-    partitioner: Arc<Mutex<dyn Partitioner + Send + Sync>>,
+    partitioner: Box<dyn Partitioner + Send + Sync>,
 }
 
 impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>) -> Self {
-        let config = PartitionerConfig { partition_count: 1 };
-        let partitioner = Arc::new(Mutex::new(SiphashRoundRobinPartitioner::new(config)));
+        let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
         Self {
             topic,
             pool,
@@ -97,13 +97,10 @@ impl TopicProducer {
         // Use a block scope to ensure we drop the partitioner lock
         let records_by_partition = {
             let mut iter = Vec::new();
-            let mut partitioner = self.partitioner.lock().await;
-            partitioner.update_config(partition_config);
-
             for record in entries {
                 let key = record.key.as_ref().map(|k| k.as_ref());
                 let value = record.value.as_ref();
-                let partition = partitioner.partition(key, value);
+                let partition = self.partitioner.partition(&partition_config, key, value);
                 iter.push((partition, record));
             }
             iter
@@ -187,94 +184,10 @@ fn assemble_requests(
     requests
 }
 
-/// A trait for defining a partitioning strategy for key/value records.
-///
-/// A Partitioner is given a slice of potential keys, and the number of
-/// partitions in the current Topic. It must map each key from the input
-/// slice into a partition stored at the same index in the output Vec.
-///
-/// It is up to the implementor to decide how the keys get mapped to
-/// partitions. This includes deciding what partition to assign to records
-/// with no keys (represented by `None` values in the keys slice).
-///
-/// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
-trait Partitioner {
-    fn partition(&mut self, key: Option<&[u8]>, value: &[u8]) -> PartitionId;
-    fn update_config(&mut self, config: PartitionerConfig);
-}
-
-struct PartitionerConfig {
-    partition_count: i32,
-}
-
-/// A [`Partitioner`] which combines hashing and round-robin partition assignment
-///
-/// - Records with keys get their keys hashed with siphash
-/// - Records without keys get assigned to partitions using round-robin
-struct SiphashRoundRobinPartitioner {
-    index: PartitionId,
-    config: PartitionerConfig,
-}
-
-impl SiphashRoundRobinPartitioner {
-    pub fn new(config: PartitionerConfig) -> Self {
-        Self { index: 0, config }
-    }
-}
-
-impl Partitioner for SiphashRoundRobinPartitioner {
-    fn partition(&mut self, maybe_key: Option<&[u8]>, _value: &[u8]) -> i32 {
-        match maybe_key {
-            Some(key) => partition_siphash(key, self.config.partition_count),
-            None => {
-                let partition = self.index;
-                self.index = (self.index + 1) % self.config.partition_count;
-                partition
-            }
-        }
-    }
-
-    fn update_config(&mut self, config: PartitionerConfig) {
-        self.config = config;
-    }
-}
-
-fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
-    use std::hash::{Hash, Hasher};
-    use std::convert::TryFrom;
-
-    assert!(partition_count >= 0, "Partition must not be less than zero");
-    let mut hasher = SipHasher::new();
-    key.hash(&mut hasher);
-    let hashed = hasher.finish();
-
-    i32::try_from(hashed % partition_count as u64).unwrap()
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::metadata::store::MetadataStoreObject;
-
-    /// Ensure that feeding keyless records one-at-a-time does not assign the same partition
-    #[test]
-    fn test_round_robin_individual() {
-        let config = PartitionerConfig { partition_count: 3 };
-        let mut partitioner = SiphashRoundRobinPartitioner::new(config);
-
-        let key1_partition = partitioner.partition(None, &[]);
-        assert_eq!(key1_partition, 0);
-        let key2_partition = partitioner.partition(None, &[]);
-        assert_eq!(key2_partition, 1);
-        let key3_partition = partitioner.partition(None, &[]);
-        assert_eq!(key3_partition, 2);
-        let key4_partition = partitioner.partition(None, &[]);
-        assert_eq!(key4_partition, 0);
-        let key5_partition = partitioner.partition(None, &[]);
-        assert_eq!(key5_partition, 1);
-        let key6_partition = partitioner.partition(None, &[]);
-        assert_eq!(key6_partition, 2);
-    }
 
     #[fluvio_future::test]
     async fn test_group_by_spu() {
