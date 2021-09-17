@@ -75,6 +75,12 @@ impl StickyEvent {
     }
 }
 
+impl Default for StickyEvent {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 pub mod offsets {
     use std::sync::atomic::{AtomicI64, Ordering};
     use std::sync::Arc;
