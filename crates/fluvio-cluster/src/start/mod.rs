@@ -1,6 +1,8 @@
 pub mod k8;
 pub mod local;
 mod common;
+mod progress;
+
 mod constants {
 
     use std::env;
