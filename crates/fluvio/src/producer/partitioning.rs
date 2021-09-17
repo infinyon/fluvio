@@ -96,4 +96,40 @@ mod tests {
         let key6_partition = partitioner.partition(&config, None, &[]);
         assert_eq!(key6_partition, 2);
     }
+
+    #[test]
+    fn test_parallel_partitioning() {
+        use std::sync::Arc;
+
+        let (tx, rx) = std::sync::mpsc::channel();
+        let partitioner = Arc::new(SiphashRoundRobinPartitioner::new());
+        let config = Arc::new(PartitionerConfig { partition_count: 4 });
+
+        // We have 5 threads calculating partitions 400 times each for NULL key (aka round-robin).
+        // This is 20,000 records total, among 4 partitions. If it is evenly distributed like we
+        // want (and the atomic counter is working as expected), we should get exactly 500
+        // hits for each partition.
+        for _ in 0..5 {
+            let tx = tx.clone();
+            let partitioner = partitioner.clone();
+            let config = config.clone();
+            std::thread::spawn(move || {
+                for _ in 0..400 {
+                    let partition = partitioner.partition(&config, None, &[]);
+                    tx.send(partition).unwrap();
+                }
+            });
+        }
+        drop(tx);
+
+        let mut counts = std::collections::HashMap::new();
+        while let Ok(partition) = rx.recv() {
+            let partition_count = counts.entry(partition).or_insert(0);
+            *partition_count += 1;
+        }
+
+        for (_partition, &count) in counts.iter() {
+            assert_eq!(count, 500);
+        }
+    }
 }
