@@ -3,6 +3,7 @@
 ## Platform Version 0.9.8 - UNRELEASED
 * Add progress indicator to `fluvio cluster start` ([#1627](https://github.com/infinyon/fluvio/pull/1627))
 * Added `fluvio cluster diagnostics` to help debugging with support ([#1671](https://github.com/infinyon/fluvio/pull/1671))
+* Make `StickyEvent` easier to use with Future combinators ([#1652](https://github.com/infinyon/fluvio/pull/1652))
 
 ## Platform Version 0.9.7 - 2021-09-16
 * Improve progress message in `fluvio cluster start --local` ([#1586](https://github.com/infinyon/fluvio/pull/1586))
