@@ -1,3 +1,4 @@
+use std::fmt;
 use std::sync::atomic::{Ordering, AtomicBool};
 use std::sync::Arc;
 
@@ -10,9 +11,7 @@ const DEFAULT_EVENT_ORDERING: Ordering = Ordering::SeqCst;
 pub use StickyEvent as SimpleEvent;
 
 #[derive(Clone)]
-pub struct StickyEvent {
-    inner: Arc<StickyInner>,
-}
+pub struct StickyEvent(Arc<StickyInner>);
 
 struct StickyInner {
     flag: AtomicBool,
@@ -32,21 +31,19 @@ impl StickyEvent {
     }
 
     pub fn new() -> Self {
-        Self {
-            inner: Arc::new(StickyInner {
-                flag: AtomicBool::new(false),
-                event: Event::new(),
-            }),
-        }
+        Self(Arc::new(StickyInner {
+            flag: AtomicBool::new(false),
+            event: Event::new(),
+        }))
     }
 
     // is flag set
     pub fn is_set(&self) -> bool {
-        self.inner.is_set()
+        self.0.is_set()
     }
 
     pub fn listen(&self) -> impl std::future::Future<Output = ()> {
-        let inner = self.inner.clone();
+        let inner = self.0.clone();
 
         async move {
             if inner.is_set() {
@@ -70,14 +67,22 @@ impl StickyEvent {
     }
 
     pub fn notify(&self) {
-        self.inner.flag.store(true, DEFAULT_EVENT_ORDERING);
-        self.inner.event.notify(usize::MAX);
+        self.0.flag.store(true, DEFAULT_EVENT_ORDERING);
+        self.0.event.notify(usize::MAX);
     }
 }
 
 impl Default for StickyEvent {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+impl fmt::Debug for StickyEvent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("StickyEvent")
+            .field(&self.0.is_set())
+            .finish()
     }
 }
 
