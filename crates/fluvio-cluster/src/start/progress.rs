@@ -17,7 +17,7 @@ pub(crate) enum InstallProgressMessage {
 }
 
 impl ProgressRenderedText for InstallProgressMessage {
-    fn text(&self) -> String {
+    fn msg(&self) -> String {
         use colored::*;
 
         match self {
@@ -25,27 +25,22 @@ impl ProgressRenderedText for InstallProgressMessage {
                 format!("{}", "📝 Running pre-flight checks".bold())
             }
             InstallProgressMessage::LaunchingSC => {
-                format!("🖥️ {}", "Starting SC server".bold())
+                format!("🖥️  {}", "Starting SC server".bold())
             }
 
             InstallProgressMessage::ScLaunched => {
-                format!("{:>6} {}", "✅".bold().green(), "SC Launched")
+                format!("🖥️  {}", "SC Launched".bold())
             }
             InstallProgressMessage::LaunchingSPUGroup(spu_num) => {
                 format!("{} {}", "🤖 Launching SPU Group with:".bold(), spu_num)
             }
 
             InstallProgressMessage::StartSPU(spu_num, total) => {
-                format!("{:>6} {} ({}/{})", "🤖", "Starting SPU:", spu_num, total)
+                format!("{} ({}/{})", "🤖 Starting SPU:", spu_num, total)
             }
 
             InstallProgressMessage::SpuGroupLaunched(spu_num) => {
-                format!(
-                    "{:>6} {} ({})",
-                    "✅".bold().green(),
-                    "SPU group launched",
-                    spu_num
-                )
+                format!("🤖 {} ({})", "SPU group launched".bold(), spu_num)
             }
             InstallProgressMessage::ConfirmingSpus => {
                 format!("💙 {}", "Confirming SPUs".bold())
@@ -69,7 +64,7 @@ pub(crate) fn create_progress_indicator() -> ProgressBar {
     let pb = ProgressBar::new(1);
     pb.set_style(
         ProgressStyle::default_bar()
-            .template("  Running: {spinner}")
+            .template("{msg} {spinner}")
             .tick_chars("/-\\|"),
     );
     pb.enable_steady_tick(100);

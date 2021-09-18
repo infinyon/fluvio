@@ -375,9 +375,9 @@ impl LocalInstaller {
 
     fn render(&self, step: InstallProgressMessage, progress_bar: Option<&ProgressBar>) {
         if let Some(pb) = progress_bar {
-            pb.println(step.text());
+            pb.set_message(step.msg());
         } else {
-            println!("{}", step.text());
+            println!("{}", step.msg());
         }
     }
 
@@ -610,9 +610,10 @@ impl LocalInstaller {
     #[instrument(skip(self))]
     async fn launch_spu_group(&self, client: SharedK8Client) -> Result<(), LocalInstallError> {
         let count = self.config.spu_replicas;
-        self.render(InstallProgressMessage::LaunchingSPUGroup(count), None);
 
         let pb = create_progress_indicator();
+        self.render(InstallProgressMessage::LaunchingSPUGroup(count), Some(&pb));
+
         for i in 0..count {
             self.render(InstallProgressMessage::StartSPU(i + 1, count), Some(&pb));
             self.launch_spu(i, client.clone(), &self.config.log_dir)

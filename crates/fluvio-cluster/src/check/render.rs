@@ -29,7 +29,7 @@ pub fn render_check_results<R: AsRef<[CheckResult]>>(check_results: R) {
 
 /// Render a single check result
 pub fn render_check_result(check_result: &CheckResult) {
-    println!("{}", check_result.text());
+    println!("{}", check_result.msg());
 }
 
 /// Render a slice of `CheckStatus`es all at once
@@ -42,7 +42,7 @@ pub fn render_check_statuses<R: AsRef<[CheckStatus]>>(check_statuses: R) {
 
 /// Render a single check status
 pub fn render_check_status(check_status: &CheckStatus) {
-    println!("{}", check_status.text());
+    println!("{}", check_status.msg());
 }
 
 /// Render a conclusion message based on the number of failures and warnings
@@ -150,7 +150,7 @@ pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
 }
 
 impl ProgressRenderedText for CheckStatus {
-    fn text(&self) -> String {
+    fn msg(&self) -> String {
         use colored::*;
         use crate::CheckStatus::*;
 
@@ -204,11 +204,11 @@ impl ProgressRenderedText for CheckStatus {
 }
 
 impl ProgressRenderedText for CheckResult {
-    fn text(&self) -> String {
+    fn msg(&self) -> String {
         use colored::*;
 
         match self {
-            Ok(status) => status.text(),
+            Ok(status) => status.msg(),
             Err(e) => {
                 // Print one layer of source error
                 let cause = match std::error::Error::source(e) {
