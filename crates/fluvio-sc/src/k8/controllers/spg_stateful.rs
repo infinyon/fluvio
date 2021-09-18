@@ -219,20 +219,13 @@ impl SpgStatefulSetController {
 #[cfg(test)]
 mod test {
 
-    use fluvio_controlplane_metadata::store::{LocalStore, MetadataStoreObject};
-    use fluvio_controlplane_metadata::store::k8::K8MetaItem;
-    use fluvio_stream_dispatcher::actions::WSAction;
-    use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
     use tracing::debug;
 
-    use crate::config::ScConfig;
-    use crate::core::Context;
+    use fluvio_stream_dispatcher::actions::WSAction;
+    use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
 
-    use crate::fixture::TestEnv;
+    use crate::k8::fixture::TestEnv;
     use super::*;
-
-    type ScConfigMetadata = MetadataStoreObject<ScK8Config, K8MetaItem>;
-    // type K8ScConfigStore = LocalStore<ScK8Config, K8MetaItem>;
 
     //
     // apiVersion: v1
@@ -244,20 +237,10 @@ mod test {
     // spuPodConfig: '{"nodeSelector":{},"resources":{"limits":{"memory":"1Gi"},"requests":{"memory":"256Mi"}},"storageClass":null}'
     //kind: ConfigMap
 
-
     #[fluvio_future::test(ignore)]
     async fn test_statefulset() {
         let test_env = TestEnv::create().await;
-
-        // load fake config map
-        let config_map = ScConfigMetadata::with_spec("fluvio", ScK8Config::default());
-        let config_store = LocalStore::new_shared();
-        config_store.sync_all(vec![config_map]).await;
-
-        let config_ctx: StoreContext<ScK8Config> = StoreContext::new_with_store(config_store);
-        assert!(config_ctx.store().value("fluvio").await.is_some());
-
-        let global_ctx = Context::shared_metadata(ScConfig::default());
+        let (global_ctx, config_ctx) = test_env.create_global_ctx().await;
 
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
