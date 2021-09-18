@@ -238,7 +238,8 @@ mod test {
         }
     }
 
-    async fn test() {
+    #[fluvio_future::test]
+    async fn test_take_untile() {
 
         use super::StickyEvent;
 
