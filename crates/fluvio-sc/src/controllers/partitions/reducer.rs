@@ -5,18 +5,20 @@
 //!
 use std::sync::Arc;
 
+use fluvio_controlplane_metadata::partition::store::{PartitionLocalStore, PartitionMetadata};
+use fluvio_controlplane_metadata::spu::store::{SpuLocalStore, SpuMetadata};
+use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use tracing::{debug, warn, info, instrument};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 
 use crate::stores::partition::{
-    PartitionSpec, PartitionAdminStore, ReplicaStatus, PartitionAdminMd, PartitionResolution,
-    ElectionPolicy, ElectionScoring,
+    PartitionSpec, ReplicaStatus, PartitionResolution, ElectionPolicy, ElectionScoring,
 };
-use crate::stores::spu::{SpuAdminStore, SpuAdminMd, SpuLocalStorePolicy};
 use crate::stores::actions::WSAction;
+use crate::stores::spu::SpuLocalStorePolicy;
 
-type PartitionWSAction = WSAction<PartitionSpec>;
+type PartitionWSAction<C = K8MetaItem> = WSAction<PartitionSpec, C>;
 
 /// Given This is a generated partition from TopicController, It will try to allocate assign replicas
 /// to live SPU.
@@ -53,25 +55,34 @@ type PartitionWSAction = WSAction<PartitionSpec>;
 /// If there are another topic1 with same number of partiition and replica then, they will
 /// have different leader because Topic0-0 already is using spu 0.
 #[derive(Debug)]
-pub struct PartitionReducer {
-    partition_store: Arc<PartitionAdminStore>,
-    spu_store: Arc<SpuAdminStore>,
+pub struct PartitionReducer<C = K8MetaItem>
+where
+    C: MetadataItem + Send + Sync,
+{
+    partition_store: Arc<PartitionLocalStore<C>>,
+    spu_store: Arc<SpuLocalStore<C>>,
 }
 
-impl Default for PartitionReducer {
+impl<C> Default for PartitionReducer<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     fn default() -> Self {
         Self {
-            partition_store: PartitionAdminStore::new_shared(),
-            spu_store: SpuAdminStore::new_shared(),
+            partition_store: PartitionLocalStore::new_shared(),
+            spu_store: SpuLocalStore::new_shared(),
         }
     }
 }
 
-impl PartitionReducer {
+impl<C> PartitionReducer<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     pub fn new<A, B>(partition_store: A, spu_store: B) -> Self
     where
-        A: Into<Arc<PartitionAdminStore>>,
-        B: Into<Arc<SpuAdminStore>>,
+        A: Into<Arc<PartitionLocalStore<C>>>,
+        B: Into<Arc<SpuLocalStore<C>>>,
     {
         Self {
             partition_store: partition_store.into(),
@@ -82,8 +93,8 @@ impl PartitionReducer {
     #[instrument(skip(self, updates))]
     pub async fn process_partition_update(
         &self,
-        updates: Vec<PartitionAdminMd>,
-    ) -> Vec<PartitionWSAction> {
+        updates: Vec<PartitionMetadata<C>>,
+    ) -> Vec<PartitionWSAction<C>> {
         // reconcile delete timestamp in the metadata with delete status
         updates
             .into_iter()
@@ -107,12 +118,12 @@ impl PartitionReducer {
     #[instrument(skip(self, spus))]
     pub async fn update_election_from_spu_changes(
         &self,
-        spus: Vec<SpuAdminMd>,
-    ) -> Vec<PartitionWSAction> {
+        spus: Vec<SpuMetadata<C>>,
+    ) -> Vec<PartitionWSAction<C>> {
         let mut actions = vec![];
 
         // group spus in terms of online and offline
-        let (online_spus, offline_spus): (Vec<SpuAdminMd>, Vec<SpuAdminMd>) =
+        let (online_spus, offline_spus): (Vec<SpuMetadata<C>>, Vec<SpuMetadata<C>>) =
             spus.into_iter().partition(|v| v.status.is_online());
 
         // election due to offline spu
@@ -132,8 +143,8 @@ impl PartitionReducer {
     #[instrument(skip(self, offline_spu, actions))]
     async fn force_election_spu_off(
         &self,
-        offline_spu: SpuAdminMd,
-        actions: &mut Vec<PartitionWSAction>,
+        offline_spu: SpuMetadata<C>,
+        actions: &mut Vec<PartitionWSAction<C>>,
     ) {
         info!(
             spu = %offline_spu.key(),
@@ -185,8 +196,8 @@ impl PartitionReducer {
     #[instrument(skip(self, online_spu, actions))]
     async fn force_election_spu_on(
         &self,
-        online_spu: SpuAdminMd,
-        actions: &mut Vec<PartitionWSAction>,
+        online_spu: SpuMetadata<C>,
+        actions: &mut Vec<PartitionWSAction<C>>,
     ) {
         info!(spu = %online_spu.key(),"start election spu went online" );
         let online_leader_spu_id = online_spu.spec.id;

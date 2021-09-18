@@ -28,7 +28,7 @@ mod context {
     use super::MetadataStoreObject;
     use super::{LocalStore, ChangeListener, MetadataChanges};
 
-    pub type K8ChangeListener<S, MetaContext = K8MetaItem> = ChangeListener<S, MetaContext>;
+    pub type K8ChangeListener<S> = ChangeListener<S, K8MetaItem>;
 
     pub type StoreChanges<S, MetaContext = K8MetaItem> = MetadataChanges<S, MetaContext>;
 
@@ -82,7 +82,7 @@ mod context {
         }
 
         /// create new listener
-        pub fn change_listener(&self) -> K8ChangeListener<S, MetaContext> {
+        pub fn change_listener(&self) -> ChangeListener<S, MetaContext> {
             self.store.change_listener()
         }
 

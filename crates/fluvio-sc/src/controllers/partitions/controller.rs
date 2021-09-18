@@ -2,43 +2,49 @@
 //! # Auth Controller
 //!
 
+use fluvio_controlplane_metadata::store::ChangeListener;
 use tracing::{debug, trace, instrument};
 
 use fluvio_future::task::spawn;
+use fluvio_controlplane_metadata::core::MetadataItem;
+use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 
-use crate::core::SharedContext;
 use crate::stores::{StoreContext};
 use crate::stores::partition::PartitionSpec;
 use crate::stores::spu::SpuSpec;
-use crate::stores::K8ChangeListener;
 
 use super::reducer::PartitionReducer;
 
 /// Handles Partition election
 #[derive(Debug)]
-pub struct PartitionController {
-    partitions: StoreContext<PartitionSpec>,
-    spus: StoreContext<SpuSpec>,
-    reducer: PartitionReducer,
+pub struct PartitionController<C = K8MetaItem>
+where
+    C: MetadataItem + Send + Sync,
+{
+    partitions: StoreContext<PartitionSpec, C>,
+    spus: StoreContext<SpuSpec, C>,
+    reducer: PartitionReducer<C>,
 }
 
-impl PartitionController {
-    pub fn start(ctx: SharedContext) {
-        let partitions = ctx.partitions().clone();
-        let spus = ctx.spus().clone();
-
+impl<C> PartitionController<C>
+where
+    C: MetadataItem + Send + Sync + 'static,
+{
+    pub fn start(partitions: StoreContext<PartitionSpec, C>, spus: StoreContext<SpuSpec, C>) {
         let controller = Self {
+            reducer: PartitionReducer::new(partitions.store().clone(), spus.store().clone()),
             partitions,
             spus,
-            reducer: PartitionReducer::new(
-                ctx.partitions().store().clone(),
-                ctx.spus().store().clone(),
-            ),
         };
 
         spawn(controller.dispatch_loop());
     }
+}
 
+impl<C> PartitionController<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     #[instrument(skip(self), name = "PartitionController")]
     async fn dispatch_loop(mut self) {
         use tokio::select;
@@ -68,7 +74,7 @@ impl PartitionController {
     }
 
     #[instrument(skip(self, listener))]
-    async fn sync_partition_changes(&mut self, listener: &mut K8ChangeListener<PartitionSpec>) {
+    async fn sync_partition_changes(&mut self, listener: &mut ChangeListener<PartitionSpec, C>) {
         if !listener.has_change() {
             trace!("no partitions change");
             return;
@@ -97,7 +103,7 @@ impl PartitionController {
 
     /// sync spu states to partition
     /// check to make sure
-    async fn sync_spu_changes(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
+    async fn sync_spu_changes(&mut self, listener: &mut ChangeListener<SpuSpec, C>) {
         if !listener.has_change() {
             trace!("no spu changes");
             return;
