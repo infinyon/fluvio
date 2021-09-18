@@ -1930,7 +1930,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.6.4"
+version = "0.6.5"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -1942,7 +1942,6 @@ dependencies = [
  "flv-util",
  "futures-lite",
  "k8-metadata-client",
- "log",
  "once_cell",
  "serde",
  "serde_json",

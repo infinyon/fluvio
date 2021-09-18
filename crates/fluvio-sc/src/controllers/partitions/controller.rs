@@ -130,3 +130,19 @@ impl PartitionController {
         }
     }
 }
+
+/*
+#[cfg(test)]
+mod test {
+
+
+
+    #[fluvio_future::test(ignore)]
+
+    async fn test_election() {
+
+
+    }
+
+}
+*/
