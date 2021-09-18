@@ -17,7 +17,6 @@ use crate::config::ScConfig;
 use crate::core::{Context, SharedContext};
 
 type ScConfigMetadata = MetadataStoreObject<ScK8Config, K8MetaItem>;
-type K8ScConfigStore = LocalStore<ScK8Config, K8MetaItem>;
 
 //
 // apiVersion: v1
