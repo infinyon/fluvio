@@ -50,7 +50,7 @@ fluvio-sc-schema = { version = "0.9.4", path = "../fluvio-sc-schema" }
 fluvio-stream-model = { version = "0.5.0", path = "../fluvio-stream-model" }
 fluvio-controlplane = { version = "0.0.0", path = "../fluvio-controlplane" }
 fluvio-controlplane-metadata = { version = "0.11.0", features = ["k8", "serde"], path = "../fluvio-controlplane-metadata" }
-fluvio-stream-dispatcher = { version = "0.6.3", path = "../fluvio-stream-dispatcher" }
+fluvio-stream-dispatcher = { version = "0.6.5", path = "../fluvio-stream-dispatcher" }
 k8-client = { version = "5.1.5", optional = true }
 k8-metadata-client = { version = "3.0.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
