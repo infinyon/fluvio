@@ -219,29 +219,13 @@ impl SpgStatefulSetController {
 #[cfg(test)]
 mod test {
 
-    use std::iter;
-
-    use fluvio_controlplane_metadata::store::{LocalStore, MetadataStoreObject};
-    use fluvio_controlplane_metadata::store::k8::K8MetaItem;
-    use fluvio_stream_dispatcher::actions::WSAction;
-    use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
     use tracing::debug;
 
-    use k8_metadata_client::MetadataClient;
-    use k8_types::core::namespace::NamespaceSpec;
-    use k8_types::{InputK8Obj, InputObjectMeta, K8Obj};
-    use rand::{Rng, thread_rng};
-    use rand::distributions::Alphanumeric;
+    use fluvio_stream_dispatcher::actions::WSAction;
+    use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
 
-    use k8_client::{K8Client, SharedK8Client, load_and_share};
-
-    use crate::config::ScConfig;
-    use crate::core::Context;
-
+    use crate::k8::fixture::TestEnv;
     use super::*;
-
-    type ScConfigMetadata = MetadataStoreObject<ScK8Config, K8MetaItem>;
-    // type K8ScConfigStore = LocalStore<ScK8Config, K8MetaItem>;
 
     //
     // apiVersion: v1
@@ -253,71 +237,10 @@ mod test {
     // spuPodConfig: '{"nodeSelector":{},"resources":{"limits":{"memory":"1Gi"},"requests":{"memory":"256Mi"}},"storageClass":null}'
     //kind: ConfigMap
 
-    struct TestEnv {
-        ns: K8Obj<NamespaceSpec>,
-        client: SharedK8Client,
-    }
-
-    impl TestEnv {
-        async fn create() -> Self {
-            let client = load_and_share().expect("creating k8 client");
-            let ns = Self::create_unique_ns();
-            let ns_obj = Self::create_ns(&ns, &client).await;
-
-            Self { ns: ns_obj, client }
-        }
-
-        fn create_unique_ns() -> String {
-            let mut rng = thread_rng();
-            let ns: String = iter::repeat(())
-                .map(|()| rng.sample(Alphanumeric))
-                .map(char::from)
-                .take(7)
-                .collect();
-            ns.to_lowercase()
-        }
-
-        #[allow(unused)]
-        async fn delete(self) {
-            self.client
-                .delete_item_with_option::<NamespaceSpec, _>(&self.ns.metadata, None)
-                .await
-                .expect("delete");
-        }
-
-        async fn create_ns(ns: &str, k8_client: &K8Client) -> K8Obj<NamespaceSpec> {
-            let input_meta = InputObjectMeta {
-                name: ns.to_owned(),
-                ..Default::default()
-            };
-
-            debug!(%ns,"creating ns");
-            let input = InputK8Obj::new(NamespaceSpec::default(), input_meta);
-            k8_client.create_item(input).await.expect("ns created")
-        }
-
-        fn ns(&self) -> &str {
-            &self.ns.metadata.name
-        }
-
-        fn client(&self) -> &SharedK8Client {
-            &self.client
-        }
-    }
-
     #[fluvio_future::test(ignore)]
     async fn test_statefulset() {
         let test_env = TestEnv::create().await;
-
-        // load fake config map
-        let config_map = ScConfigMetadata::with_spec("fluvio", ScK8Config::default());
-        let config_store = LocalStore::new_shared();
-        config_store.sync_all(vec![config_map]).await;
-
-        let config_ctx: StoreContext<ScK8Config> = StoreContext::new_with_store(config_store);
-        assert!(config_ctx.store().value("fluvio").await.is_some());
-
-        let global_ctx = Context::shared_metadata(ScConfig::default());
+        let (global_ctx, config_ctx) = test_env.create_global_ctx().await;
 
         let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
         let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
