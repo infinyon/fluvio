@@ -181,6 +181,7 @@ mod test {
     use std::sync::atomic::AtomicBool;
 
     use tracing::debug;
+    use futures_util::stream::{self, StreamExt};
 
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
@@ -208,6 +209,9 @@ mod test {
             let mut timer = sleep(Duration::from_millis(300));
 
             let mut last_value = 0;
+
+
+
             loop {
                 debug!("waiting");
 
@@ -232,6 +236,20 @@ mod test {
                 }
             }
         }
+    }
+
+    async fn test() {
+
+        use super::StickyEvent;
+
+        let end: Arc<StickyEvent> = StickyEvent::shared();
+        let stream = stream::repeat(9);
+
+        let _until = stream.take_until(end.listen());
+
+        let stream2 = stream::repeat(9);
+        let _until2 = stream2.take_until(end.listen_pinned());
+
     }
 
     #[fluvio_future::test]
