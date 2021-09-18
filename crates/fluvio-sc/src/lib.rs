@@ -11,6 +11,10 @@ mod error;
 mod services;
 mod controllers;
 
+
+#[cfg(test)]
+mod fixture;
+
 pub use init::start_main_loop;
 
 const VERSION: &str = include_str!("../../../VERSION");
