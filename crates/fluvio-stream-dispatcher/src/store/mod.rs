@@ -9,7 +9,7 @@ mod context {
     use std::sync::Arc;
     use std::io::Error as IoError;
     use std::io::ErrorKind;
-    use std::fmt::{ Display ,Debug};
+    use std::fmt::{Display, Debug};
     use std::time::Duration;
 
     use fluvio_stream_model::core::MetadataItem;
@@ -28,9 +28,9 @@ mod context {
     use super::MetadataStoreObject;
     use super::{LocalStore, ChangeListener, MetadataChanges};
 
-    pub type K8ChangeListener<S,MetaContext = K8MetaItem> = ChangeListener<S, MetaContext>;
+    pub type K8ChangeListener<S, MetaContext = K8MetaItem> = ChangeListener<S, MetaContext>;
 
-    pub type StoreChanges<S,MetaContext = K8MetaItem> = MetadataChanges<S, MetaContext>;
+    pub type StoreChanges<S, MetaContext = K8MetaItem> = MetadataChanges<S, MetaContext>;
 
     static MAX_WAIT_TIME: Lazy<u64> = Lazy::new(|| {
         use std::env;
@@ -41,20 +41,20 @@ mod context {
     });
 
     #[derive(Debug, Clone)]
-    pub struct StoreContext<S,MetaContext = K8MetaItem>
+    pub struct StoreContext<S, MetaContext = K8MetaItem>
     where
         S: Spec,
-        MetaContext: MetadataItem + Debug
+        MetaContext: MetadataItem + Debug,
     {
         store: Arc<LocalStore<S, MetaContext>>,
-        sender: Sender<WSAction<S,MetaContext>>,
-        receiver: Receiver<WSAction<S,MetaContext>>,
+        sender: Sender<WSAction<S, MetaContext>>,
+        receiver: Receiver<WSAction<S, MetaContext>>,
     }
 
-    impl<S,MetaContext> StoreContext<S, MetaContext >
+    impl<S, MetaContext> StoreContext<S, MetaContext>
     where
         S: Spec,
-        MetaContext: MetadataItem
+        MetaContext: MetadataItem,
     {
         /// create new store context
         pub fn new() -> Self {
@@ -73,8 +73,8 @@ mod context {
 
         pub async fn send(
             &mut self,
-            actions: Vec<WSAction<S,MetaContext>>,
-        ) -> Result<(), SendError<WSAction<S,MetaContext>>> {
+            actions: Vec<WSAction<S, MetaContext>>,
+        ) -> Result<(), SendError<WSAction<S, MetaContext>>> {
             for action in actions.into_iter() {
                 self.sender.send(action).await?;
             }
@@ -82,7 +82,7 @@ mod context {
         }
 
         /// create new listener
-        pub fn change_listener(&self) -> K8ChangeListener<S,MetaContext> {
+        pub fn change_listener(&self) -> K8ChangeListener<S, MetaContext> {
             self.store.change_listener()
         }
 
@@ -90,25 +90,25 @@ mod context {
             &self.store
         }
 
-        pub fn receiver(&self) -> Receiver<WSAction<S,MetaContext>> {
+        pub fn receiver(&self) -> Receiver<WSAction<S, MetaContext>> {
             self.receiver.clone()
         }
     }
 
-    impl<S,MetaContext> Default for StoreContext<S,MetaContext>
+    impl<S, MetaContext> Default for StoreContext<S, MetaContext>
     where
         S: Spec,
-        MetaContext: MetadataItem
+        MetaContext: MetadataItem,
     {
         fn default() -> Self {
             Self::new()
         }
     }
 
-    impl<S,MetaContext> StoreContext<S, MetaContext >
+    impl<S, MetaContext> StoreContext<S, MetaContext>
     where
         S: Spec + PartialEq,
-        MetaContext: MetadataItem
+        MetaContext: MetadataItem,
     {
         /// Wait for the termination of the apply action object, this is similar to ```kubectl apply```
         pub async fn apply(
@@ -211,7 +211,7 @@ mod context {
         pub async fn wait_action(
             &self,
             key: &S::IndexKey,
-            action: WSAction<S,MetaContext>,
+            action: WSAction<S, MetaContext>,
         ) -> Result<MetadataStoreObject<S, MetaContext>, IoError>
         where
             S::IndexKey: Display,
@@ -228,7 +228,7 @@ mod context {
         pub async fn wait_action_with_timeout(
             &self,
             key: &S::IndexKey,
-            action: WSAction<S,MetaContext>,
+            action: WSAction<S, MetaContext>,
             timeout: Duration,
         ) -> Result<MetadataStoreObject<S, MetaContext>, IoError>
         where
@@ -282,7 +282,7 @@ mod context {
         }
 
         /// send action
-        pub async fn send_action(&self, action: WSAction<S,MetaContext>) {
+        pub async fn send_action(&self, action: WSAction<S, MetaContext>) {
             if let Err(err) = self.sender.send(action).await {
                 error!("{}, error sending action to store: {}", S::LABEL, err);
             }

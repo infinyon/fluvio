@@ -6,10 +6,10 @@ use crate::store::*;
 use crate::store::k8::K8MetaItem;
 
 #[derive(PartialEq, Clone)]
-pub enum WSAction<S,MetaContext = K8MetaItem>
+pub enum WSAction<S, MetaContext = K8MetaItem>
 where
     S: Spec + PartialEq,
-    MetaContext: MetadataItem
+    MetaContext: MetadataItem,
 {
     Apply(MetadataStoreObject<S, MetaContext>),
     UpdateSpec((S::IndexKey, S)),
@@ -18,11 +18,11 @@ where
     DeleteFinal(S::IndexKey),
 }
 
-impl<S,MetaContext> fmt::Display for WSAction<S,MetaContext>
+impl<S, MetaContext> fmt::Display for WSAction<S, MetaContext>
 where
     S: Spec + PartialEq,
     S::IndexKey: Display,
-    MetaContext: MetadataItem
+    MetaContext: MetadataItem,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -35,11 +35,11 @@ where
     }
 }
 
-impl<S,MetaContext> fmt::Debug for WSAction<S,MetaContext>
+impl<S, MetaContext> fmt::Debug for WSAction<S, MetaContext>
 where
     S: Spec + PartialEq,
     S::IndexKey: Display,
-    MetaContext: MetadataItem
+    MetaContext: MetadataItem,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {

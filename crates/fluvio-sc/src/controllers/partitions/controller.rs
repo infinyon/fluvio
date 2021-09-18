@@ -131,8 +131,7 @@ impl PartitionController {
     }
 }
 
-
-/* 
+/*
 #[cfg(test)]
 mod test {
 
@@ -143,7 +142,7 @@ mod test {
     async fn test_election() {
 
 
-    }    
+    }
 
 }
 */
