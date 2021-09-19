@@ -64,7 +64,9 @@ impl SpuServiceController {
         use tokio::select;
 
         let mut spg_listener = self.groups.change_listener();
+        let _ = spg_listener.wait_for_initial_sync().await;
         let mut config_listener = self.configs.change_listener();
+        let _ = config_listener.wait_for_initial_sync().await;
 
         self.sync_with_spg(&mut spg_listener).await?;
         self.sync_with_config(&mut config_listener).await?;
@@ -140,7 +142,7 @@ impl SpuServiceController {
             self.update_services(updates, config.inner_owned().spec)
                 .await?;
         } else {
-            error!("config map is not loaded, skipping");
+            return Err(ClientError::Other("fluvio config not found".to_owned()));
         }
 
         Ok(())
