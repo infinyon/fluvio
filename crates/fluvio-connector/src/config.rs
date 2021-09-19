@@ -9,42 +9,40 @@ use crate::error::ConnectorError;
 
 #[derive(Debug, Deserialize)]
 pub struct ConnectorConfig {
-    #[serde(default = "String::new")]
     name: String,
     #[serde(rename = "type")]
     type_: String,
-    topic: Option<String>,
+    topic: String,
     create_topic: Option<bool>,
     #[serde(default = "ConnectorConfig::default_args")]
-    args: BTreeMap<String, String>,
+    parameters: BTreeMap<String, String>,
+    #[serde(default = "ConnectorConfig::default_args")]
+    secrets: BTreeMap<String, String>,
 }
 
-pub type ConnectorConfigSet = BTreeMap<String, ConnectorConfig>;
+pub type ConnectorConfigSet = Vec<ConnectorConfig>;
 
 impl ConnectorConfig {
     fn default_args() -> BTreeMap<String, String> {
         BTreeMap::new()
     }
+
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfigSet, ConnectorError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         let mut connector_configs: ConnectorConfigSet = serde_yaml::from_str(&contents)?;
-        for (key, value) in connector_configs.iter_mut() {
-            value.name = key.to_string();
-        }
         Ok(connector_configs)
     }
 }
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
-        let topic = config.topic.unwrap_or(config.type_.clone());
 
         ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
-            topic: topic.to_string(),
-            args: config.args,
+            topic: config.topic,
+            args: config.parameters,
         }
     }
 }

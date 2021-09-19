@@ -1,4 +1,8 @@
-test-connector:
-  type: test-connector
-  args:
-    foo: bar
+version: v1
+name: my-test-connector
+type: test-connector
+direction: source
+args:
+  foo: bar
+secrets:
+  foo: bar
