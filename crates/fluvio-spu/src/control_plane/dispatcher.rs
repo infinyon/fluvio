@@ -60,48 +60,47 @@ impl ScDispatcher<FileReplica> {
         loop {
             debug!("entering SC dispatch loop: {}", counter);
 
-            if let Some(mut socket) = self.create_socket_to_sc().await {
-                debug!(
-                    "established connection to sc for spu: {}",
-                    self.ctx.local_spu_id()
-                );
+            let mut socket = self.create_socket_to_sc().await;
+            info!(
+                "established connection to sc for spu: {}",
+                self.ctx.local_spu_id()
+            );
 
-                // register and exit on error
-                let status = match self.send_spu_registeration(&mut socket).await {
-                    Ok(status) => status,
-                    Err(err) => {
-                        print_cli_err!(format!(
-                            "spu registeration failed with sc due to error: {}",
-                            err
-                        ));
-                        false
+            // register and exit on error
+            let status = match self.send_spu_registeration(&mut socket).await {
+                Ok(status) => status,
+                Err(err) => {
+                    print_cli_err!(format!(
+                        "spu registeration failed with sc due to error: {}",
+                        err
+                    ));
+                    false
+                }
+            };
+
+            if !status {
+                warn!("sleeping 3 seconds before re-trying re-register");
+                sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
+            } else {
+                // continuously process updates from and send back status to SC
+                match self.request_loop(socket).await {
+                    Ok(_) => {
+                        debug!(
+                            "sc connection terminated: {}, waiting before reconnecting",
+                            counter
+                        );
+                        // give little bit time before trying to reconnect
+                        sleep(Duration::from_millis(10)).await;
+                        counter += 1;
                     }
-                };
-
-                if !status {
-                    warn!("sleeping 3 seconds before re-trying re-register");
-                    sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
-                } else {
-                    // continuously process updates from and send back status to SC
-                    match self.request_loop(socket).await {
-                        Ok(_) => {
-                            debug!(
-                                "sc connection terminated: {}, waiting before reconnecting",
-                                counter
-                            );
-                            // give little bit time before trying to reconnect
-                            sleep(Duration::from_millis(10)).await;
-                            counter += 1;
-                        }
-                        Err(err) => {
-                            warn!(
-                                "error connecting to sc: {:#?}, waiting before reconnecting",
-                                err
-                            );
-                            // We are  connection to sc.  Retry again
-                            // Currently we use 3 seconds to retry but this should be using backoff algorithm
-                            sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
-                        }
+                    Err(err) => {
+                        warn!(
+                            "error connecting to sc: {:#?}, waiting before reconnecting",
+                            err
+                        );
+                        // We are  connection to sc.  Retry again
+                        // Currently we use 3 seconds to retry but this should be using backoff algorithm
+                        sleep(Duration::from_millis(WAIT_RECONNECT_INTERVAL)).await;
                     }
                 }
             }
@@ -134,10 +133,7 @@ impl ScDispatcher<FileReplica> {
 
                 _ = status_timer.next() =>  {
                     trace!("status timer expired");
-                    if !self.send_status_back_to_sc(&mut sink).await {
-                        debug!("error sending status, exiting request loop");
-                        break;
-                    }
+                    self.send_status_back_to_sc(&mut sink).await?;
                 },
 
                 sc_request = api_stream.next() => {
@@ -175,23 +171,19 @@ impl ScDispatcher<FileReplica> {
 
     /// send status back to sc, if there is error return false
     #[instrument(skip(self))]
-    async fn send_status_back_to_sc(&mut self, sc_sink: &mut FluvioSink) -> bool {
+    async fn send_status_back_to_sc(
+        &mut self,
+        sc_sink: &mut FluvioSink,
+    ) -> Result<(), SocketError> {
         let requests = self.status_update.remove_all().await;
-        if !requests.is_empty() {
-            debug!(requests = ?requests, "sending status back to sc");
-            let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
-            if let Err(err) = sc_sink.send_request(&message).await {
-                error!("error sending batch status to sc: {}", err);
-                false
-            } else {
-                debug!("successfully send status back to sc");
-                true
-            }
-        } else {
-            trace!("nothing to send back to sc");
-            true
-        }
+        debug!(requests = ?requests, "sending status back to sc");
+        let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
+
+        sc_sink.send_request(&message).await.map_err(|err| {
+            error!("error sending status back: {:#?}", err);
+            err
+        })
     }
 
     /// register local spu to sc
@@ -235,33 +227,27 @@ impl ScDispatcher<FileReplica> {
 
     /// connect to sc if can't connect try until we succeed
     /// or if we received termination message
-    async fn create_socket_to_sc(&mut self) -> Option<FluvioSocket> {
+    async fn create_socket_to_sc(&mut self) -> FluvioSocket {
         let spu_id = self.ctx.local_spu_id();
         let sc_endpoint = self.ctx.config().sc_endpoint().to_string();
 
-        debug!("trying to connect to sc endpoint: {}", sc_endpoint);
-
         let wait_interval = self.ctx.config().sc_retry_ms;
         loop {
-            trace!(
-                "trying to create socket to sc: {:#?} for spu: {}",
-                sc_endpoint,
-                spu_id
+            info!(
+                %sc_endpoint,
+                spu_id,
+                "trying to create socket to sc",
+
             );
-            let connect_future = FluvioSocket::connect(&sc_endpoint);
-
-            select! {
-                socket_res = connect_future => {
-                    match socket_res {
-                        Ok(socket) => {
-                            debug!("connected to sc for spu: {}",spu_id);
-                            self.counter.reconnect += 1;
-                            return Some(socket)
-                        }
-                        Err(err) => warn!("error connecting to sc: {}",err)
-                    }
-
-                    trace!("sleeping {} ms to connect to sc: {}",wait_interval,spu_id);
+            match FluvioSocket::connect(&sc_endpoint).await {
+                Ok(socket) => {
+                    info!(spu_id, "connected to sc for spu");
+                    self.counter.reconnect += 1;
+                    return socket;
+                }
+                Err(err) => {
+                    warn!("error connecting to sc: {}", err);
+                    info!(wait_interval, spu_id, "sleeping ms");
                     sleep(Duration::from_millis(wait_interval as u64)).await;
                 }
             }

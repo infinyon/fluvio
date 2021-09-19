@@ -64,7 +64,7 @@ where
             select! {
 
                 _ = spu_status_listener.listen() => {
-                    debug!("detected spus status changed");
+                    debug!("detected spus changes");
                 },
                 _ = partition_listener.listen() => {
                     debug!("detected partition changes");
@@ -86,7 +86,7 @@ where
         // we only care about delete timestamp changes which are in metadata only
         let changes = listener.sync_meta_changes().await;
         if changes.is_empty() {
-            trace!("no partition metadata changes");
+            debug!("no partition metadata changes");
             return;
         }
 
@@ -112,10 +112,9 @@ where
             return;
         }
 
-        trace!("sync spu changes");
         let changes = listener.sync_status_changes().await;
         if changes.is_empty() {
-            trace!("no spu changes");
+            debug!("no spu status changes");
             return;
         }
 
@@ -140,17 +139,13 @@ where
     }
 }
 
-
 #[cfg(test)]
 mod test {
-
 
     use super::*;
 
     mod meta {
         use fluvio_controlplane_metadata::core::{MetadataItem, MetadataRevExtension};
-
-
 
         /// simple memory representation of meta
         #[derive(Debug, Default, PartialEq, Clone)]
@@ -172,49 +167,39 @@ mod test {
 
         impl MetadataRevExtension for MemoryMeta {
             fn next_rev(&self) -> Self {
-                Self {
-                    rev: self.rev + 1,
-                }
+                Self { rev: self.rev + 1 }
             }
         }
 
         impl MemoryMeta {
             pub fn new(rev: u32) -> Self {
-                Self {
-                    rev,
-                }
+                Self { rev }
             }
         }
 
-        /* 
+        /*
         impl From<u32> for MetadataContext<MemoryMeta> {
             fn from(val: u32) -> MetadataContext<MemoryMeta> {
                 MemoryMeta::new(val).into()
             }
         }
         */
-
     }
 
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
     use meta::*;
 
-    type MemPartition = MetadataStoreObject<PartitionSpec,MemoryMeta>;
-    type MemSpu = MetadataStoreObject<SpuSpec,MemoryMeta>;
+    type MemPartition = MetadataStoreObject<PartitionSpec, MemoryMeta>;
+    type MemSpu = MetadataStoreObject<SpuSpec, MemoryMeta>;
 
     #[fluvio_future::test(ignore)]
     async fn test_election() {
-
-        let partitions: StoreContext<PartitionSpec,MemoryMeta> =  StoreContext::new();
-        let spus: StoreContext<SpuSpec,MemoryMeta> = StoreContext::new();
+        let partitions: StoreContext<PartitionSpec, MemoryMeta> = StoreContext::new();
+        let spus: StoreContext<SpuSpec, MemoryMeta> = StoreContext::new();
 
         let controller = PartitionController::start(partitions.clone(), spus.clone());
 
         // add partitions
         spus.store().sync_all(vec![]).await;
-
-
     }
-
 }
-
