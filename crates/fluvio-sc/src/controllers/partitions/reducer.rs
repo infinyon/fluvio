@@ -123,8 +123,14 @@ where
         let mut actions = vec![];
 
         // group spus in terms of online and offline
-        let (online_spus, offline_spus): (Vec<SpuMetadata<C>>, Vec<SpuMetadata<C>>) =
+        let (online_spus, mut offline_spus): (Vec<SpuMetadata<C>>, Vec<SpuMetadata<C>>) =
             spus.into_iter().partition(|v| v.status.is_online());
+
+        // remove init
+        offline_spus = offline_spus
+            .into_iter()
+            .filter(|v| !v.status.is_init())
+            .collect();
 
         // election due to offline spu
         debug!(offline = offline_spus.len(), "offline spus");
@@ -146,10 +152,9 @@ where
         offline_spu: SpuMetadata<C>,
         actions: &mut Vec<PartitionWSAction<C>>,
     ) {
-        info!(
+        debug!(
             spu = %offline_spu.key(),
             "starting election when spu went offline",
-
         );
         let offline_leader_spu_id = offline_spu.spec.id;
 
@@ -169,7 +174,7 @@ where
                     info!(
                         partition = %partition_kv.key(),
                         candidate_leader,
-                        "suitable online leader has found",
+                        "election suitable online leader has found",
                     );
 
                     let mut part_kv_change = partition_kv.clone();

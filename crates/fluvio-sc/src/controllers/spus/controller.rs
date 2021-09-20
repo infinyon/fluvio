@@ -31,7 +31,7 @@ impl SpuController {
         spawn(controller.dispatch_loop());
     }
 
-    #[instrument(skip(self))]
+    #[instrument(skip(self), name = "SpuControllerLoop")]
     async fn dispatch_loop(self) {
         info!("started");
         loop {
@@ -110,12 +110,6 @@ impl SpuController {
                     } else {
                         trace!(id = spu.spec.id, status = %spu.status,"ignoring health status");
                     }
-                }
-            } else {
-                // if status is init, we need to apply it
-                if spu.status.is_init() {
-                    info!(id = spu.spec.id, "initial status change");
-                    changes.push(spu);
                 }
             }
         }
