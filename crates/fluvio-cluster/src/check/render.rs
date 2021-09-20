@@ -2,6 +2,7 @@
 
 use futures_util::StreamExt;
 use async_channel::Receiver;
+use indicatif::ProgressBar;
 use crate::{
     CheckFailed, CheckResult, CheckResults, CheckStatus, CheckSuggestion,
     render::ProgressRenderedText,
@@ -19,6 +20,18 @@ pub async fn render_check_progress(progress: &mut Receiver<CheckResult>) -> Chec
     check_results
 }
 
+pub async fn render_check_progress_with_indicator(
+    progress: &mut Receiver<CheckResult>,
+    pb: &ProgressBar,
+) -> CheckResults {
+    let mut check_results = vec![];
+    while let Some(check_result) = progress.next().await {
+        render_check_result_with_indicator(&check_result, pb);
+        check_results.push(check_result);
+    }
+    check_results
+}
+
 /// Renders a slice of `CheckResults` all at once
 pub fn render_check_results<R: AsRef<[CheckResult]>>(check_results: R) {
     let check_results = check_results.as_ref();
@@ -30,6 +43,11 @@ pub fn render_check_results<R: AsRef<[CheckResult]>>(check_results: R) {
 /// Render a single check result
 pub fn render_check_result(check_result: &CheckResult) {
     println!("{}", check_result.msg());
+}
+
+/// Render a single check result
+pub fn render_check_result_with_indicator(check_result: &CheckResult, pb: &ProgressBar) {
+    pb.println(check_result.msg());
 }
 
 /// Render a slice of `CheckStatus`es all at once
