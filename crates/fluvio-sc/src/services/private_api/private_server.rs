@@ -4,7 +4,6 @@ use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::time::Duration;
-use std::time::Instant;
 
 use tracing::error;
 use tracing::{debug, info, trace, instrument};
@@ -23,7 +22,6 @@ use fluvio_controlplane::{
 use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
 use crate::core::SharedContext;
-use crate::stores::spu::SharedHealthCheck;
 use crate::stores::{K8ChangeListener};
 use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
 use crate::stores::spu::SpuSpec;
