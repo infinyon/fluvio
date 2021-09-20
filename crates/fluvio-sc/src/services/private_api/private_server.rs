@@ -1,4 +1,5 @@
 use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_future::timer::sleep;
 use fluvio_service::ConnectInfo;
 use std::sync::Arc;
 use std::io::Error as IoError;
@@ -110,12 +111,11 @@ async fn dispatch_loop(
 
     // send initial changes
 
-    let mut health_check_timer = Duration::from_secs(HEALTH_DURATION);
+    let mut health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
 
     loop {
         use tokio::select;
         use futures_util::stream::StreamExt;
-        use fluvio_future::timer::sleep;
 
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
@@ -124,7 +124,7 @@ async fn dispatch_loop(
 
         select! {
 
-            _ = sleep(health_check_timer) => {
+            _ = &mut health_check_timer => {
                 debug!("health check timer expired. ending");
                 break;
             },
@@ -148,7 +148,7 @@ async fn dispatch_loop(
                             }
                         }
                         // reset timer
-                        health_check_timer = Duration::from_secs(HEALTH_DURATION);
+                        health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
                         trace!("health check reset");
                     } else {
                         debug!(spu_id,"no message content, ending processing loop");
@@ -183,7 +183,7 @@ async fn dispatch_loop(
 async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
     let requests = requests.into_requests();
     if requests.is_empty() {
-        debug!("no requests, just health check");
+        trace!("no requests, just health check");
         return;
     } else {
         debug!(?requests, "received lr requests");
@@ -258,13 +258,11 @@ async fn send_spu_spec_changes(
     spu_id: SpuId,
 ) -> Result<(), SocketError> {
     if !listener.has_change() {
-        debug!("changes is empty, skipping");
         return Ok(());
     }
 
     let changes = listener.sync_spec_changes().await;
     if changes.is_empty() {
-        debug!("spec changes is empty, skipping");
         return Ok(());
     }
 

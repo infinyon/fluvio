@@ -10,7 +10,7 @@ RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
 CLIENT_LOG=warn
-SERVER_LOG=fluvio=debug
+SERVER_LOG=info
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
 DEFAULT_SPU=2
 REPL=2
