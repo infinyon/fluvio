@@ -1482,7 +1482,7 @@ dependencies = [
  "sha2",
  "static_assertions",
  "structopt",
- "sysinfo",
+ "sysinfo 0.20.3",
  "tempdir",
  "thiserror",
  "tracing",
@@ -1780,6 +1780,7 @@ dependencies = [
  "serde",
  "serde_json",
  "structopt",
+ "sysinfo 0.19.2",
  "tokio",
  "tracing",
  "tracing-futures",
@@ -4331,6 +4332,21 @@ dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys",
  "doc-comment",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "rayon",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.20.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92d77883450d697c0010e60db3d940ed130b0ed81d27485edee981621b434e52"
+dependencies = [
+ "cfg-if 1.0.0",
+ "core-foundation-sys",
  "libc",
  "ntapi",
  "once_cell",

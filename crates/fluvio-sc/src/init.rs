@@ -5,6 +5,8 @@
 //! and receivers.
 //!
 
+use sysinfo::System;
+use sysinfo::SystemExt;
 use tracing::info;
 use k8_metadata_client::SharedClient;
 use k8_metadata_client::MetadataClient;
@@ -31,7 +33,18 @@ where
     use crate::stores::topic::TopicSpec;
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
-    info!("SC Platform Version: {}", &*crate::VERSION);
+
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    info!(version = &*crate::VERSION, "Platform");
+    info!(commit = env!("GIT_HASH"), "Git");
+    info!(name = ?sys.name(),"System");
+    info!(kernel = ?sys.kernel_version(),"System");
+    info!(os_version = ?sys.long_os_version(),"System");
+    info!(core_count = ?sys.physical_core_count(),"System");
+    info!(total_memory = sys.total_memory(), "System");
+    info!(available_memory = sys.available_memory(), "System");
+    info!(uptime = sys.uptime(), "Uptime in secs");
 
     let (sc_config, auth_policy) = sc_config_policy;
 
