@@ -10,7 +10,7 @@ RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
 CLIENT_LOG=warn
-SERVER_LOG=fluvio=debug
+SERVER_LOG=info
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
 DEFAULT_SPU=2
 REPL=2
@@ -166,7 +166,7 @@ validate-release-stable:
 ifeq (${CI},true)
 # In CI, we expect all artifacts to already be built and loaded for the script
 longevity-test:
-	$(TEST_BIN) -d -k longevity -- --runtime-seconds=600
+	$(TEST_BIN) -d -k longevity -- --runtime-seconds=1800
 else
 # When not in CI (i.e. development), load the dev k8 image before running test
 longevity-test: build-test

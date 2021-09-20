@@ -1,7 +1,7 @@
 #![allow(unused)]
 
 use futures_util::StreamExt;
-use futures_channel::mpsc::Receiver;
+use async_channel::Receiver;
 use crate::{
     CheckFailed, CheckResult, CheckResults, CheckStatus, CheckSuggestion,
     render::ProgressRenderedText,
@@ -53,7 +53,7 @@ pub fn render_next_steps(failures: u32, warnings: u32, installed: bool) {
     match (failures, warnings) {
         // No errors, failures, or warnings
         (0, 0) if !installed => {
-            println!("{}", "All checks passed!".bold());
+            println!("🎉 {}", "All checks passed!".bold());
             println!("You may proceed with cluster startup");
             println!(
                 "{}: run `fluvio cluster start`",
@@ -156,12 +156,12 @@ impl ProgressRenderedText for CheckStatus {
 
         let mut text = match self {
             Pass(success) => {
-                format!("{:>13} {}", "Ok: ✅".bold().green(), success)
+                format!("{:>6} {}", "✅".bold(), success)
             }
             Fail(e @ CheckFailed::AutoRecoverable(_)) => {
                 format!(
-                    "{:>11} {}\n{:indent$}💡 {}",
-                    "Warn: 🟡️".bold().yellow(),
+                    "{:>6} {}\n{:indent$}💡 {}",
+                    "🟡️".bold(),
                     e,
                     "",
                     format!(
@@ -174,8 +174,8 @@ impl ProgressRenderedText for CheckStatus {
             }
             Fail(CheckFailed::AlreadyInstalled) => {
                 format!(
-                    "{:>13} {}",
-                    "note: 💙".bold().bright_blue(),
+                    "{:>6} {}",
+                    "💙".bold(),
                     "Fluvio is already running".bright_blue()
                 )
             }
@@ -186,13 +186,13 @@ impl ProgressRenderedText for CheckStatus {
                     None => "".to_string(),
                 };
                 let msg = format!("{}{}", e, cause);
-                format!("{:>13} {}", "failed: ❌".bold().red(), msg.red())
+                format!("{:>6} {}", "❌".bold(), msg.red())
             }
         };
 
         if let Some(suggestion) = self.suggestion() {
             text.push_str(&format!(
-                "\n{:indent$}💡 {:>11} {}",
+                "\n{:indent$}💡 {:>6} {}",
                 "",
                 "suggestion:".bold().cyan(),
                 suggestion,

@@ -13,7 +13,7 @@ jobs:
   longevity:
     name: Longevity test 
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 60
     strategy:
       fail-fast: false 
       matrix:
@@ -88,29 +88,29 @@ jobs:
       - name: Run longevity test
         run: make TEST_BIN=./fluvio-test longevity-test
           
-      # If the test passed, then copy the data from cluster to store into artifacts
-      - name: Export data from the cluster for caching
-        run: |
-          kubectl version
-          mkdir longevity-0
-          echo Copy fluvio topic data from container
-          kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-0 longevity-0
-          ls
-          echo List copied topic data
-          ls longevity-0
-          echo Make tarball from topic data
-          tar -cvf longevity-data.tar longevity-0
-          echo Verify tarball
-          cp longevity-data.tar /tmp
-          cd /tmp
-          tar -xvf longevity-data.tar
+      ## If the test passed, then copy the data from cluster to store into artifacts
+      #- name: Export data from the cluster for caching
+      #  run: |
+      #    kubectl version
+      #    mkdir longevity-0
+      #    echo Copy fluvio topic data from container
+      #    kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-0 longevity-0
+      #    ls
+      #    echo List copied topic data
+      #    ls longevity-0
+      #    echo Make tarball from topic data
+      #    tar -cvf longevity-data.tar longevity-0
+      #    echo Verify tarball
+      #    cp longevity-data.tar /tmp
+      #    cd /tmp
+      #    tar -xvf longevity-data.tar
 
-      # TODO: Add a shorter cache time
-      - uses: actions/upload-artifact@v2
-        with:
-          name: 'longevity-data' 
-          path: longevity-data.tar
-          retention-days: 5
+      ## TODO: Add a shorter cache time
+      #- uses: actions/upload-artifact@v2
+      #  with:
+      #    name: 'longevity-data' 
+      #    path: longevity-data.tar
+      #    retention-days: 5
 
       - name: Save logs
         if: failure()

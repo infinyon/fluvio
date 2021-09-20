@@ -5,18 +5,20 @@
 //!
 use std::sync::Arc;
 
-use tracing::{debug, warn, info, instrument};
+use fluvio_controlplane_metadata::partition::store::{PartitionLocalStore, PartitionMetadata};
+use fluvio_controlplane_metadata::spu::store::{SpuLocalStore, SpuMetadata};
+use fluvio_controlplane_metadata::store::k8::K8MetaItem;
+use tracing::{debug, info, instrument};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 
 use crate::stores::partition::{
-    PartitionSpec, PartitionAdminStore, ReplicaStatus, PartitionAdminMd, PartitionResolution,
-    ElectionPolicy, ElectionScoring,
+    PartitionSpec, ReplicaStatus, PartitionResolution, ElectionPolicy, ElectionScoring,
 };
-use crate::stores::spu::{SpuAdminStore, SpuAdminMd, SpuLocalStorePolicy};
 use crate::stores::actions::WSAction;
+use crate::stores::spu::SpuLocalStorePolicy;
 
-type PartitionWSAction = WSAction<PartitionSpec>;
+type PartitionWSAction<C = K8MetaItem> = WSAction<PartitionSpec, C>;
 
 /// Given This is a generated partition from TopicController, It will try to allocate assign replicas
 /// to live SPU.
@@ -53,25 +55,34 @@ type PartitionWSAction = WSAction<PartitionSpec>;
 /// If there are another topic1 with same number of partiition and replica then, they will
 /// have different leader because Topic0-0 already is using spu 0.
 #[derive(Debug)]
-pub struct PartitionReducer {
-    partition_store: Arc<PartitionAdminStore>,
-    spu_store: Arc<SpuAdminStore>,
+pub struct PartitionReducer<C = K8MetaItem>
+where
+    C: MetadataItem + Send + Sync,
+{
+    partition_store: Arc<PartitionLocalStore<C>>,
+    spu_store: Arc<SpuLocalStore<C>>,
 }
 
-impl Default for PartitionReducer {
+impl<C> Default for PartitionReducer<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     fn default() -> Self {
         Self {
-            partition_store: PartitionAdminStore::new_shared(),
-            spu_store: SpuAdminStore::new_shared(),
+            partition_store: PartitionLocalStore::new_shared(),
+            spu_store: SpuLocalStore::new_shared(),
         }
     }
 }
 
-impl PartitionReducer {
+impl<C> PartitionReducer<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     pub fn new<A, B>(partition_store: A, spu_store: B) -> Self
     where
-        A: Into<Arc<PartitionAdminStore>>,
-        B: Into<Arc<SpuAdminStore>>,
+        A: Into<Arc<PartitionLocalStore<C>>>,
+        B: Into<Arc<SpuLocalStore<C>>>,
     {
         Self {
             partition_store: partition_store.into(),
@@ -82,8 +93,8 @@ impl PartitionReducer {
     #[instrument(skip(self, updates))]
     pub async fn process_partition_update(
         &self,
-        updates: Vec<PartitionAdminMd>,
-    ) -> Vec<PartitionWSAction> {
+        updates: Vec<PartitionMetadata<C>>,
+    ) -> Vec<PartitionWSAction<C>> {
         // reconcile delete timestamp in the metadata with delete status
         updates
             .into_iter()
@@ -107,13 +118,19 @@ impl PartitionReducer {
     #[instrument(skip(self, spus))]
     pub async fn update_election_from_spu_changes(
         &self,
-        spus: Vec<SpuAdminMd>,
-    ) -> Vec<PartitionWSAction> {
+        spus: Vec<SpuMetadata<C>>,
+    ) -> Vec<PartitionWSAction<C>> {
         let mut actions = vec![];
 
         // group spus in terms of online and offline
-        let (online_spus, offline_spus): (Vec<SpuAdminMd>, Vec<SpuAdminMd>) =
+        let (online_spus, mut offline_spus): (Vec<SpuMetadata<C>>, Vec<SpuMetadata<C>>) =
             spus.into_iter().partition(|v| v.status.is_online());
+
+        // remove init
+        offline_spus = offline_spus
+            .into_iter()
+            .filter(|v| !v.status.is_init())
+            .collect();
 
         // election due to offline spu
         debug!(offline = offline_spus.len(), "offline spus");
@@ -132,13 +149,12 @@ impl PartitionReducer {
     #[instrument(skip(self, offline_spu, actions))]
     async fn force_election_spu_off(
         &self,
-        offline_spu: SpuAdminMd,
-        actions: &mut Vec<PartitionWSAction>,
+        offline_spu: SpuMetadata<C>,
+        actions: &mut Vec<PartitionWSAction<C>>,
     ) {
-        info!(
+        debug!(
             spu = %offline_spu.key(),
-            "starting election when spu went offline",
-
+            "performing election check spu offline",
         );
         let offline_leader_spu_id = offline_spu.spec.id;
 
@@ -155,27 +171,43 @@ impl PartitionReducer {
                 if let Some(candidate_leader) =
                     partition_kv.status.candidate_leader(&spu_status, &policy)
                 {
-                    info!(
-                        partition = %partition_kv.key(),
-                        candidate_leader,
-                        "suitable online leader has found",
-                    );
-
                     let mut part_kv_change = partition_kv.clone();
                     part_kv_change.spec.leader = candidate_leader;
+
+                    // we only change leader, status happens next cycle
                     actions.push(PartitionWSAction::UpdateSpec((
                         part_kv_change.key_owned(),
                         part_kv_change.spec,
                     )));
+
+                    info!(
+                        partition = %partition_kv.key(),
+                        candidate_leader,
+                        "changing to new leader",
+                    );
+
                 // change the
                 } else {
-                    warn!( partition = %partition_kv.key(),"no suitable leader has found");
-                    let mut part_kv_change = partition_kv.clone();
-                    part_kv_change.status.resolution = PartitionResolution::LeaderOffline;
-                    actions.push(PartitionWSAction::UpdateStatus((
-                        part_kv_change.key_owned(),
-                        part_kv_change.status,
-                    )));
+                    // check partition is already offline
+                    if partition_kv.status.is_online() {
+                        let mut part_kv_change = partition_kv.clone();
+                        part_kv_change.status.resolution = PartitionResolution::LeaderOffline;
+                        actions.push(PartitionWSAction::UpdateStatus((
+                            part_kv_change.key_owned(),
+                            part_kv_change.status,
+                        )));
+                        info!(
+                            partition = %partition_kv.key(),
+                            old_leader = offline_leader_spu_id,
+                            "setting partition to offline",
+                        );
+                    } else {
+                        debug!(
+                            partition = %partition_kv.key(),
+                            old_leader = offline_leader_spu_id,
+                            "no new online leader was found",
+                        );
+                    }
                 }
             }
         }
@@ -185,10 +217,10 @@ impl PartitionReducer {
     #[instrument(skip(self, online_spu, actions))]
     async fn force_election_spu_on(
         &self,
-        online_spu: SpuAdminMd,
-        actions: &mut Vec<PartitionWSAction>,
+        online_spu: SpuMetadata<C>,
+        actions: &mut Vec<PartitionWSAction<C>>,
     ) {
-        info!(spu = %online_spu.key(),"start election spu went online" );
+        debug!(spu = %online_spu.key(),"performing election check spu online");
         let online_leader_spu_id = online_spu.spec.id;
 
         let policy = SimplePolicy::new();
@@ -197,26 +229,41 @@ impl PartitionReducer {
         for partition_kv_epoch in self.partition_store.read().await.values() {
             let partition_kv = partition_kv_epoch.inner();
             if partition_kv.status.is_offline() {
-                // we only care about partition who is follower since, leader will set partition status when it start up
                 if partition_kv.spec.leader != online_leader_spu_id {
+                    // switch leader if online leader is different
                     for replica_status in partition_kv.status.replica_iter() {
                         if replica_status.spu == online_leader_spu_id
                             && policy
                                 .potential_leader_score(replica_status, &partition_kv.status.leader)
                                 .is_suitable()
                         {
-                            info!(
-                                partition = %partition_kv.key(),
-                                online_spu = online_leader_spu_id,
-                                "suitable online leader has found",
-                            );
                             let mut part_kv_change = partition_kv.clone();
                             part_kv_change.spec.leader = online_leader_spu_id;
                             actions.push(PartitionWSAction::UpdateSpec((
                                 part_kv_change.key_owned(),
                                 part_kv_change.spec,
                             )));
+                            info!(
+                                partition = %partition_kv.key(),
+                                online_spu = online_leader_spu_id,
+                                "changing to new leader",
+                            );
                         }
+                    }
+                } else {
+                    // if leader is different but was set to offline (which could happen if just switched), change to online
+                    if partition_kv.spec.leader == online_leader_spu_id {
+                        let mut part_kv_change = partition_kv.clone();
+                        part_kv_change.status.resolution = PartitionResolution::Online;
+                        actions.push(PartitionWSAction::UpdateStatus((
+                            part_kv_change.key_owned(),
+                            part_kv_change.status,
+                        )));
+                        info!(
+                            partition = %partition_kv.key(),
+                            online_leader_spu_id,
+                            "setting partition to online",
+                        );
                     }
                 }
             }

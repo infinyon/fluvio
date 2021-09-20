@@ -1,6 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
-use tracing::debug;
+use tracing::{debug, trace};
 use anyhow::{Result, Error};
 use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
 use crate::smartstream::filter::SmartStreamFilter;
@@ -157,6 +157,8 @@ impl dyn SmartStream + '_ {
 
             let maybe_error = output.error;
             let mut records = output.successes;
+
+            trace!("smartstream processed records: {:#?}", records);
 
             // there are filtered records!!
             if records.is_empty() {

@@ -27,7 +27,7 @@ pub async fn is_conflict(
 mod health_check {
     use std::{collections::HashMap, ops::Deref, sync::Arc};
 
-    use tracing::instrument;
+    use tracing::{instrument, debug, info};
     use async_lock::RwLock;
 
     use fluvio_types::{
@@ -70,12 +70,21 @@ mod health_check {
 
         /// update health check
         #[instrument(skip(self))]
-        pub async fn update(&self, spu: SpuId, value: bool) {
+        pub async fn update(&self, spu: SpuId, new_value: bool) {
             let mut write = self.health.write().await;
-            write.insert(spu, value);
-            drop(write);
-
-            self.event.update_increment();
+            if let Some(old_value) = write.insert(spu, new_value) {
+                drop(write);
+                if new_value != old_value {
+                    info!(spu, new_value, "SPU health change");
+                    self.event.update_increment();
+                } else {
+                    debug!(spu, new_value, "No SPU health change");
+                }
+            } else {
+                drop(write);
+                info!(spu, new_value, "Initial SPU health report");
+                self.event.update_increment();
+            }
         }
     }
 }

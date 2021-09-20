@@ -251,8 +251,8 @@ mod inner {
                     return spu;
                 }
 
-                debug!("leader spu spec is not available, waiting 1 second");
-                sleep(Duration::from_millis(1000)).await;
+                debug!("leader spu spec is not available, waiting 5 second");
+                sleep(Duration::from_millis(5000)).await;
                 debug!("awake from sleep, checking spus");
             }
         }

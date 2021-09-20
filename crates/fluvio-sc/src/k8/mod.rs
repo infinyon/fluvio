@@ -8,6 +8,9 @@
 mod controllers;
 mod objects;
 
+#[cfg(test)]
+mod fixture;
+
 use k8_client::new_shared;
 
 use crate::cli::ScOpt;

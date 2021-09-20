@@ -82,7 +82,7 @@ where
                 request,
                 super::api_version::handle_api_versions_request(request),
                 shared_sink,
-                "api version handler"
+                "ApiVersionRequest"
             ),
 
             AdminPublicRequest::CreateRequest(request) => call_service!(

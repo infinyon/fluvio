@@ -72,7 +72,11 @@ where
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
-    whitelist!(config, "partition", PartitionController::start(ctx.clone()));
+    whitelist!(
+        config,
+        "partition",
+        PartitionController::start(ctx.partitions().clone(), ctx.spus().clone())
+    );
 
     whitelist!(config, "internal", start_internal_server(ctx.clone()));
     whitelist!(

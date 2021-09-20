@@ -1,10 +1,11 @@
 //!
 //! # Spu Controller
 
-use std::time::Instant;
 use std::time::Duration;
+use std::io::Error as IoError;
 
-use tracing::{debug, error, instrument};
+use fluvio_future::timer::sleep;
+use tracing::{debug, info, error, trace, instrument};
 
 use fluvio_future::task::spawn;
 
@@ -27,57 +28,52 @@ impl SpuController {
         };
 
         debug!("starting spu controller");
-        spawn(async move {
-            controller.inner_loop().await;
-        });
+        spawn(controller.dispatch_loop());
+    }
+
+    #[instrument(skip(self), name = "SpuControllerLoop")]
+    async fn dispatch_loop(self) {
+        info!("started");
+        loop {
+            if let Err(err) = self.inner_loop().await {
+                error!("error with inner loop: {:#?}", err);
+                debug!("sleeping 10 seconds try again");
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
     }
 
     #[instrument(skip(self))]
-    async fn inner_loop(mut self) {
+    async fn inner_loop(&self) -> Result<(), IoError> {
         use tokio::select;
-        use fluvio_future::timer::sleep;
 
+        debug!("initializing listeners");
         let mut spu_listener = self.spus.change_listener();
         let _ = spu_listener.wait_for_initial_sync().await;
 
         let mut health_listener = self.health_check.listener();
+        debug!("initializing listeners");
 
-        const HEALTH_DURATION: u64 = 90;
-
-        let mut time_left = Duration::from_secs(HEALTH_DURATION);
         loop {
-            self.sync_store().await;
-            let health_time = Instant::now();
-            debug!(
-                "waiting on events, health check left: {} secs",
-                time_left.as_secs()
-            );
+            self.sync_store().await?;
 
             select! {
                 _ = spu_listener.listen() => {
                     debug!("detected events in spu store");
                     spu_listener.load_last();
-                    time_left -= health_time.elapsed();
 
                 },
                 _ = health_listener.listen() => {
-                    debug!("heal check events");
-                    //health_listener.load_last();
-                    time_left -= health_time.elapsed();
+                    debug!("detected check events");
 
                 },
-                _ = sleep(time_left) => {
-                  //  self.health_check().await;
-                    time_left = Duration::from_secs(HEALTH_DURATION);
-                },
-
             }
         }
     }
 
     /// sync spu status with store
     #[instrument(skip(self))]
-    async fn sync_store(&mut self) {
+    async fn sync_store(&self) -> Result<(), IoError> {
         // first get status values
         let spus = self.spus.store().clone_values().await;
 
@@ -89,15 +85,31 @@ impl SpuController {
 
             let spu_id = spu.spec.id;
 
+            // check if we have status
             if let Some(health_status) = health_read.get(&spu_id) {
-                if spu.status.is_init() || spu.status.is_online() != *health_status {
+                // if status is init, we can set health
+                if spu.status.is_init() {
                     if *health_status {
                         spu.status.set_online();
                     } else {
                         spu.status.set_offline();
                     }
-                    debug!(id = spu.spec.id, status = %spu.status,"spu status changed");
+                    info!(id = spu.spec.id, status = %spu.status,"init => health status change");
                     changes.push(spu);
+                } else {
+                    // change if health is different
+                    let old_status = spu.status.is_online();
+                    if old_status != *health_status {
+                        if *health_status {
+                            spu.status.set_online();
+                        } else {
+                            spu.status.set_offline();
+                        }
+                        info!(id = spu.spec.id, status = %spu.status,"update health status");
+                        changes.push(spu);
+                    } else {
+                        trace!(id = spu.spec.id, status = %spu.status,"ignoring health status");
+                    }
                 }
             }
         }
@@ -107,10 +119,11 @@ impl SpuController {
         for updated_spu in changes.into_iter() {
             let key = updated_spu.key;
             let status = updated_spu.status;
-            if let Err(err) = self.spus.update_status(key, status).await {
-                error!("error updating status: {:#?}", err);
-            }
+            debug!(id = updated_spu.spec.id, status = %status, "updating spu status");
+            self.spus.update_status(key, status).await?;
         }
+
+        Ok(())
     }
 }
 
