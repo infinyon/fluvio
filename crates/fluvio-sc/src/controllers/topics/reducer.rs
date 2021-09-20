@@ -12,7 +12,7 @@
 //!
 use std::sync::Arc;
 
-use tracing::{debug, trace, error, instrument};
+use tracing::{debug, trace, info, error, instrument};
 
 use crate::stores::topic::*;
 use crate::stores::partition::*;
@@ -157,7 +157,7 @@ impl TopicReducer {
         if updated_topic.status.resolution != topic.status.resolution
             || updated_topic.status.reason != topic.status.reason
         {
-            debug!(
+            info!(
                 "{} status change to {} from: {}",
                 topic.key(),
                 updated_topic.status,

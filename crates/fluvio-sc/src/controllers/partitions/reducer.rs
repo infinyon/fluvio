@@ -8,7 +8,7 @@ use std::sync::Arc;
 use fluvio_controlplane_metadata::partition::store::{PartitionLocalStore, PartitionMetadata};
 use fluvio_controlplane_metadata::spu::store::{SpuLocalStore, SpuMetadata};
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
-use tracing::{debug, warn, info, instrument};
+use tracing::{debug, info, instrument};
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 
@@ -154,7 +154,7 @@ where
     ) {
         debug!(
             spu = %offline_spu.key(),
-            "starting election when spu went offline",
+            "performing election check spu offline",
         );
         let offline_leader_spu_id = offline_spu.spec.id;
 
@@ -171,27 +171,43 @@ where
                 if let Some(candidate_leader) =
                     partition_kv.status.candidate_leader(&spu_status, &policy)
                 {
-                    info!(
-                        partition = %partition_kv.key(),
-                        candidate_leader,
-                        "election suitable online leader has found",
-                    );
-
                     let mut part_kv_change = partition_kv.clone();
                     part_kv_change.spec.leader = candidate_leader;
+
+                    // we only change leader, status happens next cycle
                     actions.push(PartitionWSAction::UpdateSpec((
                         part_kv_change.key_owned(),
                         part_kv_change.spec,
                     )));
+
+                    info!(
+                        partition = %partition_kv.key(),
+                        candidate_leader,
+                        "changing to new leader",
+                    );
+
                 // change the
                 } else {
-                    warn!( partition = %partition_kv.key(),"no suitable leader has found");
-                    let mut part_kv_change = partition_kv.clone();
-                    part_kv_change.status.resolution = PartitionResolution::LeaderOffline;
-                    actions.push(PartitionWSAction::UpdateStatus((
-                        part_kv_change.key_owned(),
-                        part_kv_change.status,
-                    )));
+                    // check partition is already offline
+                    if partition_kv.status.is_online() {
+                        let mut part_kv_change = partition_kv.clone();
+                        part_kv_change.status.resolution = PartitionResolution::LeaderOffline;
+                        actions.push(PartitionWSAction::UpdateStatus((
+                            part_kv_change.key_owned(),
+                            part_kv_change.status,
+                        )));
+                        info!(
+                            partition = %partition_kv.key(),
+                            old_leader = offline_leader_spu_id,
+                            "setting partition to offline",
+                        );
+                    } else {
+                        debug!(
+                            partition = %partition_kv.key(),
+                            old_leader = offline_leader_spu_id,
+                            "no new online leader was found",
+                        );
+                    }
                 }
             }
         }
@@ -204,7 +220,7 @@ where
         online_spu: SpuMetadata<C>,
         actions: &mut Vec<PartitionWSAction<C>>,
     ) {
-        info!(spu = %online_spu.key(),"start election spu went online" );
+        debug!(spu = %online_spu.key(),"performing election check spu online");
         let online_leader_spu_id = online_spu.spec.id;
 
         let policy = SimplePolicy::new();
@@ -213,26 +229,41 @@ where
         for partition_kv_epoch in self.partition_store.read().await.values() {
             let partition_kv = partition_kv_epoch.inner();
             if partition_kv.status.is_offline() {
-                // we only care about partition who is follower since, leader will set partition status when it start up
                 if partition_kv.spec.leader != online_leader_spu_id {
+                    // switch leader if online leader is different
                     for replica_status in partition_kv.status.replica_iter() {
                         if replica_status.spu == online_leader_spu_id
                             && policy
                                 .potential_leader_score(replica_status, &partition_kv.status.leader)
                                 .is_suitable()
                         {
-                            info!(
-                                partition = %partition_kv.key(),
-                                online_spu = online_leader_spu_id,
-                                "suitable online leader has found",
-                            );
                             let mut part_kv_change = partition_kv.clone();
                             part_kv_change.spec.leader = online_leader_spu_id;
                             actions.push(PartitionWSAction::UpdateSpec((
                                 part_kv_change.key_owned(),
                                 part_kv_change.spec,
                             )));
+                            info!(
+                                partition = %partition_kv.key(),
+                                online_spu = online_leader_spu_id,
+                                "changing to new leader",
+                            );
                         }
+                    }
+                } else {
+                    // if leader is different but was set to offline (which could happen if just switched), change to online
+                    if partition_kv.spec.leader == online_leader_spu_id {
+                        let mut part_kv_change = partition_kv.clone();
+                        part_kv_change.status.resolution = PartitionResolution::Online;
+                        actions.push(PartitionWSAction::UpdateStatus((
+                            part_kv_change.key_owned(),
+                            part_kv_change.status,
+                        )));
+                        info!(
+                            partition = %partition_kv.key(),
+                            online_leader_spu_id,
+                            "setting partition to online",
+                        );
                     }
                 }
             }
