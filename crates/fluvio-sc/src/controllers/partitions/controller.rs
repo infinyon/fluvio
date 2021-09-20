@@ -2,8 +2,11 @@
 //! # Auth Controller
 //!
 
+use std::time::Duration;
+
 use fluvio_controlplane_metadata::store::ChangeListener;
-use tracing::{debug, trace, instrument};
+use fluvio_future::timer::sleep;
+use tracing::{debug, trace, info, error, instrument};
 
 use fluvio_future::task::spawn;
 use fluvio_controlplane_metadata::core::MetadataItem;
@@ -47,13 +50,27 @@ where
 {
     #[instrument(skip(self), name = "PartitionController")]
     async fn dispatch_loop(mut self) {
+        info!("started");
+        loop {
+            if let Err(err) = self.inner_loop().await {
+                error!("error with inner loop: {:#?}", err);
+                debug!("sleeping 10 seconds try again");
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
+    }
+
+    async fn inner_loop(&mut self) -> Result<(), ()> {
         use tokio::select;
 
+        debug!("initializing listeners");
         let mut spu_status_listener = self.spus.change_listener();
         let _ = spu_status_listener.wait_for_initial_sync().await;
 
         let mut partition_listener = self.partitions.change_listener();
         let _ = partition_listener.wait_for_initial_sync().await;
+
+        debug!("finish initializing listeners");
 
         loop {
             self.sync_spu_changes(&mut spu_status_listener).await;

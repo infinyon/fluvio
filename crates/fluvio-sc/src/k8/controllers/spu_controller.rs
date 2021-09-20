@@ -81,7 +81,7 @@ impl K8SpuController {
         let mut spu_listener = self.spus.change_listener();
         let _ = spu_listener.wait_for_initial_sync().await;
 
-        debug!("initializing listeners");
+        debug!("finish initializing listeners");
 
         loop {
             self.sync_spu().await?;
