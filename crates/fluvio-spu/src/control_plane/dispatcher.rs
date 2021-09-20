@@ -177,7 +177,11 @@ impl ScDispatcher<FileReplica> {
     ) -> Result<(), SocketError> {
         let requests = self.status_update.remove_all().await;
 
-        debug!(requests = ?requests, "sending status back to sc");
+        if requests.is_empty() {
+            trace!("sending empty status");
+        } else {
+            debug!(requests = ?requests, "sending status back to sc");
+        }
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
         sc_sink.send_request(&message).await.map_err(|err| {

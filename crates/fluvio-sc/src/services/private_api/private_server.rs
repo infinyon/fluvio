@@ -105,18 +105,10 @@ async fn dispatch_loop(
     mut api_stream: impl Stream<Item = Result<InternalScRequest, SocketError>> + Unpin,
     mut sink: FluvioSink,
 ) -> Result<(), SocketError> {
-    debug!("initializing listeners");
     let mut spu_spec_listener = context.spus().change_listener();
-    let _ = spu_spec_listener.wait_for_initial_sync().await;
-
     let mut partition_spec_listener = context.partitions().change_listener();
-    let _ = partition_spec_listener.wait_for_initial_sync().await;
-
-    debug!("finish initializing listeners");
 
     // send initial changes
-    send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
-    send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
     let mut health_check_timer = Duration::from_secs(HEALTH_DURATION);
 
@@ -124,6 +116,9 @@ async fn dispatch_loop(
         use tokio::select;
         use futures_util::stream::StreamExt;
         use fluvio_future::timer::sleep;
+
+        send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
+        send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
         trace!(spu_id, "waiting for SPU channel");
 
@@ -169,11 +164,11 @@ async fn dispatch_loop(
 
 
             _ = spu_spec_listener.listen() => {
-                send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
+                debug!("spec lister changed");
             },
 
             _ = partition_spec_listener.listen() => {
-                send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
+                debug!("partition lister changed");
 
             }
 
