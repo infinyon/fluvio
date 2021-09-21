@@ -1,6 +1,7 @@
 version: v1
 name: my-test-connector
 type: test-connector
+topic: foobar
 direction: source
 args:
   foo: bar

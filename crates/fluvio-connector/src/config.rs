@@ -20,7 +20,7 @@ pub struct ConnectorConfig {
     secrets: BTreeMap<String, String>,
 }
 
-pub type ConnectorConfigSet = Vec<ConnectorConfig>;
+pub type ConnectorConfigSet = ConnectorConfig;
 
 impl ConnectorConfig {
     fn default_args() -> BTreeMap<String, String> {
@@ -31,10 +31,11 @@ impl ConnectorConfig {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let mut connector_configs: ConnectorConfigSet = serde_yaml::from_str(&contents)?;
-        Ok(connector_configs)
+        let connector_config: ConnectorConfigSet = serde_yaml::from_str(&contents)?;
+        Ok(connector_config)
     }
 }
+
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
 
@@ -42,7 +43,8 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
             topic: config.topic,
-            args: config.parameters,
+            paramaters: config.parameters,
+            secrets: config.secrets,
         }
     }
 }

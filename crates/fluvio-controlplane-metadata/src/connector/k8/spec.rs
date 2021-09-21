@@ -41,7 +41,8 @@ pub struct K8ManagedConnectorSpec {
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack
     pub topic: String,
-    pub args: BTreeMap<String, String>,
+    pub parameters: BTreeMap<String, String>,
+    pub secrets: BTreeMap<String, String>,
 }
 mod convert {
 
@@ -55,7 +56,8 @@ mod convert {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                args: spec.args,
+                paramaters: spec.parameters,
+                secrets: spec.secrets,
             }
         }
     }
@@ -66,7 +68,8 @@ mod convert {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                args: spec.args,
+                parameters: spec.paramaters,
+                secrets: spec.secrets,
             }
         }
     }
