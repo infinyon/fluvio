@@ -20,18 +20,16 @@ pub struct ConnectorConfig {
     secrets: BTreeMap<String, String>,
 }
 
-pub type ConnectorConfigSet = ConnectorConfig;
-
 impl ConnectorConfig {
     fn default_args() -> BTreeMap<String, String> {
         BTreeMap::new()
     }
 
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfigSet, ConnectorError> {
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfig, ConnectorError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let connector_config: ConnectorConfigSet = serde_yaml::from_str(&contents)?;
+        let connector_config: ConnectorConfig = serde_yaml::from_str(&contents)?;
         Ok(connector_config)
     }
 }
@@ -46,4 +44,9 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             secrets: config.secrets,
         }
     }
+}
+
+#[test]
+fn config_test() {
+    let _ : ManagedConnectorSpec = ConnectorConfig::from_file("test-data/test-config.yaml").expect("Failed to load test config").into();
 }
