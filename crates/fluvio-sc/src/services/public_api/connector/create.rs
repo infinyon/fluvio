@@ -63,7 +63,7 @@ async fn process_managed_connector_request(
         .await
     {
         let error = Some(err.to_string());
-        Status::new(name, ErrorCode::None, error) // TODO: create error type
+        Status::new(name, ErrorCode::ManagedConnectorError, error) // TODO: create error type
     } else {
         Status::new_ok(name.clone())
     }

@@ -1,9 +1,9 @@
 mod error;
-mod connector;
+mod cli;
 mod config;
 
 use error::ConnectorError;
-use connector::ManagedConnectorCmd as ConnectorOpts;
+use cli::ManagedConnectorCmd as ConnectorOpts;
 
 use structopt::StructOpt;
 use fluvio_extension_common::PrintTerminal;

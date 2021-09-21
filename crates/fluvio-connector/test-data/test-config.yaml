@@ -3,7 +3,7 @@ name: my-test-connector
 type: test-connector
 topic: foobar
 direction: source
-args:
+paramaters:
   foo: bar
 secrets:
   foo: bar

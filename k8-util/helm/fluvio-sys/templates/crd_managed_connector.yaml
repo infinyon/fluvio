@@ -45,4 +45,3 @@ spec:
                 secrets:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
-              x-kubernetes-preserve-unknown-fields: true
