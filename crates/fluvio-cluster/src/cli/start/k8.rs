@@ -86,7 +86,6 @@ pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), K8InstallError
             if checks.is_none() {
                 println!("Skipped pre-start checks");
             }
-            println!("Successfully installed Fluvio!");
         }
         // Aborted startup because pre-checks failed
         Err(K8InstallError::FailedPrecheck(check_statuses)) => {
@@ -100,7 +99,6 @@ pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), K8InstallError
 }
 
 pub async fn setup_k8(installer: &ClusterInstaller) -> Result<(), ClusterCliError> {
-    println!("Performing pre-startup checks...");
     let check_results = installer.setup().await;
     render_check_results(&check_results);
     render_results_next_steps(&check_results);
