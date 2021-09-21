@@ -1,14 +1,8 @@
-use std::time::Duration;
 use std::process::Command;
 use std::fs::remove_dir_all;
 
 use tracing::{info, warn, debug, instrument};
-use k8_client::ClientError as K8ClientError;
-use k8_client::{load_and_share, SharedK8Client};
-use k8_client::http::status::StatusCode;
-use k8_types::Spec;
-use k8_types::core::pod::PodSpec;
-use fluvio_future::timer::sleep;
+use k8_client::{load_and_share};
 use fluvio_command::CommandExt;
 
 use crate::helm::HelmClient;
@@ -143,9 +137,6 @@ impl ClusterUninstaller {
             .uninstall(uninstall)
             .map_err(UninstallError::HelmError)?;
 
-        let client = load_and_share().map_err(UninstallError::K8ClientError)?;
-
-        self.wait_for_delete::<PodSpec>(client, "fluvio-sc").await?;
         self.cleanup().await;
 
         Ok(())
@@ -233,7 +224,7 @@ impl ClusterUninstaller {
     async fn cleanup(&self) {
         let ns = &self.config.namespace;
 
-        // delete objects
+        // delete objects if not removed already
         let _ = self.remove_custom_objects("spugroups", ns, None, false);
         let _ = self.remove_custom_objects("spus", ns, None, false);
         let _ = self.remove_custom_objects("topics", ns, None, false);
@@ -332,50 +323,6 @@ impl ClusterUninstaller {
             .arg("--ignore-not-found=true")
             .output()?;
 
-        Ok(())
-    }
-
-    async fn wait_for_delete<S: Spec>(
-        &self,
-        client: SharedK8Client,
-        prefix: &str,
-    ) -> Result<(), UninstallError> {
-        use k8_client::meta_client::MetadataClient;
-        let mut success = false;
-        for i in 0..self.config.retry_count {
-            debug!("checking to see if {} is deleted, count: {}", S::label(), i);
-            let pod_exists = match client
-                .retrieve_items::<S, _>(self.config.namespace.clone())
-                .await
-            {
-                Ok(pods) => {
-                    pods.items
-                        .iter()
-                        .filter(|i| i.metadata.name.starts_with(prefix))
-                        .count()
-                        > 0
-                }
-                Err(err) => match err {
-                    K8ClientError::Client(status) if status == StatusCode::NOT_FOUND => true,
-                    _ => {
-                        return Err(UninstallError::Other(err.to_string()));
-                    }
-                },
-            };
-            if pod_exists {
-                debug!("sc {} still exists, sleeping 10 second", S::label());
-                sleep(Duration::from_millis(10000)).await;
-            } else {
-                debug!("no sc {} found, can proceed to setup ", S::label());
-                success = true;
-                break;
-            }
-        }
-        if !success {
-            return Err(UninstallError::Other(
-                "Waiting for too long, failing".to_string(),
-            ));
-        }
         Ok(())
     }
 }
