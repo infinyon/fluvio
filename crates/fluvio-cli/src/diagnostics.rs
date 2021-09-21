@@ -37,28 +37,26 @@ impl DiagnosticsOpt {
                     return Ok(());
                 }
 
-                self.copy_kubernetes_logs(temp_path)?;
-                self.copy_kubernetes_metadata(temp_path, "pod", true)?;
-                self.copy_kubernetes_metadata(temp_path, "service", true)?;
-                self.copy_kubernetes_metadata(temp_path, "statefulset", true)?;
+                let _ = self.copy_kubernetes_logs(temp_path);
+                let _ = self.copy_kubernetes_metadata(temp_path, "pod", true);
+                let _ = self.copy_kubernetes_metadata(temp_path, "service", true);
+                let _ = self.copy_kubernetes_metadata(temp_path, "statefulset", true);
 
                 // Fluvio CRDs
-                self.copy_kubernetes_metadata(temp_path, "spu", false)?;
-                self.copy_kubernetes_metadata(temp_path, "topic", false)?;
-                self.copy_kubernetes_metadata(temp_path, "partition", false)?;
+                let _ = self.copy_kubernetes_metadata(temp_path, "spu", false);
+                let _ = self.copy_kubernetes_metadata(temp_path, "topic", false);
+                let _ = self.copy_kubernetes_metadata(temp_path, "partition", false);
             }
         }
-        self.copy_fluvio_specs(temp_path).await?;
+        let _ = self.copy_fluvio_specs(temp_path).await;
 
         let time = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
         let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.zip", time));
-        println!("Diagnostic path: {}", diagnostic_path.display());
         let mut diagnostic_file = std::fs::File::create(&diagnostic_path)?;
         self.zip_files(temp_path, &mut diagnostic_file)
             .map_err(|e| CliError::Other(format!("failed to zip diagnostics: {}", e)))?;
 
-        println!("Copied logs to {}", temp_path.display());
-        std::thread::sleep(std::time::Duration::from_secs(60));
+        println!("Wrote diagnostics to {}", diagnostic_path.display());
         Ok(())
     }
 
@@ -126,17 +124,16 @@ impl DiagnosticsOpt {
             .collect::<Vec<_>>();
 
         for &pod in &pods {
-            let log_result = cmd!(&kubectl, "logs", pod).read();
+            let log_result = cmd!(&kubectl, "logs", pod).stderr_capture().read();
             let log = match log_result {
                 Ok(log) => log,
-                Err(e) => {
-                    println!("Failed to collect log for {}, skipping: {}", pod, e);
+                Err(_) => {
+                    println!("Failed to collect log for {}, skipping", pod.trim());
                     continue;
                 }
             };
 
             let dest_path = dest_dir.join(format!("pod-{}.log", pod));
-            println!("Writing log to {}", dest_path.display());
             std::fs::write(dest_path, log)?;
         }
 
@@ -157,23 +154,19 @@ impl DiagnosticsOpt {
         let objects = objects
             .split(" ")
             .filter(|obj| !filter_fluvio || obj.starts_with("fluvio"))
+            .map(|name| name.trim())
             .collect::<Vec<_>>();
 
         for &obj in &objects {
-            let result = cmd!(&kubectl, "get", ty, obj, "-o", "yaml").read();
+            let result = cmd!(&kubectl, "get", ty, obj, "-o", "yaml")
+                .stderr_capture()
+                .read();
             let meta = match result {
                 Ok(meta) => meta,
-                Err(e) => {
-                    println!(
-                        "Failed to collect metadata for {} {}, skipping: {}",
-                        ty, obj, e
-                    );
-                    continue;
-                }
+                Err(_) => continue,
             };
 
             let dest = dest.join(format!("{}-{}.yaml", ty, obj));
-            println!("Writing metadata to {}", dest.display());
             std::fs::write(dest, meta)?;
         }
         Ok(())
