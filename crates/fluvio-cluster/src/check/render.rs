@@ -2,6 +2,7 @@
 
 use futures_util::StreamExt;
 use async_channel::Receiver;
+use indicatif::ProgressBar;
 use crate::{
     CheckFailed, CheckResult, CheckResults, CheckStatus, CheckSuggestion,
     render::ProgressRenderedText,
@@ -19,6 +20,18 @@ pub async fn render_check_progress(progress: &mut Receiver<CheckResult>) -> Chec
     check_results
 }
 
+pub async fn render_check_progress_with_indicator(
+    progress: &mut Receiver<CheckResult>,
+    pb: &ProgressBar,
+) -> CheckResults {
+    let mut check_results = vec![];
+    while let Some(check_result) = progress.next().await {
+        render_check_result_with_indicator(&check_result, pb);
+        check_results.push(check_result);
+    }
+    check_results
+}
+
 /// Renders a slice of `CheckResults` all at once
 pub fn render_check_results<R: AsRef<[CheckResult]>>(check_results: R) {
     let check_results = check_results.as_ref();
@@ -29,7 +42,12 @@ pub fn render_check_results<R: AsRef<[CheckResult]>>(check_results: R) {
 
 /// Render a single check result
 pub fn render_check_result(check_result: &CheckResult) {
-    println!("{}", check_result.text());
+    println!("{}", check_result.msg());
+}
+
+/// Render a single check result
+pub fn render_check_result_with_indicator(check_result: &CheckResult, pb: &ProgressBar) {
+    pb.println(check_result.msg());
 }
 
 /// Render a slice of `CheckStatus`es all at once
@@ -42,7 +60,7 @@ pub fn render_check_statuses<R: AsRef<[CheckStatus]>>(check_statuses: R) {
 
 /// Render a single check status
 pub fn render_check_status(check_status: &CheckStatus) {
-    println!("{}", check_status.text());
+    println!("{}", check_status.msg());
 }
 
 /// Render a conclusion message based on the number of failures and warnings
@@ -150,7 +168,7 @@ pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
 }
 
 impl ProgressRenderedText for CheckStatus {
-    fn text(&self) -> String {
+    fn msg(&self) -> String {
         use colored::*;
         use crate::CheckStatus::*;
 
@@ -204,11 +222,11 @@ impl ProgressRenderedText for CheckStatus {
 }
 
 impl ProgressRenderedText for CheckResult {
-    fn text(&self) -> String {
+    fn msg(&self) -> String {
         use colored::*;
 
         match self {
-            Ok(status) => status.text(),
+            Ok(status) => status.msg(),
             Err(e) => {
                 // Print one layer of source error
                 let cause = match std::error::Error::source(e) {
