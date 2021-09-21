@@ -13,7 +13,7 @@ use fluvio_socket::SocketError;
 use fluvio_index::{PackageId, Target};
 use crate::common::target::TargetError;
 
-pub type Result<T> = std::result::Result<T, CliError>;
+pub type Result<T, E = CliError> = core::result::Result<T, E>;
 
 #[derive(thiserror::Error, Debug)]
 pub enum CliError {
