@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.8 - UNRELEASED
+* Add progress indicator to `fluvio cluster start` ([1627](https://github.com/infinyon/fluvio/pull/1627))
 
 ## Platform Version 0.9.7 - 2021-09-16
 * Improve progress message in `fluvio cluster start --local` ([1586](https://github.com/infinyon/fluvio/pull/1586))
