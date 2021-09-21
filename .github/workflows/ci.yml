@@ -750,6 +750,7 @@ jobs:
           cat CHANGELOG.md | sed -e '/./{H;$!d;}' -e "x;/##\ Platform\ Version\ $VERSION/"'!d;' >> /tmp/release_notes
 
           # Replace UNRELEASED w/ date YYYY-MM-dd
+          export TZ=":America/Los_Angeles"
           DATE=$(date +%F)
           cat /tmp/release_notes | sed -i "s/UNRELEASED/$DATE/" /tmp/release_notes
 
