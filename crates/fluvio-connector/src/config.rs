@@ -38,7 +38,6 @@ impl ConnectorConfig {
 
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
-
         ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
