@@ -43,6 +43,7 @@ nix = "0.22.0"
 adaptive_backoff = "0.2.1"
 thiserror = "1"
 once_cell = "1.5"
+sysinfo = "0.20.3"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.3", features = ["events"], path = "../fluvio-types" }

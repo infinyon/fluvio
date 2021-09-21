@@ -15,12 +15,27 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 pub fn main_loop(opt: SpuOpt) {
     use std::time::Duration;
 
+    use sysinfo::{System, SystemExt};
+    use tracing::info;
+
     use fluvio_future::task::run_block_on;
     use fluvio_future::timer::sleep;
     // parse configuration (program exits on error)
     let (spu_config, tls_acceptor_option) = opt.process_spu_cli_or_exit();
 
     println!("starting spu server (id:{})", spu_config.id);
+
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    info!(version = &*crate::VERSION, "Platform");
+    info!(commit = env!("GIT_HASH"), "Git");
+    info!(name = ?sys.name(),"System");
+    info!(kernel = ?sys.kernel_version(),"System");
+    info!(os_version = ?sys.long_os_version(),"System");
+    info!(core_count = ?sys.physical_core_count(),"System");
+    info!(total_memory = sys.total_memory(), "System");
+    info!(available_memory = sys.available_memory(), "System");
+    info!(uptime = sys.uptime(), "Uptime in secs");
 
     run_block_on(async move {
         let (_ctx, internal_server, public_server) =
