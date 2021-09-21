@@ -10,7 +10,7 @@ spec:
     plural: managedconnectors
     singular: managedconnector
   versions:
-    - name: v2
+    - name: v1
       served: true
       storage:  true
       subresources:
@@ -39,12 +39,10 @@ spec:
                   type: string
                   minimum: 2
                   maximum: 100
-                paramaters:
-                  type: array
-                  items:
-                    type: object
+                parameters:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 secrets:
-                  type: array
-                  items:
-                    type: object
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
               x-kubernetes-preserve-unknown-fields: true

@@ -43,7 +43,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
             topic: config.topic,
-            paramaters: config.parameters,
+            parameters: config.parameters,
             secrets: config.secrets,
         }
     }

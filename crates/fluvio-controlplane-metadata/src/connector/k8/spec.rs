@@ -56,7 +56,7 @@ mod convert {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                paramaters: spec.parameters,
+                parameters: spec.parameters,
                 secrets: spec.secrets,
             }
         }
@@ -68,7 +68,7 @@ mod convert {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                parameters: spec.paramaters,
+                parameters: spec.parameters,
                 secrets: spec.secrets,
             }
         }
