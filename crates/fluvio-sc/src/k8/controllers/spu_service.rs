@@ -70,7 +70,7 @@ impl SpuServiceController {
 
         // at this point k8 config should be loaded
         if let Some(config) = self.configs.store().value("fluvio").await {
-            info!("k8 config: {:#?}", config);
+            info!("k8 config: {:#?}", config.spec);
         } else {
             // this should never happen
             warn!("K8 config not loaded initially");

@@ -1256,12 +1256,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "212d0f5754cb6769937f4501cc0e67f4f4483c8d2c3e1e922ee9edbe4ab4c7c0"
 
 [[package]]
-name = "doc-comment"
-version = "0.3.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
-
-[[package]]
 name = "dtoa"
 version = "0.4.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1482,7 +1476,7 @@ dependencies = [
  "sha2",
  "static_assertions",
  "structopt",
- "sysinfo 0.20.3",
+ "sysinfo",
  "tempdir",
  "thiserror",
  "tracing",
@@ -1780,7 +1774,7 @@ dependencies = [
  "serde",
  "serde_json",
  "structopt",
- "sysinfo 0.19.2",
+ "sysinfo",
  "tokio",
  "tracing",
  "tracing-futures",
@@ -1896,6 +1890,7 @@ dependencies = [
  "serde",
  "serde_yaml",
  "structopt",
+ "sysinfo",
  "thiserror",
  "tokio",
  "toml",
@@ -4321,22 +4316,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
-]
-
-[[package]]
-name = "sysinfo"
-version = "0.19.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e7de153d0438a648bb71e06e300e54fc641685e96af96d49b843f43172d341c"
-dependencies = [
- "cfg-if 1.0.0",
- "core-foundation-sys",
- "doc-comment",
- "libc",
- "ntapi",
- "once_cell",
- "rayon",
- "winapi 0.3.9",
 ]
 
 [[package]]
