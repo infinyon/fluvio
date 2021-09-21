@@ -109,6 +109,26 @@ jobs:
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
+
+      # Release conventions expect the top-most release in CHANGELOG.md to be the version we're releasing
+      # The date is expected to be UNRELEASED, which we will replace with the current date
+      - name: Build release notes from CHANGELOG.md
+        if: ${{ steps.release_check.outcome == 'failure' }}
+        run: |
+          touch /tmp/release_notes
+          echo "# Release Notes" >> /tmp/release_notes
+          VERSION=$(cat VERSION)
+          cat CHANGELOG.md | sed -e '/./{H;$!d;}' -e "x;/##\ Platform\ Version\ $VERSION/"'!d;' >> /tmp/release_notes
+
+          # Replace UNRELEASED w/ date YYYY-MM-dd
+          export TZ=":America/Los_Angeles"
+          DATE=$(date +%F)
+          cat /tmp/release_notes | sed -i "s/UNRELEASED/$DATE/" /tmp/release_notes
+
+          # Print the release notes to stdout
+          cat /tmp/release_notes
+
+      # The newly created releases uses the generated changelog from the previous step
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
@@ -119,7 +139,7 @@ jobs:
           ARTIFACTS=(./*)
           gh release create -R infinyon/fluvio \
             --title="v${{ env.VERSION }}" \
-            -F ../CHANGELOG.md \
+            -F /tmp/release_notes \
             "v${{ env.VERSION }}" \
             "${ARTIFACTS[@]}"
 

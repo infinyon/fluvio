@@ -737,26 +737,6 @@ jobs:
           gh release upload -R infinyon/fluvio --clobber dev k8-util/helm/pkg_app/*.*
           gh release upload -R infinyon/fluvio --clobber dev k8-util/helm/pkg_sys/*.*
 
-  build_release_notes:
-    name: Generate abbreviated GH Release notes for current release from CHANGELOG.md
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build release notes
-        run: |
-          touch /tmp/release_notes
-          echo "# Release Notes" >> /tmp/release_notes
-          VERSION=$(cat VERSION)
-          cat CHANGELOG.md | sed -e '/./{H;$!d;}' -e "x;/##\ Platform\ Version\ $VERSION/"'!d;' >> /tmp/release_notes
-
-          # Replace UNRELEASED w/ date YYYY-MM-dd
-          export TZ=":America/Los_Angeles"
-          DATE=$(date +%F)
-          cat /tmp/release_notes | sed -i "s/UNRELEASED/$DATE/" /tmp/release_notes
-
-          # Print the release notes to stdout
-          cat /tmp/release_notes
-
   publish_github_binaries:
     name: Publish to GitHub Releases dev (${{ matrix.artifact }}-${{ matrix.rust-target }})
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
