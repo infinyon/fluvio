@@ -741,7 +741,7 @@ jobs:
     name: Generate abbreviated GH Release notes for current release from CHANGELOG.md
     runs-on: ubuntu-latest
     steps:
-      - use: actions/checkout@v2
+      - uses: actions/checkout@v2
       - name: Build release notes
         run: |
           touch /tmp/release_notes
