@@ -1535,6 +1535,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-connector-manager"
+version = "0.0.0"
+dependencies = [
+ "fluvio",
+ "fluvio-controlplane-metadata",
+ "fluvio-extension-common",
+ "fluvio-future",
+ "prettytable-rs",
+ "serde",
+ "serde_yaml",
+ "structopt",
+ "thiserror",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-controlplane"
 version = "0.0.0"
 dependencies = [
@@ -1777,7 +1793,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.9.5"
+version = "0.10.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2509,9 +2525,9 @@ checksum = "c2733206bcc0550a15b450c64d8aa859f486d7281c4c0c36ef904b361960d658"
 
 [[package]]
 name = "http"
-version = "0.2.4"
+version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "527e8c9ac747e28542699a951517aa9a6945af506cd1f2e1b53a576c17b6cc11"
+checksum = "1323096b05d41827dadeaee54c9981958c0f94e670bc94ed80037d1a7b8b186b"
 dependencies = [
  "bytes",
  "fnv",
@@ -4496,9 +4512,9 @@ checksum = "cda74da7e1a664f795bb1f8a87ec406fb89a02522cf6e50620d016add6dbbf5c"
 
 [[package]]
 name = "tokio"
-version = "1.11.0"
+version = "1.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4efe6fc2395938c8155973d7be49fe8d03a843726e285e100a8a383cc0154ce"
+checksum = "c2c2416fdedca8443ae44b4527de1ea633af61d8f7169ffa6e72c5b53d24efcc"
 dependencies = [
  "autocfg",
  "bytes",

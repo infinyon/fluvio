@@ -19,6 +19,7 @@ pub async fn handle_create_request<AC: AuthContext>(
 
     let dry_run = req.dry_run;
     let name = req.name;
+    tracing::debug!("Handling create request for {:#?}", req.spec);
 
     let status = match req.spec {
         AllCreatableSpec::Topic(topic) => {
@@ -35,6 +36,15 @@ pub async fn handle_create_request<AC: AuthContext>(
                 auth_context,
             )
             .await
+        }
+        AllCreatableSpec::ManagedConnector(spec) => {
+            super::connector::handle_create_managed_connector_request(
+                name,
+                spec,
+                dry_run,
+                auth_context,
+            )
+            .await?
         }
     };
 

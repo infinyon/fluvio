@@ -42,8 +42,8 @@ derive_builder = "0.10"
 # Fluvio dependencies
 fluvio-future = { version = "0.3.5", features = ["task", "openssl_tls", "task_unstable"] }
 fluvio-types = { version = "0.2.1", features = ["events"], path = "../fluvio-types" }
-fluvio-sc-schema = { version = "0.9.4", path = "../fluvio-sc-schema", default-features = false }
-fluvio-socket = { path = "../fluvio-socket", version = "0.10.1" }
+fluvio-sc-schema = { version = "0.10.0", path = "../fluvio-sc-schema", default-features = false }
+fluvio-socket = { path = "../fluvio-socket", version = "0.10.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
 dataplane = { version = "0.6.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 

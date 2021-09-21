@@ -13,6 +13,7 @@ use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
 use crate::services::auth::AuthServiceContext;
 use crate::stores::{StoreContext, K8ChangeListener};
@@ -52,6 +53,12 @@ pub fn handle_watch_request<AC>(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
+            header,
+        ),
+        WatchRequest::ManagedConnector(_) => WatchController::<ManagedConnectorSpec>::update(
+            sink,
+            end_event,
+            auth_ctx.global_ctx.managed_connectors().clone(),
             header,
         ),
     }

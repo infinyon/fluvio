@@ -78,7 +78,7 @@ k8-types = { version = "0.2.0", features = ["core"] }
 # Optional Fluvio dependencies
 fluvio-types = { version = "0.2.0", path = "../fluvio-types", optional = true }
 fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
-fluvio-sc-schema = { version = "0.9.4", path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
+fluvio-sc-schema = { version = "0.10.0", path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.0", features = ["fixture"] }

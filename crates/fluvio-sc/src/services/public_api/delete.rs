@@ -30,6 +30,9 @@ pub async fn handle_delete_request<AC: AuthContext>(
         DeleteRequest::SpuGroup(name) => {
             super::spg::handle_delete_spu_group(name, auth_ctx).await?
         }
+        DeleteRequest::ManagedConnector(name) => {
+            super::connector::handle_delete_managed_connector(name, auth_ctx).await?
+        }
     };
 
     trace!("flv delete topics resp {:#?}", status);

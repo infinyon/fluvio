@@ -226,19 +226,20 @@ install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
 # Use check first to leverage sccache, the clippy piggybacks
-check-clippy: install-clippy install_rustup_target 
+check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
 build_smartstreams:
 	make -C crates/fluvio-smartstream/examples build
 
-run-all-unit-test: install_rustup_target 
+run-all-unit-test: install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C crates/fluvio-protocol
 
-run-integration-test:build_smartstreams install_rustup_target 
+run-integration-test:build_smartstreams install_rustup_target
+	cargo test  $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-connector-manager
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-spu -- --ignored --test-threads=1
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-socket -- --ignored --test-threads=1
 
