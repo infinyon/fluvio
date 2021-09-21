@@ -703,7 +703,8 @@ impl ClusterInstaller {
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
-        self.pb.set_message("Trying to connect to SC");
+        self.pb
+            .set_message(InstallProgressMessage::ConnectingSC.msg());
 
         let fluvio = match try_connect_to_sc(&cluster_config, &self.config.platform_version).await {
             Some(fluvio) => fluvio,
@@ -835,9 +836,11 @@ impl ClusterInstaller {
         debug!("Using helm install settings: {:#?}", &install_settings);
 
         if self.config.upgrade {
-            self.pb.set_message("Upgrading fluvio chart");
+            self.pb
+                .set_message(InstallProgressMessage::UpgradingChart.msg());
         } else {
-            self.pb.set_message("installing fluvio chart");
+            self.pb
+                .set_message(InstallProgressMessage::InstallingChart.msg());
         }
 
         let mut config = ChartConfig::app_builder()
@@ -1013,8 +1016,8 @@ impl ClusterInstaller {
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
-                self.pb
-                    .println(InstallProgressMessage::SpuGroupLaunched(ready_spu as u16).msg());
+                self.pb.println(InstallProgressMessage::SpusConfirmed.msg());
+
                 return Ok(true);
             } else {
                 debug!(
@@ -1023,10 +1026,9 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                self.pb.println(format!(
-                    "{} of {} spu are ready, sleeping 10 seconds...",
-                    ready_spu, self.config.spu_replicas
-                ));
+                self.pb.set_message(
+                    InstallProgressMessage::WaitingForSPU(ready_spu, expected_spu).msg(),
+                );
                 sleep(Duration::from_secs(10)).await;
             }
         }
@@ -1142,12 +1144,7 @@ impl ClusterInstaller {
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<(), K8InstallError> {
         let name = self.config.group_name.clone();
         let admin = fluvio.admin().await;
-        self.pb
-            .println(InstallProgressMessage::CreatingManagedSpuGroup.msg());
-
-        self.pb.set_message("checking if spu group exists");
         let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
-
         if lists.is_empty() {
             self.pb.set_message(format!(
                 "Trying to create managed {} spus",
@@ -1162,11 +1159,12 @@ impl ClusterInstaller {
 
             admin.create(name, false, spu_spec).await?;
 
-            self.pb
-                .set_message(format!("Creating SPUs"));
+            self.pb.println(
+                InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
+            );
         } else {
             self.pb
-                .println(format!("SPU group: {} exists, skipping", lists[0].name));
+                .println(InstallProgressMessage::SpuGroupExists.msg());
         }
 
         // Wait for the SPU cluster to spin up

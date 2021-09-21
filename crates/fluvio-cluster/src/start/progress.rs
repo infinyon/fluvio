@@ -7,13 +7,17 @@ pub(crate) enum InstallProgressMessage {
     PreFlightCheck,
     LaunchingSC,
     ScLaunched,
+    ConnectingSC,
     LaunchingSPUGroup(u16),
     StartSPU(u16, u16),
+    WaitingForSPU(usize, usize),
     SpuGroupLaunched(u16),
+    SpuGroupExists,
     AlreadyInstalled,
     InstallingFluvio,
+    InstallingChart,
+    UpgradingChart,
     ChartInstalled,
-    CreatingManagedSpuGroup,
     FoundSC(String),
     ConfirmingSpus,
     SpusConfirmed,
@@ -41,14 +45,27 @@ impl ProgressRenderedText for InstallProgressMessage {
             InstallProgressMessage::LaunchingSC => {
                 format!("🖥️  {}", "Starting SC server".bold())
             }
-            InstallProgressMessage::CreatingManagedSpuGroup => {
-                format!("🤖 {}", "Creating managed SPU group".bold())
+            InstallProgressMessage::SpuGroupExists => {
+                format!("{}", "🤖 SPU group exists, skipping".bold())
             }
             InstallProgressMessage::FoundSC(address) => {
                 format!("🔎 {} {}", "Found SC service addr:".bold(), address.bold())
             }
             InstallProgressMessage::ScLaunched => {
                 format!("🖥️  {}", "SC Launched".bold())
+            }
+            InstallProgressMessage::InstallingChart => {
+                format!("{:>6} {}", "📊", "Installing Fluvio chart")
+            }
+            InstallProgressMessage::UpgradingChart => {
+                format!("{:>6} {}", "📊", "Upgrading Fluvio chart")
+            }
+            InstallProgressMessage::ConnectingSC => {
+                format!("🔗 {}", "Trying to connect to SC".bold())
+            }
+
+            InstallProgressMessage::WaitingForSPU(spu_num, total) => {
+                format!("{:>6} ({}/{})", "🤖 Waiting for SPU:", spu_num, total)
             }
             InstallProgressMessage::LaunchingSPUGroup(spu_num) => {
                 format!("{} {}", "🤖 Launching SPU Group with:".bold(), spu_num)
