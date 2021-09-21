@@ -48,5 +48,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
 
 #[test]
 fn config_test() {
-    let _ : ManagedConnectorSpec = ConnectorConfig::from_file("test-data/test-config.yaml").expect("Failed to load test config").into();
+    let _: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/test-config.yaml")
+        .expect("Failed to load test config")
+        .into();
 }
