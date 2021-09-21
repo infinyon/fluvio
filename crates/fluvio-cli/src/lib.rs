@@ -19,7 +19,6 @@ mod topic;
 mod consume;
 mod produce;
 mod partition;
-mod diagnostics;
 
 use topic::TopicCmd;
 use consume::ConsumeOpt;
@@ -42,7 +41,6 @@ use common::Terminal;
 use common::PrintTerminal;
 use fluvio::Fluvio;
 use crate::install::fluvio_extensions_dir;
-use crate::diagnostics::DiagnosticsOpt;
 
 const VERSION: &str = include_str!("../../../VERSION");
 
@@ -123,10 +121,6 @@ enum RootCmd {
     #[structopt(name = "version")]
     Version(VersionOpt),
 
-    /// Collect anonymous diagnostic information to help with debugging
-    #[structopt(name = "diagnostics")]
-    Diagnostics(DiagnosticsOpt),
-
     /// Generate command-line completions for Fluvio
     #[structopt(
         name = "completions",
@@ -169,9 +163,6 @@ impl RootCmd {
             }
             Self::Version(version) => {
                 version.process(root.target).await?;
-            }
-            Self::Diagnostics(opt) => {
-                opt.process().await?;
             }
             Self::Completions(completion) => {
                 completion.process()?;

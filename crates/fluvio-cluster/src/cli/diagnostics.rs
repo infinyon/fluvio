@@ -3,8 +3,9 @@ use structopt::StructOpt;
 use fluvio::config::ConfigFile;
 use duct::cmd;
 use which::which;
+use crate::cli::ClusterCliError;
 
-use crate::{Result, CliError};
+type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 
 #[cfg(target_os = "macos")]
 const LOGS_PATH: &str = "/usr/local/var/log/fluvio/";
@@ -54,7 +55,7 @@ impl DiagnosticsOpt {
         let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.zip", time));
         let mut diagnostic_file = std::fs::File::create(&diagnostic_path)?;
         self.zip_files(temp_path, &mut diagnostic_file)
-            .map_err(|e| CliError::Other(format!("failed to zip diagnostics: {}", e)))?;
+            .map_err(|e| ClusterCliError::Other(format!("failed to zip diagnostics: {}", e)))?;
 
         println!("Wrote diagnostics to {}", diagnostic_path.display());
         Ok(())

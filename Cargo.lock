@@ -1474,13 +1474,11 @@ version = "0.0.0"
 dependencies = [
  "async-h1",
  "atty",
- "chrono",
  "color-eyre",
  "colored",
  "content_inspector",
  "ctrlc",
  "dirs 3.0.2",
- "duct",
  "eyre",
  "fluvio",
  "fluvio-cluster",
@@ -1514,7 +1512,6 @@ dependencies = [
  "tracing-futures",
  "url",
  "which 4.2.2",
- "zip",
 ]
 
 [[package]]
@@ -1523,10 +1520,12 @@ version = "0.0.0"
 dependencies = [
  "async-channel",
  "async-trait",
+ "chrono",
  "color-eyre",
  "colored",
  "derive_builder",
  "directories",
+ "duct",
  "fluvio",
  "fluvio-command",
  "fluvio-controlplane-metadata",
@@ -1559,6 +1558,7 @@ dependencies = [
  "tracing-futures",
  "url",
  "which 4.2.2",
+ "zip",
 ]
 
 [[package]]

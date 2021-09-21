@@ -24,6 +24,9 @@ pub enum ClusterCliError {
     /// An error occurred while communicating with Fluvio
     #[error("Fluvio client error")]
     ClientError(#[from] FluvioError),
+    /// An error occurred finding an executable
+    #[error("error finding executable")]
+    Which(#[from] which::Error),
     /// Another type of error
     #[error("Unknown error: {0}")]
     Other(String),
