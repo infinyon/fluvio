@@ -168,7 +168,7 @@ impl ManagedConnectorDeploymentController {
         */
 
         let k8_deployment_spec =
-            Self::generate_k8_deployment_spec(&managed_connector.spec(), &self.namespace, key);
+            Self::generate_k8_deployment_spec(managed_connector.spec(), &self.namespace, key);
         trace!(?k8_deployment_spec);
         let deployment_action = WSAction::Apply(
             MetadataStoreObject::with_spec(key, k8_deployment_spec.into())
@@ -178,7 +178,7 @@ impl ManagedConnectorDeploymentController {
         debug!(?deployment_action, "applying deployment");
 
         self.deployments
-            .wait_action(&key, deployment_action)
+            .wait_action(key, deployment_action)
             .await?;
 
         Ok(())
@@ -223,7 +223,7 @@ impl ManagedConnectorDeploymentController {
                 termination_grace_period_seconds: Some(10),
                 containers: vec![ContainerSpec {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
-                    image: Some(image.clone()),
+                    image: Some(image),
                     image_pull_policy: Some("Never".to_string()),
                     /*
                     env, // TODO

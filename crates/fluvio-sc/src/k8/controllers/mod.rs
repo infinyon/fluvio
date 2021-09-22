@@ -78,7 +78,7 @@ mod k8_operator {
                 statefulset_ctx,
                 global_ctx.spus().clone(),
                 spg_service_ctx,
-                tls.clone(),
+                tls,
             );
         });
 
@@ -92,7 +92,7 @@ mod k8_operator {
 
         whitelist!(config, "k8_spu_service", {
             SpuServiceController::start(
-                config_ctx.clone(),
+                config_ctx,
                 spu_service_ctx,
                 global_ctx.spgs().clone(),
             );
