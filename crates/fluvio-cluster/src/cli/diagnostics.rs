@@ -38,6 +38,7 @@ impl DiagnosticsOpt {
 
                 let _ = self.copy_kubernetes_logs(&kubectl, temp_path);
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "pod", true);
+                let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "pvc", true);
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "service", true);
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "statefulset", true);
 
@@ -83,7 +84,7 @@ impl DiagnosticsOpt {
             let path = entry.path();
             let name = entry.file_name().to_string_lossy().to_string();
             let contents = std::fs::read(path)?;
-            zipper.start_file(name, options)?;
+            zipper.start_file(format!("diagnostics/{}", name), options)?;
             zipper.write(&contents)?;
         }
 
@@ -118,7 +119,7 @@ impl DiagnosticsOpt {
         // Filter for only Fluvio pods
         let pods = pods
             .split(" ")
-            .filter(|pod| pod.starts_with("fluvio"))
+            .filter(|pod| pod.contains("fluvio"))
             .collect::<Vec<_>>();
 
         for &pod in &pods {
@@ -156,7 +157,7 @@ impl DiagnosticsOpt {
         // Filter for only Fluvio services
         let objects = objects
             .split(" ")
-            .filter(|obj| !filter_fluvio || obj.starts_with("fluvio"))
+            .filter(|obj| !filter_fluvio || obj.contains("fluvio"))
             .map(|name| name.trim())
             .collect::<Vec<_>>();
 
