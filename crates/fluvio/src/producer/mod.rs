@@ -39,7 +39,7 @@ pub struct TopicProducer {
 
 pub struct ProducerConfig {
     pub batch_duration: Duration,
-    pub batch_size: u32,
+    pub batch_size: usize,
 }
 
 impl Default for ProducerConfig {
@@ -223,11 +223,7 @@ impl TopicProducer {
                 )
             })?;
         // Wait for flush to finish
-        rx.recv().await.map_err(|_| {
-            FluvioError::ProducerFlush(
-                "did not receive flush acknowledgement from producer dispatcher".to_string(),
-            )
-        })?;
+        let _ = rx.recv().await;
         Ok(())
     }
 }
@@ -291,7 +287,7 @@ fn assemble_requests(
 
 pub enum DispatcherMessage {
     Record(PendingRecord<()>),
-    Flush(Sender<()>),
+    Flush(Sender<std::convert::Infallible>),
 }
 
 /// Represents a Record sitting in the batch queue, waiting to be sent.

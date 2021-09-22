@@ -9,11 +9,14 @@ use fluvio_types::event::StickyEvent;
 use dataplane::ReplicaKey;
 use dataplane::batch::Batch;
 use dataplane::produce::{ProduceRequest, TopicProduceData, PartitionProduceData, ProduceResponse};
+use fluvio_protocol::Encoder;
+use fluvio_protocol::api::Request;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::{PendingRecord, DispatcherMessage, ProducerConfig};
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
+use dataplane::record::RecordSet;
 
 pub(crate) struct Dispatcher {
     /// A pool of connections to the SPUs.
@@ -24,6 +27,7 @@ pub(crate) struct Dispatcher {
     partitioner: Box<dyn Partitioner + Send + Sync>,
     /// A buffer of records that have yet to be sent to the cluster.
     buffer: Vec<PendingRecord>,
+    bufferz: HashMap<SpuId, ProduceRequest>,
     /// A stream of events that the dispatcher needs to react to.
     incoming: Option<Receiver<DispatcherMessage>>,
     /// A shutdown event used to determine when to quit.
@@ -51,6 +55,7 @@ impl Dispatcher {
             config,
             partitioner,
             buffer: Default::default(),
+            bufferz: Default::default(),
             incoming: Some(incoming),
             shutdown,
         }
@@ -67,8 +72,7 @@ impl Dispatcher {
     pub(crate) async fn run(mut self) {
         // Set up the event stream: Select between new records and timeouts
         let mut events = {
-            let timer =
-                async_timer::interval(std::time::Duration::from_millis(10)).map(|_| Event::Timeout);
+            let timer = async_timer::interval(self.config.batch_duration).map(|_| Event::Timeout);
             let incoming = self.incoming.take().unwrap();
             let records = incoming.map(Event::ProducerRequest);
             let select = futures_util::stream::select(timer, records);
@@ -87,20 +91,27 @@ impl Dispatcher {
 
     async fn handle_event(&mut self, event: Event) -> Result<(), FluvioError> {
         match event {
-            Event::ProducerRequest(DispatcherMessage::Record(record_pending)) => {
-                self.buffer_record(record_pending).await?;
-
-                // TODO check buffer capacity, maybe flush
+            Event::ProducerRequest(DispatcherMessage::Record(record)) => {
+                let maybe_flush = self.bufferz_record(record).await?;
+                if let Some((leader, request)) = maybe_flush {
+                    let result = self.send_request(leader, request).await;
+                    if let Err(e) = result {
+                        error!("Error flushing records to SPU: {}", e);
+                    }
+                }
             }
             Event::ProducerRequest(DispatcherMessage::Flush(sender)) => {
-                self.flush_buffer().await?;
+                // self.flush_buffer().await?;
+                self.flush_requests().await?;
 
-                // TODO actually handle
-                sender.send(()).await.unwrap();
+                // Dropping the sender causes rx.recv() to yield with Err.
+                // This itself is used as the message, and ensures exactly one notification
+                drop(sender);
             }
             Event::Timeout => {
                 debug!("Producer flush timeout, buffer size: {}", self.buffer.len());
-                self.flush_buffer().await?;
+                // self.flush_buffer().await?;
+                self.flush_requests().await?;
             }
         }
 
@@ -131,6 +142,98 @@ impl Dispatcher {
         };
 
         self.buffer.push(record);
+        Ok(())
+    }
+
+    async fn bufferz_record(
+        &mut self,
+        record: PendingRecord<()>,
+    ) -> Result<Option<(SpuId, ProduceRequest)>, FluvioError> {
+        let topics = self.pool.metadata.topics();
+        let topic_spec = topics
+            .lookup_by_key(&record.topic)
+            .await?
+            .ok_or_else(|| FluvioError::TopicNotFound(record.topic.to_string()))?
+            .spec;
+
+        let partition_count = topic_spec.partitions();
+        let partition_config = PartitionerConfig { partition_count };
+        let partition = self.partitioner.partition(
+            &partition_config,
+            record.record.key.as_ref().map(AsRef::as_ref),
+            record.record.value.as_ref(),
+        );
+        let replica_key = ReplicaKey::new(&record.topic, partition);
+        let partition_spec = self
+            .pool
+            .metadata
+            .partitions()
+            .lookup_by_key(&replica_key)
+            .await?
+            .ok_or_else(|| FluvioError::PartitionNotFound(record.topic.clone(), partition))?
+            .spec;
+        let leader = partition_spec.leader;
+
+        let record = PendingRecord {
+            partition,
+            topic: record.topic,
+            record: record.record,
+        };
+
+        let buffered_request = self
+            .bufferz
+            .entry(leader)
+            .or_insert_with(|| Default::default());
+
+        // Check the sizes of the buffered request and the new record
+        let api_version = ProduceRequest::<RecordSet>::DEFAULT_API_VERSION;
+        let batch_size = Encoder::write_size(buffered_request, api_version);
+        let record_size = record.record.write_size(api_version);
+
+        // We need to flush if the combined batch size would be bigger than the max size
+        let needs_flush = batch_size + record_size > self.config.batch_size;
+        println!(
+            "Batch size: {}, New record size: {}, Needs flushing: {}",
+            batch_size, record_size, needs_flush
+        );
+
+        // If we need to flush, take the buffered request and replace it with a new request
+        let flush_request =
+            needs_flush.then(|| std::mem::replace(buffered_request, Default::default()));
+
+        // This adds the new record to whichever is now the "buffered" request.
+        //
+        // If the batch size was _not_ too big, this will be the same request as before.
+        // If the batch size _was_ too big, this will be the new empty request we replaced it with
+        add_record_to_request(buffered_request, record);
+
+        let flush = flush_request.map(|it| (leader, it));
+        Ok(flush)
+    }
+
+    async fn flush_requests(&mut self) -> Result<(), FluvioError> {
+        // Take all requests from the buffer, replacing them with empty requests
+        let mut requests_to_flush = Vec::with_capacity(self.bufferz.len());
+        for (&leader, request) in self.bufferz.iter_mut() {
+            let request = std::mem::replace(request, Default::default());
+            requests_to_flush.push((leader, request));
+        }
+
+        // Set up futures for sending requests to SPUs concurrently
+        let mut response_futures = Vec::with_capacity(requests_to_flush.len());
+        for (leader, request) in requests_to_flush {
+            let future = self.send_request(leader, request);
+            response_futures.push(future);
+        }
+
+        // Send the requests to all SPUs concurrently.
+        let responses = futures_util::future::join_all(response_futures).await;
+        for response in responses {
+            if let Err(err) = response {
+                error!("Error flushing records to SPU: {}", err);
+            }
+        }
+
         Ok(())
     }
 
@@ -232,4 +335,52 @@ impl Dispatcher {
         let response = socket.send_receive(request).await?;
         Ok(response)
     }
+}
+
+fn add_record_to_request(request: &mut ProduceRequest, record: PendingRecord) {
+    let topic = {
+        let maybe_topic = request.topics.iter_mut().find(|t| t.name == record.topic);
+        match maybe_topic {
+            Some(t) => t,
+            None => {
+                let topic = TopicProduceData {
+                    name: record.topic.clone(),
+                    ..Default::default()
+                };
+                request.topics.push(topic);
+                request.topics.last_mut().unwrap()
+            }
+        }
+    };
+
+    let partition = {
+        let maybe_partition = topic
+            .partitions
+            .iter_mut()
+            .find(|p| p.partition_index == record.partition);
+        match maybe_partition {
+            Some(p) => p,
+            None => {
+                let partition = PartitionProduceData {
+                    partition_index: record.partition,
+                    ..Default::default()
+                };
+                topic.partitions.push(partition);
+                topic.partitions.last_mut().unwrap()
+            }
+        }
+    };
+
+    let batch = {
+        let maybe_batch = partition.records.batches.first_mut();
+        match maybe_batch {
+            Some(b) => b,
+            None => {
+                partition.records.batches.push(Batch::new());
+                partition.records.batches.last_mut().unwrap()
+            }
+        }
+    };
+
+    batch.add_record(record.record);
 }
