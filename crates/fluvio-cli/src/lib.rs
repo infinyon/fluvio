@@ -39,8 +39,8 @@ use common::COMMAND_TEMPLATE;
 use common::target::ClusterTarget;
 use common::Terminal;
 use common::PrintTerminal;
-use crate::install::fluvio_extensions_dir;
 use fluvio::Fluvio;
+use crate::install::fluvio_extensions_dir;
 
 const VERSION: &str = include_str!("../../../VERSION");
 

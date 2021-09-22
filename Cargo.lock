@@ -1257,6 +1257,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
 
 [[package]]
+name = "duct"
+version = "0.13.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0fc6a0a59ed0888e0041cf708e66357b7ae1a82f1c67247e1f93b5e0818f7d8d"
+dependencies = [
+ "libc",
+ "once_cell",
+ "os_pipe",
+ "shared_child",
+]
+
+[[package]]
 name = "dyn-clone"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1365,6 +1377,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "filetime"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "975ccf83d8d9d0d84682850a38c8169027be83368805971cc4f238c2b245bc98"
+dependencies = [
+ "cfg-if 1.0.0",
+ "libc",
+ "redox_syscall 0.2.10",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "flate2"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1468,6 +1492,7 @@ dependencies = [
  "semver 1.0.4",
  "serde",
  "serde_json",
+ "serde_yaml",
  "sha2",
  "static_assertions",
  "structopt",
@@ -1486,10 +1511,13 @@ version = "0.0.0"
 dependencies = [
  "async-channel",
  "async-trait",
+ "chrono",
  "color-eyre",
  "colored",
  "derive_builder",
  "directories",
+ "duct",
+ "flate2",
  "fluvio",
  "fluvio-command",
  "fluvio-controlplane-metadata",
@@ -1514,6 +1542,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
+ "tar",
  "tempdir",
  "tempfile",
  "thiserror",
@@ -3228,6 +3257,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "os_pipe"
+version = "0.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb233f06c2307e1f5ce2ecad9f8121cffbbee2c95428f44ea85222e460d0d213"
+dependencies = [
+ "libc",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "owning_ref"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4135,6 +4174,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "shared_child"
+version = "0.3.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6be9f7d5565b1483af3e72975e2dee33879b3b86bd48c0929fccf6585d79e65a"
+dependencies = [
+ "libc",
+ "winapi 0.3.9",
+]
+
+[[package]]
 name = "shlex"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4348,6 +4397,17 @@ name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
+
+[[package]]
+name = "tar"
+version = "0.4.37"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d6f5515d3add52e0bbdcad7b83c388bb36ba7b754dda3b5f5bc2d38640cdba5c"
+dependencies = [
+ "filetime",
+ "libc",
+ "xattr",
+]
 
 [[package]]
 name = "target-lexicon"
@@ -5193,6 +5253,15 @@ dependencies = [
  "rusticata-macros",
  "rustversion",
  "thiserror",
+]
+
+[[package]]
+name = "xattr"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "244c3741f4240ef46274860397c7c74e50eb23624996930e484c16679633a54c"
+dependencies = [
+ "libc",
 ]
 
 [[package]]

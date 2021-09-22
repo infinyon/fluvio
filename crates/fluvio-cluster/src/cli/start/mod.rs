@@ -12,12 +12,12 @@ use crate::cli::ClusterCliError;
 use tls::TlsOpt;
 
 #[cfg(target_os = "macos")]
-fn get_log_directory() -> &'static str {
+pub fn get_log_directory() -> &'static str {
     "/usr/local/var/log/fluvio"
 }
 
 #[cfg(not(target_os = "macos"))]
-fn get_log_directory() -> &'static str {
+pub fn get_log_directory() -> &'static str {
     "/tmp"
 }
 

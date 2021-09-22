@@ -45,6 +45,10 @@ directories = "3.0.2"
 tempfile = "3.2"
 include_dir = "0.6.1"
 tempdir = "0.3.7"
+duct = "0.13"
+chrono = "0.4"
+flate2 = "1"
+tar = "0.4"
 
 # Fluvio dependencies
 fluvio = { version = "0.9.1", path = "../fluvio", default-features = false }
