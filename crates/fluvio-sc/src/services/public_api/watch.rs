@@ -56,7 +56,7 @@ pub fn handle_watch_request<AC>(
         ),
         WatchRequest::ManagedConnector(_) => WatchController::<ManagedConnectorSpec>::update(
             sink,
-            end_event,
+            shutdown,
             auth_ctx.global_ctx.managed_connectors().clone(),
             header,
         ),
