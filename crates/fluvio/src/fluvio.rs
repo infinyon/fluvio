@@ -20,6 +20,7 @@ use crate::consumer::PartitionSelectionStrategy;
 use crate::spu::SpuPool;
 use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
 use crate::sync::MetadataStores;
+use crate::producer::ProducerConfig;
 
 /// An interface for interacting with Fluvio streaming
 pub struct Fluvio {
@@ -140,6 +141,17 @@ impl Fluvio {
         &self,
         topic: S,
     ) -> Result<TopicProducer, FluvioError> {
+        let producer = self
+            .topic_producer_with_config(topic, Default::default())
+            .await?;
+        Ok(producer)
+    }
+
+    pub async fn topic_producer_with_config<S: Into<String>>(
+        &self,
+        topic: S,
+        config: ProducerConfig,
+    ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
 
@@ -148,7 +160,7 @@ impl Fluvio {
             return Err(FluvioError::TopicNotFound(topic));
         }
 
-        Ok(TopicProducer::new(topic, spu_pool))
+        Ok(TopicProducer::new(topic, spu_pool, config))
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition

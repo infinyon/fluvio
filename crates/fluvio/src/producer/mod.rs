@@ -22,6 +22,7 @@ use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
 pub(crate) use crate::producer::dispatcher::Dispatcher;
+use std::time::Duration;
 
 /// An interface for producing events to a particular topic
 ///
@@ -34,6 +35,20 @@ pub struct TopicProducer {
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
     inner: Arc<ProducerInner>,
+}
+
+pub struct ProducerConfig {
+    pub batch_duration: Duration,
+    pub batch_size: u32,
+}
+
+impl Default for ProducerConfig {
+    fn default() -> Self {
+        Self {
+            batch_duration: Duration::from_millis(10),
+            batch_size: 16_000,
+        }
+    }
 }
 
 /// A handle for `TopicProducer`s to communicate with the shared `ProducerDispatcher`.
@@ -56,11 +71,11 @@ impl Drop for ProducerInner {
 }
 
 impl TopicProducer {
-    pub(crate) fn new(topic: String, pool: Arc<SpuPool>) -> Self {
+    pub(crate) fn new(topic: String, pool: Arc<SpuPool>, config: ProducerConfig) -> Self {
         let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
 
         let (sender, receiver) = async_channel::unbounded();
-        let dispatcher = Dispatcher::new(pool.clone(), receiver);
+        let dispatcher = Dispatcher::new(pool.clone(), receiver, config);
         let dispatcher_shutdown = dispatcher.start();
         let inner = Arc::new(ProducerInner {
             dispatcher: sender,

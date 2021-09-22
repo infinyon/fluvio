@@ -12,12 +12,14 @@ use dataplane::produce::{ProduceRequest, TopicProduceData, PartitionProduceData,
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::producer::{PendingRecord, DispatcherMessage};
+use crate::producer::{PendingRecord, DispatcherMessage, ProducerConfig};
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
 
 pub(crate) struct Dispatcher {
     /// A pool of connections to the SPUs.
     pool: Arc<SpuPool>,
+    /// Configurations that tweak the dispatcher's behavior.
+    config: ProducerConfig,
     /// The partitioning strategy to use
     partitioner: Box<dyn Partitioner + Send + Sync>,
     /// A buffer of records that have yet to be sent to the cluster.
@@ -36,12 +38,17 @@ enum Event {
 }
 
 impl Dispatcher {
-    pub(crate) fn new(pool: Arc<SpuPool>, incoming: Receiver<DispatcherMessage>) -> Self {
+    pub(crate) fn new(
+        pool: Arc<SpuPool>,
+        incoming: Receiver<DispatcherMessage>,
+        config: ProducerConfig,
+    ) -> Self {
         let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
         let shutdown = StickyEvent::new();
 
         Self {
             pool,
+            config,
             partitioner,
             buffer: Default::default(),
             incoming: Some(incoming),
