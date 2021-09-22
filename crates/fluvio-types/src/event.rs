@@ -14,19 +14,14 @@ pub struct StickyEvent {
     event: Event,
 }
 
-impl Unpin for StickyEvent {}
+
 
 impl StickyEvent {
-
-    pub fn new() -> Self {
-        Self {
+    pub fn shared() -> Arc<Self> {
+        Arc::new(Self {
             flag: AtomicBool::new(false),
             event: Event::new(),
-        }
-    }
-
-    pub fn shared() -> Arc<Self> {
-        Arc::new(Self::new())
+        })
     }
 
     // is flag set
@@ -181,14 +176,11 @@ pub mod offsets {
 #[cfg(test)]
 mod test {
 
-    use std::{
-        sync::{Arc, atomic::Ordering},
-        time::Duration,
-    };
+    use std::{sync::{Arc, atomic::Ordering}, time::Duration};
     use std::sync::atomic::AtomicBool;
 
     use tracing::debug;
-    use futures_util::stream::{self, StreamExt};
+    use futures_util::{Stream, stream::{self, StreamExt}};
 
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
@@ -245,8 +237,6 @@ mod test {
 
     #[fluvio_future::test]
     async fn test_take_until() {
-        use std::pin::Pin;
-        use futures_util::Stream;
         use super::StickyEvent;
 
         let end = StickyEvent::shared();
@@ -257,17 +247,29 @@ mod test {
         let stream2 = stream::repeat(9);
         let _until2 = stream2.take_until(end.listen());
 
+        
         let stream3 = stream::repeat(9);
         let until3 = stream3.take_until(end.listen());
-        let pinned = Box::pin(until3);
-
-        struct DispatcherStateOrSomething {
-            _stream: Option<Pin<Box<dyn Stream<Item = i32>>>>,
+      //  let pinned = Box::pin(until3);
+        
+        struct DispatcherStateOrSomething<St> {
+            _stream: Option<St>
         }
+        
+         
+        impl <St> DispatcherStateOrSomething<St>
+            where St: Stream  {        
+            
+            
+
+
+        }
+        
 
         let _stored = DispatcherStateOrSomething {
-            _stream: Some(pinned),
+            _stream: Some(until3),
         };
+        
     }
 
     #[fluvio_future::test]
