@@ -14,12 +14,19 @@ pub struct StickyEvent {
     event: Event,
 }
 
+impl Unpin for StickyEvent {}
+
 impl StickyEvent {
-    pub fn shared() -> Arc<Self> {
-        Arc::new(Self {
+
+    pub fn new() -> Self {
+        Self {
             flag: AtomicBool::new(false),
             event: Event::new(),
-        })
+        }
+    }
+
+    pub fn shared() -> Arc<Self> {
+        Arc::new(Self::new())
     }
 
     // is flag set
@@ -242,16 +249,16 @@ mod test {
         use futures_util::Stream;
         use super::StickyEvent;
 
-        let end: Arc<StickyEvent> = StickyEvent::shared();
+        let end = StickyEvent::shared();
         let stream = stream::repeat(9);
 
         let _until = stream.take_until(end.listen());
 
         let stream2 = stream::repeat(9);
-        let _until2 = stream2.take_until(end.listen_pinned());
+        let _until2 = stream2.take_until(end.listen());
 
         let stream3 = stream::repeat(9);
-        let until3 = stream3.take_until(end.listen_pinned());
+        let until3 = stream3.take_until(end.listen());
         let pinned = Box::pin(until3);
 
         struct DispatcherStateOrSomething {
