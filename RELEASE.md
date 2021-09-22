@@ -15,18 +15,18 @@ This is a mostly **manual** workflow
 Prior to releasing, the release manager should check the following:
 
 Review Fluvio website:
-1. [ ] Review the "Getting Started" docs.
-  - [ ] https://www.fluvio.io/docs/get-started/linux/
-  - [ ] https://www.fluvio.io/docs/get-started/mac/
-  - [ ] https://www.fluvio.io/docs/get-started/raspberry/
-  - [ ] https://www.fluvio.io/docs/get-started/cloud/
-2. [ ] Sample code is correct (API docs are correct)
-  - [ ] https://www.fluvio.io/api/fluvio/rust/
-  - [ ] https://www.fluvio.io/api/fluvio/python/
-  - [ ] https://www.fluvio.io/api/fluvio/node/
-  - [ ] https://www.fluvio.io/api/fluvio/java/
-3. [ ] Review rest of doc to ensure they are up to date.
-  - https://www.fluvio.io/docs/
+1. Review the "Getting Started" docs.
+    - [ ] https://www.fluvio.io/docs/get-started/linux/
+    - [ ] https://www.fluvio.io/docs/get-started/mac/
+    - [ ] https://www.fluvio.io/docs/get-started/raspberry/
+    - [ ] https://www.fluvio.io/docs/get-started/cloud/
+2. Sample code is correct (API docs are correct)
+    - [ ] https://www.fluvio.io/api/fluvio/rust/
+    - [ ] https://www.fluvio.io/api/fluvio/python/
+    - [ ] https://www.fluvio.io/api/fluvio/node/
+    - [ ] https://www.fluvio.io/api/fluvio/java/
+3. Review rest of doc to ensure they are up to date.
+    - [ ] https://www.fluvio.io/docs/
 
 Other dependent repos:
 - [ ] Update [`infinyon/fluvio-smartstream-template`](https://github.com/infinyon/fluvio-smartstream-template) if needed.
@@ -72,9 +72,10 @@ to prepare for the next release and announce the current release to the communit
     - Update `VERSION` file for next release
       - [ ] Minor version bump the version in the `VERSION` file.
     - Update `CHANGELOG.md` file for next release
-      - [ ] Add UNRELEASED section (matching value as `VERSION` file) to `CHANGELOG.md` at top of file (but under the `# Release Notes` header)
+      - [ ] Add Platform version section (matching value as `VERSION` file) with a release date of `UNRELEASED` to 
+      `CHANGELOG.md` at top of file (but under the `# Release Notes` header)
         - ```## Platform Version X.Y.Z - UNRELEASED```
-      - [ ] For version just released, replace `UNRELEASED` date with current date (YYY-MM-dd) in `CHANGELOG.md`.
+      - [ ] For version just released, replace `UNRELEASED` date with current date (format as `YYYY-MM-dd`) in `CHANGELOG.md`.
 
 2. Announce the release on Discord (`#announcements` channel) and Twitter ([`@fluvio_io`](https://twitter.com/fluvio_io) user).
 
