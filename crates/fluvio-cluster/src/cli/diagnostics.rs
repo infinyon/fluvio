@@ -98,7 +98,7 @@ impl DiagnosticsOpt {
         .read()?;
         // Filter for only Fluvio pods
         let pods = pods
-            .split(" ")
+            .split(' ')
             .filter(|pod| pod.contains("fluvio"))
             .collect::<Vec<_>>();
 
@@ -136,7 +136,7 @@ impl DiagnosticsOpt {
         .read()?;
         // Filter for only Fluvio services
         let objects = objects
-            .split(" ")
+            .split(' ')
             .filter(|obj| !filter_fluvio || obj.contains("fluvio"))
             .map(|name| name.trim())
             .collect::<Vec<_>>();
