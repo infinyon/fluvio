@@ -15,17 +15,17 @@ This is a mostly **manual** workflow
 Prior to releasing, the release manager should check the following:
 
 Review Fluvio website:
-- [ ] Review the "Getting Started" docs.
+1. [ ] Review the "Getting Started" docs.
   - [ ] https://www.fluvio.io/docs/get-started/linux/
   - [ ] https://www.fluvio.io/docs/get-started/mac/
   - [ ] https://www.fluvio.io/docs/get-started/raspberry/
   - [ ] https://www.fluvio.io/docs/get-started/cloud/
-- [ ] Sample code is correct (API docs are correct)
+2. [ ] Sample code is correct (API docs are correct)
   - [ ] https://www.fluvio.io/api/fluvio/rust/
   - [ ] https://www.fluvio.io/api/fluvio/python/
   - [ ] https://www.fluvio.io/api/fluvio/node/
   - [ ] https://www.fluvio.io/api/fluvio/java/
-- [ ] Review rest of doc to ensure they are up to date.
+3. [ ] Review rest of doc to ensure they are up to date.
   - https://www.fluvio.io/docs/
 
 Other dependent repos:
@@ -45,20 +45,20 @@ Run the [`release.yml` Github Actions workflow](https://github.com/infinyon/fluv
 
 This workflow will:
 
-- Publish all public crates in the `crates` directory
-  - [`fluvio`](https://crates.io/crates/fluvio) and any dependencies
-  - [`fluvio-smartstream`](https://crates.io/crates/fluvio-smartstream) and any dependencies
-  - The rest of the crates w/ a version number that isn't `v0.0.0`
-- Push Fluvio docker image release tags to Docker Hub
-  - https://hub.docker.com/r/infinyon/fluvio
-- Publish fluvio artifacts to AWS S3 (via `fluvio package`) for installer
-- Create [Github Release](https://github.com/infinyon/fluvio/releases) for the current version (w/ Release notes derived from `CHANGELOG.md`)
-- Create a git tag on the commit in Fluvio repo that was just released
+1. Create [Github Release](https://github.com/infinyon/fluvio/releases) for the current version (w/ Release notes derived from `CHANGELOG.md`)
+2. Create a git tag on the commit in Fluvio repo that was just released
+3. Push Fluvio docker image release tags to Docker Hub
+    - https://hub.docker.com/r/infinyon/fluvio
+4. Publish fluvio artifacts to AWS S3 (via `fluvio package`) for installer
+5. Publish all public crates in the `crates` directory
+    - [`fluvio`](https://crates.io/crates/fluvio) and any dependencies
+    - [`fluvio-smartstream`](https://crates.io/crates/fluvio-smartstream) and any dependencies
+    - The rest of the crates w/ a version number that isn't `v0.0.0`
 
 #### In event of failure in Release workflow
 If any steps fail in `release.yml`, try to run it a 2nd time before asking in `#dev`.
 
-This workflow has been written to be idempotent and so will only perform work if necessary even if run multiple times.
+This workflow has been written to be idempotent. It will only perform work if necessary. (Even if run multiple times!)
 
 ## Post-release workflow
 
@@ -68,7 +68,7 @@ After performing the release, the release manager should do the following in ord
 to prepare for the next release and announce the current release to the community:
 
 
-1. [ ] Update files in Fluvio repo, open PR and merge
+1. Update files in Fluvio repo, open PR and merge
     - Update `VERSION` file for next release
       - [ ] Minor version bump the version in the `VERSION` file.
     - Update `CHANGELOG.md` file for next release
@@ -76,7 +76,7 @@ to prepare for the next release and announce the current release to the communit
         - ```## Platform Version X.Y.Z - UNRELEASED```
       - [ ] For version just released, replace `UNRELEASED` date with current date (YYY-MM-dd) in `CHANGELOG.md`.
 
-2. [ ] Announce the release on Discord (`#announcements` channel) and Twitter ([`@fluvio_io`](https://twitter.com/fluvio_io) user).
+2. Announce the release on Discord (`#announcements` channel) and Twitter ([`@fluvio_io`](https://twitter.com/fluvio_io) user).
 
     - Discord announcement Template:
       - Aim to announce ~3 features max. If we have more, point out that release notes includes more)
@@ -108,7 +108,7 @@ In the event that the release automation fails, there is manual cleanup required
   - s3://packages.fluvio.io/v1/packages/fluvio/fluvio/<VERSION>
   - s3://packages.fluvio.io/v1/packages/fluvio/fluvio-run/<VERSION>
 - Github Releases
-  - Delete the latest release
+  - Delete the latest release with a version number (probably the top-most)
   - Delete any DRAFT releases
 
 ### Fix the installer
