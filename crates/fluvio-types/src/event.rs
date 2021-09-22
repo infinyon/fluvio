@@ -238,6 +238,8 @@ mod test {
 
     #[fluvio_future::test]
     async fn test_take_until() {
+        use std::pin::Pin;
+        use futures_util::Stream;
         use super::StickyEvent;
 
         let end: Arc<StickyEvent> = StickyEvent::shared();
@@ -247,6 +249,18 @@ mod test {
 
         let stream2 = stream::repeat(9);
         let _until2 = stream2.take_until(end.listen_pinned());
+
+        let stream3 = stream::repeat(9);
+        let until3 = stream3.take_until(end.listen_pinned());
+        let pinned = Box::pin(until3);
+
+        struct DispatcherStateOrSomething {
+            _stream: Option<Pin<Box<dyn Stream<Item = i32>>>>,
+        }
+
+        let _stored = DispatcherStateOrSomething {
+            _stream: Some(pinned),
+        };
     }
 
     #[fluvio_future::test]
