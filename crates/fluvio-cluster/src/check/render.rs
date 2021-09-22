@@ -204,7 +204,7 @@ impl ProgressRenderedText for CheckStatus {
                     None => "".to_string(),
                 };
                 let msg = format!("{}{}", e, cause);
-                format!("{:>6} {}", "❌".bold(), msg.red())
+                format!("{:>6} {}", "❌", msg.red())
             }
         };
 

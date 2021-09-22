@@ -28,7 +28,7 @@ pub async fn process_local(
             builder.local_chart(chart_location);
         }
         None if opt.develop => {
-            builder.local_chart("./k8-util/helm");
+            builder.local_chart("./k8-util/helm/fluvio-sys");
         }
         _ => (),
     }
