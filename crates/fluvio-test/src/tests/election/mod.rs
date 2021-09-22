@@ -1,7 +1,3 @@
-pub mod consume;
-pub mod produce;
-pub mod message;
-
 use std::any::Any;
 use std::sync::Arc;
 
@@ -17,40 +13,31 @@ use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
-pub struct SmokeTestCase {
+pub struct ElectionTestCase {
     pub environment: EnvironmentSetup,
-    pub option: SmokeTestOption,
+    pub option: ElectionTestOption,
 }
 
-impl From<TestCase> for SmokeTestCase {
+impl From<TestCase> for ElectionTestCase {
     fn from(test_case: TestCase) -> Self {
-        let smoke_option = test_case
+        let election_option = test_case
             .option
             .as_any()
-            .downcast_ref::<SmokeTestOption>()
+            .downcast_ref::<ElectionTestOption>()
             .expect("SmokeTestOption")
             .to_owned();
         Self {
             environment: test_case.environment,
-            option: smoke_option,
+            option: election_option,
         }
     }
 }
 
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Smoke Test")]
-pub struct SmokeTestOption {
-    #[structopt(long)]
-    pub use_cli: bool,
-    #[structopt(long, default_value = "1")]
-    pub producer_iteration: u32,
-    #[structopt(long, default_value = "100")]
-    pub producer_record_size: u32,
-    #[structopt(long)]
-    pub consumer_wait: bool,
-}
+#[structopt(name = "Fluvio ELECTION Test")]
+pub struct ElectionTestOption {}
 
-impl TestOption for SmokeTestOption {
+impl TestOption for ElectionTestOption {
     fn as_any(&self) -> &dyn Any {
         self
     }
@@ -69,17 +56,9 @@ impl TestOption for SmokeTestOption {
 //}
 
 #[fluvio_test(topic = "test")]
-pub async fn smoke(
+pub async fn election(
     mut test_driver: Arc<RwLock<FluvioTestDriver>>,
     mut test_case: TestCase,
 ) -> TestResult {
-    println!("Starting smoke test");
-    let smoke_test_case = test_case.into();
-
-    let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
-    // println!("start sleeping");
-    // fluvio_future::timer::sleep(Duration::from_secs(40)).await;
-    // sleep(Duration::from_secs(40));
-    // println!("end sleeping");
-    consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;
+    println!("Starting election test");
 }
