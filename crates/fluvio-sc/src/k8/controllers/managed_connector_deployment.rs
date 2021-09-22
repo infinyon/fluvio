@@ -17,7 +17,6 @@ use crate::stores::connector::ManagedConnectorSpec;
 use crate::stores::connector::ManagedConnectorStatus;
 use crate::stores::connector::ManagedConnectorStatusResolution;
 
-
 use crate::k8::objects::managed_connector_deployment::ManagedConnectorDeploymentSpec;
 
 use crate::stores::k8::K8MetaItem;
@@ -27,13 +26,9 @@ use crate::stores::actions::WSAction;
 
 use k8_types::{
     TemplateSpec, TemplateMeta,
-    core::pod::{
-        PodSpec, ContainerSpec,
-        VolumeMount,
-    },
+    core::pod::{PodSpec, ContainerSpec, VolumeMount},
     LabelProvider,
 };
-
 
 /// Update Statefulset and Service from SPG
 pub struct ManagedConnectorDeploymentController {
@@ -116,7 +111,7 @@ impl ManagedConnectorDeploymentController {
             let deployment_status = mc_deployment.status();
             let ready_replicas = deployment_status.0.ready_replicas;
 
-            let resolution = if ready_replicas.is_some() && ready_replicas.unwrap() > 0{
+            let resolution = if ready_replicas.is_some() && ready_replicas.unwrap() > 0 {
                 ManagedConnectorStatusResolution::Running
             } else {
                 ManagedConnectorStatusResolution::Failed
@@ -126,7 +121,9 @@ impl ManagedConnectorDeploymentController {
                 resolution,
                 ..Default::default()
             };
-            self.connectors.update_status(key.to_string(), connector_status.clone()).await?;
+            self.connectors
+                .update_status(key.to_string(), connector_status.clone())
+                .await?;
         }
         Ok(())
     }
@@ -164,13 +161,11 @@ impl ManagedConnectorDeploymentController {
         &mut self,
         managed_connector: MetadataStoreObject<ManagedConnectorSpec, K8MetaItem>,
     ) -> Result<(), ClientError> {
-
         let key = managed_connector.key();
         /*
         self.connectors.update_status(key.to_string(), status.clone()).await?;
         let status = managed_connector.status();
         */
-
 
         let k8_deployment_spec =
             Self::generate_k8_deployment_spec(&managed_connector.spec(), &self.namespace, key);
@@ -195,35 +190,31 @@ impl ManagedConnectorDeploymentController {
         _namespace: &str,
         _name: &str,
     ) -> K8DeploymentSpec {
-
         let image = format!("infinyon/fluvio-connect-{}", mc_spec.type_);
         debug!("STARTING CONNECTOR FOR IMAGE {:?}", image);
-        use k8_types::core::pod::{
-            ConfigMapVolumeSource,
-            KeyToPath,
-            VolumeSpec,
-        };
+        use k8_types::core::pod::{ConfigMapVolumeSource, KeyToPath, VolumeSpec};
 
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
-            config_map: Some(
-                ConfigMapVolumeSource {
-                    name: Some("fluvio-config-map".to_string()),
-                    items: Some(vec![
-                        KeyToPath {
-                            key: "fluvioClientConfig".to_string(),
-                            path: "config".to_string(),
+            config_map: Some(ConfigMapVolumeSource {
+                name: Some("fluvio-config-map".to_string()),
+                items: Some(vec![KeyToPath {
+                    key: "fluvioClientConfig".to_string(),
+                    path: "config".to_string(),
 
-                            ..Default::default()
-                        },
-                    ]),
                     ..Default::default()
-                }),
+                }]),
+                ..Default::default()
+            }),
             ..Default::default()
         };
 
         let parameters = &mc_spec.parameters;
-        let args : Vec<String> = parameters.keys().zip(parameters.values()).flat_map(|(key, value)| [key.clone(), value.clone()]).collect::<Vec<_>>();
+        let args: Vec<String> = parameters
+            .keys()
+            .zip(parameters.values())
+            .flat_map(|(key, value)| [key.clone(), value.clone()])
+            .collect::<Vec<_>>();
         let template = TemplateSpec {
             metadata: Some(
                 TemplateMeta::default().set_labels(vec![("app", Self::DEFAULT_CONNECTOR_NAME)]),
@@ -237,19 +228,15 @@ impl ManagedConnectorDeploymentController {
                     /*
                     env, // TODO
                     */
-                    volume_mounts: vec![
-                        VolumeMount {
-                            name: "fluvio-config-volume".to_string(),
-                            mount_path: "/home/fluvio/.fluvio".to_string(),
-                            ..Default::default()
-                        },
-                    ],
+                    volume_mounts: vec![VolumeMount {
+                        name: "fluvio-config-volume".to_string(),
+                        mount_path: "/home/fluvio/.fluvio".to_string(),
+                        ..Default::default()
+                    }],
                     args: args.to_vec(),
                     ..Default::default()
                 }],
-                volumes: vec![
-                    config_map_volume_spec,
-                ],
+                volumes: vec![config_map_volume_spec],
                 //security_context: spu_k8_config.pod_security_context.clone(),
                 //node_selector: Some(spu_pod_config.node_selector.clone()),
                 ..Default::default()
