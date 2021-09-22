@@ -25,12 +25,17 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
+<<<<<<< HEAD
               required: ["name", "config"]
+=======
+              required: ["name", "type"]
+>>>>>>> 33276e90e99ed3bf2990093020e996141d1efd14
               properties:
                 name:
                   type: string
                   minimum: 2
                   maximum: 100
+<<<<<<< HEAD
                 config:
                   type: object
                   required: ["type", "topic"]
@@ -47,3 +52,19 @@ spec:
                       type: array
                       items:
                         type: string
+=======
+                type:
+                  type: string
+                  minimum: 2
+                  maximum: 100
+                topic:
+                  type: string
+                  minimum: 2
+                  maximum: 100
+                parameters:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+                secrets:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
+>>>>>>> 33276e90e99ed3bf2990093020e996141d1efd14

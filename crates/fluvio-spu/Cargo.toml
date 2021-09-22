@@ -20,8 +20,8 @@ doc = false
 [dependencies]
 cfg-if = "1.0.0"
 anyhow = "1.0.38"
-tracing = "0.1.14"
-tracing-futures = "0.2.4"
+tracing = "0.1.27"
+tracing-futures = "0.2.5"
 bytes = "1.0.0"
 structopt = "0.3.5"
 toml = "0.5.5"
@@ -38,16 +38,17 @@ async-rwlock = "1.1.0"
 async-lock = "2.4.0"
 event-listener = "2.4.0"
 async-io = "1.3.1"
-wasmtime = "0.29"
+wasmtime = "0.30"
 nix = "0.22.0"
 adaptive_backoff = "0.2.1"
 thiserror = "1"
 once_cell = "1.5"
+sysinfo = "0.20.3"
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.3", features = ["events"], path = "../fluvio-types" }
 fluvio-storage = { path = "../fluvio-storage" }
-fluvio-controlplane = { version = "0.8.0", path = "../fluvio-controlplane" }
+fluvio-controlplane = { version = "0.0.0", path = "../fluvio-controlplane" }
 fluvio-controlplane-metadata = { version = "0.11.0", path = "../fluvio-controlplane-metadata" }
 fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema", features = ["file"]}
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }

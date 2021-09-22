@@ -12,7 +12,7 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
-use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
@@ -45,7 +45,7 @@ impl Default for WatchRequest {
 
 impl Request for WatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
-    const DEFAULT_API_VERSION: i16 = 0;
+    const DEFAULT_API_VERSION: i16 = 1;
     type Response = WatchResponse;
 }
 

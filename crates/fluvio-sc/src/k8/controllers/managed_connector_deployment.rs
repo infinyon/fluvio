@@ -6,7 +6,6 @@ use k8_types::LabelSelector;
 use tracing::debug;
 use tracing::error;
 use tracing::trace;
-use tracing::warn;
 use tracing::instrument;
 
 use fluvio_future::task::spawn;
@@ -14,9 +13,9 @@ use fluvio_future::timer::sleep;
 use k8_client::ClientError;
 
 use crate::stores::{StoreContext};
-use crate::stores::managed_connector::ManagedConnectorSpec;
-use crate::stores::managed_connector::ManagedConnectorStatus;
-use crate::stores::managed_connector::ManagedConnectorStatusResolution;
+use crate::stores::connector::ManagedConnectorSpec;
+use crate::stores::connector::ManagedConnectorStatus;
+use crate::stores::connector::ManagedConnectorStatusResolution;
 
 
 use crate::k8::objects::managed_connector_deployment::ManagedConnectorDeploymentSpec;
@@ -197,7 +196,7 @@ impl ManagedConnectorDeploymentController {
         _name: &str,
     ) -> K8DeploymentSpec {
 
-        let image = format!("infinyon/fluvio-connect-{}", mc_spec.config.type_);
+        let image = format!("infinyon/fluvio-connect-{}", mc_spec.type_);
         debug!("STARTING CONNECTOR FOR IMAGE {:?}", image);
         use k8_types::core::pod::{
             ConfigMapVolumeSource,
@@ -223,7 +222,8 @@ impl ManagedConnectorDeploymentController {
             ..Default::default()
         };
 
-        let args = &mc_spec.config.args;
+        let parameters = &mc_spec.parameters;
+        let args : Vec<String> = parameters.keys().zip(parameters.values()).flat_map(|(key, value)| [key.clone(), value.clone()]).collect::<Vec<_>>();
         let template = TemplateSpec {
             metadata: Some(
                 TemplateMeta::default().set_labels(vec![("app", Self::DEFAULT_CONNECTOR_NAME)]),

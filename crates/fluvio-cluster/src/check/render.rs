@@ -1,8 +1,12 @@
 #![allow(unused)]
 
 use futures_util::StreamExt;
-use futures_channel::mpsc::Receiver;
-use crate::{CheckStatus, CheckResult, CheckResults, CheckFailed, CheckSuggestion};
+use async_channel::Receiver;
+use indicatif::ProgressBar;
+use crate::{
+    CheckFailed, CheckResult, CheckResults, CheckStatus, CheckSuggestion,
+    render::ProgressRenderedText,
+};
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
 
@@ -11,6 +15,18 @@ pub async fn render_check_progress(progress: &mut Receiver<CheckResult>) -> Chec
     let mut check_results = vec![];
     while let Some(check_result) = progress.next().await {
         render_check_result(&check_result);
+        check_results.push(check_result);
+    }
+    check_results
+}
+
+pub async fn render_check_progress_with_indicator(
+    progress: &mut Receiver<CheckResult>,
+    pb: &ProgressBar,
+) -> CheckResults {
+    let mut check_results = vec![];
+    while let Some(check_result) = progress.next().await {
+        render_check_result_with_indicator(&check_result, pb);
         check_results.push(check_result);
     }
     check_results
@@ -26,7 +42,12 @@ pub fn render_check_results<R: AsRef<[CheckResult]>>(check_results: R) {
 
 /// Render a single check result
 pub fn render_check_result(check_result: &CheckResult) {
-    println!("{}", check_result.text());
+    println!("{}", check_result.msg());
+}
+
+/// Render a single check result
+pub fn render_check_result_with_indicator(check_result: &CheckResult, pb: &ProgressBar) {
+    pb.println(check_result.msg());
 }
 
 /// Render a slice of `CheckStatus`es all at once
@@ -39,7 +60,7 @@ pub fn render_check_statuses<R: AsRef<[CheckStatus]>>(check_statuses: R) {
 
 /// Render a single check status
 pub fn render_check_status(check_status: &CheckStatus) {
-    println!("{}", check_status.text());
+    println!("{}", check_status.msg());
 }
 
 /// Render a conclusion message based on the number of failures and warnings
@@ -50,7 +71,7 @@ pub fn render_next_steps(failures: u32, warnings: u32, installed: bool) {
     match (failures, warnings) {
         // No errors, failures, or warnings
         (0, 0) if !installed => {
-            println!("{}", "All checks passed!".bold());
+            println!("🎉 {}", "All checks passed!".bold());
             println!("You may proceed with cluster startup");
             println!(
                 "{}: run `fluvio cluster start`",
@@ -146,23 +167,19 @@ pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
     render_next_steps(failures, warnings, installed);
 }
 
-pub trait RenderedText {
-    fn text(&self) -> String;
-}
-
-impl RenderedText for CheckStatus {
-    fn text(&self) -> String {
+impl ProgressRenderedText for CheckStatus {
+    fn msg(&self) -> String {
         use colored::*;
         use crate::CheckStatus::*;
 
         let mut text = match self {
             Pass(success) => {
-                format!("{:>13} {}", "Ok: ✅".bold().green(), success)
+                format!("{:>6} {}", "✅".bold(), success)
             }
             Fail(e @ CheckFailed::AutoRecoverable(_)) => {
                 format!(
-                    "{:>11} {}\n{:indent$}💡 {}",
-                    "Warn: 🟡️".bold().yellow(),
+                    "{:>6} {}\n{:indent$}💡 {}",
+                    "🟡️".bold(),
                     e,
                     "",
                     format!(
@@ -175,8 +192,8 @@ impl RenderedText for CheckStatus {
             }
             Fail(CheckFailed::AlreadyInstalled) => {
                 format!(
-                    "💙 {} {}",
-                    "note:".bold().bright_blue(),
+                    "{:>6} {}",
+                    "💙".bold(),
                     "Fluvio is already running".bright_blue()
                 )
             }
@@ -187,13 +204,13 @@ impl RenderedText for CheckStatus {
                     None => "".to_string(),
                 };
                 let msg = format!("{}{}", e, cause);
-                format!("❌ {} {}", "failed:".bold().red(), msg.red())
+                format!("{:>6} {}", "❌".bold(), msg.red())
             }
         };
 
         if let Some(suggestion) = self.suggestion() {
             text.push_str(&format!(
-                "\n{:indent$}💡 {:>11} {}",
+                "\n{:indent$}💡 {:>6} {}",
                 "",
                 "suggestion:".bold().cyan(),
                 suggestion,
@@ -204,12 +221,12 @@ impl RenderedText for CheckStatus {
     }
 }
 
-impl RenderedText for CheckResult {
-    fn text(&self) -> String {
+impl ProgressRenderedText for CheckResult {
+    fn msg(&self) -> String {
         use colored::*;
 
         match self {
-            Ok(status) => status.text(),
+            Ok(status) => status.msg(),
             Err(e) => {
                 // Print one layer of source error
                 let cause = match std::error::Error::source(e) {

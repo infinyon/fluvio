@@ -75,6 +75,7 @@ jobs:
     env:
       FLV_SOCKET_WAIT: 600
     steps:
+      - uses: actions/checkout@v2
       - name: Setup K3d
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
       - name: Create K3d cluster

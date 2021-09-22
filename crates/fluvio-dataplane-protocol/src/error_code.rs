@@ -58,6 +58,8 @@ pub enum ErrorCode {
     TopicInvalidConfiguration,
     #[fluvio(tag = 2005)]
     TopicNotProvisioned,
+    #[fluvio(tag = 2006)]
+    TopicInvalidName,
 
     // Partition errors
     #[fluvio(tag = 3000)]
@@ -72,6 +74,12 @@ pub enum ErrorCode {
     // SmartStream errors
     #[fluvio(tag = 4000)]
     SmartStreamError(SmartStreamError),
+
+    // Managed Connector Errors
+    #[fluvio(tag = 5000)]
+    ManagedConnectorError,
+    #[fluvio(tag = 5001)]
+    ManagedConnectorNotFound,
 }
 
 impl Default for ErrorCode {

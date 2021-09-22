@@ -31,7 +31,7 @@ pub async fn handle_delete_request<AC: AuthContext>(
             super::spg::handle_delete_spu_group(name, auth_ctx).await?
         }
         DeleteRequest::ManagedConnector(name) => {
-            super::managed_connectors::handle_delete_managed_connector(name, auth_ctx).await?
+            super::connector::handle_delete_managed_connector(name, auth_ctx).await?
         }
     };
 

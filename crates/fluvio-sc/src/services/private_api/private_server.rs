@@ -1,13 +1,13 @@
 use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_future::timer::sleep;
 use fluvio_service::ConnectInfo;
 use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::time::Duration;
-use std::time::Instant;
 
 use tracing::error;
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, trace, instrument};
 use async_trait::async_trait;
 use futures_util::stream::Stream;
 
@@ -23,13 +23,12 @@ use fluvio_controlplane::{
 use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
 use crate::core::SharedContext;
-use crate::stores::spu::SharedHealthCheck;
 use crate::stores::{K8ChangeListener};
 use crate::stores::partition::{PartitionSpec, PartitionStatus, PartitionResolution};
 use crate::stores::spu::SpuSpec;
 use crate::stores::actions::WSAction;
 
-const HEALTH_DURATION: u64 = 30;
+const HEALTH_DURATION: u64 = 90;
 
 #[derive(Debug)]
 pub struct ScInternalService {}
@@ -87,13 +86,11 @@ impl FluvioService for ScInternalService {
 
         health_check.update(spu_id, true).await;
 
-        if let Err(err) =
-            dispatch_loop(context, spu_id, api_stream, sink, health_check.clone()).await
-        {
+        if let Err(err) = dispatch_loop(context, spu_id, api_stream, sink).await {
             error!("error with SPU <{}>, error: {}", spu_id, err);
         }
 
-        info!(spu_id, "SPU terminated");
+        info!(spu_id, "Terminating connection to SPU");
 
         health_check.update(spu_id, false).await;
 
@@ -102,54 +99,44 @@ impl FluvioService for ScInternalService {
 }
 
 // perform internal dispatch
-#[instrument(name = "ScInternalService", skip(context, api_stream, health_check))]
+#[instrument(name = "ScInternalService", skip(context, api_stream))]
 async fn dispatch_loop(
     context: SharedContext,
     spu_id: SpuId,
     mut api_stream: impl Stream<Item = Result<InternalScRequest, SocketError>> + Unpin,
     mut sink: FluvioSink,
-    health_check: SharedHealthCheck,
 ) -> Result<(), SocketError> {
-    let mut time_left = Duration::from_secs(HEALTH_DURATION);
-
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
+
+    // send initial changes
+
+    let mut health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
 
     loop {
         use tokio::select;
         use futures_util::stream::StreamExt;
-        use fluvio_future::timer::sleep;
-
-        let health_time = Instant::now();
-        debug!(
-            "waiting for SPU channel or updates {}, health check left: {} secs",
-            spu_id,
-            time_left.as_secs()
-        );
 
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
 
-        debug!("waiting for events");
+        trace!(spu_id, "waiting for SPU channel");
 
         select! {
 
-            _ = sleep(time_left) => {
-                debug!("send spu health up");
-                health_check.update(spu_id,true).await;
-                time_left = Duration::from_secs(HEALTH_DURATION);
+            _ = &mut health_check_timer => {
+                debug!("health check timer expired. ending");
+                break;
             },
 
             spu_request_msg = api_stream.next() =>  {
 
 
                 if let Some(spu_request) = spu_request_msg {
-                    tracing::trace!("received spu: {} request: {:#?}",spu_id,spu_request);
 
                     if let Ok(req_message) = spu_request {
                         match req_message {
                             InternalScRequest::UpdateLrsRequest(msg) => {
-                                debug!("received lrs request: {}",msg);
                                 receive_lrs_update(&context,msg.request).await;
                             },
                             InternalScRequest::RegisterSpuRequest(msg) => {
@@ -160,24 +147,29 @@ async fn dispatch_loop(
                                 receive_replica_remove(&context,msg.request).await;
                             }
                         }
+                        // reset timer
+                        health_check_timer = sleep(Duration::from_secs(HEALTH_DURATION));
+                        trace!("health check reset");
                     } else {
-                        debug!("no spu content: {}",spu_id);
+                        debug!(spu_id,"no message content, ending processing loop");
+                        break;
                     }
                 } else {
-                    debug!("end of connection to spu: {}",spu_id);
+                    debug!(spu_id,"detected end of stream, ending processing loop");
                     break;
                 }
 
-                time_left -= health_time.elapsed();
+
             },
 
 
             _ = spu_spec_listener.listen() => {
-                debug!("spu spec changed");
+                debug!("spec lister changed");
             },
 
             _ = partition_spec_listener.listen() => {
-                debug!("partition spec changed");
+                debug!("partition lister changed");
+
             }
 
         }
@@ -187,10 +179,18 @@ async fn dispatch_loop(
 }
 
 /// send lrs update to metadata stores
+#[instrument(skip(ctx, requests))]
 async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
+    let requests = requests.into_requests();
+    if requests.is_empty() {
+        trace!("no requests, just health check");
+        return;
+    } else {
+        debug!(?requests, "received lr requests");
+    }
     let mut actions = vec![];
     let read_guard = ctx.partitions().store().read().await;
-    for lrs_req in requests.into_requests().into_iter() {
+    for lrs_req in requests.into_iter() {
         if let Some(partition) = read_guard.get(&lrs_req.id) {
             let mut current_status = partition.inner().status().clone();
             let key = lrs_req.id.clone();
@@ -258,13 +258,11 @@ async fn send_spu_spec_changes(
     spu_id: SpuId,
 ) -> Result<(), SocketError> {
     if !listener.has_change() {
-        debug!("changes is empty, skipping");
         return Ok(());
     }
 
     let changes = listener.sync_spec_changes().await;
     if changes.is_empty() {
-        debug!("spec changes is empty, skipping");
         return Ok(());
     }
 

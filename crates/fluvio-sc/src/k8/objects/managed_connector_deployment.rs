@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::dispatcher::core::Spec;
 use crate::dispatcher::core::Status;
-use crate::stores::managed_connector::ManagedConnectorSpec;
+use crate::stores::connector::ManagedConnectorSpec;
 
 pub use k8_types::app::deployment::DeploymentStatus as K8DeploymentStatus;
 pub use k8_types::app::deployment::DeploymentSpec as K8DeploymentSpec;

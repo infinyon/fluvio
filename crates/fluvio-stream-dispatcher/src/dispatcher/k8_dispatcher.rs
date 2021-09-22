@@ -187,6 +187,7 @@ where
     ///
     #[instrument(skip(self))]
     async fn retrieve_all_k8_items(&mut self) -> Result<String, IoError> {
+        debug!("retrieving all k8 items");
         let k8_objects = self
             .client
             .retrieve_items::<S::K8Spec, _>(self.namespace.clone())
@@ -194,7 +195,7 @@ where
             .map_err(|err| {
                 IoError::new(
                     ErrorKind::InvalidData,
-                    format!("error retrieving k8: {}", err),
+                    format!("error retrieving k8: {:?}", err),
                 )
             })?;
 
@@ -236,8 +237,8 @@ where
                     let meta = K8MetaItem::new(key.to_string(), self.namespace.named().to_owned());
                     (spec, meta)
                 };
-                if let Err(err) = self.ws_update_service.update_spec(metadata.clone(), spec).await {
-                    error!("error: {}, update spec {:?}, metadata: {:#?}", S::LABEL, err, metadata);
+                if let Err(err) = self.ws_update_service.update_spec(metadata, spec).await {
+                    error!("error: {:#?}, update spec {:#?}", S::LABEL, err);
                 }
             }
             WSAction::UpdateStatus((key, status)) => {

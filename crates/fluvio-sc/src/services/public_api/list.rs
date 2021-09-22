@@ -30,7 +30,7 @@ pub async fn handle_list_request<AC: AuthContext>(
             super::partition::handle_fetch_request(filter, auth_ctx).await?
         }
         ListRequest::ManagedConnector(filter) => {
-            super::managed_connectors::handle_fetch_request(filter, auth_ctx).await?
+            super::connector::handle_fetch_request(filter, auth_ctx).await?
         }
     };
 

@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt, time::Duration};
 
-use tracing::{debug, trace, error, instrument};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
@@ -64,7 +64,17 @@ impl SpuServiceController {
         use tokio::select;
 
         let mut spg_listener = self.groups.change_listener();
+        let _ = spg_listener.wait_for_initial_sync().await;
         let mut config_listener = self.configs.change_listener();
+        let _ = config_listener.wait_for_initial_sync().await;
+
+        // at this point k8 config should be loaded
+        if let Some(config) = self.configs.store().value("fluvio").await {
+            info!("k8 config: {:#?}", config.spec);
+        } else {
+            // this should never happen
+            warn!("K8 config not loaded initially");
+        }
 
         self.sync_with_spg(&mut spg_listener).await?;
         self.sync_with_config(&mut config_listener).await?;
@@ -140,7 +150,7 @@ impl SpuServiceController {
             self.update_services(updates, config.inner_owned().spec)
                 .await?;
         } else {
-            error!("config map is not loaded, skipping");
+            return Err(ClientError::Other("fluvio config not found".to_owned()));
         }
 
         Ok(())

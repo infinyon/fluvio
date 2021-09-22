@@ -42,7 +42,7 @@ use common::PrintTerminal;
 use crate::install::fluvio_extensions_dir;
 use fluvio::Fluvio;
 
-const VERSION: &str = include_str!("VERSION");
+const VERSION: &str = include_str!("../../../VERSION");
 
 /// Fluvio Command Line Interface
 #[derive(StructOpt, Debug)]

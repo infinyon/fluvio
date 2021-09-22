@@ -70,7 +70,12 @@ impl SpgStatefulSetController {
         use tokio::select;
 
         let mut spg_listener = self.groups.change_listener();
+        let _ = spg_listener.wait_for_initial_sync().await;
+
         let mut config_listener = self.configs.change_listener();
+        let _ = config_listener.wait_for_initial_sync().await;
+
+        debug!("initial sync has been done");
 
         self.sync_spgs_to_statefulset(&mut spg_listener).await?;
         self.sync_with_config(&mut config_listener).await?;
@@ -129,16 +134,18 @@ impl SpgStatefulSetController {
         listener: &mut K8ChangeListener<SpuGroupSpec>,
     ) -> Result<(), ClientError> {
         if !listener.has_change() {
-            trace!("no spg change, skipping");
+            debug!("no spg change, skipping");
             return Ok(());
         }
+
+        debug!("start syncing spg");
 
         let changes = listener.sync_changes().await;
         let epoch = changes.epoch;
         let (updates, deletes) = changes.parts();
 
         debug!(
-            "received service changes updates: {},deletes: {},epoch: {}",
+            "received spg changes updates: {},deletes: {},epoch: {}",
             updates.len(),
             deletes.len(),
             epoch,
@@ -152,7 +159,7 @@ impl SpgStatefulSetController {
                 self.sync_spg_to_statefulset(spu_group, &config).await?
             }
         } else {
-            error!("config map is not loaded, skipping");
+            error!("fluvio config map not found, skipping");
         }
 
         Ok(())
@@ -177,7 +184,7 @@ impl SpgStatefulSetController {
         } else {
             // if we pass this stage, then we reserved id.
             if !spu_group.is_already_valid() {
-                debug!("not valid");
+                debug!("not validated, setting to reserve status");
                 let status = SpuGroupStatus::reserved();
                 self.groups
                     .update_status(spg_name.to_owned(), status)
@@ -185,13 +192,16 @@ impl SpgStatefulSetController {
                 return Ok(());
             }
 
-            debug!("continue");
+            debug!("spg group is valid, generating statefulset");
             let (spg_service_key, spg_service_action) = spu_group.as_service();
 
+            debug!("starting spg service generation");
             trace!("spg_service_actions: {:#?}", spg_service_action);
             self.spg_services
                 .wait_action(&spg_service_key, spg_service_action)
                 .await?;
+
+            debug!("starting stateful set generation");
 
             let (stateful_key, stateful_action) =
                 spu_group.as_statefulset(&self.namespace, spu_k8_config, self.tls.as_ref());
@@ -203,5 +213,90 @@ impl SpgStatefulSetController {
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use tracing::debug;
+
+    use fluvio_stream_dispatcher::actions::WSAction;
+    use fluvio_stream_dispatcher::dispatcher::K8ClusterStateDispatcher;
+
+    use crate::k8::fixture::TestEnv;
+    use super::*;
+
+    //
+    // apiVersion: v1
+    // data:
+    //   image: infinyon/fluvio:b9281e320266e295e75200d10b769967e23d3ed2
+    // lbServiceAnnotations: '{"fluvio.io/ingress-address":"192.168.208.2"}'
+    // podSecurityContext: '{}'
+    // service: '{"type":"NodePort"}'
+    // spuPodConfig: '{"nodeSelector":{},"resources":{"limits":{"memory":"1Gi"},"requests":{"memory":"256Mi"}},"storageClass":null}'
+    //kind: ConfigMap
+
+    #[fluvio_future::test(ignore)]
+    async fn test_statefulset() {
+        let test_env = TestEnv::create().await;
+        let (global_ctx, config_ctx) = test_env.create_global_ctx().await;
+
+        let statefulset_ctx: StoreContext<StatefulsetSpec> = StoreContext::new();
+        let spg_service_ctx: StoreContext<SpgServiceSpec> = StoreContext::new();
+
+        // start statefullset dispatcher
+        K8ClusterStateDispatcher::<_, _>::start(
+            test_env.ns().to_owned(),
+            test_env.client().clone(),
+            statefulset_ctx.clone(),
+        );
+
+        // start spg service dispatcher
+        K8ClusterStateDispatcher::<_, _>::start(
+            test_env.ns().to_owned(),
+            test_env.client().clone(),
+            spg_service_ctx.clone(),
+        );
+
+        K8ClusterStateDispatcher::<_, _>::start(
+            test_env.ns().to_owned(),
+            test_env.client().clone(),
+            global_ctx.spgs().clone(),
+        );
+
+        SpgStatefulSetController::start(
+            test_env.ns().to_owned(),
+            config_ctx.clone(),
+            global_ctx.spgs().clone(),
+            statefulset_ctx,
+            global_ctx.spus().clone(),
+            spg_service_ctx,
+            None,
+        );
+
+        // wait for controllers to startup
+        sleep(Duration::from_millis(10)).await;
+
+        // create spu group
+        let spg_name = "test".to_string();
+        let spg_spec = SpuGroupSpec {
+            replicas: 1,
+            ..Default::default()
+        };
+        global_ctx
+            .spgs()
+            .wait_action(
+                &spg_name,
+                WSAction::UpdateSpec((spg_name.clone(), spg_spec)),
+            )
+            .await
+            .expect("create");
+
+        debug!("spu group has been created");
+
+        sleep(Duration::from_secs(10)).await;
+
+        //test_env.delete().await;
     }
 }

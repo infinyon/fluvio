@@ -20,20 +20,25 @@ pub struct MetadataStores {
     partitions: StoreContext<PartitionSpec>,
     topics: StoreContext<TopicSpec>,
     socket: SharedMultiplexerSocket,
+    watch_version: i16,
 }
 
 impl MetadataStores {
     /// start synchronization
 
     #[instrument(skip(socket))]
-    pub async fn start(socket: SharedMultiplexerSocket) -> Result<Self, SocketError> {
-        debug!("starting metadata store");
+    pub async fn start(
+        socket: SharedMultiplexerSocket,
+        watch_version: i16,
+    ) -> Result<Self, SocketError> {
+        debug!(watch_version, "starting metadata store");
         let store = Self {
             shutdown: SimpleEvent::shared(),
             spus: StoreContext::new(),
             partitions: StoreContext::new(),
             topics: StoreContext::new(),
             socket,
+            watch_version,
         };
 
         store.start_watch_for_spu().await?;
@@ -65,7 +70,9 @@ impl MetadataStores {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
-        let req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
+        let mut req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
+        req_msg.get_mut_header().set_api_version(self.watch_version);
+
         debug!("create spu metadata stream");
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 

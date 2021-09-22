@@ -13,7 +13,7 @@ use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane_metadata::topic::TopicSpec;
-use fluvio_controlplane_metadata::managed_connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
 use crate::services::auth::AuthServiceContext;
 use crate::stores::{StoreContext, K8ChangeListener};

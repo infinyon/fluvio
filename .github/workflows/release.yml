@@ -23,8 +23,30 @@ env:
   FORCE_RELEASE: ${{ github.event.inputs.force }}
 
 jobs:
+  cd_dev_check:
+    name: CD_Dev check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Get status of latest CD_Dev run
+        id: cd_dev_check
+        run: |
+          gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt  
+          echo "Latest CD_Dev run: $(cat /tmp/cd_dev_latest.txt | jq .html_url | tr -d '"')"
+          CD_DEV_CHECK=$(cat /tmp/cd_dev_latest.txt | jq .conclusion | tr -d '"')
+          if [[ "$CD_DEV_CHECK" = "success" ]]
+          then
+            echo ✅ Most recent CD_Dev run passed
+            exit 0;
+          else
+            echo ❌ Most recent CD_Dev run failed
+            exit 1;
+          fi
   setup_job:
     name: Setup workflow
+    needs: [cd_dev_check]
     runs-on: ubuntu-latest
     outputs:
       VERSION: ${{ steps.version_step.outputs.VERSION }}
@@ -87,6 +109,26 @@ jobs:
       - name: Download artifacts from dev
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: gh release download -R infinyon/fluvio dev
+
+      # Release conventions expect the top-most release in CHANGELOG.md to be the version we're releasing
+      # The date is expected to be UNRELEASED, which we will replace with the current date
+      - name: Build release notes from CHANGELOG.md
+        if: ${{ steps.release_check.outcome == 'failure' }}
+        run: |
+          touch /tmp/release_notes
+          echo "# Release Notes" >> /tmp/release_notes
+          VERSION=$(cat VERSION)
+          cat CHANGELOG.md | sed -e '/./{H;$!d;}' -e "x;/##\ Platform\ Version\ $VERSION/"'!d;' >> /tmp/release_notes
+
+          # Replace UNRELEASED w/ date YYYY-MM-dd
+          export TZ=":America/Los_Angeles"
+          DATE=$(date +%F)
+          cat /tmp/release_notes | sed -i "s/UNRELEASED/$DATE/" /tmp/release_notes
+
+          # Print the release notes to stdout
+          cat /tmp/release_notes
+
+      # The newly created releases uses the generated changelog from the previous step
       - name: Create GH Release
         if: ${{ steps.release_check.outcome == 'failure' }}
         run: |
@@ -97,7 +139,7 @@ jobs:
           ARTIFACTS=(./*)
           gh release create -R infinyon/fluvio \
             --title="v${{ env.VERSION }}" \
-            -F ../CHANGELOG.md \
+            -F /tmp/release_notes \
             "v${{ env.VERSION }}" \
             "${ARTIFACTS[@]}"
 
@@ -299,6 +341,40 @@ jobs:
             #git rebase origin/master
             #git push origin stable
           fi
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  publish_crates:
+    name: Publish crates to crates.io 
+    strategy:
+      matrix:
+        rust: [stable]
+    needs: [bump_stable_fluvio]
+    runs-on: ubuntu-latest
+    #permissions: write-all
+    steps:
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - uses: actions/checkout@v2
+
+      - name: Run publish script
+        env:
+          VERBOSE: true
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          ./release-scripts/publish-crates.sh
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3

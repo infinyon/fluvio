@@ -95,10 +95,10 @@ impl StreamFetchHandler {
             );
 
             let sm_engine = SmartStreamEngine::default();
-            debug!("Has WASM payload: {}", msg.wasm_payload.is_some());
 
             let smartstream = if let Some(payload) = msg.wasm_payload {
                 let wasm = &payload.wasm.get_raw()?;
+                debug!(len = wasm.len(), "creating WASM module with bytes");
                 let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
                     SocketError::Io(IoError::new(
                         ErrorKind::Other,
@@ -128,13 +128,20 @@ impl StreamFetchHandler {
                         Box::new(map)
                     }
                     SmartStreamKind::Aggregate { accumulator } => {
+                        debug!(
+                            accumulator_len = accumulator.len(),
+                            "Instantiating SmartStreamAggregate"
+                        );
                         let aggregator =
                             module
                                 .create_aggregate(&sm_engine, accumulator)
                                 .map_err(|err| {
                                     SocketError::Io(IoError::new(
                                         ErrorKind::Other,
-                                        format!("Failed to instantiate SmartStreamMap {}", err),
+                                        format!(
+                                            "Failed to instantiate SmartStreamAggregate {}",
+                                            err
+                                        ),
                                     ))
                                 })?;
                         Box::new(aggregator)
@@ -209,6 +216,7 @@ impl StreamFetchHandler {
         }
     }
 
+    #[instrument(skip(self, smartstream))]
     async fn inner_process(
         &mut self,
         starting_offset: Offset,
@@ -464,6 +472,9 @@ impl StreamFetchHandler {
             records = batch.records().len(),
             "sending back to consumer"
         );
+
+        //trace!("batch: {:#?}",batch);
+
         let records = RecordSet::default().add(batch);
         let partition_response = DefaultPartitionResponse {
             partition_index: self.replica.partition,
@@ -756,7 +767,7 @@ mod test {
             .parent()
             .expect("parent")
             .join(format!(
-                "fluvio-smartstream/examples/target/wasm32-unknown-unknown/debug/{}.wasm",
+                "fluvio-smartstream/examples/target/wasm32-unknown-unknown/release/{}.wasm",
                 module_name
             ));
         read_filter_from_path(wasm_path)
@@ -1354,7 +1365,7 @@ mod test {
     }
 
     #[fluvio_future::test(ignore)]
-    async fn test_stream_aggregate_fetch() {
+    async fn test_stream_aggregate_fetch_single_batch() {
         let test_path = temp_dir().join("aggregate_stream_fetch");
         ensure_clean_dir(&test_path);
 
@@ -1383,7 +1394,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Aggregate {
-                accumulator: Vec::from("789".repeat(100)),
+                accumulator: Vec::from("A"),
             },
         };
 
@@ -1398,15 +1409,17 @@ mod test {
             ..Default::default()
         };
 
-        // Aggregate 10 records
+        // Aggregate 5 records
         // These records look like:
         //
-        // 000000000000000000... x100
-        // 111111111111111111... x100
-        // 222222222222222222... x100
+        // 1
+        // 2
+        // 3
+        // 4
+        // 5
         let mut records = BatchProducer::builder()
-            .records(10u16)
-            .record_generator(Arc::new(|i, _| Record::new(i.to_string().repeat(100))))
+            .records(5u16)
+            .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
             .build()
             .expect("batch")
             .records();
@@ -1432,20 +1445,148 @@ mod test {
 
             let partition = &response.partition;
             assert_eq!(partition.error_code, ErrorCode::None);
-            assert_eq!(partition.high_watermark, 10);
-            assert_eq!(partition.next_offset_for_fetch(), Some(10)); // shoule be same as HW
+            assert_eq!(partition.high_watermark, 5);
+            assert_eq!(partition.next_offset_for_fetch(), Some(5)); // shoule be same as HW
 
             assert_eq!(partition.records.batches.len(), 1);
             let batch = &partition.records.batches[0];
             assert_eq!(batch.base_offset, 0);
-            assert_eq!(batch.records().len(), 10);
+            assert_eq!(batch.records().len(), 5);
 
-            let mut accumulator = "789".repeat(100);
-            for i in 0..10 {
-                accumulator.push_str(&i.to_string().repeat(100));
-                assert_eq!(batch.records()[i].value().as_ref(), accumulator.as_bytes());
-                assert_eq!(batch.records()[i].get_offset_delta(), i as i64);
-            }
+            let records = batch.records();
+
+            assert_eq!("A0", records[0].value().as_str().expect("string"));
+            assert_eq!("A01", records[1].value().as_str().expect("string"));
+            assert_eq!("A012", records[2].value().as_str().expect("string"));
+            assert_eq!("A0123", records[3].value().as_str().expect("string"));
+            assert_eq!("A01234", records[4].value().as_str().expect("string"));
+        }
+
+        // consumer can send back to same offset to read back again
+        debug!("send back offset ack to SPU");
+        client_socket
+            .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
+                offsets: vec![OffsetUpdate {
+                    offset: 20,
+                    session_id: stream_id,
+                }],
+            }))
+            .await
+            .expect("send offset");
+
+        server_end_event.notify();
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_aggregate_fetch_multiple_batch() {
+        let test_path = temp_dir().join("aggregate_stream_fetch");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12009";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::new(FluvioSocket::connect(addr).await.expect("connect"));
+
+        let topic = "testaggregatebatch";
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        // Aggregate 5 records
+        // These records look like:
+        //
+        // 1
+        // 2
+        // 3
+        // 4
+        // 5
+        let mut records = BatchProducer::builder()
+            .records(1u16)
+            .record_generator(Arc::new(|_, _| Record::new("0")))
+            .build()
+            .expect("batch")
+            .records();
+        debug!("first batch: {:#?}", records);
+
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
+
+        let mut records2 = BatchProducer::builder()
+            .records(1u16)
+            .record_generator(Arc::new(|_, _| Record::new("1")))
+            .build()
+            .expect("batch")
+            .records();
+
+        debug!("2nd batch: {:#?}", records2);
+
+        replica
+            .write_record_set(&mut records2, ctx.follower_notifier())
+            .await
+            .expect("write");
+
+        // Providing an accumulator causes SPU to run aggregator
+        let wasm = load_wasm_module("fluvio_wasm_aggregate");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Aggregate {
+                accumulator: Vec::from("A"),
+            },
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        debug!("first aggregate fetch");
+        let response = stream.next().await.expect("first").expect("response");
+        let stream_id = response.stream_id;
+
+        {
+            debug!("received first message");
+            assert_eq!(response.topic, topic);
+
+            let partition = &response.partition;
+            assert_eq!(partition.error_code, ErrorCode::None);
+            assert_eq!(partition.high_watermark, 2);
+            assert_eq!(partition.next_offset_for_fetch(), Some(2)); // shoule be same as HW
+
+            assert_eq!(partition.records.batches.len(), 1);
+            let batch = &partition.records.batches[0];
+            assert_eq!(batch.base_offset, 0);
+            assert_eq!(batch.records().len(), 2);
+
+            let records = batch.records();
+
+            assert_eq!("A0", records[0].value().as_str().expect("string"));
+            assert_eq!("A1", records[1].value().as_str().expect("string"));
+            //   assert_eq!("A2", records[2].value().as_str().expect("string"));
+            //   assert_eq!("A3", records[3].value().as_str().expect("string"));
+            //   assert_eq!("A4", records[4].value().as_str().expect("string"));
         }
 
         // consumer can send back to same offset to read back again

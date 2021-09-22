@@ -1,7 +1,7 @@
 pub mod topic;
 pub mod spu;
 pub mod spg;
-pub mod managed_connector;
+pub mod connector;
 pub mod partition;
 pub mod versions;
 pub mod objects;

@@ -2,49 +2,75 @@
 //! # Auth Controller
 //!
 
-use tracing::{debug, trace, instrument};
+use std::time::Duration;
+
+use fluvio_controlplane_metadata::store::ChangeListener;
+use fluvio_future::timer::sleep;
+use tracing::{debug, trace, info, error, instrument};
 
 use fluvio_future::task::spawn;
+use fluvio_controlplane_metadata::core::MetadataItem;
+use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 
-use crate::core::SharedContext;
 use crate::stores::{StoreContext};
 use crate::stores::partition::PartitionSpec;
 use crate::stores::spu::SpuSpec;
-use crate::stores::K8ChangeListener;
 
 use super::reducer::PartitionReducer;
 
 /// Handles Partition election
 #[derive(Debug)]
-pub struct PartitionController {
-    partitions: StoreContext<PartitionSpec>,
-    spus: StoreContext<SpuSpec>,
-    reducer: PartitionReducer,
+pub struct PartitionController<C = K8MetaItem>
+where
+    C: MetadataItem + Send + Sync,
+{
+    partitions: StoreContext<PartitionSpec, C>,
+    spus: StoreContext<SpuSpec, C>,
+    reducer: PartitionReducer<C>,
 }
 
-impl PartitionController {
-    pub fn start(ctx: SharedContext) {
-        let partitions = ctx.partitions().clone();
-        let spus = ctx.spus().clone();
-
+impl<C> PartitionController<C>
+where
+    C: MetadataItem + Send + Sync + 'static,
+{
+    pub fn start(partitions: StoreContext<PartitionSpec, C>, spus: StoreContext<SpuSpec, C>) {
         let controller = Self {
+            reducer: PartitionReducer::new(partitions.store().clone(), spus.store().clone()),
             partitions,
             spus,
-            reducer: PartitionReducer::new(
-                ctx.partitions().store().clone(),
-                ctx.spus().store().clone(),
-            ),
         };
 
         spawn(controller.dispatch_loop());
     }
+}
 
+impl<C> PartitionController<C>
+where
+    C: MetadataItem + Send + Sync,
+{
     #[instrument(skip(self), name = "PartitionController")]
     async fn dispatch_loop(mut self) {
+        info!("started");
+        loop {
+            if let Err(err) = self.inner_loop().await {
+                error!("error with inner loop: {:#?}", err);
+                debug!("sleeping 10 seconds try again");
+                sleep(Duration::from_secs(10)).await;
+            }
+        }
+    }
+
+    async fn inner_loop(&mut self) -> Result<(), ()> {
         use tokio::select;
 
+        debug!("initializing listeners");
         let mut spu_status_listener = self.spus.change_listener();
+        let _ = spu_status_listener.wait_for_initial_sync().await;
+
         let mut partition_listener = self.partitions.change_listener();
+        let _ = partition_listener.wait_for_initial_sync().await;
+
+        debug!("finish initializing listeners");
 
         loop {
             self.sync_spu_changes(&mut spu_status_listener).await;
@@ -55,7 +81,7 @@ impl PartitionController {
             select! {
 
                 _ = spu_status_listener.listen() => {
-                    debug!("detected spus status changed");
+                    debug!("detected spus changes");
                 },
                 _ = partition_listener.listen() => {
                     debug!("detected partition changes");
@@ -68,7 +94,7 @@ impl PartitionController {
     }
 
     #[instrument(skip(self, listener))]
-    async fn sync_partition_changes(&mut self, listener: &mut K8ChangeListener<PartitionSpec>) {
+    async fn sync_partition_changes(&mut self, listener: &mut ChangeListener<PartitionSpec, C>) {
         if !listener.has_change() {
             trace!("no partitions change");
             return;
@@ -77,7 +103,7 @@ impl PartitionController {
         // we only care about delete timestamp changes which are in metadata only
         let changes = listener.sync_meta_changes().await;
         if changes.is_empty() {
-            trace!("no partition metadata changes");
+            debug!("no partition metadata changes");
             return;
         }
 
@@ -97,16 +123,15 @@ impl PartitionController {
 
     /// sync spu states to partition
     /// check to make sure
-    async fn sync_spu_changes(&mut self, listener: &mut K8ChangeListener<SpuSpec>) {
+    async fn sync_spu_changes(&mut self, listener: &mut ChangeListener<SpuSpec, C>) {
         if !listener.has_change() {
             trace!("no spu changes");
             return;
         }
 
-        trace!("sync spu changes");
         let changes = listener.sync_status_changes().await;
         if changes.is_empty() {
-            trace!("no spu changes");
+            debug!("no spu status changes");
             return;
         }
 
@@ -130,3 +155,71 @@ impl PartitionController {
         }
     }
 }
+
+/*
+TODO: in progress, do not delete
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    mod meta {
+        use fluvio_controlplane_metadata::core::{MetadataItem, MetadataRevExtension};
+
+        /// simple memory representation of meta
+        #[derive(Debug, Default, PartialEq, Clone)]
+        pub struct MemoryMeta {
+            pub rev: u32,
+        }
+
+        impl MetadataItem for MemoryMeta {
+            type UId = u32;
+
+            fn uid(&self) -> &Self::UId {
+                &self.rev
+            }
+
+            fn is_newer(&self, another: &Self) -> bool {
+                self.rev >= another.rev
+            }
+        }
+
+        impl MetadataRevExtension for MemoryMeta {
+            fn next_rev(&self) -> Self {
+                Self { rev: self.rev + 1 }
+            }
+        }
+
+        impl MemoryMeta {
+            pub fn new(rev: u32) -> Self {
+                Self { rev }
+            }
+        }
+
+        /*
+        impl From<u32> for MetadataContext<MemoryMeta> {
+            fn from(val: u32) -> MetadataContext<MemoryMeta> {
+                MemoryMeta::new(val).into()
+            }
+        }
+        */
+    }
+
+    use fluvio_controlplane_metadata::store::MetadataStoreObject;
+    use meta::*;
+
+    type MemPartition = MetadataStoreObject<PartitionSpec, MemoryMeta>;
+    type MemSpu = MetadataStoreObject<SpuSpec, MemoryMeta>;
+
+    #[fluvio_future::test(ignore)]
+    async fn test_election() {
+        let partitions: StoreContext<PartitionSpec, MemoryMeta> = StoreContext::new();
+        let spus: StoreContext<SpuSpec, MemoryMeta> = StoreContext::new();
+
+        let controller = PartitionController::start(partitions.clone(), spus.clone());
+
+        // add partitions
+        spus.store().sync_all(vec![]).await;
+    }
+}
+*/

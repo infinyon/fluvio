@@ -71,6 +71,7 @@ impl K8SpuController {
     async fn inner_loop(&mut self) -> Result<(), ClientError> {
         use tokio::select;
 
+        debug!("initializing listeners");
         let mut service_listener = self.services.change_listener();
         let _ = service_listener.wait_for_initial_sync().await;
 
@@ -79,6 +80,8 @@ impl K8SpuController {
 
         let mut spu_listener = self.spus.change_listener();
         let _ = spu_listener.wait_for_initial_sync().await;
+
+        debug!("finish initializing listeners");
 
         loop {
             self.sync_spu().await?;

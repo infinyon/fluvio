@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
-use tracing::{debug, instrument};
+use tracing::{debug};
 use tokio::sync::OnceCell;
 
 use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
@@ -25,6 +25,7 @@ pub struct Fluvio {
     versions: Versions,
     spu_pool: OnceCell<Arc<SpuPool>>,
     metadata: MetadataStores,
+    watch_version: i16,
 }
 
 impl Fluvio {
@@ -68,38 +69,47 @@ impl Fluvio {
         Self::connect_with_connector(connector, config).await
     }
 
-    #[instrument(skip(connector))]
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
+        use fluvio_sc_schema::objects::WatchRequest;
+        use fluvio_protocol::api::Request;
+
         let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
         let inner_client = config.connect().await?;
         debug!("connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
-        debug!(platform = %versions.platform_version(),"checking platform version");
-        check_platform_compatible(versions.platform_version())?;
 
-        let socket = MultiplexerSocket::shared(socket);
+        // get version for watch
+        if let Some(watch_version) = versions.lookup_version(WatchRequest::API_KEY) {
+            debug!(platform = %versions.platform_version(),"checking platform version");
+            check_platform_compatible(versions.platform_version())?;
 
-        let metadata = MetadataStores::start(socket.clone()).await?;
+            let socket = MultiplexerSocket::shared(socket);
+            let metadata = MetadataStores::start(socket.clone(), watch_version).await?;
 
-        let spu_pool = OnceCell::new();
-        Ok(Self {
-            socket,
-            config,
-            versions,
-            spu_pool,
-            metadata,
-        })
+            let spu_pool = OnceCell::new();
+            Ok(Self {
+                socket,
+                config,
+                versions,
+                spu_pool,
+                metadata,
+                watch_version,
+            })
+        } else {
+            Err(FluvioError::Other("WatchApi versio not found".to_string()))
+        }
     }
 
     /// lazy get spu pool
     async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
         self.spu_pool
             .get_or_try_init(|| async {
-                let metadata = MetadataStores::start(self.socket.clone()).await?;
+                let metadata =
+                    MetadataStores::start(self.socket.clone(), self.watch_version).await?;
                 let pool = SpuPool::start(self.config.clone(), metadata);
                 Ok(Arc::new(pool?))
             })

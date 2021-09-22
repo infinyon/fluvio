@@ -106,6 +106,10 @@ impl CliError {
                     println!("Topic not found");
                     Ok(())
                 }
+                ApiError::Code(ErrorCode::TopicInvalidName, _) => {
+                    println!("Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).");
+                    Ok(())
+                }
                 _ => Err(self),
             },
             #[cfg(feature = "k8s")]

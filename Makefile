@@ -10,7 +10,7 @@ RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
 CLIENT_LOG=warn
-SERVER_LOG=fluvio=debug
+SERVER_LOG=info
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
 DEFAULT_SPU=2
 REPL=2
@@ -113,8 +113,19 @@ test-permission-user1:
 		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
 
-k8-setup:
+
+k8-setup:	ensure_fluvio_bin
 	$(FLUVIO_BIN) cluster start --setup --develop
+
+
+ifeq (${CI},true)
+ensure_fluvio_bin:
+else
+# When not in CI (i.e. development), need build cli
+ensure_fluvio_bin: build-cli
+endif
+
+
 
 # Kubernetes Tests
 
@@ -155,7 +166,7 @@ validate-release-stable:
 ifeq (${CI},true)
 # In CI, we expect all artifacts to already be built and loaded for the script
 longevity-test:
-	$(TEST_BIN) -d -k longevity -- --runtime-seconds=600
+	$(TEST_BIN) -d -k longevity -- --runtime-seconds=1800
 else
 # When not in CI (i.e. development), load the dev k8 image before running test
 longevity-test: build-test
@@ -215,20 +226,27 @@ install-clippy:
 	rustup component add clippy --toolchain $(RUSTV)
 
 # Use check first to leverage sccache, the clippy piggybacks
-check-clippy: install-clippy install_rustup_target 
+check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
 build_smartstreams:
 	make -C crates/fluvio-smartstream/examples build
 
-run-all-unit-test: install_rustup_target 
+run-all-unit-test: install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C crates/fluvio-protocol
 
-run-integration-test:build_smartstreams install_rustup_target 
-	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -- --ignored --test-threads=1
+run-integration-test:build_smartstreams install_rustup_target
+	cargo test  $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-connector-manager
+	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-spu -- --ignored --test-threads=1
+	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-socket -- --ignored --test-threads=1
+
+
+run-k8-test:	install_rustup_target k8-setup build_k8_image
+	cargo test --lib  -p fluvio-sc  -- --ignored --test-threads=1
+
 
 run-all-doc-test: install_rustup_target 
 	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)

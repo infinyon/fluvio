@@ -1,4 +1,6 @@
 use std::convert::TryFrom;
+
+use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::TypedFunc;
 
@@ -36,7 +38,9 @@ impl SmartStreamAggregate {
 }
 
 impl SmartStream for SmartStreamAggregate {
+    #[instrument(skip(self,base),fields(offset = base.base_offset))]
     fn process(&mut self, base: SmartStreamInput) -> Result<SmartStreamOutput> {
+        debug!("start aggregration");
         let input = SmartStreamAggregateInput {
             base,
             accumulator: self.accumulator.clone(),
@@ -44,6 +48,7 @@ impl SmartStream for SmartStreamAggregate {
         let slice = self.base.write_input(&input)?;
         let aggregate_output = self.aggregate_fn.call(&mut self.base.store, slice)?;
 
+        debug!(aggregate_output);
         if aggregate_output < 0 {
             let internal_error = SmartStreamInternalError::try_from(aggregate_output)
                 .unwrap_or(SmartStreamInternalError::UnknownError);

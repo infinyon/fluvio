@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::fmt::Display;
 use std::io::Error;
 use std::io::ErrorKind;
+use std::str::Utf8Error;
 
 use content_inspector::{inspect, ContentType};
 use tracing::{trace, warn};
@@ -93,6 +94,11 @@ impl RecordData {
         } else {
             format!("text: '{}'", self)
         }
+    }
+
+    // as string slice
+    pub fn as_str(&self) -> Result<&str, Utf8Error> {
+        std::str::from_utf8(self.as_ref())
     }
 }
 
