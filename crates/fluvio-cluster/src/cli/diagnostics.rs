@@ -4,14 +4,9 @@ use fluvio::config::ConfigFile;
 use duct::cmd;
 use which::which;
 use crate::cli::ClusterCliError;
+use crate::cli::start::get_log_directory;
 
 type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
-
-#[cfg(target_os = "macos")]
-const LOGS_PATH: &str = "/usr/local/var/log/fluvio/";
-
-#[cfg(not(target_os = "macos"))]
-const LOGS_PATH: &str = "/tmp/";
 
 #[derive(StructOpt, Debug)]
 pub struct DiagnosticsOpt {}
@@ -33,20 +28,23 @@ impl DiagnosticsOpt {
             }
             // Guess Kubernetes cluster
             _ => {
-                if which("kubectl").is_err() {
-                    println!("Missing `kubectl`, needed for collecting logs");
-                    return Ok(());
-                }
+                let kubectl = match which("kubectl") {
+                    Ok(kubectl) => kubectl,
+                    Err(_) => {
+                        println!("Missing `kubectl`, needed for collecting logs");
+                        return Ok(());
+                    }
+                };
 
-                let _ = self.copy_kubernetes_logs(temp_path);
-                let _ = self.copy_kubernetes_metadata(temp_path, "pod", true);
-                let _ = self.copy_kubernetes_metadata(temp_path, "service", true);
-                let _ = self.copy_kubernetes_metadata(temp_path, "statefulset", true);
+                let _ = self.copy_kubernetes_logs(&kubectl, temp_path);
+                let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "pod", true);
+                let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "service", true);
+                let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "statefulset", true);
 
                 // Fluvio CRDs
-                let _ = self.copy_kubernetes_metadata(temp_path, "spu", false);
-                let _ = self.copy_kubernetes_metadata(temp_path, "topic", false);
-                let _ = self.copy_kubernetes_metadata(temp_path, "partition", false);
+                let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "spu", false);
+                let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "topic", false);
+                let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "partition", false);
             }
         }
         let _ = self.copy_fluvio_specs(temp_path).await;
@@ -94,7 +92,7 @@ impl DiagnosticsOpt {
     }
 
     fn copy_local_logs(&self, dest_dir: &Path) -> Result<()> {
-        let logs_dir = std::fs::read_dir(LOGS_PATH)?;
+        let logs_dir = std::fs::read_dir(get_log_directory())?;
 
         for entry in logs_dir.flat_map(|it| it.ok()) {
             let to = dest_dir.join(entry.file_name());
@@ -108,10 +106,9 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
-    fn copy_kubernetes_logs(&self, dest_dir: &Path) -> Result<()> {
-        let kubectl = which("kubectl")?;
+    fn copy_kubernetes_logs(&self, kubectl: &Path, dest_dir: &Path) -> Result<()> {
         let pods = cmd!(
-            &kubectl,
+            kubectl,
             "get",
             "pods",
             "-o",
@@ -125,7 +122,7 @@ impl DiagnosticsOpt {
             .collect::<Vec<_>>();
 
         for &pod in &pods {
-            let log_result = cmd!(&kubectl, "logs", pod).stderr_capture().read();
+            let log_result = cmd!(kubectl, "logs", pod).stderr_capture().read();
             let log = match log_result {
                 Ok(log) => log,
                 Err(_) => {
@@ -141,10 +138,15 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
-    fn copy_kubernetes_metadata(&self, dest: &Path, ty: &str, filter_fluvio: bool) -> Result<()> {
-        let kubectl = which("kubectl")?;
+    fn copy_kubernetes_metadata(
+        &self,
+        kubectl: &Path,
+        dest: &Path,
+        ty: &str,
+        filter_fluvio: bool,
+    ) -> Result<()> {
         let objects = cmd!(
-            &kubectl,
+            kubectl,
             "get",
             ty,
             "-o",
@@ -159,7 +161,7 @@ impl DiagnosticsOpt {
             .collect::<Vec<_>>();
 
         for &obj in &objects {
-            let result = cmd!(&kubectl, "get", ty, obj, "-o", "yaml")
+            let result = cmd!(kubectl, "get", ty, obj, "-o", "yaml")
                 .stderr_capture()
                 .read();
             let meta = match result {
