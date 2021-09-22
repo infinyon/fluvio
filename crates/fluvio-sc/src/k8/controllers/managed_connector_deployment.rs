@@ -177,9 +177,7 @@ impl ManagedConnectorDeploymentController {
 
         debug!(?deployment_action, "applying deployment");
 
-        self.deployments
-            .wait_action(key, deployment_action)
-            .await?;
+        self.deployments.wait_action(key, deployment_action).await?;
 
         Ok(())
     }

@@ -91,11 +91,7 @@ mod k8_operator {
         });
 
         whitelist!(config, "k8_spu_service", {
-            SpuServiceController::start(
-                config_ctx,
-                spu_service_ctx,
-                global_ctx.spgs().clone(),
-            );
+            SpuServiceController::start(config_ctx, spu_service_ctx, global_ctx.spgs().clone());
         });
         whitelist!(config, "k8_managed_connector_delpoyment", {
             ManagedConnectorDeploymentController::start(
