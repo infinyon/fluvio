@@ -51,7 +51,7 @@ impl DiagnosticsOpt {
         let _ = self.copy_fluvio_specs(temp_path).await;
 
         let time = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
-        let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.zip", time));
+        let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.tar.gz", time));
         let mut diagnostic_file = std::fs::File::create(&diagnostic_path)?;
         self.zip_files(temp_path, &mut diagnostic_file)
             .map_err(|e| ClusterCliError::Other(format!("failed to zip diagnostics: {}", e)))?;
@@ -60,35 +60,15 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
-    fn zip_files(
-        &self,
-        source: &Path,
-        output: &mut std::fs::File,
-    ) -> Result<(), zip::result::ZipError> {
-        use std::io::Write;
-        use zip::{ZipWriter, write::FileOptions};
+    fn zip_files(&self, source: &Path, output: &mut std::fs::File) -> Result<(), std::io::Error> {
+        use flate2::write::GzEncoder;
 
-        let mut zipper = ZipWriter::new(output);
-        let options = FileOptions::default().compression_method(zip::CompressionMethod::Stored);
-
-        let dir = std::fs::read_dir(source)?;
-        for result in dir {
-            let entry = match result {
-                Ok(entry) => entry,
-                Err(e) => {
-                    println!("Failed to zip file, skipping: {}", e);
-                    continue;
-                }
-            };
-
-            let path = entry.path();
-            let name = entry.file_name().to_string_lossy().to_string();
-            let contents = std::fs::read(path)?;
-            zipper.start_file(format!("diagnostics/{}", name), options)?;
-            zipper.write(&contents)?;
+        let mut gzipper = GzEncoder::new(output, flate2::Compression::default());
+        {
+            let mut archive = tar::Builder::new(&mut gzipper);
+            archive.append_dir_all("diagnostics", source)?;
         }
-
-        zipper.finish()?;
+        gzipper.finish()?;
         Ok(())
     }
 
