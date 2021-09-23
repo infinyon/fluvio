@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use futures_util::StreamExt;
 use async_channel::Receiver;
 
-use tracing::{error, debug};
+use tracing::{error, debug, trace};
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
 use dataplane::ReplicaKey;
@@ -26,8 +26,7 @@ pub(crate) struct Dispatcher {
     /// The partitioning strategy to use
     partitioner: Box<dyn Partitioner + Send + Sync>,
     /// A buffer of records that have yet to be sent to the cluster.
-    buffer: Vec<PendingRecord>,
-    bufferz: HashMap<SpuId, ProduceRequest>,
+    buffer: HashMap<SpuId, ProduceRequest>,
     /// A stream of events that the dispatcher needs to react to.
     incoming: Option<Receiver<DispatcherMessage>>,
     /// A shutdown event used to determine when to quit.
@@ -55,7 +54,6 @@ impl Dispatcher {
             config,
             partitioner,
             buffer: Default::default(),
-            bufferz: Default::default(),
             incoming: Some(incoming),
             shutdown,
         }
@@ -92,7 +90,7 @@ impl Dispatcher {
     async fn handle_event(&mut self, event: Event) -> Result<(), FluvioError> {
         match event {
             Event::ProducerRequest(DispatcherMessage::Record(record)) => {
-                let maybe_flush = self.bufferz_record(record).await?;
+                let maybe_flush = self.buffer_record(record).await?;
                 if let Some((leader, request)) = maybe_flush {
                     let result = self.send_request(leader, request).await;
                     if let Err(e) = result {
@@ -101,7 +99,6 @@ impl Dispatcher {
                 }
             }
             Event::ProducerRequest(DispatcherMessage::Flush(sender)) => {
-                // self.flush_buffer().await?;
                 self.flush_requests().await?;
 
                 // Dropping the sender causes rx.recv() to yield with Err.
@@ -109,8 +106,18 @@ impl Dispatcher {
                 drop(sender);
             }
             Event::Timeout => {
-                debug!("Producer flush timeout, buffer size: {}", self.buffer.len());
-                // self.flush_buffer().await?;
+                let buffer_sizes = self
+                    .buffer
+                    .iter()
+                    .map(|(leader, request)| {
+                        let size = Encoder::write_size(
+                            request,
+                            ProduceRequest::<RecordSet>::DEFAULT_API_VERSION,
+                        );
+                        (leader, size)
+                    })
+                    .collect::<Vec<_>>();
+                trace!("Producer flush timeout, buffer: {:?}", buffer_sizes);
                 self.flush_requests().await?;
             }
         }
@@ -119,33 +126,7 @@ impl Dispatcher {
     }
 
     /// Buffer a given record after determining it's partition.
-    async fn buffer_record(&mut self, record: PendingRecord<()>) -> Result<(), FluvioError> {
-        let topics = self.pool.metadata.topics();
-        let topic_spec = topics
-            .lookup_by_key(&record.topic)
-            .await?
-            .ok_or_else(|| FluvioError::TopicNotFound(record.topic.to_string()))?
-            .spec;
-
-        let partition_count = topic_spec.partitions();
-        let partition_config = PartitionerConfig { partition_count };
-        let partition = self.partitioner.partition(
-            &partition_config,
-            record.record.key.as_ref().map(AsRef::as_ref),
-            record.record.value.as_ref(),
-        );
-
-        let record = PendingRecord {
-            partition,
-            topic: record.topic,
-            record: record.record,
-        };
-
-        self.buffer.push(record);
-        Ok(())
-    }
-
-    async fn bufferz_record(
+    async fn buffer_record(
         &mut self,
         record: PendingRecord<()>,
     ) -> Result<Option<(SpuId, ProduceRequest)>, FluvioError> {
@@ -181,7 +162,7 @@ impl Dispatcher {
         };
 
         let buffered_request = self
-            .bufferz
+            .buffer
             .entry(leader)
             .or_insert_with(|| Default::default());
 
@@ -192,10 +173,7 @@ impl Dispatcher {
 
         // We need to flush if the combined batch size would be bigger than the max size
         let needs_flush = batch_size + record_size > self.config.batch_size;
-        println!(
-            "Batch size: {}, New record size: {}, Needs flushing: {}",
-            batch_size, record_size, needs_flush
-        );
+        trace!(batch_size, record_size, needs_flush);
 
         // If we need to flush, take the buffered request and replace it with a new request
         let flush_request =
@@ -213,8 +191,8 @@ impl Dispatcher {
 
     async fn flush_requests(&mut self) -> Result<(), FluvioError> {
         // Take all requests from the buffer, replacing them with empty requests
-        let mut requests_to_flush = Vec::with_capacity(self.bufferz.len());
-        for (&leader, request) in self.bufferz.iter_mut() {
+        let mut requests_to_flush = Vec::with_capacity(self.buffer.len());
+        for (&leader, request) in self.buffer.iter_mut() {
             let request = std::mem::replace(request, Default::default());
             requests_to_flush.push((leader, request));
         }
@@ -222,94 +200,6 @@ impl Dispatcher {
         // Set up futures for sending requests to SPUs concurrently
         let mut response_futures = Vec::with_capacity(requests_to_flush.len());
         for (leader, request) in requests_to_flush {
-            let future = self.send_request(leader, request);
-            response_futures.push(future);
-        }
-
-        // Send the requests to all SPUs concurrently.
-        let responses = futures_util::future::join_all(response_futures).await;
-        for response in responses {
-            if let Err(err) = response {
-                error!("Error flushing records to SPU: {}", err);
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Flush the buffered records to the appropriate SPUs.
-    async fn flush_buffer(&mut self) -> Result<(), FluvioError> {
-        let mut by_spu: HashMap<SpuId, ProduceRequest> = HashMap::new();
-        let partition_store = self.pool.metadata.partitions();
-
-        if self.buffer.is_empty() {
-            return Ok(());
-        }
-
-        for pending in self.buffer.drain(..) {
-            let replica_key = ReplicaKey::new(&pending.topic, pending.partition);
-            let partition = partition_store
-                .lookup_by_key(&replica_key)
-                .await?
-                .ok_or_else(|| {
-                    FluvioError::PartitionNotFound(pending.topic.to_string(), pending.partition)
-                })?
-                .spec;
-            let leader = partition.leader;
-            let topic = &pending.topic;
-            let partition = pending.partition;
-
-            // Initialize the Request and Senders collection for this SPU
-            let request = by_spu.entry(leader).or_insert_with(Default::default);
-
-            // Get or create a TopicProduceData for this topic
-            let maybe_topic = request.topics.iter_mut().find(|it| &it.name == topic);
-            let topic_request = match maybe_topic {
-                Some(t) => t,
-                None => {
-                    let topic = TopicProduceData {
-                        name: pending.topic.to_string(),
-                        ..Default::default()
-                    };
-                    request.topics.push(topic);
-                    request.topics.last_mut().unwrap()
-                }
-            };
-
-            // Get or create a PartitionProduceData for this partition
-            let maybe_partition = topic_request
-                .partitions
-                .iter_mut()
-                .find(|it| it.partition_index == partition);
-            let partition_request = match maybe_partition {
-                Some(p) => p,
-                None => {
-                    let partition = PartitionProduceData {
-                        partition_index: pending.partition,
-                        ..Default::default()
-                    };
-                    topic_request.partitions.push(partition);
-                    topic_request.partitions.last_mut().unwrap()
-                }
-            };
-
-            // Get or create a Batch in this PartitionProduceData
-            let maybe_batch = partition_request.records.batches.first_mut();
-            let batch = match maybe_batch {
-                Some(b) => b,
-                None => {
-                    partition_request.records.batches.push(Batch::new());
-                    partition_request.records.batches.last_mut().unwrap()
-                }
-            };
-
-            // Add this record to the batch in the request
-            batch.add_record(pending.record);
-        }
-
-        // Set up futures for sending requests to SPUs concurrently
-        let mut response_futures = Vec::with_capacity(by_spu.len());
-        for (leader, request) in by_spu {
             let future = self.send_request(leader, request);
             response_futures.push(future);
         }

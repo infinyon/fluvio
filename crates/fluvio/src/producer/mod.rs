@@ -74,7 +74,7 @@ impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>, config: ProducerConfig) -> Self {
         let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
 
-        let (sender, receiver) = async_channel::unbounded();
+        let (sender, receiver) = async_channel::bounded(1);
         let dispatcher = Dispatcher::new(pool.clone(), receiver, config);
         let dispatcher_shutdown = dispatcher.start();
         let inner = Arc::new(ProducerInner {
