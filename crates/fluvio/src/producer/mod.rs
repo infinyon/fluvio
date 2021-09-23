@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::time::Duration;
 use std::collections::HashMap;
 use tracing::{debug, instrument};
 use async_channel::Sender;
@@ -22,7 +23,6 @@ use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
 pub(crate) use crate::producer::dispatcher::Dispatcher;
-use std::time::Duration;
 
 /// An interface for producing events to a particular topic
 ///
@@ -37,6 +37,8 @@ pub struct TopicProducer {
     inner: Arc<ProducerInner>,
 }
 
+#[derive(Debug)]
+#[non_exhaustive]
 pub struct ProducerConfig {
     pub batch_duration: Duration,
     pub batch_size: usize,
@@ -496,5 +498,14 @@ mod tests {
             let record_1_1 = batch.records().get(1).unwrap();
             assert_eq!(record_1_1.value.as_ref(), b"H");
         }
+    }
+
+    #[test]
+    fn test_construct_config() {
+        let _config = ProducerConfig::default();
+        let _config = ProducerConfig {
+            batch_duration: std::time::Duration::from_millis(100),
+            ..Default::default()
+        };
     }
 }
