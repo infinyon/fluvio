@@ -1,17 +1,16 @@
 use std::path::{Path, PathBuf};
-use std::borrow::Cow;
-use std::fs::{File, create_dir_all};
-use std::process::{Command, Stdio};
+use std::fs::create_dir_all;
+use std::process::{Command};
 use std::time::Duration;
 
 use indicatif::ProgressBar;
 use semver::Version;
 use derive_builder::Builder;
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, error, instrument, warn};
 use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
-use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
+use fluvio::config::{TlsPolicy, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
 use fluvio::metadata::spu::Endpoint;
@@ -28,7 +27,7 @@ use crate::{
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress_with_indicator;
-use crate::local::SpuProcess;
+use crate::local::{SpuProcess, ScProcess};
 
 use super::progress::{InstallProgressMessage, create_progress_indicator};
 use super::constants::*;
@@ -486,29 +485,17 @@ impl LocalInstaller {
     async fn launch_sc(&self, host_name: &str, port: u16) -> Result<Fluvio, LocalInstallError> {
         use super::common::try_connect_to_sc;
 
-        let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
-        let errors = outputs.try_clone()?;
         self.pb
             .set_message(InstallProgressMessage::LaunchingSC.msg());
 
-        let mut binary = {
-            let base = self
-                .config
-                .launcher_path()
-                .ok_or(LocalInstallError::MissingFluvioRunner)?;
-            let mut cmd = Command::new(base);
-            cmd.arg("run").arg("sc").arg("--local");
-            cmd
+        let sc_process = ScProcess {
+            log_dir: self.config.log_dir.clone(),
+            launcher: self.config.launcher.clone(),
+            tls_policy: self.config.server_tls_policy.clone(),
+            rust_log: self.config.rust_log.clone(),
         };
-        if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
-            self.set_server_tls(&mut binary, tls, 9005)?;
-        }
-        binary.env("RUST_LOG", &self.config.rust_log);
 
-        binary
-            .stdout(Stdio::from(outputs))
-            .stderr(Stdio::from(errors))
-            .spawn()?;
+        sc_process.start()?;
 
         // wait little bit to spin up SC
         sleep(Duration::from_secs(2)).await;
@@ -524,42 +511,6 @@ impl LocalInstaller {
         } else {
             Err(LocalInstallError::SCServiceTimeout)
         }
-    }
-
-    #[instrument(skip(self, cmd, tls, port))]
-    fn set_server_tls(
-        &self,
-        cmd: &mut Command,
-        tls: &TlsConfig,
-        port: u16,
-    ) -> Result<(), LocalInstallError> {
-        let paths: Cow<TlsPaths> = match tls {
-            TlsConfig::Files(paths) => Cow::Borrowed(paths),
-            TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
-        };
-
-        info!("starting SC with TLS options");
-        let ca_cert = paths
-            .ca_cert
-            .to_str()
-            .ok_or_else(|| LocalInstallError::Other("ca_cert must be a valid path".to_string()))?;
-        let server_cert = paths.cert.to_str().ok_or_else(|| {
-            LocalInstallError::Other("server_cert must be a valid path".to_string())
-        })?;
-        let server_key = paths.key.to_str().ok_or_else(|| {
-            LocalInstallError::Other("server_key must be a valid path".to_string())
-        })?;
-        cmd.arg("--tls")
-            .arg("--enable-client-cert")
-            .arg("--server-cert")
-            .arg(server_cert)
-            .arg("--server-key")
-            .arg(server_key)
-            .arg("--ca-cert")
-            .arg(ca_cert)
-            .arg("--bind-non-tls-public")
-            .arg(format!("0.0.0.0:{}", port));
-        Ok(())
     }
 
     /// set local profile
