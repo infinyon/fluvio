@@ -73,7 +73,7 @@ fluvio-socket = { version = "0.10", path = "../fluvio-socket" }
 fluvio-command = { version = "0.2.0" }
 fluvio-package-index = { version = "0.5.0", path = "../fluvio-package-index" }
 fluvio-extension-common = { version = "0.5.0", path = "../fluvio-extension-common", features = ["target"] }
-fluvio-controlplane-metadata = { version = "0.11.0", path = "../fluvio-controlplane-metadata", features = ["use_serde", "k8"] }
+fluvio-controlplane-metadata = { version = "0.12.0", path = "../fluvio-controlplane-metadata", features = ["use_serde", "k8"] }
 k8-types = { version = "0.2.0", features = ["core"] }
 
 # Optional Fluvio dependencies
