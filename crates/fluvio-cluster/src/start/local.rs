@@ -1,15 +1,16 @@
 use std::path::{Path, PathBuf};
-use std::borrow::Cow;
-use std::fs::{File, create_dir_all};
-use std::process::{Command, Stdio};
+use std::fs::create_dir_all;
+use std::process::{Command};
 use std::time::Duration;
-use fluvio::{Fluvio, FluvioConfig};
+
 use indicatif::ProgressBar;
 use semver::Version;
 use derive_builder::Builder;
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, error, instrument, warn};
 use once_cell::sync::Lazy;
-use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile, LOCAL_PROFILE};
+
+use fluvio::{Fluvio, FluvioConfig};
+use fluvio::config::{TlsPolicy, ConfigFile, Profile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec, SpuType};
 use fluvio::metadata::spu::IngressPort;
 use fluvio::metadata::spu::Endpoint;
@@ -26,6 +27,7 @@ use crate::{
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress_with_indicator;
+use crate::local::{SpuProcess, ScProcess};
 
 use super::progress::{InstallProgressMessage, create_progress_indicator};
 use super::constants::*;
@@ -122,7 +124,7 @@ pub struct LocalConfig {
     #[builder(default = "DEFAULT_SPU_REPLICAS")]
     spu_replicas: u16,
     /// The TLS policy for the SC and SPU servers
-    #[builder(private, default = "DEFAULT_TLS_POLICY")]
+    #[builder(default = "DEFAULT_TLS_POLICY")]
     server_tls_policy: TlsPolicy,
     /// The TLS policy for the client
     #[builder(private, default = "DEFAULT_TLS_POLICY")]
@@ -225,7 +227,7 @@ impl LocalConfig {
         builder
     }
 
-    fn launcher_path(&self) -> Option<&Path> {
+    pub fn launcher_path(&self) -> Option<&Path> {
         self.launcher.as_deref()
     }
 }
@@ -483,29 +485,17 @@ impl LocalInstaller {
     async fn launch_sc(&self, host_name: &str, port: u16) -> Result<Fluvio, LocalInstallError> {
         use super::common::try_connect_to_sc;
 
-        let outputs = File::create(format!("{}/flv_sc.log", self.config.log_dir.display()))?;
-        let errors = outputs.try_clone()?;
         self.pb
             .set_message(InstallProgressMessage::LaunchingSC.msg());
 
-        let mut binary = {
-            let base = self
-                .config
-                .launcher_path()
-                .ok_or(LocalInstallError::MissingFluvioRunner)?;
-            let mut cmd = Command::new(base);
-            cmd.arg("run").arg("sc").arg("--local");
-            cmd
+        let sc_process = ScProcess {
+            log_dir: self.config.log_dir.clone(),
+            launcher: self.config.launcher.clone(),
+            tls_policy: self.config.server_tls_policy.clone(),
+            rust_log: self.config.rust_log.clone(),
         };
-        if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
-            self.set_server_tls(&mut binary, tls, 9005)?;
-        }
-        binary.env("RUST_LOG", &self.config.rust_log);
 
-        binary
-            .stdout(Stdio::from(outputs))
-            .stderr(Stdio::from(errors))
-            .spawn()?;
+        sc_process.start()?;
 
         // wait little bit to spin up SC
         sleep(Duration::from_secs(2)).await;
@@ -521,42 +511,6 @@ impl LocalInstaller {
         } else {
             Err(LocalInstallError::SCServiceTimeout)
         }
-    }
-
-    #[instrument(skip(self, cmd, tls, port))]
-    fn set_server_tls(
-        &self,
-        cmd: &mut Command,
-        tls: &TlsConfig,
-        port: u16,
-    ) -> Result<(), LocalInstallError> {
-        let paths: Cow<TlsPaths> = match tls {
-            TlsConfig::Files(paths) => Cow::Borrowed(paths),
-            TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
-        };
-
-        info!("starting SC with TLS options");
-        let ca_cert = paths
-            .ca_cert
-            .to_str()
-            .ok_or_else(|| LocalInstallError::Other("ca_cert must be a valid path".to_string()))?;
-        let server_cert = paths.cert.to_str().ok_or_else(|| {
-            LocalInstallError::Other("server_cert must be a valid path".to_string())
-        })?;
-        let server_key = paths.key.to_str().ok_or_else(|| {
-            LocalInstallError::Other("server_key must be a valid path".to_string())
-        })?;
-        cmd.arg("--tls")
-            .arg("--enable-client-cert")
-            .arg("--server-cert")
-            .arg(server_cert)
-            .arg("--server-key")
-            .arg(server_key)
-            .arg("--ca-cert")
-            .arg(ca_cert)
-            .arg("--bind-non-tls-public")
-            .arg(format!("0.0.0.0:{}", port));
-        Ok(())
     }
 
     /// set local profile
@@ -610,8 +564,7 @@ impl LocalInstaller {
         for i in 0..count {
             self.pb
                 .set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
-            self.launch_spu(i, client.clone(), &self.config.log_dir)
-                .await?;
+            self.launch_spu(i, client.clone()).await?;
         }
         debug!(
             "SC log generated at {}/flv_sc.log",
@@ -621,14 +574,34 @@ impl LocalInstaller {
         Ok(())
     }
 
-    #[instrument(skip(self, client, log_dir))]
+    #[instrument(skip(self, client))]
     async fn launch_spu(
         &self,
         spu_index: u16,
         client: SharedK8Client,
-        log_dir: &Path,
     ) -> Result<(), LocalInstallError> {
         use k8_client::meta_client::MetadataClient;
+
+        let spu_process = self.as_spu_process(spu_index);
+        let input = InputK8Obj::new(
+            spu_process.spec.clone(),
+            InputObjectMeta {
+                name: format!("custom-spu-{}", spu_process.id),
+                namespace: "default".to_owned(),
+                ..Default::default()
+            },
+        );
+
+        debug!(input=?input,"creating spu");
+        client.create_item(input).await?;
+        debug!("sleeping 1 sec");
+        // sleep 1 seconds for sc to connect
+        sleep(Duration::from_millis(1000)).await;
+
+        spu_process.start()
+    }
+
+    fn as_spu_process(&self, spu_index: u16) -> SpuProcess {
         const BASE_PORT: u16 = 9010;
         const BASE_SPU: u16 = 5001;
         let spu_id = (BASE_SPU + spu_index) as i32;
@@ -652,55 +625,16 @@ impl LocalInstaller {
             },
             ..Default::default()
         };
-        let input = InputK8Obj::new(
-            spu_spec,
-            InputObjectMeta {
-                name: format!("custom-spu-{}", spu_id),
-                namespace: "default".to_owned(),
-                ..Default::default()
-            },
-        );
 
-        debug!(input=?input,"creating spu");
-        client.create_item(input).await?;
-        debug!("sleeping 1 sec");
-        // sleep 1 seconds for sc to connect
-        sleep(Duration::from_millis(1000)).await;
-        let log_spu = format!("{}/spu_log_{}.log", log_dir.display(), spu_id);
-        let outputs = File::create(&log_spu)?;
-        let errors = outputs.try_clone()?;
-
-        let mut binary = {
-            let base = self
-                .config
-                .launcher_path()
-                .ok_or(LocalInstallError::MissingFluvioRunner)?;
-            let mut cmd = Command::new(base);
-            cmd.arg("run").arg("spu");
-            cmd
-        };
-
-        if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
-            self.set_server_tls(&mut binary, tls, private_port + 1)?;
+        SpuProcess {
+            id: spu_spec.id as u16,
+            spec: spu_spec,
+            log_dir: self.config.log_dir.to_owned(),
+            rust_log: self.config.rust_log.clone(),
+            launcher: self.config.launcher.clone(),
+            tls_policy: self.config.server_tls_policy.clone(),
+            data_dir: self.config.data_dir.clone(),
         }
-        binary.env("RUST_LOG", &self.config.rust_log);
-        let cmd = binary
-            .arg("-i")
-            .arg(format!("{}", spu_id))
-            .arg("-p")
-            .arg(format!("0.0.0.0:{}", public_port))
-            .arg("-v")
-            .arg(format!("0.0.0.0:{}", private_port))
-            .arg("--log-base-dir")
-            .arg(&self.config.data_dir);
-        debug!("Invoking command: \"{}\"", cmd.display());
-        info!("SPU<{}> cmd: {:#?}", spu_index, cmd);
-        info!("SPU log generated at {}", log_spu);
-        cmd.stdout(Stdio::from(outputs))
-            .stderr(Stdio::from(errors))
-            .spawn()
-            .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
-        Ok(())
     }
 
     /// Check to ensure SPUs are all running

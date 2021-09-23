@@ -10,6 +10,7 @@ mod delete;
 mod util;
 mod check;
 mod error;
+mod diagnostics;
 
 use start::StartOpt;
 use start::UpgradeOpt;
@@ -17,6 +18,7 @@ use delete::DeleteOpt;
 use check::CheckOpt;
 use group::SpuGroupCmd;
 use spu::SpuCmd;
+use diagnostics::DiagnosticsOpt;
 
 pub use self::error::ClusterCliError;
 
@@ -57,6 +59,10 @@ pub enum ClusterCmd {
     /// SPGs are groups of SPUs in a cluster which are managed together.
     #[structopt(name = "spg")]
     SPUGroup(SpuGroupCmd),
+
+    /// Collect anonymous diagnostic information to help with debugging
+    #[structopt(name = "diagnostics")]
+    Diagnostics(DiagnosticsOpt),
 }
 
 impl ClusterCmd {
@@ -87,6 +93,9 @@ impl ClusterCmd {
             Self::SPUGroup(group) => {
                 let fluvio = target.connect().await?;
                 group.process(out, &fluvio).await?;
+            }
+            Self::Diagnostics(opt) => {
+                opt.process().await?;
             }
         }
 

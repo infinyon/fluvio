@@ -30,7 +30,7 @@ impl From<TestCase> for SmokeTestCase {
             .downcast_ref::<SmokeTestOption>()
             .expect("SmokeTestOption")
             .to_owned();
-        SmokeTestCase {
+        Self {
             environment: test_case.environment,
             option: smoke_option,
         }

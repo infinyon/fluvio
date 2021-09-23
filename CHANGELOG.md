@@ -1,16 +1,18 @@
 # Release Notes
 
 ## Platform Version 0.9.8 - UNRELEASED
-* Add progress indicator to `fluvio cluster start` ([1627](https://github.com/infinyon/fluvio/pull/1627))
+* Add progress indicator to `fluvio cluster start` ([#1627](https://github.com/infinyon/fluvio/pull/1627))
+* Added `fluvio cluster diagnostics` to help debugging with support ([#1671](https://github.com/infinyon/fluvio/pull/1671))
+* Fix installation of sys charts when running `fluvio cluster start --local --develop` ([#1647](https://github.com/infinyon/fluvio/issues/1647))
 
 ## Platform Version 0.9.7 - 2021-09-16
-* Improve progress message in `fluvio cluster start --local` ([1586](https://github.com/infinyon/fluvio/pull/1586))
-* Fix handling large stream fetch ([1630](https://github.com/infinyon/fluvio/pull/1630))
+* Improve progress message in `fluvio cluster start --local` ([#1586](https://github.com/infinyon/fluvio/pull/1586))
+* Fix handling large stream fetch ([#1630](https://github.com/infinyon/fluvio/pull/1630))
 * Create error variant and propagate that in case of attempt of creation of a topic with an invalid name. ([#1464](https://github.com/infinyon/fluvio/issues/1464))
 
 ## Platform Version 0.9.6 - 2021-09-11
 * Improve display representation for some variants in FluvioError type ([#1581](https://github.com/infinyon/fluvio/issues/1581))
-* Add spinner to `fluvio cluster --local --setup` command ([1574](https://github.com/infinyon/fluvio/pull/1574))
+* Add spinner to `fluvio cluster --local --setup` command ([#1574](https://github.com/infinyon/fluvio/pull/1574))
 * Add `--format` string for custom Consumer printouts ([#1593](https://github.com/infinyon/fluvio/issues/1593))
 
 ## Platform Version 0.9.5 - 2021-09-02

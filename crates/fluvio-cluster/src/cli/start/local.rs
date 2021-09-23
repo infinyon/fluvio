@@ -23,14 +23,8 @@ pub async fn process_local(
         .render_checks(true)
         .spu_replicas(opt.spu);
 
-    match opt.k8_config.chart_location {
-        Some(chart_location) => {
-            builder.local_chart(chart_location);
-        }
-        None if opt.develop => {
-            builder.local_chart("./k8-util/helm");
-        }
-        _ => (),
+    if let Some(chart_location) = opt.k8_config.chart_location {
+        builder.local_chart(chart_location);
     }
 
     if let Some(rust_log) = opt.rust_log {
