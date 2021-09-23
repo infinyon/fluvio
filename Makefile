@@ -100,8 +100,9 @@ smoke-test-tls-policy: smoke-test
 smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
 
 # election test only runs on local
+election-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)	
 election-test: test-setup
-	$(TEST_BIN) election --local \
+	$(TEST_BIN) election  \
 		${TEST_ARG_SPU} \
 		${TEST_ARG_LOG} \
 		${TEST_ARG_REPLICATION} \
