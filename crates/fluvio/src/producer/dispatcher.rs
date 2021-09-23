@@ -17,6 +17,8 @@ use crate::spu::SpuPool;
 use crate::producer::{PendingRecord, DispatcherMessage, ProducerConfig};
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
 use dataplane::record::RecordSet;
+use crate::metadata::topic::TopicSpec;
+use crate::metadata::partition::PartitionSpec;
 
 pub(crate) struct Dispatcher {
     /// A pool of connections to the SPUs.
@@ -92,10 +94,7 @@ impl Dispatcher {
             Event::ProducerRequest(DispatcherMessage::Record(record)) => {
                 let maybe_flush = self.buffer_record(record).await?;
                 if let Some((leader, request)) = maybe_flush {
-                    let result = self.send_request(leader, request).await;
-                    if let Err(e) = result {
-                        error!("Error flushing records to SPU: {}", e);
-                    }
+                    self.send_request(leader, request).await?;
                 }
             }
             Event::ProducerRequest(DispatcherMessage::Flush(sender)) => {
@@ -125,17 +124,43 @@ impl Dispatcher {
         Ok(())
     }
 
+    /// Retrieves the metadata for a named Topic
+    async fn lookup_topic(&self, topic: &String) -> Result<TopicSpec, FluvioError> {
+        let topic_spec = self
+            .pool
+            .metadata
+            .topics()
+            .lookup_by_key(topic)
+            .await?
+            .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
+            .spec;
+        Ok(topic_spec)
+    }
+
+    /// Retrieves the metadata for a specified Partition
+    async fn lookup_partition(
+        &self,
+        replica_key: &ReplicaKey,
+    ) -> Result<PartitionSpec, FluvioError> {
+        let partition_spec = self
+            .pool
+            .metadata
+            .partitions()
+            .lookup_by_key(&replica_key)
+            .await?
+            .ok_or_else(|| {
+                FluvioError::PartitionNotFound(replica_key.topic.clone(), replica_key.partition)
+            })?
+            .spec;
+        Ok(partition_spec)
+    }
+
     /// Buffer a given record after determining it's partition.
     async fn buffer_record(
         &mut self,
         record: PendingRecord<()>,
     ) -> Result<Option<(SpuId, ProduceRequest)>, FluvioError> {
-        let topics = self.pool.metadata.topics();
-        let topic_spec = topics
-            .lookup_by_key(&record.topic)
-            .await?
-            .ok_or_else(|| FluvioError::TopicNotFound(record.topic.to_string()))?
-            .spec;
+        let topic_spec = self.lookup_topic(&record.topic).await?;
 
         let partition_count = topic_spec.partitions();
         let partition_config = PartitionerConfig { partition_count };
@@ -145,14 +170,7 @@ impl Dispatcher {
             record.record.value.as_ref(),
         );
         let replica_key = ReplicaKey::new(&record.topic, partition);
-        let partition_spec = self
-            .pool
-            .metadata
-            .partitions()
-            .lookup_by_key(&replica_key)
-            .await?
-            .ok_or_else(|| FluvioError::PartitionNotFound(record.topic.clone(), partition))?
-            .spec;
+        let partition_spec = self.lookup_partition(&replica_key).await?;
         let leader = partition_spec.leader;
 
         let record = PendingRecord {
@@ -189,6 +207,7 @@ impl Dispatcher {
         Ok(flush)
     }
 
+    /// Empty all requests from the buffer and send them to their respective SPUs.
     async fn flush_requests(&mut self) -> Result<(), FluvioError> {
         // Take all requests from the buffer, replacing them with empty requests
         let mut requests_to_flush = Vec::with_capacity(self.buffer.len());
@@ -206,8 +225,8 @@ impl Dispatcher {
 
         // Send the requests to all SPUs concurrently.
         let responses = futures_util::future::join_all(response_futures).await;
-        for response in responses {
-            if let Err(err) = response {
+        for result in responses {
+            if let Err(err) = result {
                 error!("Error flushing records to SPU: {}", err);
             }
         }
