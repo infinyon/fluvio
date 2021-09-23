@@ -209,16 +209,18 @@ impl Dispatcher {
 
     /// Empty all requests from the buffer and send them to their respective SPUs.
     async fn flush_requests(&mut self) -> Result<(), FluvioError> {
-        // Take all requests from the buffer, replacing them with empty requests
-        let mut requests_to_flush = Vec::with_capacity(self.buffer.len());
-        for (&leader, request) in self.buffer.iter_mut() {
-            let request = std::mem::replace(request, Default::default());
-            requests_to_flush.push((leader, request));
+        // If there is nothing buffered, return early.
+        if self.buffer.is_empty() {
+            return Ok(());
         }
 
+        // Take the buffer to flush it, replacing it with an empty one.
+        // This way, multiple consecutive flushes will not do unnecessary work.
+        let buffer = std::mem::replace(&mut self.buffer, Default::default());
+
         // Set up futures for sending requests to SPUs concurrently
-        let mut response_futures = Vec::with_capacity(requests_to_flush.len());
-        for (leader, request) in requests_to_flush {
+        let mut response_futures = Vec::with_capacity(buffer.len());
+        for (leader, request) in buffer {
             let future = self.send_request(leader, request);
             response_futures.push(future);
         }
