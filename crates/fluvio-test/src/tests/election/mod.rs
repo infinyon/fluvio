@@ -47,18 +47,6 @@ impl TestOption for ElectionTestOption {
     }
 }
 
-//inventory::submit! {
-//    FluvioTest {
-//        name: "smoke".to_string(),
-//        test_fn: smoke,
-//        validate_fn: validate_subcommand,
-//    }
-//}
-
-//pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
-//    Box::new(SmokeTestOption::from_iter(subcmd))
-//}
-
 #[fluvio_test(topic = "test")]
 pub async fn election(
     mut test_driver: Arc<RwLock<FluvioTestDriver>>,
@@ -98,6 +86,10 @@ pub async fn election(
     let follower_status = &status.replicas[0];
     assert_eq!(follower_status.hw, 1);
     assert_eq!(follower_status.leo, 1);
+
+    // find leader spu
+    let leader = &test_topic.spec.leader;
+    println!("leader was: {}", leader);
 
     println!("election test ok")
 }
