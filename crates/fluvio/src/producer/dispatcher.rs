@@ -1,7 +1,6 @@
-use std::pin::Pin;
 use std::sync::Arc;
 use std::collections::HashMap;
-use futures_util::{StreamExt, Stream};
+use futures_util::StreamExt;
 use async_channel::Receiver;
 
 use tracing::{error, debug};
@@ -24,13 +23,7 @@ pub(crate) struct Dispatcher {
     /// A buffer of records that have yet to be sent to the cluster.
     buffer: Vec<PendingRecord>,
     /// A stream of events that the dispatcher needs to react to.
-    ///
-    /// A `NewRecord` event means that the [`Producer`]'s caller has called
-    /// `send` to queue a new record, and we need to buffer it until we're ready
-    /// to send.
-    ///
-    /// A `Timeout` event means we need to flush the buffer if there is anything in it.
-    events: Option<Pin<Box<dyn Stream<Item = Event> + Send + Sync>>>,
+    incoming: Option<Receiver<DispatcherMessage>>,
     /// A shutdown event used to determine when to quit.
     ///
     /// This will be triggered by the [`Producer`] that starts this dispatcher.
@@ -47,20 +40,11 @@ impl Dispatcher {
         let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
         let shutdown = StickyEvent::new();
 
-        // Set up the event stream: Select between new records and timeouts
-        let timer =
-            async_timer::interval(std::time::Duration::from_millis(10)).map(|_| Event::Timeout);
-        let records = incoming.map(Event::ProducerRequest);
-        let select = futures_util::stream::select(timer, records);
-        let until = select.take_until(shutdown.listen_pinned());
-        let events: Option<Pin<Box<dyn Stream<Item = Event> + Send + Sync>>> =
-            Some(Box::pin(until));
-
         Self {
             pool,
             partitioner,
             buffer: Default::default(),
-            events,
+            incoming: Some(incoming),
             shutdown,
         }
     }
@@ -68,16 +52,24 @@ impl Dispatcher {
     /// Spawn this dispatcher as a task, returning a shutdown handle.
     pub(crate) fn start(self) -> StickyEvent {
         let shutdown = self.shutdown.clone();
-        fluvio_future::task::spawn(Box::pin(self).run());
+        fluvio_future::task::spawn(self.run());
         shutdown
     }
 
     /// Drive this dispatcher via an event loop that reacts to events.
-    pub(crate) async fn run(mut self: Pin<Box<Self>>) {
-        let mut events = self.events.take().unwrap();
+    pub(crate) async fn run(mut self) {
+        // Set up the event stream: Select between new records and timeouts
+        let mut events = {
+            let timer =
+                async_timer::interval(std::time::Duration::from_millis(10)).map(|_| Event::Timeout);
+            let incoming = self.incoming.take().unwrap();
+            let records = incoming.map(Event::ProducerRequest);
+            let select = futures_util::stream::select(timer, records);
+            select.take_until(self.shutdown.listen_pinned())
+        };
 
         while let Some(event) = events.next().await {
-            let result = self.as_mut().handle_event(event).await;
+            let result = self.handle_event(event).await;
             if let Err(e) = result {
                 error!("Producer Dispatcher error: {}", e);
             }
@@ -86,7 +78,7 @@ impl Dispatcher {
         debug!("Producer dispatcher shutting down");
     }
 
-    async fn handle_event(mut self: Pin<&mut Self>, event: Event) -> Result<(), FluvioError> {
+    async fn handle_event(&mut self, event: Event) -> Result<(), FluvioError> {
         match event {
             Event::ProducerRequest(DispatcherMessage::Record(record_pending)) => {
                 self.buffer_record(record_pending).await?;
