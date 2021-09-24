@@ -2032,13 +2032,11 @@ dependencies = [
  "fluvio-test-derive 0.0.0",
  "fluvio-test-util",
  "fluvio-types",
- "fork",
  "futures",
  "futures-lite",
  "hdrhistogram",
  "inventory",
  "md-5",
- "nix",
  "prettytable-rs",
  "rand 0.8.4",
  "serde",
@@ -2201,15 +2199,6 @@ name = "foreign-types-shared"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "00b0228411908ca8685dba7fc2cdd70ec9990a6e753e89b6ac91a84c40fbaf4b"
-
-[[package]]
-name = "fork"
-version = "0.1.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4c5b9b0bce249a456f83ac4404e8baad0d2ba81cf651949719a4f74eb7323bb"
-dependencies = [
- "libc",
-]
 
 [[package]]
 name = "form_urlencoded"
