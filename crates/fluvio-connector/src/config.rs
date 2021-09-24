@@ -7,24 +7,21 @@ use std::io::Read;
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use crate::error::ConnectorError;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ConnectorConfig {
     name: String,
     #[serde(rename = "type")]
     type_: String,
-    topic: String,
-    create_topic: Option<bool>,
-    #[serde(default = "ConnectorConfig::default_args")]
+    pub(crate) topic: String,
+    #[serde(default)]
+    pub(crate) create_topic: bool,
+    #[serde(default)]
     parameters: BTreeMap<String, String>,
-    #[serde(default = "ConnectorConfig::default_args")]
+    #[serde(default)]
     secrets: BTreeMap<String, String>,
 }
 
 impl ConnectorConfig {
-    fn default_args() -> BTreeMap<String, String> {
-        BTreeMap::new()
-    }
-
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfig, ConnectorError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
