@@ -10,18 +10,12 @@ use super::SmokeTestCase;
 use super::message::*;
 use fluvio::RecordKey;
 use fluvio_command::CommandExt;
-use async_lock::RwLock;
 
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(
-    test_driver: Arc<RwLock<TestDriver>>,
-    test_case: &SmokeTestCase,
-) -> Offsets {
+pub async fn produce_message(test_driver: Arc<TestDriver>, test_case: &SmokeTestCase) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
-    let lock = test_driver.read().await;
-    let offsets = offsets::find_offsets(&*lock, test_case).await;
-    drop(lock);
+    let offsets = offsets::find_offsets(&test_driver, test_case).await;
 
     let use_cli = test_case.option.use_cli;
     let consumer_wait = test_case.option.consumer_wait;
@@ -64,7 +58,7 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let TestDriverType::Fluvio(fluvio_client) = test_driver.admin_client.as_ref();
+        let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
         let mut admin = fluvio_client.admin().await;
 
         for _i in 0..partition {
@@ -103,7 +97,7 @@ mod offsets {
 }
 
 pub async fn produce_message_with_api(
-    test_driver: Arc<RwLock<TestDriver>>,
+    test_driver: Arc<TestDriver>,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {
@@ -119,9 +113,7 @@ pub async fn produce_message_with_api(
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
-        let mut lock = test_driver.write().await;
-        let producer = lock.create_producer(&topic_name).await;
-        drop(lock);
+        let producer = test_driver.create_producer(&topic_name).await;
 
         debug!(base_offset, "created producer");
 
@@ -132,14 +124,12 @@ pub async fn produce_message_with_api(
             let len = message.len();
             info!(topic = %topic_name, iteration = i, "trying send");
 
-            let mut lock = test_driver.write().await;
-
-            lock.send_count(&producer, RecordKey::NULL, message.clone())
+            test_driver
+                .send_count(&producer, RecordKey::NULL, message.clone())
                 .await
                 .unwrap_or_else(|_| {
                     panic!("send record failed for replication: {} iteration: {}", r, i)
                 });
-            drop(lock);
 
             if i % 100 == 0 {
                 let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();

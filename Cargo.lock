@@ -2018,7 +2018,6 @@ dependencies = [
 name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
- "async-lock",
  "async-trait",
  "bencher",
  "bytes",
@@ -2034,7 +2033,6 @@ dependencies = [
  "fluvio-types",
  "futures",
  "futures-lite",
- "hdrhistogram",
  "inventory",
  "md-5",
  "prettytable-rs",
@@ -2079,7 +2077,6 @@ dependencies = [
 name = "fluvio-test-util"
 version = "0.0.0"
 dependencies = [
- "async-lock",
  "async-trait",
  "bytes",
  "dyn-clone",
