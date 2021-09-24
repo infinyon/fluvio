@@ -227,6 +227,16 @@ impl LocalConfig {
     pub fn launcher_path(&self) -> Option<&Path> {
         self.launcher.as_deref()
     }
+
+    pub fn as_spu_cluster_manager(&self) -> LocalSpuProcessClusterManager {
+        LocalSpuProcessClusterManager {
+            log_dir: self.log_dir.to_owned(),
+            rust_log: self.rust_log.clone(),
+            launcher: self.launcher.clone(),
+            tls_policy: self.server_tls_policy.clone(),
+            data_dir: self.data_dir.clone(),
+        }
+    }
 }
 
 impl LocalConfigBuilder {
@@ -558,7 +568,7 @@ impl LocalInstaller {
         self.pb
             .set_message(InstallProgressMessage::LaunchingSPUGroup(count).msg());
 
-        let runtime = self.as_spu_cluster_manager();
+        let runtime = self.config.as_spu_cluster_manager();
         for i in 0..count {
             self.pb
                 .set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
@@ -580,7 +590,7 @@ impl LocalInstaller {
         client: SharedK8Client,
     ) -> Result<(), LocalInstallError> {
         use k8_client::meta_client::MetadataClient;
-        use crate::runtime::spu::{SpuTarget, SpuClusterManager};
+        use crate::runtime::spu::{SpuClusterManager};
 
         let spu_process = cluster_manager.create_spu_relative(spu_index);
 
@@ -600,16 +610,6 @@ impl LocalInstaller {
         sleep(Duration::from_millis(1000)).await;
 
         spu_process.start().map_err(|err| err.into())
-    }
-
-    fn as_spu_cluster_manager(&self) -> LocalSpuProcessClusterManager {
-        LocalSpuProcessClusterManager {
-            log_dir: self.config.log_dir.to_owned(),
-            rust_log: self.config.rust_log.clone(),
-            launcher: self.config.launcher.clone(),
-            tls_policy: self.config.server_tls_policy.clone(),
-            data_dir: self.config.data_dir.clone(),
-        }
     }
 
     /// Check to ensure SPUs are all running

@@ -8,7 +8,6 @@ use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller, StartStatu
 
 /// Local Env driver where we should SPU locally
 pub struct LocalEnvDriver {
-    option: EnvironmentSetup,
     config: LocalConfig,
 }
 
@@ -16,7 +15,6 @@ impl LocalEnvDriver {
     pub fn new(option: EnvironmentSetup) -> Self {
         Self {
             config: Self::load_config(&option),
-            option,
         }
     }
 
@@ -65,5 +63,9 @@ impl TestEnvironmentDriver for LocalEnvDriver {
             .install()
             .await
             .expect("Failed to install local cluster")
+    }
+
+    fn create_cluster_manager(&self) -> Box<dyn fluvio_cluster::runtime::spu::SpuClusterManager> {
+        Box::new(self.config.as_spu_cluster_manager())
     }
 }

@@ -18,7 +18,7 @@ mod common {
         /// install cluster
         async fn start_cluster(&self) -> StartStatus;
 
-        fn create_spu_cluster_manager(&self) -> Box<dyn SpuClusterManager>;
+        fn create_cluster_manager(&self) -> Box<dyn SpuClusterManager>;
     }
 
     #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

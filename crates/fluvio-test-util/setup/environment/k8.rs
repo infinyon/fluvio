@@ -62,4 +62,8 @@ impl TestEnvironmentDriver for K8EnvironmentDriver {
             .await
             .expect("Failed to install k8 cluster")
     }
+
+    fn create_cluster_manager(&self) -> Box<dyn fluvio_cluster::runtime::spu::SpuClusterManager> {
+        panic!("not yet implemented")
+    }
 }

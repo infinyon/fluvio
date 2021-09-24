@@ -7,7 +7,7 @@ pub mod spu {
     use fluvio_controlplane_metadata::spu::SpuSpec;
     use fluvio_types::SpuId;
 
-    pub trait SpuTarget {
+    pub trait SpuTarget: Sync + Send {
         fn id(&self) -> SpuId;
 
         fn spec(&self) -> &SpuSpec;
