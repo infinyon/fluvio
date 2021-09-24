@@ -9,21 +9,18 @@ use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller, StartStatu
 /// Local Env driver where we should SPU locally
 pub struct LocalEnvDriver {
     option: EnvironmentSetup,
-    config: LocalConfig
+    config: LocalConfig,
 }
-
-
 
 impl LocalEnvDriver {
     pub fn new(option: EnvironmentSetup) -> Self {
-        Self { 
+        Self {
             config: Self::load_config(&option),
-            option
+            option,
         }
     }
 
     fn load_config(option: &EnvironmentSetup) -> LocalConfig {
-
         let version = semver::Version::parse(&*crate::VERSION).unwrap();
         let mut builder = LocalConfig::builder(version);
         builder.spu_replicas(option.spu()).render_checks(true);
@@ -51,11 +48,8 @@ impl LocalEnvDriver {
         }
 
         builder.build().expect("should build LocalConfig")
-
     }
 }
-
-
 
 #[async_trait]
 impl TestEnvironmentDriver for LocalEnvDriver {
@@ -66,7 +60,6 @@ impl TestEnvironmentDriver for LocalEnvDriver {
     }
 
     async fn start_cluster(&self) -> StartStatus {
-        
         let installer = LocalInstaller::from_config(self.config.clone());
         installer
             .install()

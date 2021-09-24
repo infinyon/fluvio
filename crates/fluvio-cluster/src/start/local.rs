@@ -562,7 +562,7 @@ impl LocalInstaller {
         for i in 0..count {
             self.pb
                 .set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
-            self.launch_spu(i, &runtime,client.clone()).await?;
+            self.launch_spu(i, &runtime, client.clone()).await?;
         }
         debug!(
             "SC log generated at {}/flv_sc.log",
@@ -572,7 +572,7 @@ impl LocalInstaller {
         Ok(())
     }
 
-    #[instrument(skip(self, cluster_manager,client))]
+    #[instrument(skip(self, cluster_manager, client))]
     async fn launch_spu(
         &self,
         spu_index: u16,
@@ -580,7 +580,7 @@ impl LocalInstaller {
         client: SharedK8Client,
     ) -> Result<(), LocalInstallError> {
         use k8_client::meta_client::MetadataClient;
-        use crate::runtime::spu::{SpuTarget,SpuClusterManager};
+        use crate::runtime::spu::{SpuTarget, SpuClusterManager};
 
         let spu_process = cluster_manager.create_spu_relative(spu_index);
 
@@ -603,7 +603,6 @@ impl LocalInstaller {
     }
 
     fn as_spu_cluster_manager(&self) -> LocalSpuProcessClusterManager {
-        
         LocalSpuProcessClusterManager {
             log_dir: self.config.log_dir.to_owned(),
             rust_log: self.config.rust_log.clone(),

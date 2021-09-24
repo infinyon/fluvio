@@ -6,7 +6,7 @@ use std::{
 
 use fluvio::config::TlsPolicy;
 
-use super::{FluvioLocalProcess,LocalRuntimeError};
+use super::{FluvioLocalProcess, LocalRuntimeError};
 
 pub struct ScProcess {
     pub log_dir: PathBuf,

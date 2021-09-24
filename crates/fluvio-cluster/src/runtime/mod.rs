@@ -1,6 +1,5 @@
 pub mod local;
 
-
 pub mod spu {
 
     use anyhow::Result;
@@ -9,11 +8,10 @@ pub mod spu {
     use fluvio_types::SpuId;
 
     pub trait SpuTarget {
-
         fn id(&self) -> SpuId;
 
         fn spec(&self) -> &SpuSpec;
-        
+
         /// starts spu process
         fn start(&self) -> Result<()>;
 
@@ -23,17 +21,10 @@ pub mod spu {
 
     /// manages spu
     pub trait SpuClusterManager {
-
-
         /// create new spu target
-        fn create_spu_absolute(&self, id: u16) -> Box<dyn SpuTarget>; 
+        fn create_spu_absolute(&self, id: u16) -> Box<dyn SpuTarget>;
 
         /// create spu with relative (0) from some base
-        fn create_spu_relative(&self, id: u16) -> Box<dyn SpuTarget>; 
-
+        fn create_spu_relative(&self, id: u16) -> Box<dyn SpuTarget>;
     }
-
-
-
-
 }

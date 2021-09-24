@@ -6,7 +6,7 @@ pub use common::*;
 mod common {
     use async_trait::async_trait;
 
-    use fluvio_cluster::{StartStatus,runtime::spu::SpuClusterManager};
+    use fluvio_cluster::{StartStatus, runtime::spu::SpuClusterManager};
     use serde::{Serialize, Deserialize};
 
     /// Environment driver for test

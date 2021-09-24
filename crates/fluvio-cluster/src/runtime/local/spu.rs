@@ -29,7 +29,6 @@ pub struct LocalSpuProcess {
 impl FluvioLocalProcess for LocalSpuProcess {}
 
 impl SpuTarget for LocalSpuProcess {
-
     #[instrument(skip(self))]
     fn start(&self) -> AnyResult<()> {
         let outputs = File::create(&self.log_dir)?;
@@ -92,8 +91,6 @@ pub struct LocalSpuProcessClusterManager {
 }
 
 impl SpuClusterManager for LocalSpuProcessClusterManager {
-
-
     fn create_spu_relative(&self, relative_id: u16) -> Box<dyn SpuTarget> {
         self.create_spu_absolute(relative_id + BASE_SPU)
     }
