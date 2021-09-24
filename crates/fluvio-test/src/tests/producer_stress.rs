@@ -11,7 +11,6 @@ use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct ProducerStressTestCase {
@@ -50,10 +49,7 @@ impl TestOption for ProducerStressTestOption {
 }
 
 #[fluvio_test(name = "producer_stress", topic = "test")]
-pub async fn run(
-    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
-    mut test_case: TestCase,
-) -> TestResult {
+pub async fn run(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) -> TestResult {
     let test_case: ProducerStressTestCase = test_case.into();
 
     println!("\nStarting single-process producer stress");
@@ -72,8 +68,7 @@ pub async fn run(
 
     let mut producers = Vec::new();
     for _ in 0..test_case.option.producers {
-        let mut lock = test_driver.write().await;
-        let producer = lock.create_producer(&topic_name).await;
+        let producer = test_driver.create_producer(&topic_name).await;
         producers.push(producer);
     }
 
@@ -86,8 +81,8 @@ pub async fn run(
             // This is for CI stability. We need to not panic during CI, but keep errors visible
             if let Ok(is_ci) = env::var("CI") {
                 if is_ci == "true" {
-                    let mut lock = test_driver.write().await;
-                    lock.send_count(p, RecordKey::NULL, message)
+                    test_driver
+                        .send_count(p, RecordKey::NULL, message)
                         .await
                         .unwrap_or_else(|_| {
                             eprintln!(
@@ -97,8 +92,8 @@ pub async fn run(
                         });
                 }
             } else {
-                let mut lock = test_driver.write().await;
-                lock.send_count(p, RecordKey::NULL, message)
+                test_driver
+                    .send_count(p, RecordKey::NULL, message)
                     .await
                     .unwrap_or_else(|_| {
                         panic!("send record failed for iteration: {} message: {}", n, i)
