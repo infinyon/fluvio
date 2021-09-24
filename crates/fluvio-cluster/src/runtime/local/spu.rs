@@ -1,29 +1,16 @@
 use std::process::{Command, Stdio};
 use std::{fs::File, path::PathBuf};
-use std::io::Error as IoError;
 
 use tracing::{debug, info, instrument};
 
 use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
 
-
-use fluvio_command::{CommandError, CommandExt};
+use fluvio_command::{CommandExt};
 use fluvio::config::{TlsPolicy};
 
-use crate::{LocalInstallError};
-use crate::runtime::spu::{SpuClusterManager,SpuTarget};
+use crate::runtime::spu::{SpuClusterManager, SpuTarget};
 
-use super::FluvioLocalProcess;
-
-#[derive(thiserror::Error, Debug)]
-pub enum LocalSpuRuntimeError {
-    #[error(transparent)]
-    IoError(#[from] IoError),
-    /// Failed to execute a command
-    #[error(transparent)]
-    CommandError(#[from] CommandError),
-}
-
+use super::{FluvioLocalProcess, LocalRuntimeError};
 
 /// Process representing SPU
 #[derive(Debug, Default)]
@@ -40,8 +27,7 @@ pub struct LocalSpuProcess {
 impl FluvioLocalProcess for LocalSpuProcess {}
 
 impl SpuTarget for LocalSpuProcess {
-
-    type RunTimeError = LocalSpuRuntimeError;
+    type RunTimeError = LocalRuntimeError;
 
     #[instrument(skip(self))]
     fn start(&self) -> Result<(), Self::RunTimeError> {
@@ -50,7 +36,7 @@ impl SpuTarget for LocalSpuProcess {
 
         let launcher = self.launcher.clone();
         let mut binary = {
-            let base = launcher.ok_or(LocalInstallError::MissingFluvioRunner)?;
+            let base = launcher.ok_or(LocalRuntimeError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
             cmd.arg("run").arg("spu");
             cmd
@@ -75,7 +61,7 @@ impl SpuTarget for LocalSpuProcess {
         cmd.stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
             .spawn()
-            .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
+            .map_err(|_| LocalRuntimeError::Other("SPU server failed to start".to_string()))?;
         Ok(())
     }
 
@@ -84,13 +70,9 @@ impl SpuTarget for LocalSpuProcess {
     }
 }
 
-
-
 const BASE_PORT: u16 = 9010;
 const BASE_SPU: u16 = 5001;
 /// manage spu process cluster
-
-
 
 pub struct LocalSpuProcessClusterManager {
     pub log_dir: PathBuf,
@@ -100,19 +82,14 @@ pub struct LocalSpuProcessClusterManager {
     pub tls_policy: TlsPolicy,
 }
 
-
-
 impl SpuClusterManager for LocalSpuProcessClusterManager {
-
     type Spu = LocalSpuProcess;
 
-    fn create_spu_relative(&self,relative_id: u16) -> Self::Spu {
+    fn create_spu_relative(&self, relative_id: u16) -> Self::Spu {
         self.create_spu_absolute(relative_id + BASE_SPU)
     }
 
-
     fn create_spu_absolute(&self, id: u16) -> Self::Spu {
-
         let spu_index = id - BASE_SPU;
         let public_port = BASE_PORT + spu_index * 10;
         let private_port = public_port + 1;
@@ -135,9 +112,9 @@ impl SpuClusterManager for LocalSpuProcessClusterManager {
             ..Default::default()
         };
 
-        let spu_log_dir = format!("{}/spu_log_{}.log", self.log_dir.display(),id);
+        let spu_log_dir = format!("{}/spu_log_{}.log", self.log_dir.display(), id);
 
-        let process = LocalSpuProcess {
+        LocalSpuProcess {
             id: spu_spec.id as u16,
             spec: spu_spec,
             log_dir: spu_log_dir,
@@ -145,10 +122,6 @@ impl SpuClusterManager for LocalSpuProcessClusterManager {
             launcher: self.launcher.clone(),
             tls_policy: self.tls_policy.clone(),
             data_dir: self.data_dir.clone(),
-        };
-
-        process
-
+        }
     }
-
 }

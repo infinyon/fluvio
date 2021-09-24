@@ -8,7 +8,7 @@ use fluvio_command::CommandError;
 
 use crate::check::{CheckResults, CheckStatuses};
 use crate::charts::ChartInstallError;
-use crate::runtime::local::LocalSpuRuntimeError;
+use crate::runtime::local::LocalRuntimeError;
 
 /// The types of errors that can occur during cluster management
 #[derive(thiserror::Error, Debug)]
@@ -134,12 +134,8 @@ pub enum LocalInstallError {
     /// Attempted to construct a Config object without all required fields
     #[error("Missing required config option {0}")]
     MissingRequiredConfig(String),
-    /// Attempted to launch local cluster without fluvio-run
-    #[error("Local cluster requires the fluvio-run plugin to be installed")]
-    MissingFluvioRunner,
-    /// runtime error
     #[error(transparent)]
-    SpuRuntimeError(#[from] LocalSpuRuntimeError),
+    RuntimeError(#[from] LocalRuntimeError),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),

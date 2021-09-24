@@ -11,10 +11,7 @@ use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::config::{TlsPolicy, ConfigFile, Profile, LOCAL_PROFILE};
-use fluvio_controlplane_metadata::spu::{SpuSpec, SpuType};
-use fluvio::metadata::spu::IngressPort;
-use fluvio::metadata::spu::Endpoint;
-use fluvio::metadata::spu::IngressAddr;
+use fluvio_controlplane_metadata::spu::{SpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
@@ -27,7 +24,7 @@ use crate::{
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress_with_indicator;
-use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess, LocalSpuProcess};
+use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
 
 use super::progress::{InstallProgressMessage, create_progress_indicator};
 use super::constants::*;
@@ -602,7 +599,7 @@ impl LocalInstaller {
         // sleep 1 seconds for sc to connect
         sleep(Duration::from_millis(1000)).await;
 
-        spu_process.start()
+        spu_process.start().map_err(|err| err.into())
     }
 
     fn as_spu_cluster_manager(&self) -> LocalSpuProcessClusterManager {

@@ -6,9 +6,7 @@ use std::{
 
 use fluvio::config::TlsPolicy;
 
-use crate::LocalInstallError;
-
-use super::FluvioLocalProcess;
+use super::{FluvioLocalProcess,LocalRuntimeError};
 
 pub struct ScProcess {
     pub log_dir: PathBuf,
@@ -20,13 +18,13 @@ pub struct ScProcess {
 impl FluvioLocalProcess for ScProcess {}
 
 impl ScProcess {
-    pub fn start(&self) -> Result<(), LocalInstallError> {
+    pub fn start(&self) -> Result<(), LocalRuntimeError> {
         let outputs = File::create(format!("{}/flv_sc.log", self.log_dir.display()))?;
         let errors = outputs.try_clone()?;
 
         let launcher = self.launcher.clone();
         let mut binary = {
-            let base = launcher.ok_or(LocalInstallError::MissingFluvioRunner)?;
+            let base = launcher.ok_or(LocalRuntimeError::MissingFluvioRunner)?;
             let mut cmd = Command::new(base);
             cmd.arg("run").arg("sc").arg("--local");
             cmd
