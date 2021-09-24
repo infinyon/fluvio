@@ -43,7 +43,7 @@ const LOCAL_SC_PORT: u16 = 9003;
 static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::current_exe().ok());
 
 /// Describes how to install Fluvio locally
-#[derive(Builder, Debug)]
+#[derive(Builder, Debug, Clone)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct LocalConfig {
     /// Platform version
@@ -585,9 +585,9 @@ impl LocalInstaller {
         let spu_process = cluster_manager.create_spu_relative(spu_index);
 
         let input = InputK8Obj::new(
-            spu_process.spec.clone(),
+            spu_process.spec().clone(),
             InputObjectMeta {
-                name: format!("custom-spu-{}", spu_process.id),
+                name: format!("custom-spu-{}", spu_process.id()),
                 namespace: "default".to_owned(),
                 ..Default::default()
             },

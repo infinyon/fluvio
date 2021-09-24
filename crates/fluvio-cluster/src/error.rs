@@ -1,5 +1,7 @@
 use std::io::Error as IoError;
 
+use anyhow::Error as AnyError;
+
 use fluvio::FluvioError;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
@@ -136,6 +138,8 @@ pub enum LocalInstallError {
     MissingRequiredConfig(String),
     #[error(transparent)]
     RuntimeError(#[from] LocalRuntimeError),
+    #[error(transparent)]
+    SpuClusterError(#[from] AnyError),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),

@@ -32,7 +32,7 @@ mod start;
 mod render;
 mod delete;
 mod error;
-mod runtime;
+pub mod runtime;
 
 /// extensions
 #[cfg(feature = "cli")]

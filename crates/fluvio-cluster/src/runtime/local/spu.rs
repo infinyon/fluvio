@@ -1,12 +1,14 @@
 use std::process::{Command, Stdio};
 use std::{fs::File, path::PathBuf};
 
+use anyhow::Result as AnyResult;
 use tracing::{debug, info, instrument};
 
 use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
 
 use fluvio_command::{CommandExt};
 use fluvio::config::{TlsPolicy};
+use fluvio_types::SpuId;
 
 use crate::runtime::spu::{SpuClusterManager, SpuTarget};
 
@@ -15,7 +17,7 @@ use super::{FluvioLocalProcess, LocalRuntimeError};
 /// Process representing SPU
 #[derive(Debug, Default)]
 pub struct LocalSpuProcess {
-    pub id: u16,
+    pub id: i32,
     pub log_dir: String,
     pub spec: SpuSpec,
     pub launcher: Option<PathBuf>,
@@ -27,10 +29,9 @@ pub struct LocalSpuProcess {
 impl FluvioLocalProcess for LocalSpuProcess {}
 
 impl SpuTarget for LocalSpuProcess {
-    type RunTimeError = LocalRuntimeError;
 
     #[instrument(skip(self))]
-    fn start(&self) -> Result<(), Self::RunTimeError> {
+    fn start(&self) -> AnyResult<()> {
         let outputs = File::create(&self.log_dir)?;
         let errors = outputs.try_clone()?;
 
@@ -65,8 +66,16 @@ impl SpuTarget for LocalSpuProcess {
         Ok(())
     }
 
-    fn stop(&self) -> Result<(), Self::RunTimeError> {
+    fn stop(&self) -> AnyResult<()> {
         Ok(())
+    }
+
+    fn id(&self) -> SpuId {
+        self.id
+    }
+
+    fn spec(&self) -> &SpuSpec {
+        &self.spec
     }
 }
 
@@ -83,13 +92,13 @@ pub struct LocalSpuProcessClusterManager {
 }
 
 impl SpuClusterManager for LocalSpuProcessClusterManager {
-    type Spu = LocalSpuProcess;
 
-    fn create_spu_relative(&self, relative_id: u16) -> Self::Spu {
+
+    fn create_spu_relative(&self, relative_id: u16) -> Box<dyn SpuTarget> {
         self.create_spu_absolute(relative_id + BASE_SPU)
     }
 
-    fn create_spu_absolute(&self, id: u16) -> Self::Spu {
+    fn create_spu_absolute(&self, id: u16) -> Box<dyn SpuTarget> {
         let spu_index = id - BASE_SPU;
         let public_port = BASE_PORT + spu_index * 10;
         let private_port = public_port + 1;
@@ -114,14 +123,14 @@ impl SpuClusterManager for LocalSpuProcessClusterManager {
 
         let spu_log_dir = format!("{}/spu_log_{}.log", self.log_dir.display(), id);
 
-        LocalSpuProcess {
-            id: spu_spec.id as u16,
+        Box::new(LocalSpuProcess {
+            id: spu_spec.id,
             spec: spu_spec,
             log_dir: spu_log_dir,
             rust_log: self.rust_log.clone(),
             launcher: self.launcher.clone(),
             tls_policy: self.tls_policy.clone(),
             data_dir: self.data_dir.clone(),
-        }
+        })
     }
 }
