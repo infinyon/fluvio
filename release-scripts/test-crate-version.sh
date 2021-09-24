@@ -16,7 +16,7 @@ PUBLISH_CRATES=(
     fluvio-spu-schema
     fluvio-sc-schema
     fluvio-smartstream
-    #fluvio
+    fluvio
     fluvio-stream-dispatcher
     fluvio-package-index
     fluvio-extension-common
@@ -56,14 +56,47 @@ function download_crate() {
 function compare_crates_src() {
     CRATE_NAME=$1
 
-    if [[ $VERBOSE == true ]];
+    if [[ $CRATE_NAME == "fluvio" ]];
     then
-        diff -bur ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
+        compare_fluvio_src;
     else
-        # Don't print the diff
-        diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
+
+        if [[ $VERBOSE == true ]];
+        then
+            diff -bur ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
+        else
+            # Don't print the diff
+            diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
+        fi
     fi
     
+}
+
+# The fluvio crate needs to be handled differently than the rest
+# NOTICE:
+# We are unable to verify changes to the producer subcrate,
+# as a consequence to code optimizations made by crates.io
+function compare_fluvio_src() {
+    TMP=$(mktemp)
+    EXPECTED_OUT="Only in ./crates/fluvio/src: producer\nOnly in ./crates_io/fluvio/src: producer.rs"
+
+    if [[ $VERBOSE == true ]];
+    then
+        diff -bur ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src | tee "$TMP";
+    else
+        # Don't print the diff
+        diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src | tee "$TMP";
+    fi
+
+    if [[ "$(echo -e "$EXPECTED_OUT")" == "$(cat "$TMP")" ]];
+    then
+        rm "$TMP"
+        return 0
+    else
+        rm "$TMP"
+        return 1
+    fi
+
 }
 
 function compare_crates_version() {
@@ -106,7 +139,7 @@ function check_crate() {
     # It's assumed that the repo has increased version number
     if [[ "$SRC_MATCH" == false && "$VERSION_MATCH" == true ]];
     then
-        echo "⛔ Code has changed but version needs to be bumped"
+        echo "⛔ Repo code has changed but version needs to be bumped"
         CHECK_CRATES+=("$CRATE_NAME")
         ALL_CRATE_CHECK_PASS=false
     fi
@@ -115,7 +148,7 @@ function check_crate() {
     # This is unneeded change w/o code modifications
     if [[ "$SRC_MATCH" == true && "$VERSION_MATCH" == false ]];
     then
-        echo "🔴 Code has NOT changed, but versions don't match. Something is weird."
+        echo "🔴 Repo code has NOT changed, but versions don't match. Something is weird."
         CHECK_CRATES+=("$CRATE_NAME")
         ALL_CRATE_CHECK_PASS=false
     fi
