@@ -8,7 +8,7 @@ use fluvio::config::TlsPolicy;
 
 use crate::LocalInstallError;
 
-use super::FluvioProcess;
+use super::FluvioLocalProcess;
 
 pub struct ScProcess {
     pub log_dir: PathBuf,
@@ -17,7 +17,7 @@ pub struct ScProcess {
     pub rust_log: String,
 }
 
-impl FluvioProcess for ScProcess {}
+impl FluvioLocalProcess for ScProcess {}
 
 impl ScProcess {
     pub fn start(&self) -> Result<(), LocalInstallError> {

@@ -1,15 +1,15 @@
 use std::process::{Command, Stdio};
 use std::{fs::File, path::PathBuf};
 
-use fluvio_controlplane_metadata::spu::SpuSpec;
+use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
 use tracing::{debug, info, instrument};
 
 use fluvio_command::CommandExt;
 use fluvio::config::{TlsPolicy};
 
-use crate::{LocalInstallError};
+use crate::{LocalConfig, LocalInstallError};
 
-use super::FluvioProcess;
+use super::FluvioLocalProcess;
 
 /// Process representing SPU
 #[derive(Debug, Default)]
@@ -23,7 +23,7 @@ pub struct SpuProcess {
     pub tls_policy: TlsPolicy,
 }
 
-impl FluvioProcess for SpuProcess {}
+impl FluvioLocalProcess for SpuProcess {}
 
 impl SpuProcess {
     #[instrument(skip(self))]
@@ -61,5 +61,58 @@ impl SpuProcess {
             .spawn()
             .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
         Ok(())
+    }
+}
+
+
+
+const BASE_PORT: u16 = 9010;
+const BASE_SPU: u16 = 5001;
+/// manage spu process cluster
+use crate::runtime::spu::SpuClusterManager;
+
+pub struct LocalSpuProcessClusterManager(LocalConfig);
+
+impl SpuClusterManager for LocalSpuProcessClusterManager {
+
+
+    fn start_spu(&self, id: u16) {
+
+        let spu_index = id - BASE_SPU;
+        let public_port = BASE_PORT + spu_index * 10;
+        let private_port = public_port + 1;
+        let spu_spec = SpuSpec {
+            id: id as i32,
+            spu_type: SpuType::Custom,
+            public_endpoint: IngressPort {
+                port: public_port,
+                ingress: vec![IngressAddr {
+                    hostname: Some("localhost".to_owned()),
+                    ..Default::default()
+                }],
+                ..Default::default()
+            },
+            private_endpoint: Endpoint {
+                port: private_port,
+                host: "localhost".to_owned(),
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let process = SpuProcess {
+            id: spu_spec.id as u16,
+            spec: spu_spec,
+            log_dir: self.0.log_dir.to_owned(),
+            rust_log: self.0.rust_log.clone(),
+            launcher: self.0.launcher.clone(),
+            tls_policy: self.0.server_tls_policy.clone(),
+            data_dir: self.0.data_dir.clone(),
+        };
+
+    }
+
+    fn terminate_spu(id: u16) {
+        todo!()
     }
 }

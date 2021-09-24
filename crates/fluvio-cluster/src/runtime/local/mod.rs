@@ -15,7 +15,7 @@ mod process {
 
     use crate::{LocalInstallError};
 
-    pub trait FluvioProcess {
+    pub trait FluvioLocalProcess {
         #[instrument(skip(self, cmd, tls, port))]
         fn set_server_tls(
             &self,
@@ -51,4 +51,5 @@ mod process {
             Ok(())
         }
     }
+
 }

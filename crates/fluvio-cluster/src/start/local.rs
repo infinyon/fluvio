@@ -27,7 +27,7 @@ use crate::{
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress_with_indicator;
-use crate::local::{SpuProcess, ScProcess};
+use crate::runtime::local::{SpuProcess, ScProcess};
 
 use super::progress::{InstallProgressMessage, create_progress_indicator};
 use super::constants::*;
