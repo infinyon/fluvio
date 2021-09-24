@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use async_lock::RwLock;
 use std::sync::mpsc::Receiver;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
@@ -10,13 +9,13 @@ use super::ConcurrentTestCase;
 use super::util::*;
 
 pub async fn consumer_stream(
-    test_driver: Arc<RwLock<TestDriver>>,
+    test_driver: Arc<TestDriver>,
     option: ConcurrentTestCase,
     digests: Receiver<String>,
 ) {
-    let mut lock = test_driver.write().await;
-
-    let consumer = lock.get_consumer(&option.environment.topic_name()).await;
+    let consumer = test_driver
+        .get_consumer(&option.environment.topic_name())
+        .await;
     let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 
     let mut index: i32 = 0;
