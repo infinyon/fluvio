@@ -796,3 +796,25 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
+
+  test_crate_versions:
+    name: Verify if crate versions need bump
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install cargo-download
+        run: cargo install cargo-download
+
+      - name: Check if crate versions need bump
+        run: ./release-scripts/test-crate-version.sh
