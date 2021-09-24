@@ -113,19 +113,38 @@ function compare_crates_version() {
     fi
 }
 
+function compare_crates_content() {
+    CRATE_NAME=$1
+
+     if [[ $VERBOSE == true ]];
+    then
+        diff ./crates/"$CRATE_NAME"/Cargo.toml ./crates_io/"$CRATE_NAME"/Cargo.toml.orig;
+    else
+        # Don't print the diff
+        diff -q ./crates/"$CRATE_NAME"/Cargo.toml ./crates_io/"$CRATE_NAME"/Cargo.toml.orig;
+    fi
+}
+
+
+
 # ✅ If src matches and version matches (This is the most common success case)
 # ✅ If src does not match and version does not match
 # ❌ If src matches and version does not match (This is highly unlikely)
 # ❌ If src does not match and version does match (This is the most common fail case)
+# TODO: Add Cargo.toml comparisons
 function check_crate() {
     SRC_MATCH=$1
     VERSION_MATCH=$2
-    CRATE_NAME=$3
+    CARGO_TOML_MATCH=$3
+    CRATE_NAME=$4
 
     # No changes between repo and crates.io
     if [[ "$SRC_MATCH" == true && "$VERSION_MATCH" == true ]];
     then
         echo "🟢 Repo code does not differ from crates.io"
+
+        # TODO: Need a Cargo.toml comparison here
+        # Crates.io does some re-writing of the Cargo.toml, so `diff` unreliable
     fi
 
     # Code changes found, but versions don't match
@@ -145,10 +164,10 @@ function check_crate() {
     fi
 
     # No code changes found, but the versions are different
-    # This is unneeded change w/o code modifications
+    # This is a weak test w/o Cargo.toml comparisons
     if [[ "$SRC_MATCH" == true && "$VERSION_MATCH" == false ]];
     then
-        echo "🔴 Repo code has NOT changed, but versions don't match. Something is weird."
+        echo "🔴 Repo code has NOT changed, but versions don't match. Cargo.toml only changes?"
         CHECK_CRATES+=("$CRATE_NAME")
         ALL_CRATE_CHECK_PASS=false
     fi
@@ -172,6 +191,7 @@ function main() {
 
         SRC_MATCH=false        
         VERSION_MATCH=false
+        CARGO_TOML_MATCH=false
 
         download_crate "$crate";
 
@@ -186,7 +206,13 @@ function main() {
             VERSION_MATCH=true
         fi 
 
-        check_crate "$SRC_MATCH" "$VERSION_MATCH" "$crate";
+        # TODO: Add Cargo.toml compare
+        #if compare_crates_content "$crate";
+        #then
+        #    CARGO_TOML_MATCH=true
+        #fi 
+
+        check_crate "$SRC_MATCH" "$VERSION_MATCH" "$CARGO_TOML_MATCH" "$crate";
     done
 
     echo
