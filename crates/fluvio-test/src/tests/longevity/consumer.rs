@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use std::time::SystemTime;
-use async_lock::RwLock;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use futures_lite::StreamExt;
@@ -12,12 +11,10 @@ use fluvio_future::timer::sleep;
 use super::LongevityTestCase;
 use super::util::*;
 
-pub async fn consumer_stream(test_driver: Arc<RwLock<TestDriver>>, option: LongevityTestCase) {
-    let mut lock = test_driver.write().await;
-
-    let consumer = lock.get_consumer(&option.environment.topic_name()).await;
-
-    drop(lock);
+pub async fn consumer_stream(test_driver: Arc<TestDriver>, option: LongevityTestCase) {
+    let consumer = test_driver
+        .get_consumer(&option.environment.topic_name())
+        .await;
 
     // TODO: Support starting stream from consumer offset
     let mut stream = consumer.stream(Offset::from_end(0)).await.unwrap();
@@ -48,7 +45,7 @@ pub async fn consumer_stream(test_driver: Arc<RwLock<TestDriver>>, option: Longe
                                 serde_json::from_str(std::str::from_utf8(record_json.as_ref()).unwrap())
                                     .expect("Deserialize record failed");
 
-                            let consume_latency = now.elapsed().clone().unwrap().as_nanos();
+                            let _consume_latency = now.elapsed().clone().unwrap().as_nanos();
 
                             if option.option.verbose {
                                 println!(
@@ -61,13 +58,13 @@ pub async fn consumer_stream(test_driver: Arc<RwLock<TestDriver>>, option: Longe
 
                             assert!(record.validate_crc());
 
-                            let mut lock = test_driver.write().await;
+                            //let mut lock = test_driver.write().await;
 
-                            // record latency
-                            lock.consume_latency_record(consume_latency as u64).await;
-                            lock.consume_bytes_record(record.data.len()).await;
+                            //// record latency
+                            //lock.consume_latency_record(consume_latency as u64).await;
+                            //lock.consume_bytes_record(record.data.len()).await;
 
-                            drop(lock);
+                            //drop(lock);
 
                             index += 1;
                         } else {
