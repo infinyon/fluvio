@@ -1,21 +1,35 @@
 use std::process::{Command, Stdio};
 use std::{fs::File, path::PathBuf};
+use std::io::Error as IoError;
 
-use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
 use tracing::{debug, info, instrument};
 
-use fluvio_command::CommandExt;
+use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
+
+
+use fluvio_command::{CommandError, CommandExt};
 use fluvio::config::{TlsPolicy};
 
-use crate::{LocalConfig, LocalInstallError};
+use crate::{LocalInstallError};
+use crate::runtime::spu::{SpuClusterManager,SpuTarget};
 
 use super::FluvioLocalProcess;
 
+#[derive(thiserror::Error, Debug)]
+pub enum LocalSpuRuntimeError {
+    #[error(transparent)]
+    IoError(#[from] IoError),
+    /// Failed to execute a command
+    #[error(transparent)]
+    CommandError(#[from] CommandError),
+}
+
+
 /// Process representing SPU
 #[derive(Debug, Default)]
-pub struct SpuProcess {
+pub struct LocalSpuProcess {
     pub id: u16,
-    pub log_dir: PathBuf,
+    pub log_dir: String,
     pub spec: SpuSpec,
     pub launcher: Option<PathBuf>,
     pub rust_log: String,
@@ -23,13 +37,15 @@ pub struct SpuProcess {
     pub tls_policy: TlsPolicy,
 }
 
-impl FluvioLocalProcess for SpuProcess {}
+impl FluvioLocalProcess for LocalSpuProcess {}
 
-impl SpuProcess {
+impl SpuTarget for LocalSpuProcess {
+
+    type RunTimeError = LocalSpuRuntimeError;
+
     #[instrument(skip(self))]
-    pub fn start(&self) -> Result<(), LocalInstallError> {
-        let log_spu = format!("{}/spu_log_{}.log", self.log_dir.display(), self.id);
-        let outputs = File::create(&log_spu)?;
+    fn start(&self) -> Result<(), Self::RunTimeError> {
+        let outputs = File::create(&self.log_dir)?;
         let errors = outputs.try_clone()?;
 
         let launcher = self.launcher.clone();
@@ -55,11 +71,15 @@ impl SpuProcess {
             .arg(&self.data_dir);
         debug!("Invoking command: \"{}\"", cmd.display());
         info!("SPU<{}> cmd: {:#?}", self.id, cmd);
-        info!("SPU log generated at {}", log_spu);
+        info!("SPU log generated at {}", self.log_dir);
         cmd.stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
             .spawn()
             .map_err(|_| LocalInstallError::Other("SPU server failed to start".to_string()))?;
+        Ok(())
+    }
+
+    fn stop(&self) -> Result<(), Self::RunTimeError> {
         Ok(())
     }
 }
@@ -69,14 +89,29 @@ impl SpuProcess {
 const BASE_PORT: u16 = 9010;
 const BASE_SPU: u16 = 5001;
 /// manage spu process cluster
-use crate::runtime::spu::SpuClusterManager;
 
-pub struct LocalSpuProcessClusterManager(LocalConfig);
+
+
+pub struct LocalSpuProcessClusterManager {
+    pub log_dir: PathBuf,
+    pub launcher: Option<PathBuf>,
+    pub rust_log: String,
+    pub data_dir: PathBuf,
+    pub tls_policy: TlsPolicy,
+}
+
+
 
 impl SpuClusterManager for LocalSpuProcessClusterManager {
 
+    type Spu = LocalSpuProcess;
 
-    fn start_spu(&self, id: u16) {
+    fn create_spu_relative(&self,relative_id: u16) -> Self::Spu {
+        self.create_spu_absolute(relative_id + BASE_SPU)
+    }
+
+
+    fn create_spu_absolute(&self, id: u16) -> Self::Spu {
 
         let spu_index = id - BASE_SPU;
         let public_port = BASE_PORT + spu_index * 10;
@@ -100,19 +135,20 @@ impl SpuClusterManager for LocalSpuProcessClusterManager {
             ..Default::default()
         };
 
-        let process = SpuProcess {
+        let spu_log_dir = format!("{}/spu_log_{}.log", self.log_dir.display(),id);
+
+        let process = LocalSpuProcess {
             id: spu_spec.id as u16,
             spec: spu_spec,
-            log_dir: self.0.log_dir.to_owned(),
-            rust_log: self.0.rust_log.clone(),
-            launcher: self.0.launcher.clone(),
-            tls_policy: self.0.server_tls_policy.clone(),
-            data_dir: self.0.data_dir.clone(),
+            log_dir: spu_log_dir,
+            rust_log: self.rust_log.clone(),
+            launcher: self.launcher.clone(),
+            tls_policy: self.tls_policy.clone(),
+            data_dir: self.data_dir.clone(),
         };
 
+        process
+
     }
 
-    fn terminate_spu(id: u16) {
-        todo!()
-    }
 }

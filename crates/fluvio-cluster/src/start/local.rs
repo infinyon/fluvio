@@ -27,7 +27,7 @@ use crate::{
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress_with_indicator;
-use crate::runtime::local::{SpuProcess, ScProcess};
+use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess, LocalSpuProcess};
 
 use super::progress::{InstallProgressMessage, create_progress_indicator};
 use super::constants::*;
@@ -561,10 +561,11 @@ impl LocalInstaller {
         self.pb
             .set_message(InstallProgressMessage::LaunchingSPUGroup(count).msg());
 
+        let runtime = self.as_spu_cluster_manager();
         for i in 0..count {
             self.pb
                 .set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
-            self.launch_spu(i, client.clone()).await?;
+            self.launch_spu(i, &runtime,client.clone()).await?;
         }
         debug!(
             "SC log generated at {}/flv_sc.log",
@@ -574,15 +575,18 @@ impl LocalInstaller {
         Ok(())
     }
 
-    #[instrument(skip(self, client))]
+    #[instrument(skip(self, cluster_manager,client))]
     async fn launch_spu(
         &self,
         spu_index: u16,
+        cluster_manager: &LocalSpuProcessClusterManager,
         client: SharedK8Client,
     ) -> Result<(), LocalInstallError> {
         use k8_client::meta_client::MetadataClient;
+        use crate::runtime::spu::{SpuTarget,SpuClusterManager};
 
-        let spu_process = self.as_spu_process(spu_index);
+        let spu_process = cluster_manager.create_spu_relative(spu_index);
+
         let input = InputK8Obj::new(
             spu_process.spec.clone(),
             InputObjectMeta {
@@ -601,34 +605,9 @@ impl LocalInstaller {
         spu_process.start()
     }
 
-    fn as_spu_process(&self, spu_index: u16) -> SpuProcess {
-        const BASE_PORT: u16 = 9010;
-        const BASE_SPU: u16 = 5001;
-        let spu_id = (BASE_SPU + spu_index) as i32;
-        let public_port = BASE_PORT + spu_index * 10;
-        let private_port = public_port + 1;
-        let spu_spec = SpuSpec {
-            id: spu_id,
-            spu_type: SpuType::Custom,
-            public_endpoint: IngressPort {
-                port: public_port,
-                ingress: vec![IngressAddr {
-                    hostname: Some("localhost".to_owned()),
-                    ..Default::default()
-                }],
-                ..Default::default()
-            },
-            private_endpoint: Endpoint {
-                port: private_port,
-                host: "localhost".to_owned(),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
-        SpuProcess {
-            id: spu_spec.id as u16,
-            spec: spu_spec,
+    fn as_spu_cluster_manager(&self) -> LocalSpuProcessClusterManager {
+        
+        LocalSpuProcessClusterManager {
             log_dir: self.config.log_dir.to_owned(),
             rust_log: self.config.rust_log.clone(),
             launcher: self.config.launcher.clone(),
