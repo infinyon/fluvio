@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.8 - UNRELEASED
+## Platform Version 0.9.9 - UNRELEASED
+
+## Platform Version 0.9.8 - 2021-09-23
 * Add progress indicator to `fluvio cluster start` ([#1627](https://github.com/infinyon/fluvio/pull/1627))
 * Added `fluvio cluster diagnostics` to help debugging with support ([#1671](https://github.com/infinyon/fluvio/pull/1671))
 * Fix installation of sys charts when running `fluvio cluster start --local --develop` ([#1647](https://github.com/infinyon/fluvio/issues/1647))

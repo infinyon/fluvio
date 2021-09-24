@@ -56,7 +56,7 @@ fluvio-helm = "0.4.1"
 fluvio-future = { version = "0.3.0" }
 fluvio-command = { version = "0.2.0" }
 fluvio-extension-common = { version = "0.5.0", path = "../fluvio-extension-common", optional = true }
-fluvio-controlplane-metadata = { version = "0.11.0", path = "../fluvio-controlplane-metadata", features = ["k8"] }
+fluvio-controlplane-metadata = { version = "0.12.0", path = "../fluvio-controlplane-metadata", features = ["k8"] }
 fluvio-sc-schema = { version = "0.10.0", path = "../fluvio-sc-schema", default-features = false, optional = true  }
 flv-util = "0.5.2"
 k8-config = { version = "1.3.0" }
