@@ -1,5 +1,4 @@
 use std::sync::Arc;
-use async_lock::RwLock;
 use fluvio::RecordKey;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
@@ -9,12 +8,10 @@ use tracing::debug;
 use super::LongevityTestCase;
 use super::util::*;
 
-pub async fn producer(test_driver: Arc<RwLock<TestDriver>>, option: LongevityTestCase) {
-    let mut lock = test_driver.write().await;
-
-    let producer = lock.create_producer(&option.environment.topic_name()).await;
-
-    drop(lock);
+pub async fn producer(test_driver: Arc<TestDriver>, option: LongevityTestCase) {
+    let producer = test_driver
+        .create_producer(&option.environment.topic_name())
+        .await;
 
     // Read in the timer value we want to run for
     // Note, we're going to give the consumer a couple extra seconds since it starts its timer first
@@ -44,11 +41,10 @@ pub async fn producer(test_driver: Arc<RwLock<TestDriver>>, option: LongevityTes
         }
 
         // Record the latency
-        let mut lock = test_driver.write().await;
-        lock.send_count(&producer, RecordKey::NULL, record_json)
+        test_driver
+            .send_count(&producer, RecordKey::NULL, record_json)
             .await
             .expect("Producer Send failed");
-        drop(lock);
 
         records_sent += 1;
     }

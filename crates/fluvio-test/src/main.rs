@@ -11,12 +11,11 @@ use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
-use hdrhistogram::Histogram;
+//use hdrhistogram::Histogram;
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
-use async_lock::RwLock;
 
 fn main() {
     run_block_on(async {
@@ -93,7 +92,7 @@ async fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
-    test_driver: Arc<RwLock<TestDriver>>,
+    test_driver: Arc<TestDriver>,
 ) -> TestResult {
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
@@ -113,7 +112,7 @@ async fn cluster_cleanup(option: EnvironmentSetup) {
     }
 }
 
-async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<TestDriver>> {
+async fn cluster_setup(option: &EnvironmentSetup) -> Arc<TestDriver> {
     let fluvio_client = if option.skip_cluster_start() {
         println!("skipping cluster start");
         // Connect to cluster in profile
@@ -132,17 +131,17 @@ async fn cluster_setup(option: &EnvironmentSetup) -> Arc<RwLock<TestDriver>> {
         ))
     };
 
-    Arc::new(RwLock::new(TestDriver {
-        admin_client: fluvio_client,
-        topic_num: 0,
-        producer_num: 0,
-        consumer_num: 0,
-        producer_bytes: 0,
-        consumer_bytes: 0,
-        producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    }))
+    Arc::new(TestDriver {
+        client: fluvio_client,
+        //topic_num: 0,
+        //producer_num: 0,
+        //consumer_num: 0,
+        //producer_bytes: 0,
+        //consumer_bytes: 0,
+        //producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        //consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+        //topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+    })
 }
 
 #[cfg(test)]

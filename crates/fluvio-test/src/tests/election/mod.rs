@@ -14,7 +14,6 @@ use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-use async_lock::RwLock;
 
 #[derive(Debug, Clone)]
 pub struct ElectionTestCase {
@@ -28,7 +27,7 @@ impl From<TestCase> for ElectionTestCase {
             .option
             .as_any()
             .downcast_ref::<ElectionTestOption>()
-            .expect("SmokeTestOption")
+            .expect("ElectionTestOption")
             .to_owned();
         Self {
             environment: test_case.environment,
@@ -56,9 +55,7 @@ pub async fn election(
 
     // first a create simple message
     let topic_name = test_case.environment.topic_name();
-    let mut lock = test_driver.write().await;
-    let producer = lock.create_producer(&topic_name).await;
-    drop(lock);
+    let producer = test_driver.create_producer(&topic_name).await;
 
     producer
         .send(RecordKey::NULL, "Hello World")
@@ -68,14 +65,12 @@ pub async fn election(
     // this is hack now, because we don't have ack
     sleep(Duration::from_secs(200)).await;
 
-    let lock = test_driver.write().await;
-    let TestDriverType::Fluvio(fluvio_client) = lock.admin_client.as_ref();
+    let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
     let admin = fluvio_client.admin().await;
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await
         .expect("partitions");
-    drop(lock);
 
     assert_eq!(partitions.len(), 1);
     let test_topic = &partitions[0];

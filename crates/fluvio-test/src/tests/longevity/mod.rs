@@ -6,7 +6,6 @@ use std::any::Any;
 use std::num::ParseIntError;
 use std::sync::Arc;
 use std::time::Duration;
-use async_lock::RwLock;
 use structopt::StructOpt;
 
 use fluvio_future::task::spawn;
@@ -82,14 +81,14 @@ impl TestOption for LongevityTestOption {
 
 #[fluvio_test(topic = "longevity")]
 pub async fn longevity(
-    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_driver: Arc<FluvioTestDriver>,
     mut test_case: TestCase,
 ) -> TestResult {
     test_longevity_consume_produce(test_driver.clone(), test_case.into()).await
 }
 
 pub async fn test_longevity_consume_produce(
-    test_driver: Arc<RwLock<TestDriver>>,
+    test_driver: Arc<TestDriver>,
     option: LongevityTestCase,
 ) {
     println!("Testing longevity consumer and producer");
