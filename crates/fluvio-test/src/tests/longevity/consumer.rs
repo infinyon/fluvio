@@ -17,7 +17,10 @@ pub async fn consumer_stream(test_driver: Arc<TestDriver>, option: LongevityTest
         .await;
 
     // TODO: Support starting stream from consumer offset
-    let mut stream = consumer.stream(Offset::from_end(0)).await.unwrap();
+    let mut stream = consumer
+        .stream(Offset::from_end(0))
+        .await
+        .expect("Unable to open stream");
 
     let mut index: i32 = 0;
 
