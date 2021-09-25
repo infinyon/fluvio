@@ -86,5 +86,7 @@ pub async fn election(
     let leader = &test_topic.spec.leader;
     println!("leader was: {}", leader);
 
-    println!("election test ok")
+    println!("election test ok");
+
+    //let cluster_manager = test_case.environment.cluster_manager();
 }
