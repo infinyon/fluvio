@@ -1,26 +1,18 @@
 use std::sync::Arc;
 use std::time::Duration;
-use std::collections::HashMap;
 use tracing::{debug, instrument};
 use async_channel::Sender;
 
 mod dispatcher;
 mod partitioning;
 
-use fluvio_types::{SpuId, PartitionId};
 use fluvio_types::event::StickyEvent;
 use dataplane::ReplicaKey;
-use dataplane::produce::DefaultProduceRequest;
-use dataplane::produce::DefaultPartitionRequest;
-use dataplane::produce::DefaultTopicRequest;
-use dataplane::batch::{Batch, MemoryRecords};
 use dataplane::record::Record;
 pub use dataplane::record::{RecordKey, RecordData};
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::sync::StoreContext;
-use crate::metadata::partition::PartitionSpec;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
 pub(crate) use crate::producer::dispatcher::Dispatcher;
 
@@ -63,7 +55,7 @@ impl Default for ProducerConfig {
 #[derive(Clone)]
 pub(crate) struct ProducerInner {
     /// A channel for sending messages to the shared Producer Dispatcher.
-    pub(crate) dispatcher: Sender<DispatcherMessage>,
+    pub(crate) dispatcher: Sender<ToDispatcher>,
     /// An event that can notify the Dispatcher to shutdown.
     pub(crate) dispatcher_shutdown: StickyEvent,
 }
@@ -126,16 +118,51 @@ impl TopicProducer {
         let key = key.into();
         let value = value.into();
         let record = Record::from((key, value));
-        let pending_record = PendingRecord {
-            partition: (),
-            record,
-            topic: self.topic.clone(),
-        };
-        let msg = DispatcherMessage::Record(pending_record);
 
+        let topic_spec = self.pool.lookup_topic(&self.topic).await?.spec;
+        let partition_count = topic_spec.partitions();
+        let partition_config = PartitionerConfig { partition_count };
+
+        let key_ref = record.key.as_ref().map(|it| it.as_ref());
+        let partition =
+            self.partitioner
+                .partition(&partition_config, key_ref, record.value.as_ref());
+
+        let replica_key = ReplicaKey::new(&self.topic, partition);
+        let pending_record = PendingRecord {
+            replica_key,
+            record,
+        };
+
+        // Send this record to the dispatcher.
+        let (to_producer, from_dispatcher) = async_channel::bounded(1);
+        let msg = ToDispatcher::Record {
+            record: pending_record,
+            to_producer,
+        };
         self.inner.dispatcher.send(msg).await.map_err(|_| {
             FluvioError::ProducerSend("failed to send record to dispatcher".to_string())
         })?;
+
+        let dispatcher_result = from_dispatcher.recv().await;
+        let retry_record = match dispatcher_result {
+            // Err only occurs when the sender is dropped.
+            // The dispatcher drops the sender when the record is SUCCESSFULLY added to the batch.
+            Err(_) => return Ok(()),
+            // If we get a message back, the dispatcher has REJECTED the record for some reason.
+            // The most likely is that the buffer is full, and we should try again.
+            Ok(record) => record,
+        };
+
+        let (to_producer, from_dispatcher) = async_channel::bounded(1);
+        let msg = ToDispatcher::Record {
+            record: retry_record,
+            to_producer,
+        };
+        self.inner.dispatcher.send(msg).await.map_err(|_| {
+            FluvioError::ProducerSend("failed to send record to dispatcher".to_string())
+        })?;
+
         Ok(())
     }
 
@@ -182,7 +209,7 @@ impl TopicProducer {
         let (tx, rx) = async_channel::bounded(1);
         self.inner
             .dispatcher
-            .send(DispatcherMessage::Flush(tx))
+            .send(ToDispatcher::Flush(tx))
             .await
             .map_err(|_| {
                 FluvioError::ProducerFlush(
@@ -195,8 +222,11 @@ impl TopicProducer {
     }
 }
 
-pub enum DispatcherMessage {
-    Record(PendingRecord<()>),
+pub enum ToDispatcher {
+    Record {
+        record: PendingRecord,
+        to_producer: Sender<PendingRecord>,
+    },
     Flush(Sender<std::convert::Infallible>),
 }
 
@@ -205,16 +235,14 @@ pub enum DispatcherMessage {
 // Two type states: RecordPending<()> before we have calculated the partition, and
 // RecordPending (i.e. RecordPending<PartitionId>) after we have calculated the partition.
 // This way we avoid Option<PartitionId> and needing to unwrap.
-pub struct PendingRecord<P = PartitionId> {
-    partition: P,
-    topic: String,
+pub struct PendingRecord {
+    replica_key: ReplicaKey,
     record: Record,
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::metadata::store::MetadataStoreObject;
 
     #[test]
     fn test_construct_config() {

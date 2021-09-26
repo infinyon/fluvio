@@ -967,6 +967,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "crossbeam"
+version = "0.8.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ae5588f6b3c3cb05239e90bd110f257254aecd01e4635400391aeae07497845"
+dependencies = [
+ "cfg-if 1.0.0",
+ "crossbeam-channel",
+ "crossbeam-deque",
+ "crossbeam-epoch",
+ "crossbeam-queue",
+ "crossbeam-utils",
+]
+
+[[package]]
 name = "crossbeam-channel"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1436,6 +1450,7 @@ dependencies = [
  "base64",
  "bytes",
  "cfg-if 1.0.0",
+ "crossbeam",
  "derive_builder",
  "dirs 3.0.2",
  "event-listener",
@@ -1447,6 +1462,7 @@ dependencies = [
  "fluvio-spu-schema",
  "fluvio-types",
  "fluvio_ws_stream_wasm",
+ "futures-channel",
  "futures-util",
  "once_cell",
  "pin-project-lite",

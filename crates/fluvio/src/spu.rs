@@ -11,9 +11,11 @@ use fluvio_types::SpuId;
 use fluvio_socket::{MultiplexerSocket, SharedMultiplexerSocket, SocketError, AsyncResponse};
 use crate::FluvioError;
 use crate::sockets::ClientConfig;
-use crate::sync::MetadataStores;
+use crate::sync::{MetadataStores, CacheMetadataStoreObject};
 use crate::sockets::VersionedSerialSocket;
 use crate::sockets::Versions;
+use crate::metadata::topic::TopicSpec;
+use crate::metadata::partition::PartitionSpec;
 
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
@@ -190,6 +192,34 @@ impl SpuPool {
             .lookup_by_key(&replica)
             .await?
             .is_some())
+    }
+
+    pub async fn lookup_topic(
+        &self,
+        topic: &String,
+    ) -> Result<CacheMetadataStoreObject<TopicSpec>, FluvioError> {
+        let topic = self
+            .metadata
+            .topics()
+            .lookup_by_key(&topic)
+            .await?
+            .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?;
+        Ok(topic)
+    }
+
+    pub async fn lookup_partition(
+        &self,
+        replica_key: &ReplicaKey,
+    ) -> Result<CacheMetadataStoreObject<PartitionSpec>, FluvioError> {
+        let partition = self
+            .metadata
+            .partitions()
+            .lookup_by_key(replica_key)
+            .await?
+            .ok_or_else(|| {
+                FluvioError::PartitionNotFound(replica_key.topic.clone(), replica_key.partition)
+            })?;
+        Ok(partition)
     }
 
     pub fn shutdown(&mut self) {
