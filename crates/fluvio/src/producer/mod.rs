@@ -55,7 +55,7 @@ impl Default for ProducerConfig {
 #[derive(Clone)]
 pub(crate) struct ProducerInner {
     /// A channel for sending messages to the shared Producer Dispatcher.
-    pub(crate) dispatcher: Sender<ToDispatcher>,
+    pub(crate) dispatcher: Sender<DispatcherMsg>,
     /// An event that can notify the Dispatcher to shutdown.
     pub(crate) dispatcher_shutdown: StickyEvent,
 }
@@ -136,7 +136,7 @@ impl TopicProducer {
 
         // Send this record to the dispatcher.
         let (to_producer, from_dispatcher) = async_channel::bounded(1);
-        let msg = ToDispatcher::Record {
+        let msg = DispatcherMsg::Record {
             record: pending_record,
             to_producer,
         };
@@ -151,11 +151,11 @@ impl TopicProducer {
             Err(_) => return Ok(()),
             // If we get a message back, the dispatcher has REJECTED the record for some reason.
             // The most likely is that the buffer is full, and we should try again.
-            Ok(record) => record,
+            Ok(ProducerMsg::BufferFull(record)) => record,
         };
 
         let (to_producer, from_dispatcher) = async_channel::bounded(1);
-        let msg = ToDispatcher::Record {
+        let msg = DispatcherMsg::Record {
             record: retry_record,
             to_producer,
         };
@@ -209,7 +209,7 @@ impl TopicProducer {
         let (tx, rx) = async_channel::bounded(1);
         self.inner
             .dispatcher
-            .send(ToDispatcher::Flush(tx))
+            .send(DispatcherMsg::Flush(tx))
             .await
             .map_err(|_| {
                 FluvioError::ProducerFlush(
@@ -222,19 +222,19 @@ impl TopicProducer {
     }
 }
 
-pub enum ToDispatcher {
+pub enum ProducerMsg {
+    BufferFull(PendingRecord),
+}
+
+pub enum DispatcherMsg {
     Record {
         record: PendingRecord,
-        to_producer: Sender<PendingRecord>,
+        to_producer: Sender<ProducerMsg>,
     },
     Flush(Sender<std::convert::Infallible>),
 }
 
 /// Represents a Record sitting in the batch queue, waiting to be sent.
-//
-// Two type states: RecordPending<()> before we have calculated the partition, and
-// RecordPending (i.e. RecordPending<PartitionId>) after we have calculated the partition.
-// This way we avoid Option<PartitionId> and needing to unwrap.
 pub struct PendingRecord {
     replica_key: ReplicaKey,
     record: Record,
