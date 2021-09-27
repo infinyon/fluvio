@@ -18,6 +18,7 @@ use crate::spu::SpuPool;
 use crate::producer::{Result, ProducerError};
 use crate::producer::{DispatcherMsg, ProducerConfig, ProducerMsg};
 use crate::producer::assoc::{AssociatedResponse, AssociatedRequest, AssociatedRecord, BatchStatus};
+use crate::producer::buffer::RecordBuffer;
 
 pub(crate) struct Dispatcher {
     /// A pool of connections to the SPUs.
@@ -34,72 +35,6 @@ pub(crate) struct Dispatcher {
     ///
     /// This will be triggered by the [`Producer`] that starts this dispatcher.
     shutdown: StickyEvent,
-}
-
-#[derive(Debug)]
-pub(crate) struct RecordBuffer {
-    size: usize,
-    max_size: usize,
-    records: VecDeque<AssociatedRecord>,
-}
-
-impl RecordBuffer {
-    pub fn new(max_size: usize) -> Self {
-        Self {
-            size: 0,
-            max_size,
-            records: VecDeque::new(),
-        }
-    }
-
-    pub fn push(&mut self, pending: AssociatedRecord) -> Result<(), AssociatedRecord> {
-        let record_size = Encoder::write_size(
-            &pending.record,
-            ProduceRequest::<RecordSet>::DEFAULT_API_VERSION,
-        );
-
-        if self.size + record_size > self.max_size {
-            return Err(pending);
-        }
-
-        self.records.push_back(pending);
-        self.size += record_size;
-
-        Ok(())
-    }
-
-    pub fn pop(&mut self) -> Option<AssociatedRecord> {
-        let pending = self.records.pop_front();
-        match pending {
-            None => None,
-            Some(pending) => {
-                let record_size = Encoder::write_size(
-                    &pending.record,
-                    ProduceRequest::<RecordSet>::DEFAULT_API_VERSION,
-                );
-                self.size = self.size.saturating_sub(record_size);
-                Some(pending)
-            }
-        }
-    }
-
-    pub fn size(&self) -> usize {
-        self.size
-    }
-
-    pub fn len(&self) -> usize {
-        self.records.len()
-    }
-
-    /// Returns true if the given record is smaller than the max size of this buffer.
-    ///
-    /// Basically, we may need to flush to make room for this record, but could it
-    /// even possibly fit?
-    pub fn could_fit(&self, record: &Record) -> bool {
-        let record_size =
-            Encoder::write_size(record, ProduceRequest::<RecordSet>::DEFAULT_API_VERSION);
-        record_size < self.max_size
-    }
 }
 
 enum Event {
@@ -191,7 +126,7 @@ impl Dispatcher {
             .or_insert_with(|| RecordBuffer::new(batch_size));
 
         // If this record is too large for the buffer, return it to the producer.
-        if !buffer.could_fit(&pending.record) {
+        if !buffer.could_fit(&pending) {
             to_producer
                 .send(ProducerMsg::RecordTooLarge(pending))
                 .await

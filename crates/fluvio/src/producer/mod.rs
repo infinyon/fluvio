@@ -5,6 +5,7 @@ use async_channel::Sender;
 
 mod error;
 mod assoc;
+mod buffer;
 mod dispatcher;
 mod partitioning;
 
