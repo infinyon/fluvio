@@ -335,6 +335,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         run: [r1]
+        test: [smoke,election]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
@@ -361,6 +362,7 @@ jobs:
       - name: Set up cluster
         run: ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
+        if: ${{ matrix.test == 'smoke' }}
         timeout-minutes: 2
         run: |
           date
@@ -368,10 +370,15 @@ jobs:
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
-          echo "done"
+          echo "smoke test done"
       #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
-
-
+      - name: Run election-test
+        if: ${{ matrix.test == 'election' }}
+        timeout-minutes: 2
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster election-test
+          echo "election test  done"
       - name: Save logs
         if: failure()
         run: |

@@ -2,7 +2,9 @@ use std::any::Any;
 use std::sync::Arc;
 use std::time::Duration;
 
-use fluvio::RecordKey;
+use futures_lite::stream::StreamExt;
+
+use fluvio::{Offset, RecordKey};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_future::timer::sleep;
 use structopt::StructOpt;
@@ -58,7 +60,7 @@ pub async fn election(
     let producer = test_driver.create_producer(&topic_name).await;
 
     producer
-        .send(RecordKey::NULL, "Hello World")
+        .send(RecordKey::NULL, "msg1")
         .await
         .expect("sending");
 
@@ -66,6 +68,7 @@ pub async fn election(
     sleep(Duration::from_secs(5)).await;
 
     let admin = test_driver.client().admin().await;
+
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await
@@ -80,6 +83,7 @@ pub async fn election(
     let follower_status = &status.replicas[0];
     assert_eq!(follower_status.hw, 1);
     assert_eq!(follower_status.leo, 1);
+    let follower_id = follower_status.spu;
 
     // find leader spu
     let leader = test_topic.spec.leader;
@@ -98,4 +102,84 @@ pub async fn election(
     sleep(Duration::from_secs(5)).await;
 
     println!("checking for new leader");
+
+    let partition_status2 = admin
+        .list::<PartitionSpec, _>(vec![])
+        .await
+        .expect("partitions");
+
+    let status2 = &partition_status2[0];
+    assert_eq!(status2.spec.leader, follower_id); // switch leader to follower
+
+    // create new producer
+    let producer2 = test_driver.create_producer(&topic_name).await;
+
+    producer2
+        .send(RecordKey::NULL, "msg2")
+        .await
+        .expect("sending");
+
+    // wait until this gets written
+    sleep(Duration::from_secs(5)).await;
+
+    {
+        let partition_status = admin
+            .list::<PartitionSpec, _>(vec![])
+            .await
+            .expect("partitions");
+        let leader_status = &partition_status[0].status.leader;
+        assert_eq!(leader_status.leo, 2);
+        assert_eq!(leader_status.hw, 1);
+    }
+
+    // start previous follower
+    println!("starting leader again: {}", &leader);
+    let leader_spu = cluster_manager.create_spu_absolute(leader as u16);
+    leader_spu.start().expect("start");
+
+    // wait until prev leader has caught up
+    sleep(Duration::from_secs(5)).await;
+
+    println!("checking that prev leader has fully caught up");
+    {
+        let partition_status = admin
+            .list::<PartitionSpec, _>(vec![])
+            .await
+            .expect("partitions");
+        let leader_status = &partition_status[0].status.leader;
+        assert_eq!(leader_status.leo, 2);
+        assert_eq!(leader_status.hw, 2);
+    }
+
+    println!("terminating current leader");
+    cluster_manager
+        .terminate_spu(follower_id)
+        .expect("terminate");
+
+    sleep(Duration::from_secs(5)).await;
+
+    println!("checking leader again");
+
+    {
+        let partition_status = admin
+            .list::<PartitionSpec, _>(vec![])
+            .await
+            .expect("partitions");
+        let leader_status = &partition_status[0];
+        assert_eq!(leader_status.spec.leader, leader);
+    }
+
+    let consumer = test_driver.get_consumer(&topic_name).await;
+    let mut stream = consumer
+        .stream(Offset::absolute(0).expect("offset"))
+        .await
+        .expect("stream");
+
+    println!("checking msg1");
+    let records = stream.next().await.expect("get next").expect("next");
+    assert_eq!(records.value(), "msg1".as_bytes());
+
+    println!("checking msg2");
+    let records = stream.next().await.expect("get next").expect("next");
+    assert_eq!(records.value(), "msg2".as_bytes());
 }
