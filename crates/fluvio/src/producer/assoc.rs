@@ -15,8 +15,9 @@ pub(crate) struct AssociatedRecord {
     pub record: Record,
 }
 
-#[derive(Debug)]
-pub(crate) struct BatchInfo {
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct BatchInfo {
     pub replica_key: ReplicaKey,
     pub records: HashSet<RecordUid>,
 }
@@ -30,16 +31,24 @@ impl BatchInfo {
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct BatchSuccess {
-    batch: BatchInfo,
-    base_offset: Offset,
+#[derive(Debug, Clone)]
+pub(crate) enum BatchStatus {
+    Success(BatchSuccess),
+    Failure(BatchFailure),
 }
 
-#[derive(Debug)]
-pub(crate) struct BatchFailure {
-    batch: BatchInfo,
-    error_code: ErrorCode,
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub(crate) struct BatchSuccess {
+    pub batch: BatchInfo,
+    pub base_offset: Offset,
+}
+
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct BatchFailure {
+    pub batch: BatchInfo,
+    pub error_code: ErrorCode,
 }
 
 /// A type to build a `ProduceRequest` while associating the [`RecordUid`] of each record.
@@ -116,8 +125,8 @@ impl AssociatedRequest {
 }
 
 pub(crate) struct AssociatedResponse {
-    successes: Vec<BatchSuccess>,
-    failures: Vec<BatchFailure>,
+    pub successes: Vec<BatchSuccess>,
+    pub failures: Vec<BatchFailure>,
 }
 
 impl AssociatedResponse {

@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::{debug, instrument};
 use async_channel::Sender;
@@ -18,7 +18,7 @@ use crate::error::Result;
 use crate::spu::SpuPool;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
 pub(crate) use crate::producer::dispatcher::Dispatcher;
-use crate::producer::assoc::AssociatedRecord;
+use crate::producer::assoc::{AssociatedRecord, BatchStatus};
 
 const DEFAULT_BATCH_DURATION_MS: u64 = 10;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
@@ -52,8 +52,8 @@ impl Default for ProducerConfig {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
-pub(crate) struct RecordUid(u64);
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct RecordUid(u64);
 
 /// A monotonically increasing counter for assigning Uids to records
 pub(crate) struct RecordUidGenerator {
@@ -86,6 +86,8 @@ pub(crate) struct ProducerInner {
     /// An event that can notify the Dispatcher to shutdown.
     pub(crate) dispatcher_shutdown: StickyEvent,
     pub(crate) uid_generator: RecordUidGenerator,
+    pub(crate) status_sender: tokio::sync::broadcast::Sender<BatchStatus>,
+    pub(crate) status_receiver: Mutex<tokio::sync::broadcast::Receiver<BatchStatus>>,
 }
 
 impl Drop for ProducerInner {
@@ -99,13 +101,17 @@ impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>, config: ProducerConfig) -> Self {
         let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
 
-        let (sender, receiver) = async_channel::bounded(1);
-        let dispatcher = Dispatcher::new(pool.clone(), receiver, config);
+        let (to_dispatcher, from_dispatcher) = async_channel::bounded(1);
+        let (status_sender, status_receiver) = tokio::sync::broadcast::channel(100);
+        let dispatcher =
+            Dispatcher::new(pool.clone(), status_sender.clone(), from_dispatcher, config);
         let dispatcher_shutdown = dispatcher.start();
         let inner = Arc::new(ProducerInner {
-            dispatcher: sender,
+            dispatcher: to_dispatcher,
             dispatcher_shutdown,
             uid_generator: RecordUidGenerator::new(),
+            status_sender,
+            status_receiver: Mutex::new(status_receiver),
         });
 
         Self {
@@ -139,7 +145,7 @@ impl TopicProducer {
         skip(self, key, value),
         fields(topic = %self.topic),
     )]
-    pub async fn send<K, V>(&self, key: K, value: V) -> Result<()>
+    pub async fn send<K, V>(&self, key: K, value: V) -> Result<RecordUid>
     where
         K: Into<RecordKey>,
         V: Into<RecordData>,
@@ -147,6 +153,30 @@ impl TopicProducer {
         let key = key.into();
         let value = value.into();
         let record = Record::from((key, value));
+
+        {
+            // Check if there have been any failures
+            println!("SEND: CHECKING STATUSES");
+            let mut receiver = self.inner.status_receiver.lock().expect("Mutex poisoned");
+            while let Ok(status) = (*receiver).try_recv() {
+                match status {
+                    BatchStatus::Success(success) => {
+                        println!(
+                            "Batch succeeded at offset {} with records: {:#?}",
+                            success.base_offset, success.batch
+                        );
+                    }
+                    BatchStatus::Failure(failed) => {
+                        println!(
+                            "Batch failed with error {} with records: {:#?}",
+                            failed.error_code.to_sentence(),
+                            failed.batch
+                        );
+                        return Err(ProducerError::BatchFailed(failed).into());
+                    }
+                }
+            }
+        }
 
         let topic_spec = self.pool.lookup_topic(&self.topic).await?.spec;
         let partition_count = topic_spec.partitions();
@@ -157,9 +187,10 @@ impl TopicProducer {
             self.partitioner
                 .partition(&partition_config, key_ref, record.value.as_ref());
 
+        let uid = self.inner.uid_generator.claim();
         let replica_key = ReplicaKey::new(&self.topic, partition);
         let pending_record = AssociatedRecord {
-            uid: self.inner.uid_generator.claim(),
+            uid: uid.clone(),
             replica_key,
             record,
         };
@@ -178,14 +209,15 @@ impl TopicProducer {
 
         let dispatcher_result = from_dispatcher.recv().await;
         match dispatcher_result {
-            // In this case, an Err indicates that the Sender was dropped, which indicates success.
+            // In this case, an Err means that the Sender was dropped, which indicates success.
             // This makes sense if we think about this channel's primary use as being returning errors.
             Err(_) => {}
-            Ok(ProducerMsg::RecordTooLarge(record)) => {}
-            Ok(ProducerMsg::FailedToBuffer(record)) => {}
+            Ok(ProducerMsg::RecordTooLarge(_)) => {
+                return Err(ProducerError::RecordTooLarge.into());
+            }
         }
 
-        Ok(())
+        Ok(uid)
     }
 
     #[deprecated(since = "0.9.6", note = "use 'send' and 'flush' instead")]
@@ -242,7 +274,6 @@ impl TopicProducer {
 
 pub(crate) enum ProducerMsg {
     RecordTooLarge(AssociatedRecord),
-    FailedToBuffer(AssociatedRecord),
 }
 
 pub(crate) enum DispatcherMsg {

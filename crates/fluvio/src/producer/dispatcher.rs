@@ -5,40 +5,35 @@ use async_channel::{Receiver, Sender};
 
 use tracing::{error, debug};
 use fluvio_types::event::StickyEvent;
-use dataplane::ReplicaKey;
+use dataplane::{ReplicaKey, ErrorCode};
 use dataplane::record::{RecordSet, Record};
-use dataplane::produce::{ProduceRequest, ProduceResponse};
+use dataplane::produce::{
+    ProduceRequest, ProduceResponse, TopicProduceResponse, PartitionProduceResponse,
+};
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::Request;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::producer::Result;
+use crate::producer::{Result, ProducerError};
 use crate::producer::{DispatcherMsg, ProducerConfig, ProducerMsg};
-use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
-use crate::producer::assoc::{AssociatedResponse, AssociatedRequest, AssociatedRecord};
+use crate::producer::assoc::{AssociatedResponse, AssociatedRequest, AssociatedRecord, BatchStatus};
 
 pub(crate) struct Dispatcher {
     /// A pool of connections to the SPUs.
     pool: Arc<SpuPool>,
     /// Configurations that tweak the dispatcher's behavior.
     config: ProducerConfig,
-    /// The partitioning strategy to use
-    partitioner: Box<dyn Partitioner + Send + Sync>,
     /// A buffer of records that have yet to be sent to the cluster.
     bufferz: HashMap<ReplicaKey, RecordBuffer>,
-    statuses: HashMap<ReplicaKey, ProduceResponse>,
+    /// A channel for sending the status of batches
+    statuses: tokio::sync::broadcast::Sender<BatchStatus>,
     /// A stream of events that the dispatcher needs to react to.
     incoming: Option<Receiver<DispatcherMsg>>,
     /// A shutdown event used to determine when to quit.
     ///
     /// This will be triggered by the [`Producer`] that starts this dispatcher.
     shutdown: StickyEvent,
-}
-
-pub(crate) struct RecordStatusChannel {
-    sender: tokio::sync::broadcast::Sender<()>,
-    receiver: tokio::sync::broadcast::Receiver<()>,
 }
 
 #[derive(Debug)]
@@ -82,7 +77,7 @@ impl RecordBuffer {
                     &pending.record,
                     ProduceRequest::<RecordSet>::DEFAULT_API_VERSION,
                 );
-                self.size.saturating_sub(record_size);
+                self.size = self.size.saturating_sub(record_size);
                 Some(pending)
             }
         }
@@ -115,19 +110,18 @@ enum Event {
 impl Dispatcher {
     pub(crate) fn new(
         pool: Arc<SpuPool>,
-        incoming: Receiver<DispatcherMsg>,
+        statuses: tokio::sync::broadcast::Sender<BatchStatus>,
+        commands: Receiver<DispatcherMsg>,
         config: ProducerConfig,
     ) -> Self {
-        let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
         let shutdown = StickyEvent::new();
 
         Self {
             pool,
             config,
-            partitioner,
             bufferz: Default::default(),
-            statuses: Default::default(),
-            incoming: Some(incoming),
+            statuses,
+            incoming: Some(commands),
             shutdown,
         }
     }
@@ -213,22 +207,16 @@ impl Dispatcher {
         if let Err(bounced) = buffer_result {
             let mut buffer_to_flush =
                 std::mem::replace(buffer, RecordBuffer::new(self.config.batch_size));
-            flush_buffer(self.pool.clone(), &replica_key, &mut buffer_to_flush).await?;
+            let response =
+                flush_buffer(self.pool.clone(), &replica_key, &mut buffer_to_flush).await?;
 
-            let buffer_result = buffer.push(bounced);
-            let bounced = match buffer_result {
-                Ok(_) => {
-                    drop(to_producer);
-                    return Ok(());
-                }
-                // If it bounced after flushing, there is a problem.
-                Err(bounced) => bounced,
-            };
+            // After being flushed, the buffer should have room to accept this record.
+            // If it did not, we should have returned above at "if !buffer.could_fit"
+            buffer
+                .push(bounced)
+                .expect("logic error: Buffer should have room for record");
 
-            to_producer
-                .send(ProducerMsg::FailedToBuffer(bounced))
-                .await
-                .map_err(|_| FluvioError::Other("failed to return failed record".to_string()))?;
+            self.broadcast_response_statuses(response);
         }
 
         drop(to_producer);
@@ -236,17 +224,15 @@ impl Dispatcher {
     }
 
     async fn flush_all(&mut self) -> Result<(), FluvioError> {
-        use futures_util::FutureExt;
         let mut result_futures = Vec::with_capacity(self.bufferz.len());
         for (key, buffer) in self.bufferz.iter_mut() {
             let fut = flush_buffer(self.pool.clone(), key, buffer);
-            let key = key.clone();
-            result_futures.push(fut.map(|it| (key, it)));
+            result_futures.push(fut);
         }
 
-        let results: Vec<(ReplicaKey, Result<AssociatedResponse, FluvioError>)> =
+        let results: Vec<Result<AssociatedResponse, FluvioError>> =
             futures_util::future::join_all(result_futures).await;
-        for (key, result) in results {
+        for result in results {
             let response = match result {
                 Ok(response) => response,
                 Err(e) => {
@@ -254,7 +240,25 @@ impl Dispatcher {
                     continue;
                 }
             };
+
+            self.broadcast_response_statuses(response)?;
         }
+        Ok(())
+    }
+
+    fn broadcast_response_statuses(&self, response: AssociatedResponse) -> Result<()> {
+        for success in response.successes {
+            self.broadcast_status(BatchStatus::Success(success))?;
+        }
+        for failure in response.failures {
+            self.broadcast_status(BatchStatus::Failure(failure))?;
+        }
+
+        Ok(())
+    }
+
+    fn broadcast_status(&self, status: BatchStatus) -> Result<(), ProducerError> {
+        self.statuses.send(status)?;
         Ok(())
     }
 }
@@ -275,8 +279,17 @@ async fn flush_buffer(
         pending_request.add(record);
     }
 
-    let socket = spus.create_serial_socket(key).await?;
-    let response = socket.send_receive(pending_request.request).await?;
+    // let socket = spus.create_serial_socket(key).await?;
+    // let response = socket.send_receive(pending_request.request).await?;
+    let mut response: ProduceResponse = Default::default();
+    response.responses.push(TopicProduceResponse {
+        name: key.topic.to_string(),
+        partitions: vec![PartitionProduceResponse {
+            partition_index: key.partition,
+            error_code: ErrorCode::TopicNotFound,
+            ..Default::default()
+        }],
+    });
     let associated_response = AssociatedResponse::new(response, pending_request.uids)?;
 
     Ok(associated_response)

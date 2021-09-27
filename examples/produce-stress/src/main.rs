@@ -13,9 +13,7 @@ async fn produce() -> Result<(), fluvio::FluvioError> {
     let producer = fluvio::producer("stress").await?;
 
     for i in 0..100_000 {
-        if i % 1000 == 0 {
-            println!("{}", i);
-        }
+        println!("Caller sending {}", i);
         producer.send(RecordKey::NULL, i.to_string()).await?;
     }
 
