@@ -2,9 +2,12 @@ use std::io::Error as IoError;
 
 use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
-use crate::config::ConfigError;
 use semver::Version;
 use dataplane::smartstream::SmartStreamRuntimeError;
+use crate::config::ConfigError;
+use crate::producer::ProducerError;
+
+pub type Result<T, E = FluvioError> = core::result::Result<T, E>;
 
 /// Possible errors that may arise when using Fluvio
 #[derive(thiserror::Error, Debug)]
@@ -45,10 +48,8 @@ To interact with this cluster, please install the matching CLI version using the
     ConsumerConfig(String),
     #[error("Encountered a runtime error in the user's SmartStream: {0}")]
     SmartStreamRuntime(#[from] SmartStreamRuntimeError),
-    #[error("Producer send error: {0}")]
-    ProducerSend(String),
-    #[error("Producer flush error: {0}")]
-    ProducerFlush(String),
+    #[error("Producer error")]
+    Producer(#[from] ProducerError),
     #[error("Unknown error: {0}")]
     Other(String),
 }

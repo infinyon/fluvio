@@ -9,7 +9,7 @@ use fluvio_types::event::StickyEvent;
 use dataplane::ReplicaKey;
 use dataplane::batch::Batch;
 use dataplane::record::{RecordSet, Record};
-use dataplane::produce::{ProduceRequest, TopicProduceData, PartitionProduceData};
+use dataplane::produce::{ProduceRequest, TopicProduceData, PartitionProduceData, ProduceResponse};
 use fluvio_protocol::Encoder;
 use fluvio_protocol::api::Request;
 
@@ -26,8 +26,8 @@ pub(crate) struct Dispatcher {
     /// The partitioning strategy to use
     partitioner: Box<dyn Partitioner + Send + Sync>,
     /// A buffer of records that have yet to be sent to the cluster.
-    buffer: HashMap<SpuId, ProduceRequest>,
     bufferz: HashMap<ReplicaKey, RecordBuffer>,
+    statuses: HashMap<ReplicaKey, ProduceResponse>,
     /// A stream of events that the dispatcher needs to react to.
     incoming: Option<Receiver<DispatcherMsg>>,
     /// A shutdown event used to determine when to quit.
@@ -86,6 +86,16 @@ impl RecordBuffer {
     pub fn len(&self) -> usize {
         self.records.len()
     }
+
+    /// Returns true if the given record is smaller than the max size of this buffer.
+    ///
+    /// Basically, we may need to flush to make room for this record, but could it
+    /// even possibly fit?
+    pub fn could_fit(&self, record: &Record) -> bool {
+        let record_size =
+            Encoder::write_size(record, ProduceRequest::<RecordSet>::DEFAULT_API_VERSION);
+        record_size < self.max_size
+    }
 }
 
 enum Event {
@@ -106,8 +116,8 @@ impl Dispatcher {
             pool,
             config,
             partitioner,
-            buffer: Default::default(),
             bufferz: Default::default(),
+            statuses: Default::default(),
             incoming: Some(incoming),
             shutdown,
         }
@@ -177,23 +187,39 @@ impl Dispatcher {
             .entry(record.replica_key.clone())
             .or_insert_with(|| RecordBuffer::new(batch_size));
 
+        // If this record is too large for the buffer, return it to the producer.
+        if !buffer.could_fit(&record.record) {
+            to_producer
+                .send(ProducerMsg::RecordTooLarge(record))
+                .await
+                .map_err(|_| FluvioError::Other("failed to return oversized record".to_string()))?;
+            return Ok(());
+        }
+
         // Try to push the record into the buffer. If this fails, the record is returned in Err
         let buffer_result = buffer.push(record.record);
 
-        // If the record could not be buffered, send it back to producer
+        // If the record could not be buffered, we need to flush first
         if let Err(bounced) = buffer_result {
             let mut buffer_to_flush =
                 std::mem::replace(buffer, RecordBuffer::new(self.config.batch_size));
-            print!("Size overflow: ");
             flush_buffer(self.pool.clone(), &record.replica_key, &mut buffer_to_flush).await?;
+
+            let buffer_result = buffer.push(bounced);
+            let bounced = match buffer_result {
+                Ok(_) => {
+                    drop(to_producer);
+                    return Ok(());
+                }
+                // If it bounced after flushing, there is a problem.
+                Err(bounced) => bounced,
+            };
 
             record.record = bounced;
             to_producer
-                .send(ProducerMsg::BufferFull(record))
+                .send(ProducerMsg::FailedToBuffer(record))
                 .await
-                .map_err(|_| {
-                    FluvioError::Other("failed to return record to producer".to_string())
-                })?;
+                .map_err(|_| FluvioError::Other("failed to return failed record".to_string()))?;
         }
 
         drop(to_producer);
@@ -201,17 +227,24 @@ impl Dispatcher {
     }
 
     async fn flush_all(&mut self) -> Result<(), FluvioError> {
+        use futures_util::FutureExt;
         let mut result_futures = Vec::with_capacity(self.bufferz.len());
         for (key, buffer) in self.bufferz.iter_mut() {
             let fut = flush_buffer(self.pool.clone(), key, buffer);
-            result_futures.push(fut);
+            let key = key.clone();
+            result_futures.push(fut.map(|it| (key, it)));
         }
 
-        let results = futures_util::future::join_all(result_futures).await;
-        for result in results {
-            if let Err(e) = result {
-                error!("Error flushing record: {}", e);
-            }
+        let results: Vec<(ReplicaKey, Result<ProduceResponse, FluvioError>)> =
+            futures_util::future::join_all(result_futures).await;
+        for (key, result) in results {
+            let response = match result {
+                Ok(response) => response,
+                Err(e) => {
+                    error!("Error flushing record: {}", e);
+                    continue;
+                }
+            };
         }
         Ok(())
     }
@@ -269,7 +302,7 @@ async fn flush_buffer(
     spus: Arc<SpuPool>,
     key: &ReplicaKey,
     buffer: &mut RecordBuffer,
-) -> Result<(), FluvioError> {
+) -> Result<ProduceResponse, FluvioError> {
     let mut request: ProduceRequest = Default::default();
 
     println!(
@@ -284,5 +317,5 @@ async fn flush_buffer(
     let socket = spus.create_serial_socket(key).await?;
     let response = socket.send_receive(request).await?;
 
-    Ok(())
+    Ok(response)
 }

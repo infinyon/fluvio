@@ -3,6 +3,7 @@ use std::time::Duration;
 use tracing::{debug, instrument};
 use async_channel::Sender;
 
+mod error;
 mod dispatcher;
 mod partitioning;
 
@@ -11,6 +12,8 @@ use dataplane::ReplicaKey;
 use dataplane::record::Record;
 pub use dataplane::record::{RecordKey, RecordData};
 
+pub use error::ProducerError;
+use crate::error::Result;
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
@@ -110,7 +113,7 @@ impl TopicProducer {
         skip(self, key, value),
         fields(topic = %self.topic),
     )]
-    pub async fn send<K, V>(&self, key: K, value: V) -> Result<(), FluvioError>
+    pub async fn send<K, V>(&self, key: K, value: V) -> Result<()>
     where
         K: Into<RecordKey>,
         V: Into<RecordData>,
@@ -140,28 +143,20 @@ impl TopicProducer {
             record: pending_record,
             to_producer,
         };
-        self.inner.dispatcher.send(msg).await.map_err(|_| {
-            FluvioError::ProducerSend("failed to send record to dispatcher".to_string())
-        })?;
+        self.inner
+            .dispatcher
+            .send(msg)
+            .await
+            .map_err(ProducerError::from)?;
 
         let dispatcher_result = from_dispatcher.recv().await;
-        let retry_record = match dispatcher_result {
-            // Err only occurs when the sender is dropped.
-            // The dispatcher drops the sender when the record is SUCCESSFULLY added to the batch.
-            Err(_) => return Ok(()),
-            // If we get a message back, the dispatcher has REJECTED the record for some reason.
-            // The most likely is that the buffer is full, and we should try again.
-            Ok(ProducerMsg::BufferFull(record)) => record,
-        };
-
-        let (to_producer, from_dispatcher) = async_channel::bounded(1);
-        let msg = DispatcherMsg::Record {
-            record: retry_record,
-            to_producer,
-        };
-        self.inner.dispatcher.send(msg).await.map_err(|_| {
-            FluvioError::ProducerSend("failed to send record to dispatcher".to_string())
-        })?;
+        match dispatcher_result {
+            // In this case, an Err indicates that the Sender was dropped, which indicates success.
+            // This makes sense if we think about this channel's primary use as being returning errors.
+            Err(_) => {}
+            Ok(ProducerMsg::RecordTooLarge(record)) => {}
+            Ok(ProducerMsg::FailedToBuffer(record)) => {}
+        }
 
         Ok(())
     }
@@ -171,7 +166,7 @@ impl TopicProducer {
         skip(self, records),
         fields(topic = %self.topic),
     )]
-    pub async fn send_all<K, V, I>(&self, records: I) -> Result<(), FluvioError>
+    pub async fn send_all<K, V, I>(&self, records: I) -> Result<()>
     where
         K: Into<RecordKey>,
         V: Into<RecordData>,
@@ -204,18 +199,14 @@ impl TopicProducer {
     /// # Ok(())
     /// # }
     /// ```
-    pub async fn flush(&self) -> Result<(), FluvioError> {
+    pub async fn flush(&self) -> Result<()> {
         // Create a channel for the dispatcher to notify us when flushing is done
         let (tx, rx) = async_channel::bounded(1);
         self.inner
             .dispatcher
             .send(DispatcherMsg::Flush(tx))
             .await
-            .map_err(|_| {
-                FluvioError::ProducerFlush(
-                    "failed to send flush command to producer dispatcher".to_string(),
-                )
-            })?;
+            .map_err(|_| ProducerError::Flush)?;
         // Wait for flush to finish
         let _ = rx.recv().await;
         Ok(())
@@ -223,7 +214,8 @@ impl TopicProducer {
 }
 
 pub enum ProducerMsg {
-    BufferFull(PendingRecord),
+    RecordTooLarge(PendingRecord),
+    FailedToBuffer(PendingRecord),
 }
 
 pub enum DispatcherMsg {
