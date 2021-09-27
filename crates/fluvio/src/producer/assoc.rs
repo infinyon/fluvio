@@ -1,3 +1,8 @@
+//! Associate unique records with the requests and responses they are delivered on.
+//!
+//! This module contains types to help answer the question: "has my record been
+//! committed successfully or not"?
+
 use std::collections::{HashSet, HashMap};
 use dataplane::{ReplicaKey, Offset, ErrorCode};
 use dataplane::batch::Batch;
@@ -19,7 +24,7 @@ pub(crate) struct AssociatedRecord {
 #[non_exhaustive]
 pub struct BatchInfo {
     pub replica_key: ReplicaKey,
-    pub records: HashSet<RecordUid>,
+    pub records: Vec<RecordUid>,
 }
 
 impl BatchInfo {
@@ -54,8 +59,8 @@ pub struct BatchFailure {
 /// A type to build a `ProduceRequest` while associating the [`RecordUid`] of each record.
 #[derive(Debug, Default)]
 pub(crate) struct AssociatedRequest {
-    pub request: ProduceRequest,
-    pub uids: HashMap<ReplicaKey, BatchInfo>,
+    pub(crate) request: ProduceRequest,
+    pub(crate) uids: HashMap<ReplicaKey, BatchInfo>,
 }
 
 impl AssociatedRequest {
@@ -120,7 +125,7 @@ impl AssociatedRequest {
             .entry(replica_key.clone())
             .or_insert_with(|| BatchInfo::new(replica_key))
             .records
-            .insert(pending.uid);
+            .push(pending.uid);
     }
 }
 
@@ -164,5 +169,62 @@ impl AssociatedResponse {
             successes,
             failures,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use dataplane::record::{RecordKey, RecordSet};
+
+    #[test]
+    fn test_associated_request() {
+        let mut request = AssociatedRequest::new();
+
+        request.add(AssociatedRecord {
+            uid: RecordUid(0),
+            replica_key: ReplicaKey::new("One", 0),
+            record: Record::from((RecordKey::NULL, "0")),
+        });
+        assert!(request
+            .uids
+            .get(&ReplicaKey::new("One", 0))
+            .unwrap()
+            .records
+            .contains(&RecordUid(0)));
+
+        request.add(AssociatedRecord {
+            uid: RecordUid(1),
+            replica_key: ReplicaKey::new("One", 0),
+            record: Record::from((RecordKey::NULL, "1")),
+        });
+
+        request.add(AssociatedRecord {
+            uid: RecordUid(2),
+            replica_key: ReplicaKey::new("One", 1),
+            record: Record::from((RecordKey::NULL, "2")),
+        });
+
+        let output = request.request;
+
+        let one = &output.topics[0];
+        assert_eq!(one.name, "One");
+
+        let one_0 = &one.partitions[0];
+        assert_eq!(one_0.partition_index, 0);
+        assert_eq!(one_0.records.batches.len(), 1);
+
+        let one_0_0 = &one_0.records.batches[0].records()[0];
+        assert_eq!(one_0_0.key, None);
+        assert_eq!(one_0_0.value, "0".into());
+
+        let one_0_1 = &one_0.records.batches[0].records()[1];
+        assert_eq!(one_0_1.key, None);
+        assert_eq!(one_0_1.value, "1".into());
+
+        let one_1 = &one.partitions[1];
+        let one_1_0 = &one_1.records.batches[0].records()[0];
+        assert_eq!(one_1_0.key, None);
+        assert_eq!(one_1_0.value, "2".into());
     }
 }

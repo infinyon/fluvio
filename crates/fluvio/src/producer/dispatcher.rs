@@ -281,6 +281,7 @@ async fn flush_buffer(
 
     // let socket = spus.create_serial_socket(key).await?;
     // let response = socket.send_receive(pending_request.request).await?;
+
     let mut response: ProduceResponse = Default::default();
     response.responses.push(TopicProduceResponse {
         name: key.topic.to_string(),

@@ -268,6 +268,7 @@ impl TopicProducer {
             .map_err(|_| ProducerError::Flush)?;
         // Wait for flush to finish
         let _ = rx.recv().await;
+        todo!("Flush needs to return BatchFailed");
         Ok(())
     }
 }
