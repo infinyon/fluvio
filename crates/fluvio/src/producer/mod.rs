@@ -4,6 +4,7 @@ use tracing::{debug, instrument};
 use async_channel::Sender;
 
 mod error;
+mod assoc;
 mod dispatcher;
 mod partitioning;
 
@@ -17,6 +18,7 @@ use crate::error::Result;
 use crate::spu::SpuPool;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
 pub(crate) use crate::producer::dispatcher::Dispatcher;
+use crate::producer::assoc::AssociatedRecord;
 
 const DEFAULT_BATCH_DURATION_MS: u64 = 10;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
@@ -73,8 +75,6 @@ impl RecordUidGenerator {
         RecordUid(uid)
     }
 }
-
-pub(crate) struct BatchInfo {}
 
 /// A handle for `TopicProducer`s to communicate with the shared `ProducerDispatcher`.
 ///
@@ -158,7 +158,7 @@ impl TopicProducer {
                 .partition(&partition_config, key_ref, record.value.as_ref());
 
         let replica_key = ReplicaKey::new(&self.topic, partition);
-        let pending_record = PendingRecord {
+        let pending_record = AssociatedRecord {
             uid: self.inner.uid_generator.claim(),
             replica_key,
             record,
@@ -240,25 +240,17 @@ impl TopicProducer {
     }
 }
 
-pub enum ProducerMsg {
-    RecordTooLarge(PendingRecord),
-    FailedToBuffer(PendingRecord),
+pub(crate) enum ProducerMsg {
+    RecordTooLarge(AssociatedRecord),
+    FailedToBuffer(AssociatedRecord),
 }
 
-pub enum DispatcherMsg {
+pub(crate) enum DispatcherMsg {
     Record {
-        record: PendingRecord,
+        record: AssociatedRecord,
         to_producer: Sender<ProducerMsg>,
     },
     Flush(Sender<std::convert::Infallible>),
-}
-
-/// Represents a Record sitting in the batch queue, waiting to be sent.
-#[derive(Debug)]
-pub struct PendingRecord {
-    uid: RecordUid,
-    replica_key: ReplicaKey,
-    record: Record,
 }
 
 #[cfg(test)]
