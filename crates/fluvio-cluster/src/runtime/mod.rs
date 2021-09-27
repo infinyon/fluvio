@@ -26,5 +26,7 @@ pub mod spu {
 
         /// create spu with relative (0) from some base
         fn create_spu_relative(&self, id: u16) -> Box<dyn SpuTarget>;
+
+        fn terminate_spu(&self, id: SpuId) -> Result<()>;
     }
 }

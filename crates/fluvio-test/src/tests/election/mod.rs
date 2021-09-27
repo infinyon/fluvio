@@ -48,7 +48,7 @@ impl TestOption for ElectionTestOption {
 
 #[fluvio_test(topic = "test")]
 pub async fn election(
-    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
+    mut test_driver: Arc<FluvioTestDriver>,
     mut test_case: TestCase,
 ) -> TestResult {
     println!("Starting election test");
@@ -63,7 +63,7 @@ pub async fn election(
         .expect("sending");
 
     // this is hack now, because we don't have ack
-    sleep(Duration::from_secs(200)).await;
+    sleep(Duration::from_secs(5)).await;
 
     let admin = test_driver.client().admin().await;
     let partitions = admin
@@ -82,10 +82,20 @@ pub async fn election(
     assert_eq!(follower_status.leo, 1);
 
     // find leader spu
-    let leader = &test_topic.spec.leader;
+    let leader = test_topic.spec.leader;
     println!("leader was: {}", leader);
 
-    println!("election test ok");
+    println!("terminating leader and waiting for election..");
 
-    //let cluster_manager = test_case.environment.cluster_manager();
+    let cluster_manager = test_driver
+        .get_cluster()
+        .expect("cluster")
+        .env_driver()
+        .create_cluster_manager();
+
+    cluster_manager.terminate_spu(leader).expect("terminate");
+
+    sleep(Duration::from_secs(5)).await;
+
+    println!("checking for new leader");
 }

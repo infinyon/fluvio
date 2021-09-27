@@ -1,7 +1,7 @@
 use std::process::{Command, Stdio};
 use std::{fs::File, path::PathBuf};
 
-use anyhow::Result as AnyResult;
+use anyhow::{Result as AnyResult, anyhow};
 use tracing::{debug, info, instrument};
 
 use fluvio_controlplane_metadata::spu::{Endpoint, IngressAddr, IngressPort, SpuSpec, SpuType};
@@ -129,5 +129,15 @@ impl SpuClusterManager for LocalSpuProcessClusterManager {
             tls_policy: self.tls_policy.clone(),
             data_dir: self.data_dir.clone(),
         })
+    }
+
+    fn terminate_spu(&self, id: SpuId) -> AnyResult<()> {
+        let kill_arg = format!("fluvio-run spu -i {}", id);
+        Command::new("pkill")
+            .arg("-f")
+            .arg(kill_arg)
+            .output()
+            .map_err(|err| anyhow!("failed to terminate: {}", err))
+            .map(|_| ())
     }
 }

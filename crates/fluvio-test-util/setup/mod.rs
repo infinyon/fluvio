@@ -28,6 +28,10 @@ mod cluster {
             Self { option, env_driver }
         }
 
+        pub fn env_driver(&self) -> &TestEnvironmentDriver {
+            &self.env_driver
+        }
+
         /// cleanup before initialize
         pub async fn remove_cluster(&mut self) {
             // make sure delete all
