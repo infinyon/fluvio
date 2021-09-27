@@ -24,7 +24,7 @@ use super::{follower::FollowerReplicaState, leader::LeaderReplicaState};
 const TOPIC: &str = "test";
 const HOST: &str = "127.0.0.1";
 
-const MAX_WAIT_LEADER: u64 = 100;
+const MAX_WAIT_LEADER: u64 = 300;
 const MAX_WAIT_FOLLOWER: u64 = 100;
 const WAIT_TERMINATE: u64 = 1000;
 
