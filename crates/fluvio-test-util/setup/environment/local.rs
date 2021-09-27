@@ -2,11 +2,12 @@ use async_trait::async_trait;
 
 use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
-
-use super::TestEnvironmentDriver;
 use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller, StartStatus};
 
+use super::EnvironmentDriver;
+
 /// Local Env driver where we should SPU locally
+#[derive(Clone)]
 pub struct LocalEnvDriver {
     config: LocalConfig,
 }
@@ -50,7 +51,7 @@ impl LocalEnvDriver {
 }
 
 #[async_trait]
-impl TestEnvironmentDriver for LocalEnvDriver {
+impl EnvironmentDriver for LocalEnvDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
         let uninstaller = ClusterUninstaller::new().build().unwrap();

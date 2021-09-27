@@ -8,7 +8,7 @@ use std::sync::Arc;
 use tracing::{info};
 use futures_lite::stream::StreamExt;
 
-use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
+use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::{Offset};
 use fluvio_command::CommandExt;
@@ -161,8 +161,7 @@ async fn validate_consume_message_api(
         // wait 5 seconds to get status and ensure replication is done
         sleep(Duration::from_secs(5)).await;
 
-        let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
-        let admin = fluvio_client.admin().await;
+        let admin = test_driver.client().admin().await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])
             .await

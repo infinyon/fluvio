@@ -12,7 +12,7 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
+use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 
 #[derive(Debug, Clone)]
@@ -65,8 +65,7 @@ pub async fn election(
     // this is hack now, because we don't have ack
     sleep(Duration::from_secs(200)).await;
 
-    let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
-    let admin = fluvio_client.admin().await;
+    let admin = test_driver.client().admin().await;
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await

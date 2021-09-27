@@ -1,19 +1,19 @@
-use std::sync::Arc;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
-use fluvio_test_util::test_meta::environment::EnvDetail;
 use tracing::{info, debug};
 
-use super::SmokeTestCase;
-use super::message::*;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, SharedTestDriver};
+use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::RecordKey;
 use fluvio_command::CommandExt;
 
+use super::SmokeTestCase;
+use super::message::*;
+
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(test_driver: Arc<TestDriver>, test_case: &SmokeTestCase) -> Offsets {
+pub async fn produce_message(test_driver: SharedTestDriver, test_case: &SmokeTestCase) -> Offsets {
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&test_driver, test_case).await;
 
@@ -23,7 +23,7 @@ pub async fn produce_message(test_driver: Arc<TestDriver>, test_case: &SmokeTest
     if use_cli {
         cli::produce_message_with_cli(test_case, offsets.clone()).await;
     } else if consumer_wait {
-        produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
+        produce_message_with_api(test_driver.clone(), offsets.clone(), test_case.clone()).await;
     } else {
         spawn(produce_message_with_api(
             test_driver.clone(),
@@ -45,7 +45,7 @@ mod offsets {
     use fluvio_controlplane_metadata::partition::ReplicaKey;
 
     use super::SmokeTestCase;
-    use super::{TestDriver, TestDriverType};
+    use super::{TestDriver};
     use super::EnvDetail;
 
     pub async fn find_offsets(
@@ -58,8 +58,7 @@ mod offsets {
 
         let mut offsets = HashMap::new();
 
-        let TestDriverType::Fluvio(fluvio_client) = test_driver.client.as_ref();
-        let mut admin = fluvio_client.admin().await;
+        let mut admin = test_driver.client().admin().await;
 
         for _i in 0..partition {
             let topic_name = test_case.environment.topic_name();
@@ -97,7 +96,7 @@ mod offsets {
 }
 
 pub async fn produce_message_with_api(
-    test_driver: Arc<TestDriver>,
+    test_driver: SharedTestDriver,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {

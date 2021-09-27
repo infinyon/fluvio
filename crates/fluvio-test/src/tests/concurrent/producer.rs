@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::sync::mpsc::Sender;
+
 use fluvio::RecordKey;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
@@ -8,7 +8,7 @@ use super::ConcurrentTestCase;
 use super::util::*;
 
 pub async fn producer(
-    test_driver: Arc<TestDriver>,
+    test_driver: &TestDriver,
     option: ConcurrentTestCase,
     digests: Sender<String>,
 ) {

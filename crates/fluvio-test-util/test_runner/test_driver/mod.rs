@@ -1,35 +1,43 @@
-#[allow(unused_imports)]
-use fluvio_command::CommandExt;
-use crate::test_meta::TestCase;
-use crate::test_meta::test_result::TestResult;
-use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
-use crate::test_meta::derive_attr::TestRequirements;
-use fluvio::{Fluvio, FluvioError};
 use std::sync::Arc;
+
+use tracing::debug;
+
+use fluvio::{Fluvio, FluvioError};
+
 use fluvio::metadata::topic::TopicSpec;
 //use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
 //use futures_lite::stream::StreamExt;
-use tracing::debug;
+
+#[allow(unused_imports)]
+use fluvio_command::CommandExt;
+use crate::setup::TestCluster;
+use crate::test_meta::TestCase;
+use crate::test_meta::test_result::TestResult;
+use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
+use crate::test_meta::derive_attr::TestRequirements;
+
+pub type SharedTestDriver = Arc<TestDriver>;
+
 //use fluvio::Offset;
 
-pub enum TestDriverType {
-    Fluvio(Fluvio),
-}
-#[derive(Clone)]
 pub struct TestDriver {
-    pub client: Arc<TestDriverType>,
-    //pub topic_num: usize,
-    //pub producer_num: usize,
-    //pub consumer_num: usize,
-    //pub producer_bytes: usize,
-    //pub consumer_bytes: usize,
-    //pub producer_latency_histogram: Histogram<u64>,
-    //pub consumer_latency_histogram: Histogram<u64>,
-    //pub topic_create_latency_histogram: Histogram<u64>,
+    pub client: Fluvio,
+    pub cluster: Option<TestCluster>, //pub topic_num: usize,
+                                      //pub producer_num: usize,
+                                      //pub consumer_num: usize,
+                                      //pub producer_bytes: usize,
+                                      //pub consumer_bytes: usize,
+                                      //pub producer_latency_histogram: Histogram<u64>,
+                                      //pub consumer_latency_histogram: Histogram<u64>,
+                                      //pub topic_create_latency_histogram: Histogram<u64>
 }
 
 impl TestDriver {
+    pub fn client(&self) -> &Fluvio {
+        &self.client
+    }
+
     pub fn get_results(&self) -> TestResult {
         TestResult::default()
     }
@@ -142,8 +150,7 @@ impl TestDriver {
         let topic_name = option.topic_name();
         println!("Creating the topic: {}", &topic_name);
 
-        let TestDriverType::Fluvio(fluvio_client) = self.client.as_ref();
-        let admin = fluvio_client.admin().await;
+        let admin = self.client.admin().await;
 
         let topic_spec =
             TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
