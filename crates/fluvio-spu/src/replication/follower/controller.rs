@@ -191,6 +191,7 @@ mod inner {
             let mut event_listener = self.group.events.change_listner();
 
             // starts initial sync
+            debug!("performing initial offset sync to leader");
             let mut replicas = FollowerGroup::filter_from(&self.states, self.leader).await;
             self.sync_all_offsets_to_leader(&mut sink, &replicas)
                 .await?;
@@ -272,8 +273,8 @@ mod inner {
                     let replica_key = ReplicaKey::new(topic.clone(), rep_id);
                     debug!(
                     replica = %replica_key,
-                    hw=p.hw,
-                    leo=p.leo,
+                    leader_hw=p.hw,
+                    leader_leo=p.leo,
                     records = p.records.total_records(),
                     base_offset = p.records.base_offset(),
                     "update from leader");
