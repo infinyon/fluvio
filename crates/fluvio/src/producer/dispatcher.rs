@@ -1,12 +1,11 @@
 use std::sync::Arc;
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap, VecDeque, HashSet};
 use futures_util::StreamExt;
 use async_channel::{Receiver, Sender};
 
-use tracing::{error, debug, trace};
-use fluvio_types::SpuId;
+use tracing::{error, debug};
 use fluvio_types::event::StickyEvent;
-use dataplane::ReplicaKey;
+use dataplane::{ReplicaKey, Offset, ErrorCode};
 use dataplane::batch::Batch;
 use dataplane::record::{RecordSet, Record};
 use dataplane::produce::{ProduceRequest, TopicProduceData, PartitionProduceData, ProduceResponse};
@@ -15,7 +14,8 @@ use fluvio_protocol::api::Request;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::producer::{DispatcherMsg, ProducerConfig, ProducerMsg, PendingRecord};
+use crate::producer::{Result, ProducerError};
+use crate::producer::{DispatcherMsg, ProducerConfig, ProducerMsg, PendingRecord, RecordUid};
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
 pub(crate) struct Dispatcher {
@@ -36,11 +36,16 @@ pub(crate) struct Dispatcher {
     shutdown: StickyEvent,
 }
 
+pub(crate) struct RecordStatusChannel {
+    sender: tokio::sync::broadcast::Sender<()>,
+    receiver: tokio::sync::broadcast::Receiver<()>,
+}
+
 #[derive(Debug)]
 pub(crate) struct RecordBuffer {
     size: usize,
     max_size: usize,
-    records: VecDeque<Record>,
+    records: VecDeque<PendingRecord>,
 }
 
 impl RecordBuffer {
@@ -52,29 +57,33 @@ impl RecordBuffer {
         }
     }
 
-    pub fn push(&mut self, record: Record) -> Result<(), Record> {
-        let record_size =
-            Encoder::write_size(&record, ProduceRequest::<RecordSet>::DEFAULT_API_VERSION);
+    pub fn push(&mut self, pending: PendingRecord) -> Result<(), PendingRecord> {
+        let record_size = Encoder::write_size(
+            &pending.record,
+            ProduceRequest::<RecordSet>::DEFAULT_API_VERSION,
+        );
 
         if self.size + record_size > self.max_size {
-            return Err(record);
+            return Err(pending);
         }
 
-        self.records.push_back(record);
+        self.records.push_back(pending);
         self.size += record_size;
 
         Ok(())
     }
 
-    pub fn pop(&mut self) -> Option<Record> {
-        let record = self.records.pop_front();
-        match record {
+    pub fn pop(&mut self) -> Option<PendingRecord> {
+        let pending = self.records.pop_front();
+        match pending {
             None => None,
-            Some(record) => {
-                let record_size =
-                    Encoder::write_size(&record, ProduceRequest::<RecordSet>::DEFAULT_API_VERSION);
+            Some(pending) => {
+                let record_size = Encoder::write_size(
+                    &pending.record,
+                    ProduceRequest::<RecordSet>::DEFAULT_API_VERSION,
+                );
                 self.size.saturating_sub(record_size);
-                Some(record)
+                Some(pending)
             }
         }
     }
@@ -178,32 +187,33 @@ impl Dispatcher {
 
     async fn try_buffer(
         &mut self,
-        mut record: PendingRecord,
+        pending: PendingRecord,
         to_producer: Sender<ProducerMsg>,
     ) -> Result<(), FluvioError> {
         let batch_size = self.config.batch_size;
         let buffer = self
             .bufferz
-            .entry(record.replica_key.clone())
+            .entry(pending.replica_key.clone())
             .or_insert_with(|| RecordBuffer::new(batch_size));
 
         // If this record is too large for the buffer, return it to the producer.
-        if !buffer.could_fit(&record.record) {
+        if !buffer.could_fit(&pending.record) {
             to_producer
-                .send(ProducerMsg::RecordTooLarge(record))
+                .send(ProducerMsg::RecordTooLarge(pending))
                 .await
                 .map_err(|_| FluvioError::Other("failed to return oversized record".to_string()))?;
             return Ok(());
         }
 
         // Try to push the record into the buffer. If this fails, the record is returned in Err
-        let buffer_result = buffer.push(record.record);
+        let replica_key = pending.replica_key.clone();
+        let buffer_result = buffer.push(pending);
 
         // If the record could not be buffered, we need to flush first
         if let Err(bounced) = buffer_result {
             let mut buffer_to_flush =
                 std::mem::replace(buffer, RecordBuffer::new(self.config.batch_size));
-            flush_buffer(self.pool.clone(), &record.replica_key, &mut buffer_to_flush).await?;
+            flush_buffer(self.pool.clone(), &replica_key, &mut buffer_to_flush).await?;
 
             let buffer_result = buffer.push(bounced);
             let bounced = match buffer_result {
@@ -215,9 +225,8 @@ impl Dispatcher {
                 Err(bounced) => bounced,
             };
 
-            record.record = bounced;
             to_producer
-                .send(ProducerMsg::FailedToBuffer(record))
+                .send(ProducerMsg::FailedToBuffer(bounced))
                 .await
                 .map_err(|_| FluvioError::Other("failed to return failed record".to_string()))?;
         }
@@ -235,7 +244,7 @@ impl Dispatcher {
             result_futures.push(fut.map(|it| (key, it)));
         }
 
-        let results: Vec<(ReplicaKey, Result<ProduceResponse, FluvioError>)> =
+        let results: Vec<(ReplicaKey, Result<AssociatedResponse, FluvioError>)> =
             futures_util::future::join_all(result_futures).await;
         for (key, result) in results {
             let response = match result {
@@ -250,60 +259,155 @@ impl Dispatcher {
     }
 }
 
-fn add_record_to_request(request: &mut ProduceRequest, key: &ReplicaKey, record: Record) {
-    let topic = {
-        let maybe_topic = request.topics.iter_mut().find(|t| t.name == key.topic);
-        match maybe_topic {
-            Some(t) => t,
-            None => {
-                let topic = TopicProduceData {
-                    name: key.topic.clone(),
-                    ..Default::default()
-                };
-                request.topics.push(topic);
-                request.topics.last_mut().unwrap()
+#[derive(Debug)]
+pub(crate) struct BatchInfo {
+    replica_key: ReplicaKey,
+    records: HashSet<RecordUid>,
+}
+
+impl BatchInfo {
+    pub fn new(replica_key: ReplicaKey) -> Self {
+        Self {
+            replica_key,
+            records: Default::default(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct BatchSuccess {
+    batch: BatchInfo,
+    base_offset: Offset,
+}
+
+#[derive(Debug)]
+pub(crate) struct BatchFailure {
+    batch: BatchInfo,
+    error_code: ErrorCode,
+}
+
+/// A type to build a `ProduceRequest` while associating the [`RecordUid`] of each record.
+#[derive(Debug, Default)]
+pub(crate) struct AssociatedRequest {
+    pub request: ProduceRequest,
+    pub uids: HashMap<ReplicaKey, BatchInfo>,
+}
+
+impl AssociatedRequest {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn add(&mut self, pending: PendingRecord) {
+        let topic = {
+            let maybe_topic = self
+                .request
+                .topics
+                .iter_mut()
+                .find(|t| t.name == pending.replica_key.topic);
+            match maybe_topic {
+                Some(t) => t,
+                None => {
+                    let topic = TopicProduceData {
+                        name: pending.replica_key.topic.clone(),
+                        ..Default::default()
+                    };
+                    self.request.topics.push(topic);
+                    self.request.topics.last_mut().unwrap()
+                }
+            }
+        };
+
+        let partition = {
+            let maybe_partition = topic
+                .partitions
+                .iter_mut()
+                .find(|p| p.partition_index == pending.replica_key.partition);
+            match maybe_partition {
+                Some(p) => p,
+                None => {
+                    let partition = PartitionProduceData {
+                        partition_index: pending.replica_key.partition,
+                        ..Default::default()
+                    };
+                    topic.partitions.push(partition);
+                    topic.partitions.last_mut().unwrap()
+                }
+            }
+        };
+
+        let batch = {
+            let maybe_batch = partition.records.batches.first_mut();
+            match maybe_batch {
+                Some(b) => b,
+                None => {
+                    partition.records.batches.push(Batch::new());
+                    partition.records.batches.last_mut().unwrap()
+                }
+            }
+        };
+
+        batch.add_record(pending.record);
+
+        // Associate this record's UID according to its ReplicaKey
+        let replica_key = pending.replica_key;
+        self.uids
+            .entry(replica_key.clone())
+            .or_insert_with(|| BatchInfo::new(replica_key))
+            .records
+            .insert(pending.uid);
+    }
+}
+
+pub(crate) struct AssociatedResponse {
+    successes: Vec<BatchSuccess>,
+    failures: Vec<BatchFailure>,
+}
+
+impl AssociatedResponse {
+    pub fn new(
+        response: ProduceResponse,
+        mut batches: HashMap<ReplicaKey, BatchInfo>,
+    ) -> Result<Self> {
+        let mut successes = Vec::new();
+        let mut failures = Vec::new();
+
+        for topic in response.responses {
+            for partition in topic.partitions {
+                let replica_key = ReplicaKey::new(&topic.name, partition.partition_index);
+                let batch = batches
+                    .remove(&replica_key)
+                    .ok_or_else(|| ProducerError::BatchNotFound)?;
+
+                if partition.error_code.is_ok() {
+                    let batch_success = BatchSuccess {
+                        batch,
+                        base_offset: partition.base_offset,
+                    };
+                    successes.push(batch_success);
+                } else {
+                    let batch_failure = BatchFailure {
+                        batch,
+                        error_code: partition.error_code,
+                    };
+                    failures.push(batch_failure);
+                }
             }
         }
-    };
 
-    let partition = {
-        let maybe_partition = topic
-            .partitions
-            .iter_mut()
-            .find(|p| p.partition_index == key.partition);
-        match maybe_partition {
-            Some(p) => p,
-            None => {
-                let partition = PartitionProduceData {
-                    partition_index: key.partition,
-                    ..Default::default()
-                };
-                topic.partitions.push(partition);
-                topic.partitions.last_mut().unwrap()
-            }
-        }
-    };
-
-    let batch = {
-        let maybe_batch = partition.records.batches.first_mut();
-        match maybe_batch {
-            Some(b) => b,
-            None => {
-                partition.records.batches.push(Batch::new());
-                partition.records.batches.last_mut().unwrap()
-            }
-        }
-    };
-
-    batch.add_record(record);
+        Ok(Self {
+            successes,
+            failures,
+        })
+    }
 }
 
 async fn flush_buffer(
     spus: Arc<SpuPool>,
     key: &ReplicaKey,
     buffer: &mut RecordBuffer,
-) -> Result<ProduceResponse, FluvioError> {
-    let mut request: ProduceRequest = Default::default();
+) -> Result<AssociatedResponse, FluvioError> {
+    let mut pending_request = AssociatedRequest::new();
 
     println!(
         "Flushing {} records ({} bytes)",
@@ -311,11 +415,12 @@ async fn flush_buffer(
         buffer.size()
     );
     while let Some(record) = buffer.pop() {
-        add_record_to_request(&mut request, key, record);
+        pending_request.add(record);
     }
 
     let socket = spus.create_serial_socket(key).await?;
-    let response = socket.send_receive(request).await?;
+    let response = socket.send_receive(pending_request.request).await?;
+    let associated_response = AssociatedResponse::new(response, pending_request.uids)?;
 
-    Ok(response)
+    Ok(associated_response)
 }

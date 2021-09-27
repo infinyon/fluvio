@@ -14,7 +14,6 @@ pub use dataplane::record::{RecordKey, RecordData};
 
 pub use error::ProducerError;
 use crate::error::Result;
-use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
 pub(crate) use crate::producer::dispatcher::Dispatcher;
@@ -51,16 +50,42 @@ impl Default for ProducerConfig {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Hash)]
+pub(crate) struct RecordUid(u64);
+
+/// A monotonically increasing counter for assigning Uids to records
+pub(crate) struct RecordUidGenerator {
+    next_uid: std::sync::atomic::AtomicU64,
+}
+
+impl RecordUidGenerator {
+    pub fn new() -> Self {
+        Self {
+            next_uid: std::sync::atomic::AtomicU64::new(0),
+        }
+    }
+
+    /// Claim the next UID in the monotonically increasing sequence
+    pub fn claim(&self) -> RecordUid {
+        let uid = self
+            .next_uid
+            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        RecordUid(uid)
+    }
+}
+
+pub(crate) struct BatchInfo {}
+
 /// A handle for `TopicProducer`s to communicate with the shared `ProducerDispatcher`.
 ///
 /// When all `TopicProducer`s are dropped, the `ProducerInner` will drop and
 /// notify the `ProducerDispatcher` to shutdown.
-#[derive(Clone)]
 pub(crate) struct ProducerInner {
     /// A channel for sending messages to the shared Producer Dispatcher.
     pub(crate) dispatcher: Sender<DispatcherMsg>,
     /// An event that can notify the Dispatcher to shutdown.
     pub(crate) dispatcher_shutdown: StickyEvent,
+    pub(crate) uid_generator: RecordUidGenerator,
 }
 
 impl Drop for ProducerInner {
@@ -80,6 +105,7 @@ impl TopicProducer {
         let inner = Arc::new(ProducerInner {
             dispatcher: sender,
             dispatcher_shutdown,
+            uid_generator: RecordUidGenerator::new(),
         });
 
         Self {
@@ -133,6 +159,7 @@ impl TopicProducer {
 
         let replica_key = ReplicaKey::new(&self.topic, partition);
         let pending_record = PendingRecord {
+            uid: self.inner.uid_generator.claim(),
             replica_key,
             record,
         };
@@ -227,7 +254,9 @@ pub enum DispatcherMsg {
 }
 
 /// Represents a Record sitting in the batch queue, waiting to be sent.
+#[derive(Debug)]
 pub struct PendingRecord {
+    uid: RecordUid,
     replica_key: ReplicaKey,
     record: Record,
 }

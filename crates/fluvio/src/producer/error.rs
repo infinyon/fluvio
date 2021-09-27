@@ -6,6 +6,8 @@ pub type Result<T, E = ProducerError> = core::result::Result<T, E>;
 pub enum ProducerError {
     #[error("failed to flush a batch of records")]
     Flush,
+    #[error("failed to associate record IDs with a batch")]
+    BatchNotFound,
     #[error("failed to send a message in an internal channel")]
     ChannelSend,
 }
