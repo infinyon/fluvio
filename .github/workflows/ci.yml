@@ -224,7 +224,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, integration]
+        check: [fmt, clippy, doc, test, integration, crate_version]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -257,6 +257,11 @@ jobs:
       - name: Integration test
         if: ${{ matrix.check == 'integration' }}
         run: make run-integration-test
+      - name: Crate version check
+        if: ${{ matrix.check == 'crate_version' }}
+        run: |
+          cargo install cargo-download
+          ./release-scripts/test-crate-version.sh
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
