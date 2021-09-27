@@ -17,6 +17,9 @@ use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 
+// time to wait for ac
+const ACK_WAIT: u64 = 10;
+
 #[derive(Debug, Clone)]
 pub struct ElectionTestCase {
     pub environment: EnvironmentSetup,
@@ -65,7 +68,7 @@ pub async fn election(
         .expect("sending");
 
     // this is hack now, because we don't have ack
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(ACK_WAIT)).await;
 
     let admin = test_driver.client().admin().await;
 
@@ -99,7 +102,7 @@ pub async fn election(
 
     cluster_manager.terminate_spu(leader).expect("terminate");
 
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(ACK_WAIT)).await;
 
     println!("checking for new leader");
 
@@ -120,7 +123,7 @@ pub async fn election(
         .expect("sending");
 
     // wait until this gets written
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(ACK_WAIT)).await;
 
     {
         let partition_status = admin
@@ -138,7 +141,7 @@ pub async fn election(
     leader_spu.start().expect("start");
 
     // wait until prev leader has caught up
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(ACK_WAIT)).await;
 
     println!("checking that prev leader has fully caught up");
     {
@@ -156,7 +159,7 @@ pub async fn election(
         .terminate_spu(follower_id)
         .expect("terminate");
 
-    sleep(Duration::from_secs(5)).await;
+    sleep(Duration::from_secs(ACK_WAIT)).await;
 
     println!("checking leader again");
 
