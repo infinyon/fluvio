@@ -85,7 +85,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.6.2"
+version = "0.7.0"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-core"
-version = "0.3.2"
+version = "0.3.3"
 dependencies = [
  "bytes",
  "log",
@@ -155,7 +155,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
