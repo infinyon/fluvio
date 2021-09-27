@@ -56,48 +56,47 @@ function download_crate() {
 function compare_crates_src() {
     CRATE_NAME=$1
 
-    if [[ $CRATE_NAME == "fluvio" ]];
+#    if [[ $CRATE_NAME == "fluvio" ]];
+#    then
+#        compare_fluvio_src;
+#    else
+#
+    if [[ $VERBOSE == true ]];
     then
-        compare_fluvio_src;
+        diff -bur ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
     else
-
-        if [[ $VERBOSE == true ]];
-        then
-            diff -bur ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
-        else
-            # Don't print the diff
-            diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
-        fi
+        # Don't print the diff
+        diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
     fi
+#    fi
     
 }
 
-# The fluvio crate needs to be handled differently than the rest
-# NOTICE:
-# We are unable to verify changes to the producer subcrate,
-# as a consequence to code optimizations made by crates.io
-function compare_fluvio_src() {
-    TMP=$(mktemp)
-    EXPECTED_OUT="Only in ./crates/fluvio/src: producer\nOnly in ./crates_io/fluvio/src: producer.rs"
-
-    if [[ $VERBOSE == true ]];
-    then
-        diff -bur ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src | tee "$TMP";
-    else
-        # Don't print the diff
-        diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src | tee "$TMP";
-    fi
-
-    if [[ "$(echo -e "$EXPECTED_OUT")" == "$(cat "$TMP")" ]];
-    then
-        rm "$TMP"
-        return 0
-    else
-        rm "$TMP"
-        return 1
-    fi
-
-}
+## The fluvio crate needs to be handled differently than the rest
+## NOTICE:
+## We are unable to verify changes to the producer subcrate,
+## as a consequence to code optimizations made by crates.io
+#function compare_fluvio_src() {
+#    TMP=$(mktemp)
+#    EXPECTED_OUT="Only in ./crates/fluvio/src: producer\nOnly in ./crates_io/fluvio/src: producer.rs"
+#
+#    if [[ $VERBOSE == true ]];
+#    then
+#        diff -bur ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src | tee "$TMP";
+#    else
+#        # Don't print the diff
+#        diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src | tee "$TMP";
+#    fi
+#
+#    if [[ "$(echo -e "$EXPECTED_OUT")" == "$(cat "$TMP")" ]];
+#    then
+#        rm "$TMP"
+#        return 0
+#    else
+#        rm "$TMP"
+#        return 1
+#    fi
+#}
 
 function compare_crates_version() {
     CRATE_NAME=$1
