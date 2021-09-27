@@ -1536,6 +1536,7 @@ dependencies = [
  "k8-config",
  "k8-metadata-client",
  "k8-types",
+ "nix",
  "once_cell",
  "prettytable-rs",
  "remoteprocess",

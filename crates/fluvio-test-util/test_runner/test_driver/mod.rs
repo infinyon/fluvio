@@ -42,6 +42,10 @@ impl TestDriver {
         TestResult::default()
     }
 
+    pub fn get_cluster(&self) -> Option<&TestCluster> {
+        self.cluster.as_ref()
+    }
+
     // Wrapper to getting a producer. We keep track of the number of producers we create
     pub async fn create_producer(&self, topic: &str) -> TopicProducer {
         debug!(topic, "creating producer");
