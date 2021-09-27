@@ -1,46 +1,58 @@
+use std::sync::Arc;
+
+use tracing::debug;
+
+use fluvio::{Fluvio, FluvioError};
+
+use fluvio::metadata::topic::TopicSpec;
+//use hdrhistogram::Histogram;
+use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
+//use futures_lite::stream::StreamExt;
+
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
+use crate::setup::TestCluster;
 use crate::test_meta::TestCase;
 use crate::test_meta::test_result::TestResult;
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
-use fluvio::{Fluvio, FluvioError};
-use std::sync::Arc;
-use fluvio::metadata::topic::TopicSpec;
-use hdrhistogram::Histogram;
-use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
-use futures_lite::stream::StreamExt;
-use tracing::debug;
-use fluvio::Offset;
 
-pub enum TestDriverType {
-    Fluvio(Fluvio),
-}
-#[derive(Clone)]
+pub type SharedTestDriver = Arc<TestDriver>;
+
+//use fluvio::Offset;
+
 pub struct TestDriver {
-    pub admin_client: Arc<TestDriverType>,
-    pub topic_num: usize,
-    pub producer_num: usize,
-    pub consumer_num: usize,
-    pub producer_bytes: usize,
-    pub consumer_bytes: usize,
-    pub producer_latency_histogram: Histogram<u64>,
-    pub consumer_latency_histogram: Histogram<u64>,
-    pub topic_create_latency_histogram: Histogram<u64>,
+    pub client: Fluvio,
+    pub cluster: Option<TestCluster>, //pub topic_num: usize,
+                                      //pub producer_num: usize,
+                                      //pub consumer_num: usize,
+                                      //pub producer_bytes: usize,
+                                      //pub consumer_bytes: usize,
+                                      //pub producer_latency_histogram: Histogram<u64>,
+                                      //pub consumer_latency_histogram: Histogram<u64>,
+                                      //pub topic_create_latency_histogram: Histogram<u64>
 }
 
 impl TestDriver {
+    pub fn client(&self) -> &Fluvio {
+        &self.client
+    }
+
     pub fn get_results(&self) -> TestResult {
         TestResult::default()
     }
 
+    pub fn get_cluster(&self) -> Option<&TestCluster> {
+        self.cluster.as_ref()
+    }
+
     // Wrapper to getting a producer. We keep track of the number of producers we create
-    pub async fn create_producer(&mut self, topic: &str) -> TopicProducer {
+    pub async fn create_producer(&self, topic: &str) -> TopicProducer {
         debug!(topic, "creating producer");
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.topic_producer(topic).await {
             Ok(client) => {
-                self.producer_num += 1;
+                //self.producer_num += 1;
                 client
             }
             Err(err) => {
@@ -51,7 +63,7 @@ impl TestDriver {
 
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
     pub async fn send_count(
-        &mut self,
+        &self,
         p: &TopicProducer,
         key: RecordKey,
         message: Vec<u8>,
@@ -61,28 +73,28 @@ impl TestDriver {
 
         let result = p.send(key, message.clone()).await;
 
-        let produce_time = now.elapsed().unwrap().as_nanos();
+        let _produce_time = now.elapsed().unwrap().as_nanos();
 
-        debug!(
-            "(#{}) Produce latency (ns): {:?}",
-            self.producer_latency_histogram.len() + 1,
-            produce_time as u64
-        );
+        //debug!(
+        //    "(#{}) Produce latency (ns): {:?}",
+        //    self.producer_latency_histogram.len() + 1,
+        //    produce_time as u64
+        //);
 
-        self.producer_latency_histogram
-            .record(produce_time as u64)
-            .unwrap();
+        //self.producer_latency_histogram
+        //    .record(produce_time as u64)
+        //    .unwrap();
 
-        self.producer_bytes += message.len();
+        //self.producer_bytes += message.len();
 
         result
     }
 
-    pub async fn get_consumer(&mut self, topic: &str) -> PartitionConsumer {
+    pub async fn get_consumer(&self, topic: &str) -> PartitionConsumer {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.partition_consumer(topic.to_string(), 0).await {
             Ok(client) => {
-                self.consumer_num += 1;
+                //self.consumer_num += 1;
                 client
             }
             Err(err) => {
@@ -91,57 +103,58 @@ impl TestDriver {
         }
     }
 
-    pub async fn stream_count(&mut self, consumer: PartitionConsumer, offset: Offset) {
-        use std::time::SystemTime;
-        let mut stream = consumer.stream(offset).await.expect("stream");
+    //pub async fn stream_count(&mut self, consumer: PartitionConsumer, offset: Offset) {
+    //    use std::time::SystemTime;
+    //    let mut stream = consumer.stream(offset).await.expect("stream");
 
-        loop {
-            // Take a timestamp
-            let now = SystemTime::now();
+    //    loop {
+    //        // Take a timestamp
+    //        let now = SystemTime::now();
 
-            if let Some(Ok(record)) = stream.next().await {
-                // Record latency
-                let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                self.consumer_latency_histogram
-                    .record(consume_time as u64)
-                    .unwrap();
+    //        if let Some(Ok(record)) = stream.next().await {
+    //            // Record latency
+    //            let _consume_time = now.elapsed().clone().unwrap().as_nanos();
+    //            //self.consumer_latency_histogram
+    //            //    .record(consume_time as u64)
+    //            //    .unwrap();
 
-                // Record bytes consumed
-                self.consumer_bytes += record.as_ref().len();
-            } else {
-                debug!("No more bytes left to consume");
-                break;
-            }
-        }
+    //            //// Record bytes consumed
+    //            //self.consumer_bytes += record.as_ref().len();
+    //        } else {
+    //            debug!("No more bytes left to consume");
+    //            break;
+    //        }
+    //    }
+    //}
+
+    // TODO: This is a workaround. Handle stream inside impl
+    pub async fn consume_latency_record(&mut self, _latency: u64) {
+        unimplemented!()
+        //self.consumer_latency_histogram.record(latency).unwrap();
+        //debug!(
+        //    "(#{}) Recording consumer latency (ns): {:?}",
+        //    self.consumer_latency_histogram.len(),
+        //    latency
+        //);
     }
 
     // TODO: This is a workaround. Handle stream inside impl
-    pub async fn consume_latency_record(&mut self, latency: u64) {
-        self.consumer_latency_histogram.record(latency).unwrap();
-        debug!(
-            "(#{}) Recording consumer latency (ns): {:?}",
-            self.consumer_latency_histogram.len(),
-            latency
-        );
+    pub async fn consume_bytes_record(&mut self, _bytes_len: usize) {
+        unimplemented!()
+        //self.consumer_bytes += bytes_len;
+        //debug!(
+        //    "Recording consumer bytes len: {:?} (total: {})",
+        //    bytes_len, self.consumer_bytes
+        //);
     }
 
-    // TODO: This is a workaround. Handle stream inside impl
-    pub async fn consume_bytes_record(&mut self, bytes_len: usize) {
-        self.consumer_bytes += bytes_len;
-        debug!(
-            "Recording consumer bytes len: {:?} (total: {})",
-            bytes_len, self.consumer_bytes
-        );
-    }
-
-    pub async fn create_topic(&mut self, option: &EnvironmentSetup) -> Result<(), ()> {
+    pub async fn create_topic(&self, option: &EnvironmentSetup) -> Result<(), ()> {
         use std::time::SystemTime;
 
         let topic_name = option.topic_name();
         println!("Creating the topic: {}", &topic_name);
 
-        let TestDriverType::Fluvio(fluvio_client) = self.admin_client.as_ref();
-        let admin = fluvio_client.admin().await;
+        let admin = self.client.admin().await;
 
         let topic_spec =
             TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
@@ -151,14 +164,14 @@ impl TestDriver {
 
         let topic_create = admin.create(topic_name.clone(), false, topic_spec).await;
 
-        let topic_time = now.elapsed().unwrap().as_nanos();
+        let _topic_time = now.elapsed().unwrap().as_nanos();
 
         if topic_create.is_ok() {
             println!("topic \"{}\" created", topic_name);
-            self.topic_create_latency_histogram
-                .record(topic_time as u64)
-                .unwrap();
-            self.topic_num += 1;
+            //self.topic_create_latency_histogram
+            //    .record(topic_time as u64)
+            //    .unwrap();
+            //self.topic_num += 1;
         } else {
             println!("topic \"{}\" already exists", topic_name);
         }

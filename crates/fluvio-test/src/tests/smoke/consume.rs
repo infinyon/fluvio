@@ -4,12 +4,11 @@ use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
 use std::sync::Arc;
-use async_lock::RwLock;
 
-use tracing::{info, debug};
+use tracing::{info};
 use futures_lite::stream::StreamExt;
 
-use fluvio_test_util::test_runner::test_driver::{TestDriver, TestDriverType};
+use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::{Offset};
 use fluvio_command::CommandExt;
@@ -22,7 +21,7 @@ type Offsets = HashMap<String, i64>;
 
 /// verify consumers
 pub async fn validate_consume_message(
-    test_driver: Arc<RwLock<TestDriver>>,
+    test_driver: Arc<TestDriver>,
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
@@ -63,7 +62,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
 }
 
 async fn validate_consume_message_api(
-    test_driver: Arc<RwLock<TestDriver>>,
+    test_driver: Arc<TestDriver>,
     offsets: Offsets,
     test_case: &SmokeTestCase,
 ) {
@@ -84,9 +83,7 @@ async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let mut lock = test_driver.write().await;
-        let consumer = lock.get_consumer(&topic_name).await;
-        drop(lock);
+        let consumer = test_driver.get_consumer(&topic_name).await;
 
         let mut stream = consumer
             .stream(
@@ -101,7 +98,7 @@ async fn validate_consume_message_api(
         let mut chunk_time = SystemTime::now();
 
         loop {
-            let now = SystemTime::now();
+            let _canow = SystemTime::now();
             select! {
 
                 stream_next = stream.next() => {
@@ -123,17 +120,17 @@ async fn validate_consume_message_api(
                         );
                         total_records += 1;
 
-                        let mut lock = test_driver.write().await;
+                        //let mut lock = test_driver.write().await;
 
                         // record latency
-                        let consume_time = now.elapsed().clone().unwrap().as_nanos();
-                        lock.consume_latency_record(consume_time as u64).await;
-                        lock.consume_bytes_record(bytes.len()).await;
+                        //let consume_time = now.elapsed().clone().unwrap().as_nanos();
+                        //lock.consume_latency_record(consume_time as u64).await;
+                        //lock.consume_bytes_record(bytes.len()).await;
 
-                       // debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
-                        debug!(consumer_bytes = lock.consumer_bytes, "Consume stat updates");
+                        // debug!("Consume stat updates: {:?} {:?}", lock.consumer_latency_histogram, lock.consumer_bytes);
+                        //debug!(consumer_bytes = lock.consumer_bytes, "Consume stat updates");
 
-                        drop(lock);
+                        //drop(lock);
 
                         // for each
                         if total_records % 100 == 0 {
@@ -164,14 +161,11 @@ async fn validate_consume_message_api(
         // wait 5 seconds to get status and ensure replication is done
         sleep(Duration::from_secs(5)).await;
 
-        let lock = test_driver.write().await;
-        let TestDriverType::Fluvio(fluvio_client) = lock.admin_client.as_ref();
-        let admin = fluvio_client.admin().await;
+        let admin = test_driver.client().admin().await;
         let partitions = admin
             .list::<PartitionSpec, _>(vec![])
             .await
             .expect("partitions");
-        drop(lock);
 
         assert_eq!(partitions.len(), 1);
 
@@ -204,9 +198,7 @@ async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let mut lock = test_driver.write().await;
-        let consumer = lock.get_consumer(&topic_name).await;
-        drop(lock);
+        let consumer = test_driver.get_consumer(&topic_name).await;
 
         let mut stream = consumer
             .stream(

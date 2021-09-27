@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartstream"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -18,5 +18,5 @@ crate-type = ['lib']
 
 [dependencies]
 eyre = { version = "0.6", default-features = false }
-fluvio-dataplane-protocol = { version = "0.6", path = "../fluvio-dataplane-protocol", default-features = false }
+fluvio-dataplane-protocol = { version = "0.7", path = "../fluvio-dataplane-protocol", default-features = false }
 fluvio-smartstream-derive = { version = "0.1.1", path = "../fluvio-smartstream-derive", optional = true }

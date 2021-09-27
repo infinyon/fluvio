@@ -4,7 +4,6 @@ pub mod util;
 
 use std::any::Any;
 use std::sync::Arc;
-use async_lock::RwLock;
 use structopt::StructOpt;
 
 use fluvio_future::task::spawn;
@@ -13,7 +12,7 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::TestDriver;
+use fluvio_test_util::test_runner::test_driver::{TestDriver, SharedTestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 
 #[derive(Debug, Clone)]
@@ -48,15 +47,12 @@ impl TestOption for ConcurrentTestOption {
 }
 
 #[fluvio_test(topic = "test-bug")]
-pub async fn concurrent(
-    mut test_driver: Arc<RwLock<FluvioTestDriver>>,
-    mut test_case: TestCase,
-) -> TestResult {
+pub async fn concurrent(mut test_driver: SharedTestDriver, mut test_case: TestCase) -> TestResult {
     test_concurrent_consume_produce(test_driver.clone(), test_case.into()).await
 }
 
 pub async fn test_concurrent_consume_produce(
-    test_driver: Arc<RwLock<TestDriver>>,
+    test_driver: SharedTestDriver,
     option: ConcurrentTestCase,
 ) {
     println!("Testing concurrent consumer and producer");
@@ -66,5 +62,5 @@ pub async fn test_concurrent_consume_produce(
         option.clone(),
         receiver,
     ));
-    producer::producer(test_driver, option, sender).await;
+    producer::producer(&test_driver, option, sender).await;
 }

@@ -4,6 +4,10 @@ version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
 autotests = false
+description = "Fluvio Test Utility"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
 
 [dependencies]
 tracing = "0.1"
@@ -22,8 +26,7 @@ inventory = "0.1"
 tokio = { version = "1.4", features = ["macros"] }
 bencher = "0.1"
 prettytable-rs = "0.8"
-hdrhistogram = "7.3.0"
-async-lock = "2.4.0"
+#hdrhistogram = "7.3.0"
 crc = "2.0"
 
 # Fluvio dependencies

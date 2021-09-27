@@ -1,60 +1,68 @@
 pub mod environment;
-use environment::TestEnvironmentDriver;
 
-use std::time::Duration;
+pub use cluster::*;
 
-use fluvio_future::timer::sleep;
+mod cluster {
 
-use crate::tls::load_tls;
-use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
+    use std::time::Duration;
 
-use fluvio::{Fluvio, FluvioConfig, FluvioError};
+    use fluvio_future::timer::sleep;
+    use fluvio::{Fluvio, FluvioConfig, FluvioError};
 
-pub struct TestCluster {
-    option: EnvironmentSetup,
-    env_driver: Box<dyn TestEnvironmentDriver>,
-}
+    use crate::tls::load_tls;
+    use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
 
-impl TestCluster {
-    pub fn new(option: EnvironmentSetup) -> Self {
-        use environment::create_driver;
+    use super::environment::{TestEnvironmentDriver, create_driver};
 
-        // Can we condense the interface to the environment?
-        let env_driver = create_driver(option.clone());
-
-        Self { option, env_driver }
+    #[derive(Clone)]
+    pub struct TestCluster {
+        option: EnvironmentSetup,
+        env_driver: TestEnvironmentDriver,
     }
 
-    /// cleanup before initialize
-    pub async fn remove_cluster(&mut self) {
-        // make sure delete all
-        println!("deleting cluster");
+    impl TestCluster {
+        pub fn new(option: EnvironmentSetup) -> Self {
+            // Can we condense the interface to the environment?
+            let env_driver = create_driver(option.clone());
 
-        self.env_driver.remove_cluster().await;
-    }
-
-    pub async fn start(&mut self) -> Result<Fluvio, FluvioError> {
-        if self.option.remove_cluster_before() {
-            self.remove_cluster().await;
-        } else {
-            println!("remove cluster skipped");
+            Self { option, env_driver }
         }
 
-        println!("installing cluster");
+        pub fn env_driver(&self) -> &TestEnvironmentDriver {
+            &self.env_driver
+        }
 
-        let cluster_status = self.env_driver.start_cluster().await;
+        /// cleanup before initialize
+        pub async fn remove_cluster(&mut self) {
+            // make sure delete all
+            println!("deleting cluster");
 
-        sleep(Duration::from_millis(2000)).await;
+            self.env_driver.remove_cluster().await;
+        }
 
-        let fluvio_config = if self.option.tls {
-            let (client, _server) = load_tls(&self.option.tls_user);
-            FluvioConfig::new(cluster_status.address()).with_tls(client)
-        } else {
-            FluvioConfig::new(cluster_status.address())
-        };
+        pub async fn start(&mut self) -> Result<Fluvio, FluvioError> {
+            if self.option.remove_cluster_before() {
+                self.remove_cluster().await;
+            } else {
+                println!("remove cluster skipped");
+            }
 
-        let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
+            println!("installing cluster");
 
-        Ok(fluvio)
+            let cluster_status = self.env_driver.start_cluster().await;
+
+            sleep(Duration::from_millis(2000)).await;
+
+            let fluvio_config = if self.option.tls {
+                let (client, _server) = load_tls(&self.option.tls_user);
+                FluvioConfig::new(cluster_status.address()).with_tls(client)
+            } else {
+                FluvioConfig::new(cluster_status.address())
+            };
+
+            let fluvio = Fluvio::connect_with_config(&fluvio_config).await?;
+
+            Ok(fluvio)
+        }
     }
 }

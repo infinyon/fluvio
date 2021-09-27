@@ -1,5 +1,7 @@
 use std::io::Error as IoError;
 
+use anyhow::Error as AnyError;
+
 use fluvio::FluvioError;
 use k8_config::{ConfigError as K8ConfigError};
 use k8_client::{ClientError as K8ClientError};
@@ -8,6 +10,7 @@ use fluvio_command::CommandError;
 
 use crate::check::{CheckResults, CheckStatuses};
 use crate::charts::ChartInstallError;
+use crate::runtime::local::LocalRuntimeError;
 
 /// The types of errors that can occur during cluster management
 #[derive(thiserror::Error, Debug)]
@@ -133,9 +136,10 @@ pub enum LocalInstallError {
     /// Attempted to construct a Config object without all required fields
     #[error("Missing required config option {0}")]
     MissingRequiredConfig(String),
-    /// Attempted to launch local cluster without fluvio-run
-    #[error("Local cluster requires the fluvio-run plugin to be installed")]
-    MissingFluvioRunner,
+    #[error(transparent)]
+    RuntimeError(#[from] LocalRuntimeError),
+    #[error(transparent)]
+    SpuClusterError(#[from] AnyError),
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),

@@ -11,10 +11,7 @@ use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::config::{TlsPolicy, ConfigFile, Profile, LOCAL_PROFILE};
-use fluvio_controlplane_metadata::spu::{SpuSpec, SpuType};
-use fluvio::metadata::spu::IngressPort;
-use fluvio::metadata::spu::Endpoint;
-use fluvio::metadata::spu::IngressAddr;
+use fluvio_controlplane_metadata::spu::{SpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
@@ -27,7 +24,7 @@ use crate::{
 use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress_with_indicator;
-use crate::local::{SpuProcess, ScProcess};
+use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
 
 use super::progress::{InstallProgressMessage, create_progress_indicator};
 use super::constants::*;
@@ -46,7 +43,7 @@ const LOCAL_SC_PORT: u16 = 9003;
 static DEFAULT_RUNNER_PATH: Lazy<Option<PathBuf>> = Lazy::new(|| std::env::current_exe().ok());
 
 /// Describes how to install Fluvio locally
-#[derive(Builder, Debug)]
+#[derive(Builder, Debug, Clone)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct LocalConfig {
     /// Platform version
@@ -229,6 +226,16 @@ impl LocalConfig {
 
     pub fn launcher_path(&self) -> Option<&Path> {
         self.launcher.as_deref()
+    }
+
+    pub fn as_spu_cluster_manager(&self) -> LocalSpuProcessClusterManager {
+        LocalSpuProcessClusterManager {
+            log_dir: self.log_dir.to_owned(),
+            rust_log: self.rust_log.clone(),
+            launcher: self.launcher.clone(),
+            tls_policy: self.server_tls_policy.clone(),
+            data_dir: self.data_dir.clone(),
+        }
     }
 }
 
@@ -561,10 +568,11 @@ impl LocalInstaller {
         self.pb
             .set_message(InstallProgressMessage::LaunchingSPUGroup(count).msg());
 
+        let runtime = self.config.as_spu_cluster_manager();
         for i in 0..count {
             self.pb
                 .set_message(InstallProgressMessage::StartSPU(i + 1, count).msg());
-            self.launch_spu(i, client.clone()).await?;
+            self.launch_spu(i, &runtime, client.clone()).await?;
         }
         debug!(
             "SC log generated at {}/flv_sc.log",
@@ -574,19 +582,22 @@ impl LocalInstaller {
         Ok(())
     }
 
-    #[instrument(skip(self, client))]
+    #[instrument(skip(self, cluster_manager, client))]
     async fn launch_spu(
         &self,
         spu_index: u16,
+        cluster_manager: &LocalSpuProcessClusterManager,
         client: SharedK8Client,
     ) -> Result<(), LocalInstallError> {
         use k8_client::meta_client::MetadataClient;
+        use crate::runtime::spu::{SpuClusterManager};
 
-        let spu_process = self.as_spu_process(spu_index);
+        let spu_process = cluster_manager.create_spu_relative(spu_index);
+
         let input = InputK8Obj::new(
-            spu_process.spec.clone(),
+            spu_process.spec().clone(),
             InputObjectMeta {
-                name: format!("custom-spu-{}", spu_process.id),
+                name: format!("custom-spu-{}", spu_process.id()),
                 namespace: "default".to_owned(),
                 ..Default::default()
             },
@@ -598,43 +609,7 @@ impl LocalInstaller {
         // sleep 1 seconds for sc to connect
         sleep(Duration::from_millis(1000)).await;
 
-        spu_process.start()
-    }
-
-    fn as_spu_process(&self, spu_index: u16) -> SpuProcess {
-        const BASE_PORT: u16 = 9010;
-        const BASE_SPU: u16 = 5001;
-        let spu_id = (BASE_SPU + spu_index) as i32;
-        let public_port = BASE_PORT + spu_index * 10;
-        let private_port = public_port + 1;
-        let spu_spec = SpuSpec {
-            id: spu_id,
-            spu_type: SpuType::Custom,
-            public_endpoint: IngressPort {
-                port: public_port,
-                ingress: vec![IngressAddr {
-                    hostname: Some("localhost".to_owned()),
-                    ..Default::default()
-                }],
-                ..Default::default()
-            },
-            private_endpoint: Endpoint {
-                port: private_port,
-                host: "localhost".to_owned(),
-                ..Default::default()
-            },
-            ..Default::default()
-        };
-
-        SpuProcess {
-            id: spu_spec.id as u16,
-            spec: spu_spec,
-            log_dir: self.config.log_dir.to_owned(),
-            rust_log: self.config.rust_log.clone(),
-            launcher: self.config.launcher.clone(),
-            tls_policy: self.config.server_tls_policy.clone(),
-            data_dir: self.config.data_dir.clone(),
-        }
+        spu_process.start().map_err(|err| err.into())
     }
 
     /// Check to ensure SPUs are all running
