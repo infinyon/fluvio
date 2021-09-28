@@ -10,15 +10,15 @@ pub enum ProducerError {
     BatchNotFound,
     #[error("the given record is larger than the buffer max_size ({0} bytes)")]
     RecordTooLarge(usize),
-    #[error("failed to send a message in an internal channel (async_channel)")]
-    AsyncChannelSend,
+    #[error("failed to send a message in an internal channel (flume)")]
+    FlumeChannelSend,
     #[error("failed to send a message in an internal channel (broadcast)")]
     BroadcastChannelSend,
 }
 
-impl<T> From<async_channel::SendError<T>> for ProducerError {
-    fn from(_: async_channel::SendError<T>) -> Self {
-        Self::AsyncChannelSend
+impl<T> From<flume::SendError<T>> for ProducerError {
+    fn from(_: flume::SendError<T>) -> Self {
+        Self::FlumeChannelSend
     }
 }
 

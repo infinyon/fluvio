@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::collections::HashMap;
 use futures_util::StreamExt;
-use async_channel::{Receiver, Sender};
+use flume::{Receiver, Sender};
 
 use tracing::{debug_span, debug, error, instrument};
 use tracing_futures::Instrument;
@@ -69,7 +69,7 @@ impl Dispatcher {
         let mut events = {
             let timer = async_timer::interval(self.config.batch_duration).map(|_| Event::Timeout);
             let incoming = self.incoming.take().unwrap();
-            let records = incoming.map(Event::Command);
+            let records = incoming.into_stream().map(Event::Command);
             let select = futures_util::stream::select(timer, records);
             select.take_until(self.shutdown.listen_pinned())
         };
@@ -125,7 +125,7 @@ impl Dispatcher {
         // If this record is too large for the buffer, return it to the producer.
         if !buffer.could_fit(&pending) {
             to_producer
-                .send(ProducerMsg::RecordTooLarge(pending, self.config.batch_size))
+                .send_async(ProducerMsg::RecordTooLarge(pending, self.config.batch_size))
                 .await
                 .map_err(|_| FluvioError::Other("failed to return oversized record".to_string()))?;
             return Ok(());

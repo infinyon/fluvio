@@ -1,7 +1,6 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use tracing::{debug, instrument};
-use async_channel::Sender;
 
 mod error;
 mod assoc;
@@ -20,6 +19,7 @@ use crate::spu::SpuPool;
 use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRoundRobinPartitioner};
 pub(crate) use crate::producer::dispatcher::Dispatcher;
 use crate::producer::assoc::{AssociatedRecord, BatchStatus};
+use flume::Sender;
 
 const DEFAULT_BATCH_DURATION_MS: u64 = 20;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
@@ -133,7 +133,7 @@ impl TopicProducer {
     pub(crate) fn new(topic: String, pool: Arc<SpuPool>, config: ProducerConfig) -> Self {
         let partitioner = Box::new(SiphashRoundRobinPartitioner::new());
 
-        let (to_dispatcher, from_dispatcher) = async_channel::bounded(1);
+        let (to_dispatcher, from_dispatcher) = flume::bounded(0);
         let (status_sender, status_receiver) = tokio::sync::broadcast::channel(100);
         let dispatcher =
             Dispatcher::new(pool.clone(), status_sender.clone(), from_dispatcher, config);
@@ -219,18 +219,18 @@ impl TopicProducer {
         };
 
         // Send this record to the dispatcher.
-        let (to_producer, from_dispatcher) = async_channel::bounded(1);
+        let (to_producer, from_dispatcher) = flume::bounded(1);
         let msg = DispatcherMsg::Record {
             record: pending_record,
             to_producer,
         };
         self.inner
             .dispatcher
-            .send(msg)
+            .send_async(msg)
             .await
             .map_err(ProducerError::from)?;
 
-        let dispatcher_result = from_dispatcher.recv().await;
+        let dispatcher_result = from_dispatcher.recv_async().await;
         match dispatcher_result {
             // In this case, an Err means that the Sender was dropped, which indicates success.
             // This makes sense if we think about this channel's primary use as being returning errors.
@@ -283,14 +283,14 @@ impl TopicProducer {
     /// ```
     pub async fn flush(&self) -> Result<()> {
         // Create a channel for the dispatcher to notify us when flushing is done
-        let (tx, rx) = async_channel::bounded(1);
+        let (tx, rx) = flume::bounded(1);
         self.inner
             .dispatcher
-            .send(DispatcherMsg::Flush(tx))
+            .send_async(DispatcherMsg::Flush(tx))
             .await
             .map_err(|_| ProducerError::Flush)?;
         // Wait for flush to finish
-        let _ = rx.recv().await;
+        let _ = rx.recv_async().await;
 
         // If any batches come back with failed status, return Err
         {
