@@ -1,7 +1,7 @@
 version: v1
 name: my-test-connector
 type: test-connector
-topic: foobar
+topic: test-connector
 create_topic: true
 direction: source
 paramaters:
