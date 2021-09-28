@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use futures_util::StreamExt;
 use async_channel::{Receiver, Sender};
 
-use tracing::{error, debug};
+use tracing::{debug_span, debug, error, instrument};
+use tracing_futures::Instrument;
 use fluvio_types::event::StickyEvent;
 use dataplane::ReplicaKey;
 
@@ -83,6 +84,7 @@ impl Dispatcher {
         debug!("Producer dispatcher shutting down");
     }
 
+    #[instrument(name = "producer_dispatcher", level = "debug", skip(self, event))]
     async fn handle_event(&mut self, event: Event) -> Result<(), FluvioError> {
         match event {
             Event::Command(DispatcherMsg::Record {
@@ -92,22 +94,23 @@ impl Dispatcher {
                 self.try_buffer(record, to_producer).await?;
             }
             Event::Command(DispatcherMsg::Flush(sender)) => {
-                print!("Manual flush: ");
-                self.flush_all().await?;
+                let span = debug_span!("flush", reason = "user_flush");
+                self.flush_all().instrument(span).await?;
 
                 // Dropping the sender causes rx.recv() to yield with Err.
                 // This itself is used as the message, and ensures exactly one notification
                 drop(sender);
             }
             Event::Timeout => {
-                print!("Timeout: ");
-                self.flush_all().await?;
+                let span = debug_span!("flush", reason = "timeout");
+                self.flush_all().instrument(span).await?;
             }
         }
 
         Ok(())
     }
 
+    #[instrument(level = "debug", skip(self, pending, to_producer))]
     async fn try_buffer(
         &mut self,
         pending: AssociatedRecord,
@@ -192,6 +195,7 @@ impl Dispatcher {
     }
 }
 
+#[instrument(level = "debug", skip(spus, buffer))]
 async fn flush_buffer(
     spus: Arc<SpuPool>,
     key: &ReplicaKey,
@@ -199,7 +203,7 @@ async fn flush_buffer(
 ) -> Result<AssociatedResponse, FluvioError> {
     let mut pending_request = AssociatedRequest::new();
 
-    println!(
+    debug!(
         "Flushing {} records ({} bytes)",
         buffer.len(),
         buffer.size()
