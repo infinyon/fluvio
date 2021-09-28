@@ -13,72 +13,97 @@ use crate::smartstream::SmartStreamRuntimeError;
 // -----------------------------------
 
 #[repr(i16)]
-#[derive(Encoder, Decoder, PartialEq, Debug, Clone)]
+#[derive(thiserror::Error, Encoder, Decoder, PartialEq, Debug, Clone)]
 pub enum ErrorCode {
     #[fluvio(tag = -1)]
+    #[error("An unknown server error occurred")]
     UnknownServerError,
 
     // Not an error
     #[fluvio(tag = 0)]
+    #[error("ErrorCode indicated success. If you see this it is likely a bug.")]
     None,
 
     #[fluvio(tag = 1)]
+    #[error("Offset out of range")]
     OffsetOutOfRange,
     #[fluvio(tag = 6)]
+    #[error("the given SPU is not the leader for the partition")]
     NotLeaderForPartition,
     #[fluvio(tag = 10)]
+    #[error("the message is too large to send")]
     MessageTooLarge,
     #[fluvio(tag = 13)]
+    #[error("permission denied")]
     PermissionDenied,
     #[fluvio(tag = 56)]
+    #[error("a storage error occurred")]
     StorageError,
 
     // Spu errors
     #[fluvio(tag = 1000)]
+    #[error("an error occurred on the SPU")]
     SpuError,
     #[fluvio(tag = 1001)]
+    #[error("failed to register an SPU")]
     SpuRegisterationFailed,
     #[fluvio(tag = 1002)]
+    #[error("the SPU is offline")]
     SpuOffline,
     #[fluvio(tag = 1003)]
+    #[error("the SPU was not found")]
     SpuNotFound,
     #[fluvio(tag = 1004)]
+    #[error("the SPU already exists")]
     SpuAlreadyExists,
 
     // Topic errors
     #[fluvio(tag = 2000)]
+    #[error("a topic error occurred")]
     TopicError,
     #[fluvio(tag = 2001)]
+    #[error("the topic was not found")]
     TopicNotFound,
     #[fluvio(tag = 2002)]
+    #[error("the topic already exists")]
     TopicAlreadyExists,
     #[fluvio(tag = 2003)]
+    #[error("the topic has not been initialized")]
     TopicPendingInitialization,
     #[fluvio(tag = 2004)]
+    #[error("the topic configuration is invalid")]
     TopicInvalidConfiguration,
     #[fluvio(tag = 2005)]
+    #[error("the topic is not provisioned")]
     TopicNotProvisioned,
     #[fluvio(tag = 2006)]
+    #[error("the topic name is invalid")]
     TopicInvalidName,
 
     // Partition errors
     #[fluvio(tag = 3000)]
+    #[error("the partition is not initialized")]
     PartitionPendingInitialization,
     #[fluvio(tag = 3001)]
+    #[error("the partition is not a leader")]
     PartitionNotLeader,
 
     // Stream Fetch error
     #[fluvio(tag = 3002)]
+    #[error("the fetch session was not found")]
     FetchSessionNotFoud,
 
     // SmartStream errors
     #[fluvio(tag = 4000)]
-    SmartStreamError(SmartStreamError),
+    #[error("a SmartStream error occurred")]
+    SmartStreamError(#[from] SmartStreamError),
 
     // Managed Connector Errors
     #[fluvio(tag = 5000)]
+    #[error("an error occurred while managing a connector")]
     ManagedConnectorError,
     #[fluvio(tag = 5001)]
+    #[error("the managed connector was not found")]
     ManagedConnectorNotFound,
 }
 
@@ -108,9 +133,10 @@ impl ErrorCode {
 /// A type representing the possible errors that may occur during SmartStream execution.
 // This is also where we can update our error representation in the future
 // TODO: Add variant for reporting panics
-#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
 pub enum SmartStreamError {
-    Runtime(SmartStreamRuntimeError),
+    #[error("SmartStream Runtime error")]
+    Runtime(#[from] SmartStreamRuntimeError),
 }
 
 impl Default for SmartStreamError {
@@ -186,5 +212,11 @@ mod test {
 
         // Stream Fetch error
         assert_tag!(ErrorCode::FetchSessionNotFoud, 3002, 0);
+    }
+
+    #[test]
+    fn test_errorcode_impls_error() {
+        fn assert_error<E: std::error::Error>() {}
+        assert_error::<ErrorCode>();
     }
 }
