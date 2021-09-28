@@ -1402,7 +1402,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "async-channel",
  "async-lock",

@@ -12,8 +12,11 @@ use crate::config::ConfigFile;
 use crate::admin::FluvioAdmin;
 use crate::TopicProducer;
 use crate::PartitionConsumer;
+
 use crate::FluvioError;
 use crate::FluvioConfig;
+use crate::consumer::MultiplePartitionConsumer;
+use crate::consumer::PartitionSelectionStrategy;
 use crate::spu::SpuPool;
 use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
 use crate::sync::MetadataStores;
@@ -150,11 +153,8 @@ impl Fluvio {
 
     /// Creates a new `PartitionConsumer` for the given topic and partition
     ///
-    /// Currently, consumers are scoped to both a specific Fluvio topic
-    /// _and_ to a particular partition within that topic. That means that
-    /// if you have a topic with multiple partitions, then in order to receive
-    /// all of the events in all of the partitions, you will need to create
-    /// one consumer per partition.
+    /// If you have a topic with multiple partitions, then in order to receive
+    /// all of the events in all of the partitions, use `consumer` instead.
     ///
     /// # Example
     ///
@@ -179,6 +179,36 @@ impl Fluvio {
         Ok(PartitionConsumer::new(
             topic,
             partition,
+            self.spu_pool().await?,
+        ))
+    }
+
+    /// Creates a new `MultiplePartitionConsumer`
+    ///
+    /// Currently, consumers are scoped to both a specific Fluvio topic
+    /// _and_ to a particular partition within that topic. That means that
+    /// if you have a topic with multiple partitions, then in order to receive
+    /// all of the events in all of the partitions, you will need to create
+    /// one consumer per partition.
+    ///
+    /// Records across different partitions are not guaranteed to be ordered.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, Offset, FluvioError, PartitionSelectionStrategy};
+    /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// # let consumer = fluvio.consumer(PartitionSelectionStrategy::All("my-topic".to_string())).await?;
+    /// # let stream = consumer.stream(Offset::beginning()).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn consumer(
+        &self,
+        strategy: PartitionSelectionStrategy,
+    ) -> Result<MultiplePartitionConsumer, FluvioError> {
+        Ok(MultiplePartitionConsumer::new(
+            strategy,
             self.spu_pool().await?,
         ))
     }
