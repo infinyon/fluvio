@@ -123,9 +123,8 @@ impl Fluvio {
 
     /// Creates a new `TopicProducer` for the given topic name
     ///
-    /// Currently, producers are scoped to a specific Fluvio topic.
-    /// That means when you send events via a producer, you must specify
-    /// which partition each event should go to.
+    /// Producers are scoped to a specific Fluvio topic. Each event sent to this
+    /// producer will be sent to this producer's defined topic.
     ///
     /// # Example
     ///
@@ -147,6 +146,27 @@ impl Fluvio {
         Ok(producer)
     }
 
+    /// Creates a new `TopicProducer` for the given topic name with a custom configuration.
+    ///
+    /// Producers are scoped to a specific Fluvio topic. Each event sent to this
+    /// producer will be sent to this producer's defined topic.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError, RecordKey, ProducerConfig};
+    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// let config = ProducerConfig {
+    ///     batch_duration: std::time::Duration::from_millis(20), // Default: 10ms
+    ///     batch_size: 20_000, // Bytes. Default: 16_000
+    ///     // Add this to prevent breakage with future new fields
+    ///     ..Default::default()
+    /// };
+    /// let producer = fluvio.topic_producer_with_config("my-topic", config).await?;
+    /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
     pub async fn topic_producer_with_config<S: Into<String>>(
         &self,
         topic: S,

@@ -37,8 +37,28 @@ pub struct TopicProducer {
     inner: Arc<ProducerInner>,
 }
 
+/// Options used to adjust the behavior of the Producer.
+///
+/// # Example
+///
+/// Use this with `fluvio.topic_producer_with_config`.
+///
+/// ```
+/// # use fluvio::{Fluvio, FluvioError, ProducerConfig};
+/// # async fn example(fluvio: &Fluvio) -> Result<(), FluvioError> {
+/// let config = ProducerConfig {
+///     batch_duration: std::time::Duration::from_millis(10),
+///     batch_size: 16_000,
+///     // Add this to prevent breakage with future new fields
+///     ..Default::default()
+/// };
+///
+/// // Use config on this call:
+/// fluvio.topic_producer_with_config("topic", config).await?;
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug)]
-#[non_exhaustive]
 pub struct ProducerConfig {
     pub batch_duration: Duration,
     pub batch_size: usize,
@@ -53,6 +73,12 @@ impl Default for ProducerConfig {
     }
 }
 
+/// A unique identifier assigned to each Record sent to the Producer.
+///
+/// `RecordUid` is used to associate each input record with the eventual
+/// success or failure status of the request the record belongs to.
+/// Each call to `producer.send` returns a unique `RecordUid`, and each
+/// request status includes the `RecordUid`s of all included records.
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct RecordUid(u64);
 
@@ -86,8 +112,11 @@ pub(crate) struct ProducerInner {
     pub(crate) dispatcher: Sender<DispatcherMsg>,
     /// An event that can notify the Dispatcher to shutdown.
     pub(crate) dispatcher_shutdown: StickyEvent,
+    /// Generate monotonically-increasing `RecordUid`s.
     pub(crate) uid_generator: RecordUidGenerator,
+    /// Used by the dispatcher to broadcast batch status notifications.
     pub(crate) status_sender: tokio::sync::broadcast::Sender<BatchStatus>,
+    /// Used by the producer to return batch statuses to the caller.
     pub(crate) status_receiver: Mutex<tokio::sync::broadcast::Receiver<BatchStatus>>,
 }
 
@@ -269,7 +298,16 @@ impl TopicProducer {
             .map_err(|_| ProducerError::Flush)?;
         // Wait for flush to finish
         let _ = rx.recv().await;
-        todo!("Flush needs to return BatchFailed");
+
+        // If any batches come back with failed status, return Err
+        {
+            let mut receiver = self.inner.status_receiver.lock().expect("Mutex poisoned");
+            while let Ok(status) = (*receiver).try_recv() {
+                if let BatchStatus::Failure(failed) = status {
+                    return Err(ProducerError::BatchFailed(failed).into());
+                }
+            }
+        }
         Ok(())
     }
 }

@@ -25,4 +25,5 @@ pub async fn producer(
         digests.send(record_digest).unwrap();
         producer.send(RecordKey::NULL, record).await.unwrap();
     }
+    producer.flush().await.unwrap();
 }

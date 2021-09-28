@@ -88,7 +88,8 @@ impl TestDriver {
 
         //self.producer_bytes += message.len();
 
-        result
+        result?;
+        Ok(())
     }
 
     pub async fn get_consumer(&self, topic: &str) -> PartitionConsumer {

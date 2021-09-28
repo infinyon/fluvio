@@ -214,18 +214,18 @@ async fn flush_buffer(
         pending_request.add(record);
     }
 
-    // let socket = spus.create_serial_socket(key).await?;
-    // let response = socket.send_receive(pending_request.request).await?;
+    let socket = spus.create_serial_socket(key).await?;
+    let response = socket.send_receive(pending_request.request).await?;
 
-    let mut response: ProduceResponse = Default::default();
-    response.responses.push(TopicProduceResponse {
-        name: key.topic.to_string(),
-        partitions: vec![PartitionProduceResponse {
-            partition_index: key.partition,
-            error_code: ErrorCode::TopicNotFound,
-            ..Default::default()
-        }],
-    });
+    // let mut response: ProduceResponse = Default::default();
+    // response.responses.push(TopicProduceResponse {
+    //     name: key.topic.to_string(),
+    //     partitions: vec![PartitionProduceResponse {
+    //         partition_index: key.partition,
+    //         error_code: ErrorCode::TopicNotFound,
+    //         ..Default::default()
+    //     }],
+    // });
     let associated_response = AssociatedResponse::new(response, pending_request.uids)?;
 
     Ok(associated_response)
