@@ -3,7 +3,7 @@
 //! This module contains types to help answer the question: "has my record been
 //! committed successfully or not"?
 
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use dataplane::{ReplicaKey, Offset, ErrorCode};
 use dataplane::batch::Batch;
 use dataplane::record::Record;
@@ -175,7 +175,7 @@ impl AssociatedResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dataplane::record::{RecordKey, RecordSet};
+    use dataplane::record::RecordKey;
 
     #[test]
     fn test_associated_request() {

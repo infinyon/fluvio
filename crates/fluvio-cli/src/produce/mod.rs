@@ -2,14 +2,12 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
-use tracing::{error, debug};
+use tracing::error;
 
 use fluvio::{Fluvio, TopicProducer, RecordKey};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
-use crate::{Result, CliError};
-
-const DEFAULT_BATCH_SIZE: usize = 50;
+use crate::Result;
 
 // -----------------------------------
 // CLI Options
@@ -76,6 +74,7 @@ impl ProduceOpt {
             self.produce_lines(&producer).await?;
         }
 
+        producer.flush().await?;
         if self.interactive_mode() {
             print_cli_ok!();
         }
@@ -87,11 +86,8 @@ impl ProduceOpt {
         match &self.file {
             Some(path) => {
                 let reader = BufReader::new(File::open(path)?);
-                let lines: Vec<_> = reader.lines().filter_map(|it| it.ok()).collect();
-                let batches: Vec<_> = lines.chunks(DEFAULT_BATCH_SIZE).collect();
-                for batch in batches {
-                    let batch: Vec<_> = batch.iter().map(|it| &**it).collect();
-                    self.produce_strs(producer, &batch).await?;
+                for line in reader.lines().filter_map(|it| it.ok()) {
+                    self.produce_line(producer, &line).await?;
                 }
             }
             None => {
@@ -100,7 +96,7 @@ impl ProduceOpt {
                     eprint!("> ");
                 }
                 while let Some(Ok(line)) = lines.next() {
-                    self.produce_strs(producer, &[&line]).await?;
+                    producer.send(RecordKey::NULL, line).await?;
                     if self.interactive_mode() {
                         print_cli_ok!();
                         eprint!("> ");
@@ -112,69 +108,44 @@ impl ProduceOpt {
         Ok(())
     }
 
-    async fn produce_strs(&self, producer: &TopicProducer, strings: &[&str]) -> Result<()> {
-        if self.kv_mode() {
-            self.produce_key_values(producer, strings).await?;
+    async fn produce_line(&self, producer: &TopicProducer, line: &str) -> Result<()> {
+        if let Some(separator) = &self.key_separator {
+            self.produce_key_value(producer, &line, separator).await?;
         } else {
-            let batch = strings.iter().map(|&s| (RecordKey::NULL, s));
-            producer.send_all(batch).await?;
-            if self.verbose {
-                for string in strings {
-                    println!("[null] {}", string);
-                }
-            }
+            producer.send(RecordKey::NULL, line).await?;
         }
+
         Ok(())
     }
 
-    fn kv_mode(&self) -> bool {
-        self.key_separator.is_some()
+    async fn produce_key_value(
+        &self,
+        producer: &TopicProducer,
+        line: &str,
+        separator: &str,
+    ) -> Result<()> {
+        let maybe_kv = line.split_once(separator);
+        let (key, value) = match maybe_kv {
+            Some(kv) => kv,
+            None => {
+                error!(
+                    "Failed to find separator '{}' in record, skipping: '{}'",
+                    separator, line
+                );
+                return Ok(());
+            }
+        };
+
+        if self.verbose {
+            println!("[{}] {}", key, value);
+        }
+
+        producer.send(key, value).await?;
+        Ok(())
     }
 
     fn interactive_mode(&self) -> bool {
         self.file.is_none() && atty::is(atty::Stream::Stdin)
-    }
-
-    async fn produce_key_values(&self, producer: &TopicProducer, strings: &[&str]) -> Result<()> {
-        if let Some(separator) = &self.key_separator {
-            self.produce_key_value_via_separator(producer, strings, separator)
-                .await?;
-            return Ok(());
-        }
-
-        Err(CliError::Other(
-            "Failed to send key-value record".to_string(),
-        ))
-    }
-
-    async fn produce_key_value_via_separator(
-        &self,
-        producer: &TopicProducer,
-        strings: &[&str],
-        separator: &str,
-    ) -> Result<()> {
-        debug!(?separator, "Producing Key/Value:");
-
-        let pairs: Vec<_> = strings
-            .iter()
-            .filter_map(|s| {
-                let pieces: Vec<_> = s.split(separator).collect();
-                if pieces.len() < 2 {
-                    error!("Failed to find separator '{}' in record '{}'", separator, s);
-                    return None;
-                }
-
-                let key: &str = pieces[0];
-                let value: String = (&pieces[1..]).join(&*separator);
-                if self.verbose {
-                    println!("[{}] {}", key, value);
-                }
-                Some((key, value))
-            })
-            .collect();
-
-        producer.send_all(pairs).await?;
-        Ok(())
     }
 
     pub fn metadata() -> FluvioExtensionMetadata {

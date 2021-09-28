@@ -1,7 +1,5 @@
 use crate::producer::assoc::BatchFailure;
 
-pub type Result<T, E = ProducerError> = core::result::Result<T, E>;
-
 #[derive(thiserror::Error, Debug)]
 pub enum ProducerError {
     #[error("failed to flush a batch of records")]

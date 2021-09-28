@@ -21,7 +21,7 @@ use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRound
 pub(crate) use crate::producer::dispatcher::Dispatcher;
 use crate::producer::assoc::{AssociatedRecord, BatchStatus};
 
-const DEFAULT_BATCH_DURATION_MS: u64 = 10;
+const DEFAULT_BATCH_DURATION_MS: u64 = 20;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
 
 /// An interface for producing events to a particular topic
@@ -115,7 +115,9 @@ pub(crate) struct ProducerInner {
     /// Generate monotonically-increasing `RecordUid`s.
     pub(crate) uid_generator: RecordUidGenerator,
     /// Used by the dispatcher to broadcast batch status notifications.
-    pub(crate) status_sender: tokio::sync::broadcast::Sender<BatchStatus>,
+    // We hold this because we cannot clone a broadcast::Receiver,
+    // we have to "subscribe" to a sender to get it
+    pub(crate) _status_sender: tokio::sync::broadcast::Sender<BatchStatus>,
     /// Used by the producer to return batch statuses to the caller.
     pub(crate) status_receiver: Mutex<tokio::sync::broadcast::Receiver<BatchStatus>>,
 }
@@ -140,7 +142,7 @@ impl TopicProducer {
             dispatcher: to_dispatcher,
             dispatcher_shutdown,
             uid_generator: RecordUidGenerator::new(),
-            status_sender,
+            _status_sender: status_sender,
             status_receiver: Mutex::new(status_receiver),
         });
 
@@ -186,24 +188,15 @@ impl TopicProducer {
 
         {
             // Check if there have been any failures
-            println!("SEND: CHECKING STATUSES");
             let mut receiver = self.inner.status_receiver.lock().expect("Mutex poisoned");
             while let Ok(status) = (*receiver).try_recv() {
-                match status {
-                    BatchStatus::Success(success) => {
-                        println!(
-                            "Batch succeeded at offset {} with records: {:#?}",
-                            success.base_offset, success.batch
-                        );
-                    }
-                    BatchStatus::Failure(failed) => {
-                        println!(
-                            "Batch failed with error {} with records: {:#?}",
-                            failed.error_code.to_sentence(),
-                            failed.batch
-                        );
-                        return Err(ProducerError::BatchFailed(failed).into());
-                    }
+                if let BatchStatus::Failure(failed) = status {
+                    println!(
+                        "Batch failed with error {} with records: {:#?}",
+                        failed.error_code.to_sentence(),
+                        failed.batch
+                    );
+                    return Err(ProducerError::BatchFailed(failed).into());
                 }
             }
         }

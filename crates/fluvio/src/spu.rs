@@ -15,7 +15,6 @@ use crate::sync::{MetadataStores, CacheMetadataStoreObject};
 use crate::sockets::VersionedSerialSocket;
 use crate::sockets::Versions;
 use crate::metadata::topic::TopicSpec;
-use crate::metadata::partition::PartitionSpec;
 
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
@@ -205,21 +204,6 @@ impl SpuPool {
             .await?
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?;
         Ok(topic)
-    }
-
-    pub async fn lookup_partition(
-        &self,
-        replica_key: &ReplicaKey,
-    ) -> Result<CacheMetadataStoreObject<PartitionSpec>, FluvioError> {
-        let partition = self
-            .metadata
-            .partitions()
-            .lookup_by_key(replica_key)
-            .await?
-            .ok_or_else(|| {
-                FluvioError::PartitionNotFound(replica_key.topic.clone(), replica_key.partition)
-            })?;
-        Ok(partition)
     }
 
     pub fn shutdown(&mut self) {

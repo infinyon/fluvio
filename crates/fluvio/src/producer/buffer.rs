@@ -1,7 +1,7 @@
 use std::collections::VecDeque;
 use fluvio_protocol::Encoder;
 use dataplane::produce::ProduceRequest;
-use dataplane::record::{RecordSet, Record};
+use dataplane::record::RecordSet;
 use fluvio_protocol::api::Request;
 
 use crate::producer::assoc::AssociatedRecord;
@@ -92,8 +92,8 @@ impl RecordBuffer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use dataplane::record::RecordKey;
     use dataplane::ReplicaKey;
+    use dataplane::record::{Record, RecordKey};
     use crate::producer::RecordUid;
 
     /// Each of the records in this test is 8 bytes.

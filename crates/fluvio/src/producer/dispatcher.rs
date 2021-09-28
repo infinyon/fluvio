@@ -1,17 +1,11 @@
 use std::sync::Arc;
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use futures_util::StreamExt;
 use async_channel::{Receiver, Sender};
 
 use tracing::{error, debug};
 use fluvio_types::event::StickyEvent;
-use dataplane::{ReplicaKey, ErrorCode};
-use dataplane::record::{RecordSet, Record};
-use dataplane::produce::{
-    ProduceRequest, ProduceResponse, TopicProduceResponse, PartitionProduceResponse,
-};
-use fluvio_protocol::Encoder;
-use fluvio_protocol::api::Request;
+use dataplane::ReplicaKey;
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
@@ -26,7 +20,7 @@ pub(crate) struct Dispatcher {
     /// Configurations that tweak the dispatcher's behavior.
     config: ProducerConfig,
     /// A buffer of records that have yet to be sent to the cluster.
-    bufferz: HashMap<ReplicaKey, RecordBuffer>,
+    buffers: HashMap<ReplicaKey, RecordBuffer>,
     /// A channel for sending the status of batches
     statuses: tokio::sync::broadcast::Sender<BatchStatus>,
     /// A stream of events that the dispatcher needs to react to.
@@ -54,7 +48,7 @@ impl Dispatcher {
         Self {
             pool,
             config,
-            bufferz: Default::default(),
+            buffers: Default::default(),
             statuses,
             incoming: Some(commands),
             shutdown,
@@ -121,7 +115,7 @@ impl Dispatcher {
     ) -> Result<(), FluvioError> {
         let batch_size = self.config.batch_size;
         let buffer = self
-            .bufferz
+            .buffers
             .entry(pending.replica_key.clone())
             .or_insert_with(|| RecordBuffer::new(batch_size));
 
@@ -151,7 +145,7 @@ impl Dispatcher {
                 .push(bounced)
                 .expect("logic error: Buffer should have room for record");
 
-            self.broadcast_response_statuses(response);
+            self.broadcast_response_statuses(response)?;
         }
 
         drop(to_producer);
@@ -159,8 +153,8 @@ impl Dispatcher {
     }
 
     async fn flush_all(&mut self) -> Result<(), FluvioError> {
-        let mut result_futures = Vec::with_capacity(self.bufferz.len());
-        for (key, buffer) in self.bufferz.iter_mut() {
+        let mut result_futures = Vec::with_capacity(self.buffers.len());
+        for (key, buffer) in self.buffers.iter_mut() {
             let fut = flush_buffer(self.pool.clone(), key, buffer);
             result_futures.push(fut);
         }
@@ -216,16 +210,6 @@ async fn flush_buffer(
 
     let socket = spus.create_serial_socket(key).await?;
     let response = socket.send_receive(pending_request.request).await?;
-
-    // let mut response: ProduceResponse = Default::default();
-    // response.responses.push(TopicProduceResponse {
-    //     name: key.topic.to_string(),
-    //     partitions: vec![PartitionProduceResponse {
-    //         partition_index: key.partition,
-    //         error_code: ErrorCode::TopicNotFound,
-    //         ..Default::default()
-    //     }],
-    // });
     let associated_response = AssociatedResponse::new(response, pending_request.uids)?;
 
     Ok(associated_response)
