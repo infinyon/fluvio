@@ -22,20 +22,6 @@ impl Spec for ManagedConnectorDeploymentSpec {
     type Owner = ManagedConnectorSpec;
 }
 
-/*
- * TODO: Maybe make this more generic.
-#[derive(Deserialize, Serialize, Debug, Default, Clone, PartialEq)]
-#[serde(transparent)]
-pub struct DeploymentSpec<T: Spec>(K8DeploymentSpec, T);
-
-impl<T: Spec> Spec for DeploymentSpec<T> {
-    const LABEL: &'static str = "Deployment";
-    type IndexKey = String;
-    type Status = DeploymentStatus;
-    type Owner = T;
-}
-*/
-
 impl From<K8DeploymentSpec> for ManagedConnectorDeploymentSpec {
     fn from(k8: K8DeploymentSpec) -> Self {
         Self(k8)

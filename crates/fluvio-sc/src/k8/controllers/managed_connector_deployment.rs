@@ -26,7 +26,9 @@ use crate::stores::actions::WSAction;
 
 use k8_types::{
     TemplateSpec, TemplateMeta,
-    core::pod::{PodSpec, ContainerSpec, VolumeMount},
+    core::pod::{
+        PodSpec, ContainerSpec, VolumeMount, ConfigMapVolumeSource, KeyToPath, VolumeSpec,
+    },
     LabelProvider,
 };
 
@@ -162,10 +164,6 @@ impl ManagedConnectorDeploymentController {
         managed_connector: MetadataStoreObject<ManagedConnectorSpec, K8MetaItem>,
     ) -> Result<(), ClientError> {
         let key = managed_connector.key();
-        /*
-        self.connectors.update_status(key.to_string(), status.clone()).await?;
-        let status = managed_connector.status();
-        */
 
         let k8_deployment_spec =
             Self::generate_k8_deployment_spec(managed_connector.spec(), &self.namespace, key);
@@ -189,8 +187,7 @@ impl ManagedConnectorDeploymentController {
         _name: &str,
     ) -> K8DeploymentSpec {
         let image = format!("infinyon/fluvio-connect-{}", mc_spec.type_);
-        debug!("STARTING CONNECTOR FOR IMAGE {:?}", image);
-        use k8_types::core::pod::{ConfigMapVolumeSource, KeyToPath, VolumeSpec};
+        debug!("Starting connector for image: {:?}", image);
 
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
@@ -199,7 +196,6 @@ impl ManagedConnectorDeploymentController {
                 items: Some(vec![KeyToPath {
                     key: "fluvioClientConfig".to_string(),
                     path: "config".to_string(),
-
                     ..Default::default()
                 }]),
                 ..Default::default()
@@ -222,7 +218,7 @@ impl ManagedConnectorDeploymentController {
                 containers: vec![ContainerSpec {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image),
-                    image_pull_policy: Some("Never".to_string()),
+                    image_pull_policy: Some("IfNotPresent".to_string()),
                     /*
                     env, // TODO
                     */
@@ -231,7 +227,7 @@ impl ManagedConnectorDeploymentController {
                         mount_path: "/home/fluvio/.fluvio".to_string(),
                         ..Default::default()
                     }],
-                    args: args.to_vec(),
+                    args,
                     ..Default::default()
                 }],
                 volumes: vec![config_map_volume_spec],
