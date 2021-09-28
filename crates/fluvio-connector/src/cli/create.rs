@@ -8,10 +8,7 @@ use structopt::StructOpt;
 use tracing::debug;
 
 use fluvio::Fluvio;
-use fluvio::metadata::topic::{
-    TopicSpec,
-    TopicReplicaParam,
-};
+use fluvio::metadata::topic::{TopicSpec, TopicReplicaParam};
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
 use crate::error::ConnectorError;
@@ -38,9 +35,7 @@ impl CreateManagedConnectorOpt {
 
         let admin = fluvio.admin().await;
         if config.create_topic {
-            let topic_spec = TopicSpec::Computed(
-                TopicReplicaParam::new(1,1, false)
-            );
+            let topic_spec = TopicSpec::Computed(TopicReplicaParam::new(1, 1, false));
             println!("topic spec: {:?}", topic_spec);
             admin.create(config.topic, false, topic_spec).await?;
         }
