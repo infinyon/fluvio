@@ -1,36 +1,47 @@
-use std::collections::HashMap;
-use std::{time::Duration};
+use std::{
+    collections::HashMap,
+    time::Duration,
+};
 
-use fluvio_stream_dispatcher::{store::K8ChangeListener};
-use k8_types::LabelSelector;
-use tracing::debug;
-use tracing::error;
-use tracing::trace;
-use tracing::instrument;
-
-use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
+use tracing::{
+    debug,
+    error,
+    trace,
+    instrument,
+};
 use k8_client::ClientError;
-
-use crate::stores::{StoreContext};
-use crate::stores::connector::ManagedConnectorSpec;
-use crate::stores::connector::ManagedConnectorStatus;
-use crate::stores::connector::ManagedConnectorStatusResolution;
-
-use crate::k8::objects::managed_connector_deployment::ManagedConnectorDeploymentSpec;
-
-use crate::stores::k8::K8MetaItem;
-use crate::k8::objects::managed_connector_deployment::K8DeploymentSpec;
-use crate::stores::MetadataStoreObject;
-use crate::stores::actions::WSAction;
-
 use k8_types::{
+    LabelSelector,
     TemplateSpec, TemplateMeta,
     core::pod::{
         PodSpec, ContainerSpec, VolumeMount, ConfigMapVolumeSource, KeyToPath, VolumeSpec,
     },
     LabelProvider,
 };
+
+use fluvio_future::{
+    task::spawn,
+    timer::sleep,
+};
+use fluvio_stream_dispatcher::store::K8ChangeListener;
+
+use crate::stores::{
+    StoreContext,
+    connector::{
+        ManagedConnectorSpec,
+        ManagedConnectorStatus,
+        ManagedConnectorStatusResolution,
+    },
+    k8::K8MetaItem,
+    MetadataStoreObject,
+    actions::WSAction,
+};
+
+use crate::k8::objects::managed_connector_deployment::{
+    ManagedConnectorDeploymentSpec,
+    K8DeploymentSpec,
+};
+
 
 /// Update Statefulset and Service from SPG
 pub struct ManagedConnectorDeploymentController {
@@ -112,11 +123,13 @@ impl ManagedConnectorDeploymentController {
             let key = mc_deployment.key();
             let deployment_status = mc_deployment.status();
             let ready_replicas = deployment_status.0.ready_replicas;
-
-            let resolution = if ready_replicas.is_some() && ready_replicas.unwrap() > 0 {
-                ManagedConnectorStatusResolution::Running
-            } else {
-                ManagedConnectorStatusResolution::Failed
+            let resolution = match ready_replicas {
+                Some(ready_replicas) if ready_replicas > 0 => {
+                    ManagedConnectorStatusResolution::Running
+                }
+                _ => {
+                    ManagedConnectorStatusResolution::Failed
+                }
             };
 
             let connector_status = ManagedConnectorStatus {
