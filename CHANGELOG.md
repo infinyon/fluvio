@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.9 - UNRELEASED
+* Add `impl std::error::Error for ErrorCode` for better error reporting ([#1693](https://github.com/infinyon/fluvio/pull/1693))
 
 ## Platform Version 0.9.8 - 2021-09-23
 * Add progress indicator to `fluvio cluster start` ([#1627](https://github.com/infinyon/fluvio/pull/1627))
