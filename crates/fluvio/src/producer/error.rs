@@ -8,8 +8,8 @@ pub enum ProducerError {
     BatchFailed(BatchFailure),
     #[error("failed to associate record IDs with a batch")]
     BatchNotFound,
-    #[error("the given record is larger than the buffer max_size")]
-    RecordTooLarge,
+    #[error("the given record is larger than the buffer max_size ({0} bytes)")]
+    RecordTooLarge(usize),
     #[error("failed to send a message in an internal channel (async_channel)")]
     AsyncChannelSend,
     #[error("failed to send a message in an internal channel (broadcast)")]

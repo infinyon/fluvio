@@ -125,7 +125,7 @@ impl Dispatcher {
         // If this record is too large for the buffer, return it to the producer.
         if !buffer.could_fit(&pending) {
             to_producer
-                .send(ProducerMsg::RecordTooLarge(pending))
+                .send(ProducerMsg::RecordTooLarge(pending, self.config.batch_size))
                 .await
                 .map_err(|_| FluvioError::Other("failed to return oversized record".to_string()))?;
             return Ok(());

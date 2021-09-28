@@ -235,8 +235,8 @@ impl TopicProducer {
             // In this case, an Err means that the Sender was dropped, which indicates success.
             // This makes sense if we think about this channel's primary use as being returning errors.
             Err(_) => {}
-            Ok(ProducerMsg::RecordTooLarge(_)) => {
-                return Err(ProducerError::RecordTooLarge.into());
+            Ok(ProducerMsg::RecordTooLarge(_, max_size)) => {
+                return Err(ProducerError::RecordTooLarge(max_size).into());
             }
         }
 
@@ -306,7 +306,7 @@ impl TopicProducer {
 }
 
 pub(crate) enum ProducerMsg {
-    RecordTooLarge(AssociatedRecord),
+    RecordTooLarge(AssociatedRecord, usize),
 }
 
 pub(crate) enum DispatcherMsg {

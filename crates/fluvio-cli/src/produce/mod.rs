@@ -96,7 +96,7 @@ impl ProduceOpt {
                     eprint!("> ");
                 }
                 while let Some(Ok(line)) = lines.next() {
-                    producer.send(RecordKey::NULL, line).await?;
+                    self.produce_line(producer, &line).await?;
                     if self.interactive_mode() {
                         print_cli_ok!();
                         eprint!("> ");
