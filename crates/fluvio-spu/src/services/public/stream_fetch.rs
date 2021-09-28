@@ -40,7 +40,6 @@ pub struct StreamFetchHandler {
     isolation: Isolation,
     max_bytes: u32,
     max_fetch_bytes: u32,
-
     header: RequestHeader,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
@@ -127,11 +126,7 @@ impl StreamFetchHandler {
         consumer_offset_listener: OffsetChangeListener,
         msg: StreamFetchRequest<FileRecordSet>,
     ) -> Result<(), SocketError> {
-        let current_offset = msg.fetch_offset;
-        let isolation = msg.isolation;
-        let replica = ReplicaKey::new(msg.topic, msg.partition);
         let max_bytes = msg.max_bytes as u32;
-
         let sm_engine = SmartStreamEngine::default();
 
         let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
@@ -188,6 +183,18 @@ impl StreamFetchHandler {
             (None, max_bytes)
         };
 
+        let starting_offset = msg.fetch_offset;
+        let isolation = msg.isolation;
+
+        debug!(
+            max_bytes,
+            max_fetch_bytes,
+            isolation = ?isolation,
+            stream_id,
+            sink = %sink.id(),
+            starting_offset,
+            "stream fetch");
+
         let handler = Self {
             ctx: ctx.clone(),
             isolation,
@@ -202,7 +209,7 @@ impl StreamFetchHandler {
             max_fetch_bytes,
         };
 
-        handler.process(current_offset, smartstream).await
+        handler.process(starting_offset, smartstream).await
     }
 
     #[instrument(skip(self, smartstream))]
