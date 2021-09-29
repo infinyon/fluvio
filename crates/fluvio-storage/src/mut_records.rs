@@ -1,14 +1,13 @@
 use std::io::Error as IoError;
 use std::path::PathBuf;
 use std::path::Path;
+use std::fmt;
 use std::time::{Duration, Instant};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use async_lock::Mutex;
 
-use tracing::debug;
-use tracing::warn;
-use tracing::trace;
+use tracing::{debug, warn, trace};
 
 use futures_lite::io::AsyncWriteExt;
 use async_channel::Sender;
@@ -51,6 +50,12 @@ pub struct MutFileRecords {
     flush_count: Arc<AtomicU32>,
     path: PathBuf,
     flush_time_tx: Option<Sender<Instant>>,
+}
+
+impl fmt::Debug for MutFileRecords {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Log({})", self.base_offset)
+    }
 }
 
 impl Unpin for MutFileRecords {}

@@ -359,7 +359,6 @@ impl FileReplica {
 
     #[instrument(skip(self, item))]
     async fn write_batch(&mut self, item: &mut Batch) -> Result<(), StorageError> {
-        trace!("start_send");
         if !(self.active_segment.write_batch(item).await?) {
             debug!("segment has no room, rolling over previous segment");
             self.active_segment.roll_over().await?;
@@ -778,12 +777,13 @@ mod tests {
         ));
     }
 
-    /// test finding among multiple segments
+    /// create replicat with multiple segments
     #[fluvio_future::test]
-    async fn test_replica_find_multiple() {
+    async fn test_replica_multiple_segment() {
         let mut option = base_option("test_find_segment");
         // enough for 2 batch (2 records per batch)
-        option.segment_max_bytes = 100;
+        option.segment_max_bytes = 160;
+        option.index_max_interval_bytes = 50; // ensure we are writing to index
 
         let producer = BatchProducer::builder()
             .records(2u16)
@@ -801,6 +801,10 @@ mod tests {
             .write_batch(&mut producer.new_batch())
             .await
             .expect("write");
+        replica
+            .write_batch(&mut producer.new_batch())
+            .await
+            .expect("write");
         assert_eq!(replica.prev_segments.len(), 0);
         assert!(replica.find_segment(0).is_some());
         assert!(replica.find_segment(1).expect("some").is_active());
@@ -811,7 +815,7 @@ mod tests {
             .await
             .expect("write");
         assert_eq!(replica.prev_segments.len(), 1);
-        //  assert!(replica.find_segment(0).is_some());
+        assert!(replica.find_segment(0).is_some());
         // assert!(!replica.find_segment(0).expect("some").is_active());
     }
 }

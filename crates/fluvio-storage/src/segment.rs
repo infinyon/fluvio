@@ -2,8 +2,7 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
 
-use tracing::debug;
-use tracing::trace;
+use tracing::{debug, trace, instrument};
 
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
@@ -65,7 +64,7 @@ impl<I, L> fmt::Debug for Segment<I, L> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Segment {{base: {}, current: {} }}",
+            "Segment(base={},end={})",
             self.get_base_offset(),
             self.get_end_offset()
         )
@@ -237,11 +236,12 @@ impl Unpin for Segment<MutLogIndex, MutFileRecords> {}
 /// Implementation for Active segment
 impl Segment<MutLogIndex, MutFileRecords> {
     // create segment on base directory
+
     pub async fn create(
         base_offset: Offset,
         option: &ConfigOption,
     ) -> Result<MutableSegment, StorageError> {
-        debug!("creating new segment: offset: {}", base_offset);
+        debug!(base_offset, "creating new active segment");
         let msg_log = MutFileRecords::create(base_offset, option).await?;
 
         let index = MutLogIndex::create(base_offset, option).await?;
@@ -315,6 +315,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         SegmentSlice::new_mut_segment(self)
     }
 
+    #[instrument(skip(item))]
     pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
@@ -342,7 +343,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
             let batch_len = self.msg_log.get_pos();
 
             self.index
-                .send((batch_offset_delta as u32, pos, batch_len))
+                .write_index((batch_offset_delta as u32, pos, batch_len))
                 .await?;
 
             let last_offset_delta = self.msg_log.get_item_last_offset_delta();
