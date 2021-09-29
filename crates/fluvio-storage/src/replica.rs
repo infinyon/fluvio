@@ -819,6 +819,8 @@ mod tests {
             .await
             .expect("write");
         assert_eq!(replica.prev_segments.len(), 1);
+        assert_eq!(replica.prev_segments.min_offset(), 0);
+        assert_eq!(replica.prev_segments.max_offset(), 4);
         println!("segments: {:#?}", replica.prev_segments);
         let first_segment = replica.prev_segments.get_segment(0).expect("some");
         assert_eq!(first_segment.get_base_offset(), 0);

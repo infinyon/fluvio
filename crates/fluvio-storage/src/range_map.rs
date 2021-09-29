@@ -96,7 +96,7 @@ impl SegmentList {
 
     pub fn add_segment(&mut self, segment: ReadSegment) {
         let base_offset = segment.get_base_offset();
-        debug!("inserting segment base: {}", base_offset);
+        debug!(base_offset = segment.get_base_offset(),end_offset = segment.get_end_offset(),"inserting");
         self.max_base_offset = max(self.max_base_offset, base_offset);
         self.min_base_offset = if self.min_base_offset < 0 {
             base_offset
@@ -159,7 +159,35 @@ mod tests {
     }
 
     #[fluvio_future::test]
-    async fn test_find_segment() {
+    async fn test_segment_empty() {
+        let rep_dir = temp_dir().join(TEST_EMPTY_DIR);
+        ensure_new_dir(&rep_dir).expect("new");
+        let option = default_option(rep_dir);
+
+        let (segments, last_segment) = SegmentList::from_dir(&option).await.expect("from");
+
+        assert_eq!(segments.len(), 0); // 0,500,2000
+        assert!(last_segment.is_none());
+    }
+
+    #[fluvio_future::test]
+    async fn test_segment_single() {
+        let rep_dir = temp_dir().join(TEST_SEGMENT_DIR);
+        ensure_new_dir(&rep_dir).expect("new");
+        let mut list = SegmentList::new();
+
+        let option = default_option(rep_dir);
+
+        list.add_segment(create_segment(&option, 0, 500).await.expect("create"));
+        println!("segments: {:#?}", list);
+
+        assert!(list.find_segment(0).is_some());
+
+    }
+
+
+    #[fluvio_future::test]
+    async fn test_segmen_many_simple() {
         let rep_dir = temp_dir().join(TEST_SEGMENT_DIR);
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
@@ -177,13 +205,14 @@ mod tests {
         let (pos, _) = index.unwrap();
         assert_eq!(*pos, 500);
 
+        println!("segments: {:#?}", list);
         assert!(list.find_segment(0).is_some());
     }
 
     const TEST_READ_DIR: &str = "segmentlist-read-many";
 
     #[fluvio_future::test]
-    async fn test_segment_read_many() {
+    async fn test_segment_many_load() {
         let rep_dir = temp_dir().join(TEST_READ_DIR);
         ensure_new_dir(&rep_dir).expect("new");
         let option = default_option(rep_dir);
@@ -210,15 +239,5 @@ mod tests {
 
     const TEST_EMPTY_DIR: &str = "segmentlist-read-empty";
 
-    #[fluvio_future::test]
-    async fn test_segment_read_empty() {
-        let rep_dir = temp_dir().join(TEST_EMPTY_DIR);
-        ensure_new_dir(&rep_dir).expect("new");
-        let option = default_option(rep_dir);
-
-        let (segments, last_segment) = SegmentList::from_dir(&option).await.expect("from");
-
-        assert_eq!(segments.len(), 0); // 0,500,2000
-        assert!(last_segment.is_none());
-    }
+    
 }
