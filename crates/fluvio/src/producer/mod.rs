@@ -20,6 +20,7 @@ use crate::producer::partitioning::{Partitioner, PartitionerConfig, SiphashRound
 pub(crate) use crate::producer::dispatcher::Dispatcher;
 use crate::producer::assoc::{AssociatedRecord, BatchStatus};
 use flume::Sender;
+use crate::FluvioError;
 
 const DEFAULT_BATCH_DURATION_MS: u64 = 20;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
@@ -190,13 +191,15 @@ impl TopicProducer {
             // Check if there have been any failures
             let mut receiver = self.inner.status_receiver.lock().expect("Mutex poisoned");
             while let Ok(status) = (*receiver).try_recv() {
-                if let BatchStatus::Failure(failed) = status {
-                    println!(
-                        "Batch failed with error {} with records: {:#?}",
-                        failed.error_code.to_sentence(),
-                        failed.batch
-                    );
-                    return Err(ProducerError::BatchFailed(failed).into());
+                match status {
+                    BatchStatus::Failure(failed) => {
+                        return Err(ProducerError::BatchFailed(failed).into());
+                    }
+                    BatchStatus::InternalError(e) => {
+                        return Err(FluvioError::InternalProducerError(e));
+                    }
+                    // No action to take on success
+                    _ => {}
                 }
             }
         }

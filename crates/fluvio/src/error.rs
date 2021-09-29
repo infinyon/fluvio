@@ -50,6 +50,8 @@ To interact with this cluster, please install the matching CLI version using the
     SmartStreamRuntime(#[from] SmartStreamRuntimeError),
     #[error("Producer error")]
     Producer(#[from] ProducerError),
+    #[error("An internal producer error occurred: {0}")]
+    InternalProducerError(String),
     #[error("Unknown error: {0}")]
     Other(String),
 }

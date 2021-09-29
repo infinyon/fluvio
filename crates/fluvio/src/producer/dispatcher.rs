@@ -139,8 +139,7 @@ impl Dispatcher {
         if let Err(bounced) = buffer_result {
             let mut buffer_to_flush =
                 std::mem::replace(buffer, RecordBuffer::new(self.config.batch_size));
-            let response =
-                flush_buffer(self.pool.clone(), &replica_key, &mut buffer_to_flush).await?;
+            let result = flush_buffer(self.pool.clone(), &replica_key, &mut buffer_to_flush).await;
 
             // After being flushed, the buffer should have room to accept this record.
             // If it did not, we should have returned above at "if !buffer.could_fit"
@@ -148,14 +147,14 @@ impl Dispatcher {
                 .push(bounced)
                 .expect("logic error: Buffer should have room for record");
 
-            self.broadcast_response_statuses(response)?;
+            self.broadcast_response_result(result)?;
         }
 
         drop(to_producer);
         Ok(())
     }
 
-    async fn flush_all(&mut self) -> Result<(), FluvioError> {
+    async fn flush_all(&mut self) -> Result<()> {
         let mut result_futures = Vec::with_capacity(self.buffers.len());
         for (key, buffer) in self.buffers.iter_mut() {
             let fut = flush_buffer(self.pool.clone(), key, buffer);
@@ -165,32 +164,31 @@ impl Dispatcher {
         let results: Vec<Result<AssociatedResponse, FluvioError>> =
             futures_util::future::join_all(result_futures).await;
         for result in results {
-            let response = match result {
-                Ok(response) => response,
-                Err(e) => {
-                    error!("Error flushing record: {}", e);
-                    continue;
+            self.broadcast_response_result(result)?;
+        }
+        Ok(())
+    }
+
+    fn broadcast_response_result(
+        &self,
+        result: Result<AssociatedResponse, FluvioError>,
+    ) -> Result<(), ProducerError> {
+        match result {
+            Ok(response) => {
+                for success in response.successes {
+                    self.statuses.send(BatchStatus::Success(success))?;
                 }
-            };
-
-            self.broadcast_response_statuses(response)?;
-        }
-        Ok(())
-    }
-
-    fn broadcast_response_statuses(&self, response: AssociatedResponse) -> Result<()> {
-        for success in response.successes {
-            self.broadcast_status(BatchStatus::Success(success))?;
-        }
-        for failure in response.failures {
-            self.broadcast_status(BatchStatus::Failure(failure))?;
+                for failure in response.failures {
+                    self.statuses.send(BatchStatus::Failure(failure))?;
+                }
+            }
+            Err(e) => {
+                error!("Error flushing record: {}", e);
+                self.statuses
+                    .send(BatchStatus::InternalError(e.to_string()))?;
+            }
         }
 
-        Ok(())
-    }
-
-    fn broadcast_status(&self, status: BatchStatus) -> Result<(), ProducerError> {
-        self.statuses.send(status)?;
         Ok(())
     }
 }

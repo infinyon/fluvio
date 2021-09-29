@@ -66,6 +66,7 @@ pub async fn election(
         .send(RecordKey::NULL, "msg1")
         .await
         .expect("sending");
+    producer.flush().await.expect("flushing");
 
     // this is hack now, because we don't have ack
     sleep(Duration::from_secs(ACK_WAIT)).await;
@@ -121,6 +122,7 @@ pub async fn election(
         .send(RecordKey::NULL, "msg2")
         .await
         .expect("sending");
+    producer2.flush().await.expect("flushing");
 
     // wait until this gets written
     sleep(Duration::from_secs(ACK_WAIT)).await;

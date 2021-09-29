@@ -40,6 +40,7 @@ impl BatchInfo {
 pub(crate) enum BatchStatus {
     Success(BatchSuccess),
     Failure(BatchFailure),
+    InternalError(String),
 }
 
 #[derive(Debug, Clone)]
