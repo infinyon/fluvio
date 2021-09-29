@@ -16,16 +16,12 @@ use crate::producer::assoc::{AssociatedResponse, AssociatedRequest, AssociatedRe
 use crate::producer::buffer::RecordBuffer;
 
 pub(crate) struct Dispatcher {
-    /// A pool of connections to the SPUs.
-    pool: Arc<SpuPool>,
     /// Configurations that tweak the dispatcher's behavior.
-    config: ProducerConfig,
-    /// A buffer of records that have yet to be sent to the cluster.
-    buffers: HashMap<ReplicaKey, RecordBuffer>,
-    /// A channel for sending the status of batches
-    statuses: tokio::sync::broadcast::Sender<BatchStatus>,
+    config: Arc<ProducerConfig>,
+    /// A pool of `PartitionProducer`s that handle each partition's buffer
+    partition_pool: PartitionPool,
     /// A stream of events that the dispatcher needs to react to.
-    incoming: Option<Receiver<DispatcherMsg>>,
+    commands: Option<Receiver<DispatcherMsg>>,
     /// A shutdown event used to determine when to quit.
     ///
     /// This will be triggered by the [`Producer`] that starts this dispatcher.
@@ -39,19 +35,18 @@ enum Event {
 
 impl Dispatcher {
     pub(crate) fn new(
-        pool: Arc<SpuPool>,
-        statuses: tokio::sync::broadcast::Sender<BatchStatus>,
+        spus: Arc<SpuPool>,
+        broadcast_status: tokio::sync::broadcast::Sender<BatchStatus>,
         commands: Receiver<DispatcherMsg>,
-        config: ProducerConfig,
+        config: Arc<ProducerConfig>,
     ) -> Self {
         let shutdown = StickyEvent::new();
+        let partition_pool = PartitionPool::new(spus, config.clone(), broadcast_status.clone());
 
         Self {
-            pool,
             config,
-            buffers: Default::default(),
-            statuses,
-            incoming: Some(commands),
+            partition_pool,
+            commands: Some(commands),
             shutdown,
         }
     }
@@ -68,7 +63,7 @@ impl Dispatcher {
         // Set up the event stream: Select between new records and timeouts
         let mut events = {
             let timer = async_timer::interval(self.config.batch_duration).map(|_| Event::Timeout);
-            let incoming = self.incoming.take().unwrap();
+            let incoming = self.commands.take().unwrap();
             let records = incoming.into_stream().map(Event::Command);
             let select = futures_util::stream::select(timer, records);
             select.take_until(self.shutdown.listen_pinned())
@@ -89,103 +84,23 @@ impl Dispatcher {
         match event {
             Event::Command(DispatcherMsg::Record {
                 record,
-                to_producer,
+                respond_to_producer,
             }) => {
-                self.try_buffer(record, to_producer).await?;
+                self.partition_pool
+                    .buffer(record, respond_to_producer)
+                    .await?;
             }
-            Event::Command(DispatcherMsg::Flush(sender)) => {
+            Event::Command(DispatcherMsg::Flush(respond_to_producer)) => {
                 let span = debug_span!("flush", reason = "user_flush");
-                self.flush_all().instrument(span).await?;
+                self.partition_pool.flush_all().instrument(span).await?;
 
                 // Dropping the sender causes rx.recv() to yield with Err.
                 // This itself is used as the message, and ensures exactly one notification
-                drop(sender);
+                drop(respond_to_producer);
             }
             Event::Timeout => {
                 let span = debug_span!("flush", reason = "timeout");
-                self.flush_all().instrument(span).await?;
-            }
-        }
-
-        Ok(())
-    }
-
-    #[instrument(level = "debug", skip(self, pending, to_producer))]
-    async fn try_buffer(
-        &mut self,
-        pending: AssociatedRecord,
-        to_producer: Sender<ProducerMsg>,
-    ) -> Result<(), FluvioError> {
-        let batch_size = self.config.batch_size;
-        let buffer = self
-            .buffers
-            .entry(pending.replica_key.clone())
-            .or_insert_with(|| RecordBuffer::new(batch_size));
-
-        // If this record is too large for the buffer, return it to the producer.
-        if !buffer.could_fit(&pending) {
-            to_producer
-                .send_async(ProducerMsg::RecordTooLarge(pending, self.config.batch_size))
-                .await
-                .map_err(|_| FluvioError::Other("failed to return oversized record".to_string()))?;
-            return Ok(());
-        }
-
-        // Try to push the record into the buffer. If this fails, the record is returned in Err
-        let replica_key = pending.replica_key.clone();
-        let buffer_result = buffer.push(pending);
-
-        // If the record could not be buffered, we need to flush first
-        if let Err(bounced) = buffer_result {
-            let mut buffer_to_flush =
-                std::mem::replace(buffer, RecordBuffer::new(self.config.batch_size));
-            let result = flush_buffer(self.pool.clone(), &replica_key, &mut buffer_to_flush).await;
-
-            // After being flushed, the buffer should have room to accept this record.
-            // If it did not, we should have returned above at "if !buffer.could_fit"
-            buffer
-                .push(bounced)
-                .expect("logic error: Buffer should have room for record");
-
-            self.broadcast_response_result(result)?;
-        }
-
-        drop(to_producer);
-        Ok(())
-    }
-
-    async fn flush_all(&mut self) -> Result<()> {
-        let mut result_futures = Vec::with_capacity(self.buffers.len());
-        for (key, buffer) in self.buffers.iter_mut() {
-            let fut = flush_buffer(self.pool.clone(), key, buffer);
-            result_futures.push(fut);
-        }
-
-        let results: Vec<Result<AssociatedResponse, FluvioError>> =
-            futures_util::future::join_all(result_futures).await;
-        for result in results {
-            self.broadcast_response_result(result)?;
-        }
-        Ok(())
-    }
-
-    fn broadcast_response_result(
-        &self,
-        result: Result<AssociatedResponse, FluvioError>,
-    ) -> Result<(), ProducerError> {
-        match result {
-            Ok(response) => {
-                for success in response.successes {
-                    self.statuses.send(BatchStatus::Success(success))?;
-                }
-                for failure in response.failures {
-                    self.statuses.send(BatchStatus::Failure(failure))?;
-                }
-            }
-            Err(e) => {
-                error!("Error flushing record: {}", e);
-                self.statuses
-                    .send(BatchStatus::InternalError(e.to_string()))?;
+                self.partition_pool.flush_all().instrument(span).await?;
             }
         }
 
@@ -193,26 +108,198 @@ impl Dispatcher {
     }
 }
 
-#[instrument(level = "debug", skip(spus, buffer))]
-async fn flush_buffer(
+pub(crate) struct PartitionPool {
+    /// Pool for communicating with SPUs.
     spus: Arc<SpuPool>,
-    key: &ReplicaKey,
-    buffer: &mut RecordBuffer,
-) -> Result<AssociatedResponse, FluvioError> {
-    let mut pending_request = AssociatedRequest::new();
+    /// Config for producer/flushing behavior
+    config: Arc<ProducerConfig>,
+    /// A channel for sending the status of batches
+    broadcast_status: tokio::sync::broadcast::Sender<BatchStatus>,
+    /// Pool of individual `PartitionProducer`s, which oct independently
+    pool: HashMap<ReplicaKey, PartitionProducer>,
+}
 
-    debug!(
-        "Flushing {} records ({} bytes)",
-        buffer.len(),
-        buffer.size()
-    );
-    while let Some(record) = buffer.pop() {
-        pending_request.add(record);
+impl PartitionPool {
+    /// Create a new `PartitionPool`
+    pub fn new(
+        spus: Arc<SpuPool>,
+        config: Arc<ProducerConfig>,
+        broadcast_status: tokio::sync::broadcast::Sender<BatchStatus>,
+    ) -> Self {
+        Self {
+            spus,
+            config,
+            pool: Default::default(),
+            broadcast_status,
+        }
     }
 
-    let socket = spus.create_serial_socket(key).await?;
-    let response = socket.send_receive(pending_request.request).await?;
-    let associated_response = AssociatedResponse::new(response, pending_request.uids)?;
+    /// Buffer the given record by sending it to the appropriate `PartitionProducer`.
+    ///
+    /// If a `PartitionProducer` does not exist for this record's `ReplicaKey`, one
+    /// will be created.
+    pub async fn buffer(
+        &mut self,
+        record: AssociatedRecord,
+        respond_to_caller: Sender<ProducerMsg>,
+    ) -> Result<(), FluvioError> {
+        let partition_producer = match self.pool.get_mut(&record.replica_key) {
+            Some(partition_producer) => partition_producer,
+            None => {
+                let partition_producer = PartitionProducer::new(
+                    self.spus.clone(),
+                    self.config.clone(),
+                    record.replica_key.clone(),
+                    self.broadcast_status.clone(),
+                );
+                self.pool
+                    .insert(record.replica_key.clone(), partition_producer);
+                self.pool
+                    .get_mut(&record.replica_key)
+                    .expect("just inserted, element must exist")
+            }
+        };
 
-    Ok(associated_response)
+        partition_producer.buffer(record, respond_to_caller).await?;
+        Ok(())
+    }
+
+    /// Flush the buffers for all partitions.
+    pub async fn flush_all(&mut self) -> Result<(), FluvioError> {
+        let mut flush_futures = Vec::with_capacity(self.pool.len());
+        for (_, partition_producer) in self.pool.iter_mut() {
+            let fut = partition_producer.flush();
+            flush_futures.push(fut);
+        }
+
+        // Flush all concurrently
+        let results = futures_util::future::join_all(flush_futures).await;
+        for result in results {
+            if let Err(e) = result {
+                error!("Internal error broadcasting batch status: {}", e);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Manages a buffer for a single partition's records.
+pub(crate) struct PartitionProducer {
+    /// Pool for communicating with the SPUs.
+    spus: Arc<SpuPool>,
+    /// Producer behavior configuration.
+    config: Arc<ProducerConfig>,
+    /// This partition's buffered records.
+    buffer: RecordBuffer,
+    /// A channel for sending the status of batches back to caller.
+    broadcast_status: tokio::sync::broadcast::Sender<BatchStatus>,
+    /// The topic and partition this producer operates for.
+    replica_key: ReplicaKey,
+}
+
+impl PartitionProducer {
+    /// Create a new `PartitionProducer`.
+    pub fn new(
+        spus: Arc<SpuPool>,
+        config: Arc<ProducerConfig>,
+        replica_key: ReplicaKey,
+        broadcast_status: tokio::sync::broadcast::Sender<BatchStatus>,
+    ) -> Self {
+        let batch_size = config.batch_size;
+        Self {
+            spus,
+            config,
+            buffer: RecordBuffer::new(batch_size),
+            replica_key,
+            broadcast_status,
+        }
+    }
+
+    /// Buffer the given record, flushing if necessary.
+    pub async fn buffer(
+        &mut self,
+        record: AssociatedRecord,
+        respond_to_caller: Sender<ProducerMsg>,
+    ) -> Result<(), FluvioError> {
+        // If this record is too large for the buffer, return it to the producer.
+        if !self.buffer.could_fit(&record) {
+            respond_to_caller
+                .send_async(ProducerMsg::RecordTooLarge(record, self.config.batch_size))
+                .await
+                .map_err(|_| FluvioError::Other("failed to return oversized record".to_string()))?;
+            return Ok(());
+        }
+
+        // Try to push the record into the buffer. If this fails, the record is returned in Err
+        let buffer_result = self.buffer.push(record);
+
+        // If the record could not be buffered, we need to flush first
+        if let Err(bounced) = buffer_result {
+            self.flush().await?;
+
+            // After being flushed, the buffer should have room to accept this record.
+            // If it did not, we should have returned above at "if !buffer.could_fit"
+            self.buffer
+                .push(bounced)
+                .expect("logic error: Buffer should have room for record");
+        }
+
+        drop(respond_to_caller);
+        Ok(())
+    }
+
+    /// Flush all records from this partition's buffer.
+    #[instrument(level = "debug", skip(self))]
+    async fn flush(&mut self) -> Result<(), FluvioError> {
+        let mut pending_request = AssociatedRequest::new();
+
+        debug!(
+            "Flushing {} records ({} bytes)",
+            self.buffer.len(),
+            self.buffer.size()
+        );
+        while let Some(record) = self.buffer.pop() {
+            pending_request.add(record);
+        }
+
+        let result = self.flush_impl(pending_request).await;
+        self.broadcast_result(result)?;
+
+        Ok(())
+    }
+
+    /// Internal flush, all the methods that might return `Err` for flushing.
+    async fn flush_impl(
+        &mut self,
+        request: AssociatedRequest,
+    ) -> Result<AssociatedResponse, FluvioError> {
+        let socket = self.spus.create_serial_socket(&self.replica_key).await?;
+        let response = socket.send_receive(request.request).await?;
+        let associated_response = AssociatedResponse::new(response, request.uids)?;
+        Ok(associated_response)
+    }
+
+    /// For all batches sent, broadcast their statuses for any callers listening.
+    fn broadcast_result(
+        &self,
+        result: Result<AssociatedResponse, FluvioError>,
+    ) -> Result<(), ProducerError> {
+        match result {
+            Ok(response) => {
+                for success in response.successes {
+                    self.broadcast_status.send(BatchStatus::Success(success))?;
+                }
+                for failure in response.failures {
+                    self.broadcast_status.send(BatchStatus::Failure(failure))?;
+                }
+            }
+            Err(e) => {
+                error!("Error flushing record: {}", e);
+                self.broadcast_status
+                    .send(BatchStatus::InternalError(e.to_string()))?;
+            }
+        }
+
+        Ok(())
+    }
 }

@@ -130,8 +130,12 @@ impl TopicProducer {
 
         let (to_dispatcher, from_dispatcher) = flume::bounded(0);
         let (status_sender, status_receiver) = tokio::sync::broadcast::channel(100);
-        let dispatcher =
-            Dispatcher::new(pool.clone(), status_sender.clone(), from_dispatcher, config);
+        let dispatcher = Dispatcher::new(
+            pool.clone(),
+            status_sender.clone(),
+            from_dispatcher,
+            Arc::new(config),
+        );
         let dispatcher_shutdown = dispatcher.start();
         let inner = Arc::new(ProducerInner {
             dispatcher: to_dispatcher,
@@ -216,10 +220,10 @@ impl TopicProducer {
         };
 
         // Send this record to the dispatcher.
-        let (to_producer, from_dispatcher) = flume::bounded(1);
+        let (respond_to_producer, from_dispatcher) = flume::bounded(1);
         let msg = DispatcherMsg::Record {
             record: pending_record,
-            to_producer,
+            respond_to_producer,
         };
         self.inner
             .dispatcher
@@ -309,7 +313,7 @@ pub(crate) enum ProducerMsg {
 pub(crate) enum DispatcherMsg {
     Record {
         record: AssociatedRecord,
-        to_producer: Sender<ProducerMsg>,
+        respond_to_producer: Sender<ProducerMsg>,
     },
     Flush(Sender<std::convert::Infallible>),
 }
