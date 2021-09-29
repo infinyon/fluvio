@@ -109,6 +109,16 @@ election-test: test-setup
 		${TEST_ARG_DEVELOP} \
 		${TEST_ARG_EXTRA}
 
+multiple-partition-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+multiple-partition-test: test-setup
+	$(TEST_BIN) multiple_partition --partition 10 \
+		${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
+
+
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
 SC_HOST=localhost
