@@ -27,10 +27,22 @@ const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
 
 /// An interface for producing events to a particular topic
 ///
-/// A `TopicProducer` allows you to send events to the specific
-/// topic it was initialized for. Once you have a `TopicProducer`,
-/// you can send events to the topic, choosing which partition
-/// each event should be delivered to.
+/// This will send records in batches behind the scenes in order to
+/// increase throughput. In order to ensure that all records are sent,
+/// you MUST call [`flush`] when you're done producing.
+///
+/// # Example
+///
+/// ```
+/// use fluvio::{TopicProducer, FluvioError, RecordKey};
+/// async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+///     producer.send(RecordKey::NULL, "Apple").await?;
+///     producer.send(RecordKey::NULL, "Banana").await?;
+///     producer.send(RecordKey::NULL, "Cranberry").await?;
+///     producer.flush().await?; // IMPORTANT to ensure records are sent
+///     Ok(())
+/// }
+/// ```
 pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,

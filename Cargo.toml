@@ -6,7 +6,6 @@ members = [
     "examples/02-consume",
     "examples/03-echo",
     "examples/04-admin-watch",
-    "examples/produce-stress",
     "crates/fluvio",
     "crates/fluvio-auth",
     "crates/fluvio-cli",
