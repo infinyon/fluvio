@@ -340,7 +340,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         run: [r1]
-        test: [smoke,election]
+        test: [smoke,election,multiple-partition]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
@@ -383,7 +383,14 @@ jobs:
         run: |
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster election-test
-          echo "election test  done"
+          echo "election test done"
+      - name: Run multiple-partition-test
+        if: ${{ matrix.test == 'multiple-partition' }}
+        timeout-minutes: 2
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster multiple-partition-test
+          echo "multiple partition test done"
       - name: Save logs
         if: failure()
         run: |

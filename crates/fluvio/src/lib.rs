@@ -97,7 +97,9 @@ use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
 pub use producer::{TopicProducer, RecordKey};
-pub use consumer::{PartitionConsumer, ConsumerConfig};
+pub use consumer::{
+    PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
+};
 pub use offset::Offset;
 
 pub use crate::admin::FluvioAdmin;
