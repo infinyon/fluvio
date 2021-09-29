@@ -79,7 +79,8 @@ pub async fn produce_batch(
 
     let result: Result<_, FluvioError> = (|| async move {
         for i in 0..1_000 {
-            producer.send(RecordKey::NULL, i.to_string()).await?;
+            let result = producer.send(RecordKey::NULL, i.to_string()).await;
+            assert!(result.is_ok());
         }
         println!("Send 1000");
 
