@@ -10,20 +10,18 @@ pub enum ProducerError {
     BatchNotFound,
     #[error("the given record is larger than the buffer max_size ({0} bytes)")]
     RecordTooLarge(usize),
-    #[error("failed to send a message in an internal channel (flume)")]
-    FlumeChannelSend,
-    #[error("failed to send a message in an internal channel (broadcast)")]
-    BroadcastChannelSend,
+    #[error("internal error: {0}")]
+    Internal(String),
 }
 
 impl<T> From<flume::SendError<T>> for ProducerError {
     fn from(_: flume::SendError<T>) -> Self {
-        Self::FlumeChannelSend
+        Self::Internal("failed to send message through channel (flume)".to_string())
     }
 }
 
 impl<T> From<tokio::sync::broadcast::error::SendError<T>> for ProducerError {
     fn from(_: tokio::sync::broadcast::error::SendError<T>) -> Self {
-        Self::BroadcastChannelSend
+        Self::Internal("failed to send message through channel (tokio broadcast)".to_string())
     }
 }

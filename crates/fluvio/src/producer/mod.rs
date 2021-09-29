@@ -84,22 +84,16 @@ impl Default for ProducerConfig {
 pub struct RecordUid(u64);
 
 /// A monotonically increasing counter for assigning Uids to records
-pub(crate) struct RecordUidGenerator {
-    next_uid: std::sync::atomic::AtomicU64,
-}
+pub(crate) struct RecordUidGenerator(std::sync::atomic::AtomicU64);
 
 impl RecordUidGenerator {
     pub fn new() -> Self {
-        Self {
-            next_uid: std::sync::atomic::AtomicU64::new(0),
-        }
+        Self(std::sync::atomic::AtomicU64::new(0))
     }
 
     /// Claim the next UID in the monotonically increasing sequence
     pub fn claim(&self) -> RecordUid {
-        let uid = self
-            .next_uid
-            .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let uid = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         RecordUid(uid)
     }
 }
@@ -196,7 +190,7 @@ impl TopicProducer {
                         return Err(ProducerError::BatchFailed(failed).into());
                     }
                     BatchStatus::InternalError(e) => {
-                        return Err(FluvioError::InternalProducerError(e));
+                        return Err(FluvioError::Producer(ProducerError::Internal(e)));
                     }
                     // No action to take on success
                     _ => {}
