@@ -56,7 +56,7 @@ pub struct ConsumeOpt {
     /// Provide a template string to print records with a custom format.
     /// See --help for details.
     ///
-    /// Template strings may include the variables {{key}}, {{value}}, and {{offset}}
+    /// Template strings may include the variables {{key}}, {{value}}, {{offset}} and {{partition}}
     /// which will have each record's contents substituted in their place.
     /// For example, the following template string:
     ///
@@ -265,6 +265,7 @@ impl ConsumeOpt {
                     "key": formatted_key,
                     "value": value,
                     "offset": record.offset(),
+                    "partition": record.partition(),
                 });
                 templates.render(USER_TEMPLATE, &object).ok()
             }

@@ -303,14 +303,16 @@ impl PartitionConsumer {
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
         let stream = self.stream_batches_with_config(offset, config).await?;
+        let partition = self.partition;
         let flattened =
-            stream.flat_map(|result: Result<Batch, _>| match result {
+            stream.flat_map(move |result: Result<Batch, _>| match result {
                 Err(e) => Either::Right(once(err(e))),
                 Ok(batch) => {
                     let base_offset = batch.base_offset;
                     let records = batch.own_records().into_iter().enumerate().map(
                         move |(relative, record)| {
                             Ok(Record {
+                                partition,
                                 offset: base_offset + relative as i64,
                                 record,
                             })
@@ -879,6 +881,8 @@ impl MultiplePartitionConsumer {
 pub struct Record {
     /// The offset of this Record into its partition
     offset: i64,
+    /// The partition where this Record is stored
+    partition: i32,
     /// The Record contents
     record: DefaultRecord,
 }
@@ -887,6 +891,11 @@ impl Record {
     /// The offset from the initial offset for a given stream.
     pub fn offset(&self) -> i64 {
         self.offset
+    }
+
+    /// The partition where this Record is stored.
+    pub fn partition(&self) -> i32 {
+        self.partition
     }
 
     /// Returns the contents of this Record's key, if it exists
