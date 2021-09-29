@@ -12,9 +12,9 @@ pub trait EnvDetail: Debug + Clone {
     fn replication(&self) -> u16;
     fn client_log(&self) -> Option<String>;
     fn spu(&self) -> u16;
-    fn skip_cluster_start(&self) -> bool;
     fn remove_cluster_before(&self) -> bool;
-    fn skip_cluster_delete(&self) -> bool;
+    fn cluster_start(&self) -> bool;
+    fn cluster_delete(&self) -> bool;
     fn develop_mode(&self) -> bool;
     fn skip_checks(&self) -> bool;
     fn tls_user(&self) -> String;
@@ -55,21 +55,19 @@ impl EnvDetail for EnvironmentSetup {
         self.spu
     }
 
-    // don't attempt to clean up and start new test cluster
-    // don't create a topic
-    fn skip_cluster_start(&self) -> bool {
-        self.disable_install
+    // attempt to start new test cluster
+    fn cluster_start(&self) -> bool {
+        self.cluster_start
     }
 
     /// before we start test run, remove cluster
-    // don't create a topic
     fn remove_cluster_before(&self) -> bool {
-        !self.disable_install
+        self.cluster_start_fresh
     }
 
-    // don't attempt to delete test cluster
-    fn skip_cluster_delete(&self) -> bool {
-        self.keep_cluster
+    // delete test cluster after the test
+    fn cluster_delete(&self) -> bool {
+        self.cluster_delete
     }
 
     // For k8 cluster. Use development helm chart
@@ -121,21 +119,25 @@ pub struct EnvironmentSetup {
     #[structopt(possible_values=&FluvioTestMeta::all_test_names())]
     pub test_name: String,
 
-    /// don't attempt to delete cluster or start a new cluster before test
-    /// topic creation will be skipped
-    #[structopt(short, long)]
-    pub disable_install: bool,
+    /// Ensure that test starts with a new cluster before test.
+    /// Will delete existing cluster. Implies `--cluster-start`
+    #[structopt(long)]
+    pub cluster_start_fresh: bool,
 
-    /// don't delete cluster after test
-    #[structopt(short, long)]
-    pub keep_cluster: bool,
+    /// attempt to start a new cluster before test
+    #[structopt(short("s"), long)]
+    pub cluster_start: bool,
+
+    /// delete cluster after test
+    #[structopt(short("d"), long)]
+    pub cluster_delete: bool,
 
     /// topic name used
     #[structopt(short("t"), long)]
     pub topic_name: Option<String>,
 
     /// number of spu
-    #[structopt(short, long, default_value = "1")]
+    #[structopt(long, default_value = "1")]
     pub spu: u16,
 
     /// number of replicas
