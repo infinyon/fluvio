@@ -70,7 +70,8 @@ impl SegmentList {
         let mut segments = Self::new();
 
         for offset in offsets {
-            match ReadSegment::open_for_read(offset, option).await {
+            // for now, set end offset same as base, this will be reset when validation occurs
+            match ReadSegment::open_for_read(offset, offset, option).await {
                 Ok(segment) => segments.add_segment(segment),
                 Err(err) => error!("error opening segment: {:#?}", err),
             }
@@ -175,6 +176,8 @@ mod tests {
         assert!(index.is_some());
         let (pos, _) = index.unwrap();
         assert_eq!(*pos, 500);
+
+        assert!(list.find_segment(0).is_some());
     }
 
     const TEST_READ_DIR: &str = "segmentlist-read-many";

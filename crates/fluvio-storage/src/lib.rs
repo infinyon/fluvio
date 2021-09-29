@@ -141,7 +141,10 @@ mod inner {
 
         /// create new storage area,
         /// if there exists replica state, this should restore state
-        async fn create(replica: &ReplicaKey, config: Self::Config) -> Result<Self, StorageError>;
+        async fn create_or_load(
+            replica: &ReplicaKey,
+            config: Self::Config,
+        ) -> Result<Self, StorageError>;
 
         /// high water mark offset (records that has been replicated)
         fn get_hw(&self) -> Offset;

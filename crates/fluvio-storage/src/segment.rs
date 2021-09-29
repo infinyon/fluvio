@@ -208,8 +208,10 @@ where
 }
 
 impl Segment<LogIndex, FileRecordsSlice> {
+    /// open read only segments if base and end offset are known
     pub async fn open_for_read(
         base_offset: Offset,
+        end_offset: Offset,
         option: &ConfigOption,
     ) -> Result<Self, StorageError> {
         let msg_log = FileRecordsSlice::open(base_offset, option).await?;
@@ -222,7 +224,7 @@ impl Segment<LogIndex, FileRecordsSlice> {
             index,
             option: option.to_owned(),
             base_offset,
-            end_offset: base_offset,
+            end_offset,
         })
     }
 
@@ -289,6 +291,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 
     // shrink index
+    #[cfg(test)]
     async fn shrink_index(&mut self) -> Result<(), IoError> {
         self.index.shrink().await
     }
@@ -301,14 +304,14 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// convert to immutable segment
     #[allow(clippy::wrong_self_convention)]
     pub async fn as_segment(self) -> Result<ReadSegment, StorageError> {
-        Segment::open_for_read(self.get_base_offset(), &self.option).await
+        Segment::open_for_read(self.get_base_offset(), self.end_offset, &self.option).await
     }
 
-    /// shrink and convert as immutable
-    #[allow(dead_code)]
+    /// use only in test
+    #[cfg(test)]
     pub async fn convert_to_segment(mut self) -> Result<ReadSegment, StorageError> {
         self.shrink_index().await?;
-        Segment::open_for_read(self.get_base_offset(), &self.option).await
+        Segment::open_for_read(self.get_base_offset(), self.end_offset, &self.option).await
     }
 
     pub fn to_segment_slice(&self) -> SegmentSlice {
