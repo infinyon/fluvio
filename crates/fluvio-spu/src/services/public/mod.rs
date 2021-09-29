@@ -102,7 +102,7 @@ impl FluvioService for PublicService {
                             "FetchOffsetsRequest"
                         ),
                         SpuServerRequest::FileStreamFetchRequest(request) => {
-                            StreamFetchHandler::fetch(
+                            StreamFetchHandler::start(
                                 request,
                                 context.clone(),
                                 shared_sink.clone(),

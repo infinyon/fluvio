@@ -160,7 +160,6 @@ impl MutFileRecords {
 
         if f_sink.can_be_appended(buffer.len() as u64) {
             debug!(buffer_len = buffer.len(), "writing bytes");
-
             f_sink.write_all(&buffer).await?;
             self.cached_len = f_sink.get_current_len();
             drop(f_sink); // unlock because flush may reaqire the lock
@@ -185,6 +184,11 @@ impl MutFileRecords {
 
             Ok(true)
         } else {
+            debug!(
+                len = f_sink.get_current_len(),
+                buffer_len = buffer.len(),
+                "no more room to add"
+            );
             Ok(false)
         }
     }

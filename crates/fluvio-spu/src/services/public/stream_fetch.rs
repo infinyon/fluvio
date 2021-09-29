@@ -50,7 +50,7 @@ pub struct StreamFetchHandler {
 
 impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
-    pub async fn fetch(
+    pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
@@ -65,7 +65,7 @@ impl StreamFetchHandler {
             let consumer_offset_listener = offset_publisher.change_listner();
 
             spawn(async move {
-                if let Err(err) = StreamFetchHandler::setup(
+                if let Err(err) = StreamFetchHandler::fetch(
                     ctx,
                     sink,
                     end_event.clone(),
@@ -115,7 +115,7 @@ impl StreamFetchHandler {
             sink = sink.id()
         ))
     ]
-    pub async fn setup(
+    pub async fn fetch(
         ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
@@ -212,7 +212,6 @@ impl StreamFetchHandler {
         handler.process(starting_offset, smartstream).await
     }
 
-    #[instrument(skip(self, smartstream))]
     async fn process(
         mut self,
         starting_offset: Offset,

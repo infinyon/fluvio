@@ -37,7 +37,7 @@ impl BatchProducer {
         BatchProducerBuilder::default()
     }
 
-    fn generate_batch(&self) -> Batch {
+    pub fn new_batch(&self) -> Batch {
         let mut batches = Batch::default();
         let header = batches.get_mut_header();
         header.magic = 2;
@@ -52,7 +52,7 @@ impl BatchProducer {
     }
 
     pub fn records(&self) -> RecordSet {
-        RecordSet::default().add(self.generate_batch())
+        RecordSet::default().add(self.new_batch())
     }
 }
 

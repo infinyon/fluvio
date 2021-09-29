@@ -230,14 +230,13 @@ impl FileReplica {
     /// find the segment that contains offsets
     /// segment could be active segment which can be written
     /// or read only segment.
-    #[instrument(skip(self, offset))]
     pub(crate) fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
-        trace!("finding segment for: {}", offset);
-        if offset >= self.active_segment.get_base_offset() {
-            trace!("active segment found for: {}", offset);
+        let active_base_offset = self.active_segment.get_base_offset();
+        if offset >= active_base_offset {
+            debug!(active_base_offset, "is in active segment");
             Some(self.active_segment.to_segment_slice())
         } else {
-            trace!("offset is before active, searching prev segment");
+            debug!(offset, active_base_offset, "not in segment");
             self.prev_segments
                 .find_segment(offset)
                 .map(|(_, segment)| segment.to_segment_slice())
@@ -265,7 +264,7 @@ impl FileReplica {
     /// * `responsive`:  output
     /// * `max_len`:  max length of the slice
     //  return leo, hw
-    #[instrument(skip(self, start_offset, max_offset, max_len, response))]
+    #[instrument(skip(self, response))]
     async fn read_records<P>(
         &self,
         start_offset: Offset,
@@ -278,10 +277,7 @@ impl FileReplica {
     {
         let hw = self.get_hw();
         let leo = self.get_leo();
-        debug!(
-            "read records at: {}, max: max: {:#?}, hw: {}",
-            start_offset, max_offset, hw,
-        );
+        debug!(hw, leo, "starting read records",);
 
         response.set_hw(hw);
         response.set_log_start_offset(self.get_log_start_offset());
@@ -391,12 +387,13 @@ mod tests {
     use std::fs;
     use std::fs::metadata;
     use std::io::Cursor;
+    use std::sync::Arc;
 
     use dataplane::{Isolation, batch::Batch};
     use dataplane::{Offset, ErrorCode};
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fetch::FilePartitionResponse;
-    use dataplane::record::RecordSet;
+    use dataplane::record::{Record, RecordSet};
     use dataplane::batch::MemoryRecords;
     use dataplane::fixture::{BatchProducer, create_batch};
     use dataplane::fixture::read_bytes_from_file;
@@ -779,5 +776,42 @@ mod tests {
                 .unwrap_err(),
             StorageError::BatchTooBig(_)
         ));
+    }
+
+    /// test finding among multiple segments
+    #[fluvio_future::test]
+    async fn test_replica_find_multiple() {
+        let mut option = base_option("test_find_segment");
+        // enough for 2 batch (2 records per batch)
+        option.segment_max_bytes = 100;
+
+        let producer = BatchProducer::builder()
+            .records(2u16)
+            .record_generator(Arc::new(|_, _| Record::new("1")))
+            .build()
+            .expect("batch");
+
+        let mut replica = FileReplica::create("test", 0, 0, option.clone())
+            .await
+            .expect("create");
+        assert!(replica.prev_segments.len() == 0);
+
+        // this will create  1 segment
+        replica
+            .write_batch(&mut producer.new_batch())
+            .await
+            .expect("write");
+        assert_eq!(replica.prev_segments.len(), 0);
+        assert!(replica.find_segment(0).is_some());
+        assert!(replica.find_segment(1).expect("some").is_active());
+
+        // overflow, will create 2nd segment
+        replica
+            .write_batch(&mut producer.new_batch())
+            .await
+            .expect("write");
+        assert_eq!(replica.prev_segments.len(), 1);
+        //  assert!(replica.find_segment(0).is_some());
+        // assert!(!replica.find_segment(0).expect("some").is_active());
     }
 }
