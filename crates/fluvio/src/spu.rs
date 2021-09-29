@@ -193,6 +193,7 @@ impl SpuPool {
             .is_some())
     }
 
+    #[allow(clippy::ptr_arg)]
     pub async fn lookup_topic(
         &self,
         topic: &String,
@@ -200,7 +201,7 @@ impl SpuPool {
         let topic = self
             .metadata
             .topics()
-            .lookup_by_key(&topic)
+            .lookup_by_key(topic)
             .await?
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?;
         Ok(topic)

@@ -41,7 +41,7 @@ impl Dispatcher {
         config: Arc<ProducerConfig>,
     ) -> Self {
         let shutdown = StickyEvent::new();
-        let partition_pool = PartitionPool::new(spus, config.clone(), broadcast_status.clone());
+        let partition_pool = PartitionPool::new(spus, config.clone(), broadcast_status);
 
         Self {
             config,

@@ -110,7 +110,7 @@ impl ProduceOpt {
 
     async fn produce_line(&self, producer: &TopicProducer, line: &str) -> Result<()> {
         if let Some(separator) = &self.key_separator {
-            self.produce_key_value(producer, &line, separator).await?;
+            self.produce_key_value(producer, line, separator).await?;
         } else {
             producer.send(RecordKey::NULL, line).await?;
         }

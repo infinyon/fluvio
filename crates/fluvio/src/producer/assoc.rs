@@ -148,7 +148,7 @@ impl AssociatedResponse {
                 let replica_key = ReplicaKey::new(&topic.name, partition.partition_index);
                 let batch = batches
                     .remove(&replica_key)
-                    .ok_or_else(|| ProducerError::BatchNotFound)?;
+                    .ok_or(ProducerError::BatchNotFound)?;
 
                 if partition.error_code.is_ok() {
                     let batch_success = BatchSuccess {

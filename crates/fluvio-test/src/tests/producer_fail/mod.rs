@@ -63,8 +63,7 @@ pub async fn produce_batch(
             .await
             .expect("partitions");
         let test_topic = &partitions[0];
-        let leader = test_topic.spec.leader;
-        leader
+        test_topic.spec.leader
     };
 
     println!("Found leader {}", leader);

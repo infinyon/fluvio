@@ -108,7 +108,7 @@ mod tests {
         let assoc_record = AssociatedRecord {
             uid: RecordUid(0),
             replica_key: ReplicaKey::new("One", 0),
-            record: record.clone(),
+            record,
         };
         assert!(buffer.could_fit(&assoc_record));
         buffer.push(assoc_record).expect("first record should fit");
@@ -120,7 +120,7 @@ mod tests {
         let assoc_record = AssociatedRecord {
             uid: RecordUid(1),
             replica_key: ReplicaKey::new("One", 0),
-            record: record.clone(),
+            record,
         };
         buffer.push(assoc_record).expect("second record should fit");
         assert_eq!(buffer.len(), 2);
