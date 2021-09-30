@@ -6,6 +6,8 @@ use std::io::ErrorKind;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::Ordering::SeqCst;
+use std::sync::atomic::AtomicI32;
 use std::time::Duration;
 use std::fmt;
 
@@ -46,17 +48,9 @@ enum SharedSender {
 
 type Senders = Arc<Mutex<HashMap<i32, SharedSender>>>;
 
-async fn correlation_id(counter: Arc<Mutex<i32>>) -> i32 {
-    let mut guard = counter.lock().await;
-    let current_value = *guard;
-    // update to new
-    *guard = current_value + 1;
-    current_value
-}
-
 /// Socket that can multiplex connections
 pub struct MultiplexerSocket {
-    correlation_id_counter: Arc<Mutex<i32>>,
+    correlation_id_counter: AtomicI32,
     senders: Senders,
     sink: ExclusiveFlvSink,
     terminate: Arc<Event>,
@@ -90,7 +84,7 @@ impl MultiplexerSocket {
         let (sink, stream) = socket.split();
 
         let multiplexer = Self {
-            correlation_id_counter: Arc::new(Mutex::new(1)),
+            correlation_id_counter: AtomicI32::new(1),
             senders: Arc::new(Mutex::new(HashMap::new())),
             sink: ExclusiveFlvSink::new(sink),
             terminate: Arc::new(Event::new()),
@@ -107,9 +101,8 @@ impl MultiplexerSocket {
     }
 
     /// get next available correlation to use
-    //  use lock to ensure update happens in orderly manner
-    async fn next_correlation_id(&self) -> i32 {
-        correlation_id(self.correlation_id_counter.clone()).await
+    fn next_correlation_id(&self) -> i32 {
+        self.correlation_id_counter.fetch_add(1, SeqCst)
     }
 
     /// create socket to perform request and response
@@ -131,7 +124,7 @@ impl MultiplexerSocket {
             wait_time
         });
 
-        let correlation_id = self.next_correlation_id().await;
+        let correlation_id = self.next_correlation_id();
         let bytes_lock: SharedMsg = (Arc::new(Mutex::new(None)), Arc::new(Event::new()));
 
         req_msg.header.set_correlation_id(correlation_id);
@@ -214,7 +207,7 @@ impl MultiplexerSocket {
     where
         R: Request,
     {
-        let correlation_id = self.next_correlation_id().await;
+        let correlation_id = self.next_correlation_id();
 
         req_msg.header.set_correlation_id(correlation_id);
 
