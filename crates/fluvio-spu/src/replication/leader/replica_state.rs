@@ -701,7 +701,7 @@ mod test_leader {
 
     #[async_trait]
     impl ReplicaStorage for MockStorage {
-        async fn create(
+        async fn create_or_load(
             _replica: &dataplane::ReplicaKey,
             _config: Self::Config,
         ) -> Result<Self, fluvio_storage::StorageError> {

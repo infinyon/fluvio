@@ -63,8 +63,7 @@ impl FileRecordsSlice {
         self.base_offset
     }
 
-    #[allow(dead_code)]
-    pub async fn validate(&mut self) -> Result<Offset, LogValidationError> {
+    pub async fn validate(&self) -> Result<Offset, LogValidationError> {
         validate(&self.path).await
     }
 }

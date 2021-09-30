@@ -330,7 +330,7 @@ jobs:
         run: cargo test --manifest-path ./crates/${{ matrix.crate }}/Cargo.toml
 
   local_cluster_test:
-    name: Local cluster test run (${{ matrix.run }})
+    name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
     runs-on: ${{ matrix.os }}
     needs:
       - build_primary_binaries

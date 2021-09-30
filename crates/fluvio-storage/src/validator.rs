@@ -1,8 +1,7 @@
 use std::io::Error as IoError;
 use std::path::Path;
 
-use tracing::warn;
-use tracing::trace;
+use tracing::{debug, warn, trace};
 
 use dataplane::Offset;
 use fluvio_future::fs::util as file_util;
@@ -40,26 +39,22 @@ where
     let base_offset = log_path_get_offset(file_path)?;
     let file_name = file_path.display().to_string();
 
-    trace!(
-        "validating file: {}, base offset: {}",
-        file_name,
-        base_offset
+    debug!(
+        %file_name,
+        base_offset,
+        "validating",
     );
 
     let file_clone = file_util::open(file_path).await?;
     let mut batch_stream = BatchHeaderStream::new(file_clone);
-    let mut end_offset: Offset = -1;
+    let mut last_offset: Offset = -1;
 
     while let Some(batch_pos) = batch_stream.next().await {
         let batch_base_offset = batch_pos.get_batch().get_base_offset();
         let header = batch_pos.get_batch().get_header();
         let offset_delta = header.last_offset_delta;
 
-        trace!(
-            "found batch base: {} offset delta: {}",
-            batch_base_offset,
-            offset_delta
-        );
+        trace!(batch_base_offset, offset_delta, "found batch");
 
         if batch_base_offset < base_offset {
             warn!(
@@ -69,28 +64,28 @@ where
             return Err(LogValidationError::BaseOff);
         }
 
-        if batch_base_offset <= end_offset {
+        if batch_base_offset <= last_offset {
             warn!(
                 "batch offset is  {} is less than prev offset  {}",
-                batch_base_offset, end_offset
+                batch_base_offset, last_offset
             );
             return Err(LogValidationError::OffsetNotOrdered);
         }
 
-        end_offset = batch_base_offset + offset_delta as Offset;
+        last_offset = batch_base_offset + offset_delta as Offset;
     }
 
     if let Some(err) = batch_stream.invalid() {
         return Err(err.into());
     }
 
-    if end_offset == -1 {
+    if last_offset == -1 {
         trace!("no batch found, returning last offset delta 0");
         return Ok(base_offset);
     }
 
-    trace!("end offset: {}", end_offset);
-    Ok(end_offset + 1)
+    debug!(last_offset, "found last offset");
+    Ok(last_offset + 1)
 }
 
 #[cfg(test)]

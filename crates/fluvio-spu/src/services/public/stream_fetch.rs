@@ -6,6 +6,7 @@ use std::io::Error as IoError;
 use tracing::{error, debug, trace, instrument};
 use tokio::select;
 
+use dataplane::record::FileRecordSet;
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
@@ -19,7 +20,8 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    FileStreamFetchRequest, DefaultStreamFetchRequest, StreamFetchResponse, SmartStreamKind,
+    DefaultStreamFetchRequest, FileStreamFetchRequest, SmartStreamKind, StreamFetchRequest,
+    StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
@@ -38,7 +40,6 @@ pub struct StreamFetchHandler {
     isolation: Isolation,
     max_bytes: u32,
     max_fetch_bytes: u32,
-
     header: RequestHeader,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
@@ -49,132 +50,38 @@ pub struct StreamFetchHandler {
 
 impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
-    pub async fn spawn(
-        request: RequestMessage<FileStreamFetchRequest>,
-        ctx: DefaultSharedGlobalContext,
-        sink: ExclusiveFlvSink,
-        end_event: Arc<StickyEvent>,
-    ) -> Result<(), SocketError> {
-        spawn(async move {
-            if let Err(err) = StreamFetchHandler::start(request, ctx, sink, end_event.clone()).await
-            {
-                error!("error starting stream fetch handler: {:#?}", err);
-                end_event.notify();
-            }
-        });
-        debug!("spawned stream fetch controller");
-        Ok(())
-    }
-
-    #[instrument(skip(request, ctx, sink, end_event))]
     pub async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
     ) -> Result<(), SocketError> {
-        // first get receiver to offset update channel to we don't missed events
         let (header, msg) = request.get_header_request();
-
-        let current_offset = msg.fetch_offset;
-        let isolation = msg.isolation;
-        let replica = ReplicaKey::new(msg.topic, msg.partition);
-        let max_bytes = msg.max_bytes as u32;
+        let replica = ReplicaKey::new(msg.topic.clone(), msg.partition);
 
         if let Some(leader_state) = ctx.leaders_state().get(&replica) {
             let (stream_id, offset_publisher) =
                 ctx.stream_publishers().create_new_publisher().await;
-            let offset_listener = offset_publisher.change_listner();
+            let consumer_offset_listener = offset_publisher.change_listner();
 
-            debug!(
-                sink = sink.id(),
-                %replica,
-                current_offset,
-                max_bytes,
-                "start stream fetch"
-            );
-
-            let sm_engine = SmartStreamEngine::default();
-
-            let smartstream = if let Some(payload) = msg.wasm_payload {
-                let wasm = &payload.wasm.get_raw()?;
-                debug!(len = wasm.len(), "creating WASM module with bytes");
-                let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
-                    SocketError::Io(IoError::new(
-                        ErrorKind::Other,
-                        format!("module loading error {}", err),
-                    ))
-                })?;
-
-                let smartstream: Box<dyn SmartStream> = match payload.kind {
-                    SmartStreamKind::Filter => {
-                        debug!("Instantiating SmartStreamFilter");
-                        let filter = module.create_filter(&sm_engine).map_err(|err| {
-                            SocketError::Io(IoError::new(
-                                ErrorKind::Other,
-                                format!("Failed to instantiate SmartStreamFilter {}", err),
-                            ))
-                        })?;
-                        Box::new(filter)
-                    }
-                    SmartStreamKind::Map => {
-                        debug!("Instantiating SmartStreamMap");
-                        let map = module.create_map(&sm_engine).map_err(|err| {
-                            SocketError::Io(IoError::new(
-                                ErrorKind::Other,
-                                format!("Failed to instantiate SmartStreamMap {}", err),
-                            ))
-                        })?;
-                        Box::new(map)
-                    }
-                    SmartStreamKind::Aggregate { accumulator } => {
-                        debug!(
-                            accumulator_len = accumulator.len(),
-                            "Instantiating SmartStreamAggregate"
-                        );
-                        let aggregator =
-                            module
-                                .create_aggregate(&sm_engine, accumulator)
-                                .map_err(|err| {
-                                    SocketError::Io(IoError::new(
-                                        ErrorKind::Other,
-                                        format!(
-                                            "Failed to instantiate SmartStreamAggregate {}",
-                                            err
-                                        ),
-                                    ))
-                                })?;
-                        Box::new(aggregator)
-                    }
-                };
-
-                Some(smartstream)
-            } else {
-                None
-            };
-
-            // if we are filtered we should scan all batches instead of just limit to max bytes
-            let max_fetch_bytes = if smartstream.is_none() {
-                max_bytes
-            } else {
-                u32::MAX
-            };
-
-            let handler = Self {
-                ctx: ctx.clone(),
-                isolation,
-                replica,
-                header,
-                max_bytes,
-                sink,
-                end_event,
-                consumer_offset_listener: offset_listener,
-                stream_id,
-                leader_state: leader_state.clone(),
-                max_fetch_bytes,
-            };
-
-            handler.process(current_offset, smartstream).await;
+            spawn(async move {
+                if let Err(err) = StreamFetchHandler::fetch(
+                    ctx,
+                    sink,
+                    end_event.clone(),
+                    leader_state,
+                    stream_id,
+                    header,
+                    replica,
+                    consumer_offset_listener,
+                    msg,
+                )
+                .await
+                {
+                    error!("error starting stream fetch handler: {:#?}", err);
+                    end_event.notify();
+                }
+            });
         } else {
             debug!(topic = %replica.topic," no leader founded, returning");
             let response = StreamFetchResponse {
@@ -201,24 +108,113 @@ impl StreamFetchHandler {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[instrument(
-        skip(self, smartstream),
-        name = "stream fetch",
+        skip(ctx,replica,end_event,leader_state,header,msg,consumer_offset_listener),
         fields(
-            replica = %self.replica,
-            sink = self.sink.id()
-        )
-    )]
-    async fn process(mut self, starting_offset: Offset, smartstream: Option<Box<dyn SmartStream>>) {
-        if let Err(err) = self.inner_process(starting_offset, smartstream).await {
-            error!("error: {:#?}", err);
-            self.end_event.notify();
-        }
+            replica = %replica,
+            sink = sink.id()
+        ))
+    ]
+    pub async fn fetch(
+        ctx: DefaultSharedGlobalContext,
+        sink: ExclusiveFlvSink,
+        end_event: Arc<StickyEvent>,
+        leader_state: SharedFileLeaderState,
+        stream_id: u32,
+        header: RequestHeader,
+        replica: ReplicaKey,
+        consumer_offset_listener: OffsetChangeListener,
+        msg: StreamFetchRequest<FileRecordSet>,
+    ) -> Result<(), SocketError> {
+        let max_bytes = msg.max_bytes as u32;
+        let sm_engine = SmartStreamEngine::default();
+
+        let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
+            let wasm = &payload.wasm.get_raw()?;
+            debug!(len = wasm.len(), "creating WASM module with bytes");
+            let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
+                SocketError::Io(IoError::new(
+                    ErrorKind::Other,
+                    format!("module loading error {}", err),
+                ))
+            })?;
+
+            let smartstream: Box<dyn SmartStream> = match payload.kind {
+                SmartStreamKind::Filter => {
+                    debug!("Instantiating SmartStreamFilter");
+                    let filter = module.create_filter(&sm_engine).map_err(|err| {
+                        SocketError::Io(IoError::new(
+                            ErrorKind::Other,
+                            format!("Failed to instantiate SmartStreamFilter {}", err),
+                        ))
+                    })?;
+                    Box::new(filter)
+                }
+                SmartStreamKind::Map => {
+                    debug!("Instantiating SmartStreamMap");
+                    let map = module.create_map(&sm_engine).map_err(|err| {
+                        SocketError::Io(IoError::new(
+                            ErrorKind::Other,
+                            format!("Failed to instantiate SmartStreamMap {}", err),
+                        ))
+                    })?;
+                    Box::new(map)
+                }
+                SmartStreamKind::Aggregate { accumulator } => {
+                    debug!(
+                        accumulator_len = accumulator.len(),
+                        "Instantiating SmartStreamAggregate"
+                    );
+                    let aggregator =
+                        module
+                            .create_aggregate(&sm_engine, accumulator)
+                            .map_err(|err| {
+                                SocketError::Io(IoError::new(
+                                    ErrorKind::Other,
+                                    format!("Failed to instantiate SmartStreamAggregate {}", err),
+                                ))
+                            })?;
+                    Box::new(aggregator)
+                }
+            };
+
+            (Some(smartstream), u32::MAX)
+        } else {
+            (None, max_bytes)
+        };
+
+        let starting_offset = msg.fetch_offset;
+        let isolation = msg.isolation;
+
+        debug!(
+            max_bytes,
+            max_fetch_bytes,
+            isolation = ?isolation,
+            stream_id,
+            sink = %sink.id(),
+            starting_offset,
+            "stream fetch");
+
+        let handler = Self {
+            ctx: ctx.clone(),
+            isolation,
+            replica,
+            max_bytes,
+            sink,
+            end_event,
+            header,
+            consumer_offset_listener,
+            stream_id,
+            leader_state,
+            max_fetch_bytes,
+        };
+
+        handler.process(starting_offset, smartstream).await
     }
 
-    #[instrument(skip(self, smartstream))]
-    async fn inner_process(
-        &mut self,
+    async fn process(
+        mut self,
         starting_offset: Offset,
         mut smartstream: Option<Box<dyn SmartStream>>,
     ) -> Result<(), SocketError> {

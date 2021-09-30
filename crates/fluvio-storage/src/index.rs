@@ -93,14 +93,15 @@ impl LogIndex {
     ) -> Result<Self, IoError> {
         let index_file_path = generate_file_name(&option.base_dir, base_offset, EXTENSION);
 
-        debug!("opening index mm at: {:#?}", index_file_path);
+        debug!(?index_file_path, "opening index");
+
         // make sure it is log file
         let (m_file, file) =
             MemoryMappedFile::open(index_file_path, INDEX_ENTRY_SIZE as u64).await?;
 
         let len = (file.metadata().await?).len();
 
-        trace!("opening memory mapped file with len : {}", len);
+        debug!(len, "memory mapped len");
 
         if len > std::u32::MAX as u64 {
             return Err(IoError::new(
@@ -243,8 +244,8 @@ mod tests {
 
         let mut mut_index = MutLogIndex::create(921, &option).await.expect("create");
 
-        mut_index.send((5, 16, 70)).await.expect("send");
-        mut_index.send((10, 100, 70)).await.expect("send");
+        mut_index.write_index((5, 16, 70)).await.expect("send");
+        mut_index.write_index((10, 100, 70)).await.expect("send");
 
         mut_index.shrink().await.expect("shrink");
 

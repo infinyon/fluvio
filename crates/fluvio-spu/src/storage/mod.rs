@@ -42,7 +42,7 @@ where
 {
     /// create new storage replica or restore from durable storage based on configuration
     pub async fn create(id: ReplicaKey, config: S::Config) -> Result<Self, StorageError> {
-        let storage = S::create(&id, config).await?;
+        let storage = S::create_or_load(&id, config).await?;
 
         let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
         let hw = Arc::new(OffsetPublisher::new(storage.get_hw()));

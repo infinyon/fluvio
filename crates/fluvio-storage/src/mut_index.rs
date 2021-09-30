@@ -62,7 +62,12 @@ impl MutLogIndex {
             ));
         }
 
-        debug!("creating index mm at: {:#?}", index_file_path);
+        debug!(
+            ?index_file_path,
+            max_bytes = option.index_max_bytes,
+            "creating index file"
+        );
+
         let (m_file, file) =
             MemoryMappedMutFile::create(&index_file_path, option.index_max_bytes as u64).await?;
 
@@ -119,9 +124,13 @@ impl MutLogIndex {
     // shrink index file to last know position
 
     pub async fn shrink(&mut self) -> Result<(), IoError> {
-        let len = (self.pos * INDEX_ENTRY_SIZE) as u64;
-        debug!("shrinking index: {:#?} to {} bytes", self.file, len);
-        self.file.set_len(len).await
+        let target_len = (self.pos * INDEX_ENTRY_SIZE) as u64;
+        debug!(
+            target_len,
+            base_offset = self.base_offset,
+            "shrinking index"
+        );
+        self.file.set_len(target_len).await
     }
 
     #[inline]
@@ -157,18 +166,23 @@ impl MutLogIndex {
         ))
     }
 
-    pub async fn send(&mut self, item: (Size, Size, Size)) -> Result<(), IoError> {
+    pub async fn write_index(&mut self, item: (Size, Size, Size)) -> Result<(), IoError> {
+        debug!(
+            offset_delta = item.0,
+            pos = item.1,
+            len = item.2,
+            "writing index"
+        );
         let batch_size = item.2;
 
         let bytes_delta = self.bytes_delta;
         if bytes_delta < self.option.index_max_interval_bytes {
-            trace!(
-                "index writing skipped accumulated bytes {} less than max less interval: {}",
-                bytes_delta,
-                self.option.index_max_interval_bytes
-            );
             self.bytes_delta = bytes_delta + batch_size;
-            trace!("index updated accumulated bytes: {}", self.bytes_delta);
+            debug!(
+                bytes_delta = self.bytes_delta,
+                max = self.option.index_max_interval_bytes,
+                "no write due to less than max interval"
+            );
             return Ok(());
         }
 
@@ -179,7 +193,7 @@ impl MutLogIndex {
 
         if pos < max_entries as usize {
             self[pos] = (item.0, item.1).to_be();
-            trace!("index successfully written: {:#?} at: {}", item, pos);
+            debug!(max_entries, pos, "add new entry");
             self.mmap.flush_ft().await?;
         } else {
             error!(
@@ -255,8 +269,8 @@ mod tests {
 
         let mut index_sink = MutLogIndex::create(121, &option).await.expect("crate");
 
-        index_sink.send((5, 200, 70)).await.expect("send"); // this will be ignored
-        index_sink.send((10, 100, 70)).await.expect("send"); // this will be written since batch size 70 is greater than 50
+        index_sink.write_index((5, 200, 70)).await.expect("send"); // this will be ignored
+        index_sink.write_index((10, 100, 70)).await.expect("send"); // this will be written since batch size 70 is greater than 50
 
         assert_eq!(index_sink.pos, 1);
 
@@ -292,7 +306,7 @@ mod tests {
 
         let mut index_sink = MutLogIndex::create(122, &option).await.expect("create");
 
-        index_sink.send((5, 16, 70)).await.expect("send");
+        index_sink.write_index((5, 16, 70)).await.expect("send");
 
         index_sink.shrink().await.expect("shrink");
 
@@ -311,10 +325,10 @@ mod tests {
 
         let mut index_sink = MutLogIndex::create(123, &option).await.expect("create");
 
-        index_sink.send((100, 16, 70)).await.expect("send");
-        index_sink.send((500, 200, 70)).await.expect("send");
-        index_sink.send((800, 100, 70)).await.expect("send");
-        index_sink.send((1000, 200, 70)).await.expect("send");
+        index_sink.write_index((100, 16, 70)).await.expect("send");
+        index_sink.write_index((500, 200, 70)).await.expect("send");
+        index_sink.write_index((800, 100, 70)).await.expect("send");
+        index_sink.write_index((1000, 200, 70)).await.expect("send");
 
         assert_eq!(
             index_sink.find_offset(600).map(|p| p.to_be()),
