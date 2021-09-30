@@ -215,12 +215,10 @@ impl Segment<LogIndex, FileRecordsSlice> {
         option: &ConfigOption,
     ) -> Result<Self, StorageError> {
         debug!(base_offset, end_offset, ?option, "open for read");
-        let mut msg_log = FileRecordsSlice::open(base_offset, option).await?;
-        let end_offset = msg_log.validate().await?;
+        let msg_log = FileRecordsSlice::open(base_offset, option).await?;
         let base_offset = msg_log.get_base_offset();
-        debug!(base_offset, end_offset = "offset from msg log");
+        debug!(base_offset, end_offset, "offset from msg log");
         let index = LogIndex::open_from_offset(base_offset, option).await?;
-        let base_offset = msg_log.get_base_offset();
 
         Ok(Segment {
             msg_log,
@@ -232,17 +230,17 @@ impl Segment<LogIndex, FileRecordsSlice> {
     }
 
     /// open read only segments if we don't know end offset
+    #[instrument(skip(option),fields(base_dir=?option.base_dir))]
     pub async fn open_unknown(
         base_offset: Offset,
         option: &ConfigOption,
     ) -> Result<Self, StorageError> {
-        debug!(base_offset, ?option, "open for read");
         let msg_log = FileRecordsSlice::open(base_offset, option).await?;
         let base_offset = msg_log.get_base_offset();
+        let end_offset = msg_log.validate().await?;
+        debug!(end_offset, base_offset, "base offset from msg_log");
         let index = LogIndex::open_from_offset(base_offset, option).await?;
-        let base_offset = msg_log.get_base_offset();
-        debug!(base_offset, "base offset from msg_log");
-        let end_offset = 0;
+
         Ok(Segment {
             msg_log,
             index,

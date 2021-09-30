@@ -134,8 +134,6 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use tracing::debug;
-
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
@@ -269,34 +267,5 @@ mod tests {
         assert_eq!(list.find_segment(8000).expect("segment").0, &4000);
         assert!(list.find_segment(9000).is_none());
         assert!(list.find_segment(10000).is_none());
-    }
-
-    #[fluvio_future::test]
-    async fn test_segment_many_load() {
-        let rep_dir = temp_dir().join("segmentlist-many-load");
-        ensure_new_dir(&rep_dir).expect("new");
-        let option = default_option(rep_dir);
-
-        create_segment(&option, 10, 500).await.expect("create");
-        create_segment(&option, 20, 2000).await.expect("create");
-        create_segment(&option, 30, 1000).await.expect("create");
-        create_segment(&option, 40, 2000).await.expect("create");
-
-        debug!("reading segments...");
-
-        let (segments, last_offset_res) = SegmentList::from_dir(&option).await.expect("from");
-
-        println!("segments: {:#?}", segments);
-
-        assert_eq!(segments.len(), 3); // 0,500,2000
-        assert_eq!(segments.min_offset(), 10);
-        let segment1 = segments.get_segment(10).expect("should have segment at 0 ");
-        assert_eq!(segment1.get_base_offset(), 10);
-        let last_offset = last_offset_res.expect("last segment should be there");
-        assert_eq!(last_offset, 3000);
-        let segment2 = segments
-            .get_segment(500)
-            .expect("should have segment at 500");
-        assert_eq!(segment2.get_base_offset(), 500);
     }
 }

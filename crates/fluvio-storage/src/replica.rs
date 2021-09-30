@@ -405,7 +405,7 @@ mod tests {
     use flv_util::fixture::ensure_clean_dir;
 
     use crate::config::ConfigOption;
-    use crate::StorageError;
+    use crate::{SegmentSlice, StorageError};
     use crate::ReplicaStorage;
 
     use super::FileReplica;
@@ -797,35 +797,52 @@ mod tests {
             .build()
             .expect("batch");
 
-        let mut replica = FileReplica::create_or_load("test", 0, 0, option.clone())
+        let mut new_replica = FileReplica::create_or_load("test", 0, 0, option.clone())
             .await
             .expect("create");
-        assert!(replica.prev_segments.len() == 0);
+        assert!(new_replica.prev_segments.len() == 0);
 
         // this will create  1 segment
-        replica
+        new_replica
             .write_batch(&mut producer.new_batch())
             .await
             .expect("write");
-        replica
+        new_replica
             .write_batch(&mut producer.new_batch())
             .await
             .expect("write");
-        assert_eq!(replica.prev_segments.len(), 0);
-        assert!(replica.find_segment(0).is_some());
-        assert!(replica.find_segment(1).expect("some").is_active());
+        assert_eq!(new_replica.prev_segments.len(), 0);
+        assert!(new_replica.find_segment(0).is_some());
+        assert!(new_replica.find_segment(1).expect("some").is_active());
 
         // overflow, will create 2nd segment
-        replica
+        new_replica
             .write_batch(&mut producer.new_batch())
             .await
             .expect("write");
-        assert_eq!(replica.prev_segments.len(), 1);
-        assert_eq!(replica.prev_segments.min_offset(), 0);
-        println!("segments: {:#?}", replica.prev_segments);
-        let first_segment = replica.prev_segments.get_segment(0).expect("some");
+        assert_eq!(new_replica.prev_segments.len(), 1);
+        assert_eq!(new_replica.prev_segments.min_offset(), 0);
+        println!("new replica segments: {:#?}", new_replica.prev_segments);
+        let first_segment = new_replica.prev_segments.get_segment(0).expect("some");
         assert_eq!(first_segment.get_base_offset(), 0);
         assert_eq!(first_segment.get_end_offset(), 4);
-        assert!(replica.find_segment(0).is_some());
+        assert!(new_replica.find_segment(0).is_some());
+
+        drop(new_replica);
+
+        // reload replica
+        let old_replica = FileReplica::create_or_load("test", 0, 0, option.clone())
+            .await
+            .expect("read");
+        println!("old replica segments: {:#?}", old_replica.prev_segments);
+        assert!(old_replica.prev_segments.len() == 1);
+        let slice = old_replica.find_segment(0).expect("some");
+        match slice {
+            SegmentSlice::MutableSegment(_) => panic!("should be immutable"),
+            SegmentSlice::Segment(old) => {
+                assert_eq!(old.get_base_offset(), 0);
+                assert_eq!(old.get_end_offset(), 4);
+            }
+        }
     }
 }
