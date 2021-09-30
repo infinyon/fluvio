@@ -18,17 +18,17 @@ use crate::util::log_path_get_offset;
 
 #[derive(Debug)]
 pub(crate) struct SegmentList {
-    segments: BTreeMap<Offset, ReadSegment>,
-    max_base_offset: Offset, // maximum number of offset for all segments
-    min_base_offset: Offset,
+    segments: BTreeMap<Offset, ReadSegment>, // max base offset of all segments
+    min_offset: Offset,
+    max_offset: Offset,
 }
 
 impl SegmentList {
     pub fn new() -> Self {
         SegmentList {
             segments: BTreeMap::new(),
-            max_base_offset: 0,
-            min_base_offset: -1,
+            max_offset: 0,
+            min_offset: -1,
         }
     }
 
@@ -85,23 +85,17 @@ impl SegmentList {
         self.segments.len()
     }
 
-    #[allow(dead_code)]
-    pub fn max_offset(&self) -> Offset {
-        self.max_base_offset
-    }
-
     pub fn min_offset(&self) -> Offset {
-        self.min_base_offset
+        self.min_offset
     }
 
     pub fn add_segment(&mut self, segment: ReadSegment) {
-        let base_offset = segment.get_base_offset();
         debug!(base_offset = segment.get_base_offset(),end_offset = segment.get_end_offset(),"inserting");
-        self.max_base_offset = max(self.max_base_offset, base_offset);
-        self.min_base_offset = if self.min_base_offset < 0 {
-            base_offset
+        self.max_offset = max(self.max_offset, segment.get_end_offset());
+        self.min_offset = if self.min_offset < 0 {
+            segment.get_base_offset()
         } else {
-            min(self.min_base_offset, base_offset)
+            min(self.min_offset, segment.get_base_offset())
         };
         self.segments.insert(segment.get_base_offset(), segment);
     }
@@ -113,7 +107,8 @@ impl SegmentList {
 
     pub fn find_segment(&self, offset: Offset) -> Option<(&Offset, &ReadSegment)> {
         (&self.segments)
-            .range((Excluded(offset - self.max_base_offset), Included(offset)))
+         //   .range((Included(offset), Included(offset)))
+            .range((Included(offset - self.max_offset  + self.min_offset + 1), Included(offset)))
             .next_back()
     }
 }
@@ -134,16 +129,15 @@ mod tests {
     use crate::segment::ReadSegment;
     use crate::config::ConfigOption;
 
-    const TEST_SEGMENT_DIR: &str = "segmentlist-test";
-
+    // create fake segment, this doesn't create a segment with all data, it just fill with a min data but with a valid end offset
     async fn create_segment(
         option: &ConfigOption,
         start: Offset,
-        _offsets: Offset,
+        end_offset: Offset,
     ) -> Result<ReadSegment, StorageError> {
         let mut mut_segment = MutableSegment::create(start, option).await?;
         mut_segment.write_batch(&mut create_batch()).await?;
-        //        mut_segment.set_end_offset(offsets);
+        mut_segment.set_end_offset(end_offset);        // only used for testing
         let segment = mut_segment.convert_to_segment().await?;
         Ok(segment)
     }
@@ -160,7 +154,7 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_segment_empty() {
-        let rep_dir = temp_dir().join(TEST_EMPTY_DIR);
+        let rep_dir = temp_dir().join("segmentlist-read-empty");
         ensure_new_dir(&rep_dir).expect("new");
         let option = default_option(rep_dir);
 
@@ -171,8 +165,8 @@ mod tests {
     }
 
     #[fluvio_future::test]
-    async fn test_segment_single() {
-        let rep_dir = temp_dir().join(TEST_SEGMENT_DIR);
+    async fn test_segment_single_base_zero() {
+        let rep_dir = temp_dir().join("segmentlist-single-zero");
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
@@ -181,14 +175,37 @@ mod tests {
         list.add_segment(create_segment(&option, 0, 500).await.expect("create"));
         println!("segments: {:#?}", list);
 
+        assert!(list.find_segment(-1).is_none());
         assert!(list.find_segment(0).is_some());
+        assert!(list.find_segment(1).is_some());
+        assert!(list.find_segment(499).is_some());
+        assert!(list.find_segment(500).is_none());
+        assert!(list.find_segment(501).is_none());
+    }
 
+    #[fluvio_future::test]
+    async fn test_segment_single_base_some() {
+        let rep_dir = temp_dir().join("segmentlist-single-some");
+        ensure_new_dir(&rep_dir).expect("new");
+        let mut list = SegmentList::new();
+
+        let option = default_option(rep_dir);
+
+        list.add_segment(create_segment(&option, 100, 500).await.expect("create"));
+        println!("segments: {:#?}", list);
+
+        assert!(list.find_segment(50).is_none());
+        assert!(list.find_segment(99).is_none());
+        assert!(list.find_segment(100).is_some());
+        assert!(list.find_segment(499).is_some());
+        assert!(list.find_segment(500).is_none());
     }
 
 
+
     #[fluvio_future::test]
-    async fn test_segmen_many_simple() {
-        let rep_dir = temp_dir().join(TEST_SEGMENT_DIR);
+    async fn test_segment_many_zero() {
+        let rep_dir = temp_dir().join("segmentlist-many-zero");
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
@@ -196,17 +213,18 @@ mod tests {
 
         list.add_segment(create_segment(&option, 0, 500).await.expect("create"));
         list.add_segment(create_segment(&option, 500, 2000).await.expect("create"));
-        list.add_segment(create_segment(&option, 2000, 1000).await.expect("create"));
-        list.add_segment(create_segment(&option, 3000, 2000).await.expect("create"));
-
-        let index = list.find_segment(1500);
-
-        assert!(index.is_some());
-        let (pos, _) = index.unwrap();
-        assert_eq!(*pos, 500);
+        list.add_segment(create_segment(&option, 2000, 3000).await.expect("create"));
+        list.add_segment(create_segment(&option, 3000, 4000).await.expect("create"));
 
         println!("segments: {:#?}", list);
-        assert!(list.find_segment(0).is_some());
+
+        assert_eq!(list.find_segment(0).expect("segment").0,&0);
+        assert_eq!(list.find_segment(1).expect("segment").0,&0);
+        assert_eq!(list.find_segment(499).expect("segment").0,&0);
+        assert_eq!(list.find_segment(500).expect("segment").0,&500);
+        assert_eq!(list.find_segment(1500).expect("segment").0,&500); // belong to 2nd segment
+        assert_eq!(list.find_segment(3000).expect("segment").0,&3000);
+        assert!(list.find_segment(4000).is_none());
     }
 
     const TEST_READ_DIR: &str = "segmentlist-read-many";
@@ -225,7 +243,6 @@ mod tests {
         let (segments, last_offset_res) = SegmentList::from_dir(&option).await.expect("from");
 
         assert_eq!(segments.len(), 3); // 0,500,2000
-        assert_eq!(segments.max_offset(), 2000);
         assert_eq!(segments.min_offset(), 10);
         let segment1 = segments.get_segment(10).expect("should have segment at 0 ");
         assert_eq!(segment1.get_base_offset(), 10);
@@ -236,8 +253,5 @@ mod tests {
             .expect("should have segment at 500");
         assert_eq!(segment2.get_base_offset(), 500);
     }
-
-    const TEST_EMPTY_DIR: &str = "segmentlist-read-empty";
-
     
 }

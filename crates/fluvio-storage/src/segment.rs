@@ -77,7 +77,7 @@ impl<I, L> Segment<I, L> {
         self.end_offset
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     /// set end offset, this is used by test
     pub(crate) fn set_end_offset(&mut self, offset: Offset) {
         self.end_offset = offset;
