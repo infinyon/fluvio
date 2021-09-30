@@ -15,4 +15,5 @@ pub async fn producer(test_driver: SharedTestDriver, option: MultiplePartitionTe
         let record = i.to_string();
         producer.send(RecordKey::NULL, record).await.unwrap();
     }
+    producer.flush().await.unwrap();
 }
