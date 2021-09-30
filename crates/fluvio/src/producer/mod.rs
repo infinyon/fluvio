@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time::Duration;
 use tracing::{debug, instrument};
 
@@ -126,7 +126,7 @@ pub(crate) struct ProducerInner {
     // we have to "subscribe" to a sender to get it
     pub(crate) _status_sender: tokio::sync::broadcast::Sender<BatchStatus>,
     /// Used by the producer to return batch statuses to the caller.
-    pub(crate) status_receiver: Mutex<tokio::sync::broadcast::Receiver<BatchStatus>>,
+    pub(crate) status_receiver: async_lock::Mutex<tokio::sync::broadcast::Receiver<BatchStatus>>,
 }
 
 impl Drop for ProducerInner {
@@ -154,7 +154,7 @@ impl TopicProducer {
             dispatcher_shutdown,
             uid_generator: RecordUidGenerator::new(),
             _status_sender: status_sender,
-            status_receiver: Mutex::new(status_receiver),
+            status_receiver: async_lock::Mutex::new(status_receiver),
         });
 
         Self {
@@ -199,7 +199,7 @@ impl TopicProducer {
 
         {
             // Check if there have been any failures
-            let mut receiver = self.inner.status_receiver.lock().expect("Mutex poisoned");
+            let mut receiver = self.inner.status_receiver.lock().await;
             while let Ok(status) = (*receiver).try_recv() {
                 match status {
                     BatchStatus::Failure(failed) => {
@@ -307,7 +307,7 @@ impl TopicProducer {
 
         // If any batches come back with failed status, return Err
         {
-            let mut receiver = self.inner.status_receiver.lock().expect("Mutex poisoned");
+            let mut receiver = self.inner.status_receiver.lock().await;
             while let Ok(status) = (*receiver).try_recv() {
                 if let BatchStatus::Failure(failed) = status {
                     return Err(ProducerError::BatchFailed(failed).into());

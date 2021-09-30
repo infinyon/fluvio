@@ -224,8 +224,7 @@ impl PartitionProducer {
         // If this record is too large for the buffer, return it to the producer.
         if !self.buffer.could_fit(&record) {
             respond_to_caller
-                .send_async(ProducerMsg::RecordTooLarge(record, self.config.batch_size))
-                .await
+                .send(ProducerMsg::RecordTooLarge(record, self.config.batch_size))
                 .map_err(|_| FluvioError::Other("failed to return oversized record".to_string()))?;
             return Ok(());
         }
