@@ -804,11 +804,11 @@ mod tests {
 
         // this will create  1 segment
         new_replica
-            .write_batch(&mut producer.new_batch())
+            .write_batch(&mut producer.generate_batch())
             .await
             .expect("write");
         new_replica
-            .write_batch(&mut producer.new_batch())
+            .write_batch(&mut producer.generate_batch())
             .await
             .expect("write");
         assert_eq!(new_replica.prev_segments.len(), 0);
@@ -817,7 +817,7 @@ mod tests {
 
         // overflow, will create 2nd segment
         new_replica
-            .write_batch(&mut producer.new_batch())
+            .write_batch(&mut producer.generate_batch())
             .await
             .expect("write");
         assert_eq!(new_replica.prev_segments.len(), 1);
