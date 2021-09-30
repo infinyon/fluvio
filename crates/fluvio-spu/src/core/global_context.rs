@@ -230,13 +230,17 @@ mod file_replica {
                                 outputs.push(ReplicaChange::StorageError(err));
                             }
                         } else {
-                            // gotta be follower
-                            if let Err(err) = self
-                                .followers_state_owned()
-                                .add_replica(self, new_replica)
-                                .await
-                            {
-                                outputs.push(ReplicaChange::StorageError(err));
+                            // add follower if we are in follower list
+                            if new_replica.replicas.contains(&local_id) {
+                                if let Err(err) = self
+                                    .followers_state_owned()
+                                    .add_replica(self, new_replica)
+                                    .await
+                                {
+                                    outputs.push(ReplicaChange::StorageError(err));
+                                }
+                            } else {
+                                debug!(replica = %new_replica.id, "not application to this spu, ignoring");
                             }
                         }
                     }

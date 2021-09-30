@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use futures_util::stream::Stream;
+use futures_util::stream::{Stream, select_all};
 use tracing::{debug, error, trace, instrument};
 use once_cell::sync::Lazy;
-use futures_util::future::{Either, err};
+use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
@@ -303,14 +303,16 @@ impl PartitionConsumer {
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
         let stream = self.stream_batches_with_config(offset, config).await?;
+        let partition = self.partition;
         let flattened =
-            stream.flat_map(|result: Result<Batch, _>| match result {
+            stream.flat_map(move |result: Result<Batch, _>| match result {
                 Err(e) => Either::Right(once(err(e))),
                 Ok(batch) => {
                     let base_offset = batch.base_offset;
                     let records = batch.own_records().into_iter().enumerate().map(
                         move |(relative, record)| {
                             Ok(Record {
+                                partition,
                                 offset: base_offset + relative as i64,
                                 record,
                             })
@@ -667,7 +669,7 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
 });
 
 /// Configures the behavior of consumer fetching and streaming
-#[derive(Debug, Builder)]
+#[derive(Debug, Builder, Clone)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ConsumerConfig {
     #[builder(default)]
@@ -728,10 +730,159 @@ impl ConsumerConfigBuilder {
     }
 }
 
+/// Strategy used to select which partitions and from which topics should be streamed by the [`MultiplePartitionConsumer`]
+pub enum PartitionSelectionStrategy {
+    /// Consume from all the partitions of a given topic
+    All(String),
+    /// Consume from a given list of topics and partitions
+    Multiple(Vec<(String, i32)>),
+}
+
+impl PartitionSelectionStrategy {
+    async fn selection(&self, spu_pool: Arc<SpuPool>) -> Result<Vec<(String, i32)>, FluvioError> {
+        let pairs = match self {
+            PartitionSelectionStrategy::All(topic) => {
+                let topics = spu_pool.metadata.topics();
+                let topic_spec = topics
+                    .lookup_by_key(topic)
+                    .await?
+                    .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
+                    .spec;
+                let partition_count = topic_spec.partitions();
+                (0..partition_count)
+                    .map(|partition| (topic.clone(), partition))
+                    .collect::<Vec<_>>()
+            }
+            PartitionSelectionStrategy::Multiple(topic_partition) => topic_partition.to_owned(),
+        };
+        Ok(pairs)
+    }
+}
+pub struct MultiplePartitionConsumer {
+    strategy: PartitionSelectionStrategy,
+    pool: Arc<SpuPool>,
+}
+
+impl MultiplePartitionConsumer {
+    pub(crate) fn new(strategy: PartitionSelectionStrategy, pool: Arc<SpuPool>) -> Self {
+        Self { strategy, pool }
+    }
+
+    /// Continuously streams events from a particular offset in the selected partitions
+    ///
+    /// Streaming is one of the two ways to consume events in Fluvio.
+    /// It is a continuous request for new records arriving in the selected partitions,
+    /// beginning at a particular offset. You specify the starting point of the
+    /// stream using an [`Offset`] and periodically receive events, either individually
+    /// or in batches.
+    ///
+    /// If you want more fine-grained control over how records are streamed,
+    /// check out the [`stream_with_config`] method.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::{MultiplePartitionConsumer, FluvioError};
+    /// # use fluvio::{Offset, ConsumerConfig};
+    /// # mod futures {
+    /// #     pub use futures_util::stream::StreamExt;
+    /// # }
+    /// # async fn example(consumer: &MultiplePartitionConsumer) -> Result<(), FluvioError> {
+    /// use futures::StreamExt;
+    /// let mut stream = consumer.stream(Offset::beginning()).await?;
+    /// while let Some(Ok(record)) = stream.next().await {
+    ///     let key = record.key().map(|key| String::from_utf8_lossy(key).to_string());
+    ///     let value = String::from_utf8_lossy(record.value()).to_string();
+    ///     println!("Got event: key={:?}, value={}", key, value);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`Offset`]: struct.Offset.html
+    /// [`ConsumerConfig`]: struct.ConsumerConfig.html
+    /// [`stream_with_config`]: struct.ConsumerConfig.html#method.stream_with_config
+    #[instrument(skip(self, offset))]
+    pub async fn stream(
+        &self,
+        offset: Offset,
+    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
+        let config = ConsumerConfig::builder().build()?;
+        let stream = self.stream_with_config(offset, config).await?;
+
+        Ok(stream)
+    }
+
+    /// Continuously streams events from a particular offset in the selected partitions
+    ///
+    /// Most of the time, you shouldn't need to use a custom [`ConsumerConfig`].
+    /// If you don't know what these settings do, try checking out the simpler
+    /// [`stream`] method that uses the default streaming settings.
+    ///
+    /// Streaming is one of the two ways to consume events in Fluvio.
+    /// It is a continuous request for new records arriving in the selected partitions,
+    /// beginning at a particular offset. You specify the starting point of the
+    /// stream using an [`Offset`] and a [`ConsumerConfig`], and periodically
+    /// receive events, either individually or in batches.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::{MultiplePartitionConsumer, FluvioError};
+    /// # use fluvio::{Offset, ConsumerConfig};
+    /// # mod futures {
+    /// #     pub use futures_util::stream::StreamExt;
+    /// # }
+    /// # async fn example(consumer: &MultiplePartitionConsumer) -> Result<(), FluvioError> {
+    /// use futures::StreamExt;
+    /// // Use a custom max_bytes value in the config
+    /// let fetch_config = ConsumerConfig::builder()
+    ///     .max_bytes(1000)
+    ///     .build()?;
+    /// let mut stream = consumer.stream_with_config(Offset::beginning(), fetch_config).await?;
+    /// while let Some(Ok(record)) = stream.next().await {
+    ///     let key: Option<String> = record.key().map(|key| String::from_utf8_lossy(key).to_string());
+    ///     let value = String::from_utf8_lossy(record.value());
+    ///     println!("Got record: key={:?}, value={}", key, value);
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`Offset`]: struct.Offset.html
+    /// [`ConsumerConfig`]: struct.ConsumerConfig.html
+    #[instrument(skip(self, offset, config))]
+    pub async fn stream_with_config(
+        &self,
+        offset: Offset,
+        config: ConsumerConfig,
+    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
+        let consumers = self
+            .strategy
+            .selection(self.pool.clone())
+            .await?
+            .into_iter()
+            .map(|(topic, partition)| PartitionConsumer::new(topic, partition, self.pool.clone()))
+            .collect::<Vec<_>>();
+
+        let streams_future = consumers
+            .iter()
+            .map(|consumer| consumer.stream_with_config(offset.clone(), config.clone()));
+
+        let streams_result = join_all(streams_future).await;
+
+        let streams = streams_result.into_iter().collect::<Result<Vec<_>, _>>()?;
+
+        Ok(select_all(streams))
+    }
+}
+
 /// The individual record for a given stream.
 pub struct Record {
     /// The offset of this Record into its partition
     offset: i64,
+    /// The partition where this Record is stored
+    partition: i32,
     /// The Record contents
     record: DefaultRecord,
 }
@@ -740,6 +891,11 @@ impl Record {
     /// The offset from the initial offset for a given stream.
     pub fn offset(&self) -> i64 {
         self.offset
+    }
+
+    /// The partition where this Record is stored.
+    pub fn partition(&self) -> i32 {
+        self.partition
     }
 
     /// Returns the contents of this Record's key, if it exists

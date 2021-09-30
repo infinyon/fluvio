@@ -224,7 +224,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, integration]
+        check: [fmt, clippy, doc, test, integration, crate_version]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -257,6 +257,11 @@ jobs:
       - name: Integration test
         if: ${{ matrix.check == 'integration' }}
         run: make run-integration-test
+      - name: Crate version check
+        if: ${{ matrix.check == 'crate_version' }}
+        run: |
+          cargo install cargo-download
+          ./release-scripts/test-crate-version.sh
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
@@ -325,7 +330,7 @@ jobs:
         run: cargo test --manifest-path ./crates/${{ matrix.crate }}/Cargo.toml
 
   local_cluster_test:
-    name: Local cluster test run (${{ matrix.run }})
+    name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
     runs-on: ${{ matrix.os }}
     needs:
       - build_primary_binaries
@@ -335,7 +340,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         run: [r1]
-        test: [smoke,election]
+        test: [smoke,election,multiple-partition]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
@@ -374,11 +379,18 @@ jobs:
       #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
       - name: Run election-test
         if: ${{ matrix.test == 'election' }}
-        timeout-minutes: 2
+        timeout-minutes: 3
         run: |
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster election-test
-          echo "election test  done"
+          echo "election test done"
+      - name: Run multiple-partition-test
+        if: ${{ matrix.test == 'multiple-partition' }}
+        timeout-minutes: 2
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster multiple-partition-test
+          echo "multiple partition test done"
       - name: Save logs
         if: failure()
         run: |

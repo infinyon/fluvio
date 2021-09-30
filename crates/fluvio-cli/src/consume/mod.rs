@@ -10,12 +10,11 @@ use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
-
 mod record_format;
 
-use fluvio::{Fluvio, PartitionConsumer, Offset, ConsumerConfig, FluvioError};
+use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
-use fluvio::consumer::Record;
+use fluvio::consumer::{PartitionSelectionStrategy, Record};
 
 use crate::Result;
 use crate::common::FluvioExtensionMetadata;
@@ -42,6 +41,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "p", long, default_value = "0", value_name = "integer")]
     pub partition: i32,
 
+    /// Consume records from all partitions
+    #[structopt(short = "A", long = "all-partitions", conflicts_with_all = &["partition"])]
+    pub all_partitions: bool,
+
     /// disable continuous processing of messages
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
@@ -53,7 +56,7 @@ pub struct ConsumeOpt {
     /// Provide a template string to print records with a custom format.
     /// See --help for details.
     ///
-    /// Template strings may include the variables {{key}}, {{value}}, and {{offset}}
+    /// Template strings may include the variables {{key}}, {{value}}, {{offset}} and {{partition}}
     /// which will have each record's contents substituted in their place.
     /// For example, the following template string:
     ///
@@ -119,10 +122,21 @@ impl ConsumeOpt {
         fields(topic = %self.topic, partition = self.partition),
     )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        let consumer = fluvio
-            .partition_consumer(&self.topic, self.partition)
-            .await?;
-        self.consume_records(consumer).await?;
+        if self.all_partitions {
+            let consumer = fluvio
+                .consumer(PartitionSelectionStrategy::All(self.topic.clone()))
+                .await?;
+            self.consume_records(consumer).await?;
+        } else {
+            let consumer = fluvio
+                .consumer(PartitionSelectionStrategy::Multiple(vec![(
+                    self.topic.clone(),
+                    self.partition,
+                )]))
+                .await?;
+            self.consume_records(consumer).await?;
+        };
+
         Ok(())
     }
 
@@ -135,7 +149,7 @@ impl ConsumeOpt {
         }
     }
 
-    pub async fn consume_records(&self, consumer: PartitionConsumer) -> Result<()> {
+    pub async fn consume_records(&self, consumer: MultiplePartitionConsumer) -> Result<()> {
         trace!(config = ?self, "Starting consumer:");
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
@@ -179,7 +193,7 @@ impl ConsumeOpt {
         }
 
         let consume_config = builder.build()?;
-        self.consume_records_stream(&consumer, offset, consume_config)
+        self.consume_records_stream(consumer, offset, consume_config)
             .await?;
 
         if !self.disable_continuous {
@@ -192,7 +206,7 @@ impl ConsumeOpt {
     /// Consume records as a stream, waiting for new records to arrive
     async fn consume_records_stream(
         &self,
-        consumer: &PartitionConsumer,
+        consumer: MultiplePartitionConsumer,
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<()> {
@@ -251,6 +265,7 @@ impl ConsumeOpt {
                     "key": formatted_key,
                     "value": value,
                     "offset": record.offset(),
+                    "partition": record.partition(),
                 });
                 templates.render(USER_TEMPLATE, &object).ok()
             }

@@ -2,8 +2,7 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
 
-use tracing::debug;
-use tracing::trace;
+use tracing::{debug, trace, instrument};
 
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
@@ -65,7 +64,7 @@ impl<I, L> fmt::Debug for Segment<I, L> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Segment {{base: {}, current: {} }}",
+            "Segment(base={},end={})",
             self.get_base_offset(),
             self.get_end_offset()
         )
@@ -78,7 +77,7 @@ impl<I, L> Segment<I, L> {
         self.end_offset
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     /// set end offset, this is used by test
     pub(crate) fn set_end_offset(&mut self, offset: Offset) {
         self.end_offset = offset;
@@ -209,21 +208,45 @@ where
 }
 
 impl Segment<LogIndex, FileRecordsSlice> {
+    /// open read only segments if base and end offset are known
     pub async fn open_for_read(
         base_offset: Offset,
+        end_offset: Offset,
         option: &ConfigOption,
     ) -> Result<Self, StorageError> {
+        debug!(base_offset, end_offset, ?option, "open for read");
         let msg_log = FileRecordsSlice::open(base_offset, option).await?;
         let base_offset = msg_log.get_base_offset();
+        debug!(base_offset, end_offset, "offset from msg log");
         let index = LogIndex::open_from_offset(base_offset, option).await?;
 
-        let base_offset = msg_log.get_base_offset();
         Ok(Segment {
             msg_log,
             index,
             option: option.to_owned(),
             base_offset,
-            end_offset: base_offset,
+            end_offset,
+        })
+    }
+
+    /// open read only segments if we don't know end offset
+    #[instrument(skip(option),fields(base_dir=?option.base_dir))]
+    pub async fn open_unknown(
+        base_offset: Offset,
+        option: &ConfigOption,
+    ) -> Result<Self, StorageError> {
+        let msg_log = FileRecordsSlice::open(base_offset, option).await?;
+        let base_offset = msg_log.get_base_offset();
+        let end_offset = msg_log.validate().await?;
+        debug!(end_offset, base_offset, "base offset from msg_log");
+        let index = LogIndex::open_from_offset(base_offset, option).await?;
+
+        Ok(Segment {
+            msg_log,
+            index,
+            option: option.to_owned(),
+            base_offset,
+            end_offset,
         })
     }
 
@@ -237,11 +260,12 @@ impl Unpin for Segment<MutLogIndex, MutFileRecords> {}
 /// Implementation for Active segment
 impl Segment<MutLogIndex, MutFileRecords> {
     // create segment on base directory
+
     pub async fn create(
         base_offset: Offset,
         option: &ConfigOption,
     ) -> Result<MutableSegment, StorageError> {
-        debug!("creating new segment: offset: {}", base_offset);
+        debug!(base_offset, "creating new active segment");
         let msg_log = MutFileRecords::create(base_offset, option).await?;
 
         let index = MutLogIndex::create(base_offset, option).await?;
@@ -289,6 +313,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 
     // shrink index
+    #[cfg(test)]
     async fn shrink_index(&mut self) -> Result<(), IoError> {
         self.index.shrink().await
     }
@@ -301,20 +326,21 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// convert to immutable segment
     #[allow(clippy::wrong_self_convention)]
     pub async fn as_segment(self) -> Result<ReadSegment, StorageError> {
-        Segment::open_for_read(self.get_base_offset(), &self.option).await
+        Segment::open_for_read(self.get_base_offset(), self.end_offset, &self.option).await
     }
 
-    /// shrink and convert as immutable
-    #[allow(dead_code)]
+    /// use only in test
+    #[cfg(test)]
     pub async fn convert_to_segment(mut self) -> Result<ReadSegment, StorageError> {
         self.shrink_index().await?;
-        Segment::open_for_read(self.get_base_offset(), &self.option).await
+        Segment::open_for_read(self.get_base_offset(), self.end_offset, &self.option).await
     }
 
     pub fn to_segment_slice(&self) -> SegmentSlice {
         SegmentSlice::new_mut_segment(self)
     }
 
+    #[instrument(skip(item))]
     pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
@@ -342,7 +368,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
             let batch_len = self.msg_log.get_pos();
 
             self.index
-                .send((batch_offset_delta as u32, pos, batch_len))
+                .write_index((batch_offset_delta as u32, pos, batch_len))
                 .await?;
 
             let last_offset_delta = self.msg_log.get_item_last_offset_delta();

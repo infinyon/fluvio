@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
+use fluvio::consumer::PartitionSelectionStrategy;
 use tracing::debug;
 
 use fluvio::{Fluvio, FluvioError};
 
 use fluvio::metadata::topic::TopicSpec;
 //use hdrhistogram::Histogram;
-use fluvio::{TopicProducer, RecordKey, PartitionConsumer};
+use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
 //use futures_lite::stream::StreamExt;
 
 #[allow(unused_imports)]
@@ -93,6 +94,22 @@ impl TestDriver {
     pub async fn get_consumer(&self, topic: &str) -> PartitionConsumer {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client.partition_consumer(topic.to_string(), 0).await {
+            Ok(client) => {
+                //self.consumer_num += 1;
+                client
+            }
+            Err(err) => {
+                panic!("can't create consumer: {:#?}", err);
+            }
+        }
+    }
+
+    pub async fn get_all_partitions_consumer(&self, topic: &str) -> MultiplePartitionConsumer {
+        let fluvio_client = self.create_client().await.expect("cant' create client");
+        match fluvio_client
+            .consumer(PartitionSelectionStrategy::All(topic.to_string()))
+            .await
+        {
             Ok(client) => {
                 //self.consumer_num += 1;
                 client

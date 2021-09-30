@@ -1402,7 +1402,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.9.6"
+version = "0.9.7"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1612,7 +1612,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "bytes",
  "cfg-if 1.0.0",
@@ -1734,7 +1734,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-codec"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "bytes",
  "fluvio-future",

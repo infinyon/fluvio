@@ -241,10 +241,11 @@ where
     async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
         let storage_leo = self.leo();
         if records.base_offset() != storage_leo {
+            // this could happend if records were sent from leader before hw was sync
             warn!(
                 storage_leo,
                 incoming_base_offset = records.base_offset(),
-                "storage leo is not same as base offset"
+                "follower leo is not same as base offset, skipping write"
             );
             Ok(false)
         } else {
