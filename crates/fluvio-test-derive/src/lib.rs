@@ -78,13 +78,17 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
-        pub fn #out_fn_iden(mut test_driver: Arc<TestDriver>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #out_fn_iden(mut test_driver: TestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             //println!("Inside the function");
-            let future = async move {
+            //let future = async move {
                 //println!("Inside the async wrapper function");
-                #async_inner_fn_iden(test_driver, test_case).await
-            };
-            fluvio_future::task::run_block_on(future)
+
+
+                // try fork right here?
+
+                #async_inner_fn_iden(test_driver, test_case)
+            //};
+            //fluvio_future::task::run_block_on(future)
         }
 
         inventory::submit!{
@@ -97,7 +101,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         #[allow(clippy::unnecessary_operation)]
-        pub async fn ext_test_fn(mut test_driver: Arc<TestDriver>, test_case: TestCase) -> TestResult {
+        pub fn ext_test_fn(mut test_driver: TestDriver, test_case: TestCase) -> TestResult {
             use fluvio_test_util::test_meta::environment::EnvDetail;
             #test_body;
 
@@ -114,7 +118,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
-        pub async fn #async_inner_fn_iden(mut test_driver: Arc<TestDriver>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #async_inner_fn_iden(mut test_driver: TestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::TestCase;
             use fluvio_test_util::test_meta::test_result::TestResult;
@@ -130,6 +134,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use tokio::select;
             use std::panic::panic_any;
             use std::default::Default;
+            use fork::{fork, Fork};
+            use nix::sys::wait::waitpid;
+            use nix::unistd::Pid;
+            use std::thread;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
@@ -142,10 +150,38 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
-                // Create topic before starting test
-                test_driver.create_topic(&test_case.environment)
-                    .await
-                    .expect("Unable to create default topic");
+                let consumer_process = match fork() {
+                    Ok(Fork::Parent(child_pid)) => child_pid,
+                    Ok(Fork::Child) => {
+                        run_block_on(async {
+                            let mut test_driver_setup = test_driver.clone();
+                            // Connect test driver to cluster before starting test
+                            test_driver_setup.connect().await.expect("Unable to connect to cluster");
+
+                            // Create topic before starting test
+                            test_driver_setup.create_topic(&test_case.environment)
+                                .await
+                                .expect("Unable to create default topic");
+
+                            // Disconnect test driver to cluster before starting test
+                            test_driver_setup.disconnect();
+                        });
+
+                        exit(0);
+                    }
+                    Err(_) => panic!("Consumer fork failed"),
+                };
+
+                let consumer_wait = thread::spawn( move || {
+                    let pid = Pid::from_raw(consumer_process);
+                    match waitpid(pid, None) {
+                        Ok(status) => {
+                            println!("[main] Producer Child exited with status {:?}", status);
+                        }
+                        Err(err) => panic!("[main] waitpid() failed: {}", err),
+                    }
+                });
+                let _ = consumer_wait.join();
 
                 // start a timeout timer
                 let timeout_duration = test_case.environment.timeout();
@@ -155,37 +191,44 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 let mut test_timer = TestTimer::start();
                 let test_driver_clone = test_driver.clone();
 
-                select! {
-                    _ = &mut timeout_timer => {
-                        test_timer.stop();
-                        eprintln!("\nTest timed out ({:?})", timeout_duration);
-                        //let _ = std::panic::take_hook();
-                        Err(TestResult {
-                            success: false,
-                            duration: test_timer.duration(),
-                            ..Default::default()
-                        })
-                    },
+                // TODO: test timeout needs to be re-enabled
+                let result = ext_test_fn(test_driver_clone, test_case);
 
-                    // Change this to use the return value
-                    test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
-                        test_timer.stop();
+                Ok(result)
 
-                        // This is the final version of TestResult before it renders to stdout
-                        Ok(TestResult {
-                            success: true,
-                            duration: test_timer.duration(),
-                            topic_num: test_result_tmp.topic_num,
-                            topic_create_latency_histogram: test_result_tmp.topic_create_latency_histogram,
-                            producer_num: test_result_tmp.producer_num,
-                            producer_bytes: test_result_tmp.producer_bytes,
-                            producer_latency_histogram: test_result_tmp.producer_latency_histogram,
-                            consumer_num: test_result_tmp.consumer_num,
-                            consumer_bytes: test_result_tmp.consumer_bytes,
-                            consumer_latency_histogram: test_result_tmp.consumer_latency_histogram,
-                        })
-                    }
-                }
+                //run_block_on(async move {
+                //    select! {
+                //        _ = &mut timeout_timer => {
+                //            test_timer.stop();
+                //            eprintln!("\nTest timed out ({:?})", timeout_duration);
+                //            //let _ = std::panic::take_hook();
+                //            Err(TestResult {
+                //                success: false,
+                //                duration: test_timer.duration(),
+                //                ..Default::default()
+                //            })
+                //        },
+
+                //        // Change this to use the return value
+                //        test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
+                //            test_timer.stop();
+
+                //            // This is the final version of TestResult before it renders to stdout
+                //            Ok(TestResult {
+                //                success: true,
+                //                duration: test_timer.duration(),
+                //                topic_num: test_result_tmp.topic_num,
+                //                topic_create_latency_histogram: test_result_tmp.topic_create_latency_histogram,
+                //                producer_num: test_result_tmp.producer_num,
+                //                producer_bytes: test_result_tmp.producer_bytes,
+                //                producer_latency_histogram: test_result_tmp.producer_latency_histogram,
+                //                consumer_num: test_result_tmp.consumer_num,
+                //                consumer_bytes: test_result_tmp.consumer_bytes,
+                //                consumer_latency_histogram: test_result_tmp.consumer_latency_histogram,
+                //            })
+                //        }
+                //    }
+                //})
 
             } else {
                 println!("Test skipped...");

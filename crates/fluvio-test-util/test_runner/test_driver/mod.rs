@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use fluvio::consumer::PartitionSelectionStrategy;
 use tracing::debug;
 
@@ -18,12 +16,12 @@ use crate::test_meta::test_result::TestResult;
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 
-pub type SharedTestDriver = Arc<TestDriver>;
+pub type SharedTestDriver = TestDriver;
 
 //use fluvio::Offset;
 
 pub struct TestDriver {
-    pub client: Fluvio,
+    pub client: Option<Fluvio>,
     pub cluster: Option<TestCluster>, //pub topic_num: usize,
                                       //pub producer_num: usize,
                                       //pub consumer_num: usize,
@@ -34,9 +32,42 @@ pub struct TestDriver {
                                       //pub topic_create_latency_histogram: Histogram<u64>
 }
 
+//impl Copy for TestDriver {}
+
+impl Clone for TestDriver {
+    fn clone(&self) -> Self {
+        if let Some(cluster_opts) = self.cluster.as_ref() {
+            TestDriver::new(Some(cluster_opts.to_owned()))
+        } else {
+            TestDriver::new(None)
+        }
+    }
+}
+
 impl TestDriver {
+    pub fn new(cluster_opt: Option<TestCluster>) -> Self {
+        Self {
+            client: None,
+            cluster: cluster_opt,
+        }
+    }
+
+    pub async fn connect(&mut self) -> Result<(), FluvioError> {
+        let client = self.create_client().await?;
+
+        self.client = Some(client);
+
+        Ok(())
+    }
+
+    pub fn disconnect(&mut self) {
+        self.client = None;
+    }
+
     pub fn client(&self) -> &Fluvio {
-        &self.client
+        self.client
+            .as_ref()
+            .expect("Not connected to Fluvio cluster")
     }
 
     pub fn get_results(&self) -> TestResult {
@@ -171,7 +202,7 @@ impl TestDriver {
         let topic_name = option.topic_name();
         println!("Creating the topic: {}", &topic_name);
 
-        let admin = self.client.admin().await;
+        let admin = self.client().admin().await;
 
         let topic_spec =
             TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);

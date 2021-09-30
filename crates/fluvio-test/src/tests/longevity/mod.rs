@@ -2,13 +2,15 @@ pub mod producer;
 pub mod consumer;
 pub mod util;
 
+use core::panic;
 use std::any::Any;
 use std::num::ParseIntError;
-use std::sync::Arc;
 use std::time::Duration;
+use std::process::exit;
+use std::thread;
 use structopt::StructOpt;
 
-use fluvio_future::task::spawn;
+use fluvio_future::task::run_block_on;
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -17,7 +19,9 @@ use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 
-use futures::join;
+use fork::{fork, Fork};
+use nix::sys::wait::waitpid;
+use nix::unistd::Pid;
 
 #[derive(Debug, Clone)]
 pub struct LongevityTestCase {
@@ -80,28 +84,78 @@ impl TestOption for LongevityTestOption {
 }
 
 #[fluvio_test(topic = "longevity")]
-pub async fn longevity(
-    mut test_driver: Arc<FluvioTestDriver>,
-    mut test_case: TestCase,
-) -> TestResult {
-    test_longevity_consume_produce(test_driver.clone(), test_case.into()).await
-}
+pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
+    let option: LongevityTestCase = test_case.into();
 
-pub async fn test_longevity_consume_produce(
-    test_driver: Arc<TestDriver>,
-    option: LongevityTestCase,
-) {
     println!("Testing longevity consumer and producer");
 
     if !option.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
 
-    let consumer_join = spawn(consumer::consumer_stream(
-        test_driver.clone(),
-        option.clone(),
-    ));
-    let producer_join = producer::producer(test_driver, option);
+    let consumer_process = match fork() {
+        Ok(Fork::Parent(child_pid)) => child_pid,
+        Ok(Fork::Child) => {
+            run_block_on(async {
+                println!("Consumer about to connect");
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                println!("About to start consumer test");
+                consumer::consumer_stream(test_driver.clone(), option.clone()).await
+            });
 
-    join!(consumer_join, producer_join);
+            exit(0);
+        }
+        Err(_) => panic!("Consumer fork failed"),
+    };
+
+    //let consumer_join = spawn(consumer::consumer_stream(
+    //    test_driver.clone(),
+    //    option.clone(),
+    //));
+    let consumer_wait = thread::spawn(move || {
+        let pid = Pid::from_raw(consumer_process);
+        match waitpid(pid, None) {
+            Ok(status) => {
+                println!("[main] Producer Child exited with status {:?}", status);
+            }
+            Err(err) => panic!("[main] waitpid() failed: {}", err),
+        }
+    });
+
+    let producer_process = match fork() {
+        Ok(Fork::Parent(child_pid)) => child_pid,
+        Ok(Fork::Child) => {
+            run_block_on(async {
+                println!("Producer about to connect");
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                println!("About to start producer test");
+                producer::producer(test_driver, option).await
+            });
+
+            exit(0);
+        }
+        Err(_) => panic!("Producer fork failed"),
+    };
+
+    let producer_wait = thread::spawn(move || {
+        let pid = Pid::from_raw(producer_process);
+        match waitpid(pid, None) {
+            Ok(status) => {
+                println!("[main] Producer Child exited with status {:?}", status);
+            }
+            Err(err) => panic!("[main] waitpid() failed: {}", err),
+        }
+    });
+
+    //let producer_join = producer::producer(test_driver, option);
+
+    let _ = producer_wait.join();
+    let _ = consumer_wait.join();
+    //join!(consumer_wait, producer_wait);
 }

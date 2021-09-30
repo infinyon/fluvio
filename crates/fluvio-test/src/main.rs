@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use std::process::exit;
 use structopt::StructOpt;
 use fluvio::Fluvio;
@@ -13,87 +12,85 @@ use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
 //use hdrhistogram::Histogram;
 
+use std::thread;
+use fork::{fork, Fork};
+use nix::sys::wait::waitpid;
+use nix::unistd::Pid;
+
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
 
 fn main() {
-    run_block_on(async {
-        let option = BaseCli::from_args();
-        //println!("{:?}", option);
+    let option = BaseCli::from_args();
+    //println!("{:?}", option);
 
-        let test_name = option.environment.test_name.clone();
+    let test_name = option.environment.test_name.clone();
 
-        // Get test from inventory
-        let test_meta =
-            FluvioTestMeta::from_name(&test_name).expect("StructOpt should have caught this error");
+    // Get test from inventory
+    let test_meta =
+        FluvioTestMeta::from_name(&test_name).expect("StructOpt should have caught this error");
 
-        let mut subcommand = vec![test_name.clone()];
+    let mut subcommand = vec![test_name.clone()];
 
-        // We want to get a TestOption compatible struct back
-        let test_opt: Box<dyn TestOption> = if let Some(TestCli::Args(args)) = option.test_cmd_args
-        {
-            // Add the args to the subcommand
-            subcommand.extend(args);
+    // We want to get a TestOption compatible struct back
+    let test_opt: Box<dyn TestOption> = if let Some(TestCli::Args(args)) = option.test_cmd_args {
+        // Add the args to the subcommand
+        subcommand.extend(args);
 
-            // Parse the subcommand
-            (test_meta.validate_fn)(subcommand)
-        } else {
-            // No args
-            (test_meta.validate_fn)(subcommand)
+        // Parse the subcommand
+        (test_meta.validate_fn)(subcommand)
+    } else {
+        // No args
+        (test_meta.validate_fn)(subcommand)
+    };
+
+    println!("Start running fluvio test runner");
+    //fluvio_future::subscriber::init_logger();
+
+    // Test connecting to a cluster
+    // Deploy a cluster if requested
+    cluster_setup(&option.environment).expect("Failed to connect to a cluster");
+
+    // Check on test requirements before running the test
+    if !TestDriver::is_env_acceptable(
+        &(test_meta.requirements)(),
+        &TestCase::new(option.environment.clone(), test_opt.clone()),
+    ) {
+        exit(-1);
+    }
+
+    let _panic_timer = TestTimer::start();
+    /*
+    std::panic::set_hook(Box::new(move |panic_info| {
+        let mut panic_timer = panic_timer.clone();
+        panic_timer.stop();
+
+        let test_result = TestResult {
+            success: false,
+            duration: panic_timer.duration(),
+            ..Default::default()
         };
+        //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
+        eprintln!("Test panicked: {:#?}",panic_info);
+        eprintln!("{}", test_result);
+    }));
+    */
 
-        println!("Start running fluvio test runner");
-        fluvio_future::subscriber::init_logger();
+    let test_result = run_test(option.environment.clone(), test_opt, test_meta);
+    cluster_cleanup(option.environment);
 
-        // Can I get a FluvioConfig anywhere
-        // Deploy a cluster
-        let fluvio_client = cluster_setup(&option.environment).await;
-
-        // Check on test requirements before running the test
-        if !TestDriver::is_env_acceptable(
-            &(test_meta.requirements)(),
-            &TestCase::new(option.environment.clone(), test_opt.clone()),
-        ) {
-            exit(-1);
-        }
-
-        let _panic_timer = TestTimer::start();
-        /*
-        std::panic::set_hook(Box::new(move |panic_info| {
-            let mut panic_timer = panic_timer.clone();
-            panic_timer.stop();
-
-            let test_result = TestResult {
-                success: false,
-                duration: panic_timer.duration(),
-                ..Default::default()
-            };
-            //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
-            eprintln!("Test panicked: {:#?}",panic_info);
-            eprintln!("{}", test_result);
-        }));
-        */
-
-        let test_result = run_test(
-            option.environment.clone(),
-            test_opt,
-            test_meta,
-            fluvio_client,
-        )
-        .await;
-        cluster_cleanup(option.environment).await;
-
-        println!("{}", test_result)
-    });
+    println!("{}", test_result)
 }
 
-async fn run_test(
+fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
-    test_driver: Arc<TestDriver>,
 ) -> TestResult {
+    let test_cluster_opts = TestCluster::new(environment.clone());
+    let test_driver = TestDriver::new(Some(test_cluster_opts));
+
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
         (test_meta.test_fn)(test_driver, test_case)
@@ -103,50 +100,92 @@ async fn run_test(
     test_result.expect("Test Result")
 }
 
-async fn cluster_cleanup(option: EnvironmentSetup) {
+fn cluster_cleanup(option: EnvironmentSetup) {
     if option.cluster_delete() {
         let mut setup = TestCluster::new(option.clone());
-        setup.remove_cluster().await;
+
+        let consumer_process = match fork() {
+            Ok(Fork::Parent(child_pid)) => child_pid,
+            Ok(Fork::Child) => {
+                run_block_on(async move {
+                    setup.remove_cluster().await;
+                });
+
+                exit(0);
+            }
+            Err(_) => panic!("Consumer fork failed"),
+        };
+
+        let consumer_wait = thread::spawn(move || {
+            let pid = Pid::from_raw(consumer_process);
+            match waitpid(pid, None) {
+                Ok(status) => {
+                    println!("[main] Producer Child exited with status {:?}", status);
+                }
+                Err(err) => panic!("[main] waitpid() failed: {}", err),
+            }
+        });
+        let _ = consumer_wait.join();
     }
 }
 
-async fn cluster_setup(option: &EnvironmentSetup) -> Arc<TestDriver> {
-    if option.remove_cluster_before() {
-        println!("Deleting existing cluster before starting test");
-        let mut setup = TestCluster::new(option.clone());
-        setup.remove_cluster().await;
-    }
+// FIXME: Need to confirm SPU options count match cluster. Offer self-correcting behavior
+fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
+    let consumer_process = match fork() {
+        Ok(Fork::Parent(child_pid)) => child_pid,
+        Ok(Fork::Child) => {
+            run_block_on(async {
+                if option.remove_cluster_before() {
+                    println!("Deleting existing cluster before starting test");
+                    let mut setup = TestCluster::new(option.clone());
+                    setup.remove_cluster().await;
+                }
 
-    let (cluster, fluvio_client) = if option.cluster_start() || option.remove_cluster_before() {
-        println!("Starting cluster");
-        let mut test_cluster = TestCluster::new(option.clone());
-        let fluvio = test_cluster
-            .start()
-            .await
-            .expect("Unable to connect to fresh test cluster");
-        (Some(test_cluster), fluvio)
-    } else {
-        println!("Connecting to Fluvio cluster in profile");
-        (
-            None,
-            Fluvio::connect()
-                .await
-                .expect("Unable to connect to Fluvio test cluster via profile"),
-        )
+                if option.cluster_start() || option.remove_cluster_before() {
+                    println!("Starting cluster and testing connection");
+                    let mut test_cluster = TestCluster::new(option.clone());
+
+                    test_cluster
+                        .start()
+                        .await
+                        .expect("Unable to connect to fresh test cluster");
+                } else {
+                    println!("Testing connection to Fluvio cluster in profile");
+                    Fluvio::connect()
+                        .await
+                        .expect("Unable to connect to Fluvio test cluster via profile");
+                }
+            });
+
+            exit(0);
+        }
+        Err(_) => panic!("Consumer fork failed"),
     };
 
-    Arc::new(TestDriver {
-        client: fluvio_client,
-        cluster
-        //topic_num: 0,
-        //producer_num: 0,
-        //consumer_num: 0,
-        //producer_bytes: 0,
-        //consumer_bytes: 0,
-        //producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        //consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-        //topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    })
+    let consumer_wait = thread::spawn(move || {
+        let pid = Pid::from_raw(consumer_process);
+        match waitpid(pid, None) {
+            Ok(status) => {
+                println!("[main] Producer Child exited with status {:?}", status);
+            }
+            Err(err) => panic!("[main] waitpid() failed: {}", err),
+        }
+    });
+    let _ = consumer_wait.join();
+
+    Ok(())
+    //Arc::new(TestDriver {
+    //    client: fluvio_client,
+    //    cluster
+    //    //topic_num: 0,
+    //    //producer_num: 0,
+    //    //consumer_num: 0,
+    //    //producer_bytes: 0,
+    //    //consumer_bytes: 0,
+    //    //producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+    //    //consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+    //    //topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
+    //})
 }
 
 #[cfg(test)]
