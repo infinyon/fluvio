@@ -1,47 +1,29 @@
-use std::{
-    collections::HashMap,
-    time::Duration,
-};
+use std::{collections::HashMap, time::Duration};
 
-use tracing::{
-    debug,
-    error,
-    trace,
-    instrument,
-};
+use tracing::{debug, error, trace, instrument};
 use k8_client::ClientError;
 use k8_types::{
-    LabelSelector,
-    TemplateSpec, TemplateMeta,
+    LabelSelector, TemplateSpec, TemplateMeta,
     core::pod::{
         PodSpec, ContainerSpec, VolumeMount, ConfigMapVolumeSource, KeyToPath, VolumeSpec,
     },
     LabelProvider,
 };
 
-use fluvio_future::{
-    task::spawn,
-    timer::sleep,
-};
+use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_stream_dispatcher::store::K8ChangeListener;
 
 use crate::stores::{
     StoreContext,
-    connector::{
-        ManagedConnectorSpec,
-        ManagedConnectorStatus,
-        ManagedConnectorStatusResolution,
-    },
+    connector::{ManagedConnectorSpec, ManagedConnectorStatus, ManagedConnectorStatusResolution},
     k8::K8MetaItem,
     MetadataStoreObject,
     actions::WSAction,
 };
 
 use crate::k8::objects::managed_connector_deployment::{
-    ManagedConnectorDeploymentSpec,
-    K8DeploymentSpec,
+    ManagedConnectorDeploymentSpec, K8DeploymentSpec,
 };
-
 
 /// Update Statefulset and Service from SPG
 pub struct ManagedConnectorDeploymentController {
@@ -127,9 +109,7 @@ impl ManagedConnectorDeploymentController {
                 Some(ready_replicas) if ready_replicas > 0 => {
                     ManagedConnectorStatusResolution::Running
                 }
-                _ => {
-                    ManagedConnectorStatusResolution::Failed
-                }
+                _ => ManagedConnectorStatusResolution::Failed,
             };
 
             let connector_status = ManagedConnectorStatus {

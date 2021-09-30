@@ -36,7 +36,7 @@ impl CreateManagedConnectorOpt {
         let admin = fluvio.admin().await;
         if config.create_topic {
             let topic_spec = TopicSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            println!("topic spec: {:?}", topic_spec);
+            debug!("topic spec: {:?}", topic_spec);
             admin.create(config.topic, false, topic_spec).await?;
         }
         admin.create(name.to_string(), false, spec).await?;
