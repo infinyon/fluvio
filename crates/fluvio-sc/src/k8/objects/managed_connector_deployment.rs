@@ -63,6 +63,8 @@ mod extended {
 
     use k8_types::K8Obj;
 
+    use tracing::trace;
+
     use crate::stores::k8::K8ConvertError;
     use crate::stores::k8::K8ExtendedSpec;
     use crate::stores::k8::K8MetaItem;
@@ -78,7 +80,14 @@ mod extended {
         fn convert_from_k8(
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
-            default_convert_from_k8(k8_obj)
+            if let Some(_) = k8_obj.metadata.owner_references.iter().find(|v| {
+                v.kind == "ManagedConnector"
+            })  {
+                trace!("converting k8 managed connector: {:#?}", k8_obj);
+                default_convert_from_k8(k8_obj)
+            } else {
+                Err(K8ConvertError::Skip(k8_obj))
+            }
         }
     }
 }
