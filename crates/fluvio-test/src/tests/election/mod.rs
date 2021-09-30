@@ -18,7 +18,7 @@ use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 
 // time to wait for ac
-const ACK_WAIT: u64 = 10;
+const ACK_WAIT: u64 = 20;
 
 #[derive(Debug, Clone)]
 pub struct ElectionTestCase {
