@@ -825,6 +825,5 @@ mod tests {
         assert_eq!(first_segment.get_base_offset(), 0);
         assert_eq!(first_segment.get_end_offset(), 4);
         assert!(replica.find_segment(0).is_some());
-        // assert!(!replica.find_segment(0).expect("some").is_active());
     }
 }

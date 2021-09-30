@@ -108,6 +108,7 @@ impl StreamFetchHandler {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[instrument(
         skip(ctx,replica,end_event,leader_state,header,msg,consumer_offset_listener),
         fields(
