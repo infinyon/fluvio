@@ -70,6 +70,8 @@ mod extended {
     use crate::stores::k8::K8MetaItem;
     use crate::stores::MetadataStoreObject;
     use crate::stores::k8::default_convert_from_k8;
+    use fluvio_controlplane_metadata::k8_types::Spec;
+    use fluvio_controlplane_metadata::connector::K8ManagedConnectorSpec;
 
     use super::*;
 
@@ -81,7 +83,7 @@ mod extended {
             k8_obj: K8Obj<Self::K8Spec>,
         ) -> Result<MetadataStoreObject<Self, K8MetaItem>, K8ConvertError<Self::K8Spec>> {
             if let Some(_) = k8_obj.metadata.owner_references.iter().find(|v| {
-                v.kind == "ManagedConnector"
+                v.kind == K8ManagedConnectorSpec::metadata().names.kind
             })  {
                 trace!("converting k8 managed connector: {:#?}", k8_obj);
                 default_convert_from_k8(k8_obj)
