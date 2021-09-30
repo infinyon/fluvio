@@ -3,8 +3,9 @@
 ## Platform Version 0.9.9 - UNRELEASED
 * Add `impl std::error::Error for ErrorCode` for better error reporting ([#1693](https://github.com/infinyon/fluvio/pull/1693))
 * Add ability to create a consumer that can read from multiple partitions concurrently.  ([#1568](https://github.com/infinyon/fluvio/issues/1568))
-* Expose partition for `fluvio consume --format`. ([#1701](https://github.com/infinyon/fluvio/issues/1701)) 
-* Fix consumer stream hanging after rollver ([#1700](https://github.com/infinyon/fluvio/issues/1700)) 
+* Expose partition for `fluvio consume --format`. ([#1701](https://github.com/infinyon/fluvio/issues/1701))
+* Fix consumer stream hanging after rollver ([#1700](https://github.com/infinyon/fluvio/issues/1700))
+* Added deployment controller for managed connectors ([#1499](https://github.com/infinyon/fluvio/pull/1499)).
 
 ## Platform Version 0.9.8 - 2021-09-23
 * Add progress indicator to `fluvio cluster start` ([#1627](https://github.com/infinyon/fluvio/pull/1627))
@@ -26,7 +27,7 @@
 * Increase platform stability ([#1497](https://github.com/infinyon/fluvio/pull/1497))
 * Spawn a thread to handle stream fetch requests ([#1522](https://github.com/infinyon/fluvio/issues/1522))
 
-## Platform Version 0.9.4 - 2021-08-26 
+## Platform Version 0.9.4 - 2021-08-26
 * Publish docker image for aarch64 #1389 ([#1389](https://github.com/infinyon/fluvio/pull/1389))
 * Do not panic when trying to create topic with space in the name. ([#1448](https://github.com/infinyon/fluvio/pull/1448))
 * Deprecate consumer fetch API ([#957](https://github.com/infinyon/fluvio/issues/957))
