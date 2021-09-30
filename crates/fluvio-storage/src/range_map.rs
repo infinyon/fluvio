@@ -70,7 +70,7 @@ impl SegmentList {
 
         for offset in offsets {
             // for now, set end offset same as base, this will be reset when validation occurs
-            match ReadSegment::open_for_read(offset, offset, option).await {
+            match ReadSegment::open_unknown(offset, option).await {
                 Ok(segment) => segments.add_segment(segment),
                 Err(err) => error!("error opening segment: {:#?}", err),
             }
@@ -134,15 +134,18 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
+    use tracing::debug;
+
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
 
-    use super::SegmentList;
     use crate::StorageError;
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
     use crate::config::ConfigOption;
+
+    use super::SegmentList;
 
     // create fake segment, this doesn't create a segment with all data, it just fill with a min data but with a valid end offset
     async fn create_segment(
@@ -268,18 +271,18 @@ mod tests {
         assert!(list.find_segment(10000).is_none());
     }
 
-    const TEST_READ_DIR: &str = "segmentlist-read-many";
-
     #[fluvio_future::test]
     async fn test_segment_many_load() {
-        let rep_dir = temp_dir().join(TEST_READ_DIR);
+        let rep_dir = temp_dir().join("segmentlist-many-load");
         ensure_new_dir(&rep_dir).expect("new");
         let option = default_option(rep_dir);
 
         create_segment(&option, 10, 500).await.expect("create");
-        create_segment(&option, 500, 2000).await.expect("create");
-        create_segment(&option, 2000, 1000).await.expect("create");
-        create_segment(&option, 3000, 2000).await.expect("create");
+        create_segment(&option, 20, 2000).await.expect("create");
+        create_segment(&option, 30, 1000).await.expect("create");
+        create_segment(&option, 40, 2000).await.expect("create");
+
+        debug!("reading segments...");
 
         let (segments, last_offset_res) = SegmentList::from_dir(&option).await.expect("from");
 

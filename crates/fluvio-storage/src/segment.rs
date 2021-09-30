@@ -214,11 +214,35 @@ impl Segment<LogIndex, FileRecordsSlice> {
         end_offset: Offset,
         option: &ConfigOption,
     ) -> Result<Self, StorageError> {
+        debug!(base_offset, end_offset, ?option, "open for read");
+        let mut msg_log = FileRecordsSlice::open(base_offset, option).await?;
+        let end_offset = msg_log.validate().await?;
+        let base_offset = msg_log.get_base_offset();
+        debug!(base_offset, end_offset = "offset from msg log");
+        let index = LogIndex::open_from_offset(base_offset, option).await?;
+        let base_offset = msg_log.get_base_offset();
+
+        Ok(Segment {
+            msg_log,
+            index,
+            option: option.to_owned(),
+            base_offset,
+            end_offset,
+        })
+    }
+
+    /// open read only segments if we don't know end offset
+    pub async fn open_unknown(
+        base_offset: Offset,
+        option: &ConfigOption,
+    ) -> Result<Self, StorageError> {
+        debug!(base_offset, ?option, "open for read");
         let msg_log = FileRecordsSlice::open(base_offset, option).await?;
         let base_offset = msg_log.get_base_offset();
         let index = LogIndex::open_from_offset(base_offset, option).await?;
-
         let base_offset = msg_log.get_base_offset();
+        debug!(base_offset, "base offset from msg_log");
+        let end_offset = 0;
         Ok(Segment {
             msg_log,
             index,

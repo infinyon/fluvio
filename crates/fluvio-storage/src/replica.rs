@@ -234,6 +234,7 @@ impl FileReplica {
     /// find the segment that contains offsets
     /// segment could be active segment which can be written
     /// or read only segment.
+    #[instrument(skip(self))]
     pub(crate) fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
         let active_base_offset = self.active_segment.get_base_offset();
         if offset >= active_base_offset {
@@ -241,6 +242,7 @@ impl FileReplica {
             Some(self.active_segment.to_segment_slice())
         } else {
             debug!(offset, active_base_offset, "not in segment");
+            debug!("segments: {:#?}", self.prev_segments);
             self.prev_segments
                 .find_segment(offset)
                 .map(|(_, segment)| segment.to_segment_slice())
