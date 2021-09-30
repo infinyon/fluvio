@@ -25,7 +25,7 @@ pub(crate) struct Dispatcher {
     /// A shutdown event used to determine when to quit.
     ///
     /// This will be triggered by the [`Producer`] that starts this dispatcher.
-    shutdown: StickyEvent,
+    shutdown: Arc<StickyEvent>,
 }
 
 enum Event {
@@ -40,7 +40,7 @@ impl Dispatcher {
         commands: Receiver<DispatcherMsg>,
         config: Arc<ProducerConfig>,
     ) -> Self {
-        let shutdown = StickyEvent::new();
+        let shutdown = StickyEvent::shared();
         let partition_pool = PartitionPool::new(spus, config.clone(), broadcast_status);
 
         Self {
@@ -52,7 +52,7 @@ impl Dispatcher {
     }
 
     /// Spawn this dispatcher as a task, returning a shutdown handle.
-    pub(crate) fn start(self) -> StickyEvent {
+    pub(crate) fn start(self) -> Arc<StickyEvent> {
         let shutdown = self.shutdown.clone();
         fluvio_future::task::spawn(self.run());
         shutdown
@@ -61,12 +61,13 @@ impl Dispatcher {
     /// Drive this dispatcher via an event loop that reacts to events.
     pub(crate) async fn run(mut self) {
         // Set up the event stream: Select between new records and timeouts
+        let shutdown = self.shutdown.clone();
         let mut events = {
             let timer = async_timer::interval(self.config.batch_duration).map(|_| Event::Timeout);
             let incoming = self.commands.take().unwrap();
             let records = incoming.into_stream().map(Event::Command);
             let select = futures_util::stream::select(timer, records);
-            select.take_until(self.shutdown.listen_pinned())
+            select.take_until(shutdown.listen_pinned())
         };
 
         while let Some(event) = events.next().await {

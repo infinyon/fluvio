@@ -118,7 +118,7 @@ pub(crate) struct ProducerInner {
     /// A channel for sending messages to the shared Producer Dispatcher.
     pub(crate) dispatcher: Sender<DispatcherMsg>,
     /// An event that can notify the Dispatcher to shutdown.
-    pub(crate) dispatcher_shutdown: StickyEvent,
+    pub(crate) dispatcher_shutdown: Arc<StickyEvent>,
     /// Generate monotonically-increasing `RecordUid`s.
     pub(crate) uid_generator: RecordUidGenerator,
     /// Used by the dispatcher to broadcast batch status notifications.
