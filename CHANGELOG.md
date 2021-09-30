@@ -4,6 +4,7 @@
 * Add `impl std::error::Error for ErrorCode` for better error reporting ([#1693](https://github.com/infinyon/fluvio/pull/1693))
 * Add ability to create a consumer that can read from multiple partitions concurrently.  ([#1568](https://github.com/infinyon/fluvio/issues/1568))
 * Expose partition for `fluvio consume --format`. ([#1701](https://github.com/infinyon/fluvio/issues/1701))
+* Fix consumer stream hanging after rollver ([#1700](https://github.com/infinyon/fluvio/issues/1700))
 * Added deployment controller for managed connectors ([#1499](https://github.com/infinyon/fluvio/pull/1499)).
 
 ## Platform Version 0.9.8 - 2021-09-23
