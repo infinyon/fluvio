@@ -52,10 +52,7 @@ impl TestOption for ElectionTestOption {
 }
 
 #[fluvio_test(topic = "test")]
-pub fn election(
-    mut test_driver: Arc<FluvioTestDriver>,
-    mut test_case: TestCase,
-) -> TestResult {
+pub fn election(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) -> TestResult {
     println!("Starting election test");
 
     run_block_on(async {

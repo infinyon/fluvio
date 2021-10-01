@@ -46,10 +46,7 @@ impl TestOption for MultiplePartitionTestOption {
 }
 
 #[fluvio_test(topic = "test-multiple-partition")]
-pub fn multiple_partition(
-    mut test_driver: TestDriver,
-    mut test_case: TestCase,
-) -> TestResult {
+pub fn multiple_partition(mut test_driver: TestDriver, mut test_case: TestCase) -> TestResult {
     println!("Testing multiple partition consumer");
 
     let option: MultiplePartitionTestCase = test_case.into();
