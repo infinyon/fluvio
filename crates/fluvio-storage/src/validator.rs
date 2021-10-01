@@ -227,3 +227,40 @@ mod tests {
         assert!(validate(&test_file).await.is_err());
     }
 }
+
+
+
+#[cfg(test)]
+mod perf {
+
+    use std::env::temp_dir;
+    use std::time::Instant;
+
+    use futures_lite::io::AsyncWriteExt;
+
+    use fluvio_future::fs::BoundedFileSink;
+    use fluvio_future::fs::BoundedFileOption;
+    use flv_util::fixture::ensure_clean_file;
+    use dataplane::record::Record;
+    use dataplane::batch::Batch;
+    use dataplane::Offset;
+
+    use crate::mut_records::MutFileRecords;
+    use crate::config::ConfigOption;
+
+    use super::validate;
+
+    const TEST_PATH: &str = "/tmp/fluvio-large-data/spu-logs-5002/longevity-0/00000000000000000000.log";
+    #[fluvio_future::test]
+    async fn perf_test() {
+        
+        println!("starting test");
+        let mut write_time = Instant::now();
+        let next_offset = validate(&TEST_PATH).await.expect("validate");
+        let time = write_time.elapsed();
+        println!("took: {:#?}",time);
+        
+    }
+
+
+}
