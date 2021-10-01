@@ -1,14 +1,14 @@
+use std::cmp::min;
 use std::io::Error as IoError;
 use std::io::Cursor;
 use std::io::ErrorKind;
-use std::io::SeekFrom;
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::path::Path;
 
+use fluvio_future::fs::mmap::MemoryMappedFile;
 use tracing::trace;
 use tracing::debug;
-use futures_lite::io::AsyncReadExt;
-use futures_lite::io::AsyncSeekExt;
 
 use fluvio_future::fs::File;
 use dataplane::batch::{
@@ -72,12 +72,10 @@ where
 
     /// decode next batch from file
     pub(crate) async fn from(
-        file: &mut File,
+        file: &mut SequentialMmap,
         pos: Size,
     ) -> Result<Option<FileBatchPos<R>>, IoError> {
-        let mut bytes = vec![0u8; BATCH_FILE_HEADER_SIZE];
-
-        let read_len = file.read(&mut bytes).await?;
+        let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32);
         trace!(
             "file batch: read preamble and header {} bytes out of {}",
             read_len,
@@ -89,7 +87,7 @@ where
             return Ok(None);
         }
 
-        if read_len < BATCH_FILE_HEADER_SIZE {
+        if read_len < BATCH_FILE_HEADER_SIZE as u32 {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
                 format!(
@@ -128,18 +126,18 @@ where
     /// decode the records
     async fn read_records<'a>(
         &'a mut self,
-        file: &'a mut File,
-        remainder: usize,
+        file: &'a mut SequentialMmap,
+        buf_len: usize,
     ) -> Result<(), IoError> {
-        let mut bytes = vec![0u8; remainder];
-        let read_len = file.read(&mut bytes).await?;
+        let (bytes, read_len) = file.read_bytes(buf_len as u32);
+
         trace!(
             "file batch: read records {} bytes out of {}",
             read_len,
-            remainder
+            buf_len
         );
 
-        if read_len < remainder {
+        if read_len < buf_len as u32 {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
                 "not enough for records",
@@ -154,16 +152,37 @@ where
 
     async fn seek_to_next_batch<'a>(
         &'a self,
-        file: &'a mut File,
+        file: &'a mut SequentialMmap,
         remainder: usize,
     ) -> Result<(), IoError> {
         if remainder > 0 {
             trace!("file batch skipping: content {} bytes", remainder);
-            let seek_position = file.seek(SeekFrom::Current(remainder as Offset)).await?;
+            let seek_position = file.seek(remainder as u32);
             trace!("file batch new position: {}", seek_position);
         }
 
         Ok(())
+    }
+}
+
+struct SequentialMmap {
+    map: MemoryMappedFile,
+    pos: Size,
+}
+
+impl SequentialMmap {
+    // read bytes
+    fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
+        let inner = self.map.inner();
+        let prev_pos = self.pos;
+        self.pos = min(inner.len() as Size, self.pos as Size + len);
+        (&inner, self.pos - prev_pos)
+    }
+
+    fn seek(&mut self, amount: Size) -> Size {
+        let inner = self.map.inner();
+        self.pos = min(inner.len() as Size, self.pos as Size + amount);
+        self.pos
     }
 }
 
@@ -172,6 +191,7 @@ pub struct FileBatchStream<R = MemoryRecords> {
     pos: Size,
     invalid: Option<IoError>,
     file: File,
+    seq_map: SequentialMmap,
     data: PhantomData<R>,
 }
 
@@ -179,22 +199,31 @@ impl<R> FileBatchStream<R>
 where
     R: Default + Debug,
 {
-    #[allow(dead_code)]
-    pub fn new(file: File) -> FileBatchStream<R> {
+    pub async fn open<P>(path: P) -> Result<FileBatchStream<R>, IoError>
+    where
+        P: AsRef<Path>,
+    {
+        let (mmap, file) = MemoryMappedFile::open(path, 0 as u64).await?;
+
+        let seq_map = SequentialMmap {
+            map: mmap,
+            pos: 0 as Size,
+        };
         //trace!("opening batch stream on: {}",file);
-        FileBatchStream {
+        Ok(Self {
             pos: 0,
             file,
+            seq_map,
             invalid: None,
             data: PhantomData,
-        }
+        })
     }
 
-    #[allow(dead_code)]
     pub async fn new_with_pos(
         mut file: File,
         pos: Size,
     ) -> Result<FileBatchStream<R>, StorageError> {
+        /*
         trace!("opening batch  stream at: {}", pos);
         let seek_position = file.seek(SeekFrom::Start(pos as u64)).await?;
         if seek_position != pos as u64 {
@@ -206,6 +235,8 @@ where
             invalid: None,
             data: PhantomData,
         })
+        */
+        todo!()
     }
 
     /// check if it is invalid
@@ -220,7 +251,7 @@ where
 {
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!("reading next from pos: {}", self.pos);
-        match FileBatchPos::from(&mut self.file, self.pos).await {
+        match FileBatchPos::from(&mut self.seq_map, self.pos).await {
             Ok(batch_res) => {
                 if let Some(ref batch) = batch_res {
                     trace!("batch founded, updating pos");

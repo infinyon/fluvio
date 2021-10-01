@@ -118,8 +118,8 @@ where
     pub async fn open_default_batch_stream(&self) -> Result<FileBatchStream, StorageError> {
         let file_path = self.msg_log.get_path();
         debug!("opening batch stream: {:#?}", file_path);
-        let file = file_util::open(file_path).await?;
-        Ok(FileBatchStream::new(file))
+        // let file = file_util::open(file_path).await?;
+        Ok(FileBatchStream::open(&file_path).await?)
     }
 
     /// get file slice from offset to end of segment

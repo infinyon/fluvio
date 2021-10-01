@@ -4,7 +4,6 @@ use std::path::Path;
 use tracing::{debug, warn, trace};
 
 use dataplane::Offset;
-use fluvio_future::fs::util as file_util;
 
 use crate::batch_header::BatchHeaderStream;
 use crate::util::log_path_get_offset;
@@ -45,8 +44,7 @@ where
         "validating",
     );
 
-    let file_clone = file_util::open(file_path).await?;
-    let mut batch_stream = BatchHeaderStream::new(file_clone);
+    let mut batch_stream = BatchHeaderStream::open(path).await?;
     let mut last_offset: Offset = -1;
 
     while let Some(batch_pos) = batch_stream.next().await {
