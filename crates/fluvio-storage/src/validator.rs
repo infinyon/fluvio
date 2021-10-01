@@ -240,8 +240,8 @@ mod perf {
     #[fluvio_future::test]
     async fn perf_test() {
         println!("starting test");
-        let mut write_time = Instant::now();
-        let next_offset = validate(&TEST_PATH).await.expect("validate");
+        let write_time = Instant::now();
+        let _next_offset = validate(&TEST_PATH).await.expect("validate");
         let time = write_time.elapsed();
         println!("took: {:#?}", time);
     }
