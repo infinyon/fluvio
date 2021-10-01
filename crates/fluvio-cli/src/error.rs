@@ -112,6 +112,12 @@ impl CliError {
                 }
                 _ => Err(self),
             },
+            Self::ClientError(FluvioError::Socket(SocketError::Io(io)))
+                if io.kind() == ErrorKind::TimedOut =>
+            {
+                println!("Timed out while waiting on socket response");
+                Ok(())
+            }
             #[cfg(feature = "k8s")]
             Self::ClusterCliError(ClusterCliError::TargetError(TargetError::ClientError(
                 FluvioError::Socket(SocketError::Io(io)),
