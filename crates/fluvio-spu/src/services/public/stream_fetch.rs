@@ -133,12 +133,45 @@ impl StreamFetchHandler {
         let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
             let wasm = &payload.wasm.get_raw()?;
             debug!(len = wasm.len(), "creating WASM module with bytes");
-            let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
-                SocketError::Io(IoError::new(
-                    ErrorKind::Other,
-                    format!("module loading error {}", err),
-                ))
-            })?;
+            let module_result = sm_engine.create_module_from_binary(wasm);
+            let module = match module_result {
+                Ok(module) => module,
+                Err(e) => {
+                    let error = SmartStreamError::Module(e.to_string());
+                    let error_code = ErrorCode::SmartStreamError(error);
+
+                    type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+                    let partition_response = DefaultPartitionResponse {
+                        error_code,
+                        partition_index: replica.partition,
+                        ..Default::default()
+                    };
+
+                    let stream_response = StreamFetchResponse {
+                        topic: replica.topic.clone(),
+                        stream_id,
+                        partition: partition_response,
+                    };
+
+                    let response_msg =
+                        RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
+                            &header,
+                            stream_response,
+                        );
+
+                    {
+                        let mut inner_sink = sink.lock().await;
+                        inner_sink
+                            .send_response(&response_msg, header.api_version())
+                            .await?;
+                    }
+                    return Err(SocketError::Io(IoError::new(
+                        ErrorKind::InvalidData,
+                        "Invalid WASM module",
+                    ))
+                    .into());
+                }
+            };
 
             let smartstream: Box<dyn SmartStream> = match payload.kind {
                 SmartStreamKind::Filter => {
