@@ -8,7 +8,7 @@ use super::LongevityTestCase;
 use super::util::*;
 
 pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
-    println!("About to get a producer");
+    debug!("About to get a producer");
     let producer = test_driver
         .create_producer(&option.environment.topic_name())
         .await;
@@ -19,7 +19,7 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
     let mut records_sent = 0;
     let test_start = SystemTime::now();
 
-    println!("About to start producer loop");
+    debug!("About to start producer loop");
     while test_start.elapsed().unwrap() <= option.option.runtime_seconds {
         let record = LongevityRecordBuilder::new()
             .with_offset(records_sent)
