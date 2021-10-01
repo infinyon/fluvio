@@ -18,6 +18,7 @@ use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use std::process::exit;
+use tracing::debug;
 
 use fork::{fork, Fork};
 use nix::sys::wait::waitpid;
@@ -115,7 +116,7 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
         let pid = Pid::from_raw(consumer_process);
         match waitpid(pid, None) {
             Ok(status) => {
-                println!("[main] Producer Child exited with status {:?}", status);
+                debug!("[main] Producer Child exited with status {:?}", status);
             }
             Err(err) => panic!("[main] waitpid() failed: {}", err),
         }
@@ -143,7 +144,7 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
         let pid = Pid::from_raw(producer_process);
         match waitpid(pid, None) {
             Ok(status) => {
-                println!("[main] Producer Child exited with status {:?}", status);
+                debug!("[main] Producer Child exited with status {:?}", status);
             }
             Err(err) => panic!("[main] waitpid() failed: {}", err),
         }

@@ -27,8 +27,9 @@ pub async fn consumer_stream(test_driver: SharedTestDriver, option: LongevityTes
 
     let mut index: i32 = 0;
 
-    // Note, we're going to give the consumer some buffer since it starts its timer first
-    let consumer_buffer_time = Duration::from_millis(10);
+    // Note, we're going to give the consumer some buffer
+    // to give it a better chance to read all records
+    let consumer_buffer_time = Duration::from_millis(25);
     let mut test_timer = sleep(option.option.runtime_seconds + consumer_buffer_time);
     let mut records_recvd = 0;
 
@@ -40,7 +41,8 @@ pub async fn consumer_stream(test_driver: SharedTestDriver, option: LongevityTes
         select! {
 
                 _ = &mut test_timer => {
-                    println!("Records received: {}", records_recvd);
+
+                    println!("Consumer stopped. Time's up!\nRecords received: {:?}", records_recvd);
                     break 'consumer_loop
                 }
 

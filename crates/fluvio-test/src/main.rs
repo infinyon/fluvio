@@ -100,6 +100,7 @@ fn run_test(
     match test_result {
         Ok(r) => r.unwrap(),
         Err(_) => {
+            // nix uses pid 0 to refer to the group process, so reap the child processes
             let pid = Pid::from_raw(0);
             kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             exit(1);
@@ -185,18 +186,6 @@ fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
         .expect("Cluster setup wait failed");
 
     Ok(())
-    //Arc::new(TestDriver {
-    //    client: fluvio_client,
-    //    cluster
-    //    //topic_num: 0,
-    //    //producer_num: 0,
-    //    //consumer_num: 0,
-    //    //producer_bytes: 0,
-    //    //consumer_bytes: 0,
-    //    //producer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    //    //consumer_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    //    //topic_create_latency_histogram: Histogram::<u64>::new_with_bounds(1, u64::MAX, 2).unwrap(),
-    //})
 }
 
 #[cfg(test)]

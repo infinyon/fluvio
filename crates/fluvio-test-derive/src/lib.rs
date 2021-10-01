@@ -161,13 +161,9 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 });
                 let _ = topic_setup_wait.join().expect("Topic setup wait failed");
 
-                // start a timeout timer
-                //let timeout_duration = test_case.environment.timeout();
-                //let mut timeout_timer = sleep(timeout_duration.clone());
-
                  // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
-                let (test_send, test_recv) = unbounded();
+                let (test_end, test_end_listener) = unbounded();
 
                 let test_process = match fork() {
                     Ok(Fork::Parent(child_pid)) => child_pid,
@@ -183,51 +179,36 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     match waitpid(pid, None) {
                         Ok(status) => {
                             debug!("[main] Test exited with status {:?}", status);
-                            test_send.send(()).unwrap();
+
+                            // Send something through the channel to signal test completion
+                            test_end.send(()).unwrap();
                         }
                         Err(err) => panic!("[main] Test failed: {}", err),
                     }
                 });
-                //let _ = test_wait.join().expect("Test wait failed");
 
-
-                //thread::spawn(move || {
-                //    thread::sleep(test_case.environment.timeout());
-                //    timeout_send.send(()).unwrap()timeout_thread
-
-                //thread::spawn(move || {
-                //    ext_test_fn(test_driver, test_case);
-                //    test_send.send(()).unwrap();
-                //});
-
-
-                // All of this is to handle test timeout or test pass/fail
+                // All of this is to handle test timeout
                 let mut sel = Select::new();
-                let test_thread = sel.recv(&test_recv);
-                let select_w_timeout = sel.select_timeout(test_case.environment.timeout());
+                let test_thread_done = sel.recv(&test_end_listener);
+                let thread_selector = sel.select_timeout(test_case.environment.timeout());
 
-                match select_w_timeout {
+                match thread_selector {
                     Err(_) => {
                         // Need to catch this panic to kill test parent process + all child processes
-                        panic!("Test timeout");
+                        panic!("Test timeout met: {:?}", test_case.environment.timeout());
                     },
-                    Ok(select_w_timeout) => match select_w_timeout.index() {
-                        i if i == test_thread => {
-                            let _ = select_w_timeout.recv(&test_recv);
+                    Ok(thread_selector) => match thread_selector.index() {
+                        i if i == test_thread_done => {
+                            // This is needed to let crossbeam select channel know we selected an operation, or it'll panic
+                            let _ = thread_selector.recv(&test_end_listener);
+
+                            // Stop the test timer before reporting
                             test_timer.stop();
 
                             Ok(TestResult {
                                 success: true,
                                 duration: test_timer.duration(),
                                 ..Default::default()
-                                //topic_num: result.topic_num,
-                                //topic_create_latency_histogram: result.topic_create_latency_histogram,
-                                //producer_num: result.producer_num,
-                                //producer_bytes: result.producer_bytes,
-                                //producer_latency_histogram: result.producer_latency_histogram,
-                                //consumer_num: result.consumer_num,
-                                //consumer_bytes: result.consumer_bytes,
-                                //consumer_latency_histogram: result.consumer_latency_histogram,
                             })
 
 
@@ -235,61 +216,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         _ => unreachable!()
                     }
                 }
-
-                //select! {
-                //    recv(test_timeout) -> _ => panic!("Test timeout reached"),
-                //    recv(test_recv) -> _ => {
-                //        test_timer.stop();
-
-                //        Ok(TestResult {
-                //            success: true,
-                //            duration: test_timer.duration(),
-                //            ..Default::default()
-                //            //topic_num: result.topic_num,
-                //            //topic_create_latency_histogram: result.topic_create_latency_histogram,
-                //            //producer_num: result.producer_num,
-                //            //producer_bytes: result.producer_bytes,
-                //            //producer_latency_histogram: result.producer_latency_histogram,
-                //            //consumer_num: result.consumer_num,
-                //            //consumer_bytes: result.consumer_bytes,
-                //            //consumer_latency_histogram: result.consumer_latency_histogram,
-                //        })
-                //    },
-                //}
-                //run_block_on(async move {
-                //    select! {
-                //        _ = &mut timeout_timer => {
-                //            test_timer.stop();
-                //            eprintln!("\nTest timed out ({:?})", timeout_duration);
-                //            //let _ = std::panic::take_hook();
-                //            Err(TestResult {
-                //                success: false,
-                //                duration: test_timer.duration(),
-                //                ..Default::default()
-                //            })
-                //        },
-
-                //        // Change this to use the return value
-                //        test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
-                //            test_timer.stop();
-
-                //            // This is the final version of TestResult before it renders to stdout
-                //            Ok(TestResult {
-                //                success: true,
-                //                duration: test_timer.duration(),
-                //                topic_num: test_result_tmp.topic_num,
-                //                topic_create_latency_histogram: test_result_tmp.topic_create_latency_histogram,
-                //                producer_num: test_result_tmp.producer_num,
-                //                producer_bytes: test_result_tmp.producer_bytes,
-                //                producer_latency_histogram: test_result_tmp.producer_latency_histogram,
-                //                consumer_num: test_result_tmp.consumer_num,
-                //                consumer_bytes: test_result_tmp.consumer_bytes,
-                //                consumer_latency_histogram: test_result_tmp.consumer_latency_histogram,
-                //            })
-                //        }
-                //    }
-                //})
-
             } else {
                 println!("Test skipped...");
 

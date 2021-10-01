@@ -4,9 +4,7 @@ use tracing::debug;
 use fluvio::{Fluvio, FluvioError};
 
 use fluvio::metadata::topic::TopicSpec;
-//use hdrhistogram::Histogram;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
-//use futures_lite::stream::StreamExt;
 
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
@@ -18,22 +16,13 @@ use crate::test_meta::derive_attr::TestRequirements;
 
 pub type SharedTestDriver = TestDriver;
 
-//use fluvio::Offset;
-
 pub struct TestDriver {
     pub client: Option<Fluvio>,
-    pub cluster: Option<TestCluster>, //pub topic_num: usize,
-                                      //pub producer_num: usize,
-                                      //pub consumer_num: usize,
-                                      //pub producer_bytes: usize,
-                                      //pub consumer_bytes: usize,
-                                      //pub producer_latency_histogram: Histogram<u64>,
-                                      //pub consumer_latency_histogram: Histogram<u64>,
-                                      //pub topic_create_latency_histogram: Histogram<u64>
+    pub cluster: Option<TestCluster>,
 }
 
-//impl Copy for TestDriver {}
-
+// Using `.clone()` will always be disconnected.
+// Must run `.connect()` before cluster operations
 impl Clone for TestDriver {
     fn clone(&self) -> Self {
         if let Some(cluster_opts) = self.cluster.as_ref() {
@@ -151,31 +140,7 @@ impl TestDriver {
         }
     }
 
-    //pub async fn stream_count(&mut self, consumer: PartitionConsumer, offset: Offset) {
-    //    use std::time::SystemTime;
-    //    let mut stream = consumer.stream(offset).await.expect("stream");
-
-    //    loop {
-    //        // Take a timestamp
-    //        let now = SystemTime::now();
-
-    //        if let Some(Ok(record)) = stream.next().await {
-    //            // Record latency
-    //            let _consume_time = now.elapsed().clone().unwrap().as_nanos();
-    //            //self.consumer_latency_histogram
-    //            //    .record(consume_time as u64)
-    //            //    .unwrap();
-
-    //            //// Record bytes consumed
-    //            //self.consumer_bytes += record.as_ref().len();
-    //        } else {
-    //            debug!("No more bytes left to consume");
-    //            break;
-    //        }
-    //    }
-    //}
-
-    // TODO: This is a workaround. Handle stream inside impl
+    // Re-enable when we re-enable metrics
     pub async fn consume_latency_record(&mut self, _latency: u64) {
         unimplemented!()
         //self.consumer_latency_histogram.record(latency).unwrap();
@@ -186,7 +151,7 @@ impl TestDriver {
         //);
     }
 
-    // TODO: This is a workaround. Handle stream inside impl
+    // Re-enable when we re-enable metrics
     pub async fn consume_bytes_record(&mut self, _bytes_len: usize) {
         unimplemented!()
         //self.consumer_bytes += bytes_len;
