@@ -23,7 +23,7 @@ dependencies = [
  "gimli",
  "object",
  "rustc-demangle",
- "smallvec 1.6.1",
+ "smallvec 1.7.0",
 ]
 
 [[package]]
@@ -855,7 +855,7 @@ dependencies = [
  "gimli",
  "log",
  "regalloc",
- "smallvec 1.6.1",
+ "smallvec 1.7.0",
  "target-lexicon",
 ]
 
@@ -892,7 +892,7 @@ checksum = "351c9d13b4ecd1a536215ec2fd1c3ee9ee8bc31af172abf1e45ed0adb7a931df"
 dependencies = [
  "cranelift-codegen",
  "log",
- "smallvec 1.6.1",
+ "smallvec 1.7.0",
  "target-lexicon",
 ]
 
@@ -918,7 +918,7 @@ dependencies = [
  "cranelift-frontend",
  "itertools",
  "log",
- "smallvec 1.6.1",
+ "smallvec 1.7.0",
  "wasmparser",
  "wasmtime-types",
 ]
@@ -1321,11 +1321,11 @@ dependencies = [
 
 [[package]]
 name = "errno-dragonfly"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14ca354e36190500e1e1fb267c647932382b54053c50b14970856c0b00a35067"
+checksum = "aa68f1b12764fab894d2755d2518754e71b4fd80ecfb822714a1206c2aab39bf"
 dependencies = [
- "gcc",
+ "cc",
  "libc",
 ]
 
@@ -2332,12 +2332,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gcc"
-version = "0.3.55"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8f5f3913fa0bfe7ee1fd8248b6b9f42a5af4b9d65ec2dd2c3c26132b950ecfc2"
-
-[[package]]
 name = "generic-array"
 version = "0.12.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2442,9 +2436,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.4"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7f3675cfef6a30c8031cf9e6493ebdc3bb3272a3fea3923c4210d1830e6a472"
+checksum = "6c06815895acec637cd6ed6e9662c935b866d20a106f8361892893a7d9234964"
 dependencies = [
  "bytes",
  "fnv",
@@ -2724,9 +2718,9 @@ checksum = "a257582fdcde896fd96463bf2d40eefea0580021c0712a0e2b028b60b47a837a"
 
 [[package]]
 name = "instant"
-version = "0.1.10"
+version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bee0328b1209d157ef001c94dd85b4f8f64139adb0eac2659f4b08382b2f474d"
+checksum = "716d3d89f35ac6a34fd0eed635395f4c3b76fa889338a4632e5231a8684216bd"
 dependencies = [
  "cfg-if 1.0.0",
  "js-sys",
@@ -2922,9 +2916,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.102"
+version = "0.2.103"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a2a5ac8f984bfcf3a823267e5fde638acc3325f6496633a5da6bb6eb2171e103"
+checksum = "dd8f7255a17a627354f321ef0055d63b898c6fb27eff628af4d1b66b7331edf6"
 
 [[package]]
 name = "libloading"
@@ -3085,9 +3079,9 @@ dependencies = [
 
 [[package]]
 name = "nix"
-version = "0.22.1"
+version = "0.22.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e7555d6c7164cc913be1ce7f95cbecdabda61eb2ccd89008524af306fb7f5031"
+checksum = "d3bb9a13fa32bc5aeb64150cd3f32d6cf4c748f8f8a417cce5d2eb976a8370ba"
 dependencies = [
  "bitflags",
  "cc",
@@ -3330,7 +3324,7 @@ dependencies = [
  "instant",
  "libc",
  "redox_syscall 0.2.10",
- "smallvec 1.6.1",
+ "smallvec 1.7.0",
  "winapi 0.3.9",
 ]
 
@@ -3439,9 +3433,9 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pkg-config"
-version = "0.3.19"
+version = "0.3.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3831453b3449ceb48b6d9c7ad7c96d5ea673e9b470a1dc578c2ce6521230884c"
+checksum = "7c9b1041b4387893b91ee6746cddfc28516aff326a3519fb2adf820932c5e6cb"
 
 [[package]]
 name = "plain"
@@ -3800,7 +3794,7 @@ checksum = "571f7f397d61c4755285cd37853fe8e03271c243424a907415909379659381c5"
 dependencies = [
  "log",
  "rustc-hash",
- "smallvec 1.6.1",
+ "smallvec 1.7.0",
 ]
 
 [[package]]
@@ -4100,9 +4094,9 @@ dependencies = [
 
 [[package]]
 name = "serde_qs"
-version = "0.8.4"
+version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8a72808528a89fa9eca23bbb6a1eb92cb639b881357269b6510f11e50c0f8a9"
+checksum = "c7715380eec75f029a4ef7de39a9200e0a63823176b759d055b613f5a87df6a6"
 dependencies = [
  "percent-encoding",
  "serde",
@@ -4240,9 +4234,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.6.1"
+version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
+checksum = "1ecab6c735a6bb4139c0caafd0cc3635748bbb3acf4550e8138122099251f309"
 
 [[package]]
 name = "socket2"
@@ -4368,9 +4362,9 @@ checksum = "6bdef32e8150c2a081110b42772ffe7d7c9032b606bc226c8260fd97e0976601"
 
 [[package]]
 name = "syn"
-version = "1.0.76"
+version = "1.0.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6f107db402c2c2055242dbf4d2af0e69197202e9faacbef9571bbe47f5a1b84"
+checksum = "5239bc68e0fef57495900cfea4e8dc75596d9a319d7e16b1e0a440d24e6fe0a0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4379,9 +4373,9 @@ dependencies = [
 
 [[package]]
 name = "sysinfo"
-version = "0.20.3"
+version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "92d77883450d697c0010e60db3d940ed130b0ed81d27485edee981621b434e52"
+checksum = "ffff4a02fa61eee51f95210fc9c98ea6eeb46bb071adeafd61e1a0b9b22c6a6d"
 dependencies = [
  "cfg-if 1.0.0",
  "core-foundation-sys",
@@ -4557,9 +4551,9 @@ dependencies = [
 
 [[package]]
 name = "tinyvec"
-version = "1.4.0"
+version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5241dd6f21443a3606b432718b166d3cedc962fd4b8bea54a8bc7f514ebda986"
+checksum = "f83b2a3d4d9091d0abd7eba4dc2710b1718583bd4d8992e2190720ea38f391f7"
 dependencies = [
  "tinyvec_macros",
 ]
@@ -4585,9 +4579,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "1.3.0"
+version = "1.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "54473be61f4ebe4efd09cec9bd5d16fa51d70ea0192213d754d2d500457db110"
+checksum = "154794c8f499c2619acd19e839294703e9e32e7630ef5f46ea80d4ef0fbee5eb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4701,7 +4695,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sharded-slab",
- "smallvec 1.6.1",
+ "smallvec 1.7.0",
  "thread_local",
  "tracing",
  "tracing-core",
@@ -4957,9 +4951,9 @@ dependencies = [
 
 [[package]]
 name = "wasmparser"
-version = "0.80.1"
+version = "0.80.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be92b6dcaa5af4b2a176b29be3bf1402fab9e69d313141185099c7d1684f2dca"
+checksum = "449167e2832691a1bff24cde28d2804e90e09586a448c8e76984792c44334a6b"
 
 [[package]]
 name = "wasmtime"
@@ -5133,9 +5127,9 @@ dependencies = [
 
 [[package]]
 name = "wast"
-version = "38.0.0"
+version = "38.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ebc29df4629f497e0893aacd40f13a4a56b85ef6eb4ab6d603f07244f1a7bf2"
+checksum = "ae0d7b256bef26c898fa7344a2d627e8499f5a749432ce0a05eae1a64ff0c271"
 dependencies = [
  "leb128",
 ]
