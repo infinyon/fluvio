@@ -155,7 +155,7 @@ impl MultiplexerSocket {
 
                 Err(IoError::new(
                     ErrorKind::TimedOut,
-                    format!("time out in serial: {} request: {}", R::API_KEY, correlation_id),
+                    format!("Timed out waiting for response. API_KEY={}, CorrelationId={}", R::API_KEY, correlation_id),
                 ).into())
             },
 

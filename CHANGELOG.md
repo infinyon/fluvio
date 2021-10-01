@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.10 - UNRELEASED
+* Improve error handling for socket timeout ([#791](https://github.com/infinyon/fluvio/issues/791))
 
 ## Platform Version 0.9.9 - 2021-09-30
 * Add `impl std::error::Error for ErrorCode` for better error reporting ([#1693](https://github.com/infinyon/fluvio/pull/1693))
