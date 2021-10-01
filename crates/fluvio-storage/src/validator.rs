@@ -241,8 +241,9 @@ mod perf {
     async fn perf_test() {
         println!("starting test");
         let write_time = Instant::now();
-        let _next_offset = validate(&TEST_PATH).await.expect("validate");
+        let last_offset = validate(&TEST_PATH).await.expect("validate");
         let time = write_time.elapsed();
         println!("took: {:#?}", time);
+        println!("next offset: {}", last_offset);
     }
 }
