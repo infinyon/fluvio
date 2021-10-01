@@ -52,13 +52,18 @@ impl TestOption for ElectionTestOption {
 }
 
 #[fluvio_test(topic = "test")]
-pub async fn election(
+pub fn election(
     mut test_driver: Arc<FluvioTestDriver>,
     mut test_case: TestCase,
 ) -> TestResult {
     println!("Starting election test");
 
     run_block_on(async {
+        test_driver
+            .connect()
+            .await
+            .expect("Connecting to cluster failed");
+
         // first a create simple message
         let topic_name = test_case.environment.topic_name();
         let producer = test_driver.create_producer(&topic_name).await;

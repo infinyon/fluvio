@@ -46,7 +46,7 @@ impl TestOption for MultiplePartitionTestOption {
 }
 
 #[fluvio_test(topic = "test-multiple-partition")]
-pub async fn multiple_partition(
+pub fn multiple_partition(
     mut test_driver: TestDriver,
     mut test_case: TestCase,
 ) -> TestResult {
