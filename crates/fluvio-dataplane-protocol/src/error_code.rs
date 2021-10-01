@@ -138,7 +138,7 @@ pub enum SmartStreamError {
     #[error("Runtime error")]
     Runtime(#[from] SmartStreamRuntimeError),
     #[error("WASM Module error: {0}")]
-    Module(String),
+    InvalidWasmModule(String),
 }
 
 impl Default for SmartStreamError {

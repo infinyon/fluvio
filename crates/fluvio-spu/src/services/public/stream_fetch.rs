@@ -133,11 +133,10 @@ impl StreamFetchHandler {
         let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
             let wasm = &payload.wasm.get_raw()?;
             debug!(len = wasm.len(), "creating WASM module with bytes");
-            let module_result = sm_engine.create_module_from_binary(wasm);
-            let module = match module_result {
+            let module = match sm_engine.create_module_from_binary(wasm) {
                 Ok(module) => module,
                 Err(e) => {
-                    let error = SmartStreamError::Module(e.to_string());
+                    let error = SmartStreamError::InvalidWasmModule(e.to_string());
                     let error_code = ErrorCode::SmartStreamError(error);
 
                     type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
@@ -168,8 +167,7 @@ impl StreamFetchHandler {
                     return Err(SocketError::Io(IoError::new(
                         ErrorKind::InvalidData,
                         "Invalid WASM module",
-                    ))
-                    .into());
+                    )));
                 }
             };
 
@@ -1751,7 +1749,7 @@ mod test {
         assert!(
             matches!(
                 response.partition.error_code,
-                ErrorCode::SmartStreamError(SmartStreamError::Module(_))
+                ErrorCode::SmartStreamError(SmartStreamError::InvalidWasmModule(_))
             ),
             "expected a SmartStream Module error for invalid WASM module"
         );
