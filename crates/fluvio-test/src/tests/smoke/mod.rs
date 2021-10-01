@@ -3,7 +3,6 @@ pub mod produce;
 pub mod message;
 
 use std::any::Any;
-use std::process::exit;
 
 use structopt::StructOpt;
 

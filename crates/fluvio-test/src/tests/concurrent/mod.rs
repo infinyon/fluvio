@@ -3,7 +3,6 @@ pub mod consumer;
 pub mod util;
 
 use std::any::Any;
-use std::process::exit;
 use structopt::StructOpt;
 
 use fluvio_future::task::spawn;
@@ -50,7 +49,7 @@ impl TestOption for ConcurrentTestOption {
 #[fluvio_test(topic = "test-bug")]
 pub fn concurrent(mut test_driver: TestDriver, mut test_case: TestCase) -> TestResult {
     println!("Testing concurrent consumer and producer");
-    let option : ConcurrentTestCase = test_case.into();
+    let option: ConcurrentTestCase = test_case.into();
 
     run_block_on(async {
         let (sender, receiver) = std::sync::mpsc::channel();

@@ -110,7 +110,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use nix::sys::signal::{kill, Signal};
             use nix::unistd::Pid;
             use std::thread;
-            //use std::sync::mpsc;
+            use std::process::exit;
             use tracing::debug;
             use crossbeam_channel::{Select, unbounded};
 

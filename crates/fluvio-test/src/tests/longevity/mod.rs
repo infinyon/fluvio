@@ -6,7 +6,6 @@ use core::panic;
 use std::any::Any;
 use std::num::ParseIntError;
 use std::time::Duration;
-use std::process::exit;
 use std::thread;
 use structopt::StructOpt;
 
