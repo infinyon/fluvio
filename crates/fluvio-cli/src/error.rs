@@ -115,7 +115,7 @@ impl CliError {
             Self::ClientError(FluvioError::Socket(SocketError::Io(io)))
                 if io.kind() == ErrorKind::TimedOut =>
             {
-                println!("Timed out while waiting on socket response");
+                println!("Network connection timed out while waiting for response");
                 Ok(())
             }
             #[cfg(feature = "k8s")]
