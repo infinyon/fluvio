@@ -56,9 +56,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let test_name = out_fn_iden.to_string();
 
-    // We're going to wrap the the async test into a sync to store fn pointer w/ `inventory` crate
-    let async_inner_fn_iden = Ident::new(&format!("{}_inner", &test_name), Span::call_site());
-
     // Enforce naming convention for converting dyn TestOption to concrete type
     let test_opt_ident = Ident::new(
         &format!("{}TestOption", &test_name).to_pascal_case(),
@@ -78,19 +75,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
-        pub fn #out_fn_iden(mut test_driver: TestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
-            //println!("Inside the function");
-            //let future = async move {
-                //println!("Inside the async wrapper function");
-
-
-                // try fork right here?
-
-                #async_inner_fn_iden(test_driver, test_case)
-            //};
-            //fluvio_future::task::run_block_on(future)
-        }
-
         inventory::submit!{
             FluvioTestMeta {
                 name: #test_name.to_string(),
@@ -101,24 +85,12 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         }
 
         #[allow(clippy::unnecessary_operation)]
-        pub fn ext_test_fn(mut test_driver: TestDriver, test_case: TestCase) -> TestResult {
+        pub fn ext_test_fn(mut test_driver: TestDriver, test_case: TestCase) {
             use fluvio_test_util::test_meta::environment::EnvDetail;
             #test_body;
-
-            TestResult {
-                //topic_num: lock.topic_num as u64,
-                //producer_num: lock.producer_num as u64,
-                //consumer_num: lock.consumer_num as u64,
-                //producer_bytes: lock.producer_bytes as u64,
-                //consumer_bytes: lock.consumer_bytes as u64,
-                //topic_create_latency_histogram: lock.topic_create_latency_histogram.clone(),
-                //producer_latency_histogram: lock.producer_latency_histogram.clone(),
-                //consumer_latency_histogram: lock.consumer_latency_histogram.clone(),
-                ..Default::default()
-            }
         }
 
-        pub fn #async_inner_fn_iden(mut test_driver: TestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #out_fn_iden(mut test_driver: TestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::TestCase;
             use fluvio_test_util::test_meta::test_result::TestResult;
@@ -131,13 +103,16 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use fluvio_future::task::run;
             use fluvio_future::timer::sleep;
             use std::{io, time::Duration};
-            use tokio::select;
             use std::panic::panic_any;
             use std::default::Default;
             use fork::{fork, Fork};
             use nix::sys::wait::waitpid;
+            use nix::sys::signal::{kill, Signal};
             use nix::unistd::Pid;
             use std::thread;
+            //use std::sync::mpsc;
+            use tracing::debug;
+            use crossbeam_channel::{Select, unbounded};
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
             //let test_reqs : TestRequirements = #fn_test_reqs;
@@ -150,7 +125,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
-                let consumer_process = match fork() {
+                // Setup topics before starting test
+                // Doing setup in another process to avoid async in parent process
+                // Otherwise there is .await blocking in child processes if tests fork() too
+                let topic_setup_process = match fork() {
                     Ok(Fork::Parent(child_pid)) => child_pid,
                     Ok(Fork::Child) => {
                         run_block_on(async {
@@ -169,33 +147,117 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                         exit(0);
                     }
-                    Err(_) => panic!("Consumer fork failed"),
+                    Err(_) => panic!("Topic setup fork failed"),
                 };
 
-                let consumer_wait = thread::spawn( move || {
-                    let pid = Pid::from_raw(consumer_process);
+                let topic_setup_wait = thread::spawn( move || {
+                    let pid = Pid::from_raw(topic_setup_process);
                     match waitpid(pid, None) {
                         Ok(status) => {
-                            println!("[main] Producer Child exited with status {:?}", status);
+                            debug!("[main] Topic setup exited with status {:?}", status);
                         }
-                        Err(err) => panic!("[main] waitpid() failed: {}", err),
+                        Err(err) => panic!("[main] Topic setup failed: {}", err),
                     }
                 });
-                let _ = consumer_wait.join();
+                let _ = topic_setup_wait.join().expect("Topic setup wait failed");
 
                 // start a timeout timer
-                let timeout_duration = test_case.environment.timeout();
-                let mut timeout_timer = sleep(timeout_duration.clone());
+                //let timeout_duration = test_case.environment.timeout();
+                //let mut timeout_timer = sleep(timeout_duration.clone());
 
-                // Start a test timer for the user's test now that setup is done
+                 // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
-                let test_driver_clone = test_driver.clone();
+                let (test_send, test_recv) = unbounded();
 
-                // TODO: test timeout needs to be re-enabled
-                let result = ext_test_fn(test_driver_clone, test_case);
+                let test_process = match fork() {
+                    Ok(Fork::Parent(child_pid)) => child_pid,
+                    Ok(Fork::Child) => {
+                        ext_test_fn(test_driver, test_case);
+                        exit(0);
+                    }
+                    Err(_) => panic!("Test fork failed"),
+                };
 
-                Ok(result)
+                let test_wait = thread::spawn( move || {
+                    let pid = Pid::from_raw(test_process.clone());
+                    match waitpid(pid, None) {
+                        Ok(status) => {
+                            debug!("[main] Test exited with status {:?}", status);
+                            test_send.send(()).unwrap();
+                        }
+                        Err(err) => panic!("[main] Test failed: {}", err),
+                    }
+                });
+                //let _ = test_wait.join().expect("Test wait failed");
 
+
+                //thread::spawn(move || {
+                //    thread::sleep(test_case.environment.timeout());
+                //    timeout_send.send(()).unwrap()timeout_thread
+
+                //thread::spawn(move || {
+                //    ext_test_fn(test_driver, test_case);
+                //    test_send.send(()).unwrap();
+                //});
+
+
+                // All of this is to handle test timeout or test pass/fail
+                let mut sel = Select::new();
+                let test_thread = sel.recv(&test_recv);
+                let select_w_timeout = sel.select_timeout(test_case.environment.timeout());
+
+                match select_w_timeout {
+                    Err(_) => {
+                        // Need to kill test parent process
+                        let pid = Pid::from_raw(0);
+                        panic!("Test timeout");
+                        kill(pid, Signal::SIGKILL).expect("Unable to kill test process");
+                    },
+                    Ok(select_w_timeout) => match select_w_timeout.index() {
+                        i if i == test_thread => {
+                            let _ = select_w_timeout.recv(&test_recv);
+                            test_timer.stop();
+
+                            Ok(TestResult {
+                                success: true,
+                                duration: test_timer.duration(),
+                                ..Default::default()
+                                //topic_num: result.topic_num,
+                                //topic_create_latency_histogram: result.topic_create_latency_histogram,
+                                //producer_num: result.producer_num,
+                                //producer_bytes: result.producer_bytes,
+                                //producer_latency_histogram: result.producer_latency_histogram,
+                                //consumer_num: result.consumer_num,
+                                //consumer_bytes: result.consumer_bytes,
+                                //consumer_latency_histogram: result.consumer_latency_histogram,
+                            })
+ 
+
+                        }
+                        _ => unreachable!()
+                    }
+                }
+
+                //select! {
+                //    recv(test_timeout) -> _ => panic!("Test timeout reached"),
+                //    recv(test_recv) -> _ => {
+                //        test_timer.stop();
+
+                //        Ok(TestResult {
+                //            success: true,
+                //            duration: test_timer.duration(),
+                //            ..Default::default()
+                //            //topic_num: result.topic_num,
+                //            //topic_create_latency_histogram: result.topic_create_latency_histogram,
+                //            //producer_num: result.producer_num,
+                //            //producer_bytes: result.producer_bytes,
+                //            //producer_latency_histogram: result.producer_latency_histogram,
+                //            //consumer_num: result.consumer_num,
+                //            //consumer_bytes: result.consumer_bytes,
+                //            //consumer_latency_histogram: result.consumer_latency_histogram,
+                //        })
+                //    },
+                //}
                 //run_block_on(async move {
                 //    select! {
                 //        _ = &mut timeout_timer => {

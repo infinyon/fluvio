@@ -2025,6 +2025,7 @@ dependencies = [
  "bencher",
  "bytes",
  "crc",
+ "crossbeam-channel",
  "fluvio",
  "fluvio-cluster",
  "fluvio-command",

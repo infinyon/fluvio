@@ -10,7 +10,7 @@ use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
-//use hdrhistogram::Histogram;
+use tracing::debug;
 
 use std::thread;
 use fork::{fork, Fork};
@@ -46,7 +46,7 @@ fn main() {
     };
 
     println!("Start running fluvio test runner");
-    //fluvio_future::subscriber::init_logger();
+    fluvio_future::subscriber::init_logger();
 
     // Test connecting to a cluster
     // Deploy a cluster if requested
@@ -104,7 +104,7 @@ fn cluster_cleanup(option: EnvironmentSetup) {
     if option.cluster_delete() {
         let mut setup = TestCluster::new(option.clone());
 
-        let consumer_process = match fork() {
+        let cluster_cleanup_process = match fork() {
             Ok(Fork::Parent(child_pid)) => child_pid,
             Ok(Fork::Child) => {
                 run_block_on(async move {
@@ -113,25 +113,25 @@ fn cluster_cleanup(option: EnvironmentSetup) {
 
                 exit(0);
             }
-            Err(_) => panic!("Consumer fork failed"),
+            Err(_) => panic!("Cluster cleanup fork failed"),
         };
 
-        let consumer_wait = thread::spawn(move || {
-            let pid = Pid::from_raw(consumer_process);
+        let cluster_cleanup_wait = thread::spawn(move || {
+            let pid = Pid::from_raw(cluster_cleanup_process);
             match waitpid(pid, None) {
                 Ok(status) => {
-                    println!("[main] Producer Child exited with status {:?}", status);
+                    println!("[main] Cluster cleanup exited with status {:?}", status);
                 }
-                Err(err) => panic!("[main] waitpid() failed: {}", err),
+                Err(err) => panic!("[main] Cluster cleanup failed: {}", err),
             }
         });
-        let _ = consumer_wait.join();
+        let _ = cluster_cleanup_wait.join().expect("Cluster cleanup wait failed");
     }
 }
 
 // FIXME: Need to confirm SPU options count match cluster. Offer self-correcting behavior
 fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
-    let consumer_process = match fork() {
+    let cluster_setup_process = match fork() {
         Ok(Fork::Parent(child_pid)) => child_pid,
         Ok(Fork::Child) => {
             run_block_on(async {
@@ -159,19 +159,19 @@ fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
 
             exit(0);
         }
-        Err(_) => panic!("Consumer fork failed"),
+        Err(_) => panic!("Cluster setup fork failed"),
     };
 
-    let consumer_wait = thread::spawn(move || {
-        let pid = Pid::from_raw(consumer_process);
+    let cluster_setup_wait = thread::spawn(move || {
+        let pid = Pid::from_raw(cluster_setup_process);
         match waitpid(pid, None) {
             Ok(status) => {
-                println!("[main] Producer Child exited with status {:?}", status);
+                debug!("[main] Cluster setup exited with status {:?}", status);
             }
-            Err(err) => panic!("[main] waitpid() failed: {}", err),
+            Err(err) => panic!("[main] Cluster setup failed: {}", err),
         }
     });
-    let _ = consumer_wait.join();
+    let _ = cluster_setup_wait.join().expect("Cluster setup wait failed");
 
     Ok(())
     //Arc::new(TestDriver {
