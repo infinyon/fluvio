@@ -17,6 +17,7 @@ use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
+use std::process::exit;
 
 use fork::{fork, Fork};
 use nix::sys::wait::waitpid;

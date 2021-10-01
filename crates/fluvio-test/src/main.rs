@@ -98,7 +98,7 @@ fn run_test(
 
     // If we've panicked from the test, we need to terminate all the child processes too to stop the test
     match test_result {
-        Ok(r) => return r.unwrap(),
+        Ok(r) => r.unwrap(),
         Err(_) => {
             let pid = Pid::from_raw(0);
             kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
