@@ -3,7 +3,7 @@ pub mod produce;
 pub mod message;
 
 use std::any::Any;
-use std::sync::Arc;
+use std::process::exit;
 
 use structopt::StructOpt;
 
@@ -14,6 +14,7 @@ use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
+use fluvio_future::task::run_block_on;
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -68,14 +69,17 @@ impl TestOption for SmokeTestOption {
 //}
 
 #[fluvio_test(topic = "test")]
-pub async fn smoke(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) -> TestResult {
+pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
     println!("Starting smoke test");
     let smoke_test_case = test_case.into();
 
-    let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
-    // println!("start sleeping");
-    // fluvio_future::timer::sleep(Duration::from_secs(40)).await;
-    // sleep(Duration::from_secs(40));
-    // println!("end sleeping");
-    consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;
+    run_block_on(async {
+        let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
+        // println!("start sleeping");
+        // fluvio_future::timer::sleep(Duration::from_secs(40)).await;
+        // sleep(Duration::from_secs(40));
+        // println!("end sleeping");
+        consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets)
+            .await;
+    });
 }

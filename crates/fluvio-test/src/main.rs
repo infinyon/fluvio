@@ -79,8 +79,8 @@ fn main() {
     */
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
-            cluster_cleanup(option.environment);
-            println!("{}", test_result);
+    cluster_cleanup(option.environment);
+    println!("{}", test_result);
 }
 
 fn run_test(
@@ -98,9 +98,7 @@ fn run_test(
 
     // If we've panicked from the test, we need to terminate all the child processes too to stop the test
     match test_result {
-        Ok(r) => {
-            return r.unwrap()
-        },
+        Ok(r) => return r.unwrap(),
         Err(_) => {
             let pid = Pid::from_raw(0);
             kill(pid, Signal::SIGTERM).expect("Unable to kill test process");

@@ -3,7 +3,7 @@ use std::time::SystemTime;
 
 use tracing::{info, debug};
 
-use fluvio_test_util::test_runner::test_driver::{TestDriver, SharedTestDriver};
+use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::RecordKey;
 use fluvio_command::CommandExt;
@@ -13,7 +13,11 @@ use super::message::*;
 
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(test_driver: SharedTestDriver, test_case: &SmokeTestCase) -> Offsets {
+pub async fn produce_message(mut test_driver: TestDriver, test_case: &SmokeTestCase) -> Offsets {
+    test_driver
+        .connect()
+        .await
+        .expect("Connecting to cluster failed");
     use fluvio_future::task::spawn; // get initial offsets for each of the topic
     let offsets = offsets::find_offsets(&test_driver, test_case).await;
 
@@ -96,7 +100,7 @@ mod offsets {
 }
 
 pub async fn produce_message_with_api(
-    test_driver: SharedTestDriver,
+    test_driver: TestDriver,
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {

@@ -3,7 +3,6 @@
 use std::{io, time::Duration};
 use std::io::Write;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use tracing::{info};
 use futures_lite::stream::StreamExt;
@@ -21,11 +20,16 @@ type Offsets = HashMap<String, i64>;
 
 /// verify consumers
 pub async fn validate_consume_message(
-    test_driver: Arc<TestDriver>,
+    mut test_driver: TestDriver,
     test_case: &SmokeTestCase,
     offsets: Offsets,
 ) {
     let use_cli = test_case.option.use_cli;
+
+    test_driver
+        .connect()
+        .await
+        .expect("Connecting to cluster failed");
 
     if use_cli {
         validate_consume_message_cli(test_case, offsets);
@@ -62,7 +66,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
 }
 
 async fn validate_consume_message_api(
-    test_driver: Arc<TestDriver>,
+    test_driver: TestDriver,
     offsets: Offsets,
     test_case: &SmokeTestCase,
 ) {

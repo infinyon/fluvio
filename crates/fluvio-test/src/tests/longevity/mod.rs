@@ -111,10 +111,6 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
         Err(_) => panic!("Consumer fork failed"),
     };
 
-    //let consumer_join = spawn(consumer::consumer_stream(
-    //    test_driver.clone(),
-    //    option.clone(),
-    //));
     let consumer_wait = thread::spawn(move || {
         let pid = Pid::from_raw(consumer_process);
         match waitpid(pid, None) {
@@ -153,9 +149,6 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> 
         }
     });
 
-    //let producer_join = producer::producer(test_driver, option);
-
     let _ = producer_wait.join();
     let _ = consumer_wait.join();
-    //join!(consumer_wait, producer_wait);
 }
