@@ -16,6 +16,7 @@ use std::thread;
 use fork::{fork, Fork};
 use nix::sys::wait::waitpid;
 use nix::unistd::Pid;
+use nix::sys::signal::{kill, Signal};
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -78,9 +79,8 @@ fn main() {
     */
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
-    cluster_cleanup(option.environment);
-
-    println!("{}", test_result)
+            cluster_cleanup(option.environment);
+            println!("{}", test_result);
 }
 
 fn run_test(
@@ -94,10 +94,19 @@ fn run_test(
     let test_case = TestCase::new(environment, test_opt);
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
         (test_meta.test_fn)(test_driver, test_case)
-    }))
-    .expect("Panic hook should have caught this");
+    }));
 
-    test_result.expect("Test Result")
+    // If we've panicked from the test, we need to terminate all the child processes too to stop the test
+    match test_result {
+        Ok(r) => {
+            return r.unwrap()
+        },
+        Err(_) => {
+            let pid = Pid::from_raw(0);
+            kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
+            exit(1);
+        }
+    }
 }
 
 fn cluster_cleanup(option: EnvironmentSetup) {
@@ -125,7 +134,9 @@ fn cluster_cleanup(option: EnvironmentSetup) {
                 Err(err) => panic!("[main] Cluster cleanup failed: {}", err),
             }
         });
-        let _ = cluster_cleanup_wait.join().expect("Cluster cleanup wait failed");
+        let _ = cluster_cleanup_wait
+            .join()
+            .expect("Cluster cleanup wait failed");
     }
 }
 
@@ -171,7 +182,9 @@ fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
             Err(err) => panic!("[main] Cluster setup failed: {}", err),
         }
     });
-    let _ = cluster_setup_wait.join().expect("Cluster setup wait failed");
+    let _ = cluster_setup_wait
+        .join()
+        .expect("Cluster setup wait failed");
 
     Ok(())
     //Arc::new(TestDriver {

@@ -208,10 +208,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 match select_w_timeout {
                     Err(_) => {
-                        // Need to kill test parent process
-                        let pid = Pid::from_raw(0);
+                        // Need to catch this panic to kill test parent process + all child processes
                         panic!("Test timeout");
-                        kill(pid, Signal::SIGKILL).expect("Unable to kill test process");
                     },
                     Ok(select_w_timeout) => match select_w_timeout.index() {
                         i if i == test_thread => {
@@ -231,7 +229,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                                 //consumer_bytes: result.consumer_bytes,
                                 //consumer_latency_histogram: result.consumer_latency_histogram,
                             })
- 
+
 
                         }
                         _ => unreachable!()
