@@ -138,35 +138,10 @@ impl StreamFetchHandler {
                 Err(e) => {
                     let error = SmartStreamError::InvalidWasmModule(e.to_string());
                     let error_code = ErrorCode::SmartStreamError(error);
-
-                    type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
-                    let partition_response = DefaultPartitionResponse {
-                        error_code,
-                        partition_index: replica.partition,
-                        ..Default::default()
-                    };
-
-                    let stream_response = StreamFetchResponse {
-                        topic: replica.topic.clone(),
-                        stream_id,
-                        partition: partition_response,
-                    };
-
-                    let response_msg =
-                        RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
-                            &header,
-                            stream_response,
-                        );
-
-                    {
-                        let mut inner_sink = sink.lock().await;
-                        inner_sink
-                            .send_response(&response_msg, header.api_version())
-                            .await?;
-                    }
+                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                     return Err(SocketError::Io(IoError::new(
                         ErrorKind::InvalidData,
-                        "Invalid WASM module",
+                        format!("Invalid WASM module: {}", e),
                     )));
                 }
             };
@@ -174,54 +149,81 @@ impl StreamFetchHandler {
             let smartstream: Box<dyn SmartStream> = match payload.kind {
                 SmartStreamKind::Filter => {
                     debug!("Instantiating SmartStreamFilter");
-                    let filter =
-                        module
-                            .create_filter(&sm_engine, payload.params)
-                            .map_err(|err| {
-                                SocketError::Io(IoError::new(
-                                    ErrorKind::Other,
-                                    format!("Failed to instantiate SmartStreamFilter {}", err),
-                                ))
-                            })?;
+                    let filter = match module.create_filter(&sm_engine, payload.params) {
+                        Ok(filter) => filter,
+                        Err(err) => {
+                            let error_code = ErrorCode::SmartStreamError(
+                                SmartStreamError::InvalidSmartStreamModule("filter".to_string()),
+                            );
+                            send_back_error(&sink, &replica, &header, stream_id, error_code)
+                                .await?;
+                            return Err(SocketError::Io(IoError::new(
+                                ErrorKind::Other,
+                                format!("Failed to instantiate SmartStreamFilter {}", err),
+                            )));
+                        }
+                    };
                     Box::new(filter)
                 }
                 SmartStreamKind::Map => {
                     debug!("Instantiating SmartStreamMap");
-                    let map = module
-                        .create_map(&sm_engine, payload.params)
-                        .map_err(|err| {
-                            SocketError::Io(IoError::new(
+                    let map = match module.create_map(&sm_engine, payload.params) {
+                        Ok(map) => map,
+                        Err(err) => {
+                            let error_code = ErrorCode::SmartStreamError(
+                                SmartStreamError::InvalidSmartStreamModule("map".to_string()),
+                            );
+                            send_back_error(&sink, &replica, &header, stream_id, error_code)
+                                .await?;
+                            return Err(SocketError::Io(IoError::new(
                                 ErrorKind::Other,
                                 format!("Failed to instantiate SmartStreamMap {}", err),
-                            ))
-                        })?;
+                            )));
+                        }
+                    };
                     Box::new(map)
                 }
                 SmartStreamKind::ArrayMap => {
                     debug!("Instantiating SmartStreamArrayMap");
-                    let map = module
-                        .create_array_map(&sm_engine, payload.params)
-                        .map_err(|err| {
-                            SocketError::Io(IoError::new(
+                    let array_map = match module.create_array_map(&sm_engine, payload.params) {
+                        Ok(array_map) => array_map,
+                        Err(err) => {
+                            let error_code = ErrorCode::SmartStreamError(
+                                SmartStreamError::InvalidSmartStreamModule("array_map".to_string()),
+                            );
+                            send_back_error(&sink, &replica, &header, stream_id, error_code)
+                                .await?;
+                            return Err(SocketError::Io(IoError::new(
                                 ErrorKind::Other,
                                 format!("Failed to instantiate SmartStreamArrayMap {}", err),
-                            ))
-                        })?;
-                    Box::new(map)
+                            )));
+                        }
+                    };
+
+                    Box::new(array_map)
                 }
                 SmartStreamKind::Aggregate { accumulator } => {
                     debug!(
                         accumulator_len = accumulator.len(),
                         "Instantiating SmartStreamAggregate"
                     );
-                    let aggregator = module
-                        .create_aggregate(&sm_engine, payload.params, accumulator)
-                        .map_err(|err| {
-                            SocketError::Io(IoError::new(
-                                ErrorKind::Other,
-                                format!("Failed to instantiate SmartStreamAggregate {}", err),
-                            ))
-                        })?;
+                    let aggregator =
+                        match module.create_aggregate(&sm_engine, payload.params, accumulator) {
+                            Ok(aggregate) => aggregate,
+                            Err(err) => {
+                                let error_code = ErrorCode::SmartStreamError(
+                                    SmartStreamError::InvalidSmartStreamModule(
+                                        "aggregate".to_string(),
+                                    ),
+                                );
+                                send_back_error(&sink, &replica, &header, stream_id, error_code)
+                                    .await?;
+                                return Err(SocketError::Io(IoError::new(
+                                    ErrorKind::Other,
+                                    format!("Failed to instantiate SmartStreamAggregate {}", err),
+                                )));
+                            }
+                        };
                     Box::new(aggregator)
                 }
             };
@@ -552,6 +554,42 @@ impl StreamFetchHandler {
 
         Ok((next_offset, true))
     }
+}
+
+async fn send_back_error(
+    sink: &ExclusiveFlvSink,
+    replica: &ReplicaKey,
+    header: &RequestHeader,
+    stream_id: u32,
+    error_code: ErrorCode,
+) -> Result<(), SocketError> {
+    type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+    let partition_response = DefaultPartitionResponse {
+        error_code,
+        partition_index: replica.partition,
+        ..Default::default()
+    };
+
+    let stream_response = StreamFetchResponse {
+        topic: replica.topic.clone(),
+        stream_id,
+        partition: partition_response,
+    };
+
+    let response_msg =
+        RequestMessage::<DefaultStreamFetchRequest>::response_with_header(header, stream_response);
+
+    {
+        let mut inner_sink = sink.lock().await;
+        inner_sink
+            .send_response(&response_msg, header.api_version())
+            .await?;
+    }
+
+    Err(SocketError::Io(IoError::new(
+        ErrorKind::InvalidData,
+        "Invalid WASM module",
+    )))
 }
 
 pub mod publishers {
