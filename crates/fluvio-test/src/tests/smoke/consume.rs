@@ -57,7 +57,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
     }
 }
 
-async fn validate_consume_message_api(
+pub async fn validate_consume_message_api(
     test_driver: TestDriver,
     offsets: Offsets,
     test_case: &SmokeTestCase,
@@ -79,11 +79,8 @@ async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        println!("Creating a consumer");
         let consumer = test_driver.get_consumer(&topic_name).await;
-        println!("Created a consumer");
 
-        println!("Creating a stream");
         let mut stream = consumer
             .stream(
                 Offset::absolute(*base_offset)
@@ -92,13 +89,10 @@ async fn validate_consume_message_api(
             .await
             .expect("stream");
 
-        println!("Created a stream");
-
         let mut total_records: u32 = 0;
 
         let mut chunk_time = SystemTime::now();
 
-        println!("About to enter consumer loop");
         loop {
             let _canow = SystemTime::now();
             select! {

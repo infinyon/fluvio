@@ -81,18 +81,36 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
     println!("Starting smoke test");
     let smoke_test_case = test_case.into();
 
+    // We're going to handle the `--consumer-wait` flag in this process
     let producer_process = match fork() {
         Ok(Fork::Parent(child_pid)) => child_pid,
         Ok(Fork::Child) => {
             run_block_on(async {
                 println!("Producer about to connect");
+                let mut test_driver_consumer_wait = test_driver.clone();
+
                 test_driver
                     .connect()
                     .await
                     .expect("Connecting to cluster failed");
                 println!("About to start producer test");
 
-                produce::produce_message(test_driver, &smoke_test_case).await;
+                let start_offset = produce::produce_message(test_driver, &smoke_test_case).await;
+
+                // If we've passed in `--consumer-wait` then we should start the consumer after the producer
+                if smoke_test_case.option.consumer_wait {
+                    test_driver_consumer_wait
+                        .connect()
+                        .await
+                        .expect("Connecting to cluster failed");
+                    use crate::tests::smoke::consume::validate_consume_message_api;
+                    validate_consume_message_api(
+                        test_driver_consumer_wait,
+                        start_offset,
+                        &smoke_test_case,
+                    )
+                    .await;
+                }
             });
 
             exit(0);
@@ -110,34 +128,39 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
         }
     });
 
-    let consumer_process = match fork() {
-        Ok(Fork::Parent(child_pid)) => child_pid,
-        Ok(Fork::Child) => {
-            run_block_on(async {
-                println!("Consumer about to connect");
-                test_driver
-                    .connect()
-                    .await
-                    .expect("Connecting to cluster failed");
-                println!("About to start consumer test");
-                consume::validate_consume_message(test_driver, &smoke_test_case).await;
-            });
+    // By default, we should run the consumer and producer at the same time
+    if !smoke_test_case.option.consumer_wait {
+        let consumer_process = match fork() {
+            Ok(Fork::Parent(child_pid)) => child_pid,
+            Ok(Fork::Child) => {
+                run_block_on(async {
+                    println!("Consumer about to connect");
+                    test_driver
+                        .connect()
+                        .await
+                        .expect("Connecting to cluster failed");
+                    println!("About to start consumer test");
+                    consume::validate_consume_message(test_driver, &smoke_test_case).await;
+                });
 
-            exit(0);
-        }
-        Err(_) => panic!("Consumer fork failed"),
-    };
-
-    let consumer_wait = thread::spawn(move || {
-        let pid = Pid::from_raw(consumer_process);
-        match waitpid(pid, None) {
-            Ok(status) => {
-                debug!("[main] Producer Child exited with status {:?}", status);
+                exit(0);
             }
-            Err(err) => panic!("[main] waitpid() failed: {}", err),
-        }
-    });
+            Err(_) => panic!("Consumer fork failed"),
+        };
 
-    let _ = consumer_wait.join();
-    let _ = producer_wait.join();
+        let consumer_wait = thread::spawn(move || {
+            let pid = Pid::from_raw(consumer_process);
+            match waitpid(pid, None) {
+                Ok(status) => {
+                    debug!("[main] Producer Child exited with status {:?}", status);
+                }
+                Err(err) => panic!("[main] waitpid() failed: {}", err),
+            }
+        });
+
+        let _ = consumer_wait.join();
+        let _ = producer_wait.join();
+    } else {
+        let _ = producer_wait.join();
+    }
 }

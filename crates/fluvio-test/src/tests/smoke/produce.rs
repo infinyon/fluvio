@@ -14,19 +14,18 @@ use super::offsets;
 
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(test_driver: TestDriver, test_case: &SmokeTestCase) {
+pub async fn produce_message(test_driver: TestDriver, test_case: &SmokeTestCase) -> Offsets {
     let offsets = offsets::find_offsets(&test_driver, test_case).await;
 
     let use_cli = test_case.option.use_cli;
 
-    // This needs to be evaluated up one level
-    //let consumer_wait = test_case.option.consumer_wait;
-
     if use_cli {
-        cli::produce_message_with_cli(test_case, offsets).await;
+        cli::produce_message_with_cli(test_case, offsets.clone()).await;
     } else {
-        produce_message_with_api(test_driver, offsets, test_case.clone()).await;
+        produce_message_with_api(test_driver, offsets.clone(), test_case.clone()).await;
     }
+
+    offsets
 }
 
 pub async fn produce_message_with_api(
@@ -46,9 +45,7 @@ pub async fn produce_message_with_api(
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
-        print!("Creating a producer");
         let producer = test_driver.create_producer(&topic_name).await;
-        print!("Created a producer");
 
         debug!(base_offset, "created producer");
 
