@@ -10,92 +10,22 @@ use fluvio_command::CommandExt;
 
 use super::SmokeTestCase;
 use super::message::*;
+use super::offsets;
 
 type Offsets = HashMap<String, i64>;
 
-pub async fn produce_message(mut test_driver: TestDriver, test_case: &SmokeTestCase) -> Offsets {
-    test_driver
-        .connect()
-        .await
-        .expect("Connecting to cluster failed");
-    use fluvio_future::task::spawn; // get initial offsets for each of the topic
+pub async fn produce_message(test_driver: TestDriver, test_case: &SmokeTestCase) {
     let offsets = offsets::find_offsets(&test_driver, test_case).await;
 
     let use_cli = test_case.option.use_cli;
-    let consumer_wait = test_case.option.consumer_wait;
+
+    // This needs to be evaluated up one level
+    //let consumer_wait = test_case.option.consumer_wait;
 
     if use_cli {
-        cli::produce_message_with_cli(test_case, offsets.clone()).await;
-    } else if consumer_wait {
-        produce_message_with_api(test_driver.clone(), offsets.clone(), test_case.clone()).await;
+        cli::produce_message_with_cli(test_case, offsets).await;
     } else {
-        spawn(produce_message_with_api(
-            test_driver.clone(),
-            offsets.clone(),
-            test_case.clone(),
-        ));
-    }
-
-    offsets
-}
-
-mod offsets {
-
-    use std::collections::HashMap;
-
-    use fluvio::FluvioAdmin;
-
-    use fluvio_controlplane_metadata::partition::PartitionSpec;
-    use fluvio_controlplane_metadata::partition::ReplicaKey;
-
-    use super::SmokeTestCase;
-    use super::{TestDriver};
-    use super::EnvDetail;
-
-    pub async fn find_offsets(
-        test_driver: &TestDriver,
-        test_case: &SmokeTestCase,
-    ) -> HashMap<String, i64> {
-        let partition = test_case.environment.partition;
-
-        let _consumer_wait = test_case.option.consumer_wait;
-
-        let mut offsets = HashMap::new();
-
-        let mut admin = test_driver.client().admin().await;
-
-        for _i in 0..partition {
-            let topic_name = test_case.environment.topic_name();
-            // find last offset
-            let offset = last_leo(&mut admin, &topic_name).await;
-            println!("found topic: {} offset: {}", &topic_name, offset);
-            offsets.insert(topic_name.to_string(), offset);
-        }
-
-        offsets
-    }
-
-    async fn last_leo(admin: &mut FluvioAdmin, topic: &str) -> i64 {
-        use std::convert::TryInto;
-
-        let partitions = admin
-            .list::<PartitionSpec, _>(vec![])
-            .await
-            .expect("get partitions status");
-
-        for partition in partitions {
-            let replica: ReplicaKey = partition
-                .name
-                .clone()
-                .try_into()
-                .expect("canot parse partition");
-
-            if replica.topic == topic && replica.partition == 0 {
-                return partition.status.leader.leo;
-            }
-        }
-
-        panic!("cannot found partition 0 for topic: {}", topic);
+        produce_message_with_api(test_driver, offsets, test_case.clone()).await;
     }
 }
 
@@ -116,7 +46,9 @@ pub async fn produce_message_with_api(
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
+        print!("Creating a producer");
         let producer = test_driver.create_producer(&topic_name).await;
+        print!("Created a producer");
 
         debug!(base_offset, "created producer");
 

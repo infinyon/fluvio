@@ -14,8 +14,6 @@ use crate::test_meta::test_result::TestResult;
 use crate::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use crate::test_meta::derive_attr::TestRequirements;
 
-pub type SharedTestDriver = TestDriver;
-
 pub struct TestDriver {
     pub client: Option<Fluvio>,
     pub cluster: Option<TestCluster>,

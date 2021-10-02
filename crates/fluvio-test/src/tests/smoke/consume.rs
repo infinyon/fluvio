@@ -2,7 +2,6 @@
 
 use std::{io, time::Duration};
 use std::io::Write;
-use std::collections::HashMap;
 
 use tracing::{info};
 use futures_lite::stream::StreamExt;
@@ -15,21 +14,14 @@ use crate::get_binary;
 
 use super::SmokeTestCase;
 use super::message::*;
-
-type Offsets = HashMap<String, i64>;
+use super::offsets::{self, Offsets};
 
 /// verify consumers
-pub async fn validate_consume_message(
-    mut test_driver: TestDriver,
-    test_case: &SmokeTestCase,
-    offsets: Offsets,
-) {
+pub async fn validate_consume_message(test_driver: TestDriver, test_case: &SmokeTestCase) {
     let use_cli = test_case.option.use_cli;
 
-    test_driver
-        .connect()
-        .await
-        .expect("Connecting to cluster failed");
+    // Get offsets before starting
+    let offsets = offsets::find_offsets(&test_driver, test_case).await;
 
     if use_cli {
         validate_consume_message_cli(test_case, offsets);
@@ -87,8 +79,11 @@ async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
+        println!("Creating a consumer");
         let consumer = test_driver.get_consumer(&topic_name).await;
+        println!("Created a consumer");
 
+        println!("Creating a stream");
         let mut stream = consumer
             .stream(
                 Offset::absolute(*base_offset)
@@ -97,10 +92,13 @@ async fn validate_consume_message_api(
             .await
             .expect("stream");
 
+        println!("Created a stream");
+
         let mut total_records: u32 = 0;
 
         let mut chunk_time = SystemTime::now();
 
+        println!("About to enter consumer loop");
         loop {
             let _canow = SystemTime::now();
             select! {

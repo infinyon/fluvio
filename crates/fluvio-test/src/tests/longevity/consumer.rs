@@ -4,7 +4,7 @@ use std::time::Duration;
 use futures_lite::StreamExt;
 use tokio::select;
 
-use fluvio_test_util::test_runner::test_driver::SharedTestDriver;
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
@@ -12,7 +12,7 @@ use fluvio_future::timer::sleep;
 use super::LongevityTestCase;
 use super::util::*;
 
-pub async fn consumer_stream(test_driver: SharedTestDriver, option: LongevityTestCase) {
+pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase) {
     println!("About to get a consumer");
     let consumer = test_driver
         .get_consumer(&option.environment.topic_name())

@@ -1,6 +1,7 @@
 pub mod consume;
 pub mod produce;
 pub mod message;
+pub mod offsets;
 
 use std::any::Any;
 
@@ -14,6 +15,14 @@ use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_future::task::run_block_on;
+
+use std::thread;
+use tracing::debug;
+use std::process::exit;
+
+use fork::{fork, Fork};
+use nix::sys::wait::waitpid;
+use nix::unistd::Pid;
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -72,13 +81,63 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
     println!("Starting smoke test");
     let smoke_test_case = test_case.into();
 
-    run_block_on(async {
-        let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
-        // println!("start sleeping");
-        // fluvio_future::timer::sleep(Duration::from_secs(40)).await;
-        // sleep(Duration::from_secs(40));
-        // println!("end sleeping");
-        consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets)
-            .await;
+    let producer_process = match fork() {
+        Ok(Fork::Parent(child_pid)) => child_pid,
+        Ok(Fork::Child) => {
+            run_block_on(async {
+                println!("Producer about to connect");
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                println!("About to start producer test");
+
+                produce::produce_message(test_driver, &smoke_test_case).await;
+            });
+
+            exit(0);
+        }
+        Err(_) => panic!("Producer fork failed"),
+    };
+
+    let producer_wait = thread::spawn(move || {
+        let pid = Pid::from_raw(producer_process);
+        match waitpid(pid, None) {
+            Ok(status) => {
+                debug!("[main] Producer Child exited with status {:?}", status);
+            }
+            Err(err) => panic!("[main] waitpid() failed: {}", err),
+        }
     });
+
+    let consumer_process = match fork() {
+        Ok(Fork::Parent(child_pid)) => child_pid,
+        Ok(Fork::Child) => {
+            run_block_on(async {
+                println!("Consumer about to connect");
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                println!("About to start consumer test");
+                consume::validate_consume_message(test_driver, &smoke_test_case).await;
+            });
+
+            exit(0);
+        }
+        Err(_) => panic!("Consumer fork failed"),
+    };
+
+    let consumer_wait = thread::spawn(move || {
+        let pid = Pid::from_raw(consumer_process);
+        match waitpid(pid, None) {
+            Ok(status) => {
+                debug!("[main] Producer Child exited with status {:?}", status);
+            }
+            Err(err) => panic!("[main] waitpid() failed: {}", err),
+        }
+    });
+
+    let _ = consumer_wait.join();
+    let _ = producer_wait.join();
 }
