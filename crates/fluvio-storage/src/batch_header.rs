@@ -50,7 +50,6 @@ mod tests {
 
     use std::env::temp_dir;
 
-    use fluvio_future::fs::util as file_util;
     use flv_util::fixture::ensure_clean_file;
     use dataplane::fixture::create_batch;
     use dataplane::fixture::create_batch_with_producer;
@@ -58,7 +57,6 @@ mod tests {
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
     use super::BatchHeaderStream;
-    use super::BatchHeaderPos;
 
     #[allow(unused)]
     const TEST_FILE_NAME: &str = "00000000000000000200.log"; // for offset 200
@@ -89,18 +87,13 @@ mod tests {
             .await
             .expect("send batch");
 
-        let mut file = file_util::open(&test_file).await.expect("open test file");
+        let mut stream = BatchHeaderStream::open(test_file).await.expect("open");
 
-        let batch_res = BatchHeaderPos::from(&mut file, 0)
-            .await
-            .expect("open header");
-
-        if let Some(batch) = batch_res {
-            let header = batch.get_batch().get_header();
-            assert_eq!(header.producer_id, 12);
-        } else {
-            panic!("batch not found")
-        }
+        let batch_header_opt = stream.next().await;
+        assert!(batch_header_opt.is_some());
+        let batch = batch_header_opt.expect("some");
+        let header = batch.get_batch().get_header();
+        assert_eq!(header.producer_id, 12);
     }
 
     #[allow(unused)]
@@ -125,9 +118,7 @@ mod tests {
             .await
             .expect("write");
 
-        let file = file_util::open(&test_file).await.expect("open");
-
-        let mut stream = BatchHeaderStream::new(file);
+        let mut stream = BatchHeaderStream::open(test_file).await.expect("open");
 
         let batch_pos1 = stream.next().await.expect("batch");
         assert_eq!(batch_pos1.get_batch().get_header().producer_id, 12);

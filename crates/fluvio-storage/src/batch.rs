@@ -1,4 +1,5 @@
 use std::cmp::min;
+use std::fs::OpenOptions;
 use std::io::Error as IoError;
 use std::io::Cursor;
 use std::io::ErrorKind;
@@ -6,7 +7,8 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
-use fluvio_future::fs::mmap::MemoryMappedFile;
+use fluvio_future::task::spawn_blocking;
+use memmap::Mmap;
 use tracing::trace;
 use tracing::debug;
 
@@ -165,22 +167,22 @@ where
     }
 }
 
-struct SequentialMmap {
-    map: MemoryMappedFile,
+pub struct SequentialMmap {
+    map: Mmap,
     pos: Size,
 }
 
 impl SequentialMmap {
     // read bytes
     fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
-        let inner = self.map.inner();
+        let inner = &self.map;
         let prev_pos = self.pos;
         self.pos = min(inner.len() as Size, self.pos as Size + len);
         (&inner, self.pos - prev_pos)
     }
 
     fn seek(&mut self, amount: Size) -> Size {
-        let inner = self.map.inner();
+        let inner = &self.map;
         self.pos = min(inner.len() as Size, self.pos as Size + amount);
         self.pos
     }
@@ -203,7 +205,17 @@ where
     where
         P: AsRef<Path>,
     {
-        let (mmap, file) = MemoryMappedFile::open(path, 0 as u64).await?;
+        let m_path = path.as_ref().to_owned();
+        let (mmap, file, _) = spawn_blocking(move || {
+            let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
+            let meta = mfile.metadata().unwrap();
+            if meta.len() == 0 {
+                mfile.set_len(0)?;
+            }
+
+            unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))
+        })
+        .await?;
 
         let seq_map = SequentialMmap {
             map: mmap,
@@ -212,7 +224,7 @@ where
         //trace!("opening batch stream on: {}",file);
         Ok(Self {
             pos: 0,
-            file,
+            file: file.into(),
             seq_map,
             invalid: None,
             data: PhantomData,
@@ -249,6 +261,10 @@ impl<R> FileBatchStream<R>
 where
     R: BatchRecords,
 {
+    pub fn seek(&mut self, pos: Size) {
+        self.pos = pos;
+    }
+
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!("reading next from pos: {}", self.pos);
         match FileBatchPos::from(&mut self.seq_map, self.pos).await {
