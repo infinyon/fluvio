@@ -104,31 +104,35 @@ async fn run_test(
 }
 
 async fn cluster_cleanup(option: EnvironmentSetup) {
-    if option.skip_cluster_delete() {
-        println!("skipping cluster delete\n");
-    } else {
+    if option.cluster_delete() {
         let mut setup = TestCluster::new(option.clone());
         setup.remove_cluster().await;
     }
 }
 
 async fn cluster_setup(option: &EnvironmentSetup) -> Arc<TestDriver> {
-    let (cluster, fluvio_client) = if option.skip_cluster_start() {
-        println!("skipping cluster start");
-        // Connect to cluster in profile
-        (
-            None,
-            Fluvio::connect()
-                .await
-                .expect("Unable to connect to Fluvio test cluster via profile"),
-        )
-    } else {
+    if option.remove_cluster_before() {
+        println!("Deleting existing cluster before starting test");
+        let mut setup = TestCluster::new(option.clone());
+        setup.remove_cluster().await;
+    }
+
+    let (cluster, fluvio_client) = if option.cluster_start() || option.remove_cluster_before() {
+        println!("Starting cluster");
         let mut test_cluster = TestCluster::new(option.clone());
         let fluvio = test_cluster
             .start()
             .await
             .expect("Unable to connect to fresh test cluster");
         (Some(test_cluster), fluvio)
+    } else {
+        println!("Connecting to Fluvio cluster in profile");
+        (
+            None,
+            Fluvio::connect()
+                .await
+                .expect("Unable to connect to Fluvio test cluster via profile"),
+        )
     };
 
     Arc::new(TestDriver {
