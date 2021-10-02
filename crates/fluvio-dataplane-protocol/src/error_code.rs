@@ -135,8 +135,10 @@ impl ErrorCode {
 // TODO: Add variant for reporting panics
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
 pub enum SmartStreamError {
-    #[error("SmartStream Runtime error")]
+    #[error("Runtime error")]
     Runtime(#[from] SmartStreamRuntimeError),
+    #[error("WASM Module error: {0}")]
+    InvalidWasmModule(String),
 }
 
 impl Default for SmartStreamError {

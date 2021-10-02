@@ -133,12 +133,43 @@ impl StreamFetchHandler {
         let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
             let wasm = &payload.wasm.get_raw()?;
             debug!(len = wasm.len(), "creating WASM module with bytes");
-            let module = sm_engine.create_module_from_binary(wasm).map_err(|err| {
-                SocketError::Io(IoError::new(
-                    ErrorKind::Other,
-                    format!("module loading error {}", err),
-                ))
-            })?;
+            let module = match sm_engine.create_module_from_binary(wasm) {
+                Ok(module) => module,
+                Err(e) => {
+                    let error = SmartStreamError::InvalidWasmModule(e.to_string());
+                    let error_code = ErrorCode::SmartStreamError(error);
+
+                    type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+                    let partition_response = DefaultPartitionResponse {
+                        error_code,
+                        partition_index: replica.partition,
+                        ..Default::default()
+                    };
+
+                    let stream_response = StreamFetchResponse {
+                        topic: replica.topic.clone(),
+                        stream_id,
+                        partition: partition_response,
+                    };
+
+                    let response_msg =
+                        RequestMessage::<DefaultStreamFetchRequest>::response_with_header(
+                            &header,
+                            stream_response,
+                        );
+
+                    {
+                        let mut inner_sink = sink.lock().await;
+                        inner_sink
+                            .send_response(&response_msg, header.api_version())
+                            .await?;
+                    }
+                    return Err(SocketError::Io(IoError::new(
+                        ErrorKind::InvalidData,
+                        "Invalid WASM module",
+                    )));
+                }
+            };
 
             let smartstream: Box<dyn SmartStream> = match payload.kind {
                 SmartStreamKind::Filter => {
@@ -1655,6 +1686,73 @@ mod test {
             .await;
 
         assert!(response.is_ok());
+
+        server_end_event.notify();
+        debug!("terminated controller");
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_fetch_invalid_wasm_module() {
+        let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12009";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::shared(FluvioSocket::connect(addr).await.expect("connect"));
+
+        // perform for two versions
+        let topic = "test_invalid_wasm";
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        let wasm = Vec::from("Hello, world, I'm not a valid WASM module!");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Filter,
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        let response = stream
+            .next()
+            .await
+            .expect("should get response")
+            .expect("response should be Ok");
+
+        assert!(
+            matches!(
+                response.partition.error_code,
+                ErrorCode::SmartStreamError(SmartStreamError::InvalidWasmModule(_))
+            ),
+            "expected a SmartStream Module error for invalid WASM module"
+        );
 
         server_end_event.notify();
         debug!("terminated controller");

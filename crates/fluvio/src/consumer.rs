@@ -11,7 +11,7 @@ use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, SmartStreamPayload, SmartStreamWasm,
     SmartStreamKind, WASM_MODULE_V2_API, GZIP_WASM_API,
 };
-use dataplane::{Isolation, SmartStreamError};
+use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
 use dataplane::fetch::DefaultFetchRequest;
@@ -372,8 +372,8 @@ impl PartitionConsumer {
                 let code = response.partition.error_code;
                 match code {
                     ErrorCode::None => None,
-                    ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)) => {
-                        Some(Err(FluvioError::SmartStreamRuntime(error)))
+                    ErrorCode::SmartStreamError(error) => {
+                        Some(Err(FluvioError::SmartStream(error)))
                     }
                     _ => Some(Err(FluvioError::AdminApi(
                         fluvio_sc_schema::ApiError::Code(code, None),
