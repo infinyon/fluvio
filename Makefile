@@ -93,7 +93,7 @@ smoke-test-tls: smoke-test
 
 smoke-test-tls-policy: TEST_ENV_AUTH_POLICY=AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
 smoke-test-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
-smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks 
+smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks $(EXTRA_ARG)
 smoke-test-tls-policy: smoke-test
 
 # test rbac with ROOT user

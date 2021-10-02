@@ -371,7 +371,7 @@ jobs:
         timeout-minutes: 2
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster smoke-test-tls-root
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start smoke-test-tls-root
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
@@ -382,14 +382,14 @@ jobs:
         timeout-minutes: 3
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster election-test
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
           echo "election test done"
       - name: Run multiple-partition-test
         if: ${{ matrix.test == 'multiple-partition' }}
         timeout-minutes: 2
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--keep-cluster multiple-partition-test
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
           echo "multiple partition test done"
       - name: Save logs
         if: failure()
@@ -520,7 +520,7 @@ jobs:
           FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--keep-cluster UNINSTALL=noclean smoke-test-k8-tls-root
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean smoke-test-k8-tls-root
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: |
