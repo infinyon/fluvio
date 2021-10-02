@@ -72,7 +72,7 @@ fn main() {
             ..Default::default()
         };
         //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
-        eprintln!("Test panicked: {:#?}",panic_info);
+        eprintln!("Test panicked: {:#?}", panic_info);
         eprintln!("{}", test_result);
     }));
 
