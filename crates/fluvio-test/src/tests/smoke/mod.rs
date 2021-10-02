@@ -159,8 +159,6 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> Test
         });
 
         let _ = consumer_wait.join();
-        let _ = producer_wait.join();
-    } else {
-        let _ = producer_wait.join();
     }
+    let _ = producer_wait.join();
 }
