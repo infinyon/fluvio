@@ -20,8 +20,6 @@ use dataplane::batch::{
 use dataplane::Size;
 use dataplane::Offset;
 
-use crate::StorageError;
-
 /// hold information about position of batch in the file
 pub struct FileBatchPos<R>
 where
@@ -192,7 +190,6 @@ impl SequentialMmap {
 pub struct FileBatchStream<R = MemoryRecords> {
     pos: Size,
     invalid: Option<IoError>,
-    file: File,
     seq_map: SequentialMmap,
     data: PhantomData<R>,
 }
@@ -224,31 +221,10 @@ where
         //trace!("opening batch stream on: {}",file);
         Ok(Self {
             pos: 0,
-            file: file.into(),
             seq_map,
             invalid: None,
             data: PhantomData,
         })
-    }
-
-    pub async fn new_with_pos(
-        mut file: File,
-        pos: Size,
-    ) -> Result<FileBatchStream<R>, StorageError> {
-        /*
-        trace!("opening batch  stream at: {}", pos);
-        let seek_position = file.seek(SeekFrom::Start(pos as u64)).await?;
-        if seek_position != pos as u64 {
-            return Err(IoError::new(ErrorKind::UnexpectedEof, "not enough for position").into());
-        }
-        Ok(FileBatchStream {
-            pos,
-            file,
-            invalid: None,
-            data: PhantomData,
-        })
-        */
-        todo!()
     }
 
     /// check if it is invalid

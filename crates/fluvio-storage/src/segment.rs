@@ -7,7 +7,6 @@ use tracing::{debug, trace, instrument};
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
 use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_future::fs::util as file_util;
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
@@ -108,10 +107,12 @@ where
             self.msg_log.get_path(),
             start_pos
         );
-        let file = file_util::open(self.msg_log.get_path()).await?;
+
         // let metadata = file.metadata().await?;
         // debug!("batch file len: {}",metadata.len());
-        BatchHeaderStream::new_with_pos(file, start_pos).await
+        let mut stream = BatchHeaderStream::open(self.msg_log.get_path()).await?;
+        stream.seek(start_pos);
+        Ok(stream)
     }
 
     #[allow(dead_code)]
