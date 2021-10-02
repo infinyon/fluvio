@@ -70,8 +70,7 @@ mod tests {
         }
     }
 
-    #[allow(unused, clippy::unnecessary_mut_passed)]
-    //#[fluvio_future::test]
+    #[fluvio_future::test]
     async fn test_decode_batch_header_simple() {
         let test_file = temp_dir().join(TEST_FILE_NAME);
         ensure_clean_file(&test_file);
@@ -83,7 +82,7 @@ mod tests {
             .expect("create sink");
 
         msg_sink
-            .write_batch(&mut create_batch())
+            .write_batch(&create_batch())
             .await
             .expect("send batch");
 
@@ -99,8 +98,7 @@ mod tests {
     #[allow(unused)]
     const TEST_FILE_NAME2: &str = "00000000000000000201.log"; // for offset 200
 
-    #[allow(unused, clippy::unnecessary_mut_passed)]
-    //#[fluvio_future::test]
+    #[fluvio_future::test]
     async fn test_decode_batch_header_multiple() {
         let test_file = temp_dir().join(TEST_FILE_NAME2);
         ensure_clean_file(&test_file);
@@ -109,12 +107,9 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(201, &options).await.expect("create");
 
+        msg_sink.write_batch(&create_batch()).await.expect("write");
         msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("write");
-        msg_sink
-            .write_batch(&mut create_batch_with_producer(25, 2))
+            .write_batch(&create_batch_with_producer(25, 2))
             .await
             .expect("write");
 

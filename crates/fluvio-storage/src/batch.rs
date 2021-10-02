@@ -12,7 +12,6 @@ use memmap::Mmap;
 use tracing::trace;
 use tracing::debug;
 
-use fluvio_future::fs::File;
 use dataplane::batch::{
     Batch, BatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE, BATCH_FILE_HEADER_SIZE,
     MemoryRecords,
@@ -176,7 +175,7 @@ impl SequentialMmap {
         let inner = &self.map;
         let prev_pos = self.pos;
         self.pos = min(inner.len() as Size, self.pos as Size + len);
-        (&inner, self.pos - prev_pos)
+        (inner, self.pos - prev_pos)
     }
 
     fn seek(&mut self, amount: Size) -> Size {
@@ -203,7 +202,7 @@ where
         P: AsRef<Path>,
     {
         let m_path = path.as_ref().to_owned();
-        let (mmap, file, _) = spawn_blocking(move || {
+        let (mmap, _file, _) = spawn_blocking(move || {
             let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
             let meta = mfile.metadata().unwrap();
             if meta.len() == 0 {
@@ -214,10 +213,7 @@ where
         })
         .await?;
 
-        let seq_map = SequentialMmap {
-            map: mmap,
-            pos: 0 as Size,
-        };
+        let seq_map = SequentialMmap { map: mmap, pos: 0 };
         //trace!("opening batch stream on: {}",file);
         Ok(Self {
             pos: 0,
