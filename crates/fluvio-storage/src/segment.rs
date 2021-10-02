@@ -111,7 +111,7 @@ where
         // let metadata = file.metadata().await?;
         // debug!("batch file len: {}",metadata.len());
         let mut stream = BatchHeaderStream::open(self.msg_log.get_path()).await?;
-        stream.seek(start_pos);
+        stream.set_absolute(start_pos);
         Ok(stream)
     }
 

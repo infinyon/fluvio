@@ -24,7 +24,8 @@ pub struct FileBatchPos<R>
 where
     R: BatchRecords,
 {
-    inner: Batch<R>
+    inner: Batch<R>,
+    pos: Size,
 }
 
 impl<R> Unpin for FileBatchPos<R> where R: BatchRecords {}
@@ -34,15 +35,17 @@ impl<R> FileBatchPos<R>
 where
     R: BatchRecords,
 {
-    fn new(inner: Batch<R>) -> Self {
-        FileBatchPos { inner }
+    fn new(inner: Batch<R>, pos: Size) -> Self {
+        FileBatchPos { inner, pos }
     }
 
     pub fn get_batch(&self) -> &Batch<R> {
         &self.inner
     }
 
-
+    pub fn get_pos(&self) -> Size {
+        self.pos
+    }
 
     pub fn get_base_offset(&self) -> Offset {
         self.inner.get_base_offset()
@@ -66,11 +69,11 @@ where
         self.inner.records().remainder_bytes(remainder)
     }
 
-    /// decode next batch from file
-    pub(crate) async fn from(
+    /// decode next batch from sequence map
+    pub(crate) async fn read_from(
         file: &mut SequentialMmap,
-        pos: Size,
     ) -> Result<Option<FileBatchPos<R>>, IoError> {
+        let pos = file.pos;
         let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32);
         trace!(
             "file batch: read preamble and header {} bytes out of {}",
@@ -100,40 +103,37 @@ where
 
         let remainder = file_batch.len() as usize - BATCH_HEADER_SIZE as usize;
         trace!(
-            "file batch: offset: {}, len: {}, total: {}, remainder: {}, pos: {}",
-            file_batch.get_batch().get_last_offset_delta(),
-            file_batch.len(),
-            file_batch.total_len(),
+            last_offset = file_batch.get_batch().get_last_offset_delta(),
             remainder,
-            pos
+            pos,
+            "decoding header",
         );
 
         if file_batch.records_remainder_bytes(remainder) > 0 {
-            trace!("file batch reading records with remainder: {}", remainder);
+            trace!(remainder, "file batch reading records");
             file_batch.read_records(file, remainder).await?
         } else {
-            trace!("file batch seeking next batch");
-            file_batch.seek_to_next_batch(file, remainder).await?;
+            trace!("record length is zero");
         }
 
         Ok(Some(file_batch))
     }
 
-    /// decode the records
+    /// decode the records of contents
     async fn read_records<'a>(
         &'a mut self,
         file: &'a mut SequentialMmap,
-        buf_len: usize,
+        content_len: usize,
     ) -> Result<(), IoError> {
-        let (bytes, read_len) = file.read_bytes(buf_len as u32);
+        let (bytes, read_len) = file.read_bytes(content_len as u32);
 
         trace!(
             "file batch: read records {} bytes out of {}",
             read_len,
-            buf_len
+            content_len
         );
 
-        if read_len < buf_len as u32 {
+        if read_len < content_len as u32 {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
                 "not enough for records",
@@ -175,16 +175,21 @@ impl SequentialMmap {
         (inner, self.pos - prev_pos)
     }
 
+    // seek relative
     fn seek(&mut self, amount: Size) -> Size {
-        let inner = &self.map;
-        self.pos = min(inner.len() as Size, self.pos as Size + amount);
+        self.pos = min(self.map.len() as Size, self.pos as Size + amount);
+        self.pos
+    }
+
+    // seek absolute
+    pub fn set_absolute(&mut self, offset: Size) -> Size {
+        self.pos = min(self.map.len() as Size, offset);
         self.pos
     }
 }
 
 // stream to iterate batch
 pub struct FileBatchStream<R = MemoryRecords> {
-    pos: Size,
     invalid: Option<IoError>,
     seq_map: SequentialMmap,
     data: PhantomData<R>,
@@ -213,7 +218,6 @@ where
         let seq_map = SequentialMmap { map: mmap, pos: 0 };
         //trace!("opening batch stream on: {}",file);
         Ok(Self {
-            pos: 0,
             seq_map,
             invalid: None,
             data: PhantomData,
@@ -224,23 +228,34 @@ where
     pub fn invalid(self) -> Option<IoError> {
         self.invalid
     }
+
+    #[inline(always)]
+    pub fn get_pos(&self) -> Size {
+        self.seq_map.pos
+    }
+
+    #[inline(always)]
+    pub fn seek(&mut self, pos: Size) {
+        self.seq_map.seek(pos);
+    }
+
+    #[inline(always)]
+    pub fn set_absolute(&mut self, abs_offset: Size) {
+        self.seq_map.set_absolute(abs_offset);
+    }
 }
 
 impl<R> FileBatchStream<R>
 where
     R: BatchRecords,
 {
-    pub fn seek(&mut self, pos: Size) {
-        self.pos = pos;
-    }
-
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
-        trace!("reading next from pos: {}", self.pos);
-        match FileBatchPos::from(&mut self.seq_map, self.pos).await {
+        trace!(pos = self.get_pos(), "reading next from");
+        match FileBatchPos::read_from(&mut self.seq_map).await {
             Ok(batch_res) => {
                 if let Some(ref batch) = batch_res {
                     trace!("batch founded, updating pos");
-                    self.pos += batch.total_len() as Size;
+                    self.seek(batch.total_len() as Size);
                 } else {
                     trace!("no batch founded");
                 }
@@ -325,10 +340,10 @@ mod tests {
             .await
             .expect("open file batch stream");
 
-        assert_eq!(batch_stream.pos, 0);
+        assert_eq!(batch_stream.get_pos(), 0);
         let batch1 = batch_stream.next().await.expect("batch");
         assert_eq!(batch1.get_last_offset(), 301);
-        assert_eq!(batch_stream.pos, 79);
+        assert_eq!(batch_stream.get_pos(), 79);
         let batch2 = batch_stream.next().await.expect("batch");
         assert_eq!(batch2.get_last_offset(), 303);
     }
