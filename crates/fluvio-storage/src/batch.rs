@@ -24,8 +24,7 @@ pub struct FileBatchPos<R>
 where
     R: BatchRecords,
 {
-    inner: Batch<R>,
-    pos: Size,
+    inner: Batch<R>
 }
 
 impl<R> Unpin for FileBatchPos<R> where R: BatchRecords {}
@@ -35,17 +34,15 @@ impl<R> FileBatchPos<R>
 where
     R: BatchRecords,
 {
-    fn new(inner: Batch<R>, pos: Size) -> Self {
-        FileBatchPos { inner, pos }
+    fn new(inner: Batch<R>) -> Self {
+        FileBatchPos { inner }
     }
 
     pub fn get_batch(&self) -> &Batch<R> {
         &self.inner
     }
 
-    pub fn get_pos(&self) -> Size {
-        self.pos
-    }
+
 
     pub fn get_base_offset(&self) -> Offset {
         self.inner.get_base_offset()
@@ -328,8 +325,10 @@ mod tests {
             .await
             .expect("open file batch stream");
 
+        assert_eq!(batch_stream.pos, 0);
         let batch1 = batch_stream.next().await.expect("batch");
         assert_eq!(batch1.get_last_offset(), 301);
+        assert_eq!(batch_stream.pos, 79);
         let batch2 = batch_stream.next().await.expect("batch");
         assert_eq!(batch2.get_last_offset(), 303);
     }
