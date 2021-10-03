@@ -160,7 +160,7 @@ mod tests {
         }
 
         let time = write_time.elapsed();
-        println!("took: {:#?}, count: {}", time,counter);
+        println!("took: {:#?}, count: {}, pos = {}", time,counter,stream.get_pos());
         
     }
 }
