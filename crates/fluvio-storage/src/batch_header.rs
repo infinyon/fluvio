@@ -49,6 +49,7 @@ impl Encoder for FileEmptyRecords {
 mod tests {
 
     use std::env::temp_dir;
+    use std::path::PathBuf;
 
     use flv_util::fixture::ensure_clean_file;
     use dataplane::fixture::create_batch;
@@ -58,13 +59,11 @@ mod tests {
     use crate::config::ConfigOption;
     use super::BatchHeaderStream;
 
-    #[allow(unused)]
-    const TEST_FILE_NAME: &str = "00000000000000000200.log"; // for offset 200
 
-    #[allow(unused)]
-    fn default_option() -> ConfigOption {
+
+    fn default_option(base_dir: PathBuf) -> ConfigOption {
         ConfigOption {
-            base_dir: temp_dir(),
+            base_dir,
             segment_max_bytes: 1000,
             ..Default::default()
         }
@@ -72,10 +71,10 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_decode_batch_header_simple() {
-        let test_file = temp_dir().join(TEST_FILE_NAME);
+        let test_file = temp_dir().join("header-simpl").join("00000000000000000200.log");
         ensure_clean_file(&test_file);
 
-        let options = default_option();
+        let options = default_option(test_file.clone());
 
         let mut msg_sink = MutFileRecords::create(200, &options)
             .await
@@ -93,17 +92,16 @@ mod tests {
         let batch = batch_header_opt.expect("some");
         let header = batch.get_batch().get_header();
         assert_eq!(header.producer_id, 12);
+        assert_eq!(stream.get_pos(),79);
     }
 
-    #[allow(unused)]
-    const TEST_FILE_NAME2: &str = "00000000000000000201.log"; // for offset 200
 
     #[fluvio_future::test]
     async fn test_decode_batch_header_multiple() {
-        let test_file = temp_dir().join(TEST_FILE_NAME2);
+        let test_file = temp_dir().join("header_multiple").join("00000000000000000201.log");
         ensure_clean_file(&test_file);
 
-        let options = default_option();
+        let options = default_option(test_file.clone());
 
         let mut msg_sink = MutFileRecords::create(201, &options).await.expect("create");
 

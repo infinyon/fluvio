@@ -146,19 +146,6 @@ where
         Ok(())
     }
 
-    async fn seek_to_next_batch<'a>(
-        &'a self,
-        file: &'a mut SequentialMmap,
-        remainder: usize,
-    ) -> Result<(), IoError> {
-        if remainder > 0 {
-            trace!("file batch skipping: content {} bytes", remainder);
-            let seek_position = file.seek(remainder as u32);
-            trace!("file batch new position: {}", seek_position);
-        }
-
-        Ok(())
-    }
 }
 
 pub struct SequentialMmap {
@@ -315,11 +302,12 @@ mod tests {
         assert_eq!(batch.get_base_offset(), 300);
         assert_eq!(batch.get_header().producer_id, 12);
         assert_eq!(batch1.get_last_offset(), 301);
+        assert_eq!(batch1.get_pos(),79);
     }
 
     #[fluvio_future::test]
     async fn test_batch_stream_multiple() {
-        let test_dir = temp_dir().join("batch-stream");
+        let test_dir = temp_dir().join("batch-stream-multiple");
         ensure_new_dir(&test_dir).expect("new");
 
         let option = default_option(test_dir.clone());
