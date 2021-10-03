@@ -17,7 +17,6 @@ use dataplane::batch::{
     MemoryRecords,
 };
 use dataplane::Size;
-use dataplane::Offset;
 
 /// hold information about position of batch in the file
 pub struct FileBatchPos<R>

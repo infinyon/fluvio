@@ -19,7 +19,6 @@ use crate::config::ConfigOption;
 use crate::StorageError;
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
-use crate::validator::LogValidationError;
 use crate::util::OffsetError;
 
 pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
@@ -341,21 +340,12 @@ impl Segment<MutLogIndex, MutFileRecords> {
         SegmentSlice::new_mut_segment(self)
     }
 
+    /// write a batch, the batch is relative, we assume this would be add to current segment
     #[instrument(skip(item))]
     pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
         let pos = self.get_log_pos();
-
-        // fill in the base offset using current offset if record's batch offset is 0
-        // ensure batch is not already recorded
-        if item.base_offset == 0 {
-            item.set_base_offset(current_offset);
-        } else if item.base_offset < current_offset {
-            return Err(StorageError::LogValidation(
-                LogValidationError::ExistingBatch,
-            ));
-        }
 
         let batch_offset_delta = (current_offset - base_offset) as i32;
         debug!(

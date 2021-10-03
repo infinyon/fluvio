@@ -159,11 +159,11 @@ mod tests {
             .expect("create");
 
         msg_sink
-            .write_batch(&create_batch(SUCCESS_BASE_OFFSET, 2))
+            .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET, 2))
             .await
             .expect("write");
         msg_sink
-            .write_batch(&create_batch(SUCCESS_BASE_OFFSET + 2, 3))
+            .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET + 2, 3))
             .await
             .expect("write");
 
@@ -185,11 +185,11 @@ mod tests {
         let mut msg_sink = MutFileRecords::create(401, &options).await.expect("create");
 
         msg_sink
-            .write_batch(&create_batch(401, 0))
+            .write_batch(&mut create_batch(401, 0))
             .await
             .expect("create");
         msg_sink
-            .write_batch(&create_batch(111, 1))
+            .write_batch(&mut create_batch(111, 1))
             .await
             .expect("create");
 
@@ -211,7 +211,7 @@ mod tests {
             .await
             .expect("record created");
         msg_sink
-            .write_batch(&create_batch(501, 2))
+            .write_batch(&mut create_batch(501, 2))
             .await
             .expect("create batch");
 

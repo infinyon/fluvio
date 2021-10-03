@@ -86,7 +86,7 @@ impl MutFileRecords {
             max_len: Some(option.segment_max_bytes as u64),
         };
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        debug!("creating log at: {}", log_path.display());
+        debug!(log_path = ?log_path,"creating log at");
         let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
         let f_slice_root = f_sink.slice_from(0, 0)?;
         Ok(MutFileRecords {
@@ -155,8 +155,10 @@ impl MutFileRecords {
 
     /// try to write batch
     /// if there is enough room, return true, false otherwise
-    pub async fn write_batch(&mut self, item: &Batch) -> Result<bool, StorageError> {
+    pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
         trace!("start sending using batch {:#?}", item.get_header());
+        // ensure we use same base offset
+        item.set_base_offset(self.base_offset);
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
         item.encode(&mut buffer, 0)?;

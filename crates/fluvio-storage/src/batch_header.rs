@@ -80,7 +80,7 @@ mod tests {
             .expect("create sink");
 
         msg_sink
-            .write_batch(&create_batch())
+            .write_batch(&mut create_batch())
             .await
             .expect("send batch");
 
@@ -100,22 +100,26 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_decode_batch_header_multiple() {
-        let test_file = temp_dir()
-            .join("header_multiple")
-            .join("00000000000000000201.log");
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("header_multiple");
+        ensure_new_dir(&test_dir).expect("new");
 
-        let options = default_option(test_file.clone());
+        let options = default_option(test_dir.clone());
 
         let mut msg_sink = MutFileRecords::create(201, &options).await.expect("create");
 
-        msg_sink.write_batch(&create_batch()).await.expect("write");
         msg_sink
-            .write_batch(&create_batch_with_producer(25, 2))
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
+        msg_sink
+            .write_batch(&mut create_batch_with_producer(25, 2))
             .await
             .expect("write");
 
-        let mut stream = BatchHeaderStream::open(test_file).await.expect("open");
+        let log_path = msg_sink.get_path().to_owned();
+        drop(msg_sink);
+
+        let mut stream = BatchHeaderStream::open(log_path).await.expect("open");
 
         let batch_pos1 = stream.next().await.expect("batch");
         assert_eq!(batch_pos1.get_batch().get_header().producer_id, 12);
