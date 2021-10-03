@@ -7,10 +7,8 @@ use std::io::Error as IoError;
 
 use dataplane::bytes::Buf;
 use dataplane::core::Encoder;
-
+use dataplane::core::api_decode;
 use dataplane::api::RequestMessage;
-
-use dataplane::api::api_decode;
 use dataplane::api::RequestHeader;
 use dataplane::api::ApiMessage;
 

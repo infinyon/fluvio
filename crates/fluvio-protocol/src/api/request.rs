@@ -173,22 +173,13 @@ where
 
 #[cfg(test)]
 mod test {
+    use super::*;
 
     use std::io::Cursor;
     use std::io::Error as IoError;
     use std::convert::TryInto;
-    use bytes::Buf;
-    use bytes::BufMut;
-    use crate::Decoder;
-    use crate::Encoder;
-    use crate::Version;
-    use crate::derive::Encoder;
-    use crate::derive::Decoder;
-
-    use super::RequestHeader;
-    use super::RequestMessage;
-    use super::ApiMessage;
-    use super::Request;
+    use bytes::{Buf, BufMut};
+    use crate::api::ApiMessage;
 
     #[repr(u16)]
     #[derive(PartialEq, Debug, Clone, Copy, Encoder, Decoder)]

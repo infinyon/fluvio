@@ -1,7 +1,11 @@
+// Allow fluvio_protocol_derive to use fluvio_protocol exports
+// See https://github.com/rust-lang/rust/issues/56409
+extern crate self as fluvio_protocol;
+
 pub mod core;
 
 #[cfg(feature = "derive")]
-pub use fluvio_protocol_derive::{Encoder, Decoder};
+pub use fluvio_protocol_derive::{Encoder, Decoder, FluvioDefault, RequestApi};
 
 #[cfg(feature = "derive")]
 pub use fluvio_protocol_derive as derive;
@@ -20,3 +24,5 @@ pub use self::core::DecoderVarInt;
 pub use self::core::Encoder;
 pub use self::core::EncoderVarInt;
 pub use self::core::Version;
+
+pub use bytes;
