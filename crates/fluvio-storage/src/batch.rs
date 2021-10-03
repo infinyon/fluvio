@@ -13,14 +13,11 @@ use memmap::Mmap;
 
 use fluvio_future::task::spawn_blocking;
 
-
-
 use dataplane::batch::{
     Batch, BatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE, BATCH_FILE_HEADER_SIZE,
     MemoryRecords,
 };
 use dataplane::Size;
-
 
 /// hold information about position of batch in the file
 pub struct FileBatchPos<R>
@@ -59,8 +56,6 @@ where
     pub fn total_len(&self) -> Size {
         self.len() + BATCH_PREAMBLE_SIZE as Size
     }
-
-
 
     /// decode next batch from sequence map
     pub(crate) async fn read_from(
@@ -102,9 +97,8 @@ where
             "decoding header",
         );
 
-
         batch_position.read_records(file, remainder).await?;
-        
+
         Ok(Some(batch_position))
     }
 
@@ -114,7 +108,7 @@ where
         file: &'a mut SequentialMmap,
         content_len: usize,
     ) -> Result<(), IoError> {
-        // for now se 
+        // for now se
         let (_bytes, read_len) = file.read_bytes(content_len as u32);
 
         trace!(
@@ -138,11 +132,7 @@ where
 
         Ok(())
     }
-
-
 }
-
-
 
 /*
 impl FileBatchPos<MemoryRecords> {
@@ -175,7 +165,6 @@ impl FileBatchPos<MemoryRecords> {
     }
 }
 */
-
 
 pub struct SequentialMmap {
     map: Mmap,

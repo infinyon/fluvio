@@ -80,7 +80,10 @@ mod tests {
         let batch = create_batch();
         assert_eq!(batch.get_last_offset(), 1);
         // write a batch with 2 records
-        msg_sink.write_batch(&mut create_batch()).await.expect("write");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
 
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
@@ -92,7 +95,7 @@ mod tests {
         assert_eq!(file_pos.get_pos(), 0);
         let batch = file_pos.get_batch();
         assert_eq!(batch.get_header().producer_id, 12);
-        assert_eq!(batch.get_base_offset(),200);
+        assert_eq!(batch.get_base_offset(), 200);
         assert_eq!(batch.get_last_offset(), 201);
         assert!((stream.next().await).is_none());
     }
@@ -107,8 +110,14 @@ mod tests {
         let mut msg_sink = MutFileRecords::create(201, &options).await.expect("create");
 
         // writing 2 batches of 2 records = 4 records
-        msg_sink.write_batch(&mut create_batch()).await.expect("write");
-        msg_sink.write_batch(&mut create_batch_with_producer(25, 2)).await.expect("write");
+        msg_sink
+            .write_batch(&mut create_batch())
+            .await
+            .expect("write");
+        msg_sink
+            .write_batch(&mut create_batch_with_producer(25, 2))
+            .await
+            .expect("write");
 
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
@@ -119,11 +128,15 @@ mod tests {
         assert_eq!(stream.get_pos(), 79);
         assert_eq!(batch_pos1.get_pos(), 0);
         let batch1 = batch_pos1.get_batch();
+        assert_eq!(batch1.get_base_offset(), 201);
         assert_eq!(batch1.get_header().producer_id, 12);
-       
+
         let batch_pos2 = stream.next().await.expect("batch");
-        assert_eq!(batch_pos2.get_batch().get_header().producer_id, 25);
-        assert_eq!(batch_pos2.get_pos(), 79); // 2 records
+        assert_eq!(stream.get_pos(), 158);
+        assert_eq!(batch_pos2.get_pos(), 79);
+        let batch2 = batch_pos2.get_batch();
+        assert_eq!(batch2.get_header().producer_id, 25);
+
         assert!((stream.next().await).is_none());
     }
 }

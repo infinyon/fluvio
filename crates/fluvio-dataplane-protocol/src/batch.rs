@@ -26,7 +26,6 @@ pub trait BatchRecords: Default + Debug + Encoder + Decoder {
 /// A type describing in-memory records
 pub type MemoryRecords = Vec<Record>;
 
-
 impl BatchRecords for MemoryRecords {}
 
 /// size of the offset and length
@@ -44,7 +43,6 @@ pub struct Batch<R = MemoryRecords> {
 }
 
 impl<R> Batch<R> {
-
     pub fn get_mut_header(&mut self) -> &mut BatchHeader {
         &mut self.header
     }
