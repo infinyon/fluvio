@@ -62,6 +62,7 @@ where
             return Err(LogValidationError::BaseOff);
         }
 
+        /*
         if batch_base_offset <= last_offset {
             warn!(
                 "batch offset is  {} is less than prev offset  {}",
@@ -69,6 +70,7 @@ where
             );
             return Err(LogValidationError::OffsetNotOrdered);
         }
+        */
 
         last_offset = batch_base_offset + offset_delta as Offset;
     }
