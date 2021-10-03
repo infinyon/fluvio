@@ -193,7 +193,7 @@ where
 
         let mut header_stream = self.open_batch_header_stream(position).await?;
         while let Some(batch_pos) = header_stream.next().await {
-            let last_offset = batch_pos.get_last_offset();
+            let last_offset = batch_pos.get_batch().get_last_offset();
             if last_offset >= offset {
                 trace!(
                     "found batch last offset which matches offset: {}",
@@ -476,7 +476,7 @@ mod tests {
         .is_none());
         let offset_position =
             (active_segment.find_offset_position(20).await.expect("find")).expect("offset exists");
-        assert_eq!(offset_position.get_base_offset(), 20);
+        assert_eq!(offset_position.get_batch().get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 58);
         assert!((active_segment.find_offset_position(30).await.expect("find")).is_none());
@@ -518,7 +518,7 @@ mod tests {
         assert!((active_segment.find_offset_position(10).await.expect("find")).is_none());
         let offset_position =
             (active_segment.find_offset_position(20).await.expect("find")).expect("offset exists");
-        assert_eq!(offset_position.get_base_offset(), 20);
+        assert_eq!(offset_position.get_batch().get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 85);
         assert!((active_segment.find_offset_position(30).await.expect("find")).is_none());
@@ -575,7 +575,7 @@ mod tests {
             .await
             .expect("pos")
             .unwrap();
-        assert_eq!(offset_pos1.get_base_offset(), 40);
+        assert_eq!(offset_pos1.get_batch().get_base_offset(), 40);
         assert_eq!(offset_pos1.get_pos(), 0);
         assert_eq!(offset_pos1.len(), 67);
         let offset_pos2 = seg_sink
@@ -583,7 +583,7 @@ mod tests {
             .await
             .expect("pos")
             .unwrap();
-        assert_eq!(offset_pos2.get_base_offset(), 42);
+        assert_eq!(offset_pos2.get_batch().get_base_offset(), 42);
         assert_eq!(offset_pos2.get_pos(), 79);
         assert_eq!(offset_pos2.len(), 67);
 
@@ -592,7 +592,7 @@ mod tests {
             .await
             .expect("pos")
             .unwrap();
-        assert_eq!(offset_pos3.get_base_offset(), 44);
+        assert_eq!(offset_pos3.get_batch().get_base_offset(), 44);
         assert_eq!(offset_pos3.get_pos(), 158);
         assert_eq!(offset_pos3.len(), 67);
 

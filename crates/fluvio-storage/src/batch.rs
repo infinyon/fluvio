@@ -47,14 +47,6 @@ where
         self.pos
     }
 
-    pub fn get_base_offset(&self) -> Offset {
-        self.inner.get_base_offset()
-    }
-
-    pub fn get_last_offset(&self) -> Offset {
-        self.inner.get_last_offset()
-    }
-
     /// batch length (without preamble)
     pub fn len(&self) -> Size {
         self.inner.batch_len as Size
@@ -145,7 +137,6 @@ where
 
         Ok(())
     }
-
 }
 
 pub struct SequentialMmap {
@@ -301,8 +292,8 @@ mod tests {
         let batch = batch1.get_batch();
         assert_eq!(batch.get_base_offset(), 300);
         assert_eq!(batch.get_header().producer_id, 12);
-        assert_eq!(batch1.get_last_offset(), 301);
-        assert_eq!(batch1.get_pos(),79);
+        assert_eq!(batch1.get_batch().get_last_offset(), 301);
+        assert_eq!(batch1.get_pos(), 79);
     }
 
     #[fluvio_future::test]
@@ -330,9 +321,9 @@ mod tests {
 
         assert_eq!(batch_stream.get_pos(), 0);
         let batch1 = batch_stream.next().await.expect("batch");
-        assert_eq!(batch1.get_last_offset(), 301);
+        assert_eq!(batch1.get_batch().get_last_offset(), 301);
         assert_eq!(batch_stream.get_pos(), 79);
         let batch2 = batch_stream.next().await.expect("batch");
-        assert_eq!(batch2.get_last_offset(), 303);
+        assert_eq!(batch2.get_batch().get_last_offset(), 303);
     }
 }

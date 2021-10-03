@@ -51,15 +51,14 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use flv_util::fixture::ensure_clean_file;
+    use flv_util::fixture::{ensure_clean_file, ensure_new_dir};
     use dataplane::fixture::create_batch;
     use dataplane::fixture::create_batch_with_producer;
 
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
+    use crate::records::FileRecords;
     use super::BatchHeaderStream;
-
-
 
     fn default_option(base_dir: PathBuf) -> ConfigOption {
         ConfigOption {
@@ -71,10 +70,10 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_decode_batch_header_simple() {
-        let test_file = temp_dir().join("header-simpl").join("00000000000000000200.log");
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("header-simpl");
+        ensure_new_dir(&test_dir).expect("new");
 
-        let options = default_option(test_file.clone());
+        let options = default_option(test_dir.clone());
 
         let mut msg_sink = MutFileRecords::create(200, &options)
             .await
@@ -85,20 +84,25 @@ mod tests {
             .await
             .expect("send batch");
 
-        let mut stream = BatchHeaderStream::open(test_file).await.expect("open");
+        let log_path = msg_sink.get_path().to_owned();
+        drop(msg_sink);
+
+        let mut stream = BatchHeaderStream::open(log_path).await.expect("open");
 
         let batch_header_opt = stream.next().await;
         assert!(batch_header_opt.is_some());
         let batch = batch_header_opt.expect("some");
         let header = batch.get_batch().get_header();
         assert_eq!(header.producer_id, 12);
-        assert_eq!(stream.get_pos(),79);
+        assert_eq!(stream.get_pos(), 79);
+        assert_eq!(batch.get_batch().get_base_offset(), 200);
     }
-
 
     #[fluvio_future::test]
     async fn test_decode_batch_header_multiple() {
-        let test_file = temp_dir().join("header_multiple").join("00000000000000000201.log");
+        let test_file = temp_dir()
+            .join("header_multiple")
+            .join("00000000000000000201.log");
         ensure_clean_file(&test_file);
 
         let options = default_option(test_file.clone());

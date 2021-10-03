@@ -39,7 +39,7 @@ async fn print_logs(path: PathBuf) -> Result<(), StorageError> {
     while let Some(batch_pos) = header.next().await {
         println!(
             "batch offset: {}, pos: {}, len: {}, ",
-            batch_pos.get_base_offset(),
+            batch_pos.get_batch().get_base_offset(),
             batch_pos.get_pos(),
             batch_pos.len(),
         );
