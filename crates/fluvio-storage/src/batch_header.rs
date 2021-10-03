@@ -51,7 +51,7 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
 
-    use flv_util::fixture::{ensure_clean_file, ensure_new_dir};
+    use flv_util::fixture::{ensure_new_dir};
     use dataplane::fixture::create_batch;
     use dataplane::fixture::create_batch_with_producer;
 
@@ -75,27 +75,26 @@ mod tests {
 
         let options = default_option(test_dir.clone());
 
-        let mut msg_sink = MutFileRecords::create(200, &options)
-            .await
-            .expect("create sink");
+        let mut msg_sink = MutFileRecords::create(200, &options).await.expect("create");
 
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send batch");
+        let batch = create_batch();
+        assert_eq!(batch.get_last_offset(), 1);
+        // write a batch with 2 records
+        msg_sink.write_batch(&mut create_batch()).await.expect("write");
 
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
         let mut stream = BatchHeaderStream::open(log_path).await.expect("open");
 
-        let batch_header_opt = stream.next().await;
-        assert!(batch_header_opt.is_some());
-        let batch = batch_header_opt.expect("some");
-        let header = batch.get_batch().get_header();
-        assert_eq!(header.producer_id, 12);
+        let file_pos = stream.next().await.expect("some");
         assert_eq!(stream.get_pos(), 79);
-        assert_eq!(batch.get_batch().get_base_offset(), 200);
+        assert_eq!(file_pos.get_pos(), 0);
+        let batch = file_pos.get_batch();
+        assert_eq!(batch.get_header().producer_id, 12);
+        assert_eq!(batch.get_base_offset(),200);
+        assert_eq!(batch.get_last_offset(), 201);
+        assert!((stream.next().await).is_none());
     }
 
     #[fluvio_future::test]
@@ -107,14 +106,9 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(201, &options).await.expect("create");
 
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("write");
-        msg_sink
-            .write_batch(&mut create_batch_with_producer(25, 2))
-            .await
-            .expect("write");
+        // writing 2 batches of 2 records = 4 records
+        msg_sink.write_batch(&mut create_batch()).await.expect("write");
+        msg_sink.write_batch(&mut create_batch_with_producer(25, 2)).await.expect("write");
 
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
@@ -122,8 +116,11 @@ mod tests {
         let mut stream = BatchHeaderStream::open(log_path).await.expect("open");
 
         let batch_pos1 = stream.next().await.expect("batch");
-        assert_eq!(batch_pos1.get_batch().get_header().producer_id, 12);
+        assert_eq!(stream.get_pos(), 79);
         assert_eq!(batch_pos1.get_pos(), 0);
+        let batch1 = batch_pos1.get_batch();
+        assert_eq!(batch1.get_header().producer_id, 12);
+       
         let batch_pos2 = stream.next().await.expect("batch");
         assert_eq!(batch_pos2.get_batch().get_header().producer_id, 25);
         assert_eq!(batch_pos2.get_pos(), 79); // 2 records
