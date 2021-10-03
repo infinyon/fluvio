@@ -138,7 +138,15 @@ impl StreamFetchHandler {
                 Err(e) => {
                     let error = SmartStreamError::InvalidWasmModule(e.to_string());
                     let error_code = ErrorCode::SmartStreamError(error);
-                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                    send_back_error(
+                        &sink,
+                        &replica,
+                        &header,
+                        stream_id,
+                        error_code,
+                        "Invalid WASM module",
+                    )
+                    .await?;
                     return Err(SocketError::Io(IoError::new(
                         ErrorKind::InvalidData,
                         format!("Invalid WASM module: {}", e),
@@ -155,8 +163,15 @@ impl StreamFetchHandler {
                             let error_code = ErrorCode::SmartStreamError(
                                 SmartStreamError::InvalidSmartStreamModule("filter".to_string()),
                             );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
+                            send_back_error(
+                                &sink,
+                                &replica,
+                                &header,
+                                stream_id,
+                                error_code,
+                                "Invalid SmartStream Filter",
+                            )
+                            .await?;
                             return Err(SocketError::Io(IoError::new(
                                 ErrorKind::Other,
                                 format!("Failed to instantiate SmartStreamFilter {}", err),
@@ -173,8 +188,15 @@ impl StreamFetchHandler {
                             let error_code = ErrorCode::SmartStreamError(
                                 SmartStreamError::InvalidSmartStreamModule("map".to_string()),
                             );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
+                            send_back_error(
+                                &sink,
+                                &replica,
+                                &header,
+                                stream_id,
+                                error_code,
+                                "Invalid SmartStream Map",
+                            )
+                            .await?;
                             return Err(SocketError::Io(IoError::new(
                                 ErrorKind::Other,
                                 format!("Failed to instantiate SmartStreamMap {}", err),
@@ -191,8 +213,15 @@ impl StreamFetchHandler {
                             let error_code = ErrorCode::SmartStreamError(
                                 SmartStreamError::InvalidSmartStreamModule("array_map".to_string()),
                             );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
+                            send_back_error(
+                                &sink,
+                                &replica,
+                                &header,
+                                stream_id,
+                                error_code,
+                                "Invalid SmartStream Aggregate",
+                            )
+                            .await?;
                             return Err(SocketError::Io(IoError::new(
                                 ErrorKind::Other,
                                 format!("Failed to instantiate SmartStreamArrayMap {}", err),
@@ -562,6 +591,7 @@ async fn send_back_error(
     header: &RequestHeader,
     stream_id: u32,
     error_code: ErrorCode,
+    msg: &str,
 ) -> Result<(), SocketError> {
     type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
     let partition_response = DefaultPartitionResponse {
@@ -586,10 +616,7 @@ async fn send_back_error(
             .await?;
     }
 
-    Err(SocketError::Io(IoError::new(
-        ErrorKind::InvalidData,
-        "Invalid WASM module",
-    )))
+    Err(SocketError::Io(IoError::new(ErrorKind::InvalidData, msg)))
 }
 
 pub mod publishers {
