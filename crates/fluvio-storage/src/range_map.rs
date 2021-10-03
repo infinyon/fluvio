@@ -245,7 +245,7 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_segment_many_some() {
-        let rep_dir = temp_dir().join("segmentlist-many-zero");
+        let rep_dir = temp_dir().join("segmentlist-many-some");
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
