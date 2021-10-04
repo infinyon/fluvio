@@ -105,7 +105,7 @@ fn run_test(
 
 fn cluster_cleanup(option: EnvironmentSetup) {
     if option.cluster_delete() {
-        let mut setup = TestCluster::new(option.clone());
+        let mut setup = TestCluster::new(option);
 
         let cluster_cleanup_wait = async_process!(async {
             setup.remove_cluster().await;
