@@ -53,6 +53,7 @@ jobs:
       TARGET_SHA: ${{ steps.version_step.outputs.GIT_SHA }}
       LATEST_TAG: ${{ steps.docker_step.outputs.LATEST_TAG }}
       RELEASE_TAG: ${{ steps.docker_step.outputs.RELEASE_TAG }}
+      INSTALLER_URL: ${{ steps.installer_step.outputs.INSTALLER_URL }}
     steps:
       - name: Set target sha and Fluvio version
         id: version_step
@@ -75,6 +76,10 @@ jobs:
         run: |
             echo "::set-output name=LATEST_TAG::infinyon/fluvio:${{ env.VERSION }}-${{ env.GIT_SHA }}"
             echo "::set-output name=RELEASE_TAG::infinyon/fluvio:${{ env.VERSION }}"
+      - name: Set Installer URL
+        id: installer_step
+        run: |
+            echo "::set-output name=INSTALLER_URL::https://raw.githubusercontent.com/infinyon/fluvio/${{ steps.version_step.outputs.GIT_SHA }}/install.sh"
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
@@ -84,6 +89,22 @@ jobs:
           fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  release_installer:
+    name: Release Fluvio Installer
+    needs: [setup_job]
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: us-west-2
+      TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
+      INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
+    steps:
+      - name: Download install.sh
+        run: curl -sSO $INSTALLER_URL
+      - name: Push install.sh to packages S3 bucket
+        run: aws s3 cp ./install.sh s3://packages.fluvio.io/v1/install.sh --acl public-read
 
   # Check for Github Release
   release_github:
@@ -201,7 +222,6 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-
   # Check for Fluvio CLI
   release_fluvio:
     name: Release Fluvio CLI package
@@ -211,12 +231,13 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
+      INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
     steps:
       # Check that this release does not already exist by trying to download it
       - name: Attempt to install Fluvio CLI
         id: check_fluvio
         continue-on-error: true
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ env.VERSION }} bash
+        run: curl -fsS $INSTALLER_URL | VERSION=${{ env.VERSION }} bash
 
       # If this release does not already exist (i.e. check_fluvio failed), continue
       - name: Login GH CLI
@@ -229,7 +250,7 @@ jobs:
               export VERSION=${{ github.event.inputs.installer_version }}
               echo "VERSION=$VERSION"
           fi
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS $INSTALLER_URL | bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
       - name: Download dev release
@@ -304,6 +325,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       VERSION: ${{ needs.setup_job.outputs.VERSION }}
       TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
+      INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
     steps:
       - name: Install fluvio-package
         run: |
@@ -311,7 +333,7 @@ jobs:
               export VERSION=${{ github.event.inputs.installer_version }}
               echo "VERSION=$VERSION"
           fi
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          curl -fsS $INSTALLER_URL | bash
           ${HOME}/.fluvio/bin/fluvio install fluvio-package
 
       - name: Bump Fluvio CLI
