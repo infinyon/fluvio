@@ -64,9 +64,12 @@ where
         let pos = file.pos;
         let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32);
         trace!(
-            "file batch: read preamble and header {} bytes out of {}",
             read_len,
-            BATCH_FILE_HEADER_SIZE
+            bytes_len = bytes.len(),
+            BATCH_FILE_HEADER_SIZE,
+
+            "file batch: read preamble and header",
+            
         );
 
         if read_len == 0 {
@@ -87,7 +90,7 @@ where
         let mut cursor = Cursor::new(bytes);
         let mut batch: Batch<R> = Batch::default();
         batch.decode_from_file_buf(&mut cursor, 0)?;
-    //    println!("batch: {:#?}",batch);
+      //  println!("batch: {:#?}",batch);
         let mut batch_position = FileBatchPos::new(batch, pos);
 
         let remainder = batch_position.len() as usize - BATCH_HEADER_SIZE as usize;
@@ -175,10 +178,12 @@ pub struct SequentialMmap {
 impl SequentialMmap {
     // read bytes
     fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
-        let inner = &self.map;
+       // println!("inner len: {}, read_len: {}", self.map.len(),len);
+        let bytes = (&self.map).split_at(self.pos as usize).1;
         let prev_pos = self.pos;
-        self.pos = min(inner.len() as Size, self.pos as Size + len);
-        (inner, self.pos - prev_pos)
+        self.pos = min(self.map.len() as Size, self.pos as Size + len);
+       // println!("prev pos: {}, new pos: {}", prev_pos, self.pos);
+        (bytes, self.pos - prev_pos)
     }
 
     // seek relative

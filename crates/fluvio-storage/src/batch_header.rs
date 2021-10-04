@@ -155,21 +155,22 @@ mod tests {
         let mut counter = 0;
         println!("starting test");
         let write_time = Instant::now();
-        let mut records: i32 = 0;
+        let mut last_base_offset = 0;
+       // let mut records: i32 = 0;
         while let Some(batch) = stream.next().await {
             counter = counter + 1;
-            println!("offset delta: {}",batch.get_batch().get_last_offset());
+         //   println!("offset delta: {}",batch.get_batch().get_last_offset());
           //  records += batch.get_batch().get_records().len() as i32;
-            if counter > 100 {
-                break;
-            }
-          //  println!("pos: {}",stream.get_pos());
+         //   if counter > 10 {
+         //       break;
+         //   }
+           //  println!("pos: {}",stream.get_pos());
           //  println!("base_offset: {}",batch.get_batch().get_base_offset());
-          //  last_base_offset = batch.get_batch().get_base_offset();
+           last_base_offset = batch.get_batch().get_base_offset();
         }
 
         let time = write_time.elapsed();
-        println!("took: {:#?}, count: {}, pos = {}", time,counter,stream.get_pos());
+        println!("took: {:#?}, count: {}, pos = {},base_offset={}", time,counter,stream.get_pos(),last_base_offset);
         
     }
 }
