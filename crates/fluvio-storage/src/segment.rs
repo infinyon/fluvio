@@ -20,6 +20,7 @@ use crate::StorageError;
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
 use crate::util::OffsetError;
+use crate::validator::LogValidationError;
 
 pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
 pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
@@ -346,6 +347,16 @@ impl Segment<MutLogIndex, MutFileRecords> {
         let current_offset = self.end_offset;
         let base_offset = self.base_offset;
         let pos = self.get_log_pos();
+
+        // fill in the base offset using current offset if record's batch offset is 0
+        // ensure batch is not already recorded
+        if item.base_offset == 0 {
+            item.set_base_offset(current_offset);
+        } else if item.base_offset < current_offset {
+            return Err(StorageError::LogValidation(
+                LogValidationError::ExistingBatch,
+            ));
+        }
 
         let batch_offset_delta = (current_offset - base_offset) as i32;
         debug!(

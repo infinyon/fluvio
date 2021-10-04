@@ -52,6 +52,8 @@ mod tests {
     use std::path::PathBuf;
     use std::time::Instant;
 
+    use dataplane::Offset;
+    use dataplane::batch::Batch;
     use flv_util::fixture::{ensure_new_dir};
     use dataplane::fixture::create_batch;
     use dataplane::fixture::create_batch_with_producer;
@@ -69,6 +71,12 @@ mod tests {
         }
     }
 
+    fn create_batch_with(base_offset: Offset) -> Batch {
+        let mut batch = create_batch();
+        batch.set_base_offset(base_offset);
+        batch
+    }
+
     #[fluvio_future::test]
     async fn test_decode_batch_header_simple() {
         let test_dir = temp_dir().join("header-simpl");
@@ -78,11 +86,11 @@ mod tests {
 
         let mut msg_sink = MutFileRecords::create(200, &options).await.expect("create");
 
-        let batch = create_batch();
-        assert_eq!(batch.get_last_offset(), 1);
+        let batch = create_batch_with(200);
+        assert_eq!(batch.get_last_offset(), 201);
         // write a batch with 2 records
         msg_sink
-            .write_batch(&mut create_batch())
+            .write_batch(&batch)
             .await
             .expect("write");
 
@@ -108,18 +116,19 @@ mod tests {
 
         let options = default_option(test_dir.clone());
 
-        let mut msg_sink = MutFileRecords::create(201, &options).await.expect("create");
+        let mut msg_sink = MutFileRecords::create(200, &options).await.expect("create");
 
         // writing 2 batches of 2 records = 4 records
         msg_sink
-            .write_batch(&mut create_batch())
+            .write_batch(&mut create_batch_with(200))
             .await
             .expect("write");
 
-        let test_batch = create_batch_with_producer(25, 2);
+        let mut test_batch = create_batch_with_producer(25, 2);
+        test_batch.set_base_offset(202);
         assert_eq!(test_batch.get_header().producer_id, 25);
         msg_sink
-            .write_batch(&mut create_batch_with_producer(25, 2))
+            .write_batch(&test_batch)
             .await
             .expect("write");
 
@@ -132,19 +141,21 @@ mod tests {
         assert_eq!(stream.get_pos(), 79);
         assert_eq!(batch_pos1.get_pos(), 0);
         let batch1 = batch_pos1.get_batch();
-        assert_eq!(batch1.get_base_offset(), 201);
+        assert_eq!(batch1.get_base_offset(), 200);
         assert_eq!(batch1.get_header().producer_id, 12);
 
         let batch_pos2 = stream.next().await.expect("batch");
         assert_eq!(stream.get_pos(), 158);
         assert_eq!(batch_pos2.get_pos(), 79);
         let batch2 = batch_pos2.get_batch();
+        assert_eq!(batch2.get_base_offset(), 202);
         assert_eq!(batch2.get_header().producer_id, 25);
 
         assert!((stream.next().await).is_none());
     }
 
-    #[fluvio_future::test]
+    //#[fluvio_future::test]
+    #[allow(unused)]
     async fn test_code_perf() {
         let mut stream = BatchHeaderStream::open(
             "/tmp/fluvio-large-data/spu-logs-5002/longevity-0/00000000000000000000.log",

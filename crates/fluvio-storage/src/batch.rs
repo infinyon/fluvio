@@ -317,7 +317,7 @@ mod tests {
         assert_eq!(batch.get_base_offset(), 300);
         assert_eq!(batch.get_header().producer_id, 12);
         assert_eq!(batch1.get_batch().get_last_offset(), 301);
-        assert_eq!(batch1.get_pos(), 79);
+        assert_eq!(batch1.get_pos(), 0);
     }
 
     #[fluvio_future::test]
