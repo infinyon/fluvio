@@ -5,16 +5,13 @@ use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
-use fluvio_future::task::run_block_on;
 use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
-use tracing::debug;
+use fluvio_test_util::async_process;
+//use tracing::debug;
 
-use std::thread;
-use fork::{fork, Fork};
-use nix::sys::wait::waitpid;
 use nix::unistd::Pid;
 use nix::sys::signal::{kill, Signal};
 
@@ -110,26 +107,8 @@ fn cluster_cleanup(option: EnvironmentSetup) {
     if option.cluster_delete() {
         let mut setup = TestCluster::new(option.clone());
 
-        let cluster_cleanup_process = match fork() {
-            Ok(Fork::Parent(child_pid)) => child_pid,
-            Ok(Fork::Child) => {
-                run_block_on(async move {
-                    setup.remove_cluster().await;
-                });
-
-                exit(0);
-            }
-            Err(_) => panic!("Cluster cleanup fork failed"),
-        };
-
-        let cluster_cleanup_wait = thread::spawn(move || {
-            let pid = Pid::from_raw(cluster_cleanup_process);
-            match waitpid(pid, None) {
-                Ok(status) => {
-                    println!("[main] Cluster cleanup exited with status {:?}", status);
-                }
-                Err(err) => panic!("[main] Cluster cleanup failed: {}", err),
-            }
+        let cluster_cleanup_wait = async_process!(async {
+            setup.remove_cluster().await;
         });
         let _ = cluster_cleanup_wait
             .join()
@@ -139,46 +118,29 @@ fn cluster_cleanup(option: EnvironmentSetup) {
 
 // FIXME: Need to confirm SPU options count match cluster. Offer self-correcting behavior
 fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
-    let cluster_setup_process = match fork() {
-        Ok(Fork::Parent(child_pid)) => child_pid,
-        Ok(Fork::Child) => {
-            run_block_on(async {
-                if option.remove_cluster_before() {
-                    println!("Deleting existing cluster before starting test");
-                    let mut setup = TestCluster::new(option.clone());
-                    setup.remove_cluster().await;
-                }
-
-                if option.cluster_start() || option.remove_cluster_before() {
-                    println!("Starting cluster and testing connection");
-                    let mut test_cluster = TestCluster::new(option.clone());
-
-                    test_cluster
-                        .start()
-                        .await
-                        .expect("Unable to connect to fresh test cluster");
-                } else {
-                    println!("Testing connection to Fluvio cluster in profile");
-                    Fluvio::connect()
-                        .await
-                        .expect("Unable to connect to Fluvio test cluster via profile");
-                }
-            });
-
-            exit(0);
+    let cluster_setup_wait = async_process!(async {
+        if option.remove_cluster_before() {
+            println!("Deleting existing cluster before starting test");
+            let mut setup = TestCluster::new(option.clone());
+            setup.remove_cluster().await;
         }
-        Err(_) => panic!("Cluster setup fork failed"),
-    };
 
-    let cluster_setup_wait = thread::spawn(move || {
-        let pid = Pid::from_raw(cluster_setup_process);
-        match waitpid(pid, None) {
-            Ok(status) => {
-                debug!("[main] Cluster setup exited with status {:?}", status);
-            }
-            Err(err) => panic!("[main] Cluster setup failed: {}", err),
+        if option.cluster_start() || option.remove_cluster_before() {
+            println!("Starting cluster and testing connection");
+            let mut test_cluster = TestCluster::new(option.clone());
+
+            test_cluster
+                .start()
+                .await
+                .expect("Unable to connect to fresh test cluster");
+        } else {
+            println!("Testing connection to Fluvio cluster in profile");
+            Fluvio::connect()
+                .await
+                .expect("Unable to connect to Fluvio test cluster via profile");
         }
     });
+
     let _ = cluster_setup_wait
         .join()
         .expect("Cluster setup wait failed");
