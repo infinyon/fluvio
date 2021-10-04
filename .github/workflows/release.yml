@@ -90,19 +90,19 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
-  # release_installer:
-  #   name: Release Fluvio Installer
-  #   needs: [setup_job]
-  #   runs-on: ubuntu-latest
-  #   env:
-  #     AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  #     AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  #     INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
-  #   steps:
-  #     - name: Download install.sh
-  #       run: curl -sSO $INSTALLER_URL
-  #     - name: Push install.sh to packages S3 bucket
-  #       run: s3 cp ./install.sh s3://packages.fluvio.io/v1/install.sh --acl public-read
+  release_installer:
+    name: Release Fluvio Installer
+    needs: [setup_job]
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
+    steps:
+      - name: Download install.sh
+        run: curl -sSO $INSTALLER_URL
+      - name: Push install.sh to packages S3 bucket
+        run: s3 cp ./install.sh s3://packages.fluvio.io/v1/install.sh --acl public-read
 
   # # Check for Github Release
   # release_github:
