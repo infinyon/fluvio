@@ -127,6 +127,7 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_validate_empty() {
+        
         let test_file = temp_dir().join("00000000000000000301.log");
         ensure_clean_file(&test_file);
 

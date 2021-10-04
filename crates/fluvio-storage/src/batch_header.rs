@@ -124,6 +124,7 @@ mod tests {
             .await
             .expect("write");
 
+        // since mut records doesn't write base offset, we need to set manually
         let mut test_batch = create_batch_with_producer(25, 2);
         test_batch.set_base_offset(202);
         assert_eq!(test_batch.get_header().producer_id, 25);
