@@ -87,6 +87,7 @@ where
         let mut cursor = Cursor::new(bytes);
         let mut batch: Batch<R> = Batch::default();
         batch.decode_from_file_buf(&mut cursor, 0)?;
+    //    println!("batch: {:#?}",batch);
         let mut batch_position = FileBatchPos::new(batch, pos);
 
         let remainder = batch_position.len() as usize - BATCH_HEADER_SIZE as usize;
