@@ -39,37 +39,37 @@ where
         FileBatchPos { inner, pos }
     }
 
+    #[inline(always)]
     pub fn get_batch(&self) -> &Batch<R> {
         &self.inner
     }
 
+    #[inline(always)]
     pub fn get_pos(&self) -> Size {
         self.pos
     }
 
     /// batch length (without preamble)
+    #[inline(always)]
     pub fn len(&self) -> Size {
         self.inner.batch_len as Size
     }
 
     /// total batch length including preamble
+    #[inline(always)]
     pub fn total_len(&self) -> Size {
         self.len() + BATCH_PREAMBLE_SIZE as Size
     }
 
     /// decode next batch from sequence map
-    pub(crate) async fn read_from(
-        file: &mut SequentialMmap,
-    ) -> Result<Option<FileBatchPos<R>>, IoError> {
+    pub(crate) fn read_from(file: &mut SequentialMmap) -> Result<Option<FileBatchPos<R>>, IoError> {
         let pos = file.pos;
         let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32);
         trace!(
             read_len,
             bytes_len = bytes.len(),
             BATCH_FILE_HEADER_SIZE,
-
             "file batch: read preamble and header",
-            
         );
 
         if read_len == 0 {
@@ -90,7 +90,7 @@ where
         let mut cursor = Cursor::new(bytes);
         let mut batch: Batch<R> = Batch::default();
         batch.decode_from_file_buf(&mut cursor, 0)?;
-      //  println!("batch: {:#?}",batch);
+
         let mut batch_position = FileBatchPos::new(batch, pos);
 
         let remainder = batch_position.len() as usize - BATCH_HEADER_SIZE as usize;
@@ -101,13 +101,13 @@ where
             "decoding header",
         );
 
-        batch_position.read_records(file, remainder).await?;
+        batch_position.read_records(file, remainder)?;
 
         Ok(Some(batch_position))
     }
 
     /// decode the records of contents
-    async fn read_records<'a>(
+    fn read_records<'a>(
         &'a mut self,
         file: &'a mut SequentialMmap,
         content_len: usize,
@@ -176,13 +176,12 @@ pub struct SequentialMmap {
 }
 
 impl SequentialMmap {
-    // read bytes
     fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
-       // println!("inner len: {}, read_len: {}", self.map.len(),len);
+        // println!("inner len: {}, read_len: {}", self.map.len(),len);
         let bytes = (&self.map).split_at(self.pos as usize).1;
         let prev_pos = self.pos;
         self.pos = min(self.map.len() as Size, self.pos as Size + len);
-       // println!("prev pos: {}, new pos: {}", prev_pos, self.pos);
+        // println!("prev pos: {}, new pos: {}", prev_pos, self.pos);
         (bytes, self.pos - prev_pos)
     }
 
@@ -262,7 +261,7 @@ where
 {
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!(pos = self.get_pos(), "reading next from");
-        match FileBatchPos::read_from(&mut self.seq_map).await {
+        match FileBatchPos::read_from(&mut self.seq_map) {
             Ok(batch_res) => batch_res,
             Err(err) => {
                 debug!("error getting batch: {}", err);

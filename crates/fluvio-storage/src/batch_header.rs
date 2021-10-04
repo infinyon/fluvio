@@ -138,39 +138,44 @@ mod tests {
         let batch_pos2 = stream.next().await.expect("batch");
         assert_eq!(stream.get_pos(), 158);
         assert_eq!(batch_pos2.get_pos(), 79);
-       // let batch2 = batch_pos2.get_batch();
-   //     assert_eq!(batch2.get_header().producer_id, 25);
+        let batch2 = batch_pos2.get_batch();
+        assert_eq!(batch2.get_header().producer_id, 25);
 
         assert!((stream.next().await).is_none());
     }
 
-
-
     #[fluvio_future::test]
     async fn test_code_perf() {
-        
-
-        let mut stream = BatchHeaderStream::open("/tmp/fluvio-large-data/spu-logs-5002/longevity-0/00000000000000000000.log").await.expect("open");
+        let mut stream = BatchHeaderStream::open(
+            "/tmp/fluvio-large-data/spu-logs-5002/longevity-0/00000000000000000000.log",
+        )
+        .await
+        .expect("open");
 
         let mut counter = 0;
         println!("starting test");
         let write_time = Instant::now();
         let mut last_base_offset = 0;
-       // let mut records: i32 = 0;
+        // let mut records: i32 = 0;
         while let Some(batch) = stream.next().await {
             counter = counter + 1;
-         //   println!("offset delta: {}",batch.get_batch().get_last_offset());
-          //  records += batch.get_batch().get_records().len() as i32;
-         //   if counter > 10 {
-         //       break;
-         //   }
-           //  println!("pos: {}",stream.get_pos());
-          //  println!("base_offset: {}",batch.get_batch().get_base_offset());
-           last_base_offset = batch.get_batch().get_base_offset();
+            //   println!("offset delta: {}",batch.get_batch().get_last_offset());
+            //  records += batch.get_batch().get_records().len() as i32;
+            //   if counter > 10 {
+            //       break;
+            //   }
+            //  println!("pos: {}",stream.get_pos());
+            //  println!("base_offset: {}",batch.get_batch().get_base_offset());
+            last_base_offset = batch.get_batch().get_base_offset();
         }
 
         let time = write_time.elapsed();
-        println!("took: {:#?}, count: {}, pos = {},base_offset={}", time,counter,stream.get_pos(),last_base_offset);
-        
+        println!(
+            "took: {:#?}, count: {}, pos = {},base_offset={}",
+            time,
+            counter,
+            stream.get_pos(),
+            last_base_offset
+        );
     }
 }
