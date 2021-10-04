@@ -97,7 +97,7 @@ jobs:
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      TARGET_SHA: ${{ needs.setup_job.outputs.GIT_SHA }}
+      TARGET_SHA: ${{ needs.setup_job.outputs.TARGET_SHA }}
       INSTALLER_URL: ${{ needs.setup_job.outputs.INSTALLER_URL }}
     steps:
       - name: Download install.sh
