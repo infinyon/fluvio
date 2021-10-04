@@ -102,9 +102,6 @@ jobs:
     steps:
       - name: Download install.sh
         run: curl -sSO $INSTALLER_URL
-      - run: cat ./install.sh
-      - name: Install AWS CLI
-        run: curl -fsS https://raw.githubusercontent.com/infinyon/fluvio/${{ env.TARGET_SHA }}/actions/aws-cli-install.sh | sh
       - name: Push install.sh to packages S3 bucket
         run: aws s3 cp ./install.sh s3://packages.fluvio.io/v1/install.sh --acl public-read
 
