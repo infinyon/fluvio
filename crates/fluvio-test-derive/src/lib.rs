@@ -67,26 +67,15 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         fn_user_test.sig.ident.to_string()
     };
 
-    let async_checker_name = format!("async_check_{}_{}", test_name, &rand_string);
-    let test_wrapper_name = format!("{}_{}", test_name, &rand_string);
+    let test_driver_name = format!("{}_{}", test_name, &rand_string);
     let user_test_name = format!("ext_test_fn_{}", &rand_string);
     let requirements_name = format!("requirements_{}", &rand_string);
     let validate_name = format!("validate_subcommand_{}", &rand_string);
 
-    let outer_async_checker_iden = Ident::new(&async_checker_name, Span::call_site());
-    let inner_test_wrapper_iden = Ident::new(&test_wrapper_name, Span::call_site());
+    let test_driver_iden = Ident::new(&test_driver_name, Span::call_site());
     let user_test_fn_iden = Ident::new(&user_test_name, Span::call_site());
     let requirements_fn_iden = Ident::new(&requirements_name, Span::call_site());
     let validate_sub_fn_iden = Ident::new(&validate_name, Span::call_site());
-
-    //let fn_declare = if fn_test_reqs.r#async {
-    //    let code = "pub async fn";
-    //    syn::parse_str::<syn::Expr>(code).expect("")
-
-    //} else {
-    //    let code = "pub fn";
-    //    syn::parse_str::<syn::Expr>(code).expect("")
-    //};
 
     // Enforce naming convention for converting dyn TestOption to concrete type
     let test_opt_ident = Ident::new(
@@ -119,24 +108,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         inventory::submit!{
             fluvio_test_util::test_runner::test_meta::FluvioTestMeta {
                 name: #test_name.to_string(),
-                test_fn: #outer_async_checker_iden,
+                test_fn: #test_driver_iden,
                 validate_fn: #validate_sub_fn_iden,
                 requirements: #requirements_fn_iden,
             }
-        }
-
-        pub fn #outer_async_checker_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
-            use fluvio_test_util::test_meta::derive_attr::TestRequirements;
-
-            //let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
-            //if test_reqs.r#async {
-            //    fluvio_future::task::run_block_on(async {
-            //        #inner_test_wrapper_iden(test_driver, test_case)
-            //    })
-            //} else {
-                #inner_test_wrapper_iden(test_driver, test_case)
-            //}
-
         }
 
         pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
@@ -144,38 +119,19 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             #maybe_async_test
         }
 
-        pub fn #inner_test_wrapper_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
-            use fluvio::Fluvio;
-            use fluvio_test_util::test_meta::TestCase;
+        pub fn #test_driver_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
             use fluvio_test_util::test_meta::test_result::TestResult;
-            use fluvio_test_util::test_meta::environment::{EnvDetail};
+            use fluvio_test_util::test_meta::environment::EnvDetail;
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
             use fluvio_test_util::test_meta::test_timer::TestTimer;
             use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-            use fluvio_test_util::setup::environment::EnvironmentType;
             use fluvio_test_util::async_process;
-            use fluvio_future::task::run;
-            use fluvio_future::timer::sleep;
-            use std::{io, time::Duration};
-            use std::panic::panic_any;
-            use std::default::Default;
-            use fork::{fork, Fork};
-            use nix::sys::wait::waitpid;
-            use nix::sys::signal::{kill, Signal};
-            use nix::unistd::Pid;
-            use std::thread;
-            use std::process::exit;
-            use tracing::debug;
-            use crossbeam_channel::{Select, unbounded};
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
-            //let test_reqs : TestRequirements = #fn_test_reqs;
-
-            let is_env_acceptable = TestDriver::is_env_acceptable(&test_reqs, &test_case);
 
             // Customize test environment if it meets minimum requirements
-            if is_env_acceptable {
+            if TestDriver::is_env_acceptable(&test_reqs, &test_case) {
 
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
@@ -183,7 +139,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Setup topics before starting test
                 // Doing setup in another process to avoid async in parent process
                 // Otherwise there is .await blocking in child processes if tests fork() too
-                let topic_setup_wait = async_process!(async{
+                let topic_setup_wait = async_process!(async {
                     let mut test_driver_setup = test_driver.clone();
                     // Connect test driver to cluster before starting test
                     test_driver_setup.connect().await.expect("Unable to connect to cluster");
@@ -201,25 +157,25 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                  // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
-                let (test_end, test_end_listener) = unbounded();
+                let (test_end, test_end_listener) = crossbeam_channel::unbounded();
 
                 // Run the test in its own process
                 // We're not using the `async_process` macro here
                 // Only bc we are sending something to a channel in waiting thread
-                let test_process = match fork() {
-                    Ok(Fork::Parent(child_pid)) => child_pid,
-                    Ok(Fork::Child) => {
+                let test_process = match fork::fork() {
+                    Ok(fork::Fork::Parent(child_pid)) => child_pid,
+                    Ok(fork::Fork::Child) => {
                         #user_test_fn_iden(test_driver, test_case);
-                        exit(0);
+                        std::process::exit(0);
                     }
                     Err(_) => panic!("Test fork failed"),
                 };
 
-                let test_wait = thread::spawn( move || {
-                    let pid = Pid::from_raw(test_process.clone());
-                    match waitpid(pid, None) {
+                let test_wait = std::thread::spawn( move || {
+                    let pid = nix::unistd::Pid::from_raw(test_process.clone());
+                    match nix::sys::wait::waitpid(pid, None) {
                         Ok(status) => {
-                            debug!("[main] Test exited with status {:?}", status);
+                            tracing::debug!("[main] Test exited with status {:?}", status);
 
                             // Send something through the channel to signal test completion
                             test_end.send(()).unwrap();
@@ -229,7 +185,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 });
 
                 // All of this is to handle test timeout
-                let mut sel = Select::new();
+                let mut sel = crossbeam_channel::Select::new();
                 let test_thread_done = sel.recv(&test_end_listener);
                 let thread_selector = sel.select_timeout(test_case.environment.timeout());
 
@@ -249,9 +205,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                             Ok(TestResult {
                                 success: true,
                                 duration: test_timer.duration(),
-                                ..Default::default()
+                                ..std::default::Default::default()
                             })
-
 
                         }
                         _ => unreachable!()
@@ -262,8 +217,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 Ok(TestResult {
                     success: true,
-                    duration: Duration::new(0, 0),
-                    ..Default::default()
+                    duration: std::time::Duration::new(0, 0),
+                    ..std::default::Default::default()
                 })
             }
         }

@@ -1,7 +1,0 @@
-error: custom attribute panicked
- --> $DIR/fail_invalid_key.rs:9:1
-  |
-9 | #[fluvio_test(fail)]
-  | ^^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: Parse failed

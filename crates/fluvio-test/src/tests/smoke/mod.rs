@@ -12,8 +12,6 @@ use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 
-use tracing::debug;
-
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
     pub environment: EnvironmentSetup,

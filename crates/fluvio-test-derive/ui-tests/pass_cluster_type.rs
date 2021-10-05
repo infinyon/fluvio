@@ -1,10 +1,6 @@
 use fluvio_test_derive::fluvio_test;
-#[allow(unused_imports)]
-use fluvio::Fluvio;
-#[allow(unused_imports)]
+#[warn(unused_imports)]
 use fluvio_test_util::test_meta::TestCase;
-#[allow(unused_imports)]
-use std::sync::Arc;
 use structopt::StructOpt;
 use std::any::Any;
 use fluvio_test_util::test_meta::TestOption;
@@ -30,11 +26,11 @@ impl TestOption for TestTwoTestOption {
 }
 
 #[fluvio_test(cluster_type="k8")]
-pub async fn test_one(mut test_driver: TestDriver, test_case: TestCase) {
+pub fn test_one(mut test_driver: TestDriver, test_case: TestCase) {
 }
 
 #[fluvio_test(cluster_type="local")]
-pub async fn test_two(mut test_driver: TestDriver, test_case: TestCase) {
+pub fn test_two(mut test_driver: TestDriver, test_case: TestCase) {
 }
 
 fn main() {

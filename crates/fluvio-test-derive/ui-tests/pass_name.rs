@@ -1,10 +1,6 @@
 use fluvio_test_derive::fluvio_test;
-#[allow(unused_imports)]
-use fluvio::Fluvio;
-#[allow(unused_imports)]
+#[warn(unused_imports)]
 use fluvio_test_util::test_meta::TestCase;
-#[allow(unused_imports)]
-use std::sync::Arc;
 use structopt::StructOpt;
 use std::any::Any;
 use fluvio_test_util::test_meta::TestOption;
@@ -20,7 +16,7 @@ impl TestOption for TestNameTestOption {
 }
 
 #[fluvio_test(name = "test_name")]
-pub async fn run(mut test_driver: TestDriver, test_case: TestCase) {
+pub fn run(mut test_driver: TestDriver, test_case: TestCase) {
 }
 
 fn main() {

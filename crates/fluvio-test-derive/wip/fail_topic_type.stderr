@@ -1,7 +1,0 @@
-error: custom attribute panicked
- --> $DIR/fail_topic_type.rs:9:1
-  |
-9 | #[fluvio_test(topic = 1)]
-  | ^^^^^^^^^^^^^^^^^^^^^^^^^
-  |
-  = help: message: Parse failed

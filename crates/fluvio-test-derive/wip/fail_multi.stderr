@@ -1,5 +1,0 @@
-error: expected literal
- --> $DIR/fail_multi.rs:9:25
-  |
-9 | #[fluvio_test(min_spu = a, topic = 2)]
-  |                         ^
