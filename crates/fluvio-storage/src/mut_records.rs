@@ -83,13 +83,13 @@ impl MutFileRecords {
         option: &ConfigOption,
     ) -> Result<MutFileRecords, BoundedFileSinkError> {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        debug!(log_path = ?log_path,"creating log at");
-
         let sink_option = BoundedFileOption {
             max_len: Some(option.segment_max_bytes as u64),
         };
+        debug!(log_path = ?log_path, max_len = ?sink_option.max_len,"creating log at");
 
         let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
+        debug!("file created");
         let f_slice_root = f_sink.slice_from(0, 0)?;
         Ok(MutFileRecords {
             base_offset,
