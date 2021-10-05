@@ -82,45 +82,20 @@ impl MutFileRecords {
         base_offset: Offset,
         option: &ConfigOption,
     ) -> Result<MutFileRecords, BoundedFileSinkError> {
+        let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
         let sink_option = BoundedFileOption {
             max_len: Some(option.segment_max_bytes as u64),
         };
-        let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        debug!("creating log at: {}", log_path.display());
+        debug!(log_path = ?log_path, max_len = ?sink_option.max_len,"creating log at");
+
         let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
+        debug!("file created");
         let f_slice_root = f_sink.slice_from(0, 0)?;
         Ok(MutFileRecords {
             base_offset,
             f_sink: Arc::new(Mutex::new(f_sink)),
             f_slice_root,
             cached_len: 0,
-            flush_policy: get_flush_policy_from_config(option),
-            write_count: 0,
-            flush_count: Arc::new(AtomicU32::new(0)),
-            item_last_offset_delta: 0,
-            path: log_path.to_owned(),
-            flush_time_tx: None,
-        })
-    }
-
-    pub async fn open(
-        base_offset: Offset,
-        option: &ConfigOption,
-    ) -> Result<MutFileRecords, StorageError> {
-        let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        debug!("opening commit log at: {}", log_path.display());
-
-        let sink_option = BoundedFileOption {
-            max_len: Some(option.segment_max_bytes as u64),
-        };
-        let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
-        let f_slice_root = f_sink.slice_from(0, 0)?;
-        let cached_len = f_sink.get_current_len();
-        Ok(MutFileRecords {
-            base_offset,
-            f_sink: Arc::new(Mutex::new(f_sink)),
-            f_slice_root,
-            cached_len,
             flush_policy: get_flush_policy_from_config(option),
             write_count: 0,
             flush_count: Arc::new(AtomicU32::new(0)),
@@ -157,6 +132,10 @@ impl MutFileRecords {
     /// if there is enough room, return true, false otherwise
     pub async fn write_batch(&mut self, item: &Batch) -> Result<bool, StorageError> {
         trace!("start sending using batch {:#?}", item.get_header());
+        if item.base_offset < self.base_offset {
+            return Err(StorageError::LogValidation(LogValidationError::BaseOff));
+        }
+
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
         item.encode(&mut buffer, 0)?;
@@ -376,47 +355,89 @@ mod tests {
     // use std::time::{Duration, Instant};
     use std::env::temp_dir;
     use std::io::Cursor;
+
+    use dataplane::Offset;
     use tracing::debug;
 
-    use flv_util::fixture::ensure_clean_file;
+    use flv_util::fixture::{ensure_new_dir};
     use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::core::{Decoder, Encoder};
-    use dataplane::fixture::create_batch;
     use dataplane::fixture::read_bytes_from_file;
 
     use crate::config::ConfigOption;
+    use crate::records::FileRecords;
+    use crate::fixture::BatchProducer;
     use super::MutFileRecords;
 
-    const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
-    const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200
+    #[fluvio_future::test]
+    async fn test_records_with_invalid_base() {
+        const BASE_OFFSET: Offset = 401;
+
+        let test_dir = temp_dir().join("records_with_invalid_base");
+        ensure_new_dir(&test_dir).expect("new");
+
+        let options = ConfigOption {
+            base_dir: test_dir,
+            segment_max_bytes: 1000,
+            ..Default::default()
+        };
+
+        let mut builder = BatchProducer::builder()
+            .base_offset(BASE_OFFSET)
+            .build()
+            .expect("build");
+
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+            .await
+            .expect("create");
+
+        msg_sink
+            .write_batch(&builder.batch())
+            .await
+            .expect("create");
+
+        // use wrong base offset
+        let mut wrong_builder = BatchProducer::builder()
+            .base_offset(200)
+            .build()
+            .expect("build");
+
+        assert!(msg_sink.write_batch(&wrong_builder.batch()).await.is_err());
+    }
 
     #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_every() {
-        debug!("test_write_records_every");
+        const BASE_OFFSET: Offset = 100;
 
-        let test_file = temp_dir().join(TEST_FILE_NAME);
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("write_records_every");
+        ensure_new_dir(&test_dir).expect("new");
 
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
         };
-        let mut msg_sink = MutFileRecords::create(100, &options).await.expect("create");
-
-        debug!("{:?}", msg_sink.flush_policy);
-
-        let batch = create_batch();
-        let write_size = batch.write_size(0);
-        debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink
-            .write_batch(&mut create_batch())
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
             .await
             .expect("create");
 
+        debug!("{:?}", msg_sink.flush_policy);
+
+        let mut builder = BatchProducer::builder()
+            .base_offset(BASE_OFFSET)
+            .build()
+            .expect("build");
+
+        let batch = builder.batch();
+        let write_size = batch.write_size(0);
+        debug!("write size: {}", write_size); // for now, this is 79 bytes
+        msg_sink.write_batch(&batch).await.expect("create");
+
+        let log_path = msg_sink.get_path().to_owned();
+
         debug!("read start");
-        let bytes = read_bytes_from_file(&test_file).expect("read bytes");
+        let bytes = read_bytes_from_file(&log_path).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
         debug!("read ok");
         let batch =
@@ -427,35 +448,37 @@ mod tests {
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
         assert_eq!(record1.value.as_ref(), vec![10, 20]);
-        let record2 = records.remove(0);
-        assert_eq!(record2.value.as_ref(), vec![10, 20]);
 
         debug!("write 2");
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("write");
+        msg_sink.write_batch(&builder.batch()).await.expect("write");
 
-        let bytes = read_bytes_from_file(&test_file).expect("read");
+        let bytes = read_bytes_from_file(&log_path).expect("read");
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
 
-        let old_msg_sink = MutFileRecords::open(100, &options).await.expect("open");
-        assert_eq!(old_msg_sink.get_base_offset(), 100);
+        // check if we can read the records and get base offset
+        let old_msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+            .await
+            .expect("open");
+        assert_eq!(old_msg_sink.get_base_offset(), BASE_OFFSET);
     }
 
     // This Test configures policy to flush after every NUM_WRITES
     // and checks to see when the flush occurs relative to the write count
-    #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_count() {
-        let test_file = temp_dir().join(TEST_FILE_NAMEC);
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("mut_records_word_count");
+        ensure_new_dir(&test_dir).expect("new");
 
         const NUM_WRITES: u32 = 4;
         const OFFSET: i64 = 200;
 
+        let mut builder = BatchProducer::builder()
+            .base_offset(OFFSET)
+            .build()
+            .expect("build");
+
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             flush_write_count: NUM_WRITES,
             ..Default::default()
@@ -463,14 +486,12 @@ mod tests {
         let mut msg_sink = MutFileRecords::create(OFFSET, &options)
             .await
             .expect("create");
+        let test_file = msg_sink.get_path().to_owned();
 
-        let batch = create_batch();
+        let batch = builder.batch();
         let write_size = batch.write_size(0);
-        debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("create");
+        debug!(write_size, "write size"); // for now, this is 79 bytes
+        msg_sink.write_batch(&batch).await.expect("create");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
@@ -489,30 +510,21 @@ mod tests {
 
         // check flush counts don't increment yet
         let flush_count = msg_sink.flush_count();
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         for _ in 1..(NUM_WRITES - 2) {
-            msg_sink
-                .write_batch(&mut create_batch())
-                .await
-                .expect("send");
+            msg_sink.write_batch(&builder.batch()).await.expect("send");
             assert_eq!(flush_count, msg_sink.flush_count());
         }
 
         // flush count should increment after final write
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         assert_eq!(flush_count + 1, msg_sink.flush_count());
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
         let nbytes = write_size * NUM_WRITES as usize;
         assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
 
-        let old_msg_sink = MutFileRecords::open(OFFSET, &options)
+        let old_msg_sink = MutFileRecords::create(OFFSET, &options)
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);
@@ -528,21 +540,19 @@ mod tests {
     // The test still verifies that flushes on writes have occured within the
     // expected timeframe
     #[cfg(not(target_os = "macos"))]
-    #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_idle_delay() {
         use std::time::Duration;
         use fluvio_future::timer;
-        const TEST_FILE_NAMEI: &str = "00000000000000000300.log"; // for offset 300
 
-        let test_file = temp_dir().join(TEST_FILE_NAMEI);
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("test_write_records_idle_delay");
+        ensure_new_dir(&test_dir).expect("new");
 
         const IDLE_FLUSH: u32 = 500;
         const OFFSET: i64 = 300;
 
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             flush_write_count: 0,
             flush_idle_msec: IDLE_FLUSH,
@@ -552,17 +562,21 @@ mod tests {
             .await
             .expect("create");
 
-        let batch = create_batch();
+        let mut builder = BatchProducer::builder()
+            .base_offset(OFFSET)
+            .build()
+            .expect("build");
+
+        let batch = builder.batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("create");
+        msg_sink.write_batch(&batch).await.expect("create");
 
         debug!("direct flush");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
         debug!("direct done");
+
+        let test_file = msg_sink.get_path().to_owned();
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
@@ -581,10 +595,7 @@ mod tests {
         // check flush counts don't increment immediately
         let flush_count = msg_sink.flush_count();
         // debug!("flush_count: {} {:?}", flush_count, Instant::now());
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         // debug!("flush_count: {}", flush_count);
         assert_eq!(flush_count, msg_sink.flush_count());
 
@@ -602,15 +613,9 @@ mod tests {
         debug!("check multi write delayed flush: wait for flush");
         let flush_count = msg_sink.flush_count();
 
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
 
         let dur = Duration::from_millis((IDLE_FLUSH + 100).into());
@@ -628,7 +633,7 @@ mod tests {
         drop(msg_sink);
         timer::after(dur).await;
 
-        let old_msg_sink = MutFileRecords::open(OFFSET, &options)
+        let old_msg_sink = MutFileRecords::create(OFFSET, &options)
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);

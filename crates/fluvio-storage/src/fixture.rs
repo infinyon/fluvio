@@ -1,6 +1,8 @@
 use std::env::temp_dir;
 
-use dataplane::Size;
+use derive_builder::Builder;
+
+use dataplane::{Size, batch::Batch, record::Record};
 
 use crate::config::ConfigOption;
 
@@ -11,6 +13,46 @@ pub fn default_option(index_max_interval_bytes: Size) -> ConfigOption {
         base_dir: temp_dir(),
         index_max_bytes: 1000,
         ..Default::default()
+    }
+}
+
+#[derive(Builder)]
+pub struct BatchProducer {
+    #[builder(setter(into), default = "0")]
+    base_offset: i64,
+    #[builder(setter(into), default = "0")]
+    producer_id: i64,
+    #[builder(setter(into), default = "2")]
+    pub records: u16,
+    /// how many bytes in a record
+    #[builder(setter, default = "2")]
+    pub per_record_bytes: usize,
+}
+
+impl BatchProducer {
+    pub fn builder() -> BatchProducerBuilder {
+        BatchProducerBuilder::default()
+    }
+
+    // create new batch
+    pub fn batch(&mut self) -> Batch {
+        self.batch_records(self.records)
+    }
+
+    // create new batch
+    pub fn batch_records(&mut self, records: u16) -> Batch {
+        let mut batch = Batch::default();
+        batch.set_base_offset(self.base_offset);
+        let header = batch.get_mut_header();
+        header.magic = 2;
+        header.producer_id = self.producer_id;
+        header.producer_epoch = -1;
+        for _ in 0..records {
+            let record = Record::new(vec![10, 20]);
+            batch.add_record(record);
+        }
+        self.base_offset += records as i64;
+        batch
     }
 }
 

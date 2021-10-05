@@ -17,6 +17,7 @@ use crate::record::Record;
 
 pub trait BatchRecords: Default + Debug + Encoder + Decoder {
     /// how many bytes does record wants to process
+    #[deprecated]
     fn remainder_bytes(&self, remainder: usize) -> usize {
         remainder
     }
@@ -41,10 +42,7 @@ pub struct Batch<R = MemoryRecords> {
     records: R,
 }
 
-impl<R> Batch<R>
-where
-    R: BatchRecords,
-{
+impl<R> Batch<R> {
     pub fn get_mut_header(&mut self) -> &mut BatchHeader {
         &mut self.header
     }

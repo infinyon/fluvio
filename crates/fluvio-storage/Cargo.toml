@@ -31,6 +31,7 @@ serde = { version = "1.0.103", features = ['derive'] }
 async-lock = "2.4.0"
 derive_builder = "0.10.2"
 thiserror = "1"
+memmap = { version = "0.7.0" }
 
 # Fluvio dependencies
 fluvio-types = { version = "0.2.0", path = "../fluvio-types" }
@@ -44,3 +45,4 @@ flv-util = { version = "0.5.2", features = ["fixture"] }
 fluvio-socket = { path = "../fluvio-socket", version = "0.10.0",features = ["file"] }
 fluvio-storage = { path = ".", features = ["fixture"]}
 dataplane = { version = "0.7.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = ["fixture"] }
+derive_builder = { version = "0.10.0" }

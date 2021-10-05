@@ -7,7 +7,6 @@ use tracing::{debug, trace, instrument};
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
 use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_future::fs::util as file_util;
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
@@ -20,8 +19,8 @@ use crate::config::ConfigOption;
 use crate::StorageError;
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
-use crate::validator::LogValidationError;
 use crate::util::OffsetError;
+use crate::validator::LogValidationError;
 
 pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
 pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
@@ -108,18 +107,20 @@ where
             self.msg_log.get_path(),
             start_pos
         );
-        let file = file_util::open(self.msg_log.get_path()).await?;
+
         // let metadata = file.metadata().await?;
         // debug!("batch file len: {}",metadata.len());
-        BatchHeaderStream::new_with_pos(file, start_pos).await
+        let mut stream = BatchHeaderStream::open(self.msg_log.get_path()).await?;
+        stream.set_absolute(start_pos);
+        Ok(stream)
     }
 
     #[allow(dead_code)]
     pub async fn open_default_batch_stream(&self) -> Result<FileBatchStream, StorageError> {
         let file_path = self.msg_log.get_path();
         debug!("opening batch stream: {:#?}", file_path);
-        let file = file_util::open(file_path).await?;
-        Ok(FileBatchStream::new(file))
+        // let file = file_util::open(file_path).await?;
+        Ok(FileBatchStream::open(&file_path).await?)
     }
 
     /// get file slice from offset to end of segment
@@ -192,7 +193,7 @@ where
 
         let mut header_stream = self.open_batch_header_stream(position).await?;
         while let Some(batch_pos) = header_stream.next().await {
-            let last_offset = batch_pos.get_last_offset();
+            let last_offset = batch_pos.get_batch().get_last_offset();
             if last_offset >= offset {
                 trace!(
                     "found batch last offset which matches offset: {}",
@@ -288,7 +289,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
             base_offset,
             &option.base_dir
         );
-        let msg_log = MutFileRecords::open(base_offset, option).await?;
+        let msg_log = MutFileRecords::create(base_offset, option).await?;
         let base_offset = msg_log.get_base_offset();
         let index = MutLogIndex::open(base_offset, option).await?;
 
@@ -340,6 +341,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         SegmentSlice::new_mut_segment(self)
     }
 
+    /// write a batch, the batch is relative, we assume this would be add to current segment
     #[instrument(skip(item))]
     pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
         let current_offset = self.end_offset;
@@ -475,7 +477,7 @@ mod tests {
         .is_none());
         let offset_position =
             (active_segment.find_offset_position(20).await.expect("find")).expect("offset exists");
-        assert_eq!(offset_position.get_base_offset(), 20);
+        assert_eq!(offset_position.get_batch().get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 58);
         assert!((active_segment.find_offset_position(30).await.expect("find")).is_none());
@@ -517,7 +519,7 @@ mod tests {
         assert!((active_segment.find_offset_position(10).await.expect("find")).is_none());
         let offset_position =
             (active_segment.find_offset_position(20).await.expect("find")).expect("offset exists");
-        assert_eq!(offset_position.get_base_offset(), 20);
+        assert_eq!(offset_position.get_batch().get_base_offset(), 20);
         assert_eq!(offset_position.get_pos(), 0); //
         assert_eq!(offset_position.len(), 85);
         assert!((active_segment.find_offset_position(30).await.expect("find")).is_none());
@@ -574,7 +576,7 @@ mod tests {
             .await
             .expect("pos")
             .unwrap();
-        assert_eq!(offset_pos1.get_base_offset(), 40);
+        assert_eq!(offset_pos1.get_batch().get_base_offset(), 40);
         assert_eq!(offset_pos1.get_pos(), 0);
         assert_eq!(offset_pos1.len(), 67);
         let offset_pos2 = seg_sink
@@ -582,7 +584,7 @@ mod tests {
             .await
             .expect("pos")
             .unwrap();
-        assert_eq!(offset_pos2.get_base_offset(), 42);
+        assert_eq!(offset_pos2.get_batch().get_base_offset(), 42);
         assert_eq!(offset_pos2.get_pos(), 79);
         assert_eq!(offset_pos2.len(), 67);
 
@@ -591,7 +593,7 @@ mod tests {
             .await
             .expect("pos")
             .unwrap();
-        assert_eq!(offset_pos3.get_base_offset(), 44);
+        assert_eq!(offset_pos3.get_batch().get_base_offset(), 44);
         assert_eq!(offset_pos3.get_pos(), 158);
         assert_eq!(offset_pos3.len(), 67);
 

@@ -1974,6 +1974,7 @@ dependencies = [
  "flv-util",
  "futures-lite",
  "libc",
+ "memmap",
  "pin-utils",
  "serde",
  "structopt",
