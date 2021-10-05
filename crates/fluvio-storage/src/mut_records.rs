@@ -355,8 +355,7 @@ mod tests {
     // use std::time::{Duration, Instant};
     use std::env::temp_dir;
     use std::io::Cursor;
-    use dataplane::Offset;
-    use dataplane::record::Record;
+
     use tracing::debug;
 
     use flv_util::fixture::{ensure_clean_file, ensure_new_dir};
@@ -366,28 +365,11 @@ mod tests {
     use dataplane::fixture::read_bytes_from_file;
 
     use crate::config::ConfigOption;
+    use crate::records::FileRecords;
+    use crate::fixture::BatchProducer;
     use super::MutFileRecords;
 
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
-    const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200
-
-    const PRODUCER: i64 = 33;
-
-    // same as in the validator,
-    // TODO: move to fixture
-    fn create_batch_offset(base_offset: Offset, records: u16) -> Batch {
-        let mut batch = Batch::default();
-        batch.set_base_offset(base_offset);
-        let header = batch.get_mut_header();
-        header.magic = 2;
-        header.producer_id = PRODUCER;
-        header.producer_epoch = -1;
-        for _ in 0..records {
-            let record = Record::new(vec![10, 20]);
-            batch.add_record(record);
-        }
-        batch
-    }
 
     #[fluvio_future::test]
     async fn test_records_with_invalid_base() {
@@ -400,14 +382,19 @@ mod tests {
             ..Default::default()
         };
 
+        let mut builder = BatchProducer::builder()
+            .base_offset(401)
+            .build()
+            .expect("build");
+
         let mut msg_sink = MutFileRecords::create(401, &options).await.expect("create");
 
         msg_sink
-            .write_batch(&mut create_batch_offset(401, 0))
+            .write_batch(&builder.generate_batch())
             .await
             .expect("create");
         assert!(msg_sink
-            .write_batch(&mut create_batch_offset(111, 1))
+            .write_batch(&builder.generate_batch())
             .await
             .is_err());
     }
@@ -467,17 +454,22 @@ mod tests {
 
     // This Test configures policy to flush after every NUM_WRITES
     // and checks to see when the flush occurs relative to the write count
-    #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_count() {
-        let test_file = temp_dir().join(TEST_FILE_NAMEC);
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("mut_records_word_count");
+        //TEST_FILE_NAMEC);
+        ensure_new_dir(&test_dir).expect("new");
 
         const NUM_WRITES: u32 = 4;
         const OFFSET: i64 = 200;
 
+        let mut builder = BatchProducer::builder()
+            .base_offset(OFFSET)
+            .build()
+            .expect("build");
+
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             flush_write_count: NUM_WRITES,
             ..Default::default()
@@ -485,14 +477,12 @@ mod tests {
         let mut msg_sink = MutFileRecords::create(OFFSET, &options)
             .await
             .expect("create");
+        let test_file = msg_sink.get_path().to_owned();
 
-        let batch = create_batch();
+        let batch = builder.generate_batch();
         let write_size = batch.write_size(0);
-        debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("create");
+        debug!(write_size, "write size"); // for now, this is 79 bytes
+        msg_sink.write_batch(&batch).await.expect("create");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
@@ -512,14 +502,11 @@ mod tests {
         // check flush counts don't increment yet
         let flush_count = msg_sink.flush_count();
         msg_sink
-            .write_batch(&mut create_batch())
+            .write_batch(&builder.generate_batch())
             .await
             .expect("send");
         for _ in 1..(NUM_WRITES - 2) {
-            msg_sink
-                .write_batch(&mut create_batch())
-                .await
-                .expect("send");
+            msg_sink.write_batch(&create_batch()).await.expect("send");
             assert_eq!(flush_count, msg_sink.flush_count());
         }
 

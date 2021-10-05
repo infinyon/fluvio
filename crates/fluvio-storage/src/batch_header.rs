@@ -53,11 +53,9 @@ mod tests {
     use std::time::Instant;
 
     use dataplane::Offset;
-    use dataplane::batch::Batch;
     use flv_util::fixture::{ensure_new_dir};
-    use dataplane::fixture::create_batch;
-    use dataplane::fixture::create_batch_with_producer;
 
+    use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
     use crate::records::FileRecords;
@@ -71,23 +69,26 @@ mod tests {
         }
     }
 
-    fn create_batch_with(base_offset: Offset) -> Batch {
-        let mut batch = create_batch();
-        batch.set_base_offset(base_offset);
-        batch
-    }
-
     #[fluvio_future::test]
     async fn test_decode_batch_header_simple() {
+        const BASE_OFFSET: Offset = 200;
+
         let test_dir = temp_dir().join("header-simpl");
         ensure_new_dir(&test_dir).expect("new");
 
         let options = default_option(test_dir.clone());
 
-        let mut msg_sink = MutFileRecords::create(200, &options).await.expect("create");
+        let mut builder = BatchProducer::builder()
+            .base_offset(BASE_OFFSET)
+            .build()
+            .expect("build");
 
-        let batch = create_batch_with(200);
-        assert_eq!(batch.get_last_offset(), 201);
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+            .await
+            .expect("create");
+
+        let batch = builder.generate_batch();
+        assert_eq!(batch.get_last_offset(), BASE_OFFSET + 1);
         // write a batch with 2 records
         msg_sink.write_batch(&batch).await.expect("write");
 
@@ -101,30 +102,41 @@ mod tests {
         assert_eq!(file_pos.get_pos(), 0);
         let batch = file_pos.get_batch();
         assert_eq!(batch.get_header().producer_id, 12);
-        assert_eq!(batch.get_base_offset(), 200);
-        assert_eq!(batch.get_last_offset(), 201);
+        assert_eq!(batch.get_base_offset(), BASE_OFFSET);
+        assert_eq!(batch.get_last_offset(), BASE_OFFSET + 1);
         assert!((stream.next().await).is_none());
     }
 
     #[fluvio_future::test]
     async fn test_decode_batch_header_multiple() {
+        const BASE_OFFSET: Offset = 200;
+        const PRODUCER_ID: i64 = 25;
+
         let test_dir = temp_dir().join("header_multiple");
         ensure_new_dir(&test_dir).expect("new");
 
         let options = default_option(test_dir.clone());
 
-        let mut msg_sink = MutFileRecords::create(200, &options).await.expect("create");
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+            .await
+            .expect("create");
+
+        let mut builder = BatchProducer::builder()
+            .base_offset(BASE_OFFSET)
+            .producer_id(PRODUCER_ID)
+            .build()
+            .expect("build");
 
         // writing 2 batches of 2 records = 4 records
         msg_sink
-            .write_batch(&mut create_batch_with(200))
+            .write_batch(&builder.generate_batch())
             .await
             .expect("write");
 
         // since mut records doesn't write base offset, we need to set manually
-        let mut test_batch = create_batch_with_producer(25, 2);
-        test_batch.set_base_offset(202);
-        assert_eq!(test_batch.get_header().producer_id, 25);
+        let test_batch = builder.generate_batch();
+
+        assert_eq!(test_batch.get_header().producer_id, PRODUCER_ID);
         msg_sink.write_batch(&test_batch).await.expect("write");
 
         let log_path = msg_sink.get_path().to_owned();
@@ -136,15 +148,15 @@ mod tests {
         assert_eq!(stream.get_pos(), 79);
         assert_eq!(batch_pos1.get_pos(), 0);
         let batch1 = batch_pos1.get_batch();
-        assert_eq!(batch1.get_base_offset(), 200);
-        assert_eq!(batch1.get_header().producer_id, 12);
+        assert_eq!(batch1.get_base_offset(), BASE_OFFSET);
+        assert_eq!(batch1.get_header().producer_id, PRODUCER_ID);
 
         let batch_pos2 = stream.next().await.expect("batch");
         assert_eq!(stream.get_pos(), 158);
         assert_eq!(batch_pos2.get_pos(), 79);
         let batch2 = batch_pos2.get_batch();
-        assert_eq!(batch2.get_base_offset(), 202);
-        assert_eq!(batch2.get_header().producer_id, 25);
+        assert_eq!(batch2.get_base_offset(), BASE_OFFSET + 2);
+        assert_eq!(batch2.get_header().producer_id, PRODUCER_ID);
 
         assert!((stream.next().await).is_none());
     }
