@@ -67,15 +67,26 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         fn_user_test.sig.ident.to_string()
     };
 
+    let async_checker_name = format!("async_check_{}_{}", test_name, &rand_string);
     let test_wrapper_name = format!("{}_{}", test_name, &rand_string);
     let user_test_name = format!("ext_test_fn_{}", &rand_string);
     let requirements_name = format!("requirements_{}", &rand_string);
     let validate_name = format!("validate_subcommand_{}", &rand_string);
 
-    let test_wrapper_iden = Ident::new(&test_wrapper_name, Span::call_site());
+    let outer_async_checker_iden = Ident::new(&async_checker_name, Span::call_site());
+    let inner_test_wrapper_iden = Ident::new(&test_wrapper_name, Span::call_site());
     let user_test_fn_iden = Ident::new(&user_test_name, Span::call_site());
     let requirements_fn_iden = Ident::new(&requirements_name, Span::call_site());
     let validate_sub_fn_iden = Ident::new(&validate_name, Span::call_site());
+
+    //let fn_declare = if fn_test_reqs.r#async {
+    //    let code = "pub async fn";
+    //    syn::parse_str::<syn::Expr>(code).expect("")
+
+    //} else {
+    //    let code = "pub fn";
+    //    syn::parse_str::<syn::Expr>(code).expect("")
+    //};
 
     // Enforce naming convention for converting dyn TestOption to concrete type
     let test_opt_ident = Ident::new(
@@ -85,6 +96,15 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
     // Finally, the test body
     let test_body = &fn_user_test.block;
+
+    // We need to conditionally generate test code (per test) based on the `async` keyword
+    let maybe_async_test = if fn_test_reqs.r#async {
+        quote! {
+            fluvio_future::task::run_block_on(async { #test_body });
+        }
+    } else {
+        quote! { #test_body }
+    };
 
     let output_fn = quote! {
 
@@ -99,28 +119,32 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
         inventory::submit!{
             fluvio_test_util::test_runner::test_meta::FluvioTestMeta {
                 name: #test_name.to_string(),
-                test_fn: #test_wrapper_iden,
+                test_fn: #outer_async_checker_iden,
                 validate_fn: #validate_sub_fn_iden,
                 requirements: #requirements_fn_iden,
             }
         }
 
-        pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
-            use fluvio_test_util::test_meta::environment::EnvDetail;
+        pub fn #outer_async_checker_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 
-            let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
+            //let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
+            //if test_reqs.r#async {
+            //    fluvio_future::task::run_block_on(async {
+            //        #inner_test_wrapper_iden(test_driver, test_case)
+            //    })
+            //} else {
+                #inner_test_wrapper_iden(test_driver, test_case)
+            //}
 
-            if test_reqs.r#async {
-                fluvio_future::task::run_block_on(async {
-                    #test_body
-                });
-            } else {
-                #test_body;
-            }
         }
 
-        pub fn #test_wrapper_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
+        pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
+            use fluvio_test_util::test_meta::environment::EnvDetail;
+            #maybe_async_test 
+        }
+
+        pub fn #inner_test_wrapper_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::TestCase;
             use fluvio_test_util::test_meta::test_result::TestResult;
