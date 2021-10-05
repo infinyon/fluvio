@@ -34,7 +34,8 @@ impl BatchProducer {
         BatchProducerBuilder::default()
     }
 
-    pub fn generate_batch(&mut self) -> Batch {
+    // create new batch
+    pub fn batch(&mut self) -> Batch {
         let mut batch = Batch::default();
         batch.set_base_offset(self.base_offset);
         let header = batch.get_mut_header();

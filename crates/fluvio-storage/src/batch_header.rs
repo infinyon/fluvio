@@ -89,7 +89,7 @@ mod tests {
             .await
             .expect("create");
 
-        let batch = builder.generate_batch();
+        let batch = builder.batch();
         assert_eq!(batch.get_last_offset(), BASE_OFFSET + 1);
         // write a batch with 2 records
         msg_sink.write_batch(&batch).await.expect("write");
@@ -130,13 +130,10 @@ mod tests {
             .expect("build");
 
         // writing 2 batches of 2 records = 4 records
-        msg_sink
-            .write_batch(&builder.generate_batch())
-            .await
-            .expect("write");
+        msg_sink.write_batch(&builder.batch()).await.expect("write");
 
         // since mut records doesn't write base offset, we need to set manually
-        let test_batch = builder.generate_batch();
+        let test_batch = builder.batch();
 
         assert_eq!(test_batch.get_header().producer_id, PRODUCER_ID);
         msg_sink.write_batch(&test_batch).await.expect("write");

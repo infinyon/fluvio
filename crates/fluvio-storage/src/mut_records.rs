@@ -370,8 +370,6 @@ mod tests {
     use crate::fixture::BatchProducer;
     use super::MutFileRecords;
 
-    const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
-
     #[fluvio_future::test]
     async fn test_records_with_invalid_base() {
         const BASE_OFFSET: Offset = 401;
@@ -395,7 +393,7 @@ mod tests {
             .expect("create");
 
         msg_sink
-            .write_batch(&builder.generate_batch())
+            .write_batch(&builder.batch())
             .await
             .expect("create");
 
@@ -405,39 +403,42 @@ mod tests {
             .build()
             .expect("build");
 
-        assert!(msg_sink
-            .write_batch(&wrong_builder.generate_batch())
-            .await
-            .is_err());
+        assert!(msg_sink.write_batch(&wrong_builder.batch()).await.is_err());
     }
 
     #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_every() {
-        debug!("test_write_records_every");
+        const BASE_OFFSET: Offset = 100;
 
-        let test_file = temp_dir().join(TEST_FILE_NAME);
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("write_records_every");
+        ensure_new_dir(&test_dir).expect("new");
 
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
         };
-        let mut msg_sink = MutFileRecords::create(100, &options).await.expect("create");
-
-        debug!("{:?}", msg_sink.flush_policy);
-
-        let batch = create_batch();
-        let write_size = batch.write_size(0);
-        debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink
-            .write_batch(&mut create_batch())
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
             .await
             .expect("create");
 
+        debug!("{:?}", msg_sink.flush_policy);
+
+        let mut builder = BatchProducer::builder()
+            .base_offset(BASE_OFFSET)
+            .build()
+            .expect("build");
+
+        let batch = builder.batch();
+        let write_size = batch.write_size(0);
+        debug!("write size: {}", write_size); // for now, this is 79 bytes
+        msg_sink.write_batch(&batch).await.expect("create");
+
+        let log_path = msg_sink.get_path().to_owned();
+
         debug!("read start");
-        let bytes = read_bytes_from_file(&test_file).expect("read bytes");
+        let bytes = read_bytes_from_file(&log_path).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
         debug!("read ok");
         let batch =
@@ -448,20 +449,18 @@ mod tests {
         assert_eq!(records.len(), 2);
         let record1 = records.remove(0);
         assert_eq!(record1.value.as_ref(), vec![10, 20]);
-        let record2 = records.remove(0);
-        assert_eq!(record2.value.as_ref(), vec![10, 20]);
 
         debug!("write 2");
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("write");
+        msg_sink.write_batch(&builder.batch()).await.expect("write");
 
-        let bytes = read_bytes_from_file(&test_file).expect("read");
+        let bytes = read_bytes_from_file(&log_path).expect("read");
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
 
-        let old_msg_sink = MutFileRecords::create(100, &options).await.expect("open");
-        assert_eq!(old_msg_sink.get_base_offset(), 100);
+        // check if we can read the records and get base offset
+        let old_msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+            .await
+            .expect("open");
+        assert_eq!(old_msg_sink.get_base_offset(), BASE_OFFSET);
     }
 
     // This Test configures policy to flush after every NUM_WRITES
@@ -469,7 +468,6 @@ mod tests {
     #[fluvio_future::test]
     async fn test_write_records_count() {
         let test_dir = temp_dir().join("mut_records_word_count");
-        //TEST_FILE_NAMEC);
         ensure_new_dir(&test_dir).expect("new");
 
         const NUM_WRITES: u32 = 4;
@@ -491,7 +489,7 @@ mod tests {
             .expect("create");
         let test_file = msg_sink.get_path().to_owned();
 
-        let batch = builder.generate_batch();
+        let batch = builder.batch();
         let write_size = batch.write_size(0);
         debug!(write_size, "write size"); // for now, this is 79 bytes
         msg_sink.write_batch(&batch).await.expect("create");
@@ -513,20 +511,14 @@ mod tests {
 
         // check flush counts don't increment yet
         let flush_count = msg_sink.flush_count();
-        msg_sink
-            .write_batch(&builder.generate_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         for _ in 1..(NUM_WRITES - 2) {
-            msg_sink.write_batch(&create_batch()).await.expect("send");
+            msg_sink.write_batch(&builder.batch()).await.expect("send");
             assert_eq!(flush_count, msg_sink.flush_count());
         }
 
         // flush count should increment after final write
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         assert_eq!(flush_count + 1, msg_sink.flush_count());
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes final");
