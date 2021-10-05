@@ -72,6 +72,7 @@ mod tests {
     #[fluvio_future::test]
     async fn test_decode_batch_header_simple() {
         const BASE_OFFSET: Offset = 200;
+        const PRODUCER_ID: i64 = 12;
 
         let test_dir = temp_dir().join("header-simpl");
         ensure_new_dir(&test_dir).expect("new");
@@ -80,6 +81,7 @@ mod tests {
 
         let mut builder = BatchProducer::builder()
             .base_offset(BASE_OFFSET)
+            .producer_id(PRODUCER_ID)
             .build()
             .expect("build");
 

@@ -356,6 +356,7 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Cursor;
 
+    use dataplane::Offset;
     use tracing::debug;
 
     use flv_util::fixture::{ensure_clean_file, ensure_new_dir};
@@ -373,6 +374,8 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_records_with_invalid_base() {
+        const BASE_OFFSET: Offset = 401;
+
         let test_dir = temp_dir().join("records_with_invalid_base");
         ensure_new_dir(&test_dir).expect("new");
 
@@ -383,18 +386,27 @@ mod tests {
         };
 
         let mut builder = BatchProducer::builder()
-            .base_offset(401)
+            .base_offset(BASE_OFFSET)
             .build()
             .expect("build");
 
-        let mut msg_sink = MutFileRecords::create(401, &options).await.expect("create");
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+            .await
+            .expect("create");
 
         msg_sink
             .write_batch(&builder.generate_batch())
             .await
             .expect("create");
+
+        // use wrong base offset
+        let mut wrong_builder = BatchProducer::builder()
+            .base_offset(200)
+            .build()
+            .expect("build");
+
         assert!(msg_sink
-            .write_batch(&builder.generate_batch())
+            .write_batch(&wrong_builder.generate_batch())
             .await
             .is_err());
     }
