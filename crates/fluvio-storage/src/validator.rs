@@ -103,6 +103,7 @@ where
 mod tests {
 
     use std::env::temp_dir;
+    use std::io::ErrorKind;
 
     use flv_util::fixture::ensure_new_dir;
     use futures_lite::io::AsyncWriteExt;
@@ -115,6 +116,7 @@ mod tests {
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
     use crate::records::FileRecords;
+    use crate::validator::LogValidationError;
 
     use super::validate;
 
@@ -212,7 +214,15 @@ mod tests {
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
-        assert!(validate(&test_file).await.is_err());
+        match validate(&test_file).await {
+            Err(err) => match err {
+                LogValidationError::Io(io_err) => {
+                    assert!(matches!(io_err.kind(), ErrorKind::UnexpectedEof));
+                }
+                _ => panic!("unexpected error"),
+            },
+            Ok(_) => panic!("should have failed"),
+        };
     }
 }
 
