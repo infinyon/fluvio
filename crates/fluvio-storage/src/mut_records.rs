@@ -82,11 +82,13 @@ impl MutFileRecords {
         base_offset: Offset,
         option: &ConfigOption,
     ) -> Result<MutFileRecords, BoundedFileSinkError> {
+        let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
+        debug!(log_path = ?log_path,"creating log at");
+
         let sink_option = BoundedFileOption {
             max_len: Some(option.segment_max_bytes as u64),
         };
-        let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        debug!(log_path = ?log_path,"creating log at");
+
         let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
         let f_slice_root = f_sink.slice_from(0, 0)?;
         Ok(MutFileRecords {
@@ -94,33 +96,6 @@ impl MutFileRecords {
             f_sink: Arc::new(Mutex::new(f_sink)),
             f_slice_root,
             cached_len: 0,
-            flush_policy: get_flush_policy_from_config(option),
-            write_count: 0,
-            flush_count: Arc::new(AtomicU32::new(0)),
-            item_last_offset_delta: 0,
-            path: log_path.to_owned(),
-            flush_time_tx: None,
-        })
-    }
-
-    pub async fn open(
-        base_offset: Offset,
-        option: &ConfigOption,
-    ) -> Result<MutFileRecords, StorageError> {
-        let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        debug!("opening commit log at: {}", log_path.display());
-
-        let sink_option = BoundedFileOption {
-            max_len: Some(option.segment_max_bytes as u64),
-        };
-        let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
-        let f_slice_root = f_sink.slice_from(0, 0)?;
-        let cached_len = f_sink.get_current_len();
-        Ok(MutFileRecords {
-            base_offset,
-            f_sink: Arc::new(Mutex::new(f_sink)),
-            f_slice_root,
-            cached_len,
             flush_policy: get_flush_policy_from_config(option),
             write_count: 0,
             flush_count: Arc::new(AtomicU32::new(0)),
@@ -160,7 +135,7 @@ impl MutFileRecords {
         if item.base_offset < self.base_offset {
             return Err(StorageError::LogValidation(LogValidationError::BaseOff));
         }
-        
+
         self.item_last_offset_delta = item.get_last_offset_delta();
         let mut buffer: Vec<u8> = vec![];
         item.encode(&mut buffer, 0)?;
@@ -443,7 +418,7 @@ mod tests {
         let bytes = read_bytes_from_file(&test_file).expect("read");
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
 
-        let old_msg_sink = MutFileRecords::open(100, &options).await.expect("open");
+        let old_msg_sink = MutFileRecords::create(100, &options).await.expect("open");
         assert_eq!(old_msg_sink.get_base_offset(), 100);
     }
 
@@ -516,7 +491,7 @@ mod tests {
         let nbytes = write_size * NUM_WRITES as usize;
         assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
 
-        let old_msg_sink = MutFileRecords::open(OFFSET, &options)
+        let old_msg_sink = MutFileRecords::create(OFFSET, &options)
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);
@@ -632,7 +607,7 @@ mod tests {
         drop(msg_sink);
         timer::after(dur).await;
 
-        let old_msg_sink = MutFileRecords::open(OFFSET, &options)
+        let old_msg_sink = MutFileRecords::create(OFFSET, &options)
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);

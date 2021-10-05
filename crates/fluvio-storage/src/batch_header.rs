@@ -89,10 +89,7 @@ mod tests {
         let batch = create_batch_with(200);
         assert_eq!(batch.get_last_offset(), 201);
         // write a batch with 2 records
-        msg_sink
-            .write_batch(&batch)
-            .await
-            .expect("write");
+        msg_sink.write_batch(&batch).await.expect("write");
 
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
@@ -128,10 +125,7 @@ mod tests {
         let mut test_batch = create_batch_with_producer(25, 2);
         test_batch.set_base_offset(202);
         assert_eq!(test_batch.get_header().producer_id, 25);
-        msg_sink
-            .write_batch(&test_batch)
-            .await
-            .expect("write");
+        msg_sink.write_batch(&test_batch).await.expect("write");
 
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);

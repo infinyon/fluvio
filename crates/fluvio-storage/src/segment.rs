@@ -289,7 +289,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
             base_offset,
             &option.base_dir
         );
-        let msg_log = MutFileRecords::open(base_offset, option).await?;
+        let msg_log = MutFileRecords::create(base_offset, option).await?;
         let base_offset = msg_log.get_base_offset();
         let index = MutLogIndex::open(base_offset, option).await?;
 

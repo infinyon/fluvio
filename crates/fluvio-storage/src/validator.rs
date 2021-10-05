@@ -93,6 +93,7 @@ mod tests {
 
     use std::env::temp_dir;
 
+    use flv_util::fixture::ensure_new_dir;
     use futures_lite::io::AsyncWriteExt;
 
     use fluvio_future::fs::BoundedFileSink;
@@ -104,6 +105,7 @@ mod tests {
 
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
+    use crate::records::FileRecords;
 
     use super::validate;
 
@@ -127,20 +129,22 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_validate_empty() {
-        
-        let test_file = temp_dir().join("00000000000000000301.log");
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("validation_empty");
+        ensure_new_dir(&test_dir).expect("new");
 
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
         };
 
-        let _ = MutFileRecords::open(BASE_OFFSET, &options)
+        let log_records = MutFileRecords::create(BASE_OFFSET, &options)
             .await
             .expect("open");
-        let next_offset = validate(&test_file).await.expect("validate");
+        let log_path = log_records.get_path().to_owned();
+        drop(log_records);
+
+        let next_offset = validate(&log_path).await.expect("validate");
         assert_eq!(next_offset, BASE_OFFSET);
     }
 
