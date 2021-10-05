@@ -233,10 +233,12 @@ mod perf {
 
     use super::validate;
 
-    const TEST_PATH: &str =
-        "/tmp/fluvio-large-data/spu-logs-5002/longevity-0/00000000000000000000.log";
-    #[fluvio_future::test]
+    //#[fluvio_future::test]
+    #[allow(unused)]
     async fn perf_test() {
+        const TEST_PATH: &str =
+            "/tmp/fluvio-large-data/spu-logs-5002/longevity-0/00000000000000000000.log";
+
         println!("starting test");
         let write_time = Instant::now();
         let last_offset = validate(&TEST_PATH).await.expect("validate");
