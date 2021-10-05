@@ -6,12 +6,8 @@ use structopt::StructOpt;
 
 use fluvio_future::task::spawn;
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::{TestDriver};
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_future::task::run_block_on;
 
 #[derive(Debug, Clone)]

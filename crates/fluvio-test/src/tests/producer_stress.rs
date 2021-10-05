@@ -4,12 +4,8 @@ use structopt::StructOpt;
 
 use fluvio::RecordKey;
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::TestDriver;
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_future::task::run_block_on;
 
 #[derive(Debug, Clone)]
@@ -49,7 +45,7 @@ impl TestOption for ProducerStressTestOption {
 }
 
 #[fluvio_test(name = "producer_stress", topic = "test")]
-pub fn run(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) -> TestResult {
+pub fn run(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) {
     let test_case: ProducerStressTestCase = test_case.into();
 
     run_block_on(async {

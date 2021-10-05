@@ -9,12 +9,8 @@ use fluvio_future::timer::sleep;
 use structopt::StructOpt;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::{TestDriver};
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_future::task::run_block_on;
 
 // time to wait for ac
@@ -52,7 +48,7 @@ impl TestOption for ElectionTestOption {
 }
 
 #[fluvio_test(topic = "test")]
-pub fn election(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) -> TestResult {
+pub fn election(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) {
     println!("Starting election test");
 
     run_block_on(async {

@@ -8,14 +8,9 @@ use std::num::ParseIntError;
 use std::time::Duration;
 use structopt::StructOpt;
 
-use fluvio_future::task::run_block_on;
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::TestDriver;
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::async_process;
 use tracing::debug;
 
@@ -82,7 +77,7 @@ impl TestOption for LongevityTestOption {
 }
 
 #[fluvio_test(topic = "longevity")]
-pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) -> TestResult {
+pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let option: LongevityTestCase = test_case.into();
 
     println!("Testing longevity consumer and producer");
