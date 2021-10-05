@@ -141,7 +141,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
         pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
             use fluvio_test_util::test_meta::environment::EnvDetail;
-            #maybe_async_test 
+            #maybe_async_test
         }
 
         pub fn #inner_test_wrapper_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
