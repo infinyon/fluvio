@@ -109,32 +109,14 @@ mod tests {
 
     use fluvio_future::fs::BoundedFileSink;
     use fluvio_future::fs::BoundedFileOption;
-    use flv_util::fixture::ensure_clean_file;
-    use dataplane::record::Record;
-    use dataplane::batch::Batch;
     use dataplane::Offset;
 
+    use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
     use crate::config::ConfigOption;
     use crate::records::FileRecords;
 
     use super::validate;
-
-    const PRODUCER: i64 = 33;
-
-    pub fn create_batch(base_offset: Offset, records: u16) -> Batch {
-        let mut batch = Batch::default();
-        batch.set_base_offset(base_offset);
-        let header = batch.get_mut_header();
-        header.magic = 2;
-        header.producer_id = PRODUCER;
-        header.producer_epoch = -1;
-        for _ in 0..records {
-            let record = Record::new(vec![10, 20]);
-            batch.add_record(record);
-        }
-        batch
-    }
 
     #[fluvio_future::test]
     async fn test_validate_empty() {
@@ -161,7 +143,7 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_validate_success() {
-        const SUCCESS_BASE_OFFSET: Offset = 601;
+        const BASE_OFFSET: Offset = 601;
 
         let test_dir = temp_dir().join("validation_success");
         ensure_new_dir(&test_dir).expect("new");
@@ -172,16 +154,18 @@ mod tests {
             ..Default::default()
         };
 
-        let mut msg_sink = MutFileRecords::create(SUCCESS_BASE_OFFSET, &options)
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
             .await
             .expect("create");
 
+        let mut builder = BatchProducer::builder()
+            .base_offset(BASE_OFFSET)
+            .build()
+            .expect("build");
+
+        msg_sink.write_batch(&builder.batch()).await.expect("write");
         msg_sink
-            .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET, 2))
-            .await
-            .expect("write");
-        msg_sink
-            .write_batch(&mut create_batch(SUCCESS_BASE_OFFSET + 2, 3))
+            .write_batch(&builder.batch_records(3))
             .await
             .expect("write");
 
@@ -189,27 +173,37 @@ mod tests {
         drop(msg_sink);
 
         let next_offset = validate(&log_path).await.expect("validate");
-        assert_eq!(next_offset, SUCCESS_BASE_OFFSET + 5);
+        assert_eq!(next_offset, BASE_OFFSET + 5);
     }
 
     #[fluvio_future::test]
     async fn test_validate_invalid_contents() {
-        let test_file = temp_dir().join("00000000000000000501.log");
-        ensure_clean_file(&test_file);
+        const OFFSET: i64 = 501;
+
+        let test_dir = temp_dir().join("validate_invalid_contents");
+        ensure_new_dir(&test_dir).expect("new");
 
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
         };
 
-        let mut msg_sink = MutFileRecords::create(501, &options)
+        let mut msg_sink = MutFileRecords::create(OFFSET, &options)
             .await
             .expect("record created");
+
+        let mut builder = BatchProducer::builder()
+            .base_offset(OFFSET)
+            .build()
+            .expect("build");
+
         msg_sink
-            .write_batch(&mut create_batch(501, 2))
+            .write_batch(&builder.batch())
             .await
             .expect("create batch");
+
+        let test_file = msg_sink.get_path().to_owned();
 
         // add some junk
         let mut f_sink = BoundedFileSink::create(&test_file, BoundedFileOption::default())

@@ -359,10 +359,9 @@ mod tests {
     use dataplane::Offset;
     use tracing::debug;
 
-    use flv_util::fixture::{ensure_clean_file, ensure_new_dir};
+    use flv_util::fixture::{ensure_new_dir};
     use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::core::{Decoder, Encoder};
-    use dataplane::fixture::create_batch;
     use dataplane::fixture::read_bytes_from_file;
 
     use crate::config::ConfigOption;
@@ -541,21 +540,19 @@ mod tests {
     // The test still verifies that flushes on writes have occured within the
     // expected timeframe
     #[cfg(not(target_os = "macos"))]
-    #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_idle_delay() {
         use std::time::Duration;
         use fluvio_future::timer;
-        const TEST_FILE_NAMEI: &str = "00000000000000000300.log"; // for offset 300
 
-        let test_file = temp_dir().join(TEST_FILE_NAMEI);
-        ensure_clean_file(&test_file);
+        let test_dir = temp_dir().join("test_write_records_idle_delay");
+        ensure_new_dir(&test_dir).expect("new");
 
         const IDLE_FLUSH: u32 = 500;
         const OFFSET: i64 = 300;
 
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             flush_write_count: 0,
             flush_idle_msec: IDLE_FLUSH,
@@ -565,17 +562,21 @@ mod tests {
             .await
             .expect("create");
 
-        let batch = create_batch();
+        let mut builder = BatchProducer::builder()
+            .base_offset(OFFSET)
+            .build()
+            .expect("build");
+
+        let batch = builder.batch();
         let write_size = batch.write_size(0);
         debug!("write size: {}", write_size); // for now, this is 79 bytes
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("create");
+        msg_sink.write_batch(&batch).await.expect("create");
 
         debug!("direct flush");
         msg_sink.flush().await.expect("create flush"); // ensure the file is created
         debug!("direct done");
+
+        let test_file = msg_sink.get_path().to_owned();
 
         let bytes = read_bytes_from_file(&test_file).expect("read bytes");
         assert_eq!(bytes.len(), write_size, "incorrect size for write");
@@ -594,10 +595,7 @@ mod tests {
         // check flush counts don't increment immediately
         let flush_count = msg_sink.flush_count();
         // debug!("flush_count: {} {:?}", flush_count, Instant::now());
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         // debug!("flush_count: {}", flush_count);
         assert_eq!(flush_count, msg_sink.flush_count());
 
@@ -615,15 +613,9 @@ mod tests {
         debug!("check multi write delayed flush: wait for flush");
         let flush_count = msg_sink.flush_count();
 
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
-        msg_sink
-            .write_batch(&mut create_batch())
-            .await
-            .expect("send");
+        msg_sink.write_batch(&builder.batch()).await.expect("send");
         assert_eq!(flush_count, msg_sink.flush_count());
 
         let dur = Duration::from_millis((IDLE_FLUSH + 100).into());

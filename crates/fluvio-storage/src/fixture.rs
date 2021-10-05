@@ -36,17 +36,22 @@ impl BatchProducer {
 
     // create new batch
     pub fn batch(&mut self) -> Batch {
+        self.batch_records(self.records)
+    }
+
+    // create new batch
+    pub fn batch_records(&mut self, records: u16) -> Batch {
         let mut batch = Batch::default();
         batch.set_base_offset(self.base_offset);
         let header = batch.get_mut_header();
         header.magic = 2;
         header.producer_id = self.producer_id;
         header.producer_epoch = -1;
-        for _ in 0..self.records {
+        for _ in 0..records {
             let record = Record::new(vec![10, 20]);
             batch.add_record(record);
         }
-        self.base_offset += self.records as i64;
+        self.base_offset += records as i64;
         batch
     }
 }

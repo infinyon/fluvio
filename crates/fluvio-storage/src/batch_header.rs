@@ -175,7 +175,7 @@ mod tests {
         let mut last_base_offset = 0;
         // let mut records: i32 = 0;
         while let Some(batch) = stream.next().await {
-            counter = counter + 1;
+            counter += 1;
             //   println!("offset delta: {}",batch.get_batch().get_last_offset());
             //  records += batch.get_batch().get_records().len() as i32;
             //   if counter > 10 {
