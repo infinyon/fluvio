@@ -23,8 +23,12 @@ impl TestRequirementAttribute {
                 "timeout" => Self::timeout(&name_value),
                 "cluster_type" => Self::cluster_type(&name_value),
                 "name" => Self::name(&name_value),
-                "async" => Self::is_async(&name_value),
+                "async" => Self::async_nv(&name_value),
                 _ => Err(SynError::new(name_value.span(), "Unsupported key")),
+            },
+            Meta::Path(path) => match Self::get_key(&path).as_str() {
+                "async" => Self::async_path(&path),
+                _ => Err(SynError::new(path.span(), "Unsupported key")),
             },
             _ => Err(SynError::new(meta.span(), "Unsupported attribute:")),
         }
@@ -105,7 +109,11 @@ impl TestRequirementAttribute {
     }
 
     // Support #[fluvio_test(async)] and #[fluvio_test(async = true)] + #[fluvio_test(async = false)]
-    fn is_async(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
+    fn async_path(_path: &syn::Path) -> Result<TestRequirementAttribute, SynError> {
+        Ok(Self::Async(true))
+    }
+
+    fn async_nv(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
         if let Lit::Bool(bool_lit) = &name_value.lit {
             Ok(Self::Async(bool_lit.value()))
         } else {
