@@ -25,7 +25,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-
+  K3D_VERSION: v4.4.8
 
 jobs:
 
@@ -345,7 +345,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - uses: nolar/setup-k3d-k3s@v1
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
         with:
@@ -365,7 +364,9 @@ jobs:
       - name: Print artifacts and mark executable
         run: chmod +x ./fluvio ./fluvio-test && ./fluvio version
       - name: Set up cluster
-        run: ./k8-util/cluster/reset-k3d.sh
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke' }}
         timeout-minutes: 2
@@ -495,7 +496,7 @@ jobs:
       - name: Install K3d
         if: ${{ matrix.k8 == 'k3d' }}
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Load image to K3d
         if: ${{ matrix.k8 == 'k3d' }}
@@ -574,7 +575,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup K3d
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       # Download artifacts
       - name: Download artifact - fluvio
@@ -649,7 +650,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install K3d
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Install stable CLI and start Fluvio cluster
         run: |

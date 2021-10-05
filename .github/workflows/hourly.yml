@@ -18,6 +18,8 @@ jobs:
       fail-fast: false 
       matrix:
         os: [ubuntu-latest]
+    env:
+      K3D_VERSION: v4.4.8
     steps:
       - uses: actions/checkout@v2
 
@@ -52,7 +54,7 @@ jobs:
       # If they don't match, then let's run the test
 
       - name: Setup K3d
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
