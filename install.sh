@@ -25,6 +25,10 @@ normalize_target() {
             echo "x86_64-unknown-linux-musl"
             return 0
             ;;
+        aarch64-unknown-linux-gnu)
+            echo "aarch64-unknown-linux-musl"
+            return 0
+            ;;
     esac
 
     echo "${_target}"
