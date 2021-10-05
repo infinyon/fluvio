@@ -25,7 +25,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
-
+  K3D_VERSION: v4.4.8
 
 jobs:
 
@@ -365,7 +365,7 @@ jobs:
         run: chmod +x ./fluvio ./fluvio-test && ./fluvio version
       - name: Set up cluster
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v4.4.8 bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke' }}
@@ -496,7 +496,7 @@ jobs:
       - name: Install K3d
         if: ${{ matrix.k8 == 'k3d' }}
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v4.4.8 bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Load image to K3d
         if: ${{ matrix.k8 == 'k3d' }}
@@ -575,7 +575,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup K3d
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v4.4.8 bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       # Download artifacts
       - name: Download artifact - fluvio
@@ -650,7 +650,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Install K3d
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v4.4.8 bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Install stable CLI and start Fluvio cluster
         run: |

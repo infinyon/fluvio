@@ -26,7 +26,7 @@ on:
 
 env:
   USE_VERSION: ${{ github.event.inputs.alt_version }}
-
+  K3D_VERSION: v4.4.8
 
 jobs:
   # test fluvio in local cluster 
@@ -50,7 +50,7 @@ jobs:
       - name: Set up K3d for Ubuntu
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v4.4.8 bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Set up K8 for ubuntu(kind)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: ./k8-util/cluster/reset-k3d.sh
@@ -117,7 +117,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Setup K3d
         run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v4.4.8 bash
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh 
       - name: Run upgrade test
         timeout-minutes: 10
@@ -199,7 +199,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Setup K3d
-        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=v4.4.8 bash
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
