@@ -66,12 +66,10 @@ impl TestOption for SmokeTestOption {
 
 #[fluvio_test(topic = "test")]
 pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
-    println!("Starting smoke test");
     let smoke_test_case = test_case.into();
 
     // We're going to handle the `--consumer-wait` flag in this process
     let producer_wait = async_process!(async {
-        println!("Producer about to connect");
         let mut test_driver_consumer_wait = test_driver.clone();
 
         test_driver
@@ -97,12 +95,10 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     // By default, we should run the consumer and producer at the same time
     if !smoke_test_case.option.consumer_wait {
         let consumer_wait = async_process!(async {
-            println!("Consumer about to connect");
             test_driver
                 .connect()
                 .await
                 .expect("Connecting to cluster failed");
-            println!("About to start consumer test");
             consume::validate_consume_message(test_driver, &smoke_test_case).await;
         });
 

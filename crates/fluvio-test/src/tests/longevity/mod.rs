@@ -84,22 +84,18 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     }
 
     let consumer_wait = async_process!(async {
-        println!("Consumer about to connect");
         test_driver
             .connect()
             .await
             .expect("Connecting to cluster failed");
-        println!("About to start consumer test");
         consumer::consumer_stream(test_driver.clone(), option.clone()).await
     });
 
     let producer_wait = async_process!(async {
-        println!("Producer about to connect");
         test_driver
             .connect()
             .await
             .expect("Connecting to cluster failed");
-        println!("About to start producer test");
         producer::producer(test_driver, option).await
     });
 
