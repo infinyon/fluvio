@@ -109,11 +109,12 @@ impl TestRequirementAttribute {
         if let Lit::Bool(bool_lit) = &name_value.lit {
             Ok(Self::Async(bool_lit.value()))
         } else {
-            Err(SynError::new(name_value.span(), "Async must be LitBool or have no key"))
+            Err(SynError::new(
+                name_value.span(),
+                "Async must be LitBool or have no key",
+            ))
         }
     }
-
-
 }
 
 // These are the arguments used by `#[fluvio_test()]
@@ -161,9 +162,7 @@ impl TestRequirements {
                 TestRequirementAttribute::TestName(name) => {
                     test_requirements.test_name = Some(name)
                 }
-                TestRequirementAttribute::Async(is_async) => {
-                    test_requirements.r#async = is_async
-                }
+                TestRequirementAttribute::Async(is_async) => test_requirements.r#async = is_async,
             }
         }
 
