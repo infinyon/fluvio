@@ -11,6 +11,7 @@ pub enum TestRequirementAttribute {
     Timeout(Duration),
     ClusterType(EnvironmentType),
     TestName(String),
+    Async(bool),
 }
 
 impl TestRequirementAttribute {
@@ -22,6 +23,7 @@ impl TestRequirementAttribute {
                 "timeout" => Self::timeout(&name_value),
                 "cluster_type" => Self::cluster_type(&name_value),
                 "name" => Self::name(&name_value),
+                "async" => Self::is_async(&name_value),
                 _ => Err(SynError::new(name_value.span(), "Unsupported key")),
             },
             _ => Err(SynError::new(meta.span(), "Unsupported attribute:")),
@@ -101,6 +103,17 @@ impl TestRequirementAttribute {
             Err(SynError::new(name_value.span(), "Min spu must be LitInt"))
         }
     }
+
+    // Support #[fluvio_test(async)] and #[fluvio_test(async = true)] + #[fluvio_test(async = false)]
+    fn is_async(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
+        if let Lit::Bool(bool_lit) = &name_value.lit {
+            Ok(Self::Async(bool_lit.value()))
+        } else {
+            Err(SynError::new(name_value.span(), "Async must be LitBool or have no key"))
+        }
+    }
+
+
 }
 
 // These are the arguments used by `#[fluvio_test()]
@@ -111,6 +124,7 @@ pub struct TestRequirements {
     pub timeout: Option<Duration>,
     pub cluster_type: Option<EnvironmentType>,
     pub test_name: Option<String>,
+    pub r#async: bool,
 }
 
 impl TestRequirements {
@@ -146,6 +160,9 @@ impl TestRequirements {
                 }
                 TestRequirementAttribute::TestName(name) => {
                     test_requirements.test_name = Some(name)
+                }
+                TestRequirementAttribute::Async(is_async) => {
+                    test_requirements.r#async = is_async
                 }
             }
         }

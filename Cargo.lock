@@ -2056,15 +2056,22 @@ dependencies = [
 name = "fluvio-test-derive"
 version = "0.0.0"
 dependencies = [
+ "crossbeam-channel",
  "fluvio",
  "fluvio-future",
  "fluvio-test-util",
+ "fork",
  "inflections",
+ "inventory",
+ "nix",
  "proc-macro2",
  "quote",
+ "rand 0.8.4",
  "serde_json",
+ "structopt",
  "syn",
  "tokio",
+ "tracing",
  "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
 ]
 

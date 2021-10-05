@@ -19,9 +19,17 @@ proc-macro2 = "1.0"
 serde_json = "1.0"
 inflections = "1.1"
 fluvio-test-util = { path = "../fluvio-test-util" }
+rand = "0.8.4"
+
 
 [dev-dependencies]
 trybuild = { git = "https://github.com/sehz/trybuild", branch = "check_option" }
 fluvio = { path = "../fluvio" }
 tokio = { version = "1.4", features = ["macros"] }
 fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }
+structopt = "0.3.5"
+fork = "0.1"
+nix = "0.22"
+inventory = "0.1"
+tracing = "0.1"
+crossbeam-channel = "0.5"

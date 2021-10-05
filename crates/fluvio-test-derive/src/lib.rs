@@ -5,6 +5,8 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use syn::{AttributeArgs, Ident, ItemFn, parse_macro_input};
 use quote::quote;
 use inflections::Inflect;
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
 
 /// This macro will allow a test writer to override
 /// minimum Fluvio cluster requirements for a test
@@ -47,14 +49,37 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     // Read the user test
     let fn_user_test = parse_macro_input!(input as ItemFn);
 
+    // Add some random to the generated function names so
+    // we can support using the macro multiple times in the same file
+    let rand_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
+
+    //println!("{}", rand_string);
+
     // If test name is given, then use that instead of the test's function name
-    let out_fn_iden = if let Some(req_test_name) = &fn_test_reqs.test_name {
-        Ident::new(&req_test_name.to_string(), Span::call_site())
+    let test_name = if let Some(req_test_name) = &fn_test_reqs.test_name {
+        req_test_name.to_string()
     } else {
-        fn_user_test.sig.ident
+        fn_user_test.sig.ident.to_string()
     };
 
-    let test_name = out_fn_iden.to_string();
+    let test_wrapper_name = format!("{}_{}", test_name, &rand_string);
+    let user_test_name = format!("ext_test_fn_{}", &rand_string);
+    let requirements_name = format!("requirements_{}", &rand_string);
+    let validate_name = format!("validate_subcommand_{}", &rand_string);
+
+    let test_wrapper_iden = Ident::new(&test_wrapper_name, Span::call_site());
+
+    let user_test_fn_iden = Ident::new(&user_test_name, Span::call_site());
+
+    let requirements_fn_iden = Ident::new(&requirements_name, Span::call_site());
+
+    let validate_sub_fn_iden = Ident::new(&validate_name, Span::call_site());
+
+    //let test_name = out_fn_name.to_string();
 
     // Enforce naming convention for converting dyn TestOption to concrete type
     let test_opt_ident = Ident::new(
@@ -67,30 +92,30 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
     let output_fn = quote! {
 
-        pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
+        pub fn #validate_sub_fn_iden(subcmd: Vec<String>) -> Box<dyn fluvio_test_util::test_meta::TestOption> {
             Box::new(#test_opt_ident::from_iter(subcmd))
         }
 
-        pub fn requirements() -> TestRequirements {
+        pub fn #requirements_fn_iden() -> fluvio_test_util::test_meta::derive_attr::TestRequirements {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
         inventory::submit!{
-            FluvioTestMeta {
+            fluvio_test_util::test_runner::test_meta::FluvioTestMeta {
                 name: #test_name.to_string(),
-                test_fn: #out_fn_iden,
-                validate_fn: validate_subcommand,
-                requirements: requirements,
+                test_fn: #test_wrapper_iden,
+                validate_fn: #validate_sub_fn_iden,
+                requirements: #requirements_fn_iden,
             }
         }
 
         #[allow(clippy::unnecessary_operation)]
-        pub fn ext_test_fn(mut test_driver: TestDriver, test_case: TestCase) {
+        pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
             use fluvio_test_util::test_meta::environment::EnvDetail;
             #test_body;
         }
 
-        pub fn #out_fn_iden(mut test_driver: TestDriver, mut test_case: TestCase) -> Result<TestResult, TestResult> {
+        pub fn #test_wrapper_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
             use fluvio::Fluvio;
             use fluvio_test_util::test_meta::TestCase;
             use fluvio_test_util::test_meta::test_result::TestResult;
@@ -131,7 +156,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 let topic_setup_process = match fork() {
                     Ok(Fork::Parent(child_pid)) => child_pid,
                     Ok(Fork::Child) => {
-                        run_block_on(async {
+                        fluvio_future::task::run_block_on(async {
                             let mut test_driver_setup = test_driver.clone();
                             // Connect test driver to cluster before starting test
                             test_driver_setup.connect().await.expect("Unable to connect to cluster");
@@ -168,7 +193,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 let test_process = match fork() {
                     Ok(Fork::Parent(child_pid)) => child_pid,
                     Ok(Fork::Child) => {
-                        ext_test_fn(test_driver, test_case);
+                        #user_test_fn_iden(test_driver, test_case);
                         exit(0);
                     }
                     Err(_) => panic!("Test fork failed"),
