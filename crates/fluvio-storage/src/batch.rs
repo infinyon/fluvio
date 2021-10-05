@@ -218,7 +218,8 @@ where
             let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
             let meta = mfile.metadata().unwrap();
             if meta.len() == 0 {
-                mfile.set_len(0)?;
+                // if file size is zero, we can't map it, and there is no offset, se return error
+                return Err(IoError::new(ErrorKind::UnexpectedEof, "file size is zero"));
             }
 
             unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))

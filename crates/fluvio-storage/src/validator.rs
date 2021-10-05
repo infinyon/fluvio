@@ -1,4 +1,5 @@
 use std::io::Error as IoError;
+use std::io::ErrorKind;
 use std::path::Path;
 
 use tracing::{debug, warn, trace};
@@ -44,7 +45,17 @@ where
         "validating",
     );
 
-    let mut batch_stream = BatchHeaderStream::open(path).await?;
+    let mut batch_stream = match BatchHeaderStream::open(path).await {
+        Ok(batch_stream) => batch_stream,
+        Err(err) => match err.kind() {
+            ErrorKind::UnexpectedEof => {
+                debug!(%file_name, "empty");
+                return Ok(base_offset);
+            }
+            _ => return Err(err.into()),
+        },
+    };
+
     let mut last_offset: Offset = -1;
 
     while let Some(batch_pos) = batch_stream.next().await {
