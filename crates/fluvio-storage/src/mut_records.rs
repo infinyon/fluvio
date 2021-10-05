@@ -355,9 +355,11 @@ mod tests {
     // use std::time::{Duration, Instant};
     use std::env::temp_dir;
     use std::io::Cursor;
+    use dataplane::Offset;
+    use dataplane::record::Record;
     use tracing::debug;
 
-    use flv_util::fixture::ensure_clean_file;
+    use flv_util::fixture::{ensure_clean_file, ensure_new_dir};
     use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fixture::create_batch;
@@ -368,6 +370,47 @@ mod tests {
 
     const TEST_FILE_NAME: &str = "00000000000000000100.log"; // for offset 100
     const TEST_FILE_NAMEC: &str = "00000000000000000200.log"; // for offset 200
+
+    const PRODUCER: i64 = 33;
+
+    // same as in the validator,
+    // TODO: move to fixture
+    fn create_batch_offset(base_offset: Offset, records: u16) -> Batch {
+        let mut batch = Batch::default();
+        batch.set_base_offset(base_offset);
+        let header = batch.get_mut_header();
+        header.magic = 2;
+        header.producer_id = PRODUCER;
+        header.producer_epoch = -1;
+        for _ in 0..records {
+            let record = Record::new(vec![10, 20]);
+            batch.add_record(record);
+        }
+        batch
+    }
+
+    #[fluvio_future::test]
+    async fn test_records_with_invalid_base() {
+        let test_dir = temp_dir().join("records_with_invalid_base");
+        ensure_new_dir(&test_dir).expect("new");
+
+        let options = ConfigOption {
+            base_dir: test_dir,
+            segment_max_bytes: 1000,
+            ..Default::default()
+        };
+
+        let mut msg_sink = MutFileRecords::create(401, &options).await.expect("create");
+
+        msg_sink
+            .write_batch(&mut create_batch_offset(401, 0))
+            .await
+            .expect("create");
+        assert!(msg_sink
+            .write_batch(&mut create_batch_offset(111, 1))
+            .await
+            .is_err());
+    }
 
     #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]

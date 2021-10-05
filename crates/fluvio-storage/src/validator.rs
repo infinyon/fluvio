@@ -136,10 +136,10 @@ mod tests {
         batch
     }
 
-    const BASE_OFFSET: Offset = 301;
-
     #[fluvio_future::test]
     async fn test_validate_empty() {
+        const BASE_OFFSET: Offset = 301;
+
         let test_dir = temp_dir().join("validation_empty");
         ensure_new_dir(&test_dir).expect("new");
 
@@ -159,15 +159,15 @@ mod tests {
         assert_eq!(next_offset, BASE_OFFSET);
     }
 
-    const SUCCESS_BASE_OFFSET: Offset = 601;
-
     #[fluvio_future::test]
     async fn test_validate_success() {
-        let test_file = temp_dir().join("00000000000000000601.log");
-        ensure_clean_file(&test_file);
+        const SUCCESS_BASE_OFFSET: Offset = 601;
+
+        let test_dir = temp_dir().join("validation_success");
+        ensure_new_dir(&test_dir).expect("new");
 
         let options = ConfigOption {
-            base_dir: temp_dir(),
+            base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
         };
@@ -185,33 +185,11 @@ mod tests {
             .await
             .expect("write");
 
-        let next_offset = validate(&test_file).await.expect("validate");
+        let log_path = msg_sink.get_path().to_owned();
+        drop(msg_sink);
+
+        let next_offset = validate(&log_path).await.expect("validate");
         assert_eq!(next_offset, SUCCESS_BASE_OFFSET + 5);
-    }
-
-    #[fluvio_future::test]
-    async fn test_validate_offset() {
-        let test_file = temp_dir().join("00000000000000000401.log");
-        ensure_clean_file(&test_file);
-
-        let options = ConfigOption {
-            base_dir: temp_dir(),
-            segment_max_bytes: 1000,
-            ..Default::default()
-        };
-
-        let mut msg_sink = MutFileRecords::create(401, &options).await.expect("create");
-
-        msg_sink
-            .write_batch(&mut create_batch(401, 0))
-            .await
-            .expect("create");
-        msg_sink
-            .write_batch(&mut create_batch(111, 1))
-            .await
-            .expect("create");
-
-        assert!(validate(&test_file).await.is_err());
     }
 
     #[fluvio_future::test]
