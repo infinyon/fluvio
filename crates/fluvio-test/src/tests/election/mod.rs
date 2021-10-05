@@ -11,7 +11,9 @@ use structopt::StructOpt;
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_future::task::run_block_on;
+
+// This is temporary until test macro can generate async context
+use fluvio_test_util::async_process;
 
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
@@ -47,11 +49,13 @@ impl TestOption for ElectionTestOption {
     }
 }
 
-#[fluvio_test(topic = "test")]
-pub fn election(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) {
+// TODO: When `async` test key is generating async context
+// Move code out of `async_process` block, and add async to fn sig
+#[fluvio_test(topic = "test", async)]
+pub fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     println!("Starting election test");
 
-    run_block_on(async {
+    let test_wait = async_process!(async {
         test_driver
             .connect()
             .await
@@ -185,4 +189,6 @@ pub fn election(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase)
         let records = stream.next().await.expect("get next").expect("next");
         assert_eq!(records.value(), "msg2".as_bytes());
     });
+
+    let _ = test_wait.join();
 }

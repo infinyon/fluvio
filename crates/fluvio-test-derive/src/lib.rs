@@ -17,6 +17,7 @@ use rand::distributions::Alphanumeric;
 /// * `timeout` (default: `3600` seconds)
 /// * `cluster_type` (default: no cluster restrictions)
 /// * `name` (default: uses function name)
+/// * `async` (default: false)
 ///
 /// #[fluvio_test(min_spu = 2)]
 /// pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
@@ -72,14 +73,9 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     let validate_name = format!("validate_subcommand_{}", &rand_string);
 
     let test_wrapper_iden = Ident::new(&test_wrapper_name, Span::call_site());
-
     let user_test_fn_iden = Ident::new(&user_test_name, Span::call_site());
-
     let requirements_fn_iden = Ident::new(&requirements_name, Span::call_site());
-
     let validate_sub_fn_iden = Ident::new(&validate_name, Span::call_site());
-
-    //let test_name = out_fn_name.to_string();
 
     // Enforce naming convention for converting dyn TestOption to concrete type
     let test_opt_ident = Ident::new(
@@ -109,10 +105,19 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             }
         }
 
-        #[allow(clippy::unnecessary_operation)]
         pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
             use fluvio_test_util::test_meta::environment::EnvDetail;
-            #test_body;
+            use fluvio_test_util::test_meta::derive_attr::TestRequirements;
+
+            let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
+
+            if test_reqs.r#async {
+                fluvio_future::task::run_block_on(async {
+                    #test_body
+                });
+            } else {
+                #test_body;
+            }
         }
 
         pub fn #test_wrapper_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
@@ -125,6 +130,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
             use fluvio_test_util::setup::environment::EnvironmentType;
+            use fluvio_test_util::async_process;
             use fluvio_future::task::run;
             use fluvio_future::timer::sleep;
             use std::{io, time::Duration};
@@ -153,43 +159,29 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Setup topics before starting test
                 // Doing setup in another process to avoid async in parent process
                 // Otherwise there is .await blocking in child processes if tests fork() too
-                let topic_setup_process = match fork() {
-                    Ok(Fork::Parent(child_pid)) => child_pid,
-                    Ok(Fork::Child) => {
-                        fluvio_future::task::run_block_on(async {
-                            let mut test_driver_setup = test_driver.clone();
-                            // Connect test driver to cluster before starting test
-                            test_driver_setup.connect().await.expect("Unable to connect to cluster");
+                let topic_setup_wait = async_process!(async{
+                    let mut test_driver_setup = test_driver.clone();
+                    // Connect test driver to cluster before starting test
+                    test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-                            // Create topic before starting test
-                            test_driver_setup.create_topic(&test_case.environment)
-                                .await
-                                .expect("Unable to create default topic");
+                    // Create topic before starting test
+                    test_driver_setup.create_topic(&test_case.environment)
+                        .await
+                        .expect("Unable to create default topic");
 
-                            // Disconnect test driver to cluster before starting test
-                            test_driver_setup.disconnect();
-                        });
-
-                        exit(0);
-                    }
-                    Err(_) => panic!("Topic setup fork failed"),
-                };
-
-                let topic_setup_wait = thread::spawn( move || {
-                    let pid = Pid::from_raw(topic_setup_process);
-                    match waitpid(pid, None) {
-                        Ok(status) => {
-                            debug!("[main] Topic setup exited with status {:?}", status);
-                        }
-                        Err(err) => panic!("[main] Topic setup failed: {}", err),
-                    }
+                    // Disconnect test driver to cluster before starting test
+                    test_driver_setup.disconnect();
                 });
+
                 let _ = topic_setup_wait.join().expect("Topic setup wait failed");
 
                  // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
                 let (test_end, test_end_listener) = unbounded();
 
+                // Run the test in its own process
+                // We're not using the `async_process` macro here
+                // Only bc we are sending something to a channel in waiting thread
                 let test_process = match fork() {
                     Ok(Fork::Parent(child_pid)) => child_pid,
                     Ok(Fork::Child) => {

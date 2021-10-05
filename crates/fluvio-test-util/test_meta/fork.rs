@@ -14,10 +14,10 @@ macro_rules! async_process {
         };
 
         let child_waitpid_joinhandle = std::thread::spawn(move || {
-            let pid = Pid::from_raw(child_process);
+            let pid = nix::unistd::Pid::from_raw(child_process);
             match nix::sys::wait::waitpid(pid, None) {
                 Ok(status) => {
-                    println!("[fork] Child exited with status {:?}", status);
+                    tracing::debug!("[fork] Child exited with status {:?}", status);
                 }
                 Err(err) => panic!("[fork] waitpid() failed: {}", err),
             }

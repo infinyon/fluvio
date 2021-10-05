@@ -14,8 +14,6 @@ use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 use tracing::debug;
 
-use nix::unistd::Pid;
-
 #[derive(Debug, Clone)]
 pub struct LongevityTestCase {
     pub environment: EnvironmentSetup,
