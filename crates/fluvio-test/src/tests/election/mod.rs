@@ -12,8 +12,6 @@ use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 
-//use fluvio_future::task::run_block_on;
-
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
 
@@ -48,17 +46,9 @@ impl TestOption for ElectionTestOption {
     }
 }
 
-// TODO: When `async` test key is generating async context
-// Move code out of `run_block_on` block, and add async to fn sig
 #[fluvio_test(topic = "test", async)]
 pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     println!("Starting election test");
-
-    //run_block_on(async {
-    test_driver
-        .connect()
-        .await
-        .expect("Connecting to cluster failed");
 
     // first a create simple message
     let topic_name = test_case.environment.topic_name();
@@ -187,5 +177,4 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     println!("checking msg2");
     let records = stream.next().await.expect("get next").expect("next");
     assert_eq!(records.value(), "msg2".as_bytes());
-    //});
 }

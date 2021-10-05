@@ -89,7 +89,15 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     // We need to conditionally generate test code (per test) based on the `async` keyword
     let maybe_async_test = if fn_test_reqs.r#async {
         quote! {
-            fluvio_future::task::run_block_on(async { #test_body });
+            fluvio_future::task::run_block_on(async {
+                // Automatically connect to cluster before handing control to async test
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+
+                #test_body
+            });
         }
     } else {
         quote! { #test_body }
