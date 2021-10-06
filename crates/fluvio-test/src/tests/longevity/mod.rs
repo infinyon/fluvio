@@ -53,6 +53,11 @@ pub struct LongevityTestOption {
     //pub disable_producer: bool,
     //#[structopt(long)]
     //pub disable_consumer: bool,
+    #[structopt(long, default_value = "1")]
+    pub producers: u16,
+
+    #[structopt(long, default_value = "1")]
+    pub consumers: u16,
 
     // Offset the consumer should start from
     //#[structopt(long, default_value = "0")]
@@ -77,28 +82,49 @@ impl TestOption for LongevityTestOption {
 pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let option: LongevityTestCase = test_case.into();
 
-    println!("Testing longevity consumer and producer");
+    println!("Starting Longevity Test");
+    println!("Expected runtime: {:?}", option.option.runtime_seconds);
+    println!("# Consumers: {}", option.option.consumers);
+    println!("# Producers: {}", option.option.producers);
 
     if !option.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
 
-    let consumer_wait = async_process!(async {
-        test_driver
-            .connect()
-            .await
-            .expect("Connecting to cluster failed");
-        consumer::consumer_stream(test_driver.clone(), option.clone()).await
-    });
+    let mut consumer_wait = Vec::new();
+    for i in 0..option.option.consumers {
+        println!("Starting Consumer #{}", i + 1);
+        let consumer = async_process!(async {
+            test_driver
+                .connect()
+                .await
+                .expect("Connecting to cluster failed");
+            consumer::consumer_stream(test_driver.clone(), option.clone()).await
+        });
 
-    let producer_wait = async_process!(async {
-        test_driver
-            .connect()
-            .await
-            .expect("Connecting to cluster failed");
-        producer::producer(test_driver, option).await
-    });
+        consumer_wait.push(consumer);
+    }
 
-    let _ = producer_wait.join();
-    let _ = consumer_wait.join();
+    let mut producer_wait = Vec::new();
+    for i in 0..option.option.producers {
+        println!("Starting Producer #{}", i + 1);
+        let producer = async_process!(async {
+            test_driver
+                .connect()
+                .await
+                .expect("Connecting to cluster failed");
+            producer::producer(test_driver, option).await
+        });
+
+        producer_wait.push(producer);
+    }
+
+    let _: Vec<_> = consumer_wait
+        .into_iter()
+        .map(|c| c.join().expect("Consumer thread fail"))
+        .collect();
+    let _: Vec<_> = producer_wait
+        .into_iter()
+        .map(|p| p.join().expect("Producer thread fail"))
+        .collect();
 }
