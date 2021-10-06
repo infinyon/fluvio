@@ -82,7 +82,10 @@ impl TestOption for LongevityTestOption {
 pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let option: LongevityTestCase = test_case.into();
 
-    println!("Testing longevity consumer and producer");
+    println!("Starting Longevity Test");
+    println!("Expected runtime: {:?}", option.option.runtime_seconds);
+    println!("# Consumers: {}", option.option.consumers);
+    println!("# Producers: {}", option.option.producers);
 
     if !option.option.verbose {
         println!("Run with `--verbose` flag for more test output");
@@ -90,7 +93,7 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     let mut consumer_wait = Vec::new();
     for i in 0..option.option.consumers {
-        println!("Consumer #{}", i+1);
+        println!("Starting Consumer #{}", i+1);
         let consumer = async_process!(async {
             test_driver
                 .connect()
@@ -104,7 +107,7 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     let mut producer_wait = Vec::new();
     for i in 0..option.option.producers {
-        println!("Producer #{}", i+1);
+        println!("Starting Producer #{}", i+1);
         let producer = async_process!(async {
             test_driver
                 .connect()

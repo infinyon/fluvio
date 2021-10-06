@@ -186,7 +186,7 @@ validate-release-stable:
 ifeq (${CI},true)
 # In CI, we expect all artifacts to already be built and loaded for the script
 longevity-test:
-	$(TEST_BIN) longevity -- --runtime-seconds=1800
+	$(TEST_BIN) longevity -- --runtime-seconds=1800 --producers 10 --consumers 10
 else
 # When not in CI (i.e. development), load the dev k8 image before running test
 longevity-test: build-test
