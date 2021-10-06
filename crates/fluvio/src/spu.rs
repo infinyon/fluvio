@@ -32,6 +32,10 @@ impl SpuSocket {
         )
     }
 
+    pub fn is_stale(&self) -> bool {
+        self.socket.is_stale()
+    }
+
     async fn create_stream_with_version<R: Request>(
         &mut self,
         request: R,
@@ -133,7 +137,9 @@ impl SpuPool {
         let mut client_lock = self.spu_clients.lock().await;
 
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
-            return Ok(spu_socket.create_serial_socket().await);
+            if !spu_socket.is_stale() {
+                return Ok(spu_socket.create_serial_socket().await);
+            }
         }
 
         let mut spu_socket = self.connect_to_leader(leader_id).await?;
