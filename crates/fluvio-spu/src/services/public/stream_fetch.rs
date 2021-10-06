@@ -28,7 +28,7 @@ use fluvio_types::event::offsets::OffsetChangeListener;
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use publishers::INIT_OFFSET;
-use crate::smartstream::{SmartStreamEngine, SmartStream};
+use crate::smartstream::{SmartStream};
 use crate::smartstream::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartstream::SmartStreamRuntimeError;
@@ -128,7 +128,7 @@ impl StreamFetchHandler {
         msg: StreamFetchRequest<FileRecordSet>,
     ) -> Result<(), SocketError> {
         let max_bytes = msg.max_bytes as u32;
-        let sm_engine = SmartStreamEngine::default();
+        let sm_engine = ctx.smartstream_owned();
 
         let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
             let wasm = &payload.wasm.get_raw()?;
