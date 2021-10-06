@@ -1,13 +1,9 @@
-use fluvio_integration_derive::fluvio_test;
-#[allow(unused_imports)]
-use fluvio::Fluvio;
+use fluvio_test_derive::fluvio_test;
 #[allow(unused_imports)]
 use fluvio_test_util::test_meta::TestCase;
-#[allow(unused_imports)]
-use std::sync::Arc;
 
 #[fluvio_test(fail)]
-pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
+pub fn run(mut test_driver: TestDriver, test_case: TestCase) {
 }
 
 fn main() {

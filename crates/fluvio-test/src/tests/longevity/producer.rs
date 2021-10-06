@@ -1,4 +1,3 @@
-use std::sync::Arc;
 use fluvio::RecordKey;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
@@ -8,7 +7,8 @@ use tracing::debug;
 use super::LongevityTestCase;
 use super::util::*;
 
-pub async fn producer(test_driver: Arc<TestDriver>, option: LongevityTestCase) {
+pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
+    debug!("About to get a producer");
     let producer = test_driver
         .create_producer(&option.environment.topic_name())
         .await;
@@ -19,6 +19,7 @@ pub async fn producer(test_driver: Arc<TestDriver>, option: LongevityTestCase) {
     let mut records_sent = 0;
     let test_start = SystemTime::now();
 
+    debug!("About to start producer loop");
     while test_start.elapsed().unwrap() <= option.option.runtime_seconds {
         let record = LongevityRecordBuilder::new()
             .with_offset(records_sent)

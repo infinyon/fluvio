@@ -1,10 +1,10 @@
 use fluvio::RecordKey;
-use fluvio_test_util::test_runner::test_driver::{SharedTestDriver};
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 
 use super::MultiplePartitionTestCase;
 
-pub async fn producer(test_driver: SharedTestDriver, option: MultiplePartitionTestCase) {
+pub async fn producer(test_driver: TestDriver, option: MultiplePartitionTestCase) {
     let producer = test_driver
         .create_producer(&option.environment.topic_name())
         .await;

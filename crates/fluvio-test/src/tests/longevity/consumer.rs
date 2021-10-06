@@ -4,7 +4,7 @@ use std::time::Duration;
 use futures_lite::StreamExt;
 use tokio::select;
 
-use fluvio_test_util::test_runner::test_driver::SharedTestDriver;
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
@@ -12,10 +12,12 @@ use fluvio_future::timer::sleep;
 use super::LongevityTestCase;
 use super::util::*;
 
-pub async fn consumer_stream(test_driver: SharedTestDriver, option: LongevityTestCase) {
+pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase) {
+    println!("About to get a consumer");
     let consumer = test_driver
         .get_consumer(&option.environment.topic_name())
         .await;
+    println!("About to get a stream");
 
     // TODO: Support starting stream from consumer offset
     let mut stream = consumer
@@ -25,11 +27,13 @@ pub async fn consumer_stream(test_driver: SharedTestDriver, option: LongevityTes
 
     let mut index: i32 = 0;
 
-    // Note, we're going to give the consumer some buffer since it starts its timer first
-    let consumer_buffer_time = Duration::from_millis(10);
+    // Note, we're going to give the consumer some buffer
+    // to give it a better chance to read all records
+    let consumer_buffer_time = Duration::from_millis(25);
     let mut test_timer = sleep(option.option.runtime_seconds + consumer_buffer_time);
     let mut records_recvd = 0;
 
+    println!("About to start consumer loop");
     'consumer_loop: loop {
         // Take a timestamp before record consumed
         let now = SystemTime::now();
@@ -37,7 +41,8 @@ pub async fn consumer_stream(test_driver: SharedTestDriver, option: LongevityTes
         select! {
 
                 _ = &mut test_timer => {
-                    println!("Records received: {}", records_recvd);
+
+                    println!("Consumer stopped. Time's up!\nRecords received: {:?}", records_recvd);
                     break 'consumer_loop
                 }
 

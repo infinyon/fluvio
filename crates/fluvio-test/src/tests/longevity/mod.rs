@@ -2,22 +2,16 @@ pub mod producer;
 pub mod consumer;
 pub mod util;
 
+use core::panic;
 use std::any::Any;
 use std::num::ParseIntError;
-use std::sync::Arc;
 use std::time::Duration;
 use structopt::StructOpt;
 
-use fluvio_future::task::spawn;
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::TestDriver;
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-
-use futures::join;
+use fluvio_test_util::async_process;
 
 #[derive(Debug, Clone)]
 pub struct LongevityTestCase {
@@ -80,28 +74,31 @@ impl TestOption for LongevityTestOption {
 }
 
 #[fluvio_test(topic = "longevity")]
-pub async fn longevity(
-    mut test_driver: Arc<FluvioTestDriver>,
-    mut test_case: TestCase,
-) -> TestResult {
-    test_longevity_consume_produce(test_driver.clone(), test_case.into()).await
-}
+pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
+    let option: LongevityTestCase = test_case.into();
 
-pub async fn test_longevity_consume_produce(
-    test_driver: Arc<TestDriver>,
-    option: LongevityTestCase,
-) {
     println!("Testing longevity consumer and producer");
 
     if !option.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
 
-    let consumer_join = spawn(consumer::consumer_stream(
-        test_driver.clone(),
-        option.clone(),
-    ));
-    let producer_join = producer::producer(test_driver, option);
+    let consumer_wait = async_process!(async {
+        test_driver
+            .connect()
+            .await
+            .expect("Connecting to cluster failed");
+        consumer::consumer_stream(test_driver.clone(), option.clone()).await
+    });
 
-    join!(consumer_join, producer_join);
+    let producer_wait = async_process!(async {
+        test_driver
+            .connect()
+            .await
+            .expect("Connecting to cluster failed");
+        producer::producer(test_driver, option).await
+    });
+
+    let _ = producer_wait.join();
+    let _ = consumer_wait.join();
 }

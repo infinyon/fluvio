@@ -2,8 +2,6 @@
 
 use std::{io, time::Duration};
 use std::io::Write;
-use std::collections::HashMap;
-use std::sync::Arc;
 
 use tracing::{info};
 use futures_lite::stream::StreamExt;
@@ -16,16 +14,14 @@ use crate::get_binary;
 
 use super::SmokeTestCase;
 use super::message::*;
-
-type Offsets = HashMap<String, i64>;
+use super::offsets::{self, Offsets};
 
 /// verify consumers
-pub async fn validate_consume_message(
-    test_driver: Arc<TestDriver>,
-    test_case: &SmokeTestCase,
-    offsets: Offsets,
-) {
+pub async fn validate_consume_message(test_driver: TestDriver, test_case: &SmokeTestCase) {
     let use_cli = test_case.option.use_cli;
+
+    // Get offsets before starting
+    let offsets = offsets::find_offsets(&test_driver, test_case).await;
 
     if use_cli {
         validate_consume_message_cli(test_case, offsets);
@@ -61,8 +57,8 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
     }
 }
 
-async fn validate_consume_message_api(
-    test_driver: Arc<TestDriver>,
+pub async fn validate_consume_message_api(
+    test_driver: TestDriver,
     offsets: Offsets,
     test_case: &SmokeTestCase,
 ) {

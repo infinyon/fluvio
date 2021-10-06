@@ -7,13 +7,13 @@ This assumes you have read Fluvio doc and setup or access to a Fluvio cluster .
 ## Setting up Test runer
 
 * Build all `Fluvio` crates
-* Build development minikube image
+* Build development kubernetes image
 
 Must run test runner from fluvio repo root (issue: #[860](https://github.com/infinyon/fluvio/issues/860))
 
 ```
-make build_test
-make minikube-image
+make build-test
+make build_k8_image 
 ```
 
 ## Testing Fluvio with different cargo compiler profiles
@@ -49,39 +49,20 @@ alias fluvio-test=./target/release/fluvio-test
 fluvio-test <test-name> [FLAGS] [OPTIONS] -- [SUBCOMMAND OPTIONS]
 ```
 
-> Test runner testing doesn't work when VERSION set to an unpublished version. Workaround: Run `make minikube_image` and use `--develop` flag with `fluvio-test` (issue #[859](https://github.com/infinyon/fluvio/issues/859))
+> Test runner testing doesn't work when VERSION set to an unpublished version. Workaround: Run `make build_k8_image` and use `--develop` flag with `fluvio-test` (issue #[859](https://github.com/infinyon/fluvio/issues/859))
 
 
 Test runner can be a running in two ways:
 - Create new cluster (local or k8) and run test
 - Run tests againts existing cluster
 
-
 > Expected behavior of local clusters that fluvio-test start:
 >
 > If you `ctrl+c`, the local cluster will also be terminated.
 >
-> If you want the cluster to stick around, then you should start the cluster locally, and pass `--disable-install` and `--keep-cluster` flags.
-
-## Benchmark testing
-(The feature is experimental.)
-
-* Tests must opt-in to be run in benchmark mode. To opt-in add `#[fluvio_test(benchmark = true)]` to test
-* To run a test in benchmark mode, run test with the `--benchmark` flag.
-
-```
-cargo run --release --bin fluvio-test -- producer_stress --develop --disable-install --benchmark -- --iteration 5 --producers 5
-```
-
-> The `--benchmark` flag is specified as an option of `fluvio-test` (Before the `--`.)
-
-An error message will appear when attempting to benchmark tests without `benchmark = true`.
-
-Benchmarks are performed with the [bencher](https://crates.io/crates/bencher) crate using the [auto_bench](https://docs.rs/bencher/0.1.5/bencher/struct.Bencher.html#method.auto_bench) method.
-
-The number of iterations are not user-controllable because it is the easiest way to use the crate to build a statistical summary.
-
-Total iterations run depend on the runtime of a single test. The longer the test, the fewer the runs.
+> If you want to deploy a cluster before or delete your cluster after a test, then pass `--cluster-start` or `--cluster-delete` flags, respectively. 
+>
+> The `--cluster-start-fresh` flag will delete, then re-start a cluster before the test begins
 
 ---
 ## Smoke test
@@ -90,31 +71,44 @@ The smoke test can be configured with it's own CLI options:
 
 `fluvio-test smoke [environment vars] -- [smoke test vars]`
 
-
 ---
 
-This run a simple smoke test by creating new local cluster.
+This is an example of running a simple test, the smoke test. creating new local cluster
 
 It creates a simple topic: `topic` and perform produce/consume 
 
 ```
-$ fluvio-test smoke --local
-
+$ fluvio-test smoke --cluster-start --cluster-delete
 Start running fluvio test runner
-deleting cluster
+Starting cluster and testing connection
+remove cluster skipped
 installing cluster
-Performing pre-flight checks
-✅ ok: Supported helm version is installed
-✅ ok: Supported kubernetes version is installed
-✅ ok: Kubernetes config is loadable
-✅ ok: Fluvio system charts are installed
-Creating the topic: topic
-found topic: topic offset: 0
-starting produce
-Ok!
-send message of len 121
-topic: topic, consume message validated!
+🛠️  Installing Fluvio
+     ✅ Fluvio app chart has been installed
+🔎 Found SC service addr: 172.18.0.2:32309
+👤 Profile set
+🤖 SPU group launched (1)
+     ✅ All SPUs confirmed
+🎯 Successfully installed Fluvio!
+Creating the topic: test
+topic "test" created
+found topic: test offset: 0
+starting fetch stream for: test base offset: 0, expected new records: 1
+found topic: test offset: 0
+total records sent: 0 chunk time: 0.0 secs
+consume message validated!, records: 1
+replication status verified
+performing 2nd fetch check. waiting 5 seconds
+performing complete  fetch stream for: test base offset: 0, expected new records: 1
+full <<consume test done for: test >>>>
 deleting cluster
++--------------+--------------+
+| Test Results |              |
++--------------+--------------+
+| Pass?        | true         |
++--------------+--------------+
+| Duration     | 5.028603585s |
++--------------+--------------+
 ```
 
 ### Test with multiple iteration
@@ -127,13 +121,11 @@ Run a test with sending 10 records:
 $ fluvio-test smoke --local -- --producer-iteration 10
 ```
 
-### Run test without re-installing
-
-After initial test using `--keep-cluster`, more iteration can be tested without re-installing cluster using `--disable-install`
+### Run test using your current Fluvio cluster
 
 ```
-$ fluvio-test smoke --local --keep-cluster -- --producer-iteration 10
-$ fluvio-test smoke --disable-install -- --producer-iteration 200
+$ fluvio-test smoke --local -- --producer-iteration 10
+$ fluvio-test smoke -- --producer-iteration 200
 ```
 
 ### No streaming
@@ -164,15 +156,10 @@ Write new tests in the `tests` module of the `fluvio-test` crate.
 
 Here's a complete stub to modify:
 ```rust
-use std::sync::Arc;
 use std::any::Any;
 use structopt::StructOpt;
-
-use fluvio::Fluvio;
-use fluvio_future::task::spawn;
 use fluvio_integration_derive::fluvio_test;
-use fluvio_test_util::test_meta::environment::EnvironmentSetup;
-use fluvio_test_util::test_meta::{TestOption, TestCase, TestResult};
+use fluvio_test_util::test_meta::{TestOption, TestCase};
 
 #[derive(Debug, Clone)]
 pub struct ExampleTestCase {
@@ -207,7 +194,7 @@ impl TestOption for ExampleTestOption {
 }
 
 #[fluvio_test()]
-pub async fn run(client: Arc<Fluvio>, mut option: TestCase) {
+pub fn example(mut test_driver: TestDriver, test_case: TestCase) {
     let example_test_case : ExampleTestCase = option.into();
 
     println!("Ready to run tests: {:?}", example_test_case);
@@ -231,6 +218,15 @@ example: Set both `min_spu` and `topic` on test.
 
 ```rust
 #[fluvio_test(min_spu=2, topic="test_topic")]
+pub fn run(client: Arc<Fluvio>, mut option: TestCase) {
+    println!("Hello world!")
+}
+```
+
+(For `async/await` test code, use the `async` attribute with the macro)
+
+```rust
+#[fluvio_test(min_spu=2, topic="test_topic", async)]
 pub async fn run(client: Arc<Fluvio>, mut option: TestCase) {
     println!("Hello world!")
 }

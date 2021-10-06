@@ -5,6 +5,8 @@ use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use syn::{AttributeArgs, Ident, ItemFn, parse_macro_input};
 use quote::quote;
 use inflections::Inflect;
+use rand::{thread_rng, Rng};
+use rand::distributions::Alphanumeric;
 
 /// This macro will allow a test writer to override
 /// minimum Fluvio cluster requirements for a test
@@ -15,6 +17,7 @@ use inflections::Inflect;
 /// * `timeout` (default: `3600` seconds)
 /// * `cluster_type` (default: no cluster restrictions)
 /// * `name` (default: uses function name)
+/// * `async` (default: false)
 ///
 /// #[fluvio_test(min_spu = 2)]
 /// pub async fn run(client: Arc<Fluvio>, mut test_case: TestCase) {
@@ -47,17 +50,32 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     // Read the user test
     let fn_user_test = parse_macro_input!(input as ItemFn);
 
+    // Add some random to the generated function names so
+    // we can support using the macro multiple times in the same file
+    let rand_string: String = thread_rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
+
+    //println!("{}", rand_string);
+
     // If test name is given, then use that instead of the test's function name
-    let out_fn_iden = if let Some(req_test_name) = &fn_test_reqs.test_name {
-        Ident::new(&req_test_name.to_string(), Span::call_site())
+    let test_name = if let Some(req_test_name) = &fn_test_reqs.test_name {
+        req_test_name.to_string()
     } else {
-        fn_user_test.sig.ident
+        fn_user_test.sig.ident.to_string()
     };
 
-    let test_name = out_fn_iden.to_string();
+    let test_driver_name = format!("{}_{}", test_name, &rand_string);
+    let user_test_name = format!("ext_test_fn_{}", &rand_string);
+    let requirements_name = format!("requirements_{}", &rand_string);
+    let validate_name = format!("validate_subcommand_{}", &rand_string);
 
-    // We're going to wrap the the async test into a sync to store fn pointer w/ `inventory` crate
-    let async_inner_fn_iden = Ident::new(&format!("{}_inner", &test_name), Span::call_site());
+    let test_driver_iden = Ident::new(&test_driver_name, Span::call_site());
+    let user_test_fn_iden = Ident::new(&user_test_name, Span::call_site());
+    let requirements_fn_iden = Ident::new(&requirements_name, Span::call_site());
+    let validate_sub_fn_iden = Ident::new(&validate_name, Span::call_site());
 
     // Enforce naming convention for converting dyn TestOption to concrete type
     let test_opt_ident = Ident::new(
@@ -68,132 +86,147 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     // Finally, the test body
     let test_body = &fn_user_test.block;
 
+    // We need to conditionally generate test code (per test) based on the `async` keyword
+    let maybe_async_test = if fn_test_reqs.r#async {
+        quote! {
+            fluvio_future::task::run_block_on(async {
+                // Automatically connect to cluster before handing control to async test
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+
+                #test_body
+            });
+        }
+    } else {
+        quote! { #test_body }
+    };
+
     let output_fn = quote! {
 
-        pub fn validate_subcommand(subcmd: Vec<String>) -> Box<dyn TestOption> {
+        pub fn #validate_sub_fn_iden(subcmd: Vec<String>) -> Box<dyn fluvio_test_util::test_meta::TestOption> {
             Box::new(#test_opt_ident::from_iter(subcmd))
         }
 
-        pub fn requirements() -> TestRequirements {
+        pub fn #requirements_fn_iden() -> fluvio_test_util::test_meta::derive_attr::TestRequirements {
             serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs")
         }
 
-        pub fn #out_fn_iden(mut test_driver: Arc<TestDriver>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
-            //println!("Inside the function");
-            let future = async move {
-                //println!("Inside the async wrapper function");
-                #async_inner_fn_iden(test_driver, test_case).await
-            };
-            fluvio_future::task::run_block_on(future)
-        }
-
         inventory::submit!{
-            FluvioTestMeta {
+            fluvio_test_util::test_runner::test_meta::FluvioTestMeta {
                 name: #test_name.to_string(),
-                test_fn: #out_fn_iden,
-                validate_fn: validate_subcommand,
-                requirements: requirements,
+                test_fn: #test_driver_iden,
+                validate_fn: #validate_sub_fn_iden,
+                requirements: #requirements_fn_iden,
             }
         }
 
-        #[allow(clippy::unnecessary_operation)]
-        pub async fn ext_test_fn(mut test_driver: Arc<TestDriver>, test_case: TestCase) -> TestResult {
+        pub fn #user_test_fn_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, test_case: fluvio_test_util::test_meta::TestCase) {
             use fluvio_test_util::test_meta::environment::EnvDetail;
-            #test_body;
-
-            TestResult {
-                //topic_num: lock.topic_num as u64,
-                //producer_num: lock.producer_num as u64,
-                //consumer_num: lock.consumer_num as u64,
-                //producer_bytes: lock.producer_bytes as u64,
-                //consumer_bytes: lock.consumer_bytes as u64,
-                //topic_create_latency_histogram: lock.topic_create_latency_histogram.clone(),
-                //producer_latency_histogram: lock.producer_latency_histogram.clone(),
-                //consumer_latency_histogram: lock.consumer_latency_histogram.clone(),
-                ..Default::default()
-            }
+            #maybe_async_test
         }
 
-        pub async fn #async_inner_fn_iden(mut test_driver: Arc<TestDriver>, mut test_case: TestCase) -> Result<TestResult, TestResult> {
-            use fluvio::Fluvio;
-            use fluvio_test_util::test_meta::TestCase;
+        pub fn #test_driver_iden(mut test_driver: fluvio_test_util::test_runner::test_driver::TestDriver, mut test_case: fluvio_test_util::test_meta::TestCase) -> Result<fluvio_test_util::test_meta::test_result::TestResult, fluvio_test_util::test_meta::test_result::TestResult> {
             use fluvio_test_util::test_meta::test_result::TestResult;
-            use fluvio_test_util::test_meta::environment::{EnvDetail};
+            use fluvio_test_util::test_meta::environment::EnvDetail;
             use fluvio_test_util::test_meta::derive_attr::TestRequirements;
             use fluvio_test_util::test_meta::test_timer::TestTimer;
             use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-            use fluvio_test_util::setup::environment::EnvironmentType;
-            use fluvio_future::task::run;
-            use fluvio_future::timer::sleep;
-            use std::{io, time::Duration};
-            use tokio::select;
-            use std::panic::panic_any;
-            use std::default::Default;
+            use fluvio_test_util::async_process;
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
-            //let test_reqs : TestRequirements = #fn_test_reqs;
-
-            let is_env_acceptable = TestDriver::is_env_acceptable(&test_reqs, &test_case);
 
             // Customize test environment if it meets minimum requirements
-            if is_env_acceptable {
+            if TestDriver::is_env_acceptable(&test_reqs, &test_case) {
 
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
-                // Create topic before starting test
-                test_driver.create_topic(&test_case.environment)
-                    .await
-                    .expect("Unable to create default topic");
+                // Setup topics before starting test
+                // Doing setup in another process to avoid async in parent process
+                // Otherwise there is .await blocking in child processes if tests fork() too
+                let topic_setup_wait = async_process!(async {
+                    let mut test_driver_setup = test_driver.clone();
+                    // Connect test driver to cluster before starting test
+                    test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-                // start a timeout timer
-                let timeout_duration = test_case.environment.timeout();
-                let mut timeout_timer = sleep(timeout_duration.clone());
+                    // Create topic before starting test
+                    test_driver_setup.create_topic(&test_case.environment)
+                        .await
+                        .expect("Unable to create default topic");
 
-                // Start a test timer for the user's test now that setup is done
+                    // Disconnect test driver to cluster before starting test
+                    test_driver_setup.disconnect();
+                });
+
+                let _ = topic_setup_wait.join().expect("Topic setup wait failed");
+
+                 // Start a test timer for the user's test now that setup is done
                 let mut test_timer = TestTimer::start();
-                let test_driver_clone = test_driver.clone();
+                let (test_end, test_end_listener) = crossbeam_channel::unbounded();
 
-                select! {
-                    _ = &mut timeout_timer => {
-                        test_timer.stop();
-                        eprintln!("\nTest timed out ({:?})", timeout_duration);
-                        //let _ = std::panic::take_hook();
-                        Err(TestResult {
-                            success: false,
-                            duration: test_timer.duration(),
-                            ..Default::default()
-                        })
+                // Run the test in its own process
+                // We're not using the `async_process` macro here
+                // Only bc we are sending something to a channel in waiting thread
+                let test_process = match fork::fork() {
+                    Ok(fork::Fork::Parent(child_pid)) => child_pid,
+                    Ok(fork::Fork::Child) => {
+                        #user_test_fn_iden(test_driver, test_case);
+                        std::process::exit(0);
+                    }
+                    Err(_) => panic!("Test fork failed"),
+                };
+
+                let test_wait = std::thread::spawn( move || {
+                    let pid = nix::unistd::Pid::from_raw(test_process.clone());
+                    match nix::sys::wait::waitpid(pid, None) {
+                        Ok(status) => {
+                            tracing::debug!("[main] Test exited with status {:?}", status);
+
+                            // Send something through the channel to signal test completion
+                            test_end.send(()).unwrap();
+                        }
+                        Err(err) => panic!("[main] Test failed: {}", err),
+                    }
+                });
+
+                // All of this is to handle test timeout
+                let mut sel = crossbeam_channel::Select::new();
+                let test_thread_done = sel.recv(&test_end_listener);
+                let thread_selector = sel.select_timeout(test_case.environment.timeout());
+
+                match thread_selector {
+                    Err(_) => {
+                        // Need to catch this panic to kill test parent process + all child processes
+                        panic!("Test timeout met: {:?}", test_case.environment.timeout());
                     },
+                    Ok(thread_selector) => match thread_selector.index() {
+                        i if i == test_thread_done => {
+                            // This is needed to let crossbeam select channel know we selected an operation, or it'll panic
+                            let _ = thread_selector.recv(&test_end_listener);
 
-                    // Change this to use the return value
-                    test_result_tmp = ext_test_fn(test_driver_clone, test_case) => {
-                        test_timer.stop();
+                            // Stop the test timer before reporting
+                            test_timer.stop();
 
-                        // This is the final version of TestResult before it renders to stdout
-                        Ok(TestResult {
-                            success: true,
-                            duration: test_timer.duration(),
-                            topic_num: test_result_tmp.topic_num,
-                            topic_create_latency_histogram: test_result_tmp.topic_create_latency_histogram,
-                            producer_num: test_result_tmp.producer_num,
-                            producer_bytes: test_result_tmp.producer_bytes,
-                            producer_latency_histogram: test_result_tmp.producer_latency_histogram,
-                            consumer_num: test_result_tmp.consumer_num,
-                            consumer_bytes: test_result_tmp.consumer_bytes,
-                            consumer_latency_histogram: test_result_tmp.consumer_latency_histogram,
-                        })
+                            Ok(TestResult {
+                                success: true,
+                                duration: test_timer.duration(),
+                                ..std::default::Default::default()
+                            })
+
+                        }
+                        _ => unreachable!()
                     }
                 }
-
             } else {
                 println!("Test skipped...");
 
                 Ok(TestResult {
                     success: true,
-                    duration: Duration::new(0, 0),
-                    ..Default::default()
+                    duration: std::time::Duration::new(0, 0),
+                    ..std::default::Default::default()
                 })
             }
         }

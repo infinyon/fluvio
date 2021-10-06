@@ -1,6 +1,6 @@
 use std::sync::mpsc::Receiver;
 
-use fluvio_test_util::test_runner::test_driver::{SharedTestDriver};
+use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use futures_lite::StreamExt;
 use fluvio::Offset;
@@ -9,7 +9,7 @@ use super::ConcurrentTestCase;
 use super::util::*;
 
 pub async fn consumer_stream(
-    test_driver: SharedTestDriver,
+    test_driver: TestDriver,
     option: ConcurrentTestCase,
     digests: Receiver<String>,
 ) {

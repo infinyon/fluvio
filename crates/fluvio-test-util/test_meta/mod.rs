@@ -2,6 +2,7 @@ pub mod derive_attr;
 pub mod environment;
 pub mod test_result;
 pub mod test_timer;
+pub mod fork;
 
 use std::any::Any;
 use std::fmt::Debug;

@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::sync::Arc;
 use std::time::Duration;
 
 use futures_lite::stream::StreamExt;
@@ -10,12 +9,8 @@ use fluvio_future::timer::sleep;
 use structopt::StructOpt;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::{TestDriver};
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
@@ -51,11 +46,8 @@ impl TestOption for ElectionTestOption {
     }
 }
 
-#[fluvio_test(topic = "test")]
-pub async fn election(
-    mut test_driver: Arc<FluvioTestDriver>,
-    mut test_case: TestCase,
-) -> TestResult {
+#[fluvio_test(topic = "test", async)]
+pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
     println!("Starting election test");
 
     // first a create simple message

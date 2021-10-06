@@ -1,19 +1,16 @@
 pub mod consume;
 pub mod produce;
 pub mod message;
+pub mod offsets;
 
 use std::any::Any;
-use std::sync::Arc;
 
 use structopt::StructOpt;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::TestDriver;
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
+use fluvio_test_util::async_process;
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -68,14 +65,44 @@ impl TestOption for SmokeTestOption {
 //}
 
 #[fluvio_test(topic = "test")]
-pub async fn smoke(mut test_driver: Arc<FluvioTestDriver>, mut test_case: TestCase) -> TestResult {
-    println!("Starting smoke test");
+pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let smoke_test_case = test_case.into();
 
-    let start_offsets = produce::produce_message(test_driver.clone(), &smoke_test_case).await;
-    // println!("start sleeping");
-    // fluvio_future::timer::sleep(Duration::from_secs(40)).await;
-    // sleep(Duration::from_secs(40));
-    // println!("end sleeping");
-    consume::validate_consume_message(test_driver.clone(), &smoke_test_case, start_offsets).await;
+    // We're going to handle the `--consumer-wait` flag in this process
+    let producer_wait = async_process!(async {
+        let mut test_driver_consumer_wait = test_driver.clone();
+
+        test_driver
+            .connect()
+            .await
+            .expect("Connecting to cluster failed");
+        println!("About to start producer test");
+
+        let start_offset = produce::produce_message(test_driver, &smoke_test_case).await;
+
+        // If we've passed in `--consumer-wait` then we should start the consumer after the producer
+        if smoke_test_case.option.consumer_wait {
+            test_driver_consumer_wait
+                .connect()
+                .await
+                .expect("Connecting to cluster failed");
+            use crate::tests::smoke::consume::validate_consume_message_api;
+            validate_consume_message_api(test_driver_consumer_wait, start_offset, &smoke_test_case)
+                .await;
+        }
+    });
+
+    // By default, we should run the consumer and producer at the same time
+    if !smoke_test_case.option.consumer_wait {
+        let consumer_wait = async_process!(async {
+            test_driver
+                .connect()
+                .await
+                .expect("Connecting to cluster failed");
+            consume::validate_consume_message(test_driver, &smoke_test_case).await;
+        });
+
+        let _ = consumer_wait.join();
+    }
+    let _ = producer_wait.join();
 }
