@@ -93,8 +93,35 @@ impl FluvioSocket {
         addr: &str,
         connector: &dyn TcpDomainConnector,
     ) -> Result<Self, SocketError> {
-        debug!("trying to connect to addr at: {}", addr);
-        let (write, read, fd) = connector.connect(addr).await?;
+        use once_cell::sync::Lazy;
+
+        static CONNECTION_RETRIES: Lazy<u64> = Lazy::new(|| {
+            use std::env;
+
+            let var_value = env::var("FLV_CONNECTION_RETRIES").unwrap_or_default();
+            let retries: u64 = var_value.parse().unwrap_or(5);
+            retries
+        });
+
+        let mut attempt = 0;
+
+        let result = loop {
+            debug!("trying to connect to addr at: {}", addr);
+
+            match connector.connect(addr).await {
+                Err(_) if attempt < *CONNECTION_RETRIES => {
+                    debug!(
+                        "failed attempt {} to connect to {}. Sleeping 5 seconds",
+                        attempt + 1,
+                        addr
+                    );
+                    attempt += 1;
+                    fluvio_future::timer::sleep(std::time::Duration::from_secs(5)).await;
+                }
+                res => break res,
+            }
+        };
+        let (write, read, fd) = result?;
         Ok(Self::from_stream(write, read, fd))
     }
 }
