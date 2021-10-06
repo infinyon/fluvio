@@ -93,7 +93,7 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     let mut consumer_wait = Vec::new();
     for i in 0..option.option.consumers {
-        println!("Starting Consumer #{}", i+1);
+        println!("Starting Consumer #{}", i + 1);
         let consumer = async_process!(async {
             test_driver
                 .connect()
@@ -107,7 +107,7 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     let mut producer_wait = Vec::new();
     for i in 0..option.option.producers {
-        println!("Starting Producer #{}", i+1);
+        println!("Starting Producer #{}", i + 1);
         let producer = async_process!(async {
             test_driver
                 .connect()
