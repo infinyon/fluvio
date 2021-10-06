@@ -1,6 +1,5 @@
 pub mod producer;
 pub mod consumer;
-pub mod util;
 
 use core::panic;
 use std::any::Any;
