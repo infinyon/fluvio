@@ -13,11 +13,9 @@ use super::LongevityTestCase;
 use super::util::*;
 
 pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase) {
-    println!("About to get a consumer");
     let consumer = test_driver
         .get_consumer(&option.environment.topic_name())
         .await;
-    println!("About to get a stream");
 
     // TODO: Support starting stream from consumer offset
     let mut stream = consumer
@@ -33,7 +31,6 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase)
     let mut test_timer = sleep(option.option.runtime_seconds + consumer_buffer_time);
     let mut records_recvd = 0;
 
-    println!("About to start consumer loop");
     'consumer_loop: loop {
         // Take a timestamp before record consumed
         let now = SystemTime::now();
@@ -66,14 +63,6 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase)
                         }
 
                         assert!(record.validate_crc());
-
-                        //let mut lock = test_driver.write().await;
-
-                        //// record latency
-                        //lock.consume_latency_record(consume_latency as u64).await;
-                        //lock.consume_bytes_record(record.data.len()).await;
-
-                        //drop(lock);
 
                         index += 1;
                     } else {
