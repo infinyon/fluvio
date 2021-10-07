@@ -1,18 +1,26 @@
 use std::sync::Arc;
 use structopt::StructOpt;
+
+use serde::Deserialize;
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::fs::File;
+use std::io::Read;
+
 use fluvio::Fluvio;
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio_extension_common::Terminal;
+use fluvio_extension_common::COMMAND_TEMPLATE;
+
 
 mod create;
 mod delete;
 mod list;
 
-use crate::cli::ClusterCliError;
-use fluvio_extension_common::Terminal;
-use fluvio_extension_common::COMMAND_TEMPLATE;
-
 use create::CreateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
+use crate::cli::ClusterCliError;
 
 #[derive(Debug, StructOpt)]
 pub enum ManagedConnectorCmd {
@@ -58,13 +66,6 @@ impl ManagedConnectorCmd {
         Ok(())
     }
 }
-use serde::Deserialize;
-use std::collections::BTreeMap;
-use std::path::PathBuf;
-use std::fs::File;
-use std::io::Read;
-
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ConnectorConfig {
