@@ -340,7 +340,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         run: [r1]
-        test: [smoke,election,multiple-partition]
+        test: [smoke,election,multiple-partition,reconnection]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
@@ -392,6 +392,14 @@ jobs:
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
           echo "multiple partition test done"
+      - name: Run reconnection-test
+        if: ${{ matrix.test == 'reconnection' }}
+        timeout-minutes: 3
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnectino-test
+          echo "reconnection test done"
+
       - name: Save logs
         if: failure()
         run: |

@@ -24,7 +24,7 @@ TEST_ENV_AUTH_POLICY=
 TEST_ENV_FLV_SPU_DELAY=
 
 # Test args
-TEST_ARG_SPU=--spu ${DEFAULT_SPU}
+/EST_ARG_SPU=--spu ${DEFAULT_SPU}
 TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 TEST_ARG_REPLICATION=-r ${REPL}
 TEST_ARG_DEVELOP=$(if $(IMAGE_VERSION),--image-version ${IMAGE_VERSION}, --develop)
@@ -118,6 +118,17 @@ multiple-partition-test: test-setup
                 ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
+
+reconnect-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+reconnect-test: DEFAULT_SPU=1
+reconnect-test: REPL=1
+reconnect-test: test-setup
+	$(TEST_BIN) reconnection  \
+                ${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
