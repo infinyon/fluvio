@@ -48,7 +48,7 @@ pub struct ConsumerTestOption {
     /// Max records to consume before stopping
     /// Default, stop when end of topic reached
     #[structopt(long, default_value = "0")]
-    pub num_records: u16,
+    pub num_records: u32,
 
     #[structopt(long)]
     pub max_bytes: Option<usize>,
@@ -105,8 +105,7 @@ async fn consume_work<S: ?Sized>(
     //S: Stream<Item = Result<Record, FluvioError>> + std::marker::Unpin,
     S: Stream<Item = Result<Record, FluvioError>>,
 {
-    let mut index: i32 = 0;
-    //let mut records_recvd = 0;
+    let mut records_recvd = 0;
 
     // Per producer
     // Keep track of latency
@@ -128,15 +127,16 @@ async fn consume_work<S: ?Sized>(
 
                 stream_next = stream.next() => {
 
-                    if let Some(Ok(record_json)) = stream_next {
-                        let recv_json_str = std::str::from_utf8(record_json.as_ref()).unwrap();
-                        let recv_size = recv_json_str.len();
-                        //records_recvd += 1;
-                        let record: TestRecord =
-                            serde_json::from_str(recv_json_str)
+                    if let Some(Ok(record_raw)) = stream_next {
+                        records_recvd += 1;
+
+                        let record_str = std::str::from_utf8(record_raw.as_ref()).unwrap();
+                        let record_size = record_str.len();
+                        let test_record: TestRecord =
+                            serde_json::from_str(record_str)
                                 .expect("Deserialize record failed");
 
-                        assert!(record.validate_crc());
+                        assert!(test_record.validate_crc());
 
                         let consume_latency = now.elapsed().clone().unwrap().as_nanos() as u64;
                         latency_histogram.record(consume_latency).unwrap();
@@ -145,21 +145,26 @@ async fn consume_work<S: ?Sized>(
                         // Starting units: time is in nano, data is in bytes
                         // Converting from nanoseconds to seconds, to store (bytes per second) in histogram
                         let consume_throughput =
-                            (((recv_size as f32) / (consume_latency as f32)) * 1_000_000_000.0) as u64;
+                            (((record_size as f32) / (consume_latency as f32)) * 1_000_000_000.0) as u64;
                         throughput_histogram.record(consume_throughput as u64).unwrap();
 
                         if test_case.option.verbose {
                             println!(
-                                "Consuming {:<7} (size {:<5}): consumed CRC: {:<10} latency: {:?} throughput: {:?} kB/s",
-                                index,
-                                recv_json_str.len(),
-                                record.crc,
-                                Duration::from_nanos(consume_latency),
+                                "[consumer-{}] record: {:>7} offset: {:>7} (size {:>5}): CRC: {:>10} latency: {:>12} throughput: {:>7?} kB/s",
+                                consumer_id,
+                                records_recvd,
+                                record_raw.offset(),
+                                record_size,
+                                test_record.crc,
+                                format!("{:?}", Duration::from_nanos(consume_latency)),
                                 (consume_throughput / 1_000)
                             );
                         }
 
-                        index += 1;
+                        if test_case.option.num_records != 0 && records_recvd == test_case.option.num_records  {
+                            break 'consumer_loop;
+                        }
+
                     } else {
                         break 'consumer_loop;
                     }
@@ -245,7 +250,15 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     println!("\nStarting Consumer test");
 
-    println!("Consumers              : {}", consumers);
+    println!("Consumers: {}", consumers);
+    println!("Starting offset: {:?}", &offset);
+
+    if test_case.option.num_records != 0 {
+        println!("# records to consume: {:?}", &test_case.option.num_records);
+    } else {
+        println!("# records to consume: (until end):");
+    }
+
     // starting offset
     // consumer type (basically, specify if multi-partition)
     // partition

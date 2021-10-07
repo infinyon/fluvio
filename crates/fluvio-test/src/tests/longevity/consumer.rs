@@ -12,7 +12,7 @@ use fluvio_future::timer::sleep;
 use super::LongevityTestCase;
 use crate::tests::TestRecord;
 
-pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase) {
+pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase, consumer_id: u32) {
     let consumer = test_driver
         .get_consumer(&option.environment.topic_name(), 0)
         .await;
@@ -22,8 +22,6 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase)
         .stream(Offset::from_end(0))
         .await
         .expect("Unable to open stream");
-
-    let mut index: i32 = 0;
 
     // Note, we're going to give the consumer some buffer
     // to give it a better chance to read all records
@@ -45,26 +43,30 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase)
 
                 stream_next = stream.next() => {
 
-                    if let Some(Ok(record_json)) = stream_next {
+                    if let Some(Ok(record_raw)) = stream_next {
                         records_recvd += 1;
-                        let record: TestRecord =
-                            serde_json::from_str(std::str::from_utf8(record_json.as_ref()).unwrap())
+
+                        let record_str = std::str::from_utf8(record_raw.as_ref()).unwrap();
+                        let record_size = record_str.len();
+                        let test_record: TestRecord =
+                            serde_json::from_str(std::str::from_utf8(record_raw.as_ref()).unwrap())
                                 .expect("Deserialize record failed");
 
                         let _consume_latency = now.elapsed().clone().unwrap().as_nanos();
 
                         if option.option.verbose {
                             println!(
-                                "Consuming {:<7} (size {:<5}): consumed CRC: {:<10}",
-                                index,
-                                record.data.len(),
-                                record.crc,
+                                "[consumer-{}] record: {:>7} offset: {:>7} (size {:>5}): CRC: {:>10}",
+                                consumer_id,
+                                records_recvd,
+                                record_raw.offset(),
+                                record_size,
+                                test_record.crc,
                             );
                         }
 
-                        assert!(record.validate_crc());
+                        assert!(test_record.validate_crc());
 
-                        index += 1;
                     } else {
                         panic!("Stream ended unexpectedly")
                     }

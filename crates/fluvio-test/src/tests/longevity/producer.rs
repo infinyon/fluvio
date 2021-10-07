@@ -7,7 +7,7 @@ use tracing::debug;
 use super::LongevityTestCase;
 use crate::tests::TestRecordBuilder;
 
-pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
+pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, producer_id: u32) {
     debug!("About to get a producer");
     let producer = test_driver
         .create_producer(&option.environment.topic_name())
@@ -34,9 +34,10 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
 
         if option.option.verbose {
             println!(
-                "Producing {:<7} (size {:<5}): produced CRC: {:<10}",
+                "[producer-{}] record: {:>7} (size {:>5}): CRC: {:>10}",
+                producer_id,
                 records_sent,
-                record.data.len(),
+                record_json.len(),
                 record.crc,
             );
         }

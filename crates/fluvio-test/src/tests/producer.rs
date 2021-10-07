@@ -91,6 +91,10 @@ async fn producer_work(
 
     // Loop over num_record
     for record_n in 0..workload_size {
+        // This is to report the sent tag relative to the work split
+        // Shift the record tag wrt the producer id, so they don't overlap
+        let record_tag = record_n + (producer_id * workload_size);
+
         // {
         //  Create record
         //  calculate the min latency to meet throughput requirements
@@ -137,10 +141,12 @@ async fn producer_work(
             let throughput_kbps = send_throughput / 1_000;
 
             println!(
-                "[producer-{}] Sent (size {:<5}): Latency: {:?} Throughput: {} kB/s",
+                "[producer-{}] record: {:>7} (size {:>5}) CRC: {:>10} Latency: {:>12} Throughput: {:>7?} kB/s",
                 producer_id,
+                record_tag,
                 record_size,
-                Duration::from_nanos(send_latency),
+                record.crc,
+                format!("{:?}", Duration::from_nanos(send_latency)),
                 throughput_kbps,
             );
         }
@@ -175,10 +181,8 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     };
 
     println!("\nStarting Producer test");
-
-    println!("Producers              : {}", producers);
-
-    println!("# Records              : {}", total_records);
+    println!("Producers: {}", producers);
+    println!("# Records: {}", total_records);
 
     // Divide work up amongst the total number of producers
     let record_producer_modulo = total_records % producers;

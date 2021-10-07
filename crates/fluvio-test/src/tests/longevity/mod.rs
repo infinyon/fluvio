@@ -47,16 +47,11 @@ pub struct LongevityTestOption {
     #[structopt(long, default_value = "1000")]
     record_size: usize,
 
-    // TODO: Support these workflows
-    //#[structopt(long)]
-    //pub disable_producer: bool,
-    //#[structopt(long)]
-    //pub disable_consumer: bool,
     #[structopt(long, default_value = "1")]
-    pub producers: u16,
+    pub producers: u32,
 
     #[structopt(long, default_value = "1")]
-    pub consumers: u16,
+    pub consumers: u32,
 
     // Offset the consumer should start from
     //#[structopt(long, default_value = "0")]
@@ -92,13 +87,13 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     let mut consumer_wait = Vec::new();
     for i in 0..option.option.consumers {
-        println!("Starting Consumer #{}", i + 1);
+        println!("Starting Consumer #{}", i);
         let consumer = async_process!(async {
             test_driver
                 .connect()
                 .await
                 .expect("Connecting to cluster failed");
-            consumer::consumer_stream(test_driver.clone(), option.clone()).await
+            consumer::consumer_stream(test_driver.clone(), option.clone(), i).await
         });
 
         consumer_wait.push(consumer);
@@ -106,13 +101,13 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     let mut producer_wait = Vec::new();
     for i in 0..option.option.producers {
-        println!("Starting Producer #{}", i + 1);
+        println!("Starting Producer #{}", i);
         let producer = async_process!(async {
             test_driver
                 .connect()
                 .await
                 .expect("Connecting to cluster failed");
-            producer::producer(test_driver, option).await
+            producer::producer(test_driver, option, i).await
         });
 
         producer_wait.push(producer);
