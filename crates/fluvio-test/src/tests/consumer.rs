@@ -155,7 +155,7 @@ async fn consume_work<S: ?Sized>(
                                 recv_json_str.len(),
                                 record.crc,
                                 Duration::from_nanos(consume_latency),
-                                consume_throughput
+                                (consume_throughput / 1_000)
                             );
                         }
 
