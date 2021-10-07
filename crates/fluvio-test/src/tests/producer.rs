@@ -7,9 +7,10 @@ use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use crate::tests::TestRecordBuilder;
 use fluvio_test_util::async_process;
-use tracing::debug;
+//use tracing::debug;
 use hdrhistogram::Histogram;
 use std::time::{Duration, SystemTime};
+//use std::num::ParseIntError;
 
 #[derive(Debug, Clone)]
 pub struct ProducerTestCase {
@@ -37,11 +38,13 @@ impl From<TestCase> for ProducerTestCase {
 pub struct ProducerTestOption {
     #[structopt(long, default_value = "3")]
     pub producers: u32,
-    // duration
-    // 0 => never stop, but we're going to need to support signals for clean exit
 
     // Not sure how we're going to support this yet
     // max-throughput
+
+    //// total time we want the producer to run, in seconds
+    //#[structopt(long, parse(try_from_str = parse_seconds), default_value = "60")]
+    //runtime_seconds: Duration,
 
     // this might eventually be mutually exclusive to duration
     #[structopt(long, default_value = "100")]
@@ -56,6 +59,11 @@ pub struct ProducerTestOption {
     #[structopt(long, short)]
     verbose: bool,
 }
+
+//fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
+//    let seconds = s.parse::<u64>()?;
+//    Ok(Duration::from_secs(seconds))
+//}
 
 impl TestOption for ProducerTestOption {
     fn as_any(&self) -> &dyn Any {
@@ -76,6 +84,7 @@ async fn producer_work(
     // Keep track of latency
     let mut latency_histogram = Histogram::<u64>::new(2).unwrap();
     // Keep track of throughput
+    let mut throughput_histogram = Histogram::<u64>::new(2).unwrap();
     // Eventually we'll need to store globally to calculate wrt all producers in test
 
     // Loop over num_record
@@ -91,6 +100,7 @@ async fn producer_work(
         //
         //  calculate actual latency, throughput
         // }
+
         let record = TestRecordBuilder::new()
             .with_tag(format!("{}:{}", producer_id, record_n))
             .with_random_data(test_case.option.record_size)
@@ -99,39 +109,49 @@ async fn producer_work(
             .expect("Convert record to json string failed")
             .as_bytes()
             .to_vec();
+        let record_size = record_json.len() as u64;
 
-        debug!("{:?}", &record);
+        //debug!("{:?}", &record);
 
         // Record the latency
-        //test_driver
-        //    .send_count(&producer, RecordKey::NULL, record_json)
-        //    .await
-        //    .expect("Producer Send failed");
-
         let now = SystemTime::now();
         producer
             .send(RecordKey::NULL, record_json)
             .await
-            .expect(&format!("Producer {} send failed", producer_id));
-        let send_latency = now.elapsed().unwrap().as_nanos() as u64;
+            .unwrap_or_else(|_| panic!("Producer {} send failed", producer_id));
 
+        let send_latency = now.elapsed().unwrap().as_nanos() as u64;
         latency_histogram.record(send_latency).unwrap();
 
+        // Calculate send throughput.
+        // Starting units: time is in nano, data is in bytes
+        // Converting from nanoseconds to seconds, to store (bytes per second) in histogram
+        let send_throughput =
+            (((record_size as f32) / (send_latency as f32)) * 1_000_000_000.0) as u64;
+        throughput_histogram.record(send_throughput as u64).unwrap();
+
         if test_case.option.verbose {
+            // Convert bytes per second to kilobytes per second
+            let throughput_kbps = send_throughput / 1_000;
+
             println!(
-                "[producer-{}] Sent (size {:<5}): CRC: {:<10}, Latency: {:?}",
+                "[producer-{}] Sent (size {:<5}): Latency: {:?} Throughput: {} kB/s",
                 producer_id,
-                record.data.len(),
-                record.crc,
+                record_size,
                 Duration::from_nanos(send_latency),
+                throughput_kbps,
             );
         }
     }
 
+    let produce_p99 = Duration::from_nanos(latency_histogram.value_at_percentile(0.99));
+
+    // Stored as bytes per second. Convert to kilobytes per second
+    let throughput_p99 = throughput_histogram.max() / 1_000;
+
     println!(
-        "[producer-{}] P99: {:?}",
-        producer_id,
-        Duration::from_nanos(latency_histogram.value_at_percentile(0.99))
+        "[producer-{}] Produce P99: {:?} Peak Throughput: {:?} kB/s",
+        producer_id, produce_p99, throughput_p99
     );
 }
 
@@ -142,7 +162,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     // If we assign more producers than records to split
     // then set # of producers to the # of records
-    let producers = if total_records > test_case.option.producers.into() {
+    let producers = if total_records > test_case.option.producers {
         test_case.option.producers
     } else {
         println!(
@@ -166,22 +186,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     assert_eq!((even_split + record_producer_modulo), odd_split);
 
-    let is_even_split = if record_producer_modulo == 0 {
-        // if we divide evenly, then no problem
-
-        //println!("each producer will send {} records", even_split);
-        true
-    } else {
-        // otherwise, one producer will deal will take care of the remaining work
-
-        //println!("each producer will send {} records", even_split);
-        //println!(
-        //    "except for one producer, which will send {} records",
-        //    odd_split
-        //);
-
-        false
-    };
+    let is_even_split = record_producer_modulo == 0;
 
     // Spawn the producers
     let mut producer_wait = Vec::new();
