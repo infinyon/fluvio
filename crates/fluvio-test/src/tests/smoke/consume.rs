@@ -79,7 +79,7 @@ pub async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let consumer = test_driver.get_consumer(&topic_name).await;
+        let consumer = test_driver.get_consumer(&topic_name, 0).await;
 
         let mut stream = consumer
             .stream(
@@ -194,7 +194,7 @@ pub async fn validate_consume_message_api(
             topic_name, base_offset, producer_iteration
         );
 
-        let consumer = test_driver.get_consumer(&topic_name).await;
+        let consumer = test_driver.get_consumer(&topic_name, 0).await;
 
         let mut stream = consumer
             .stream(

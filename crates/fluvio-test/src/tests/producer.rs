@@ -36,6 +36,7 @@ impl From<TestCase> for ProducerTestCase {
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 #[structopt(name = "Fluvio Producer Test")]
 pub struct ProducerTestOption {
+    /// Num of producers to create
     #[structopt(long, default_value = "3")]
     pub producers: u32,
 
@@ -45,10 +46,11 @@ pub struct ProducerTestOption {
     //// total time we want the producer to run, in seconds
     //#[structopt(long, parse(try_from_str = parse_seconds), default_value = "60")]
     //runtime_seconds: Duration,
-
-    // this might eventually be mutually exclusive to duration
+    /// Total number of records to producer
     #[structopt(long, default_value = "100")]
     pub num_records: u32,
+
+    /// Size of dynamic payload portion of test record
     #[structopt(long, default_value = "1000")]
     pub record_size: usize,
 

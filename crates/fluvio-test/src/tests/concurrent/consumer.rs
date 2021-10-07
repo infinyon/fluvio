@@ -14,7 +14,7 @@ pub async fn consumer_stream(
     digests: Receiver<String>,
 ) {
     let consumer = test_driver
-        .get_consumer(&option.environment.topic_name())
+        .get_consumer(&option.environment.topic_name(), 0)
         .await;
     let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 

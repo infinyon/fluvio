@@ -164,7 +164,7 @@ pub async fn election(mut test_driver: TestDriver, mut test_case: TestCase) {
         assert_eq!(leader_status.spec.leader, leader);
     }
 
-    let consumer = test_driver.get_consumer(&topic_name).await;
+    let consumer = test_driver.get_consumer(&topic_name, 0).await;
     let mut stream = consumer
         .stream(Offset::absolute(0).expect("offset"))
         .await

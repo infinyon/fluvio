@@ -14,7 +14,7 @@ use crate::tests::TestRecord;
 
 pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase) {
     let consumer = test_driver
-        .get_consumer(&option.environment.topic_name())
+        .get_consumer(&option.environment.topic_name(), 0)
         .await;
 
     // TODO: Support starting stream from consumer offset

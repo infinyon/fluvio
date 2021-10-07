@@ -3,6 +3,7 @@ pub mod concurrent;
 pub mod multiple_partitions;
 pub mod longevity;
 pub mod producer;
+pub mod consumer;
 pub mod election;
 
 use serde::{Serialize, Deserialize};
