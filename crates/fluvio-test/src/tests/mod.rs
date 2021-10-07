@@ -2,9 +2,8 @@ pub mod smoke;
 pub mod concurrent;
 pub mod multiple_partitions;
 pub mod longevity;
-pub mod producer_stress;
+pub mod producer;
 pub mod election;
-
 
 use serde::{Serialize, Deserialize};
 use std::time::SystemTime;
@@ -13,15 +12,14 @@ use crc::{Crc, CRC_32_CKSUM};
 pub struct TestRecordBuilder {
     /// The producer will set this timestamp
     pub timestamp: SystemTime,
-    // Index of this record wrt the longevity session, starting at 0
-    pub testrun_offset: u32,
+    pub tag: String,
     pub data: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TestRecord {
     pub timestamp: SystemTime,
-    pub offset: u32,
+    pub tag: String,
     pub data: String,
     pub crc: u32,
 }
@@ -34,7 +32,7 @@ impl TestRecord {
         // Use all fields to build CRC
         // Order is important: go by order of fields
         digest.update(format!("{:?}", &self.timestamp).as_bytes());
-        digest.update(format!("{}", &self.offset).as_bytes());
+        digest.update(self.tag.as_bytes());
         digest.update(self.data.as_bytes());
 
         digest.finalize() == self.crc
@@ -45,7 +43,7 @@ impl Default for TestRecordBuilder {
     fn default() -> Self {
         Self {
             timestamp: SystemTime::now(),
-            testrun_offset: 0,
+            tag: format!("{}", 0),
             data: String::new(),
         }
     }
@@ -56,8 +54,9 @@ impl TestRecordBuilder {
         Self::default()
     }
 
-    pub fn with_offset(mut self, offset: u32) -> Self {
-        self.testrun_offset = offset;
+    // This is used more as a tag. This just needs to be Display
+    pub fn with_tag(mut self, tag: String) -> Self {
+        self.tag = tag;
         self
     }
 
@@ -74,7 +73,7 @@ impl TestRecordBuilder {
     pub fn build(&self) -> TestRecord {
         TestRecord {
             timestamp: self.timestamp,
-            offset: self.testrun_offset,
+            tag: self.tag.clone(),
             data: self.data.clone(),
             crc: self.compute_data_crc(),
         }
@@ -106,9 +105,8 @@ impl TestRecordBuilder {
         // Use all fields to build CRC
         // Order is important: go by order of fields
         digest.update(format!("{:?}", &self.timestamp).as_bytes());
-        digest.update(format!("{}", &self.testrun_offset).as_bytes());
+        digest.update(self.tag.as_bytes());
         digest.update(self.data.as_bytes());
         digest.finalize()
     }
 }
-

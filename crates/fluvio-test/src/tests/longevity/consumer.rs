@@ -10,7 +10,7 @@ use fluvio::Offset;
 use fluvio_future::timer::sleep;
 
 use super::LongevityTestCase;
-use super::util::*;
+use crate::tests::TestRecord;
 
 pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase) {
     let consumer = test_driver
@@ -47,7 +47,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase)
 
                     if let Some(Ok(record_json)) = stream_next {
                         records_recvd += 1;
-                        let record: LongevityRecord =
+                        let record: TestRecord =
                             serde_json::from_str(std::str::from_utf8(record_json.as_ref()).unwrap())
                                 .expect("Deserialize record failed");
 
