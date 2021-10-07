@@ -78,6 +78,7 @@ async fn producer_work(
     producer: TopicProducer,
     producer_id: u32,
     workload_size: u32,
+    record_tag_start: u32,
     test_case: ProducerTestCase,
 ) {
     //println!("Hello, I'm producing {} records", workload_size);
@@ -93,7 +94,7 @@ async fn producer_work(
     for record_n in 0..workload_size {
         // This is to report the sent tag relative to the work split
         // Shift the record tag wrt the producer id, so they don't overlap
-        let record_tag = record_n + (producer_id * workload_size);
+        let record_tag = record_tag_start + record_n;
 
         // {
         //  Create record
@@ -211,6 +212,9 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 even_split
             };
 
+            // This is used to print non-overlapping record tags
+            let start_record_tag = even_split * n;
+
             test_driver
                 .connect()
                 .await
@@ -222,6 +226,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     .await,
                 n,
                 workload_size,
+                start_record_tag,
                 test_case,
             )
             .await
