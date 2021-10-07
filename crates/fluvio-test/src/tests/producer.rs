@@ -198,7 +198,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     // Spawn the producers
     let mut producer_wait = Vec::new();
     for n in 0..producers {
-        println!("Starting Producer #{}", n + 1);
+        println!("Starting Producer #{}", n);
 
         let producer = async_process!(async {
             // We want to ensure that we handle the case of an odd split in work

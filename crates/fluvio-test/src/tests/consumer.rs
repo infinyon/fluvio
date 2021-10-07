@@ -266,6 +266,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     // Spawn the consumers
     let mut consumer_wait = Vec::new();
     for n in 0..consumers {
+        println!("Starting Consumer #{}", n);
         let consumer = async_process!(async {
             test_driver
                 .connect()
