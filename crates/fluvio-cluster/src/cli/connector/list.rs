@@ -11,7 +11,7 @@ use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
-use crate::error::ConnectorError;
+use crate::cli::ClusterCliError;
 
 #[derive(Debug, StructOpt)]
 pub struct ListManagedConnectorsOpt {
@@ -25,7 +25,7 @@ impl ListManagedConnectorsOpt {
         self,
         out: Arc<O>,
         fluvio: &Fluvio,
-    ) -> Result<(), ConnectorError> {
+    ) -> Result<(), ClusterCliError> {
         let admin = fluvio.admin().await;
         let lists = admin.list::<ManagedConnectorSpec, _>(vec![]).await?;
 
@@ -53,7 +53,7 @@ mod output {
     use fluvio::metadata::objects::Metadata;
     use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
-    use crate::error::ConnectorError;
+    use crate::cli::error::ClusterCliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
@@ -69,7 +69,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_managed_connectors: Vec<Metadata<ManagedConnectorSpec>>,
         output_type: OutputType,
-    ) -> Result<(), ConnectorError> {
+    ) -> Result<(), ClusterCliError> {
         debug!("managed connectors: {:#?}", list_managed_connectors);
 
         if !list_managed_connectors.is_empty() {

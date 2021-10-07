@@ -6,9 +6,9 @@
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::{ManagedConnectorSpec};
+use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
-use crate::error::ConnectorError;
+use crate::cli::ClusterCliError;
 
 // -----------------------------------
 // CLI Options
@@ -22,7 +22,7 @@ pub struct DeleteManagedConnectorOpt {
 }
 
 impl DeleteManagedConnectorOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConnectorError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
         let admin = fluvio.admin().await;
         admin.delete::<ManagedConnectorSpec, _>(&self.name).await?;
         Ok(())

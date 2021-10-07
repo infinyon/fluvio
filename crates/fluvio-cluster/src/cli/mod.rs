@@ -11,6 +11,7 @@ mod util;
 mod check;
 mod error;
 mod diagnostics;
+mod connector;
 
 use start::StartOpt;
 use start::UpgradeOpt;
@@ -18,6 +19,7 @@ use delete::DeleteOpt;
 use check::CheckOpt;
 use group::SpuGroupCmd;
 use spu::SpuCmd;
+use connector::ManagedConnectorCmd;
 use diagnostics::DiagnosticsOpt;
 
 pub use self::error::ClusterCliError;
@@ -60,6 +62,9 @@ pub enum ClusterCmd {
     #[structopt(name = "spg")]
     SPUGroup(SpuGroupCmd),
 
+    #[structopt(name = "connector")]
+    ManagedConnector(ManagedConnectorCmd),
+
     /// Collect anonymous diagnostic information to help with debugging
     #[structopt(name = "diagnostics")]
     Diagnostics(DiagnosticsOpt),
@@ -91,6 +96,10 @@ impl ClusterCmd {
                 spu.process(out, &fluvio).await?;
             }
             Self::SPUGroup(group) => {
+                let fluvio = target.connect().await?;
+                group.process(out, &fluvio).await?;
+            }
+            Self::ManagedConnector(group) => {
                 let fluvio = target.connect().await?;
                 group.process(out, &fluvio).await?;
             }
