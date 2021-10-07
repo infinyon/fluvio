@@ -1,8 +1,11 @@
 use std::sync::{Arc, Mutex};
 use std::time::Instant;
+use std::fmt::{self, Debug};
+
 use tracing::{debug, trace};
 use anyhow::{Result, Error};
 use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
+
 use crate::smartstream::filter::SmartStreamFilter;
 use crate::smartstream::map::SmartStreamMap;
 use crate::smartstream::aggregate::SmartStreamAggregate;
@@ -19,13 +22,19 @@ pub mod file_batch;
 
 pub type WasmSlice = (i32, i32);
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub struct SmartStreamEngine(pub(crate) Engine);
 
 impl SmartStreamEngine {
     pub fn create_module_from_binary(&self, bytes: &[u8]) -> Result<SmartStreamModule> {
         let module = Module::from_binary(&self.0, bytes)?;
         Ok(SmartStreamModule(module))
+    }
+}
+
+impl Debug for SmartStreamEngine {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "SmartStreamEngine")
     }
 }
 

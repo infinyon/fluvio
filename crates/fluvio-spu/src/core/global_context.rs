@@ -19,6 +19,7 @@ use crate::replication::leader::{
 };
 use crate::services::public::StreamPublishers;
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
+use crate::smartstream::SmartStreamEngine;
 
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
@@ -38,6 +39,7 @@ pub struct GlobalContext<S> {
     stream_publishers: StreamPublishers,
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
+    sm_engine: SmartStreamEngine,
 }
 
 // -----------------------------------
@@ -62,6 +64,7 @@ where
             stream_publishers: StreamPublishers::new(),
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
+            sm_engine: SmartStreamEngine::default(),
         }
     }
 
@@ -125,6 +128,10 @@ where
         self.spu_followers
             .sync_from_spus(self.spu_localstore(), self.local_spu_id())
             .await;
+    }
+
+    pub fn smartstream_owned(&self) -> SmartStreamEngine {
+        self.sm_engine.clone()
     }
 }
 
