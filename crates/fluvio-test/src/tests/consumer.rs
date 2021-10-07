@@ -1,23 +1,21 @@
 use std::any::Any;
-//use std::env;
-//use dataplane::record::Record;
 use fluvio::consumer::Record;
 use structopt::StructOpt;
 use futures_lite::stream::StreamExt;
 use std::pin::Pin;
-use std::time::SystemTime;
+use std::time::{Duration, SystemTime};
 
-use fluvio::{ConsumerConfig, FluvioError, MultiplePartitionConsumer, PartitionConsumer, RecordKey};
+use fluvio::{ConsumerConfig, FluvioError, MultiplePartitionConsumer, PartitionConsumer};
 use fluvio::Offset;
 use crate::tests::TestRecord;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-//use fluvio_future::task::run_block_on;
 use fluvio_test_util::async_process;
 use fluvio_future::io::Stream;
 use tokio::select;
+use hdrhistogram::Histogram;
 
 #[derive(Debug, Clone)]
 pub struct ConsumerTestCase {
@@ -99,13 +97,22 @@ impl TestOption for ConsumerTestOption {
     }
 }
 
-async fn consume_work<S: ?Sized>(mut stream: Pin<Box<S>>, test_case: ConsumerTestCase)
-where
+async fn consume_work<S: ?Sized>(
+    mut stream: Pin<Box<S>>,
+    consumer_id: u32,
+    test_case: ConsumerTestCase,
+) where
     //S: Stream<Item = Result<Record, FluvioError>> + std::marker::Unpin,
     S: Stream<Item = Result<Record, FluvioError>>,
 {
     let mut index: i32 = 0;
-    let mut records_recvd = 0;
+    //let mut records_recvd = 0;
+
+    // Per producer
+    // Keep track of latency
+    let mut latency_histogram = Histogram::<u64>::new(2).unwrap();
+    // Keep track of throughput
+    let mut throughput_histogram = Histogram::<u64>::new(2).unwrap();
 
     'consumer_loop: loop {
         // Take a timestamp before record consumed
@@ -122,23 +129,35 @@ where
                 stream_next = stream.next() => {
 
                     if let Some(Ok(record_json)) = stream_next {
-                        records_recvd += 1;
+                        let recv_json_str = std::str::from_utf8(record_json.as_ref()).unwrap();
+                        let recv_size = recv_json_str.len();
+                        //records_recvd += 1;
                         let record: TestRecord =
-                            serde_json::from_str(std::str::from_utf8(record_json.as_ref()).unwrap())
+                            serde_json::from_str(recv_json_str)
                                 .expect("Deserialize record failed");
 
-                        let _consume_latency = now.elapsed().clone().unwrap().as_nanos();
+                        assert!(record.validate_crc());
+
+                        let consume_latency = now.elapsed().clone().unwrap().as_nanos() as u64;
+                        latency_histogram.record(consume_latency).unwrap();
+
+                        // Calculate consume throughput.
+                        // Starting units: time is in nano, data is in bytes
+                        // Converting from nanoseconds to seconds, to store (bytes per second) in histogram
+                        let consume_throughput =
+                            (((recv_size as f32) / (consume_latency as f32)) * 1_000_000_000.0) as u64;
+                        throughput_histogram.record(consume_throughput as u64).unwrap();
 
                         if test_case.option.verbose {
                             println!(
-                                "Consuming {:<7} (size {:<5}): consumed CRC: {:<10}",
+                                "Consuming {:<7} (size {:<5}): consumed CRC: {:<10} latency: {:?} throughput: {:?} kB/s",
                                 index,
-                                record.data.len(),
+                                recv_json_str.len(),
                                 record.crc,
+                                Duration::from_nanos(consume_latency),
+                                consume_throughput
                             );
                         }
-
-                        assert!(record.validate_crc());
 
                         index += 1;
                     } else {
@@ -148,6 +167,16 @@ where
             }
         }
     }
+
+    let consume_p99 = Duration::from_nanos(latency_histogram.value_at_percentile(0.99));
+
+    // Stored as bytes per second. Convert to kilobytes per second
+    let throughput_p99 = throughput_histogram.max() / 1_000;
+
+    println!(
+        "[consumer-{}] Consume P99: {:?} Peak Throughput: {:?} kB/s",
+        consumer_id, consume_p99, throughput_p99
+    );
 }
 
 fn build_consumer_config(test_case: ConsumerTestCase) -> ConsumerConfig {
@@ -237,7 +266,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
                     get_multi_stream(consumer, offset, test_case.clone()).await;
 
-                consume_work(Box::pin(stream), test_case).await
+                consume_work(Box::pin(stream), n.into(), test_case).await
             } else {
                 let consumer = test_driver
                     .get_consumer(&test_case.environment.topic_name(), partition)
@@ -245,7 +274,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
                     get_single_stream(consumer, offset, test_case.clone()).await;
 
-                consume_work(stream, test_case).await
+                consume_work(stream, n.into(), test_case).await
             }
         });
 
