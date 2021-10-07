@@ -48,7 +48,7 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
 dataplane = { version = "0.7.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-dirs = "3.0.0"
+dirs = "4.0.0"
 
 [target.'cfg(unix)'.dependencies]
 fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema", features = ["file"] }
