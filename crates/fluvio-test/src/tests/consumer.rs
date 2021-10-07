@@ -7,7 +7,7 @@ use futures_lite::stream::StreamExt;
 use std::pin::Pin;
 use std::time::SystemTime;
 
-use fluvio::{FluvioError, PartitionConsumer, MultiplePartitionConsumer, RecordKey};
+use fluvio::{ConsumerConfig, FluvioError, MultiplePartitionConsumer, PartitionConsumer, RecordKey};
 use fluvio::Offset;
 use crate::tests::TestRecord;
 
@@ -51,6 +51,9 @@ pub struct ConsumerTestOption {
     /// Default, stop when end of topic reached
     #[structopt(long, default_value = "0")]
     pub num_records: u16,
+
+    #[structopt(long)]
+    pub max_bytes: Option<usize>,
 
     // TODO: These should be mutually exclusive to each other
     /// Offset should be relative to beginning
@@ -139,20 +142,40 @@ where
 
                         index += 1;
                     } else {
-                        panic!("Stream ended unexpectedly")
+                        break 'consumer_loop;
                     }
-                }
+
+            }
         }
     }
+}
+
+fn build_consumer_config(test_case: ConsumerTestCase) -> ConsumerConfig {
+    let mut config = ConsumerConfig::builder();
+
+    // continuous
+    if test_case.option.num_records == 0 {
+        config.disable_continuous(true);
+    }
+
+    // max bytes
+    if let Some(max_bytes) = test_case.option.max_bytes {
+        config.max_bytes(max_bytes as i32);
+    }
+
+    config.build().expect("Couldn't build consumer config")
 }
 
 async fn get_single_stream(
     consumer: PartitionConsumer,
     offset: Offset,
+    test_case: ConsumerTestCase,
 ) -> Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> {
+    let config = build_consumer_config(test_case);
+
     Box::pin(
         consumer
-            .stream(offset)
+            .stream_with_config(offset, config)
             .await
             .expect("Unable to open stream"),
     )
@@ -161,10 +184,13 @@ async fn get_single_stream(
 async fn get_multi_stream(
     consumer: MultiplePartitionConsumer,
     offset: Offset,
+    test_case: ConsumerTestCase,
 ) -> Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> {
+    let config = build_consumer_config(test_case);
+
     Box::pin(
         consumer
-            .stream(offset)
+            .stream_with_config(offset, config)
             .await
             .expect("Unable to open stream"),
     )
@@ -209,7 +235,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     .get_all_partitions_consumer(&test_case.environment.topic_name())
                     .await;
                 let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
-                    get_multi_stream(consumer, offset).await;
+                    get_multi_stream(consumer, offset, test_case.clone()).await;
 
                 consume_work(Box::pin(stream), test_case).await
             } else {
@@ -217,7 +243,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     .get_consumer(&test_case.environment.topic_name(), partition)
                     .await;
                 let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
-                    get_single_stream(consumer, offset).await;
+                    get_single_stream(consumer, offset, test_case.clone()).await;
 
                 consume_work(stream, test_case).await
             }

@@ -1,3 +1,4 @@
+//use fluvio::consumer::{PartitionSelectionStrategy, ConsumerConfig};
 use fluvio::consumer::PartitionSelectionStrategy;
 use tracing::debug;
 
