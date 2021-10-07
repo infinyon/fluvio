@@ -12,7 +12,6 @@ use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
-
 mod create;
 mod delete;
 mod list;
