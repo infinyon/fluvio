@@ -1,3 +1,4 @@
+//use fluvio::consumer::{PartitionSelectionStrategy, ConsumerConfig};
 use fluvio::consumer::PartitionSelectionStrategy;
 use tracing::debug;
 
@@ -109,9 +110,12 @@ impl TestDriver {
         result
     }
 
-    pub async fn get_consumer(&self, topic: &str) -> PartitionConsumer {
+    pub async fn get_consumer(&self, topic: &str, partition: i32) -> PartitionConsumer {
         let fluvio_client = self.create_client().await.expect("cant' create client");
-        match fluvio_client.partition_consumer(topic.to_string(), 0).await {
+        match fluvio_client
+            .partition_consumer(topic.to_string(), partition)
+            .await
+        {
             Ok(client) => {
                 //self.consumer_num += 1;
                 client
@@ -122,6 +126,7 @@ impl TestDriver {
         }
     }
 
+    // TODO: Create a multi-partition api w/ a list of partitions based off this
     pub async fn get_all_partitions_consumer(&self, topic: &str) -> MultiplePartitionConsumer {
         let fluvio_client = self.create_client().await.expect("cant' create client");
         match fluvio_client

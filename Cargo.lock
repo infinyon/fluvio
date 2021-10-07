@@ -2059,6 +2059,7 @@ dependencies = [
  "fork",
  "futures",
  "futures-lite",
+ "hdrhistogram",
  "inventory",
  "md-5",
  "nix 0.23.0",

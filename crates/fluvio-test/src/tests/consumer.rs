@@ -1,0 +1,302 @@
+use std::any::Any;
+use fluvio::consumer::Record;
+use structopt::StructOpt;
+use futures_lite::stream::StreamExt;
+use std::pin::Pin;
+use std::time::{Duration, SystemTime};
+
+use fluvio::{ConsumerConfig, FluvioError, MultiplePartitionConsumer, PartitionConsumer};
+use fluvio::Offset;
+use crate::tests::TestRecord;
+
+use fluvio_test_derive::fluvio_test;
+use fluvio_test_util::test_meta::environment::EnvironmentSetup;
+use fluvio_test_util::test_meta::{TestOption, TestCase};
+use fluvio_test_util::async_process;
+use fluvio_future::io::Stream;
+use tokio::select;
+use hdrhistogram::Histogram;
+
+#[derive(Debug, Clone)]
+pub struct ConsumerTestCase {
+    pub environment: EnvironmentSetup,
+    pub option: ConsumerTestOption,
+}
+
+impl From<TestCase> for ConsumerTestCase {
+    fn from(test_case: TestCase) -> Self {
+        let producer_stress_option = test_case
+            .option
+            .as_any()
+            .downcast_ref::<ConsumerTestOption>()
+            .expect("ConsumerTestOption")
+            .to_owned();
+        ConsumerTestCase {
+            environment: test_case.environment,
+            option: producer_stress_option,
+        }
+    }
+}
+
+#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+#[structopt(name = "Fluvio Consumer Test")]
+pub struct ConsumerTestOption {
+    /// Num of consumers to create
+    #[structopt(long, default_value = "1")]
+    pub consumers: u16,
+
+    /// Max records to consume before stopping
+    /// Default, stop when end of topic reached
+    #[structopt(long, default_value = "0")]
+    pub num_records: u32,
+
+    #[structopt(long)]
+    pub max_bytes: Option<usize>,
+
+    // TODO: These should be mutually exclusive to each other
+    /// Offset should be relative to beginning
+    #[structopt(long)]
+    pub offset_beginning: bool,
+    /// Offset should be relative to end
+    #[structopt(long)]
+    pub offset_end: bool,
+
+    /// Absolute topic offset
+    /// use --offset-beginning or --offset-end to refer to relative offsets
+    #[structopt(long, default_value = "0")]
+    pub offset: i32,
+
+    /// Partition to consume from.
+    /// If multiple consumers, they will all use same partition
+    // TODO: Support specifying multiple partitions
+    #[structopt(long, default_value = "0")]
+    pub partition: i32,
+
+    // TODO: This option needs to be mutually exclusive w/ partition
+    /// Test should use multi-partition consumer, default all partitions
+    #[structopt(long)]
+    pub multi_partition: bool,
+
+    // This will need to be mutually exclusive w/ num_records
+    //// total time we want the consumer to run, in seconds
+    //#[structopt(long, parse(try_from_str = parse_seconds), default_value = "60")]
+    //runtime_seconds: Duration,
+    /// Opt-in to detailed output printed to stdout
+    #[structopt(long, short)]
+    verbose: bool,
+}
+
+//fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
+//    let seconds = s.parse::<u64>()?;
+//    Ok(Duration::from_secs(seconds))
+//}
+
+impl TestOption for ConsumerTestOption {
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
+
+async fn consume_work<S: ?Sized>(
+    mut stream: Pin<Box<S>>,
+    consumer_id: u32,
+    test_case: ConsumerTestCase,
+) where
+    //S: Stream<Item = Result<Record, FluvioError>> + std::marker::Unpin,
+    S: Stream<Item = Result<Record, FluvioError>>,
+{
+    let mut records_recvd = 0;
+
+    // Per producer
+    // Keep track of latency
+    let mut latency_histogram = Histogram::<u64>::new(2).unwrap();
+    // Keep track of throughput
+    let mut throughput_histogram = Histogram::<u64>::new(2).unwrap();
+
+    'consumer_loop: loop {
+        // Take a timestamp before record consumed
+        let now = SystemTime::now();
+
+        select! {
+
+                //_ = &mut test_timer => {
+
+                //    println!("Consumer stopped. Time's up!\nRecords received: {:?}", records_recvd);
+                //    break 'consumer_loop
+                //}
+
+                stream_next = stream.next() => {
+
+                    if let Some(Ok(record_raw)) = stream_next {
+                        records_recvd += 1;
+
+                        let record_str = std::str::from_utf8(record_raw.as_ref()).unwrap();
+                        let record_size = record_str.len();
+                        let test_record: TestRecord =
+                            serde_json::from_str(record_str)
+                                .expect("Deserialize record failed");
+
+                        assert!(test_record.validate_crc());
+
+                        let consume_latency = now.elapsed().clone().unwrap().as_nanos() as u64;
+                        latency_histogram.record(consume_latency).unwrap();
+
+                        // Calculate consume throughput.
+                        // Starting units: time is in nano, data is in bytes
+                        // Converting from nanoseconds to seconds, to store (bytes per second) in histogram
+                        let consume_throughput =
+                            (((record_size as f32) / (consume_latency as f32)) * 1_000_000_000.0) as u64;
+                        throughput_histogram.record(consume_throughput as u64).unwrap();
+
+                        if test_case.option.verbose {
+                            println!(
+                                "[consumer-{}] record: {:>7} offset: {:>7} (size {:>5}): CRC: {:>10} latency: {:>12} throughput: {:>7?} kB/s",
+                                consumer_id,
+                                records_recvd,
+                                record_raw.offset(),
+                                record_size,
+                                test_record.crc,
+                                format!("{:?}", Duration::from_nanos(consume_latency)),
+                                (consume_throughput / 1_000)
+                            );
+                        }
+
+                        if test_case.option.num_records != 0 && records_recvd == test_case.option.num_records  {
+                            break 'consumer_loop;
+                        }
+
+                    } else {
+                        break 'consumer_loop;
+                    }
+
+            }
+        }
+    }
+
+    let consume_p99 = Duration::from_nanos(latency_histogram.value_at_percentile(0.99));
+
+    // Stored as bytes per second. Convert to kilobytes per second
+    let throughput_p99 = throughput_histogram.max() / 1_000;
+
+    println!(
+        "[consumer-{}] Consume P99: {:?} Peak Throughput: {:?} kB/s",
+        consumer_id, consume_p99, throughput_p99
+    );
+}
+
+fn build_consumer_config(test_case: ConsumerTestCase) -> ConsumerConfig {
+    let mut config = ConsumerConfig::builder();
+
+    // continuous
+    if test_case.option.num_records == 0 {
+        config.disable_continuous(true);
+    }
+
+    // max bytes
+    if let Some(max_bytes) = test_case.option.max_bytes {
+        config.max_bytes(max_bytes as i32);
+    }
+
+    config.build().expect("Couldn't build consumer config")
+}
+
+async fn get_single_stream(
+    consumer: PartitionConsumer,
+    offset: Offset,
+    test_case: ConsumerTestCase,
+) -> Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> {
+    let config = build_consumer_config(test_case);
+
+    Box::pin(
+        consumer
+            .stream_with_config(offset, config)
+            .await
+            .expect("Unable to open stream"),
+    )
+}
+
+async fn get_multi_stream(
+    consumer: MultiplePartitionConsumer,
+    offset: Offset,
+    test_case: ConsumerTestCase,
+) -> Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> {
+    let config = build_consumer_config(test_case);
+
+    Box::pin(
+        consumer
+            .stream_with_config(offset, config)
+            .await
+            .expect("Unable to open stream"),
+    )
+}
+
+// Default to using the producer test's topic
+#[fluvio_test(name = "consumer", topic = "producer-test")]
+pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
+    let test_case: ConsumerTestCase = test_case.into();
+    let consumers = test_case.option.consumers;
+    let partition = test_case.option.partition;
+    let is_multi = test_case.option.multi_partition;
+    let raw_offset = test_case.option.offset;
+
+    // We'll assume for now that structopt is handling mutual exclusivity
+    let offset = if test_case.option.offset_beginning {
+        Offset::from_beginning(raw_offset as u32)
+    } else if test_case.option.offset_end {
+        Offset::from_end(raw_offset as u32)
+    } else {
+        Offset::absolute(raw_offset.into()).expect("Couldn't create absolute offset")
+    };
+
+    println!("\nStarting Consumer test");
+
+    println!("Consumers: {}", consumers);
+    println!("Starting offset: {:?}", &offset);
+
+    if test_case.option.num_records != 0 {
+        println!("# records to consume: {:?}", &test_case.option.num_records);
+    } else {
+        println!("# records to consume: (until end):");
+    }
+
+    // starting offset
+    // consumer type (basically, specify if multi-partition)
+    // partition
+
+    // Spawn the consumers
+    let mut consumer_wait = Vec::new();
+    for n in 0..consumers {
+        println!("Starting Consumer #{}", n);
+        let consumer = async_process!(async {
+            test_driver
+                .connect()
+                .await
+                .expect("Connecting to cluster failed");
+
+            if is_multi {
+                let consumer = test_driver
+                    .get_all_partitions_consumer(&test_case.environment.topic_name())
+                    .await;
+                let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
+                    get_multi_stream(consumer, offset, test_case.clone()).await;
+
+                consume_work(Box::pin(stream), n.into(), test_case).await
+            } else {
+                let consumer = test_driver
+                    .get_consumer(&test_case.environment.topic_name(), partition)
+                    .await;
+                let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
+                    get_single_stream(consumer, offset, test_case.clone()).await;
+
+                consume_work(stream, n.into(), test_case).await
+            }
+        });
+
+        consumer_wait.push(consumer);
+    }
+
+    let _: Vec<_> = consumer_wait
+        .into_iter()
+        .map(|p| p.join().expect("Consumer thread fail"))
+        .collect();
+}

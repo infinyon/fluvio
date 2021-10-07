@@ -5,9 +5,9 @@ use std::time::SystemTime;
 use tracing::debug;
 
 use super::LongevityTestCase;
-use super::util::*;
+use crate::tests::TestRecordBuilder;
 
-pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
+pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, producer_id: u32) {
     debug!("About to get a producer");
     let producer = test_driver
         .create_producer(&option.environment.topic_name())
@@ -21,8 +21,8 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
 
     debug!("About to start producer loop");
     while test_start.elapsed().unwrap() <= option.option.runtime_seconds {
-        let record = LongevityRecordBuilder::new()
-            .with_offset(records_sent)
+        let record = TestRecordBuilder::new()
+            .with_tag(format!("{}", records_sent))
             .with_random_data(option.option.record_size)
             .build();
         let record_json = serde_json::to_string(&record)
@@ -34,9 +34,10 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase) {
 
         if option.option.verbose {
             println!(
-                "Producing {:<7} (size {:<5}): produced CRC: {:<10}",
+                "[producer-{}] record: {:>7} (size {:>5}): CRC: {:>10}",
+                producer_id,
                 records_sent,
-                record.data.len(),
+                record_json.len(),
                 record.crc,
             );
         }
