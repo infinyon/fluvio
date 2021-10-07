@@ -11,8 +11,8 @@ use fluvio::Fluvio;
 use fluvio::metadata::topic::{TopicSpec, TopicReplicaParam};
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
-use crate::error::ConnectorError;
-use crate::config::ConnectorConfig;
+use crate::cli::ClusterCliError;
+use super::ConnectorConfig;
 
 // -----------------------------------
 // CLI Options
@@ -26,7 +26,7 @@ pub struct CreateManagedConnectorOpt {
 }
 
 impl CreateManagedConnectorOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ConnectorError> {
+    pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
         let config = ConnectorConfig::from_file(&self.config)?;
         let spec: ManagedConnectorSpec = config.clone().into();
         let name = spec.name.clone();

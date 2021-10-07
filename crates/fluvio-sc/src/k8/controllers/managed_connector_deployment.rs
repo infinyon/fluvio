@@ -180,7 +180,6 @@ impl ManagedConnectorDeploymentController {
         _name: &str,
     ) -> K8DeploymentSpec {
         let image = format!("infinyon/fluvio-connect-{}", mc_spec.type_);
-        debug!("Starting connector for image: {:?}", image);
 
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
@@ -197,11 +196,20 @@ impl ManagedConnectorDeploymentController {
         };
 
         let parameters = &mc_spec.parameters;
-        let args: Vec<String> = parameters
+        let parameters: Vec<String> = parameters
             .keys()
             .zip(parameters.values())
-            .flat_map(|(key, value)| [key.clone(), value.clone()])
+            .flat_map(|(key, value)| [format!("--{}={}", key.clone(), value.clone())])
             .collect::<Vec<_>>();
+
+        // Prefixing the args with a "--" passed to the container is needed for an unclear reason.
+        let mut args = vec!["--".to_string()];
+        args.extend(parameters);
+
+        debug!(
+            "Starting connector for image: {:?} with arguments {:?}",
+            image, args
+        );
         let template = TemplateSpec {
             metadata: Some(
                 TemplateMeta::default().set_labels(vec![("app", Self::DEFAULT_CONNECTOR_NAME)]),

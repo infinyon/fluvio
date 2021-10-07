@@ -204,6 +204,10 @@ pub mod metadata {
         pub use fluvio_sc_schema::topic::*;
     }
 
+    pub mod connector {
+        pub use fluvio_sc_schema::connector::*;
+    }
+
     pub mod spu {
         pub use fluvio_sc_schema::spu::*;
     }

@@ -1603,22 +1603,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-connector-manager"
-version = "0.0.0"
-dependencies = [
- "fluvio",
- "fluvio-controlplane-metadata",
- "fluvio-extension-common",
- "fluvio-future",
- "prettytable-rs",
- "serde",
- "serde_yaml",
- "structopt",
- "thiserror",
- "tracing",
-]
-
-[[package]]
 name = "fluvio-controlplane"
 version = "0.0.0"
 dependencies = [
