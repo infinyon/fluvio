@@ -93,7 +93,8 @@ impl FluvioSocket {
         addr: &str,
         connector: &dyn TcpDomainConnector,
     ) -> Result<Self, SocketError> {
-        debug!("trying to connect to addr at: {}", addr);
+        debug!("connecting to addr at: {}", addr);
+
         let (write, read, fd) = connector.connect(addr).await?;
         Ok(Self::from_stream(write, read, fd))
     }

@@ -6,6 +6,7 @@ use std::io::ErrorKind;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::Ordering::SeqCst;
 use std::sync::atomic::AtomicI32;
 use std::time::Duration;
@@ -53,6 +54,7 @@ pub struct MultiplexerSocket {
     correlation_id_counter: AtomicI32,
     senders: Senders,
     sink: ExclusiveFlvSink,
+    stale: Arc<AtomicBool>,
     terminate: Arc<Event>,
 }
 
@@ -82,12 +84,14 @@ impl MultiplexerSocket {
         debug!(socket = %id, "spawning dispatcher");
 
         let (sink, stream) = socket.split();
+        let stale = Arc::new(AtomicBool::new(false));
 
         let multiplexer = Self {
             correlation_id_counter: AtomicI32::new(1),
             senders: Arc::new(Mutex::new(HashMap::new())),
             sink: ExclusiveFlvSink::new(sink),
             terminate: Arc::new(Event::new()),
+            stale: stale.clone(),
         };
 
         MultiPlexingResponseDispatcher::run(
@@ -95,9 +99,18 @@ impl MultiplexerSocket {
             stream,
             multiplexer.senders.clone(),
             multiplexer.terminate.clone(),
+            stale,
         );
 
         multiplexer
+    }
+
+    pub fn set_stale(&self) {
+        self.stale.store(true, SeqCst);
+    }
+
+    pub fn is_stale(&self) -> bool {
+        self.stale.load(SeqCst)
     }
 
     /// get next available correlation to use
@@ -151,6 +164,7 @@ impl MultiplexerSocket {
                 let mut senders = self.senders.lock().await;
                 senders.remove(&correlation_id);
                 drop(senders);
+                self.set_stale();
 
 
                 Err(IoError::new(
@@ -319,6 +333,7 @@ struct MultiPlexingResponseDispatcher {
     id: ConnectionFd,
     senders: Senders,
     terminate: Arc<Event>,
+    stale: Arc<AtomicBool>,
 }
 
 impl fmt::Debug for MultiPlexingResponseDispatcher {
@@ -328,13 +343,20 @@ impl fmt::Debug for MultiPlexingResponseDispatcher {
 }
 
 impl MultiPlexingResponseDispatcher {
-    pub fn run(id: ConnectionFd, stream: FluvioStream, senders: Senders, terminate: Arc<Event>) {
+    pub fn run(
+        id: ConnectionFd,
+        stream: FluvioStream,
+        senders: Senders,
+        terminate: Arc<Event>,
+        stale: Arc<AtomicBool>,
+    ) {
         use fluvio_future::task::spawn;
 
         let dispatcher = Self {
             id,
             senders,
             terminate,
+            stale,
         };
 
         spawn(dispatcher.dispatcher_loop(stream));
@@ -369,6 +391,7 @@ impl MultiPlexingResponseDispatcher {
                         }
                     } else {
                         debug!("inner stream has terminated ");
+                        self.stale.store(true, SeqCst);
 
                         let guard = self.senders.lock().await;
                         for sender in guard.values() {
@@ -379,6 +402,7 @@ impl MultiPlexingResponseDispatcher {
                                 }
                             }
                         }
+
                         break;
                     }
                 },

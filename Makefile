@@ -119,6 +119,17 @@ multiple-partition-test: test-setup
                 ${TEST_ARG_EXTRA}
 
 
+reconnection-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+reconnection-test: DEFAULT_SPU=1
+reconnection-test: REPL=1
+reconnection-test: test-setup
+	$(TEST_BIN) reconnection  \
+                ${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
+
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
 SC_HOST=localhost
