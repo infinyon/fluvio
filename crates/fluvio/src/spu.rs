@@ -32,7 +32,7 @@ impl SpuSocket {
         )
     }
 
-    pub fn is_stale(&self) -> bool {
+    fn is_stale(&self) -> bool {
         self.socket.is_stale()
     }
 
@@ -139,6 +139,8 @@ impl SpuPool {
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
             if !spu_socket.is_stale() {
                 return Ok(spu_socket.create_serial_socket().await);
+            } else {
+                client_lock.remove(&leader_id);
             }
         }
 
