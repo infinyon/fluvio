@@ -255,7 +255,7 @@ impl Decoder for i64 {
     where
         T: Buf,
     {
-        if src.remaining() < 4 {
+        if src.remaining() < 8 {
             return Err(Error::new(ErrorKind::UnexpectedEof, "can't read i64"));
         }
         let value = src.get_i64();

@@ -322,7 +322,7 @@ impl PartitionConsumer {
                 }
             });
 
-        Ok(flattened.boxed())
+        Ok(flattened)
     }
 
     /// Continuously streams batches of messages, starting an offset in the consumer's partition
@@ -385,7 +385,7 @@ impl PartitionConsumer {
             Either::Left(iter(items))
         });
 
-        Ok(flattened.boxed())
+        Ok(flattened)
     }
 
     /// Creates a stream of `DefaultStreamFetchResponse` for older consumers who rely

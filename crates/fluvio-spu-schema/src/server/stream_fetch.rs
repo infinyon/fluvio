@@ -9,8 +9,8 @@ use std::marker::PhantomData;
 use std::io::{self, Read};
 use std::borrow::Cow;
 
-use fluvio_protocol::{Encoder, Decoder};
-use fluvio_protocol::api::Request;
+use dataplane::core::{Encoder, Decoder};
+use dataplane::api::Request;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;

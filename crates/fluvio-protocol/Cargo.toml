@@ -9,17 +9,18 @@ license = "Apache-2.0"
 categories = ["encoding", "api-bindings"]
 
 [features]
+default = ["derive"]
 derive = ["fluvio-protocol-derive"]
 api = []
-codec = []
-store = ["fluvio-future", "bytes"]
+codec = ["tokio-util"]
+store = ["fluvio-future"]
 
 [dependencies]
 tracing = "0.1"
 fluvio-protocol-derive = { version = "0.3.0", path = "../fluvio-protocol-derive", optional = true }
 fluvio-future = { version = "0.3.0", optional = true }
-bytes = { version = "1", optional = true }
-tokio-util = { version = "0.6.4", features = ["codec", "compat"] }
+bytes = { version = "1" }
+tokio-util = { version = "0.6.4", features = ["codec", "compat"], optional = true }
 
 [dev-dependencies]
 flv-util = { version = "0.5.2" }
