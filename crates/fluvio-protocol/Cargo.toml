@@ -25,5 +25,5 @@ tokio-util = { version = "0.6.4", features = ["codec", "compat"], optional = tru
 [dev-dependencies]
 flv-util = { version = "0.5.2" }
 fluvio-protocol-derive = { version = "0.3.0", path = "../fluvio-protocol-derive" }
-fluvio-future = { version = "0.3.0", features = ["subscriber"] }
+fluvio-future = { version = "0.3.0", features = ["fixture", "subscriber", "timer", "net"] }
 futures = { version = "0.3.1" }
