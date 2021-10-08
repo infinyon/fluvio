@@ -8,13 +8,9 @@ use std::path::Path;
 use tracing::debug;
 use tracing::trace;
 
-use crate::core::bytes::Buf;
-use crate::core::bytes::BufMut;
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::core::Version;
-
-use crate::RequestHeader;
+use bytes::{Buf, BufMut};
+use crate::api::RequestHeader;
+use crate::{Decoder, Encoder, Version};
 
 #[derive(Debug, Default)]
 pub struct ResponseMessage<P> {

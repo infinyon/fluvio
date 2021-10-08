@@ -4,17 +4,10 @@ TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 build:
 	cargo build --all-features $(TARGET_FLAG)
 
-test-all:	test-crates test-codec
+test-all:	test-crates 
 
 test-crates:
-	cargo test $(TARGET_FLAG)
-	cargo test -p fluvio-protocol-api $(TARGET_FLAG)
-	cargo test -p fluvio-protocol-core $(TARGET_FLAG)
-
-# can't test codec as package due to dev-dependencies
-test-codec:
-	cd fluvio-protocol-codec;cargo test $(TARGET_FLAG)
-
+	cargo test $(TARGET_FLAG) --all-features
 
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)

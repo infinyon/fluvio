@@ -1,8 +1,7 @@
 use std::io::Cursor;
 
-use fluvio_protocol_api::Request;
-use fluvio_protocol_core::{Decoder, Encoder};
-use fluvio_protocol_derive::{Decoder, Encoder, FluvioDefault, RequestApi};
+use fluvio_protocol::api::Request;
+use fluvio_protocol::{Decoder, Encoder, FluvioDefault, RequestApi};
 
 #[derive(Encoder, Decoder, FluvioDefault, RequestApi, Debug)]
 #[fluvio(

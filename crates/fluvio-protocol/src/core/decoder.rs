@@ -7,7 +7,7 @@ use std::marker::PhantomData;
 
 use bytes::Buf;
 use bytes::BufMut;
-use log::trace;
+use tracing::trace;
 
 use super::varint::varint_decode;
 use crate::Version;
@@ -661,7 +661,7 @@ mod test {
 
     #[test]
     fn test_vec8_encode_and_decode() {
-        use crate::encoder::Encoder;
+        use crate::Encoder;
         let in_vec: Vec<u8> = vec![1, 2, 3];
         let mut out: Vec<u8> = vec![];
         let ret = in_vec.encode(&mut out, 0);

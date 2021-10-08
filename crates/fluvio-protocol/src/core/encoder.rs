@@ -8,7 +8,7 @@ use std::marker::PhantomData;
 use bytes::BufMut;
 use bytes::Bytes;
 use bytes::BytesMut;
-use log::trace;
+use tracing::trace;
 
 use crate::Version;
 

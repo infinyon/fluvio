@@ -1,14 +1,12 @@
 use std::io::Cursor;
 use std::io::Error as IoError;
 
-use log::trace;
+use tracing::trace;
 use tokio_util::codec::Decoder;
 use tokio_util::codec::Encoder;
+use bytes::{Bytes, BytesMut, BufMut};
 
-use crate::core::Decoder as FluvioDecoder;
-use crate::core::Encoder as FluvioEncoder;
-use crate::core::bytes::{Bytes, BytesMut, BufMut};
-use crate::core::Version;
+use crate::{Encoder as FluvioEncoder, Decoder as FluvioDecoder, Version};
 
 /// Implement Fluvio Encoding
 /// First 4 bytes are size of the message.  Then total buffer = 4 + message content
@@ -122,16 +120,12 @@ mod test {
     use fluvio_future::net::TcpStream;
     use fluvio_future::timer::sleep;
     use futures::AsyncWriteExt;
-    use fluvio_protocol::Decoder as FluvioDecoder;
-    use fluvio_protocol::Encoder as FluvioEncoder;
-    use log::debug;
+    use crate::{Encoder, Decoder};
+    use tracing::debug;
 
     use super::FluvioCodec;
 
-    async fn run_server_raw_data<T: FluvioEncoder>(
-        data: T,
-        addr: &SocketAddr,
-    ) -> Result<(), Error> {
+    async fn run_server_raw_data<T: Encoder>(data: T, addr: &SocketAddr) -> Result<(), Error> {
         debug!("server: binding");
         let listener = TcpListener::bind(&addr).await.expect("bind");
         debug!("server: successfully binding. waiting for incoming");
@@ -167,7 +161,7 @@ mod test {
         Ok(())
     }
 
-    async fn run_server_object<T: FluvioEncoder + Clone>(
+    async fn run_server_object<T: Encoder + Clone>(
         data: T,
         addr: &SocketAddr,
     ) -> Result<(), Error> {
@@ -192,9 +186,7 @@ mod test {
         Ok(())
     }
 
-    async fn run_client<
-        T: PartialEq + std::fmt::Debug + Default + FluvioDecoder + FluvioEncoder,
-    >(
+    async fn run_client<T: PartialEq + std::fmt::Debug + Default + Decoder + Encoder>(
         data: T,
         addr: &SocketAddr,
     ) -> Result<(), Error> {

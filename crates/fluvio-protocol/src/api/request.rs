@@ -4,16 +4,16 @@ use std::fmt;
 use std::fmt::Display;
 
 use tracing::trace;
+use bytes::Buf;
+use bytes::BufMut;
 
-use crate::core::bytes::Buf;
-use crate::core::bytes::BufMut;
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::core::Version;
+use crate::Decoder;
+use crate::Encoder;
+use crate::Version;
 
-use crate::api::Request;
-use crate::api::RequestHeader;
-use crate::response::ResponseMessage;
+use super::Request;
+use super::RequestHeader;
+use super::response::ResponseMessage;
 
 /// Start of API request
 #[derive(Debug)]
@@ -173,23 +173,13 @@ where
 
 #[cfg(test)]
 mod test {
+    use super::*;
 
     use std::io::Cursor;
     use std::io::Error as IoError;
     use std::convert::TryInto;
-    use crate::core::bytes::Buf;
-    use crate::core::bytes::BufMut;
-    use crate::core::Decoder;
-    use crate::core::Encoder;
-    use crate::core::Version;
-    use crate::derive::Encoder;
-    use crate::derive::Decoder;
-
-    use super::RequestHeader;
-    use super::RequestMessage;
-    use crate::ApiMessage;
-
-    use crate::Request;
+    use bytes::{Buf, BufMut};
+    use crate::api::ApiMessage;
 
     #[repr(u16)]
     #[derive(PartialEq, Debug, Clone, Copy, Encoder, Decoder)]

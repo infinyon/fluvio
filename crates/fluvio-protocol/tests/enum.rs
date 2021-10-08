@@ -4,9 +4,8 @@ use std::io::Error;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-use fluvio_protocol_core::bytes::{Buf, BufMut};
-use fluvio_protocol_core::{Decoder, Encoder, Version};
-use fluvio_protocol_derive::{Decoder, Encoder};
+use fluvio_protocol::bytes::{Buf, BufMut};
+use fluvio_protocol::{Decoder, Encoder, Version};
 
 // manual encode
 pub enum Mix {

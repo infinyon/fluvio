@@ -5,7 +5,7 @@
 use std::io::Error;
 use std::io::ErrorKind;
 
-use log::trace;
+use tracing::trace;
 use bytes::Buf;
 use bytes::BufMut;
 

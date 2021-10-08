@@ -1730,47 +1730,15 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bytes",
  "fluvio-future",
- "fluvio-protocol-api",
- "fluvio-protocol-codec",
- "fluvio-protocol-core",
  "fluvio-protocol-derive",
- "flv-util",
- "tracing",
-]
-
-[[package]]
-name = "fluvio-protocol-api"
-version = "0.4.1"
-dependencies = [
- "fluvio-protocol-core",
- "fluvio-protocol-derive",
- "flv-util",
- "tracing",
-]
-
-[[package]]
-name = "fluvio-protocol-codec"
-version = "0.3.2"
-dependencies = [
- "bytes",
- "fluvio-future",
- "fluvio-protocol-core",
  "flv-util",
  "futures",
- "log",
  "tokio-util",
-]
-
-[[package]]
-name = "fluvio-protocol-core"
-version = "0.3.3"
-dependencies = [
- "bytes",
- "log",
+ "tracing",
 ]
 
 [[package]]
@@ -1964,7 +1932,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.8.4"
+version = "0.8.5"
 dependencies = [
  "bytes",
  "flate2",

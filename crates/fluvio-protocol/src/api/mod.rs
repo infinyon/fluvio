@@ -1,22 +1,30 @@
-use std::default::Default;
-use std::io::Error as IoError;
-use std::io::ErrorKind;
-use std::fs::File;
-use std::io::Cursor;
+use std::fmt::{self, Debug};
 use std::path::Path;
-use std::io::Read;
-use std::fmt::Debug;
-use std::fmt;
+use std::fs::File;
+use std::io::{Cursor, Error as IoError, ErrorKind, Read};
 use std::convert::TryFrom;
+use bytes::Buf;
+use tracing::{debug, trace};
 
-use tracing::debug;
-use tracing::trace;
+mod request;
+mod response;
 
-use crate::core::Decoder;
-use crate::core::Encoder;
-use crate::derive::Decoder;
-use crate::derive::Encoder;
-use crate::core::bytes::Buf;
+pub use self::response::*;
+pub use self::request::*;
+use crate::{Encoder, Decoder};
+
+pub const MAX_BYTES: i32 = 52428800;
+
+pub use crate::api_decode;
+
+#[macro_export]
+macro_rules! api_decode {
+    ($api:ident,$req:ident,$src:expr,$header:expr) => {{
+        use fluvio_protocol::Decoder;
+        let request = $req::decode_from($src, $header.api_version())?;
+        Ok($api::$req(RequestMessage::new($header, request)))
+    }};
+}
 
 pub trait Request: Encoder + Decoder + Debug {
     const API_KEY: u16;
