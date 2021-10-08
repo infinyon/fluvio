@@ -18,6 +18,7 @@ admin = ["fluvio-sc-schema/use_serde"]
 unstable = []
 
 [dependencies]
+adaptive_backoff = "0.2.1"
 tracing = "0.1.19"
 tracing-futures = "0.2.4"
 futures-util = "0.3.6"

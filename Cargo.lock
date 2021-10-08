@@ -1440,6 +1440,7 @@ dependencies = [
 name = "fluvio"
 version = "0.9.9"
 dependencies = [
+ "adaptive_backoff",
  "async-channel",
  "async-lock",
  "async-rwlock",

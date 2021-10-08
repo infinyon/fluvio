@@ -11,8 +11,17 @@ use dataplane::versions::{ApiVersions, ApiVersionsRequest, ApiVersionsResponse};
 use fluvio_socket::SocketError;
 use fluvio_socket::{FluvioSocket, SharedMultiplexerSocket};
 use fluvio_future::net::{DomainConnector, DefaultDomainConnector};
+use fluvio_future::timer::sleep;
 
 use crate::FluvioError;
+
+use once_cell::sync::Lazy;
+static DEFAULT_CONNECTION_RETRY_ATTEMPTS: Lazy<u16> = Lazy::new(|| {
+    use std::env;
+    let var_value = env::var("FLV_CONNECTION_RETRY_ATTEMPTS").unwrap_or_default();
+    let retries: u16 = var_value.parse().unwrap_or(3);
+    retries
+});
 
 /// Frame with request and response
 pub(crate) trait SerialFrame: Display {
@@ -76,6 +85,7 @@ pub struct ClientConfig {
     addr: String,
     client_id: String,
     connector: DomainConnector,
+    retries: u16,
     pub(crate) use_spu_local_address: bool,
 }
 
@@ -101,8 +111,15 @@ impl ClientConfig {
             addr: addr.into(),
             client_id: "fluvio".to_owned(),
             connector,
+            retries: *DEFAULT_CONNECTION_RETRY_ATTEMPTS,
             use_spu_local_address,
         }
+    }
+
+    #[allow(unused)]
+    pub fn set_retries(mut self, retries: u16) -> Self {
+        self.retries = retries;
+        self
     }
 
     pub fn with_addr(addr: String) -> Self {
@@ -129,9 +146,35 @@ impl ClientConfig {
 
     #[instrument(skip(self))]
     pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
+        use adaptive_backoff::prelude::*;
         debug!(add = %self.addr, "Connection to");
-        let socket =
-            FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
+
+        let mut attempt = 0;
+
+        let mut backoff = ExponentialBackoffBuilder::default()
+            .min(std::time::Duration::from_secs(1))
+            .max(std::time::Duration::from_secs(30))
+            .build()
+            .map_err(|_| FluvioError::Other("Failed to build exponential Backoff".to_string()))?;
+
+        let result = loop {
+            match FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await {
+                Err(_) if attempt < self.retries => {
+                    let wait = backoff.wait();
+                    debug!(
+                        attempt = attempt + 1,
+                        wait_time = wait.as_secs(),
+                        add = %self.addr,
+                        "Failed attempt to connect.",
+                    );
+                    attempt += 1;
+                    sleep(wait).await;
+                }
+                other => break other,
+            }
+        };
+
+        let socket = result?;
         debug!(add = %self.addr, "creating version socket");
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
@@ -148,6 +191,7 @@ impl ClientConfig {
             client_id: self.client_id.clone(),
             connector,
             use_spu_local_address: self.use_spu_local_address,
+            retries: self.retries,
         }
     }
 }
