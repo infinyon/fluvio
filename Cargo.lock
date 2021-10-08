@@ -1730,7 +1730,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.6.0"
+version = "0.6.1"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1932,7 +1932,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.8.4"
+version = "0.8.5"
 dependencies = [
  "bytes",
  "flate2",
