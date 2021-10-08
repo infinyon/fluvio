@@ -397,7 +397,7 @@ jobs:
         timeout-minutes: 3
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnectino-test
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnection-test
           echo "reconnection test done"
 
       - name: Save logs

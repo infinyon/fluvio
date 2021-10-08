@@ -119,10 +119,10 @@ multiple-partition-test: test-setup
                 ${TEST_ARG_EXTRA}
 
 
-reconnect-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
-reconnect-test: DEFAULT_SPU=1
-reconnect-test: REPL=1
-reconnect-test: test-setup
+reconnection-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+reconnection-test: DEFAULT_SPU=1
+reconnection-test: REPL=1
+reconnection-test: test-setup
 	$(TEST_BIN) reconnection  \
                 ${TEST_ARG_SPU} \
                 ${TEST_ARG_LOG} \
