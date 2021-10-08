@@ -1,5 +1,4 @@
 use std::any::Any;
-use std::sync::Arc;
 use std::time::Duration;
 
 use futures_lite::stream::StreamExt;
@@ -10,25 +9,21 @@ use fluvio_future::timer::sleep;
 use structopt::StructOpt;
 
 use fluvio_test_derive::fluvio_test;
-use fluvio_test_util::test_meta::derive_attr::TestRequirements;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::test_meta::test_result::TestResult;
-use fluvio_test_util::test_runner::test_driver::{TestDriver};
-use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 
 // time to wait for ac
 const ACK_WAIT: u64 = 20;
 
 #[derive(Debug, Clone)]
-pub struct ElectionTestCase {
+pub struct ReconnectionTestCase {
     pub environment: EnvironmentSetup,
     pub option: ReconnectionTestOption,
 }
 
-impl From<TestCase> for ElectionTestCase {
+impl From<TestCase> for ReconnectionTestCase {
     fn from(test_case: TestCase) -> Self {
-        let election_option = test_case
+        let reconnection_option = test_case
             .option
             .as_any()
             .downcast_ref::<ReconnectionTestOption>()
@@ -36,13 +31,13 @@ impl From<TestCase> for ElectionTestCase {
             .to_owned();
         Self {
             environment: test_case.environment,
-            option: election_option,
+            option: reconnection_option,
         }
     }
 }
 
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Client Reconnection Test")]
+#[structopt(name = "Fluvio reconnection Test")]
 pub struct ReconnectionTestOption {}
 
 impl TestOption for ReconnectionTestOption {
@@ -51,11 +46,8 @@ impl TestOption for ReconnectionTestOption {
     }
 }
 
-#[fluvio_test(topic = "reconnection")]
-pub async fn reconnection(
-    mut test_driver: Arc<FluvioTestDriver>,
-    mut test_case: TestCase,
-) -> TestResult {
+#[fluvio_test(topic = "reconnection", async)]
+pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) {
     println!("Starting reconnection test");
 
     // first a create simple message
@@ -108,7 +100,7 @@ pub async fn reconnection(
 
     sleep(Duration::from_secs(ACK_WAIT)).await;
 
-    let consumer = test_driver.get_consumer(&topic_name).await;
+    let consumer = test_driver.get_consumer(&topic_name, 0).await;
     let mut stream = consumer
         .stream(Offset::absolute(0).expect("offset"))
         .await
