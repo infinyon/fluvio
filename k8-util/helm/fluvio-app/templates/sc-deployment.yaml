@@ -47,9 +47,13 @@ spec:
             - --authorization-scopes
             - /etc/fluvio/authorization/scopes.json
             {{ end }}
+            {{ if .Values.connectorPod.maxInstances }}
+            - --max-connectors
+            - {{ .Values.connectorPod.maxInstances }}
+            {{ end }}
           volumeMounts:
             - name: cacert
-              mountPath: /var/certs/ca  
+              mountPath: /var/certs/ca
               readOnly: true
             - name: tls
               mountPath: /var/certs/tls

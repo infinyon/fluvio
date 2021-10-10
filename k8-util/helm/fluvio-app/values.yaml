@@ -31,6 +31,13 @@ spuPod:
   nodeSelector: {}
   storageClass: null
 
+connectorPod:
+  maxInstances: 10
+  resources:
+    requests:
+      memory: 256Mi
+    limits:
+      memory: 1Gi
 
 rbac:
   create: true

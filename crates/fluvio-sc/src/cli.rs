@@ -65,6 +65,13 @@ pub struct ScOpt {
     )]
     auth_policy: Option<PathBuf>,
 
+    #[structopt(
+        long = "max-connectors",
+        value_name = "Max number of connectors",
+        env
+    )]
+    max_connectors: Option<usize>,
+
     /// only allow white list of controllers
     #[structopt(long)]
     white_list: Vec<String>,
@@ -110,6 +117,10 @@ impl ScOpt {
 
         if let Some(private_addr) = self.bind_private {
             config.private_endpoint = private_addr;
+        }
+
+        if let Some(max_connectors) = self.max_connectors {
+            config.max_connectors = max_connectors;
         }
 
         config.namespace = self.namespace.unwrap();

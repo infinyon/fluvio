@@ -18,7 +18,6 @@ use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for managed connector request
-#[instrument(skip(name, spec, _dry_run, auth_ctx))]
 pub async fn handle_create_managed_connector_request<AC: AuthContext>(
     name: String,
     spec: ManagedConnectorSpec,
@@ -26,6 +25,18 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     debug!("creating managed connector: {}", name);
+
+    let connector_count = auth_ctx
+        .global_ctx
+        .managed_connectors()
+        .store()
+        .read()
+        .await
+        .len();
+    let max_connectors = auth_ctx.global_ctx.config().max_connectors;
+    if connector_count >= max_connectors {
+        return Err(Error::new(ErrorKind::Interrupted, format!("Max connectors reached. Must have less than {} connectors.", max_connectors)));
+    }
 
     if let Ok(authorized) = auth_ctx
         .auth
