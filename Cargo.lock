@@ -1927,7 +1927,6 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "nix 0.23.0",
  "once_cell",
  "pin-utils",
  "regex",
@@ -1940,7 +1939,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
- "wasmtime",
 ]
 
 [[package]]
