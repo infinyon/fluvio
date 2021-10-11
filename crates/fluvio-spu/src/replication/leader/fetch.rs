@@ -1,9 +1,6 @@
-
-use std::fmt;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::io::{self, Read};
-use std::borrow::Cow;
+
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
@@ -11,13 +8,11 @@ use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;
 
-
 pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
 
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 
 use super::LeaderPeerApiEnum;
-
 
 /// Based on SPU client schema
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -51,8 +46,6 @@ where
     pub stream_id: u32,
     pub partition: FetchablePartitionResponse<R>,
 }
-
-
 
 mod file {
 

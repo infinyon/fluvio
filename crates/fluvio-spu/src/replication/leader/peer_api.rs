@@ -9,10 +9,12 @@ use dataplane::api::{RequestMessage, ApiMessage, RequestHeader};
 
 use super::LeaderPeerApiEnum;
 use super::UpdateOffsetRequest;
+use super::fetch::DefaultStreamFetchRequest;
 
 #[derive(Debug, Encoder)]
 pub enum LeaderPeerRequest {
     UpdateOffsets(RequestMessage<UpdateOffsetRequest>),
+    StreamFetch(RequestMessage<DefaultStreamFetchRequest>),
 }
 
 impl Default for LeaderPeerRequest {
@@ -36,7 +38,12 @@ impl ApiMessage for LeaderPeerRequest {
             LeaderPeerApiEnum::UpdateOffsets => Ok(LeaderPeerRequest::UpdateOffsets(
                 RequestMessage::new(header, UpdateOffsetRequest::decode_from(src, version)?),
             )),
-            LeaderPeerApiEnum::StreamFetch => todo!(),
+            LeaderPeerApiEnum::StreamFetch => {
+                Ok(LeaderPeerRequest::StreamFetch(RequestMessage::new(
+                    header,
+                    DefaultStreamFetchRequest::decode_from(src, version)?,
+                )))
+            }
         }
     }
 }
