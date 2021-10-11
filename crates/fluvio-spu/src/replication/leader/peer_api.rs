@@ -36,6 +36,7 @@ impl ApiMessage for LeaderPeerRequest {
             LeaderPeerApiEnum::UpdateOffsets => Ok(LeaderPeerRequest::UpdateOffsets(
                 RequestMessage::new(header, UpdateOffsetRequest::decode_from(src, version)?),
             )),
+            LeaderPeerApiEnum::StreamFetch => todo!(),
         }
     }
 }
