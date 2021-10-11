@@ -1,7 +1,6 @@
 mod smartstream;
 pub use smartstream::*;
 
-
 #[cfg(test)]
 mod tests {
     #[test]
