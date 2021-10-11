@@ -1,14 +1,13 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;
 
-pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
+//pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
 
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 
@@ -59,7 +58,7 @@ mod file {
     use dataplane::record::FileRecordSet;
     use dataplane::store::FileWrite;
 
-    pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
+    //pub type FileStreamFetchRequest = StreamFetchRequest<FileRecordSet>;
 
     use super::*;
 
