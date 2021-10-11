@@ -14,7 +14,7 @@ use crate::{
     replication::follower::sync::{FileSyncRequest},
 };
 
-use super::LeaderPeerApiEnum;
+use super::{LeaderPeerApiEnum, fetch::DefaultStreamFetchRequest};
 use super::LeaderPeerRequest;
 use super::UpdateOffsetRequest;
 use super::spu::SharedSpuPendingUpdate;
@@ -101,6 +101,9 @@ impl FollowerHandler {
 
                                 LeaderPeerRequest::UpdateOffsets(request) => {
                                     self.update_from_follower(request.request,&mut sink).await?;
+                                },
+                                LeaderPeerRequest::StreamFetch(request) => {
+                                    self.handle_stream_fetch(request.request,&mut sink).await?;
                                 }
                             }
                         } else {
@@ -204,6 +207,16 @@ impl FollowerHandler {
             sink.send_request(&request).await?;
         }
 
+        Ok(())
+    }
+
+    // send out any updates from other leaders to this followers
+    #[instrument(skip(self))]
+    async fn handle_stream_fetch(
+        &mut self,
+        request: DefaultStreamFetchRequest,
+        sink: &mut FluvioSink,
+    ) -> Result<(), SocketError> {
         Ok(())
     }
 }
