@@ -6,6 +6,7 @@ mod peer_api;
 mod update_offsets;
 mod actions;
 mod spu;
+mod fetch;
 
 pub use self::leaders_state::{ReplicaLeadersState, SharedReplicaLeadersState};
 pub use self::replica_state::{SharedFileLeaderState, SharedLeaderState, LeaderReplicaState};

@@ -5,6 +5,7 @@ use dataplane::core::{Encoder, Decoder};
 #[fluvio(encode_discriminant)]
 pub enum LeaderPeerApiEnum {
     UpdateOffsets = 0,
+    StreamFetch = 1
 }
 
 impl Default for LeaderPeerApiEnum {
