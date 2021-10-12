@@ -30,6 +30,13 @@ impl SmartStreamEngine {
         let module = Module::from_binary(&self.0, bytes)?;
         Ok(SmartStreamModule(module))
     }
+    pub fn create_module_from_path(&self, path: String) -> Result<SmartStreamModule> {
+        let binary = std::fs::read(path)?;
+        let smart_stream_module = self
+            .create_module_from_binary(&binary)
+            .expect("Failed to create wasm module from binary");
+        Ok(smart_stream_module)
+    }
 }
 
 impl Debug for SmartStreamEngine {

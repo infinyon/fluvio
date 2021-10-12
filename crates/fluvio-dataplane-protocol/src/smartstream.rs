@@ -18,6 +18,18 @@ mod encoding {
         pub record_data: Vec<u8>,
     }
 
+    impl SmartStreamInput {
+        pub fn from_single_record(value: &[u8]) -> Result<Self, std::io::Error> {
+            let record = vec![Record::new(value.clone())];
+            let mut record_data = Vec::new();
+            let _ = record.encode(&mut record_data, 0)?;
+            Ok(SmartStreamInput {
+                record_data,
+                ..Default::default()
+            })
+        }
+    }
+
     /// A type to pass input to an Aggregate SmartStream WASM module
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
     pub struct SmartStreamAggregateInput {
