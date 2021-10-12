@@ -11,6 +11,7 @@ pub use self::requests::update_spu::*;
 pub use self::requests::update_replica::*;
 pub use self::requests::register_spu::*;
 pub use self::requests::update_lrs::*;
+pub use self::requests::update_pipeline::*;
 pub use self::requests::remove::*;
 
 use dataplane::api::RequestMessage;

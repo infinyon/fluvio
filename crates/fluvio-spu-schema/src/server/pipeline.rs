@@ -1,7 +1,6 @@
 use dataplane::Isolation;
 
-use super::stream_fetch::SmartStreamPayload;
-
+#[allow(unused)]
 pub struct Pipeline {
     pub(crate) isolation: Isolation,
     pub sources: Vec<Source>,
@@ -18,5 +17,5 @@ pub struct Source {
 }
 
 pub struct SmartStreamConfig {
-    pub(crate) wasm_module: Option<SmartStreamPayload>,
+    //pub(crate) wasm_module: Option<SmartStreamPayload>,
 }
