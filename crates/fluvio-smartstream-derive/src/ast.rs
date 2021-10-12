@@ -8,13 +8,34 @@ use proc_macro2::Ident;
 #[derive(Debug)]
 pub struct SmartStreamConfig {
     pub kind: SmartStreamKind,
+    pub has_params: bool,
+}
+
+fn has_params(args: &AttributeArgs) -> bool {
+    args.iter()
+        .filter_map(|it| match it {
+            NestedMeta::Meta(Meta::Path(it)) => {
+                it.segments
+                    .iter()
+                    .rev()
+                    .next()
+                    .and_then(|it| match &*it.ident.to_string() {
+                        "params" => Some(true),
+                        _ => None,
+                    })
+            }
+            _ => None,
+        })
+        .next()
+        .is_some()
 }
 
 impl SmartStreamConfig {
     #[allow(clippy::ptr_arg)]
     pub fn from_ast(args: &AttributeArgs) -> SynResult<Self> {
         let kind = SmartStreamKind::from_ast(args)?;
-        Ok(Self { kind })
+        let has_params = has_params(args);
+        Ok(Self { kind, has_params })
     }
 }
 

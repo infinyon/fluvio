@@ -3,7 +3,7 @@ use std::time::{Instant};
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use tracing::{error, debug, trace, instrument};
+use tracing::{debug, error, instrument, trace};
 use tokio::select;
 
 use dataplane::record::FileRecordSet;
@@ -174,32 +174,39 @@ impl StreamFetchHandler {
             let smartstream: Box<dyn SmartStream> = match payload.kind {
                 SmartStreamKind::Filter => {
                     debug!("Instantiating SmartStreamFilter");
-                    let filter = module.create_filter(&sm_engine).map_err(|err| {
-                        SocketError::Io(IoError::new(
-                            ErrorKind::Other,
-                            format!("Failed to instantiate SmartStreamFilter {}", err),
-                        ))
-                    })?;
+                    let filter =
+                        module
+                            .create_filter(&sm_engine, payload.params)
+                            .map_err(|err| {
+                                SocketError::Io(IoError::new(
+                                    ErrorKind::Other,
+                                    format!("Failed to instantiate SmartStreamFilter {}", err),
+                                ))
+                            })?;
                     Box::new(filter)
                 }
                 SmartStreamKind::Map => {
                     debug!("Instantiating SmartStreamMap");
-                    let map = module.create_map(&sm_engine).map_err(|err| {
-                        SocketError::Io(IoError::new(
-                            ErrorKind::Other,
-                            format!("Failed to instantiate SmartStreamMap {}", err),
-                        ))
-                    })?;
+                    let map = module
+                        .create_map(&sm_engine, payload.params)
+                        .map_err(|err| {
+                            SocketError::Io(IoError::new(
+                                ErrorKind::Other,
+                                format!("Failed to instantiate SmartStreamMap {}", err),
+                            ))
+                        })?;
                     Box::new(map)
                 }
                 SmartStreamKind::Flatmap => {
                     debug!("Instantiating SmartStreamFlatmap");
-                    let map = module.create_flatmap(&sm_engine).map_err(|err| {
-                        SocketError::Io(IoError::new(
-                            ErrorKind::Other,
-                            format!("Failed to instantiate SmartStreamFlatmap {}", err),
-                        ))
-                    })?;
+                    let map = module
+                        .create_flatmap(&sm_engine, payload.params)
+                        .map_err(|err| {
+                            SocketError::Io(IoError::new(
+                                ErrorKind::Other,
+                                format!("Failed to instantiate SmartStreamFlatmap {}", err),
+                            ))
+                        })?;
                     Box::new(map)
                 }
                 SmartStreamKind::Aggregate { accumulator } => {
@@ -207,15 +214,14 @@ impl StreamFetchHandler {
                         accumulator_len = accumulator.len(),
                         "Instantiating SmartStreamAggregate"
                     );
-                    let aggregator =
-                        module
-                            .create_aggregate(&sm_engine, accumulator)
-                            .map_err(|err| {
-                                SocketError::Io(IoError::new(
-                                    ErrorKind::Other,
-                                    format!("Failed to instantiate SmartStreamAggregate {}", err),
-                                ))
-                            })?;
+                    let aggregator = module
+                        .create_aggregate(&sm_engine, payload.params, accumulator)
+                        .map_err(|err| {
+                            SocketError::Io(IoError::new(
+                                ErrorKind::Other,
+                                format!("Failed to instantiate SmartStreamAggregate {}", err),
+                            ))
+                        })?;
                     Box::new(aggregator)
                 }
             };
@@ -618,9 +624,9 @@ mod test {
 
     use super::*;
     use std::{
+        env::temp_dir,
         path::{Path, PathBuf},
         time::Duration,
-        env::temp_dir,
     };
 
     use fluvio_controlplane_metadata::partition::Replica;
@@ -845,6 +851,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Filter,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -988,6 +995,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Filter,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1083,6 +1091,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Filter,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1223,6 +1232,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Filter,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1336,6 +1346,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Map,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1435,6 +1446,7 @@ mod test {
             kind: SmartStreamKind::Aggregate {
                 accumulator: Vec::from("A"),
             },
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1583,6 +1595,7 @@ mod test {
             kind: SmartStreamKind::Aggregate {
                 accumulator: Vec::from("A"),
             },
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1674,6 +1687,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Filter,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1734,6 +1748,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Filter,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1817,6 +1832,7 @@ mod test {
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::Flatmap,
+            ..Default::default()
         };
 
         let stream_request = DefaultStreamFetchRequest {
@@ -1854,5 +1870,137 @@ mod test {
 
         server_end_event.notify();
         debug!("terminated controller");
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_fetch_filter_with_params() {
+        use std::collections::BTreeMap;
+        let test_path = temp_dir().join("test_stream_fetch_filter");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12011";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::new(FluvioSocket::connect(addr).await.expect("connect"));
+
+        // perform for two versions
+        let topic = "testfilter_with_params";
+
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        let mut params = BTreeMap::new();
+        params.insert("key".to_string(), "b".to_string());
+
+        let wasm = load_wasm_module("fluvio_wasm_filter");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm.clone()),
+            kind: SmartStreamKind::Filter,
+            params: params.into(),
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        // 1 out of 2 are filtered
+        let mut records = create_filter_records(2);
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        debug!("first filter fetch");
+        let response = stream.next().await.expect("first").expect("response");
+        {
+            debug!("received first message");
+            assert_eq!(response.topic, topic);
+
+            let partition = &response.partition;
+            assert_eq!(partition.error_code, ErrorCode::None);
+            assert_eq!(partition.high_watermark, 2);
+            assert_eq!(partition.next_offset_for_fetch(), Some(2));
+
+            assert_eq!(partition.records.batches.len(), 1);
+            let batch = &partition.records.batches[0];
+            assert_eq!(batch.base_offset, 0);
+            assert_eq!(batch.records().len(), 1);
+            assert_eq!(
+                batch.records()[0].value().as_ref(),
+                "b".repeat(100).as_bytes()
+            );
+            assert_eq!(batch.records()[0].get_offset_delta(), 1);
+        }
+
+        // Using default params
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Filter,
+            ..Default::default()
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        debug!("second filter fetch");
+        let response = stream.next().await.expect("first").expect("response");
+        {
+            debug!("received first message");
+            assert_eq!(response.topic, topic);
+
+            let partition = &response.partition;
+            assert_eq!(partition.error_code, ErrorCode::None);
+            assert_eq!(partition.high_watermark, 2);
+            assert_eq!(partition.next_offset_for_fetch(), Some(2));
+
+            assert_eq!(partition.records.batches.len(), 1);
+            let batch = &partition.records.batches[0];
+            assert_eq!(batch.base_offset, 0);
+            assert_eq!(batch.records().len(), 1);
+            assert_eq!(
+                batch.records()[0].value().as_ref(),
+                "a".repeat(100).as_bytes()
+            );
+            assert_eq!(batch.records()[0].get_offset_delta(), 1);
+        }
+
+        server_end_event.notify();
     }
 }

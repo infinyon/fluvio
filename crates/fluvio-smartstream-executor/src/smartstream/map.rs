@@ -3,7 +3,9 @@ use anyhow::Result;
 use wasmtime::TypedFunc;
 
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamInternalError};
-use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamContext, SmartStream};
+use crate::smartstream::{
+    SmartStreamEngine, SmartStreamModule, SmartStreamContext, SmartStream, SmartStreamExtraParams,
+};
 
 const MAP_FN_NAME: &str = "map";
 type MapFn = TypedFunc<(i32, i32), i32>;
@@ -14,8 +16,12 @@ pub struct SmartStreamMap {
 }
 
 impl SmartStreamMap {
-    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
-        let mut base = SmartStreamContext::new(engine, module)?;
+    pub fn new(
+        engine: &SmartStreamEngine,
+        module: &SmartStreamModule,
+        params: SmartStreamExtraParams,
+    ) -> Result<Self> {
+        let mut base = SmartStreamContext::new(engine, module, params)?;
         let map_fn: MapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
 
         Ok(Self { base, map_fn })
@@ -35,5 +41,9 @@ impl SmartStream for SmartStreamMap {
 
         let output: SmartStreamOutput = self.base.read_output()?;
         Ok(output)
+    }
+
+    fn params(&self) -> SmartStreamExtraParams {
+        self.base.params.clone()
     }
 }
