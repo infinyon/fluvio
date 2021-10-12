@@ -93,7 +93,7 @@ mod output {
 
         /// return errors in string format
         fn errors(&self) -> Vec<String> {
-            self.0.iter().map(|_g| "".to_owned()).collect()
+            vec![]
         }
 
         /// table content implementation
