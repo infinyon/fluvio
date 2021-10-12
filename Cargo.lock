@@ -1632,7 +1632,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "bytes",
  "cfg-if 1.0.0",
