@@ -1869,6 +1869,7 @@ dependencies = [
  "anyhow",
  "fluvio-dataplane-protocol",
  "fluvio-future",
+ "fluvio-storage",
  "nix 0.23.0",
  "tracing",
  "wasmtime",
