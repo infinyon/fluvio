@@ -9,7 +9,7 @@ use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use fluvio_controlplane::InternalSpuApi;
+use fluvio_controlplane::{InternalSpuApi, UpdatePipelineRequest};
 use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;
 use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
@@ -149,6 +149,9 @@ impl ScDispatcher<FileReplica> {
                                 error!("error handling update spu request: {}", err);
                                 break;
                             }
+                        },
+                        Some(Ok(InternalSpuRequest::UpdatePipelineRequest(request))) => {
+                            self.handle_update_pipeline_request(request,&mut sink).await;
                         },
                         Some(_) => {
                             debug!("no more sc msg content, end");
@@ -323,5 +326,16 @@ impl ScDispatcher<FileReplica> {
         trace!("finish spu update");
 
         Ok(())
+    }
+
+    ///
+    /// Follower Update Handler sent by a peer Spu
+    ///
+    #[instrument(skip(self, req_msg))]
+    async fn handle_update_pipeline_request(
+        &mut self,
+        req_msg: RequestMessage<UpdatePipelineRequest>,
+        sc_sink: &mut FluvioSink,
+    ) {
     }
 }
