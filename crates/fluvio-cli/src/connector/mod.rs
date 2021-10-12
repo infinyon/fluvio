@@ -19,7 +19,7 @@ mod list;
 use create::CreateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
-use crate::cli::ClusterCliError;
+use crate::CliError;
 
 #[derive(Debug, StructOpt)]
 pub enum ManagedConnectorCmd {
@@ -50,7 +50,7 @@ impl ManagedConnectorCmd {
         self,
         out: Arc<O>,
         fluvio: &Fluvio,
-    ) -> Result<(), ClusterCliError> {
+    ) -> Result<(), CliError> {
         match self {
             Self::Create(create) => {
                 create.process(fluvio).await?;
@@ -81,7 +81,7 @@ pub struct ConnectorConfig {
 }
 
 impl ConnectorConfig {
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfig, ClusterCliError> {
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfig, CliError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;

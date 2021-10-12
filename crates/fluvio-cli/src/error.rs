@@ -41,6 +41,10 @@ pub enum CliError {
     #[error("Kubernetes client error")]
     K8ClientError(#[from] k8_client::ClientError),
 
+    /// An error occurred while processing the connector yaml
+    #[error("Fluvio connector config")]
+    ConnectorConfig(#[from] serde_yaml::Error),
+
     #[error("Package index error")]
     IndexError(#[from] fluvio_index::Error),
     #[error("Error finding executable")]
