@@ -4,7 +4,9 @@ set -eu
 
 PUBLISH_CRATES=(
     fluvio-protocol-core
+    fluvio-smartstream
     fluvio-smartstream-derive
+    #fluvio-smartstream-executor
     fluvio-types
     fluvio-protocol-derive
     fluvio-protocol-codec
@@ -15,7 +17,6 @@ PUBLISH_CRATES=(
     fluvio-controlplane-metadata
     fluvio-spu-schema
     fluvio-sc-schema
-    fluvio-smartstream
     fluvio
     fluvio-stream-dispatcher
     fluvio-package-index
@@ -49,7 +50,7 @@ function download_crate() {
     else
         cargo download -x "$CRATE_NAME" -o ./crates_io/"$CRATE_NAME" --quiet
     fi
-    
+
 }
 
 
@@ -63,7 +64,7 @@ function compare_crates_src() {
         # Don't print the diff
         diff -burq ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
     fi
-    
+
 }
 
 function compare_crates_version() {
@@ -147,7 +148,7 @@ function main() {
         echo "VERBOSE MODE ON"
         set -x
     fi
-    
+
     cargo_download_check;
 
     rm -rf ./crates_io
@@ -156,7 +157,7 @@ function main() {
     for crate in "${PUBLISH_CRATES[@]}" ; do
         echo "Checking: $crate"
 
-        SRC_MATCH=false        
+        SRC_MATCH=false
         VERSION_MATCH=false
         CARGO_TOML_MATCH=false
 
@@ -165,19 +166,19 @@ function main() {
         if compare_crates_src "$crate";
         then
             SRC_MATCH=true
-        fi 
-        
-        
+        fi
+
+
         if compare_crates_version "$crate";
         then
             VERSION_MATCH=true
-        fi 
+        fi
 
         # TODO: Add Cargo.toml compare
         #if compare_crates_content "$crate";
         #then
         #    CARGO_TOML_MATCH=true
-        #fi 
+        #fi
 
         check_crate "$SRC_MATCH" "$VERSION_MATCH" "$CARGO_TOML_MATCH" "$crate";
     done
