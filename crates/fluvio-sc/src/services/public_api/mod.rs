@@ -1,6 +1,7 @@
 mod public_server;
 mod spg;
 mod connector;
+mod smartmodule;
 mod spu;
 mod topic;
 mod partition;

@@ -105,6 +105,14 @@ pub enum ErrorCode {
     #[fluvio(tag = 5001)]
     #[error("the managed connector was not found")]
     ManagedConnectorNotFound,
+
+    // Smart Module Errors
+    #[fluvio(tag = 6000)]
+    #[error("an error occurred while managing a smart module")]
+    SmartModuleError,
+    #[fluvio(tag = 6001)]
+    #[error("the smart module was not found")]
+    SmartModuleNotFound,
 }
 
 impl Default for ErrorCode {

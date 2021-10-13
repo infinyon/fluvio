@@ -16,6 +16,8 @@ use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::CustomSpuKey;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::core::Removable;
 
@@ -38,6 +40,7 @@ pub enum DeleteRequest {
     CustomSpu(CustomSpuKey),
     SpuGroup(String),
     ManagedConnector(String),
+    SmartModule(String),
 }
 
 impl Default for DeleteRequest {
@@ -54,6 +57,7 @@ impl DeleteRequest {
             Self::CustomSpu(_) => CustomSpuSpec::LABEL,
             Self::SpuGroup(_) => SpuGroupSpec::LABEL,
             Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
+            Self::SmartModule(_) => SmartModuleSpec::LABEL,
         }
     }
 }
@@ -76,6 +80,7 @@ impl Encoder for DeleteRequest {
                 Self::CustomSpu(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
                 Self::ManagedConnector(s) => s.write_size(version),
+                Self::SmartModule(s) => s.write_size(version),
             }
     }
 
@@ -91,6 +96,7 @@ impl Encoder for DeleteRequest {
             Self::CustomSpu(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
             Self::ManagedConnector(s) => s.encode(dest, version)?,
+            Self::SmartModule(s) => s.encode(dest, version)?,
         }
 
         Ok(())
@@ -131,6 +137,13 @@ impl Decoder for DeleteRequest {
                 let mut response = String::default();
                 response.decode(src, version)?;
                 *self = Self::ManagedConnector(response);
+                Ok(())
+            }
+
+            SmartModuleSpec::LABEL => {
+                let mut response = String::default();
+                response.decode(src, version)?;
+                *self = Self::SmartModule(response);
                 Ok(())
             }
 

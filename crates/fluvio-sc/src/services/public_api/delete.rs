@@ -33,6 +33,9 @@ pub async fn handle_delete_request<AC: AuthContext>(
         DeleteRequest::ManagedConnector(name) => {
             super::connector::handle_delete_managed_connector(name, auth_ctx).await?
         }
+        DeleteRequest::SmartModule(name) => {
+            super::smartmodule::handle_delete_smart_module(name, auth_ctx).await?
+        }
     };
 
     trace!("flv delete topics resp {:#?}", status);

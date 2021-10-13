@@ -17,6 +17,8 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::store::*;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
 
@@ -45,6 +47,7 @@ pub enum ListRequest {
     CustomSpu(Vec<NameFilter>),
     Partition(Vec<NameFilter>),
     ManagedConnector(Vec<NameFilter>),
+    SmartModule(Vec<NameFilter>),
 }
 
 impl Default for ListRequest {
@@ -69,6 +72,7 @@ pub enum ListResponse {
     SpuGroup(Vec<Metadata<SpuGroupSpec>>),
     Partition(Vec<Metadata<PartitionSpec>>),
     ManagedConnector(Vec<Metadata<ManagedConnectorSpec>>),
+    SmartModule(Vec<Metadata<SmartModuleSpec>>),
 }
 
 impl Default for ListResponse {
@@ -159,6 +163,7 @@ mod encoding {
                 Self::CustomSpu(_) => CustomSpuSpec::LABEL,
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
+                Self::SmartModule(_) => SmartModuleSpec::LABEL,
             }
         }
     }
@@ -175,6 +180,7 @@ mod encoding {
                     Self::Spu(s) => s.write_size(version),
                     Self::Partition(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
+                    Self::SmartModule(s) => s.write_size(version),
                 }
         }
 
@@ -192,6 +198,7 @@ mod encoding {
                 Self::Spu(s) => s.encode(dest, version)?,
                 Self::Partition(s) => s.encode(dest, version)?,
                 Self::ManagedConnector(s) => s.encode(dest, version)?,
+                Self::SmartModule(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -249,6 +256,12 @@ mod encoding {
                     Ok(())
                 }
 
+                SmartModuleSpec::LABEL => {
+                    let mut response: Vec<NameFilter> = vec![];
+                    response.decode(src, version)?;
+                    *self = Self::SmartModule(response);
+                    Ok(())
+                }
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,
@@ -268,6 +281,7 @@ mod encoding {
                 Self::CustomSpu(_) => CustomSpuSpec::LABEL,
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
+                Self::SmartModule(_) => SmartModuleSpec::LABEL,
             }
         }
     }
@@ -284,6 +298,7 @@ mod encoding {
                     Self::Spu(s) => s.write_size(version),
                     Self::Partition(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
+                    Self::SmartModule(s) => s.write_size(version),
                 }
         }
 
@@ -301,6 +316,7 @@ mod encoding {
                 Self::Spu(s) => s.encode(dest, version)?,
                 Self::Partition(s) => s.encode(dest, version)?,
                 Self::ManagedConnector(s) => s.encode(dest, version)?,
+                Self::SmartModule(s) => s.encode(dest, version)?,
             }
 
             Ok(())

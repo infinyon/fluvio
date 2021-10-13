@@ -46,6 +46,15 @@ pub async fn handle_create_request<AC: AuthContext>(
             )
             .await?
         }
+        AllCreatableSpec::SmartModule(spec) => {
+            super::smartmodule::handle_create_smart_module_request(
+                name,
+                spec,
+                dry_run,
+                auth_context,
+            )
+            .await?
+        }
     };
 
     Ok(ResponseMessage::from_header(&header, status))
