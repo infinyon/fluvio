@@ -20,8 +20,9 @@ mod consume;
 mod produce;
 mod partition;
 mod connector;
-use connector::ManagedConnectorCmd;
+mod smartmodule;
 
+use connector::ManagedConnectorCmd;
 use topic::TopicCmd;
 use consume::ConsumeOpt;
 use produce::ProduceOpt;
@@ -43,6 +44,7 @@ use common::Terminal;
 use common::PrintTerminal;
 use fluvio::Fluvio;
 use crate::install::fluvio_extensions_dir;
+use crate::smartmodule::SmartModuleCmd;
 
 const VERSION: &str = include_str!("../../../VERSION");
 
@@ -219,6 +221,12 @@ pub enum FluvioCmd {
     /// total throughput of the Topic.
     #[structopt(name = "partition")]
     Partition(PartitionCmd),
+
+    /// Create and manage SmartModules
+    ///
+    /// SmartModules are compiled WASM modules used to create SmartStreams.
+    #[structopt(name = "smartmodule")]
+    SmartModule(SmartModuleCmd),
 }
 
 impl FluvioCmd {
@@ -239,6 +247,9 @@ impl FluvioCmd {
             }
             Self::Partition(partition) => {
                 partition.process(out, &fluvio).await?;
+            }
+            Self::SmartModule(smart_module) => {
+                smart_module.process()?;
             }
         }
 
