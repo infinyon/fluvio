@@ -19,6 +19,8 @@ mod topic;
 mod consume;
 mod produce;
 mod partition;
+mod connector;
+use connector::ManagedConnectorCmd;
 
 use topic::TopicCmd;
 use consume::ConsumeOpt;
@@ -135,6 +137,9 @@ enum RootCmd {
     )]
     Metadata(MetadataOpt),
 
+    #[structopt(name = "connector")]
+    ManagedConnector(ManagedConnectorCmd),
+
     #[structopt(external_subcommand)]
     External(Vec<String>),
 }
@@ -169,6 +174,10 @@ impl RootCmd {
             }
             Self::Metadata(metadata) => {
                 metadata.process()?;
+            }
+            Self::ManagedConnector(group) => {
+                let fluvio = root.target.connect().await?;
+                group.process(out, &fluvio).await?;
             }
             Self::External(args) => {
                 process_external_subcommand(args)?;

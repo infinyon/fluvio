@@ -11,7 +11,7 @@ use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
-use crate::cli::ClusterCliError;
+use crate::CliError;
 
 #[derive(Debug, StructOpt)]
 pub struct ListManagedConnectorsOpt {
@@ -21,11 +21,7 @@ pub struct ListManagedConnectorsOpt {
 
 impl ListManagedConnectorsOpt {
     /// Process list connectors cli request
-    pub async fn process<O: Terminal>(
-        self,
-        out: Arc<O>,
-        fluvio: &Fluvio,
-    ) -> Result<(), ClusterCliError> {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
         let lists = admin.list::<ManagedConnectorSpec, _>(vec![]).await?;
 
@@ -53,7 +49,7 @@ mod output {
     use fluvio::metadata::objects::Metadata;
     use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 
-    use crate::cli::error::ClusterCliError;
+    use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
@@ -69,7 +65,7 @@ mod output {
         out: std::sync::Arc<O>,
         list_managed_connectors: Vec<Metadata<ManagedConnectorSpec>>,
         output_type: OutputType,
-    ) -> Result<(), ClusterCliError> {
+    ) -> Result<(), CliError> {
         debug!("managed connectors: {:#?}", list_managed_connectors);
 
         if !list_managed_connectors.is_empty() {
@@ -93,7 +89,7 @@ mod output {
 
         /// return errors in string format
         fn errors(&self) -> Vec<String> {
-            self.0.iter().map(|_g| "".to_owned()).collect()
+            vec![]
         }
 
         /// table content implementation
