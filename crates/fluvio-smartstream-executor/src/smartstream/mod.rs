@@ -13,6 +13,7 @@ use dataplane::core::{Encoder, Decoder};
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError};
 use crate::smartstream::file_batch::FileBatchIterator;
 use dataplane::batch::{Batch, MemoryRecords};
+use std::path::Path;
 
 mod memory;
 pub mod filter;
@@ -30,7 +31,7 @@ impl SmartStreamEngine {
         let module = Module::from_binary(&self.0, bytes)?;
         Ok(SmartStreamModule(module))
     }
-    pub fn create_module_from_path(&self, path: String) -> Result<SmartStreamModule> {
+    pub fn create_module_from_path<P: AsRef<Path>>(&self, path: P) -> Result<SmartStreamModule> {
         let binary = std::fs::read(path)?;
         let smart_stream_module = self
             .create_module_from_binary(&binary)
