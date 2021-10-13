@@ -1,0 +1,71 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: smartmodules.fluvio.infinyon.com
+spec:
+  group: fluvio.infinyon.com
+  scope: Namespaced
+  names:
+    kind: SmartModule
+    plural: smartmodules
+    singular: smartmodule
+  versions:
+    - name: v1
+      served: true
+      storage:  true
+      subresources:
+          status: {}
+      schema:
+        openAPIV3Schema:
+          required: ["spec"]
+          type: object
+          properties:
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            spec:
+              type: object
+              required: ["input_kind", "output_kind", "wasm"]
+              properties:
+                input_kind:
+                  type: string
+                  enum:
+                    - Stream
+                    - External
+                output_kind:
+                  type: string
+                  enum:
+                    - Stream
+                    - External
+                    - Table
+                source_code:
+                  type: object
+                  required: ["language", "payload"]
+                  properties:
+                    language:
+                      type: string
+                    payload:
+                      type: string
+                wasm:
+                  type: object
+                  required: ["format", "payload"]
+                  properties:
+                    format:
+                      type: string
+                      enum:
+                        - BINARY
+                        - TEXT
+                    payload:
+                      type: string
+                parameters:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      name:
+                        type: string
+      additionalPrinterColumns:
+        - name: Kind
+          type: string
+          description: Type of SmartStream this module creates
+          jsonPath: .spec.kind
