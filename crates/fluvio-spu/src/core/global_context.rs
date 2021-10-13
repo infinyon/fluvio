@@ -19,7 +19,7 @@ use crate::replication::leader::{
 };
 use crate::services::public::StreamPublishers;
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
-use crate::smartstream::SmartStreamEngine;
+use fluvio_smartstream_executor::SmartStreamEngine;
 
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;

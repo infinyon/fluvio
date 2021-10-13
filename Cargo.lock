@@ -1632,7 +1632,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "bytes",
  "cfg-if 1.0.0",
@@ -1863,6 +1863,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartstream-executor"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "fluvio-dataplane-protocol",
+ "fluvio-future",
+ "fluvio-storage",
+ "nix 0.23.0",
+ "tracing",
+ "wasmtime",
+]
+
+[[package]]
 name = "fluvio-socket"
 version = "0.10.3"
 dependencies = [
@@ -1907,6 +1920,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-service",
+ "fluvio-smartstream-executor",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-storage",
@@ -1914,7 +1928,6 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "nix 0.23.0",
  "once_cell",
  "pin-utils",
  "regex",
@@ -1927,7 +1940,6 @@ dependencies = [
  "toml",
  "tracing",
  "tracing-futures",
- "wasmtime",
 ]
 
 [[package]]

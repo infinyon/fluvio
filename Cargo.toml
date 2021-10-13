@@ -23,6 +23,7 @@ members = [
     "crates/fluvio-service",
     "crates/fluvio-smartstream",
     "crates/fluvio-smartstream-derive",
+    "crates/fluvio-smartstream-executor",
     "crates/fluvio-socket",
     "crates/fluvio-spu",
     "crates/fluvio-spu-schema",
