@@ -5,18 +5,20 @@ edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 keywords = ["streaming", "stream", "queue"]
+categories = ["encoding", "api-bindings"]
 repository = "https://github.com/infinyon/fluvio"
-description = "The offical Fluvio driver for Rust"
+description = "The offical Fluvio smartstream executor"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 wasmtime = "0.30"
-dataplane = { version = "0.7.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" , features=["file"]}
 nix = "0.23"
-fluvio-future = { version = "0.3.9", features = ["subscriber", "openssl_tls", "zero_copy"] }
 tracing = "0.1.27"
 anyhow = "1.0.38"
+fluvio-future = { version = "0.3.9", features = ["subscriber", "openssl_tls", "zero_copy"] }
+dataplane = { version = "0.7.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" , features=["file"]}
 
 [dev-dependencies]
 fluvio-storage = { path = "../fluvio-storage" }
