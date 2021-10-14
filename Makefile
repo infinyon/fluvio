@@ -81,26 +81,26 @@ smoke-test: test-setup
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION}
 
-smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
+smoke-test-local: TEST_ARG_EXTRA=--local --cluster-start $(EXTRA_ARG)
 smoke-test-local: smoke-test
 
-smoke-test-stream: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+smoke-test-stream: TEST_ARG_EXTRA=--local --cluster-start $(EXTRA_ARG)
 smoke-test-stream: TEST_ARG_CONSUMER_WAIT=--consumer-wait=true
 smoke-test-stream: smoke-test
 
-smoke-test-tls: TEST_ARG_EXTRA=--tls --local $(EXTRA_ARG)
+smoke-test-tls: TEST_ARG_EXTRA=--tls --local --cluster-start $(EXTRA_ARG)
 smoke-test-tls: smoke-test
 
 smoke-test-tls-policy: TEST_ENV_AUTH_POLICY=AUTH_POLICY=$(SC_AUTH_CONFIG)/policy.json X509_AUTH_SCOPES=$(SC_AUTH_CONFIG)/scopes.json
 smoke-test-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
-smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks $(EXTRA_ARG)
+smoke-test-tls-policy: TEST_ARG_EXTRA=--tls --local --skip-checks --cluster-start $(EXTRA_ARG)
 smoke-test-tls-policy: smoke-test
 
 # test rbac with ROOT user
 smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
 
 # election test only runs on local
-election-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)	
+election-test: TEST_ARG_EXTRA=--local --cluster-start $(EXTRA_ARG)	
 election-test: test-setup
 	$(TEST_BIN) election  \
 		${TEST_ARG_SPU} \
@@ -109,7 +109,7 @@ election-test: test-setup
 		${TEST_ARG_DEVELOP} \
 		${TEST_ARG_EXTRA}
 
-multiple-partition-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+multiple-partition-test: TEST_ARG_EXTRA=--local --cluster-start $(EXTRA_ARG)
 multiple-partition-test: test-setup
 	$(TEST_BIN) multiple_partition --partition 10 \
 		${TEST_ARG_SPU} \
@@ -119,7 +119,7 @@ multiple-partition-test: test-setup
                 ${TEST_ARG_EXTRA}
 
 
-reconnection-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+reconnection-test: TEST_ARG_EXTRA=--local --cluster-start $(EXTRA_ARG)
 reconnection-test: DEFAULT_SPU=1
 reconnection-test: REPL=1
 reconnection-test: test-setup
@@ -160,17 +160,17 @@ endif
 
 # Kubernetes Tests
 
-smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
+smoke-test-k8: TEST_ARG_EXTRA=--cluster-start $(EXTRA_ARG)
 smoke-test-k8: build_k8_image smoke-test 
 
-smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
+smoke-test-k8-tls: TEST_ARG_EXTRA=--tls --cluster-start $(EXTRA_ARG)
 smoke-test-k8-tls: build_k8_image smoke-test
 
 smoke-test-k8-tls-policy-setup:
 	kubectl delete configmap authorization --ignore-not-found
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
-smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization $(EXTRA_ARG)
+smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization --cluster-start $(EXTRA_ARG)
 smoke-test-k8-tls-policy: build_k8_image smoke-test-k8-tls-policy-setup smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
