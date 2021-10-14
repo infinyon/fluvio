@@ -23,6 +23,7 @@ pub enum SmartStreamKind {
     Aggregate,
     Filter,
     Map,
+    Flatmap,
 }
 
 impl SmartStreamKind {
@@ -37,6 +38,7 @@ impl SmartStreamKind {
                                 "aggregate" => Some(Self::Aggregate),
                                 "filter" => Some(Self::Filter),
                                 "map" => Some(Self::Map),
+                                "flat_map" => Some(Self::Flatmap),
                                 _ => None,
                             }
                         })

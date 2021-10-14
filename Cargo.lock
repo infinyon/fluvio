@@ -1844,7 +1844,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream"
-version = "0.2.3"
+version = "0.3.0"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
@@ -1853,7 +1853,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream-derive"
-version = "0.1.2"
+version = "0.3.0"
 dependencies = [
  "fluvio-smartstream",
  "proc-macro2",
@@ -1932,6 +1932,7 @@ dependencies = [
  "pin-utils",
  "regex",
  "serde",
+ "serde_json",
  "serde_yaml",
  "structopt",
  "sysinfo",

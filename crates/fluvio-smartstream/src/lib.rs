@@ -34,7 +34,6 @@ pub mod memory {
     #[allow(clippy::missing_safety_doc)]
     pub unsafe fn dealloc(ptr: *mut u8, size: usize) {
         let data = Vec::from_raw_parts(ptr, size, size);
-
         std::mem::drop(data);
     }
 }

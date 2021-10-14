@@ -192,6 +192,16 @@ impl StreamFetchHandler {
                     })?;
                     Box::new(map)
                 }
+                SmartStreamKind::Flatmap => {
+                    debug!("Instantiating SmartStreamFlatmap");
+                    let map = module.create_flatmap(&sm_engine).map_err(|err| {
+                        SocketError::Io(IoError::new(
+                            ErrorKind::Other,
+                            format!("Failed to instantiate SmartStreamFlatmap {}", err),
+                        ))
+                    })?;
+                    Box::new(map)
+                }
                 SmartStreamKind::Aggregate { accumulator } => {
                     debug!(
                         accumulator_len = accumulator.len(),
@@ -423,7 +433,9 @@ impl StreamFetchHandler {
             Some(smartstream) => {
                 let (batch, smartstream_error) = smartstream
                     .process_batch(&mut file_batch_iterator, self.max_bytes as usize)
-                    .map_err(|err| IoError::new(ErrorKind::Other, format!("filter err {}", err)))?;
+                    .map_err(|err| {
+                        IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
+                    })?;
 
                 self.send_processed_response(
                     file_partition_response,
@@ -1753,6 +1765,92 @@ mod test {
             ),
             "expected a SmartStream Module error for invalid WASM module"
         );
+
+        server_end_event.notify();
+        debug!("terminated controller");
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_fetch_flatmap() {
+        let test_path = temp_dir().join("test_stream_fetch_flatmap");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12010";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::shared(FluvioSocket::connect(addr).await.expect("connect"));
+
+        // perform for two versions
+        let topic = "test_flatmap";
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        // Input: One JSON record with 10 ints: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        let mut records = BatchProducer::builder()
+            .records(1u16)
+            .record_generator(Arc::new(|_, _| {
+                let nums = (0..10).collect::<Vec<_>>();
+                Record::new(serde_json::to_string(&nums).unwrap())
+            }))
+            .build()
+            .expect("batch")
+            .records();
+
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
+
+        let wasm = load_wasm_module("fluvio_wasm_flat_map");
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Flatmap,
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        let response = stream
+            .next()
+            .await
+            .expect("should get response")
+            .expect("response should be Ok");
+
+        assert_eq!(response.partition.records.batches.len(), 1);
+        let batch = &response.partition.records.batches[0];
+
+        // Output: 10 records containing integers 0-9
+        for (i, record) in batch.records().iter().enumerate() {
+            assert_eq!(
+                record.value.as_ref(),
+                RecordData::from(i.to_string()).as_ref()
+            );
+        }
 
         server_end_event.notify();
         debug!("terminated controller");

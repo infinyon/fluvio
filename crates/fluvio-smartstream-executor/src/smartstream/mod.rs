@@ -8,6 +8,7 @@ use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instan
 
 use crate::smartstream::filter::SmartStreamFilter;
 use crate::smartstream::map::SmartStreamMap;
+use crate::smartstream::flatmap::SmartStreamFlatmap;
 use crate::smartstream::aggregate::SmartStreamAggregate;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError};
@@ -18,6 +19,7 @@ use std::path::Path;
 mod memory;
 pub mod filter;
 pub mod map;
+pub mod flatmap;
 pub mod aggregate;
 pub mod file_batch;
 
@@ -56,6 +58,11 @@ impl SmartStreamModule {
 
     pub fn create_map(&self, engine: &SmartStreamEngine) -> Result<SmartStreamMap> {
         let map = SmartStreamMap::new(engine, self)?;
+        Ok(map)
+    }
+
+    pub fn create_flatmap(&self, engine: &SmartStreamEngine) -> Result<SmartStreamFlatmap> {
+        let map = SmartStreamFlatmap::new(engine, self)?;
         Ok(map)
     }
 
@@ -143,7 +150,7 @@ impl dyn SmartStream + '_ {
 
         loop {
             let file_batch = match iter.next() {
-                // we filter-map entire batches.  entire batches are process as group
+                // we process entire batches.  entire batches are process as group
                 // if we can't fit current batch into max bytes then it is discarded
                 Some(batch_result) => batch_result?,
                 None => {
@@ -158,9 +165,9 @@ impl dyn SmartStream + '_ {
             debug!(
                 current_batch_offset = file_batch.batch.base_offset,
                 current_batch_offset_delta = file_batch.offset_delta(),
-                filter_offset_delta = smartstream_batch.get_header().last_offset_delta,
-                filter_base_offset = smartstream_batch.base_offset,
-                filter_records = smartstream_batch.records().len(),
+                smartstream_offset_delta = smartstream_batch.get_header().last_offset_delta,
+                smartstream_base_offset = smartstream_batch.base_offset,
+                smartstream_records = smartstream_batch.records().len(),
                 "Starting SmartStream processing"
             );
 
@@ -170,23 +177,23 @@ impl dyn SmartStream + '_ {
                 record_data: file_batch.records.clone(),
             };
             let output = self.process(input)?;
-            debug!(filter_execution_time = %now.elapsed().as_millis());
+            debug!(smartstream_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;
             let mut records = output.successes;
 
             trace!("smartstream processed records: {:#?}", records);
 
-            // there are filtered records!!
+            // there are smartstreamed records!!
             if records.is_empty() {
-                debug!("filters records empty");
+                debug!("smartstreams records empty");
             } else {
                 // set base offset if this is first time
                 if smartstream_batch.base_offset == -1 {
                     smartstream_batch.base_offset = file_batch.base_offset();
                 }
 
-                // difference between filter batch and and current batch
+                // difference between smartstream batch and and current batch
                 // since base are different we need update delta offset for each records
                 let relative_base_offset = smartstream_batch.base_offset - file_batch.base_offset();
 
@@ -196,7 +203,7 @@ impl dyn SmartStream + '_ {
 
                 let record_bytes = records.write_size(0);
 
-                // if filter bytes exceed max bytes then we skip this batch
+                // if smartstream bytes exceed max bytes then we skip this batch
                 if total_bytes + record_bytes > max_bytes {
                     debug!(
                         total_bytes = total_bytes + record_bytes,
@@ -208,13 +215,13 @@ impl dyn SmartStream + '_ {
                 total_bytes += record_bytes;
 
                 debug!(
-                    filter_records = records.len(),
-                    total_bytes, "finished filtering"
+                    smartstream_records = records.len(),
+                    total_bytes, "finished smartstreaming"
                 );
                 smartstream_batch.mut_records().append(&mut records);
             }
 
-            // only increment filter offset delta if filter_batch has been initialized
+            // only increment smartstream offset delta if smartstream_batch has been initialized
             if smartstream_batch.base_offset != -1 {
                 debug!(
                     offset_delta = file_batch.offset_delta(),
@@ -223,7 +230,7 @@ impl dyn SmartStream + '_ {
                 smartstream_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
             }
 
-            // If we had a filtering error, return current batch and error
+            // If we had a processing error, return current batch and error
             if maybe_error.is_some() {
                 return Ok((smartstream_batch, maybe_error));
             }

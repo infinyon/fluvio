@@ -91,6 +91,36 @@ pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData
 
 This SmartStream reads each record as a string and appends it to the accumulator string.
 
+### Flatmap
+
+Flatmap functions are used to take one input record and create zero to many output records.
+This can be used to chop up input records that logically represent more than one data point
+and turn them into independent records. Below is an example where we take JSON arrays and
+convert them into a stream of the inner JSON objects.
+
+```ignore
+use fluvio_smartstream::{smartstream, Result, Record, RecordData};
+
+#[smartstream(flat_map)]
+pub fn flatmap(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
+    // Read the input record as a JSON array
+    let array = serde_json::from_slice::<Vec<serde_json::Value>>(record.value.as_ref())?;
+    
+    // Convert each individual value from the array into its own JSON string
+    let strings = array
+        .into_iter()
+        .map(|value| serde_json::to_string(&value))
+        .collect::<core::result::Result<Vec<String>, _>>()?;
+        
+    // Return a list of records to be flattened into the output stream
+    let kvs = strings
+        .into_iter()
+        .map(|s| (None, RecordData::from(s)))
+        .collect::<Vec<_>>();
+    Ok(kvs)
+}
+```
+
 ## License
 
 This project is licensed under the [Apache license](LICENSE-APACHE).
