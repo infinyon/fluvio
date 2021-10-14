@@ -1904,7 +1904,8 @@ mod test {
         let mut params = BTreeMap::new();
         params.insert("key".to_string(), "b".to_string());
 
-        let wasm = load_wasm_module("fluvio_wasm_filter");
+        let wasm = load_wasm_module("fluvio_wasm_filter_with_parameters");
+
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm.clone()),
             kind: SmartStreamKind::Filter,
@@ -1941,11 +1942,7 @@ mod test {
             assert_eq!(response.topic, topic);
 
             let partition = &response.partition;
-            assert_eq!(partition.error_code, ErrorCode::None);
-            assert_eq!(partition.high_watermark, 2);
-            assert_eq!(partition.next_offset_for_fetch(), Some(2));
 
-            assert_eq!(partition.records.batches.len(), 1);
             let batch = &partition.records.batches[0];
             assert_eq!(batch.base_offset, 0);
             assert_eq!(batch.records().len(), 1);
@@ -1953,7 +1950,13 @@ mod test {
                 batch.records()[0].value().as_ref(),
                 "b".repeat(100).as_bytes()
             );
-            assert_eq!(batch.records()[0].get_offset_delta(), 1);
+            assert_eq!(batch.records()[0].get_offset_delta(), 0);
+
+            assert_eq!(partition.error_code, ErrorCode::None);
+            assert_eq!(partition.high_watermark, 2);
+            assert_eq!(partition.next_offset_for_fetch(), Some(2));
+
+            assert_eq!(partition.records.batches.len(), 1);
         }
 
         // Using default params

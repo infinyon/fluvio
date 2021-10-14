@@ -11,7 +11,6 @@ impl Default for FilterOpt{
             key: "a".to_string()
         }
     }
-
 }
 
 #[smartstream(filter, params)]
