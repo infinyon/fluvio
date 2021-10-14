@@ -192,6 +192,16 @@ impl StreamFetchHandler {
                     })?;
                     Box::new(map)
                 }
+                SmartStreamKind::Flatmap => {
+                    debug!("Instantiating SmartStreamFlatmap");
+                    let map = module.create_flatmap(&sm_engine).map_err(|err| {
+                        SocketError::Io(IoError::new(
+                            ErrorKind::Other,
+                            format!("Failed to instantiate SmartStreamFlatmap {}", err),
+                        ))
+                    })?;
+                    Box::new(map)
+                }
                 SmartStreamKind::Aggregate { accumulator } => {
                     debug!(
                         accumulator_len = accumulator.len(),
@@ -423,7 +433,9 @@ impl StreamFetchHandler {
             Some(smartstream) => {
                 let (batch, smartstream_error) = smartstream
                     .process_batch(&mut file_batch_iterator, self.max_bytes as usize)
-                    .map_err(|err| IoError::new(ErrorKind::Other, format!("filter err {}", err)))?;
+                    .map_err(|err| {
+                        IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
+                    })?;
 
                 self.send_processed_response(
                     file_partition_response,

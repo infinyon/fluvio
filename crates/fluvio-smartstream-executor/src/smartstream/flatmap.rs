@@ -5,7 +5,7 @@ use wasmtime::TypedFunc;
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamInternalError};
 use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamContext, SmartStream};
 
-const FLATMAP_FN_NAME: &str = "flat_map";
+const FLATMAP_FN_NAME: &str = "flatmap";
 type FlatmapFn = TypedFunc<(i32, i32), i32>;
 
 pub struct SmartStreamFlatmap {

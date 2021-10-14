@@ -714,6 +714,14 @@ impl ConsumerConfigBuilder {
         self
     }
 
+    /// Adds a SmartStream flatmap to this ConsumerConfig
+    pub fn wasm_flatmap<T: Into<Vec<u8>>>(&mut self, flatmap: T) -> &mut Self {
+        self.wasm_module(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(flatmap.into()),
+            kind: SmartStreamKind::Flatmap,
+        })
+    }
+
     /// Set a WASM aggregator function and initial accumulator value
     pub fn wasm_aggregate<T: Into<Vec<u8>>, U: Into<Vec<u8>>>(
         &mut self,
