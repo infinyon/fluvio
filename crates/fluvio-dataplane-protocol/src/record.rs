@@ -52,6 +52,15 @@ impl RecordKey {
             RecordKeyInner::Null => None,
         }
     }
+
+    #[doc(hidden)]
+    pub fn from_option(key: Option<RecordData>) -> Self {
+        let inner = match key {
+            Some(key) => RecordKeyInner::Key(key),
+            None => RecordKeyInner::Null,
+        };
+        Self(inner)
+    }
 }
 
 enum RecordKeyInner {
