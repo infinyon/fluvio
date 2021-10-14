@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
+use dataplane::smartstream::SmartStreamExtraParams;
 use tracing::{debug, trace};
 use anyhow::{Result, Error};
 use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
@@ -51,27 +52,40 @@ impl Debug for SmartStreamEngine {
 pub struct SmartStreamModule(pub(crate) Module);
 
 impl SmartStreamModule {
-    pub fn create_filter(&self, engine: &SmartStreamEngine) -> Result<SmartStreamFilter> {
-        let filter = SmartStreamFilter::new(engine, self)?;
+    pub fn create_filter(
+        &self,
+        engine: &SmartStreamEngine,
+        params: SmartStreamExtraParams,
+    ) -> Result<SmartStreamFilter> {
+        let filter = SmartStreamFilter::new(engine, self, params)?;
         Ok(filter)
     }
 
-    pub fn create_map(&self, engine: &SmartStreamEngine) -> Result<SmartStreamMap> {
-        let map = SmartStreamMap::new(engine, self)?;
+    pub fn create_map(
+        &self,
+        engine: &SmartStreamEngine,
+        params: SmartStreamExtraParams,
+    ) -> Result<SmartStreamMap> {
+        let map = SmartStreamMap::new(engine, self, params)?;
         Ok(map)
     }
 
-    pub fn create_flatmap(&self, engine: &SmartStreamEngine) -> Result<SmartStreamFlatmap> {
-        let map = SmartStreamFlatmap::new(engine, self)?;
+    pub fn create_flatmap(
+        &self,
+        engine: &SmartStreamEngine,
+        params: SmartStreamExtraParams,
+    ) -> Result<SmartStreamFlatmap> {
+        let map = SmartStreamFlatmap::new(engine, self, params)?;
         Ok(map)
     }
 
     pub fn create_aggregate(
         &self,
         engine: &SmartStreamEngine,
+        params: SmartStreamExtraParams,
         accumulator: Vec<u8>,
     ) -> Result<SmartStreamAggregate> {
-        let aggregate = SmartStreamAggregate::new(engine, self, accumulator)?;
+        let aggregate = SmartStreamAggregate::new(engine, self, params, accumulator)?;
         Ok(aggregate)
     }
 }
@@ -80,10 +94,15 @@ pub struct SmartStreamContext {
     store: Store<()>,
     instance: Instance,
     records_cb: Arc<RecordsCallBack>,
+    params: SmartStreamExtraParams,
 }
 
 impl SmartStreamContext {
-    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
+    pub fn new(
+        engine: &SmartStreamEngine,
+        module: &SmartStreamModule,
+        params: SmartStreamExtraParams,
+    ) -> Result<Self> {
         let mut store = Store::new(&engine.0, ());
         let cb = Arc::new(RecordsCallBack::new());
         let records_cb = cb.clone();
@@ -107,6 +126,7 @@ impl SmartStreamContext {
             store,
             instance,
             records_cb,
+            params,
         })
     }
 
@@ -134,6 +154,7 @@ impl SmartStreamContext {
 
 pub trait SmartStream: Send {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput>;
+    fn params(&self) -> SmartStreamExtraParams;
 }
 
 impl dyn SmartStream + '_ {
@@ -175,6 +196,7 @@ impl dyn SmartStream + '_ {
             let input = SmartStreamInput {
                 base_offset: file_batch.batch.base_offset,
                 record_data: file_batch.records.clone(),
+                params: self.params().clone(),
             };
             let output = self.process(input)?;
             debug!(smartstream_execution_time = %now.elapsed().as_millis());

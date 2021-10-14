@@ -2,9 +2,33 @@ use quote::quote;
 use proc_macro2::TokenStream;
 use crate::SmartStreamFn;
 
-pub fn generate_aggregate_smartstream(func: &SmartStreamFn) -> TokenStream {
+pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
+
+    let params_parsing = if has_params {
+        quote!(
+            use std::convert::TryInto;
+
+            let params = match smartstream_input.base.params.try_into(){
+                Ok(params) => params,
+                Err(err) => return SmartStreamInternalError::ParsingExtraParams as i32,
+            };
+
+        )
+    } else {
+        quote!()
+    };
+
+    let function_call = if has_params {
+        quote!(
+            super:: #user_fn(acc_data, &record, &params)
+        )
+    } else {
+        quote!(
+            super:: #user_fn(acc_data, &record)
+        )
+    };
 
     quote! {
         #user_code
@@ -31,6 +55,9 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn) -> TokenStream {
                 }
 
                 let mut accumulator = smartstream_input.accumulator;
+
+                #params_parsing
+
                 let records_input = smartstream_input.base.record_data;
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 0) {
@@ -45,7 +72,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn) -> TokenStream {
 
                 for mut record in records.into_iter() {
                     let acc_data = RecordData::from(accumulator);
-                    let result = super:: #user_fn(acc_data, &record);
+                    let result = #function_call;
 
                     match result {
                         Ok(value) => {

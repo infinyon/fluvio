@@ -1,6 +1,6 @@
 pub use encoding::{
     SmartStreamRuntimeError, SmartStreamInternalError, SmartStreamType, SmartStreamInput,
-    SmartStreamAggregateInput, SmartStreamOutput,
+    SmartStreamAggregateInput, SmartStreamOutput, SmartStreamExtraParams,
 };
 
 mod encoding {
@@ -8,6 +8,24 @@ mod encoding {
     use crate::Offset;
     use crate::record::{Record, RecordData};
     use fluvio_protocol::{Encoder, Decoder};
+    use std::collections::BTreeMap;
+
+    #[derive(Debug, Default, Clone, Encoder, Decoder)]
+    pub struct SmartStreamExtraParams {
+        inner: BTreeMap<String, String>,
+    }
+
+    impl From<BTreeMap<String, String>> for SmartStreamExtraParams {
+        fn from(inner: BTreeMap<String, String>) -> SmartStreamExtraParams {
+            SmartStreamExtraParams { inner }
+        }
+    }
+
+    impl SmartStreamExtraParams {
+        pub fn get(&self, key: &str) -> Option<&String> {
+            self.inner.get(key)
+        }
+    }
 
     /// Common data that gets passed as input to every SmartStream WASM module
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
@@ -16,6 +34,7 @@ mod encoding {
         pub base_offset: Offset,
         /// The records for the SmartStream to process
         pub record_data: Vec<u8>,
+        pub params: SmartStreamExtraParams,
     }
 
     impl SmartStreamInput {
@@ -38,7 +57,6 @@ mod encoding {
         /// The current value of the Aggregate's accumulator
         pub accumulator: Vec<u8>,
     }
-
     /// A type used to return processed records and/or an error from a SmartStream
     #[derive(Debug, Default, Encoder, Decoder)]
     pub struct SmartStreamOutput {
@@ -70,6 +88,8 @@ mod encoding {
         DecodingRecords = -22,
         #[error("failed to encode Smartstream output")]
         EncodingOutput = -33,
+        #[error("failed to parse Smartstream extra params")]
+        ParsingExtraParams = -44,
     }
 
     impl Default for SmartStreamInternalError {

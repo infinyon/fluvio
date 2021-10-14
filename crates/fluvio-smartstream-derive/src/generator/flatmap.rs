@@ -2,9 +2,33 @@ use quote::quote;
 use proc_macro2::TokenStream;
 use crate::SmartStreamFn;
 
-pub fn generate_flatmap_smartstream(func: &SmartStreamFn) -> TokenStream {
+pub fn generate_flatmap_smartstream(func: &SmartStreamFn, has_params: bool) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
+
+    let params_parsing = if has_params {
+        quote!(
+            use std::convert::TryInto;
+
+            let params = match smartstream_input.params.try_into(){
+                Ok(params) => params,
+                Err(err) => return SmartStreamInternalError::ParsingExtraParams as i32,
+            };
+
+        )
+    } else {
+        quote!()
+    };
+
+    let function_call = if has_params {
+        quote!(
+            super:: #user_fn(&record, &params)
+        )
+    } else {
+        quote!(
+            super:: #user_fn(&record)
+        )
+    };
 
     quote! {
         #user_code
@@ -37,6 +61,9 @@ pub fn generate_flatmap_smartstream(func: &SmartStreamFn) -> TokenStream {
                     return SmartStreamInternalError::DecodingRecords as i32;
                 };
 
+                #params_parsing
+
+
                 // PROCESSING
                 let mut output = SmartStreamOutput {
                     successes: Vec::with_capacity(records.len()),
@@ -44,7 +71,7 @@ pub fn generate_flatmap_smartstream(func: &SmartStreamFn) -> TokenStream {
                 };
 
                 for record in records.into_iter() {
-                    let result = super:: #user_fn(&record);
+                    let result = #function_call;
                     match result {
                         Ok(output_records) => {
                             for (output_key, output_value) in output_records {

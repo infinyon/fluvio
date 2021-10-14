@@ -6,6 +6,7 @@
 
 use std::{io::Error as IoError, path::PathBuf};
 use std::io::ErrorKind;
+use std::collections::{BTreeMap};
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -16,7 +17,7 @@ use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Off
 use fluvio_sc_schema::ApiError;
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
 
-use crate::Result;
+use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
@@ -117,6 +118,19 @@ pub struct ConsumeOpt {
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
     #[structopt(long)]
     pub initial: Option<PathBuf>,
+
+    /// (Optional) Extra input parameters passed to the smartstream module.
+    /// They should be passed using key=value format
+    /// Eg. fluvio consume topic-name --filter filter.wasm -E foo=bar -E key=value -E one=1
+    #[structopt(short = "e", long= "extra-params", parse(try_from_str = parse_key_val), number_of_values = 1)]
+    pub extra_params: Option<Vec<(String, String)>>,
+}
+
+fn parse_key_val(s: &str) -> Result<(String, String)> {
+    let pos = s.find('=').ok_or_else(|| {
+        CliError::InvalidArg(format!("invalid KEY=value: no `=` found in `{}`", s))
+    })?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
 impl ConsumeOpt {
@@ -163,39 +177,40 @@ impl ConsumeOpt {
             builder.max_bytes(max_bytes);
         }
 
+        let extra_params = match &self.extra_params {
+            None => BTreeMap::default(),
+            Some(params) => params.clone().into_iter().collect(),
+        };
+
         if let Some(filter_path) = &self.filter {
             let buffer = std::fs::read(filter_path)?;
             debug!(len = buffer.len(), "read filter bytes");
-            builder.wasm_filter(buffer);
-        }
-
-        if let Some(map_path) = &self.map {
+            builder.wasm_filter(buffer, extra_params);
+        } else if let Some(map_path) = &self.map {
             let buffer = std::fs::read(map_path)?;
             debug!(len = buffer.len(), "read map bytes");
-            builder.wasm_map(buffer);
-        }
-
-        if let Some(map_path) = &self.flatmap {
+            builder.wasm_map(buffer, extra_params);
+        } else if let Some(map_path) = &self.flatmap {
             let buffer = std::fs::read(map_path)?;
             debug!(len = buffer.len(), "read flatmap bytes");
-            builder.wasm_flatmap(buffer);
-        }
-
-        match (&self.aggregate, &self.initial) {
-            (Some(wasm_path), Some(acc_path)) => {
-                let wasm = std::fs::read(wasm_path)?;
-                let acc = std::fs::read(acc_path)?;
-                builder.wasm_aggregate(wasm, acc);
+            builder.wasm_flatmap(buffer, extra_params);
+        } else {
+            match (&self.aggregate, &self.initial) {
+                (Some(wasm_path), Some(acc_path)) => {
+                    let wasm = std::fs::read(wasm_path)?;
+                    let acc = std::fs::read(acc_path)?;
+                    builder.wasm_aggregate(wasm, acc, extra_params);
+                }
+                (Some(wasm_path), None) => {
+                    let wasm = std::fs::read(wasm_path)?;
+                    builder.wasm_aggregate(wasm, Vec::new(), extra_params);
+                }
+                (None, Some(_)) => {
+                    println!("In order to use --accumulator, you must also specify --aggregate");
+                    return Ok(());
+                }
+                (None, None) => (),
             }
-            (Some(wasm_path), None) => {
-                let wasm = std::fs::read(wasm_path)?;
-                builder.wasm_aggregate(wasm, Vec::new());
-            }
-            (None, Some(_)) => {
-                println!("In order to use --accumulator, you must also specify --aggregate");
-                return Ok(());
-            }
-            (None, None) => (),
         }
 
         if self.disable_continuous {

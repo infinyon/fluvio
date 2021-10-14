@@ -2,7 +2,9 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use wasmtime::TypedFunc;
 
-use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamInternalError};
+use dataplane::smartstream::{
+    SmartStreamInput, SmartStreamOutput, SmartStreamInternalError, SmartStreamExtraParams,
+};
 use crate::smartstream::{SmartStreamModule, SmartStreamEngine, SmartStreamContext, SmartStream};
 
 const FILTER_FN_NAME: &str = "filter";
@@ -14,8 +16,12 @@ pub struct SmartStreamFilter {
 }
 
 impl SmartStreamFilter {
-    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
-        let mut base = SmartStreamContext::new(engine, module)?;
+    pub fn new(
+        engine: &SmartStreamEngine,
+        module: &SmartStreamModule,
+        params: SmartStreamExtraParams,
+    ) -> Result<Self> {
+        let mut base = SmartStreamContext::new(engine, module, params)?;
         let filter_fn: FilterFn = base
             .instance
             .get_typed_func(&mut base.store, FILTER_FN_NAME)?;
@@ -37,5 +43,9 @@ impl SmartStream for SmartStreamFilter {
 
         let output: SmartStreamOutput = self.base.read_output()?;
         Ok(output)
+    }
+
+    fn params(&self) -> SmartStreamExtraParams {
+        self.base.params.clone()
     }
 }

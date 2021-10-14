@@ -8,6 +8,7 @@ members = [
     "filter_odd",
     "filter_json",
     "filter_regex",
+    "filter_with_parameters",
     "map",
     "map_double",
     "map_json",

@@ -2,7 +2,9 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use wasmtime::TypedFunc;
 
-use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamInternalError};
+use dataplane::smartstream::{
+    SmartStreamInput, SmartStreamOutput, SmartStreamInternalError, SmartStreamExtraParams,
+};
 use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamContext, SmartStream};
 
 const FLATMAP_FN_NAME: &str = "flat_map";
@@ -14,8 +16,12 @@ pub struct SmartStreamFlatmap {
 }
 
 impl SmartStreamFlatmap {
-    pub fn new(engine: &SmartStreamEngine, module: &SmartStreamModule) -> Result<Self> {
-        let mut base = SmartStreamContext::new(engine, module)?;
+    pub fn new(
+        engine: &SmartStreamEngine,
+        module: &SmartStreamModule,
+        params: SmartStreamExtraParams,
+    ) -> Result<Self> {
+        let mut base = SmartStreamContext::new(engine, module, params)?;
         let map_fn: FlatmapFn = base
             .instance
             .get_typed_func(&mut base.store, FLATMAP_FN_NAME)?;
@@ -40,5 +46,9 @@ impl SmartStream for SmartStreamFlatmap {
 
         let output: SmartStreamOutput = self.base.read_output()?;
         Ok(output)
+    }
+
+    fn params(&self) -> SmartStreamExtraParams {
+        self.base.params.clone()
     }
 }

@@ -1,4 +1,7 @@
-use std::io::{Error as IoError, ErrorKind};
+use std::{
+    convert::Infallible,
+    io::{Error as IoError, ErrorKind},
+};
 
 use semver::Version;
 use handlebars::TemplateError;
@@ -65,6 +68,8 @@ pub enum CliError {
     InvalidArg(String),
     #[error("Unknown error: {0}")]
     Other(String),
+    #[error("Unexpected Infallible error")]
+    Infallible(#[from] Infallible),
 }
 
 #[derive(thiserror::Error, Debug)]

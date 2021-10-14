@@ -1,3 +1,4 @@
+use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use futures_util::stream::{Stream, select_all};
@@ -697,28 +698,43 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream filter to this ConsumerConfig
-    pub fn wasm_filter<T: Into<Vec<u8>>>(&mut self, filter: T) -> &mut Self {
+    pub fn wasm_filter<T: Into<Vec<u8>>>(
+        &mut self,
+        filter: T,
+        params: BTreeMap<String, String>,
+    ) -> &mut Self {
         self.wasm_module(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(filter.into()),
             kind: SmartStreamKind::Filter,
+            params: params.into(),
         });
         self
     }
 
     /// Adds a SmartStream map to this ConsumerConfig
-    pub fn wasm_map<T: Into<Vec<u8>>>(&mut self, map: T) -> &mut Self {
+    pub fn wasm_map<T: Into<Vec<u8>>>(
+        &mut self,
+        map: T,
+        params: BTreeMap<String, String>,
+    ) -> &mut Self {
         self.wasm_module(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(map.into()),
             kind: SmartStreamKind::Map,
+            params: params.into(),
         });
         self
     }
 
     /// Adds a SmartStream flatmap to this ConsumerConfig
-    pub fn wasm_flatmap<T: Into<Vec<u8>>>(&mut self, flatmap: T) -> &mut Self {
+    pub fn wasm_flatmap<T: Into<Vec<u8>>>(
+        &mut self,
+        flatmap: T,
+        params: BTreeMap<String, String>,
+    ) -> &mut Self {
         self.wasm_module(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(flatmap.into()),
             kind: SmartStreamKind::Flatmap,
+            params: params.into(),
         })
     }
 
@@ -727,12 +743,14 @@ impl ConsumerConfigBuilder {
         &mut self,
         aggregate: T,
         accumulator: U,
+        params: BTreeMap<String, String>,
     ) -> &mut Self {
         self.wasm_module(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(aggregate.into()),
             kind: SmartStreamKind::Aggregate {
                 accumulator: accumulator.into(),
             },
+            params: params.into(),
         });
         self
     }
