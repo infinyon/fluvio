@@ -34,7 +34,7 @@ fluvio-smartstream = "0.2.0"
 For filtering, write your smartstream using `#[smartstream(filter)]` on your
 top-level function. Consider this the "main" function of your SmartStream.
 
-```ignore
+```text
 use fluvio_smartstream::{smartstream, Record, Result};
 
 #[smartstream(filter)]
@@ -50,7 +50,7 @@ This filter will keep only records whose contents contain the letter `a`.
 
 Mapping functions use `#[smartstream(map)]`, and are also a top-level entrypoint.
 
-```ignore
+```text
 use fluvio_smartstream::{smartstream, Record, RecordData, Result};
 
 #[smartstream(map)]
@@ -77,7 +77,7 @@ accumulator value will be passed to the next invocation of `aggregate` with
 the next record value. The resulting stream of values is the output accumulator
 from each step.
 
-```ignore
+```text
 use fluvio_smartstream::{smartstream, Result, Record, RecordData};
 
 #[smartstream(aggregate)]
