@@ -372,7 +372,7 @@ jobs:
         timeout-minutes: 2
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start smoke-test-tls-root
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-tls-root
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
@@ -383,21 +383,21 @@ jobs:
         timeout-minutes: 3
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean election-test
           echo "election test done"
       - name: Run multiple-partition-test
         if: ${{ matrix.test == 'multiple-partition' }}
         timeout-minutes: 3
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean multiple-partition-test
           echo "multiple partition test done"
       - name: Run reconnection-test
         if: ${{ matrix.test == 'reconnection' }}
         timeout-minutes: 3
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnection-test
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean reconnection-test
           echo "reconnection test done"
 
       - name: Save logs
@@ -529,7 +529,7 @@ jobs:
           FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean smoke-test-k8-tls-root
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-k8-tls-root
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: |
