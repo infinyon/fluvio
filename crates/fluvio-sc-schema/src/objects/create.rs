@@ -40,12 +40,15 @@ mod create {
     use fluvio_controlplane_metadata::spu::CustomSpuSpec;
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
     use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+    use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+
     use super::*;
 
     const TOPIC: u8 = 0;
     const CUSTOM_SPU: u8 = 1;
     const SPG: u8 = 2;
     const MANAGED_CONNECTOR: u8 = 3;
+    const SMART_MODULE: u8 = 4;
 
     #[derive(Debug)]
     /// enum of spec that can be created
@@ -54,6 +57,7 @@ mod create {
         CustomSpu(CustomSpuSpec),
         SpuGroup(SpuGroupSpec),
         ManagedConnector(ManagedConnectorSpec),
+        SmartModule(SmartModuleSpec),
     }
 
     impl Default for AllCreatableSpec {
@@ -72,6 +76,7 @@ mod create {
                     Self::CustomSpu(s) => s.write_size(version),
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
+                    Self::SmartModule(s) => s.write_size(version),
                 }
         }
 
@@ -101,6 +106,12 @@ mod create {
 
                 Self::ManagedConnector(s) => {
                     let typ: u8 = MANAGED_CONNECTOR;
+                    typ.encode(dest, version)?;
+                    s.encode(dest, version)?;
+                }
+
+                Self::SmartModule(s) => {
+                    let typ: u8 = SMART_MODULE;
                     typ.encode(dest, version)?;
                     s.encode(dest, version)?;
                 }
@@ -144,6 +155,13 @@ mod create {
                     let mut response = ManagedConnectorSpec::default();
                     response.decode(src, version)?;
                     *self = Self::ManagedConnector(response);
+                    Ok(())
+                }
+
+                SMART_MODULE => {
+                    let mut response = SmartModuleSpec::default();
+                    response.decode(src, version)?;
+                    *self = Self::SmartModule(response);
                     Ok(())
                 }
 

@@ -4,6 +4,7 @@ pub mod partition;
 pub mod spg;
 pub mod message;
 pub mod connector;
+pub mod smartmodule;
 
 pub use fluvio_stream_model::core;
 
@@ -27,6 +28,7 @@ pub mod extended {
         Topic,
         Partition,
         ManagedConnector,
+        SmartModule,
     }
 
     pub trait SpecExt: Spec {

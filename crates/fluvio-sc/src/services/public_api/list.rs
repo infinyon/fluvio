@@ -32,6 +32,10 @@ pub async fn handle_list_request<AC: AuthContext>(
         ListRequest::ManagedConnector(filter) => {
             super::connector::handle_fetch_request(filter, auth_ctx).await?
         }
+
+        ListRequest::SmartModule(filter) => {
+            super::smartmodule::handle_fetch_request(filter, auth_ctx).await?
+        }
     };
 
     Ok(ResponseMessage::from_header(&header, response))
