@@ -11,6 +11,7 @@ pub struct SmartStreamConfig {
     pub has_params: bool,
 }
 
+#[allow(clippy::ptr_arg)]
 fn has_params(args: &AttributeArgs) -> bool {
     args.iter()
         .filter_map(|it| match it {
