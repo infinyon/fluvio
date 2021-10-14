@@ -1,0 +1,39 @@
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartStream
+metadata:
+  name: route-agg-stream1 
+spec:
+  inputs:
+    topic:  route
+  phase:
+    aggegration: route-module
+---
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartStream
+metadata:
+  name: route-agg-stream2
+spec:
+  inputs:
+    topic:  route
+  phase:
+    aggegration: 
+        module: route-module
+        params:
+          date: string
+---
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartStream
+spec:
+  inputs:
+    topic: BusEvents
+    streams:
+    - name: route_agg
+      id:   route-agg-stream1 
+    table_template:
+        name: route_agg
+        columns:
+        - name: route
+            type: string
+        - name: bus
+            type: string
+        
