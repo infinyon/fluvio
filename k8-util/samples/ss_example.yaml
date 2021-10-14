@@ -19,7 +19,7 @@ spec:
     aggegration: 
         module: route-module
         params:
-          date: string
+          - route
 ---
 apiVersion: fluvio.infinyon.com/v1
 kind: SmartStream
