@@ -113,6 +113,14 @@ pub enum ErrorCode {
     #[fluvio(tag = 6001)]
     #[error("the smart module was not found")]
     SmartModuleNotFound,
+
+    // Table Errors
+    #[fluvio(tag = 7000)]
+    #[error("a table error occurred")]
+    TableError,
+    #[fluvio(tag = 7001)]
+    #[error("the table was not found")]
+    TableNotFound,
 }
 
 impl Default for ErrorCode {

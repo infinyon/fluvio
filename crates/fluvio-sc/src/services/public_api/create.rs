@@ -55,6 +55,9 @@ pub async fn handle_create_request<AC: AuthContext>(
             )
             .await?
         }
+        AllCreatableSpec::Table(spec) => {
+            super::table::handle_create_table_request(name, spec, dry_run, auth_context).await?
+        }
     };
 
     Ok(ResponseMessage::from_header(&header, status))

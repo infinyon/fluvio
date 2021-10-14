@@ -10,6 +10,7 @@ mod create;
 mod delete;
 mod list;
 mod watch;
+mod table;
 
 pub use server::start_public_server;
 

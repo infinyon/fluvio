@@ -12,6 +12,7 @@ use crate::stores::topic::*;
 use crate::stores::spg::*;
 use crate::stores::connector::*;
 use crate::stores::smartmodule::*;
+use crate::stores::table::*;
 use crate::stores::*;
 
 pub type SharedContext = Arc<Context>;
@@ -26,6 +27,7 @@ pub struct Context {
     spgs: StoreContext<SpuGroupSpec>,
     managed_connectors: StoreContext<ManagedConnectorSpec>,
     smart_modules: StoreContext<SmartModuleSpec>,
+    tables: StoreContext<TableSpec>,
     health: SharedHealthCheck,
     config: ScConfig,
 }
@@ -48,6 +50,7 @@ impl Context {
             spgs: StoreContext::new(),
             managed_connectors: StoreContext::new(),
             smart_modules: StoreContext::new(),
+            tables: StoreContext::new(),
             health: HealthCheck::shared(),
             config,
         }
@@ -78,6 +81,10 @@ impl Context {
 
     pub fn smart_modules(&self) -> &StoreContext<SmartModuleSpec> {
         &self.smart_modules
+    }
+
+    pub fn tables(&self) -> &StoreContext<TableSpec> {
+        &self.tables
     }
 
     /// spu health channel
