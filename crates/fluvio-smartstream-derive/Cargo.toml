@@ -16,7 +16,3 @@ proc-macro = true
 syn = { version = "1.0", features = ["full"] }
 quote = "1.0"
 proc-macro2 = "1.0"
-
-[dev-dependencies]
-trybuild = { git = "https://github.com/sehz/trybuild", branch = "check_option" }
-fluvio-smartstream = { path = "../fluvio-smartstream" }
