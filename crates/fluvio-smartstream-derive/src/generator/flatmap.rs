@@ -12,7 +12,7 @@ pub fn generate_flatmap_smartstream(func: &SmartStreamFn) -> TokenStream {
         mod __system {
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
-            pub unsafe fn flatmap(ptr: *mut u8, len: usize) -> i32 {
+            pub unsafe fn flat_map(ptr: *mut u8, len: usize) -> i32 {
                 use fluvio_smartstream::dataplane::smartstream::{
                     SmartStreamInput, SmartStreamInternalError,
                     SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,

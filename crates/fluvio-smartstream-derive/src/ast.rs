@@ -38,7 +38,7 @@ impl SmartStreamKind {
                                 "aggregate" => Some(Self::Aggregate),
                                 "filter" => Some(Self::Filter),
                                 "map" => Some(Self::Map),
-                                "flatmap" => Some(Self::Flatmap),
+                                "flat_map" => Some(Self::Flatmap),
                                 _ => None,
                             }
                         })
