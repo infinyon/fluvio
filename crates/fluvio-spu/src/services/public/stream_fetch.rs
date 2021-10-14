@@ -1845,13 +1845,11 @@ mod test {
         let batch = &response.partition.records.batches[0];
 
         // Output: 10 records containing integers 0-9
-        let mut num = 0;
-        for record in batch.records() {
+        for (i, record) in batch.records().iter().enumerate() {
             assert_eq!(
                 record.value.as_ref(),
-                RecordData::from(num.to_string()).as_ref()
+                RecordData::from(i.to_string()).as_ref()
             );
-            num += 1;
         }
 
         server_end_event.notify();
