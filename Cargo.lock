@@ -1932,6 +1932,7 @@ dependencies = [
  "pin-utils",
  "regex",
  "serde",
+ "serde_json",
  "serde_yaml",
  "structopt",
  "sysinfo",
