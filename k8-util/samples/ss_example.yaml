@@ -4,9 +4,12 @@ metadata:
   name: route-agg-stream1 
 spec:
   inputs:
-    topic:  route
+    topicSelector:
+      name: route
   phase:
-    aggegration: route-module
+    processing: 
+      moduleSelector:
+        name: route-agg-module
 ---
 apiVersion: fluvio.infinyon.com/v1
 kind: SmartStream
@@ -14,9 +17,10 @@ metadata:
   name: route-agg-stream2
 spec:
   inputs:
-    topic:  route
+    topicSelector:  
+      name:route
   phase:
-    aggegration:
+    processing:
         template:
           metadata: 
             name: route-module
@@ -33,18 +37,16 @@ apiVersion: fluvio.infinyon.com/v1
 kind: SmartStream
 spec:
   inputs:
-    topic: BusEvents
+    topicSelector: 
+      name: BusEvents
     streams:
-    - name: route_agg
-      id:   route-agg-stream1 
-    table:
-        template:
-          metadata: 
-            name: route-default
-            spec:
-              columns:
-                - name: route
-                  type: string
-                - name: bus
-                  type: string
-          
+    - smartStreamSelector:
+        name: route_agg
+        id: route
+  phase:
+    processing: 
+      moduleSelector: 
+        name: bus-joint-module
+  output: 
+    tableSelector: 
+      name: bus-joint-table
