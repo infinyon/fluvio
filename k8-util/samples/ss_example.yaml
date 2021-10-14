@@ -16,10 +16,18 @@ spec:
   inputs:
     topic:  route
   phase:
-    aggegration: 
-        module: route-module
-        params:
-          - route
+    aggegration:
+        template:
+          metadata: 
+            name: route-module
+          spec:
+            input_kind: Stream
+            output_kind: Stream
+            wasm:
+              format: BINARY
+              payload: AAAAAA
+            parameters:
+              - name: route
 ---
 apiVersion: fluvio.infinyon.com/v1
 kind: SmartStream
@@ -29,11 +37,14 @@ spec:
     streams:
     - name: route_agg
       id:   route-agg-stream1 
-    table_template:
-        name: route_agg
-        columns:
-        - name: route
-            type: string
-        - name: bus
-            type: string
-        
+    table:
+        template:
+          metadata: 
+            name: route-default
+            spec:
+              columns:
+                - name: route
+                  type: string
+                - name: bus
+                  type: string
+          
