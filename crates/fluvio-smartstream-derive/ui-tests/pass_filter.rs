@@ -1,7 +1,7 @@
-use fluvio_smartstream::{smartstream, Record};
+use fluvio_smartstream::{smartstream, Record, Result};
 
 #[smartstream(filter)]
-pub fn my_filter(_record: &SimpleRecord) -> bool {
+pub fn my_filter(_record: &Record) -> Result<bool> {
     unimplemented!()
 }
 
