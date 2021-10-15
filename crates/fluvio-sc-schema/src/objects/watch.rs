@@ -218,7 +218,6 @@ mod encoding {
                     Ok(())
                 }
 
-
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,

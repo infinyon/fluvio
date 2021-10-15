@@ -91,7 +91,6 @@ where
         ctx.tables().clone(),
     );
 
-
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));
     whitelist!(

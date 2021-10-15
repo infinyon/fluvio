@@ -47,10 +47,9 @@ mod convert {
         use crate::store::k8::default_convert_from_k8;
 
         use super::TableSpec;
-        use super::K8TableSpec;
 
         impl K8ExtendedSpec for TableSpec {
-            type K8Spec = K8TableSpec;
+            type K8Spec = Self;
             type K8Status = Self::Status;
 
             fn convert_from_k8(

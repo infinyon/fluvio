@@ -25,7 +25,7 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["name"]
+              required: ["name", "input_format"]
               properties:
                 name:
                   type: string

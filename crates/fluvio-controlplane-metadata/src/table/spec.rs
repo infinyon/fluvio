@@ -11,19 +11,14 @@ use dataplane::core::{Encoder, Decoder};
 )]
 pub struct TableSpec {
     pub name: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub input_format: Option<InputFormat>,
+    pub input_format: InputFormat,
     //pub column: TableColumnConfig,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub smartmodule: Option<String>,
 }
 
-
 #[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum InputFormat {
     JSON,
     YAML,
@@ -32,13 +27,13 @@ pub enum InputFormat {
 
 impl Default for InputFormat {
     fn default() -> Self {
-        Self::JSON 
+        Self::JSON
     }
 }
-pub struct TableColumnConfig {
-    pub label: String,
-    pub width: String,
-    pub alignment: String, // Can I enum this?
-    pub path: String,
-    pub format: String,
-}
+//pub struct TableColumnConfig {
+//    pub label: String,
+//    pub width: String,
+//    pub alignment: String, // Can I enum this?
+//    pub path: String,
+//    pub format: String,
+//}
