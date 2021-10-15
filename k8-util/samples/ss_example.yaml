@@ -7,7 +7,7 @@ spec:
     topicSelector:
       name: route
   phase:
-    processing: 
+    transform: 
       moduleSelector:
         name: route-agg-module
 ---
@@ -20,7 +20,7 @@ spec:
     topicSelector:  
       name:route
   phase:
-    processing:
+    transform:
         template:
           metadata: 
             name: route-module
@@ -35,18 +35,64 @@ spec:
 ---
 apiVersion: fluvio.infinyon.com/v1
 kind: SmartStream
+metadata:
+  name: bus-arrival-prediction
 spec:
   inputs:
     topicSelector: 
       name: BusEvents
     streams:
     - smartStreamSelector:
-        name: route_agg
+        name: route_agg-stream-1
         id: route
-  phase:
-    processing: 
+  phases:
+    transform: 
+      moduleSelector:: 
+        name: bus-route-joint-module
+  tableFormat:
       moduleSelector: 
-        name: bus-joint-module
-  output: 
-    tableSelector: 
-      name: bus-joint-table
+        name: bus-joint-table
+  mapformat:
+    mapSelector:
+        name: bus-openstreemap
+---
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartStream
+metadata:
+  name: bus-arrival-prediction
+spec:
+  inputs:
+    topicSelector: 
+      name: BusEvents
+    streams:
+    - smartStreamSelector:
+        name: route_agg-stream-1
+        id: route
+  modules:
+    - phase: transform
+      selector:
+        name: bus-route-joint-module
+    - phase: output
+      format: table
+      selector: 
+        name: bus-joint-table
+    - phase: output
+      format: map
+      selector:
+        name: bus-openstreemap
+---
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartProducer
+metadata:
+  name: bus-clean-filter
+spec:
+  target:
+    topicSelector: 
+      name: BusEvents
+  phase:
+    access:
+      moduleSelector:
+        name: rbac-module
+    filter: 
+      moduleSelector: 
+        name: bus-produce-filter

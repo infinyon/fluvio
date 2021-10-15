@@ -27,6 +27,7 @@ spec:
               type: object
               required: []
               properties:
+                
                 input:
                   type: object
                   properties:
