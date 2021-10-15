@@ -21,6 +21,8 @@ mod produce;
 mod partition;
 mod connector;
 use connector::ManagedConnectorCmd;
+mod table;
+use table::TableCmd;
 
 use topic::TopicCmd;
 use consume::ConsumeOpt;
@@ -140,6 +142,10 @@ enum RootCmd {
     #[structopt(name = "connector")]
     ManagedConnector(ManagedConnectorCmd),
 
+    /// Create a table display specification
+    #[structopt(name = "table")]
+    Table(TableCmd),
+
     #[structopt(external_subcommand)]
     External(Vec<String>),
 }
@@ -178,6 +184,10 @@ impl RootCmd {
             Self::ManagedConnector(group) => {
                 let fluvio = root.target.connect().await?;
                 group.process(out, &fluvio).await?;
+            }
+            Self::Table(table) => {
+                let fluvio = root.target.connect().await?;
+                table.process(out, &fluvio).await?;
             }
             Self::External(args) => {
                 process_external_subcommand(args)?;

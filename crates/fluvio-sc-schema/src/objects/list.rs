@@ -18,6 +18,7 @@ use fluvio_controlplane_metadata::store::*;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_controlplane_metadata::table::TableSpec;
 
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
@@ -48,6 +49,7 @@ pub enum ListRequest {
     Partition(Vec<NameFilter>),
     ManagedConnector(Vec<NameFilter>),
     SmartModule(Vec<NameFilter>),
+    Table(Vec<NameFilter>),
 }
 
 impl Default for ListRequest {
@@ -73,6 +75,7 @@ pub enum ListResponse {
     Partition(Vec<Metadata<PartitionSpec>>),
     ManagedConnector(Vec<Metadata<ManagedConnectorSpec>>),
     SmartModule(Vec<Metadata<SmartModuleSpec>>),
+    Table(Vec<Metadata<TableSpec>>),
 }
 
 impl Default for ListResponse {
@@ -164,6 +167,7 @@ mod encoding {
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
                 Self::SmartModule(_) => SmartModuleSpec::LABEL,
+                Self::Table(_) => TableSpec::LABEL,
             }
         }
     }
@@ -181,6 +185,7 @@ mod encoding {
                     Self::Partition(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
                     Self::SmartModule(s) => s.write_size(version),
+                    Self::Table(s) => s.write_size(version),
                 }
         }
 
@@ -199,6 +204,7 @@ mod encoding {
                 Self::Partition(s) => s.encode(dest, version)?,
                 Self::ManagedConnector(s) => s.encode(dest, version)?,
                 Self::SmartModule(s) => s.encode(dest, version)?,
+                Self::Table(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -249,6 +255,7 @@ mod encoding {
                     *self = Self::Partition(response);
                     Ok(())
                 }
+
                 ManagedConnectorSpec::LABEL => {
                     let mut response: Vec<NameFilter> = vec![];
                     response.decode(src, version)?;
@@ -262,6 +269,14 @@ mod encoding {
                     *self = Self::SmartModule(response);
                     Ok(())
                 }
+
+                TableSpec::LABEL => {
+                    let mut response: Vec<NameFilter> = vec![];
+                    response.decode(src, version)?;
+                    *self = Self::Table(response);
+                    Ok(())
+                }
+
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,
@@ -282,6 +297,7 @@ mod encoding {
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
                 Self::SmartModule(_) => SmartModuleSpec::LABEL,
+                Self::Table(_) => TableSpec::LABEL,
             }
         }
     }
@@ -299,6 +315,7 @@ mod encoding {
                     Self::Partition(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
                     Self::SmartModule(s) => s.write_size(version),
+                    Self::Table(s) => s.write_size(version),
                 }
         }
 
@@ -317,6 +334,7 @@ mod encoding {
                 Self::Partition(s) => s.encode(dest, version)?,
                 Self::ManagedConnector(s) => s.encode(dest, version)?,
                 Self::SmartModule(s) => s.encode(dest, version)?,
+                Self::Table(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -373,7 +391,12 @@ mod encoding {
                     *self = Self::ManagedConnector(response);
                     Ok(())
                 }
-
+                TableSpec::LABEL => {
+                    let mut response: Vec<Metadata<TableSpec>> = vec![];
+                    response.decode(src, version)?;
+                    *self = Self::Table(response);
+                    Ok(())
+                }
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,

@@ -15,6 +15,7 @@ use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_controlplane_metadata::table::TableSpec;
 
 use crate::services::auth::AuthServiceContext;
 use crate::stores::{StoreContext, K8ChangeListener};
@@ -66,6 +67,12 @@ pub fn handle_watch_request<AC>(
             sink,
             end_event,
             auth_ctx.global_ctx.smart_modules().clone(),
+            header,
+        ),
+        WatchRequest::Table(_) => WatchController::<TableSpec>::update(
+            sink,
+            end_event,
+            auth_ctx.global_ctx.tables().clone(),
             header,
         ),
     }

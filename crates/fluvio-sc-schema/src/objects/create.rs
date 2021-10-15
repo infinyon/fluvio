@@ -41,7 +41,7 @@ mod create {
     use fluvio_controlplane_metadata::spg::SpuGroupSpec;
     use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
     use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
-
+    use fluvio_controlplane_metadata::table::TableSpec;
     use super::*;
 
     const TOPIC: u8 = 0;
@@ -49,6 +49,7 @@ mod create {
     const SPG: u8 = 2;
     const MANAGED_CONNECTOR: u8 = 3;
     const SMART_MODULE: u8 = 4;
+    const TABLE: u8 = 5;
 
     #[derive(Debug)]
     /// enum of spec that can be created
@@ -58,6 +59,7 @@ mod create {
         SpuGroup(SpuGroupSpec),
         ManagedConnector(ManagedConnectorSpec),
         SmartModule(SmartModuleSpec),
+        Table(TableSpec),
     }
 
     impl Default for AllCreatableSpec {
@@ -77,6 +79,7 @@ mod create {
                     Self::SpuGroup(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
                     Self::SmartModule(s) => s.write_size(version),
+                    Self::Table(s) => s.write_size(version),
                 }
         }
 
@@ -112,6 +115,12 @@ mod create {
 
                 Self::SmartModule(s) => {
                     let typ: u8 = SMART_MODULE;
+                    typ.encode(dest, version)?;
+                    s.encode(dest, version)?;
+                }
+
+                Self::Table(s) => {
+                    let typ: u8 = TABLE;
                     typ.encode(dest, version)?;
                     s.encode(dest, version)?;
                 }
@@ -155,6 +164,12 @@ mod create {
                     let mut response = ManagedConnectorSpec::default();
                     response.decode(src, version)?;
                     *self = Self::ManagedConnector(response);
+                    Ok(())
+                }
+                TABLE => {
+                    let mut response = TableSpec::default();
+                    response.decode(src, version)?;
+                    *self = Self::Table(response);
                     Ok(())
                 }
 

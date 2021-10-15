@@ -14,6 +14,7 @@ use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_controlplane_metadata::table::TableSpec;
 
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
@@ -37,6 +38,7 @@ pub enum WatchRequest {
     Partition(Epoch),
     ManagedConnector(Epoch),
     SmartModule(Epoch),
+    Table(Epoch),
 }
 
 impl Default for WatchRequest {
@@ -61,6 +63,7 @@ pub enum WatchResponse {
     Partition(MetadataUpdate<PartitionSpec>),
     ManagedConnector(MetadataUpdate<ManagedConnectorSpec>),
     SmartModule(MetadataUpdate<SmartModuleSpec>),
+    Table(MetadataUpdate<TableSpec>),
 }
 
 impl Default for WatchResponse {
@@ -128,6 +131,7 @@ mod encoding {
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
                 Self::SmartModule(_) => SmartModuleSpec::LABEL,
+                Self::Table(_) => TableSpec::LABEL,
             }
         }
     }
@@ -144,6 +148,7 @@ mod encoding {
                     Self::Partition(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
                     Self::SmartModule(s) => s.write_size(version),
+                    Self::Table(s) => s.write_size(version),
                 }
         }
 
@@ -161,6 +166,7 @@ mod encoding {
                 Self::Partition(s) => s.encode(dest, version)?,
                 Self::ManagedConnector(s) => s.encode(dest, version)?,
                 Self::SmartModule(s) => s.encode(dest, version)?,
+                Self::Table(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -205,6 +211,13 @@ mod encoding {
                     Ok(())
                 }
 
+                TableSpec::LABEL => {
+                    let mut response: Epoch = Epoch::default();
+                    response.decode(src, version)?;
+                    *self = Self::Table(response);
+                    Ok(())
+                }
+
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,
@@ -224,6 +237,7 @@ mod encoding {
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
                 Self::SmartModule(_) => SmartModuleSpec::LABEL,
+                Self::Table(_) => TableSpec::LABEL,
             }
         }
     }
@@ -240,6 +254,7 @@ mod encoding {
                     Self::Partition(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
                     Self::SmartModule(s) => s.write_size(version),
+                    Self::Table(s) => s.write_size(version),
                 }
         }
 
@@ -257,6 +272,7 @@ mod encoding {
                 Self::Partition(s) => s.encode(dest, version)?,
                 Self::ManagedConnector(s) => s.encode(dest, version)?,
                 Self::SmartModule(s) => s.encode(dest, version)?,
+                Self::Table(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -305,6 +321,13 @@ mod encoding {
                     let mut response = MetadataUpdate::default();
                     response.decode(src, version)?;
                     *self = Self::SmartModule(response);
+                    Ok(())
+                }
+
+                TableSpec::LABEL => {
+                    let mut response = MetadataUpdate::default();
+                    response.decode(src, version)?;
+                    *self = Self::Table(response);
                     Ok(())
                 }
 
