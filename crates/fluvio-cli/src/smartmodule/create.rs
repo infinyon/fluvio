@@ -25,8 +25,6 @@ impl CreateSmartModuleOpt {
         let mut encoder = GzEncoder::new(raw.as_slice(), Compression::default());
         let mut buffer = Vec::with_capacity(raw.len());
         encoder.read_to_end(&mut buffer)?;
-
-        println!("NEW SIZE {:?} old - {:?}", buffer.len(), raw.len());
         /*
          * TODO: Fix the CRD to work with this
         let buffer = vec!['a' as u8; self.size];
