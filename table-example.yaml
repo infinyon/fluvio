@@ -1,0 +1,8 @@
+apiVersion: fluvio.infinyon.com/v1
+kind: Table 
+metadata:
+  name: test2
+spec:
+  name: "bb" 
+  input_format: "JSON"
+  smartmodule: ""

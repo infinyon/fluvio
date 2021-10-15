@@ -38,6 +38,7 @@ pub enum WatchRequest {
     Partition(Epoch),
     ManagedConnector(Epoch),
     SmartModule(Epoch),
+    Table(Epoch),
 }
 
 impl Default for WatchRequest {
@@ -130,6 +131,7 @@ mod encoding {
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
                 Self::SmartModule(_) => SmartModuleSpec::LABEL,
+                Self::Table(_) => TableSpec::LABEL,
             }
         }
     }
@@ -146,6 +148,7 @@ mod encoding {
                     Self::Partition(s) => s.write_size(version),
                     Self::ManagedConnector(s) => s.write_size(version),
                     Self::SmartModule(s) => s.write_size(version),
+                    Self::Table(s) => s.write_size(version),
                 }
         }
 
@@ -163,6 +166,7 @@ mod encoding {
                 Self::Partition(s) => s.encode(dest, version)?,
                 Self::ManagedConnector(s) => s.encode(dest, version)?,
                 Self::SmartModule(s) => s.encode(dest, version)?,
+                Self::Table(s) => s.encode(dest, version)?,
             }
 
             Ok(())
@@ -207,6 +211,14 @@ mod encoding {
                     Ok(())
                 }
 
+                TableSpec::LABEL => {
+                    let mut response: Epoch = Epoch::default();
+                    response.decode(src, version)?;
+                    *self = Self::Table(response);
+                    Ok(())
+                }
+
+
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,
@@ -226,7 +238,7 @@ mod encoding {
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
                 Self::SmartModule(_) => SmartModuleSpec::LABEL,
-                Self::Table(_) => ManagedConnectorSpec::LABEL,
+                Self::Table(_) => TableSpec::LABEL,
             }
         }
     }

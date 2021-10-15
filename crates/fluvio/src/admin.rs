@@ -182,8 +182,11 @@ impl FluvioAdmin {
         use std::io::ErrorKind;
 
         let list_request = S::into_list_request(filters.into());
+        println!("list_request {:?}", &list_request);
 
         let response = self.send_receive(list_request).await?;
+
+        println!("ZZZZZZZ {:?}", &response);
 
         response
             .try_into()

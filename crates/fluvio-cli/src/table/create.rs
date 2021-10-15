@@ -27,7 +27,10 @@ pub struct CreateTableOpt {
 
 impl CreateTableOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
-        let table_spec = TableSpec::default();
+        let table_spec = TableSpec {
+            name: self.name.clone(),
+            ..Default::default()
+        };
 
         debug!("creating table: {} spec: {:#?}", self.name, table_spec);
         let admin = fluvio.admin().await;

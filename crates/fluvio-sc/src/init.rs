@@ -34,6 +34,7 @@ where
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
     use crate::stores::connector::ManagedConnectorSpec;
+    use crate::stores::table::TableSpec;
     info!("SC Platform Version: {}", &*crate::VERSION);
 
     let mut sys = System::new_all();
@@ -79,10 +80,17 @@ where
     );
 
     K8ClusterStateDispatcher::<ManagedConnectorSpec, C>::start(
-        namespace,
-        metadata_client,
+        namespace.clone(),
+        metadata_client.clone(),
         ctx.managed_connectors().clone(),
     );
+
+    K8ClusterStateDispatcher::<TableSpec, C>::start(
+        namespace,
+        metadata_client,
+        ctx.tables().clone(),
+    );
+
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
     whitelist!(config, "topic", TopicController::start(ctx.clone()));

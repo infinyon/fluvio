@@ -40,15 +40,15 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .values()
         .filter_map(|value| {
             if filters.filter(value.key()) {
-                Some(value.inner().clone().into())
+              Some(value.inner().clone().into())
             } else {
                 None
             }
         })
         .collect();
 
-    debug!("flv fetch tables resp: {} items", tables.len());
-    trace!("flv fetch tables resp {:#?}", tables);
+    debug!("AAAAFLV fetch tables resp: {} items", tables.len());
+    trace!("AAAAFLV fetch tables resp {:#?}", tables);
 
     Ok(ListResponse::Table(tables))
 }

@@ -297,7 +297,7 @@ mod encoding {
                 Self::Partition(_) => PartitionSpec::LABEL,
                 Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
                 Self::SmartModule(_) => SmartModuleSpec::LABEL,
-                Self::Table(_) => ManagedConnectorSpec::LABEL,
+                Self::Table(_) => TableSpec::LABEL,
             }
         }
     }

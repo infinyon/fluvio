@@ -7,6 +7,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use super::super::TableStatus;
+use super::super::InputFormat;
 use crate::k8_types::{Spec, Crd, DefaultHeader};
 //use std::collections::BTreeMap;
 
@@ -38,9 +39,9 @@ impl Spec for K8TableSpec {
 #[serde(rename_all = "camelCase", default)]
 pub struct K8TableSpec {
     pub name: String,
-    pub input_format: String,
+    pub input_format: Option<InputFormat>,
     //pub column: TableColumnConfig,
-    pub smartmodule: String,
+    pub smartmodule: Option<String>,
 }
 mod convert {
 
@@ -52,8 +53,8 @@ mod convert {
         fn from(spec: K8TableSpec) -> Self {
             Self {
                 name: spec.name,
-                input_format: spec.input_format,
-                smartmodule: spec.smartmodule,
+                input_format: None,
+                smartmodule: None,
             }
         }
     }
@@ -62,8 +63,8 @@ mod convert {
         fn from(spec: TableSpec) -> Self {
             Self {
                 name: spec.name,
-                input_format: spec.input_format,
-                smartmodule: spec.smartmodule,
+                input_format: None,
+                smartmodule: None,
             }
         }
     }
