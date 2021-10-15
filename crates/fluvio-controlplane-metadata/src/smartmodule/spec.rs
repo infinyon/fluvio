@@ -50,7 +50,7 @@ impl Default for SmartModuleSourceCodeLanguage {
 pub struct SmartModuleWasm {
     format: SmartModuleWasmFormat,
     #[serde(with="base64")]
-    payload: Vec<u8>,
+    pub payload: Vec<u8>,
 }
 impl std::fmt::Debug for SmartModuleWasm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

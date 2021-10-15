@@ -23,6 +23,7 @@ pub struct CreateSmartModuleOpt {
     /// The path to the source code for the SmartModule WASM
     #[structopt(long)]
     source_file: Option<PathBuf>,
+
 }
 
 
@@ -35,7 +36,10 @@ impl CreateSmartModuleOpt {
         encoder.read_to_end(&mut buffer)?;
 
         println!("NEW SIZE {:?} old - {:?}", buffer.len(), raw.len());
-        let buffer = vec![1; 100000];
+        /*
+         * TODO: Fix the CRD to work with this
+        let buffer = vec!['a' as u8; self.size];
+        */
 
         let spec : SmartModuleSpec = SmartModuleSpec {
             wasm: SmartModuleWasm::from_binary_payload(buffer),
