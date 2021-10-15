@@ -84,7 +84,7 @@ pub fn generate_flatmap_smartstream(func: &SmartStreamFn, has_params: bool) -> T
                             let error = SmartStreamRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
-                                SmartStreamType::Map,
+                                SmartStreamType::Flatmap,
                                 err,
                             );
                             output.error = Some(error);
