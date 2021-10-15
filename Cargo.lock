@@ -1507,6 +1507,7 @@ dependencies = [
  "ctrlc",
  "dirs 4.0.0",
  "eyre",
+ "flate2",
  "fluvio",
  "fluvio-cluster",
  "fluvio-command",
@@ -1619,6 +1620,7 @@ name = "fluvio-controlplane-metadata"
 version = "0.12.2"
 dependencies = [
  "async-trait",
+ "base64",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",

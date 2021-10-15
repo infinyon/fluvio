@@ -23,7 +23,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .await
     {
         if !authorized {
-            debug!("fetch connector authorization failed");
+            debug!("fetch smart module authorization failed");
             // If permission denied, return empty list;
             return Ok(ListResponse::SmartModule(vec![]));
         }
@@ -31,7 +31,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let connectors: Vec<Metadata<SmartModuleSpec>> = auth_ctx
+    let smart_modules: Vec<Metadata<SmartModuleSpec>> = auth_ctx
         .global_ctx
         .smart_modules()
         .store()
@@ -47,8 +47,11 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         })
         .collect();
 
-    debug!("flv fetch connectors resp: {} items", connectors.len());
-    trace!("flv fetch connectors resp {:#?}", connectors);
+    debug!(
+        "flv fetch smart_modules resp: {} items",
+        smart_modules.len()
+    );
+    trace!("flv fetch smart_modules resp {:#?}", smart_modules);
 
-    Ok(ListResponse::SmartModule(connectors))
+    Ok(ListResponse::SmartModule(smart_modules))
 }
