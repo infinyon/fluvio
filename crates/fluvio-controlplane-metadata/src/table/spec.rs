@@ -13,7 +13,7 @@ pub struct TableSpec {
     pub name: String,
     pub input_format: InputFormat,
     //pub column: TableColumnConfig,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub smartmodule: Option<String>,
 }
 
