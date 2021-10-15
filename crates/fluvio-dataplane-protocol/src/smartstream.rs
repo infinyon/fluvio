@@ -166,6 +166,7 @@ mod encoding {
     pub enum SmartStreamType {
         Filter,
         Map,
+        Flatmap,
         Aggregate,
     }
 
