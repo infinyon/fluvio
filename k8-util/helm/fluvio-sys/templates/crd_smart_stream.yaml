@@ -25,28 +25,27 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: []
+              required: ["inputs"]
               properties:
-                
-                input:
+                inputs:
                   type: object
                   properties:
-                    topic:
-                        type: string
+                    topicSelector:
+                      type: object
+                      properties:
+                        name: string
                     streams:
                         type: array
                         items:
                             type: object
                             properties:
-                                name:
-                                    type: string
-                                id: 
-                                    type: string
-                phase:
-                    type: object
-                    properties:
-                        processing: object
-                            id: string
+                                smartStreamSelector:
+                                    type: object
+                                    properties:
+                                        name:
+                                          type: string
+                                        id:
+                                          type: string
 
 
                     
