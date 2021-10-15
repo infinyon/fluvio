@@ -20,12 +20,11 @@ mod consume;
 mod produce;
 mod partition;
 mod connector;
-use connector::ManagedConnectorCmd;
 mod table;
-use table::TableCmd;
 mod smartmodule;
 
 use connector::ManagedConnectorCmd;
+use table::TableCmd;
 use topic::TopicCmd;
 use consume::ConsumeOpt;
 use produce::ProduceOpt;

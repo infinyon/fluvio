@@ -86,17 +86,15 @@ where
         ctx.managed_connectors().clone(),
     );
 
-<<<<<<< HEAD
     K8ClusterStateDispatcher::<TableSpec, C>::start(
-        namespace,
-        metadata_client,
+        namespace.clone(),
+        metadata_client.clone(),
         ctx.tables().clone(),
-=======
+    );
     K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
         namespace,
         metadata_client,
         ctx.smart_modules().clone(),
->>>>>>> ab4e2b65 (why is this broken)
     );
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));

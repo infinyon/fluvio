@@ -26,16 +26,16 @@ impl SmartModuleCmd {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         match self {
             Self::Create(opt) => {
-                opt.process(&fluvio).await?;
+                opt.process(fluvio).await?;
             }
             Self::List(opt) => {
-                opt.process(out, &fluvio).await?;
+                opt.process(out, fluvio).await?;
             }
             Self::Describe(opt) => {
                 opt.process()?;
             }
             Self::Delete(opt) => {
-                opt.process(&fluvio).await?;
+                opt.process(fluvio).await?;
             }
         }
         Ok(())

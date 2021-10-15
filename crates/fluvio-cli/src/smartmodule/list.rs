@@ -75,7 +75,7 @@ mod output {
     impl TableOutputHandler for ListSmartModules {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS","SIZE"]
+            row!["NAME", "STATUS", "SIZE"]
         }
 
         /// return errors in string format

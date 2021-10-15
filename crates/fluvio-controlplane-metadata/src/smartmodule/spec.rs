@@ -5,10 +5,7 @@
 use dataplane::core::{Encoder, Decoder};
 
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSpec {
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
@@ -18,20 +15,14 @@ pub struct SmartModuleSpec {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSourceCode {
     language: SmartModuleSourceCodeLanguage,
     payload: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleSourceCodeLanguage {
     Rust,
 }
@@ -43,18 +34,18 @@ impl Default for SmartModuleSourceCodeLanguage {
 }
 
 #[derive(Clone, Default, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {
     format: SmartModuleWasmFormat,
-    #[serde(with="base64")]
+    #[serde(with = "base64")]
     pub payload: Vec<u8>,
 }
 impl std::fmt::Debug for SmartModuleWasm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&format!("SmartModuleWasm {{ format: {:?}, payload: [REDACTED] }}", self.format))
+        f.write_str(&format!(
+            "SmartModuleWasm {{ format: {:?}, payload: [REDACTED] }}",
+            self.format
+        ))
     }
 }
 
@@ -62,6 +53,7 @@ mod base64 {
     use serde::{Serialize, Deserialize};
     use serde::{Deserializer, Serializer};
 
+    #[allow(clippy::ptr_arg)]
     pub fn serialize<S: Serializer>(v: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
         let base64 = base64::encode(v);
         String::serialize(&base64, s)
@@ -69,8 +61,7 @@ mod base64 {
 
     pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
         let base64 = String::deserialize(d)?;
-        base64::decode(base64.as_bytes())
-            .map_err(|e| serde::de::Error::custom(e))
+        base64::decode(base64.as_bytes()).map_err(serde::de::Error::custom)
     }
 }
 impl SmartModuleWasm {
@@ -83,10 +74,7 @@ impl SmartModuleWasm {
 }
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleWasmFormat {
     #[serde(rename = "BINARY")]
     Binary,
@@ -101,19 +89,13 @@ impl Default for SmartModuleWasmFormat {
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleParameter {
     name: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleInputKind {
     Stream,
     External,
@@ -126,10 +108,7 @@ impl Default for SmartModuleInputKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleOutputKind {
     Stream,
     External,

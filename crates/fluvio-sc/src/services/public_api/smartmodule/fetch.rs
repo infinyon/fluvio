@@ -47,7 +47,10 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         })
         .collect();
 
-    debug!("flv fetch smart_modules resp: {} items", smart_modules.len());
+    debug!(
+        "flv fetch smart_modules resp: {} items",
+        smart_modules.len()
+    );
     trace!("flv fetch smart_modules resp {:#?}", smart_modules);
 
     Ok(ListResponse::SmartModule(smart_modules))
