@@ -127,7 +127,7 @@ mod context {
         /// Wait for creation/update of spec.  There is no guarantee that this spec has been applied.
         /// Only that spec has been changed.
         ///
-        /// This should only used in the imperative code such as API Server where confirmation is needed.
+        /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn create_spec(
             &self,
@@ -146,7 +146,7 @@ mod context {
         /// Wait for status update.  There is no guarantee that this status valus has been applied.
         /// Only that status has been changed.
         ///
-        /// This should only used in the imperative code such as API Server where confirmation is needed.
+        /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn update_status(
             &self,
@@ -162,9 +162,9 @@ mod context {
                 .await
         }
 
-        /// Wait for object deletion.
+        /// Wait for object deletion.  
         ///
-        /// This should only used in the imperative code such as API Server where confirmation is needed.
+        /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn delete(&self, key: S::IndexKey) -> Result<(), IoError> {
             match self.sender.send(WSAction::Delete(key.clone())).await {
@@ -223,7 +223,7 @@ mod context {
         /// Wait for action to finish.  There is no guarantee that the status valus has been applied.
         /// Only that status has been changed.
         ///
-        /// This should only used in the imperative code such as API Server where confirmation is needed.
+        /// This should only used in the imperative code such as API Server where confirmation is needed.  
         /// Controller should only use Action.
         pub async fn wait_action_with_timeout(
             &self,

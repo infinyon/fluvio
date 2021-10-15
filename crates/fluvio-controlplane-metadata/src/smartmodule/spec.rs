@@ -37,7 +37,7 @@ impl Default for SmartModuleSourceCodeLanguage {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {
     format: SmartModuleWasmFormat,
-    #[serde(with = "base64")]
+    #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
     pub payload: Vec<u8>,
 }
 impl std::fmt::Debug for SmartModuleWasm {
@@ -49,6 +49,7 @@ impl std::fmt::Debug for SmartModuleWasm {
     }
 }
 
+#[cfg(feature = "use_serde")]
 mod base64 {
     use serde::{Serialize, Deserialize};
     use serde::{Deserializer, Serializer};
@@ -76,9 +77,9 @@ impl SmartModuleWasm {
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartModuleWasmFormat {
-    #[serde(rename = "BINARY")]
+    #[cfg_attr(feature = "use_serde", serde(rename = "BINARY"))]
     Binary,
-    #[serde(rename = "TEXT")]
+    #[cfg_attr(feature = "use_serde", serde(rename = "TEXT"))]
     Text,
 }
 
