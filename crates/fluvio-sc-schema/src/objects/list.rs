@@ -397,6 +397,13 @@ mod encoding {
                     *self = Self::Table(response);
                     Ok(())
                 }
+                SmartModuleSpec::LABEL=> {
+                    let mut response: Vec<Metadata<SmartModuleSpec>> = vec![];
+                    response.decode(src, version)?;
+                    *self = Self::SmartModule(response);
+                    Ok(())
+                }
+
                 // Unexpected type
                 _ => Err(Error::new(
                     ErrorKind::InvalidData,

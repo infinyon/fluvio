@@ -35,6 +35,7 @@ where
     use crate::stores::spg::SpuGroupSpec;
     use crate::stores::connector::ManagedConnectorSpec;
     use crate::stores::table::TableSpec;
+    use crate::stores::smartmodule::SmartModuleSpec;
     info!("SC Platform Version: {}", &*crate::VERSION);
 
     let mut sys = System::new_all();
@@ -85,10 +86,17 @@ where
         ctx.managed_connectors().clone(),
     );
 
+<<<<<<< HEAD
     K8ClusterStateDispatcher::<TableSpec, C>::start(
         namespace,
         metadata_client,
         ctx.tables().clone(),
+=======
+    K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
+        namespace,
+        metadata_client,
+        ctx.smart_modules().clone(),
+>>>>>>> ab4e2b65 (why is this broken)
     );
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));

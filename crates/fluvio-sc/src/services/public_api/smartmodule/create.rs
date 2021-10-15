@@ -17,7 +17,7 @@ use fluvio_auth::{AuthContext, TypeAction};
 use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
-/// Handler for managed connector request
+/// Handler for smart module request
 #[instrument(skip(name, spec, _dry_run, auth_ctx))]
 pub async fn handle_create_smart_module_request<AC: AuthContext>(
     name: String,
@@ -25,7 +25,7 @@ pub async fn handle_create_smart_module_request<AC: AuthContext>(
     _dry_run: bool,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    debug!("creating managed connector: {}", name);
+    debug!("creating smart module: {}", name);
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -50,7 +50,7 @@ pub async fn handle_create_smart_module_request<AC: AuthContext>(
     Ok(status)
 }
 
-/// Process custom managed connector, converts managed connector spec to K8 and sends to KV store
+/// Process custom smart module, converts smart module spec to K8 and sends to KV store
 #[instrument(skip(ctx, name, smart_module_spec))]
 async fn process_smart_module_request(
     ctx: &Context,

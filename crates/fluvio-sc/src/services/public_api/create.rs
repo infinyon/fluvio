@@ -19,7 +19,7 @@ pub async fn handle_create_request<AC: AuthContext>(
 
     let dry_run = req.dry_run;
     let name = req.name;
-    tracing::debug!("Handling create request for {:#?}", req.spec);
+    tracing::debug!("Handling create request for {:?}", req.spec);
 
     let status = match req.spec {
         AllCreatableSpec::Topic(topic) => {

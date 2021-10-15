@@ -260,7 +260,7 @@ impl FluvioCmd {
                 partition.process(out, &fluvio).await?;
             }
             Self::SmartModule(smart_module) => {
-                smart_module.process()?;
+                smart_module.process(out, &fluvio).await?;
             }
         }
 

@@ -238,7 +238,7 @@ where
                     (spec, meta)
                 };
                 if let Err(err) = self.ws_update_service.update_spec(metadata, spec).await {
-                    error!("error: {:#?}, update spec {:#?}", S::LABEL, err);
+                    error!("error: {:#?}, update spec {:#?}", err, S::LABEL);
                 }
             }
             WSAction::UpdateStatus((key, status)) => {

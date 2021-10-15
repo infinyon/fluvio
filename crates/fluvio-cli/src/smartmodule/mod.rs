@@ -1,5 +1,8 @@
+use std::sync::Arc;
 use structopt::StructOpt;
 use crate::Result;
+use crate::common::output::Terminal;
+use fluvio::Fluvio;
 
 mod create;
 mod list;
@@ -20,19 +23,19 @@ pub enum SmartModuleCmd {
 }
 
 impl SmartModuleCmd {
-    pub fn process(self) -> Result<()> {
+    pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         match self {
             Self::Create(opt) => {
-                opt.process()?;
+                opt.process(&fluvio).await?;
             }
             Self::List(opt) => {
-                opt.process()?;
+                opt.process(out, &fluvio).await?;
             }
             Self::Describe(opt) => {
                 opt.process()?;
             }
             Self::Delete(opt) => {
-                opt.process()?;
+                opt.process(&fluvio).await?;
             }
         }
         Ok(())

@@ -8,7 +8,6 @@ use dataplane::core::{Encoder, Decoder};
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
 pub struct SmartModuleSpec {
     pub input_kind: SmartModuleInputKind,
@@ -22,7 +21,6 @@ pub struct SmartModuleSpec {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
 pub struct SmartModuleSourceCode {
     language: SmartModuleSourceCodeLanguage,
@@ -33,7 +31,6 @@ pub struct SmartModuleSourceCode {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
 pub enum SmartModuleSourceCodeLanguage {
     Rust,
@@ -45,18 +42,39 @@ impl Default for SmartModuleSourceCodeLanguage {
     }
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
+#[derive(Clone, Default, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
 pub struct SmartModuleWasm {
     format: SmartModuleWasmFormat,
-    payload: String,
+    #[serde(with="base64")]
+    payload: Vec<u8>,
+}
+impl std::fmt::Debug for SmartModuleWasm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&format!("SmartModuleWasm {{ format: {:?}, payload: [REDACTED] }}", self.format))
+    }
+}
+
+mod base64 {
+    use serde::{Serialize, Deserialize};
+    use serde::{Deserializer, Serializer};
+
+    pub fn serialize<S: Serializer>(v: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
+        let base64 = base64::encode(v);
+        String::serialize(&base64, s)
+    }
+
+    pub fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Vec<u8>, D::Error> {
+        let base64 = String::deserialize(d)?;
+        base64::decode(base64.as_bytes())
+            .map_err(|e| serde::de::Error::custom(e))
+    }
 }
 impl SmartModuleWasm {
-    pub fn from_binary_payload(payload: String) -> Self {
+    pub fn from_binary_payload(payload: Vec<u8>) -> Self {
         SmartModuleWasm {
             payload,
             format: SmartModuleWasmFormat::Binary,
@@ -68,10 +86,11 @@ impl SmartModuleWasm {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
 pub enum SmartModuleWasmFormat {
+    #[serde(rename = "BINARY")]
     Binary,
+    #[serde(rename = "TEXT")]
     Text,
 }
 
@@ -85,7 +104,6 @@ impl Default for SmartModuleWasmFormat {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
 pub struct SmartModuleParameter {
     name: String,
@@ -95,9 +113,7 @@ pub struct SmartModuleParameter {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
-
 pub enum SmartModuleInputKind {
     Stream,
     External,
@@ -113,7 +129,6 @@ impl Default for SmartModuleInputKind {
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
 )]
 pub enum SmartModuleOutputKind {
     Stream,
