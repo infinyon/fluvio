@@ -34,7 +34,6 @@ mod output {
     //!
     //! # Fluvio SC - output processing
     //!
-    //! Format Managed Connectors response based on output type
 
     use prettytable::Row;
     use prettytable::row;
@@ -60,7 +59,7 @@ mod output {
     // Format Output
     // -----------------------------------
 
-    /// Format Table based on output type
+    /// Format Table list
     pub fn tables_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
         list_tables: Vec<Metadata<TableSpec>>,
@@ -69,11 +68,11 @@ mod output {
         debug!("tables: {:#?}", list_tables);
 
         if !list_tables.is_empty() {
-            let connectors = ListTables(list_tables);
-            out.render_list(&connectors, output_type)?;
+            let tables = ListTables(list_tables);
+            out.render_list(&tables, output_type)?;
             Ok(())
         } else {
-            t_println!(out, "no managed connectors");
+            t_println!(out, "no tables");
             Ok(())
         }
     }

@@ -17,7 +17,6 @@ use crate::CliError;
 #[derive(Debug, StructOpt)]
 pub struct DeleteTableOpt {
     /// The name of the connector to delete
-    #[structopt(value_name = "name")]
     name: String,
 }
 

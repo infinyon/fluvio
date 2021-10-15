@@ -29,7 +29,7 @@ spec:
               properties:
                 name:
                   type: string
-                  minimum: 2
+                  minimum: 1
                   maximum: 100
                 input_format:
                   type: string
