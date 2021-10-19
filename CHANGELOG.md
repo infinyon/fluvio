@@ -5,6 +5,7 @@
 * Merge fluvio-protocol-{api,core,codec} crates into fluvio-protocol ([#1594](https://github.com/infinyon/fluvio/issues/1594))
 * Add `#[smarstream(flat_map)]` for flattening one record into many ([#1335](https://github.com/infinyon/fluvio/issues/1335))
 * Add capability to use input parameters in smartstreams ([#1643](https://github.com/infinyon/fluvio/issues/1643))
+* Make it easier to debug inline chart ([#1779](https://github.com/infinyon/fluvio/issues/1779))
 
 ## Platform Version 0.9.10 - 2021-10-07
 * Improve error handling for socket timeout ([#791](https://github.com/infinyon/fluvio/issues/791))
