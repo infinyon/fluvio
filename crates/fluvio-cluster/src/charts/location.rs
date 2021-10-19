@@ -103,7 +103,7 @@ impl ChartSetup {
 
 mod inline {
     use std::path::{Path, PathBuf};
-    use std::fs::{File};
+    use std::fs::{DirBuilder, File};
     use std::io::{Error as IoError, ErrorKind};
     use std::io::Write;
 
@@ -148,12 +148,25 @@ mod inline {
                 ));
             }
 
-            let file = inline.files[0];
-            let chart = base_dir.to_owned().join(file.path());
+            let inline_file = inline.files[0];
+            let chart = base_dir.to_owned().join(inline_file.path());
             trace!(?chart, "writing file");
-            let contents = file.contents();
+            let contents = inline_file.contents();
             let mut chart_file = File::create(&chart)?;
             chart_file.write_all(contents)?;
+
+            // if there is debug env file, output it as well
+            if let Ok(debug_dir) = std::env::var("FLV_INLINE_CHART_DIR") {
+                let debug_chart_path = Path::new(&debug_dir);
+                let mut builder = DirBuilder::new();
+                builder.recursive(true);
+                builder
+                    .create(&debug_chart_path)
+                    .expect("FLV_INLINE_CHART_DIR not exists");
+                let mut debug_file = File::create(debug_chart_path.join(inline_file.path()))
+                    .expect("chart cant' be created");
+                debug_file.write_all(contents)?;
+            }
 
             Ok(chart)
         }
