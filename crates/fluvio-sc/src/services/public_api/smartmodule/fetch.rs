@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{debug, trace, instrument};
 
-use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata, SmartModuleFilterMap};
+use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
 use fluvio_sc_schema::smartmodule::SmartModuleSpec;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
@@ -12,7 +12,7 @@ use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_request<AC: AuthContext>(
-    filters: Vec<SmartModuleFilterMap>,
+    filters: Vec<NameFilter>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse, Error> {
     trace!("fetching smart modules");
@@ -48,7 +48,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
                 Some(inner)
             } else {
                 if filters.iter().filter(|filter| {
-                    filter.name.filter(value.key())
+                    filter.filter(value.key())
                 }).count() > 0 {
                     Some(value.inner().clone().into())
                 } else {
