@@ -13,9 +13,13 @@ pub struct SmartStreamSpec {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SmartStreamInput {
-    pub topicSelector: TopicSelector,
+    pub topic_selector: TopicSelector,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
