@@ -27,9 +27,9 @@ pub mod file_batch;
 pub type WasmSlice = (i32, i32);
 
 #[derive(Default, Clone)]
-pub struct SmartStreamEngine(pub(crate) Engine);
+pub struct SmartEngine(pub(crate) Engine);
 
-impl SmartStreamEngine {
+impl SmartEngine {
     pub fn create_module_from_binary(&self, bytes: &[u8]) -> Result<SmartStreamModule> {
         let module = Module::from_binary(&self.0, bytes)?;
         Ok(SmartStreamModule(module))
@@ -43,7 +43,7 @@ impl SmartStreamEngine {
     }
 }
 
-impl Debug for SmartStreamEngine {
+impl Debug for SmartEngine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SmartStreamEngine")
     }
@@ -54,7 +54,7 @@ pub struct SmartStreamModule(pub(crate) Module);
 impl SmartStreamModule {
     pub fn create_filter(
         &self,
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         params: SmartStreamExtraParams,
     ) -> Result<SmartStreamFilter> {
         let filter = SmartStreamFilter::new(engine, self, params)?;
@@ -63,7 +63,7 @@ impl SmartStreamModule {
 
     pub fn create_map(
         &self,
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         params: SmartStreamExtraParams,
     ) -> Result<SmartStreamMap> {
         let map = SmartStreamMap::new(engine, self, params)?;
@@ -72,7 +72,7 @@ impl SmartStreamModule {
 
     pub fn create_flatmap(
         &self,
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         params: SmartStreamExtraParams,
     ) -> Result<SmartStreamFlatmap> {
         let map = SmartStreamFlatmap::new(engine, self, params)?;
@@ -81,7 +81,7 @@ impl SmartStreamModule {
 
     pub fn create_aggregate(
         &self,
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         params: SmartStreamExtraParams,
         accumulator: Vec<u8>,
     ) -> Result<SmartStreamAggregate> {
@@ -99,7 +99,7 @@ pub struct SmartStreamContext {
 
 impl SmartStreamContext {
     pub fn new(
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         module: &SmartStreamModule,
         params: SmartStreamExtraParams,
     ) -> Result<Self> {

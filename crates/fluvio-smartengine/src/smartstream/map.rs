@@ -4,7 +4,7 @@ use wasmtime::TypedFunc;
 
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamInternalError};
 use crate::smartstream::{
-    SmartStreamEngine, SmartStreamModule, SmartStreamContext, SmartStream, SmartStreamExtraParams,
+    SmartEngine, SmartStreamModule, SmartStreamContext, SmartStream, SmartStreamExtraParams,
 };
 
 const MAP_FN_NAME: &str = "map";
@@ -17,7 +17,7 @@ pub struct SmartStreamMap {
 
 impl SmartStreamMap {
     pub fn new(
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         module: &SmartStreamModule,
         params: SmartStreamExtraParams,
     ) -> Result<Self> {

@@ -5,38 +5,41 @@ use wasmtime::TypedFunc;
 use dataplane::smartstream::{
     SmartStreamInput, SmartStreamOutput, SmartStreamInternalError, SmartStreamExtraParams,
 };
-use crate::smartstream::{SmartStreamModule, SmartStreamEngine, SmartStreamContext, SmartStream};
+use crate::smartstream::{SmartEngine, SmartStreamModule, SmartStreamContext, SmartStream};
 
-const FILTER_FN_NAME: &str = "filter";
-type FilterFn = TypedFunc<(i32, i32), i32>;
+const FLATMAP_FN_NAME: &str = "flat_map";
+type FlatmapFn = TypedFunc<(i32, i32), i32>;
 
-pub struct SmartStreamFilter {
+pub struct SmartStreamFlatmap {
     base: SmartStreamContext,
-    filter_fn: FilterFn,
+    flatmap_fn: FlatmapFn,
 }
 
-impl SmartStreamFilter {
+impl SmartStreamFlatmap {
     pub fn new(
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         module: &SmartStreamModule,
         params: SmartStreamExtraParams,
     ) -> Result<Self> {
         let mut base = SmartStreamContext::new(engine, module, params)?;
-        let filter_fn: FilterFn = base
+        let map_fn: FlatmapFn = base
             .instance
-            .get_typed_func(&mut base.store, FILTER_FN_NAME)?;
+            .get_typed_func(&mut base.store, FLATMAP_FN_NAME)?;
 
-        Ok(Self { base, filter_fn })
+        Ok(Self {
+            base,
+            flatmap_fn: map_fn,
+        })
     }
 }
 
-impl SmartStream for SmartStreamFilter {
+impl SmartStream for SmartStreamFlatmap {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
         let slice = self.base.write_input(&input)?;
-        let filter_output = self.filter_fn.call(&mut self.base.store, slice)?;
+        let map_output = self.flatmap_fn.call(&mut self.base.store, slice)?;
 
-        if filter_output < 0 {
-            let internal_error = SmartStreamInternalError::try_from(filter_output)
+        if map_output < 0 {
+            let internal_error = SmartStreamInternalError::try_from(map_output)
                 .unwrap_or(SmartStreamInternalError::UnknownError);
             return Err(internal_error.into());
         }

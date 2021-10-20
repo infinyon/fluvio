@@ -1845,6 +1845,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-smartengine"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "fluvio-dataplane-protocol",
+ "fluvio-future",
+ "fluvio-storage",
+ "nix",
+ "tracing",
+ "wasmtime",
+]
+
+[[package]]
 name = "fluvio-smartstream"
 version = "0.3.0"
 dependencies = [
@@ -1861,19 +1874,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "fluvio-smartstream-executor"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "fluvio-dataplane-protocol",
- "fluvio-future",
- "fluvio-storage",
- "nix",
- "tracing",
- "wasmtime",
 ]
 
 [[package]]
@@ -1921,7 +1921,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-service",
- "fluvio-smartstream-executor",
+ "fluvio-smartengine",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-storage",

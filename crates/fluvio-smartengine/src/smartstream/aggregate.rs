@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::TypedFunc;
 
-use crate::smartstream::{SmartStreamEngine, SmartStreamModule, SmartStreamContext, SmartStream};
+use crate::smartstream::{SmartEngine, SmartStreamModule, SmartStreamContext, SmartStream};
 use dataplane::smartstream::{
     SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput, SmartStreamInternalError,
     SmartStreamExtraParams,
@@ -21,7 +21,7 @@ pub struct SmartStreamAggregate {
 
 impl SmartStreamAggregate {
     pub fn new(
-        engine: &SmartStreamEngine,
+        engine: &SmartEngine,
         module: &SmartStreamModule,
         params: SmartStreamExtraParams,
         accumulator: Vec<u8>,
