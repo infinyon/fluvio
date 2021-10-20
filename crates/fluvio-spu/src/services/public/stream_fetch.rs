@@ -28,8 +28,8 @@ use fluvio_types::event::offsets::OffsetChangeListener;
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use publishers::INIT_OFFSET;
-use fluvio_smartstream_executor::SmartStream;
-use fluvio_smartstream_executor::file_batch::FileBatchIterator;
+use fluvio_smartengine::SmartStream;
+use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartstream::SmartStreamRuntimeError;
 

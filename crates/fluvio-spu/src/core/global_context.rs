@@ -19,7 +19,7 @@ use crate::replication::leader::{
 };
 use crate::services::public::StreamPublishers;
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
-use fluvio_smartstream_executor::SmartStreamEngine;
+use fluvio_smartengine::SmartEngine;
 
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
@@ -39,7 +39,7 @@ pub struct GlobalContext<S> {
     stream_publishers: StreamPublishers,
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
-    sm_engine: SmartStreamEngine,
+    sm_engine: SmartEngine,
 }
 
 // -----------------------------------
@@ -64,7 +64,7 @@ where
             stream_publishers: StreamPublishers::new(),
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
-            sm_engine: SmartStreamEngine::default(),
+            sm_engine: SmartEngine::default(),
         }
     }
 
@@ -130,7 +130,7 @@ where
             .await;
     }
 
-    pub fn smartstream_owned(&self) -> SmartStreamEngine {
+    pub fn smartstream_owned(&self) -> SmartEngine {
         self.sm_engine.clone()
     }
 }
