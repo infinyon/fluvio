@@ -22,6 +22,7 @@ mod partition;
 mod connector;
 mod table;
 mod smartmodule;
+mod smartstream;
 
 use connector::ManagedConnectorCmd;
 use table::TableCmd;
