@@ -25,7 +25,7 @@ mod convert {
     }
 
     impl ListSpec for SmartModuleSpec {
-        type Filter = NameFilter;
+        type Filter = SmartModuleFilterMap;
 
         fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
             ListRequest::SmartModule(filters)
@@ -59,6 +59,4 @@ mod convert {
             }
         }
     }
-    /*
-     */
 }

@@ -31,7 +31,7 @@ impl CreateSmartModuleOpt {
         */
 
         let spec: SmartModuleSpec = SmartModuleSpec {
-            wasm: SmartModuleWasm::from_binary_payload(buffer),
+            wasm: Some(SmartModuleWasm::from_binary_payload(buffer)),
             ..Default::default()
         };
         let admin = fluvio.admin().await;

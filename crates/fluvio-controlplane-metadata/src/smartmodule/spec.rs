@@ -10,7 +10,7 @@ pub struct SmartModuleSpec {
     pub input_kind: SmartModuleInputKind,
     pub output_kind: SmartModuleOutputKind,
     pub source_code: Option<SmartModuleSourceCode>,
-    pub wasm: SmartModuleWasm,
+    pub wasm: Option<SmartModuleWasm>,
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 

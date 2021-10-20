@@ -48,9 +48,16 @@ pub enum ListRequest {
     CustomSpu(Vec<NameFilter>),
     Partition(Vec<NameFilter>),
     ManagedConnector(Vec<NameFilter>),
-    SmartModule(Vec<NameFilter>),
+    SmartModule(Vec<SmartModuleFilterMap>),
     Table(Vec<NameFilter>),
 }
+
+#[derive(Debug, Encoder, Decoder, Default)]
+pub struct SmartModuleFilterMap {
+    pub name: NameFilter,
+    pub include_wasm: bool,
+}
+impl ListFilter for SmartModuleFilterMap { }
 
 impl Default for ListRequest {
     fn default() -> Self {
@@ -264,7 +271,7 @@ mod encoding {
                 }
 
                 SmartModuleSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
+                    let mut response: Vec<SmartModuleFilterMap> = vec![];
                     response.decode(src, version)?;
                     *self = Self::SmartModule(response);
                     Ok(())

@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{debug, trace, instrument};
 
-use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
+use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata, SmartModuleFilterMap};
 use fluvio_sc_schema::smartmodule::SmartModuleSpec;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
@@ -12,7 +12,7 @@ use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_request<AC: AuthContext>(
-    filters: Vec<NameFilter>,
+    filters: Vec<SmartModuleFilterMap>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ListResponse, Error> {
     trace!("fetching smart modules");
@@ -39,11 +39,23 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .await
         .values()
         .filter_map(|value| {
-            if filters.filter(value.key()) {
-                Some(value.inner().clone().into())
+            if filters.is_empty() {
+                let mut inner : Metadata<SmartModuleSpec> = value.inner().clone().into();
+                inner.spec = SmartModuleSpec {
+                    wasm: None,
+                    ..inner.spec
+                };
+                Some(inner)
             } else {
-                None
+                if filters.iter().filter(|filter| {
+                    filter.name.filter(value.key())
+                }).count() > 0 {
+                    Some(value.inner().clone().into())
+                } else {
+                    None
+                }
             }
+                //Some(value.inner().clone().into())
         })
         .collect();
 

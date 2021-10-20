@@ -92,7 +92,7 @@ mod output {
                     Row::new(vec![
                         Cell::new_align(&r.name, Alignment::RIGHT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
-                        Cell::new_align(&r.spec.wasm.payload.len().to_string(), Alignment::RIGHT),
+                        //Cell::new_align(&r.spec.wasm.payload.len().to_string(), Alignment::RIGHT),
                     ])
                 })
                 .collect()
