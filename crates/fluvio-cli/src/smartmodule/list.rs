@@ -75,7 +75,7 @@ mod output {
     impl TableOutputHandler for ListSmartModules {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS", "SIZE"]
+            row!["NAME", "STATUS"]
         }
 
         /// return errors in string format
@@ -92,7 +92,6 @@ mod output {
                     Row::new(vec![
                         Cell::new_align(&r.name, Alignment::RIGHT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
-                        //Cell::new_align(&r.spec.wasm.payload.len().to_string(), Alignment::RIGHT),
                     ])
                 })
                 .collect()
