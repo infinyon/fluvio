@@ -1507,7 +1507,6 @@ dependencies = [
  "ctrlc",
  "dirs 4.0.0",
  "eyre",
- "flate2",
  "fluvio",
  "fluvio-cluster",
  "fluvio-command",

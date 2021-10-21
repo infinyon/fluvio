@@ -40,22 +40,22 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .values()
         .filter_map(|value| {
             if filters.is_empty() {
-                let mut inner : Metadata<SmartModuleSpec> = value.inner().clone().into();
+                let mut inner: Metadata<SmartModuleSpec> = value.inner().clone().into();
                 inner.spec = SmartModuleSpec {
                     wasm: None,
                     ..inner.spec
                 };
                 Some(inner)
+            } else if filters
+                .iter()
+                .filter(|filter| filter.filter(value.key()))
+                .count()
+                > 0
+            {
+                Some(value.inner().clone().into())
             } else {
-                if filters.iter().filter(|filter| {
-                    filter.filter(value.key())
-                }).count() > 0 {
-                    Some(value.inner().clone().into())
-                } else {
-                    None
-                }
+                None
             }
-                //Some(value.inner().clone().into())
         })
         .collect();
 
