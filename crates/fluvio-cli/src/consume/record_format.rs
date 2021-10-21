@@ -75,8 +75,9 @@ pub fn format_raw_record(record: &[u8]) -> String {
 
 // TODO: This will eventually read for alternative formatting
 /// Print records in table format
-pub fn format_table_record(record: &[u8]) -> String {
-    use prettytable::{Row, cell};
+pub fn print_table_record(record: &[u8], count: i32) -> String {
+    use prettytable::{Row, cell, Cell, Slice};
+    use prettytable::format::{self, FormatBuilder};
 
     //let mut hashmap : std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
 
@@ -91,11 +92,7 @@ pub fn format_table_record(record: &[u8]) -> String {
     // Think about how we might only select specific keys
     let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
 
-    // String
-    // Boolean
-    // Int
-    // Float
-    // Object should probably be printed as json str
+    // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
     let values_str: Vec<String> = obj
         .values()
         .map(|v| {
@@ -110,14 +107,38 @@ pub fn format_table_record(record: &[u8]) -> String {
         .collect();
 
     let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
-    let entries: Row = Row::new(values_str.iter().map(|v| cell!(v.to_owned())).collect());
+    let entries: Row = Row::new(
+        values_str
+            .iter()
+            .map(|v| {
+                let c = Cell::new(v);
+                c
+            })
+            .collect(),
+    );
 
     // Print the table
     let mut t_print = Vec::new();
     // TODO: Don't print the headers in this table display
+
     t_print.push(header);
+
     t_print.push(entries);
-    let _ = prettytable::Table::init(t_print).printstd();
+    let mut table = prettytable::Table::init(t_print);
+
+    let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
+    let table_format = base_format;
+    table.set_format(table_format.build());
+
+    // FIXME: Live display of table data easily misaligns column widths
+    // The rows after the first (count == 0) don't line up with the header
+    // prettytable might not support the live display use-case we want
+    if count == 0 {
+        table.printstd();
+    } else {
+        let slice = table.slice(1..);
+        slice.printstd();
+    }
     format!("")
 }
 // -----------------------------------
@@ -127,85 +148,4 @@ pub fn format_table_record(record: &[u8]) -> String {
 fn is_binary(bytes: &[u8]) -> bool {
     use content_inspector::{inspect, ContentType};
     matches!(inspect(bytes), ContentType::BINARY)
-}
-
-mod output {
-
-    //!
-    //! # Fluvio SC - output processing
-    //!
-
-    use prettytable::Row;
-    use prettytable::row;
-    use prettytable::Cell;
-    use prettytable::cell;
-    use prettytable::format::Alignment;
-    use tracing::debug;
-    use serde::Serialize;
-    use fluvio_extension_common::output::OutputType;
-    use fluvio_extension_common::Terminal;
-
-    use fluvio::metadata::objects::Metadata;
-    use fluvio_controlplane_metadata::table::TableSpec;
-
-    use crate::CliError;
-    use fluvio_extension_common::output::TableOutputHandler;
-    use fluvio_extension_common::t_println;
-
-    #[derive(Serialize)]
-    struct ListTables(Vec<Metadata<TableSpec>>);
-
-    // -----------------------------------
-    // Format Output
-    // -----------------------------------
-
-    /// Format Table list
-    pub fn tables_response_to_output<O: Terminal>(
-        out: std::sync::Arc<O>,
-        list_tables: Vec<Metadata<TableSpec>>,
-        output_type: OutputType,
-    ) -> Result<(), CliError> {
-        debug!("tables: {:#?}", list_tables);
-
-        //if !list_tables.is_empty() {
-        //    let tables = ListTables(list_tables);
-        //    out.render_list(&tables, output_type)?;
-        //    Ok(())
-        //} else {
-        //    t_println!(out, "no tables");
-        //    Ok(())
-        //}
-        Ok(())
-    }
-
-    // -----------------------------------
-    // Output Handlers
-    // -----------------------------------
-    impl TableOutputHandler for ListTables {
-        // This needs to be flexible to the keys, or the table spec
-        /// table header implementation
-        fn header(&self) -> Row {
-            row!["NAME", "STATUS",]
-        }
-
-        /// return errors in string format
-        fn errors(&self) -> Vec<String> {
-            vec![]
-        }
-
-        // This needs to be flexible to the keys, or the table spec
-        /// table content implementation
-        fn content(&self) -> Vec<Row> {
-            self.0
-                .iter()
-                .map(|r| {
-                    let _spec = &r.spec;
-                    Row::new(vec![
-                        Cell::new_align(&r.name, Alignment::RIGHT),
-                        Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
-                    ])
-                })
-                .collect()
-        }
-    }
 }
