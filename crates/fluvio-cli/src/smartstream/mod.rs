@@ -9,10 +9,10 @@ mod list;
 mod describe;
 mod delete;
 
-use self::create::CreateSmartModuleOpt;
-use self::list::ListSmartModuleOpt;
-use self::describe::DescribeSmartModuleOpt;
-use self::delete::DeleteSmartModuleOpt;
+use self::create::*;
+use self::list::*;
+use self::describe::*;
+use self::delete::*;
 
 #[derive(Debug, StructOpt)]
 pub enum SmartStreamCmd {

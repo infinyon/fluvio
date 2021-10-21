@@ -54,7 +54,7 @@ mod convert {
 
         fn try_into(self) -> Result<MetadataUpdate<SmartStreamSpec>, Self::Error> {
             match self {
-                WatchResponse::SmartModule(m) => Ok(m),
+                WatchResponse::SmartStream(m) => Ok(m),
                 _ => Err(Error::new(ErrorKind::Other, "not smartmodule")),
             }
         }
