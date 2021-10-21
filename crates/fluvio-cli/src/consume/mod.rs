@@ -256,7 +256,7 @@ impl ConsumeOpt {
             }
         };
 
-        //let mut is_table_titles_printed = false;
+        // This is used by table output, to print the table titles only once
         let mut record_count = 0;
         while let Some(result) = stream.next().await {
             let result: std::result::Result<Record, _> = result;
@@ -269,14 +269,6 @@ impl ConsumeOpt {
                 Err(other) => return Err(other.into()),
             };
 
-            //// If output table, print the headers ONCE before printing records
-            //if &self.output == &Some(ConsumeOutputType::table) && !is_table_titles_printed {
-            //    // Print the table titles
-            //    print_table_title(&record.value());
-
-            //    is_table_titles_printed = true;
-            //}
-
             self.print_record(templates.as_ref(), &record, record_count);
             record_count = record_count + 1;
         }
@@ -285,7 +277,6 @@ impl ConsumeOpt {
         Ok(())
     }
 
-    // Add a row counter? For the table printer to know how to handle titles
     /// Process fetch topic response based on output type
     pub fn print_record(&self, templates: Option<&Handlebars>, record: &Record, count: i32) {
         let formatted_key = record
