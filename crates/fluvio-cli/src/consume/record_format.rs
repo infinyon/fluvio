@@ -70,10 +70,142 @@ pub fn format_raw_record(record: &[u8]) -> String {
 }
 
 // -----------------------------------
+//  Table
+// -----------------------------------
+
+// TODO: This will eventually read for alternative formatting
+/// Print records in table format
+pub fn format_table_record(record: &[u8]) -> String {
+    use prettytable::{Row, cell};
+
+    //let mut hashmap : std::collections::HashMap<String, serde_json::Value> = std::collections::HashMap::new();
+
+    let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
+        Ok(value) => value,
+        Err(_e) => panic!("Value not json"),
+    };
+
+    let obj = maybe_json.as_object().unwrap();
+
+    // This is the case where we don't provide any table info. We want to print a table w/ all top-level keys as headers
+    // Think about how we might only select specific keys
+    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
+
+    // String
+    // Boolean
+    // Int
+    // Float
+    // Object should probably be printed as json str
+    let values_str: Vec<String> = obj
+        .values()
+        .map(|v| {
+            if v.is_string() {
+                v.as_str()
+                    .expect("Value not representable as str")
+                    .to_string()
+            } else {
+                v.to_string()
+            }
+        })
+        .collect();
+
+    let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
+    let entries: Row = Row::new(values_str.iter().map(|v| cell!(v.to_owned())).collect());
+
+    // Print the table
+    let mut t_print = Vec::new();
+    // TODO: Don't print the headers in this table display
+    t_print.push(header);
+    t_print.push(entries);
+    let _ = prettytable::Table::init(t_print).printstd();
+    format!("")
+}
+// -----------------------------------
 //  Utilities
 // -----------------------------------
 
 fn is_binary(bytes: &[u8]) -> bool {
     use content_inspector::{inspect, ContentType};
     matches!(inspect(bytes), ContentType::BINARY)
+}
+
+mod output {
+
+    //!
+    //! # Fluvio SC - output processing
+    //!
+
+    use prettytable::Row;
+    use prettytable::row;
+    use prettytable::Cell;
+    use prettytable::cell;
+    use prettytable::format::Alignment;
+    use tracing::debug;
+    use serde::Serialize;
+    use fluvio_extension_common::output::OutputType;
+    use fluvio_extension_common::Terminal;
+
+    use fluvio::metadata::objects::Metadata;
+    use fluvio_controlplane_metadata::table::TableSpec;
+
+    use crate::CliError;
+    use fluvio_extension_common::output::TableOutputHandler;
+    use fluvio_extension_common::t_println;
+
+    #[derive(Serialize)]
+    struct ListTables(Vec<Metadata<TableSpec>>);
+
+    // -----------------------------------
+    // Format Output
+    // -----------------------------------
+
+    /// Format Table list
+    pub fn tables_response_to_output<O: Terminal>(
+        out: std::sync::Arc<O>,
+        list_tables: Vec<Metadata<TableSpec>>,
+        output_type: OutputType,
+    ) -> Result<(), CliError> {
+        debug!("tables: {:#?}", list_tables);
+
+        //if !list_tables.is_empty() {
+        //    let tables = ListTables(list_tables);
+        //    out.render_list(&tables, output_type)?;
+        //    Ok(())
+        //} else {
+        //    t_println!(out, "no tables");
+        //    Ok(())
+        //}
+        Ok(())
+    }
+
+    // -----------------------------------
+    // Output Handlers
+    // -----------------------------------
+    impl TableOutputHandler for ListTables {
+        // This needs to be flexible to the keys, or the table spec
+        /// table header implementation
+        fn header(&self) -> Row {
+            row!["NAME", "STATUS",]
+        }
+
+        /// return errors in string format
+        fn errors(&self) -> Vec<String> {
+            vec![]
+        }
+
+        // This needs to be flexible to the keys, or the table spec
+        /// table content implementation
+        fn content(&self) -> Vec<Row> {
+            self.0
+                .iter()
+                .map(|r| {
+                    let _spec = &r.spec;
+                    Row::new(vec![
+                        Cell::new_align(&r.name, Alignment::RIGHT),
+                        Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
+                    ])
+                })
+                .collect()
+        }
+    }
 }

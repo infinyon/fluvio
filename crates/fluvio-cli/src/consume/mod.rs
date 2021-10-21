@@ -20,7 +20,8 @@ use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
-    format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
+    format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
+    format_json, format_table_record,
 };
 use handlebars::Handlebars;
 
@@ -266,6 +267,8 @@ impl ConsumeOpt {
                 Err(other) => return Err(other.into()),
             };
 
+            // If output table, print the headers ONCE before printing records
+
             self.print_record(templates.as_ref(), &record);
         }
 
@@ -292,6 +295,7 @@ impl ConsumeOpt {
                 Some(format_dynamic_record(record.value()))
             }
             (Some(ConsumeOutputType::raw), None) => Some(format_raw_record(record.value())),
+            (Some(ConsumeOutputType::table), None) => Some(format_table_record(record.value())),
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
                 let object = serde_json::json!({
@@ -421,6 +425,7 @@ arg_enum! {
         binary,
         json,
         raw,
+        table,
     }
 }
 
