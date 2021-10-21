@@ -31,17 +31,13 @@ fn main() {
 
     let mut subcommand = vec![test_name.clone()];
 
-    // We want to get a TestOption compatible struct back
-    let test_opt: Box<dyn TestOption> = if let Some(TestCli::Args(args)) = option.test_cmd_args {
+    if let Some(TestCli::Args(args)) = option.test_cmd_args {
         // Add the args to the subcommand
         subcommand.extend(args);
+    }
 
-        // Parse the subcommand
-        (test_meta.validate_fn)(subcommand)
-    } else {
-        // No args
-        (test_meta.validate_fn)(subcommand)
-    };
+    // We want to get a TestOption compatible struct back
+    let test_opt: Box<dyn TestOption> = (test_meta.validate_fn)(subcommand);
 
     println!("Start running fluvio test runner");
     fluvio_future::subscriber::init_logger();
