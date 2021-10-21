@@ -171,6 +171,7 @@ impl Encoder for RecordData {
     {
         let len: i64 = self.0.len() as i64;
         len.encode_varint(dest)?;
+        dest.put_slice(self.as_ref());
         for v in self.0.iter() {
             v.encode(dest, version)?;
         }

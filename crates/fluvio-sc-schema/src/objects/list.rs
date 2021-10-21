@@ -9,16 +9,14 @@ use std::io::ErrorKind;
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
+use fluvio_controlplane_metadata::core::MetadataContext;
+use fluvio_controlplane_metadata::core::MetadataItem;
+use fluvio_controlplane_metadata::core::Spec;
+use fluvio_controlplane_metadata::store::MetadataStoreObject;
+use fluvio_protocol::bytes::Bytes;
 
-use fluvio_controlplane_metadata::core::*;
-use fluvio_controlplane_metadata::topic::TopicSpec;
-use fluvio_controlplane_metadata::spu::*;
-use fluvio_controlplane_metadata::spg::SpuGroupSpec;
-use fluvio_controlplane_metadata::store::*;
-use fluvio_controlplane_metadata::partition::PartitionSpec;
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
-use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
-use fluvio_controlplane_metadata::table::TableSpec;
+
+
 
 use crate::AdminPublicApiKey;
 use crate::AdminRequest;
@@ -35,28 +33,20 @@ pub trait ListSpec: Spec {
     /// filter type
     type Filter: ListFilter;
 
+    type ListType: Encoder + Decoder;
+
     /// convert to list request with filters
     #[allow(clippy::wrong_self_convention)]
     fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest;
 }
 
-#[derive(Debug)]
-pub enum ListRequest {
-    Topic(Vec<NameFilter>),
-    Spu(Vec<NameFilter>),
-    SpuGroup(Vec<NameFilter>),
-    CustomSpu(Vec<NameFilter>),
-    Partition(Vec<NameFilter>),
-    ManagedConnector(Vec<NameFilter>),
-    SmartModule(Vec<NameFilter>),
-    Table(Vec<NameFilter>),
+#[derive(Debug,Default,Encoder,Decoder)]
+pub struct ListRequest {
+    object_type: String,
+    name_filters: Vec<NameFilter>
 }
 
-impl Default for ListRequest {
-    fn default() -> Self {
-        Self::Spu(vec![])
-    }
-}
+
 
 impl Request for ListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
@@ -66,23 +56,14 @@ impl Request for ListRequest {
 
 impl AdminRequest for ListRequest {}
 
-#[derive(Debug)]
-pub enum ListResponse {
-    Topic(Vec<Metadata<TopicSpec>>),
-    Spu(Vec<Metadata<SpuSpec>>),
-    CustomSpu(Vec<Metadata<CustomSpuSpec>>),
-    SpuGroup(Vec<Metadata<SpuGroupSpec>>),
-    Partition(Vec<Metadata<PartitionSpec>>),
-    ManagedConnector(Vec<Metadata<ManagedConnectorSpec>>),
-    SmartModule(Vec<Metadata<SmartModuleSpec>>),
-    Table(Vec<Metadata<TableSpec>>),
+
+
+#[derive(Debug,Default,Encoder,Decoder)]
+pub struct ListResponse {
+    pub object_type: String,
+    buffer: Bytes,
 }
 
-impl Default for ListResponse {
-    fn default() -> Self {
-        Self::Topic(vec![])
-    }
-}
 
 #[derive(Encoder, Decoder, Default, Clone, Debug)]
 #[cfg_attr(
@@ -138,278 +119,5 @@ where
             })?,
             ctx: MetadataContext::default(),
         })
-    }
-}
-
-// later this can be written using procedure macro
-mod encoding {
-
-    use std::io::Error;
-    use std::io::ErrorKind;
-
-    use tracing::trace;
-
-    use dataplane::core::Encoder;
-    use dataplane::core::Decoder;
-    use dataplane::core::Version;
-    use dataplane::bytes::{Buf, BufMut};
-
-    use super::*;
-
-    impl ListRequest {
-        /// type represent as string
-        fn type_string(&self) -> &'static str {
-            match self {
-                Self::Topic(_) => TopicSpec::LABEL,
-                Self::Spu(_) => SpuSpec::LABEL,
-                Self::SpuGroup(_) => SpuGroupSpec::LABEL,
-                Self::CustomSpu(_) => CustomSpuSpec::LABEL,
-                Self::Partition(_) => PartitionSpec::LABEL,
-                Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
-                Self::SmartModule(_) => SmartModuleSpec::LABEL,
-                Self::Table(_) => TableSpec::LABEL,
-            }
-        }
-    }
-
-    impl Encoder for ListRequest {
-        fn write_size(&self, version: Version) -> usize {
-            let type_size = self.type_string().to_owned().write_size(version);
-
-            type_size
-                + match self {
-                    Self::Topic(s) => s.write_size(version),
-                    Self::CustomSpu(s) => s.write_size(version),
-                    Self::SpuGroup(s) => s.write_size(version),
-                    Self::Spu(s) => s.write_size(version),
-                    Self::Partition(s) => s.write_size(version),
-                    Self::ManagedConnector(s) => s.write_size(version),
-                    Self::SmartModule(s) => s.write_size(version),
-                    Self::Table(s) => s.write_size(version),
-                }
-        }
-
-        // encode match
-        fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
-        where
-            T: BufMut,
-        {
-            self.type_string().to_owned().encode(dest, version)?;
-
-            match self {
-                Self::Topic(s) => s.encode(dest, version)?,
-                Self::CustomSpu(s) => s.encode(dest, version)?,
-                Self::SpuGroup(s) => s.encode(dest, version)?,
-                Self::Spu(s) => s.encode(dest, version)?,
-                Self::Partition(s) => s.encode(dest, version)?,
-                Self::ManagedConnector(s) => s.encode(dest, version)?,
-                Self::SmartModule(s) => s.encode(dest, version)?,
-                Self::Table(s) => s.encode(dest, version)?,
-            }
-
-            Ok(())
-        }
-    }
-
-    impl Decoder for ListRequest {
-        fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-        where
-            T: Buf,
-        {
-            let mut typ = "".to_owned();
-            typ.decode(src, version)?;
-            trace!("decoded type: {}", typ);
-
-            match typ.as_ref() {
-                TopicSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Topic(response);
-                    Ok(())
-                }
-
-                CustomSpuSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::CustomSpu(response);
-                    Ok(())
-                }
-
-                SpuGroupSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::SpuGroup(response);
-                    Ok(())
-                }
-
-                SpuSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Spu(response);
-                    Ok(())
-                }
-
-                PartitionSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Partition(response);
-                    Ok(())
-                }
-
-                ManagedConnectorSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::ManagedConnector(response);
-                    Ok(())
-                }
-
-                SmartModuleSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::SmartModule(response);
-                    Ok(())
-                }
-
-                TableSpec::LABEL => {
-                    let mut response: Vec<NameFilter> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Table(response);
-                    Ok(())
-                }
-
-                // Unexpected type
-                _ => Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("invalid request type {}", typ),
-                )),
-            }
-        }
-    }
-
-    impl ListResponse {
-        /// type represent as string
-        fn type_string(&self) -> &'static str {
-            match self {
-                Self::Topic(_) => TopicSpec::LABEL,
-                Self::Spu(_) => SpuSpec::LABEL,
-                Self::SpuGroup(_) => SpuGroupSpec::LABEL,
-                Self::CustomSpu(_) => CustomSpuSpec::LABEL,
-                Self::Partition(_) => PartitionSpec::LABEL,
-                Self::ManagedConnector(_) => ManagedConnectorSpec::LABEL,
-                Self::SmartModule(_) => SmartModuleSpec::LABEL,
-                Self::Table(_) => TableSpec::LABEL,
-            }
-        }
-    }
-
-    impl Encoder for ListResponse {
-        fn write_size(&self, version: Version) -> usize {
-            let type_size = self.type_string().to_owned().write_size(version);
-
-            type_size
-                + match self {
-                    Self::Topic(s) => s.write_size(version),
-                    Self::CustomSpu(s) => s.write_size(version),
-                    Self::SpuGroup(s) => s.write_size(version),
-                    Self::Spu(s) => s.write_size(version),
-                    Self::Partition(s) => s.write_size(version),
-                    Self::ManagedConnector(s) => s.write_size(version),
-                    Self::SmartModule(s) => s.write_size(version),
-                    Self::Table(s) => s.write_size(version),
-                }
-        }
-
-        // encode match
-        fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
-        where
-            T: BufMut,
-        {
-            self.type_string().to_owned().encode(dest, version)?;
-
-            match self {
-                Self::Topic(s) => s.encode(dest, version)?,
-                Self::CustomSpu(s) => s.encode(dest, version)?,
-                Self::SpuGroup(s) => s.encode(dest, version)?,
-                Self::Spu(s) => s.encode(dest, version)?,
-                Self::Partition(s) => s.encode(dest, version)?,
-                Self::ManagedConnector(s) => s.encode(dest, version)?,
-                Self::SmartModule(s) => s.encode(dest, version)?,
-                Self::Table(s) => s.encode(dest, version)?,
-            }
-
-            Ok(())
-        }
-    }
-
-    impl Decoder for ListResponse {
-        fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-        where
-            T: Buf,
-        {
-            let mut typ = "".to_owned();
-            typ.decode(src, version)?;
-            trace!("decoded type: {}", typ);
-
-            match typ.as_ref() {
-                TopicSpec::LABEL => {
-                    let mut response: Vec<Metadata<TopicSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Topic(response);
-                    Ok(())
-                }
-
-                CustomSpuSpec::LABEL => {
-                    let mut response: Vec<Metadata<CustomSpuSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::CustomSpu(response);
-                    Ok(())
-                }
-
-                SpuGroupSpec::LABEL => {
-                    let mut response: Vec<Metadata<SpuGroupSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::SpuGroup(response);
-                    Ok(())
-                }
-
-                SpuSpec::LABEL => {
-                    let mut response: Vec<Metadata<SpuSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Spu(response);
-                    Ok(())
-                }
-
-                PartitionSpec::LABEL => {
-                    let mut response: Vec<Metadata<PartitionSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Partition(response);
-                    Ok(())
-                }
-                ManagedConnectorSpec::LABEL => {
-                    let mut response: Vec<Metadata<ManagedConnectorSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::ManagedConnector(response);
-                    Ok(())
-                }
-                TableSpec::LABEL => {
-                    let mut response: Vec<Metadata<TableSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::Table(response);
-                    Ok(())
-                }
-                SmartModuleSpec::LABEL => {
-                    let mut response: Vec<Metadata<SmartModuleSpec>> = vec![];
-                    response.decode(src, version)?;
-                    *self = Self::SmartModule(response);
-                    Ok(())
-                }
-
-                // Unexpected type
-                _ => Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("invalid spec type {}", typ),
-                )),
-            }
-        }
     }
 }
