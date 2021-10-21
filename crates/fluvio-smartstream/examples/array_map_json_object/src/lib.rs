@@ -57,7 +57,7 @@ use serde_json::{Map, Value};
 #[smartstream(array_map)]
 pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Deserialize a JSON object (Map) with any kind of values inside
-    let object = serde_json::from_slice::<Map<String, Value>>(record.value.as_ref())?;
+    let object: Map<String, Value> = serde_json::from_slice(record.value.as_ref())?;
 
     // Convert each JSON value from the array back into a JSON string
     let key_value_strings: Vec<(&String, String)> = object

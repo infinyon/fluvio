@@ -38,7 +38,7 @@ use fluvio_smartstream::{smartstream, Record, RecordData, Result};
 #[smartstream(array_map)]
 pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Deserialize a JSON array with any kind of values inside
-    let array = serde_json::from_slice::<Vec<serde_json::Value>>(record.value.as_ref())?;
+    let array: Vec<serde_json::Value> = serde_json::from_slice(record.value.as_ref())?;
 
     // Convert each JSON value from the array back into a JSON string
     let strings: Vec<String> = array
