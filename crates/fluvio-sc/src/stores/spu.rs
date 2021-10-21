@@ -69,6 +69,8 @@ mod health_check {
         }
 
         /// update health check
+        // TODO: Determine if we can follow the clippy suggestion w/o negatively affecting functionality
+        #[allow(clippy::branches_sharing_code)]
         #[instrument(skip(self))]
         pub async fn update(&self, spu: SpuId, new_value: bool) {
             let mut write = self.health.write().await;
