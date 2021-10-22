@@ -18,26 +18,28 @@ use dataplane::api::api_decode;
 use dataplane::core::Encoder;
 use dataplane::versions::ApiVersionsRequest;
 
-use super::objects::*;
-use super::AdminPublicApiKey;
+use crate::AdminPublicApiKey;
+use crate::AdminSpec;
+use crate::objects::{CreateRequest,DeleteRequest, ListRequest, WatchRequest};
+
 
 #[derive(Debug, Encoder)]
-pub enum AdminPublicRequest {
-    // Mixed
+pub enum AdminPublicRequest<S> where S: AdminSpec {
+
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-    CreateRequest(RequestMessage<CreateRequest>),
+    CreateRequest(RequestMessage<CreateRequest<S>>),
     DeleteRequest(RequestMessage<DeleteRequest>),
-    ListRequest(RequestMessage<ListRequest>),
-    WatchRequest(RequestMessage<WatchRequest>),
+    ListRequest(RequestMessage<ListRequest<S>>),
+    WatchRequest(RequestMessage<WatchRequest<S>>),
 }
 
-impl Default for AdminPublicRequest {
+impl <S> Default for AdminPublicRequest<S> where S: AdminSpec {
     fn default() -> Self {
         Self::ApiVersionsRequest(RequestMessage::<ApiVersionsRequest>::default())
     }
 }
 
-impl ApiMessage for AdminPublicRequest {
+impl <S> ApiMessage for AdminPublicRequest<S>  where S: AdminSpec {
     type ApiKey = AdminPublicApiKey;
 
     fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>

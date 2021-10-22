@@ -34,7 +34,44 @@ pub enum ApiError {
 }
 
 mod admin {
+
+    use std::fmt::Debug;
+    
     use dataplane::api::Request;
+    use dataplane::core::{Encoder, Decoder};
+    use super::core::Spec;
+
+
+    pub trait ListFilter: Encoder + Decoder + Sized  + Debug {
+
+    }
+    /// filter by name
+    pub type NameFilter = String;
+
+    impl ListFilter for NameFilter {}
+
+    pub trait ListType: Encoder + Decoder + Sized{
+    }
+
+    pub trait DeleteKey: Encoder + Decoder + Sized{
+    }
+
+
+    /// Admin spec, they are 
+    pub trait AdminSpec: Spec +  Encoder + Decoder {
+
+        const AdminType: u8;
+
+        /// filter type
+        type ListFilter: ListFilter;
+        type ListType: ListType;
+        type DeleteKey: DeleteKey; 
+
+    }
+
 
     pub trait AdminRequest: Request {}
 }
+
+
+
