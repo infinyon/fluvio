@@ -84,11 +84,13 @@ pub struct SmartStreamPayload {
 pub enum SmartStreamKind {
     Filter,
     Map,
-    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
-    ArrayMap,
     Aggregate {
         accumulator: Vec<u8>,
     },
+    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
+    ArrayMap,
+    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
+    FilterMap,
 }
 
 impl Default for SmartStreamKind {

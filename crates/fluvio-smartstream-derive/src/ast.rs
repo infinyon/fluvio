@@ -46,6 +46,7 @@ pub enum SmartStreamKind {
     Filter,
     Map,
     ArrayMap,
+    FilterMap,
 }
 
 impl SmartStreamKind {
@@ -61,6 +62,7 @@ impl SmartStreamKind {
                                 "filter" => Some(Self::Filter),
                                 "map" => Some(Self::Map),
                                 "array_map" => Some(Self::ArrayMap),
+                                "filter_map" => Some(Self::FilterMap),
                                 _ => None,
                             }
                         })

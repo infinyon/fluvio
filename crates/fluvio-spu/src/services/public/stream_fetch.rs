@@ -183,6 +183,18 @@ impl StreamFetchHandler {
                     };
                     Box::new(map)
                 }
+                SmartStreamKind::FilterMap => {
+                    debug!("Instantiating SmartStreamFilterMap");
+                    let filter_map = module
+                        .create_filter_map(&sm_engine, payload.params)
+                        .map_err(|err| {
+                            SocketError::Io(IoError::new(
+                                ErrorKind::Other,
+                                format!("Failed to instantiate SmartStreamFilterMap {}", err),
+                            ))
+                        })?;
+                    Box::new(filter_map)
+                }
                 SmartStreamKind::ArrayMap => {
                     debug!("Instantiating SmartStreamArrayMap");
                     let array_map = match module.create_array_map(&sm_engine, payload.params) {
