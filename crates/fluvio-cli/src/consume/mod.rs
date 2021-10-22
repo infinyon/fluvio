@@ -270,7 +270,7 @@ impl ConsumeOpt {
             };
 
             self.print_record(templates.as_ref(), &record, record_count);
-            record_count = record_count + 1;
+            record_count += 1;
         }
 
         debug!("fetch loop exited");
@@ -312,7 +312,7 @@ impl ConsumeOpt {
         };
 
         // If the consume type is table, we don't want to accidentally print a newline
-        if &self.output != &Some(ConsumeOutputType::table) {
+        if self.output != Some(ConsumeOutputType::table) {
             match formatted_value {
                 Some(value) if self.key_value => {
                     println!("[{}] {}", formatted_key, value);
