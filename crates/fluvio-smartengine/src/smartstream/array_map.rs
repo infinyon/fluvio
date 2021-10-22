@@ -7,36 +7,36 @@ use dataplane::smartstream::{
 };
 use crate::smartstream::{SmartEngine, SmartStreamModule, SmartStreamContext, SmartStream};
 
-const FLATMAP_FN_NAME: &str = "flat_map";
-type FlatmapFn = TypedFunc<(i32, i32), i32>;
+const ARRAY_MAP_FN_NAME: &str = "array_map";
+type ArrayMapFn = TypedFunc<(i32, i32), i32>;
 
-pub struct SmartStreamFlatmap {
+pub struct SmartStreamArrayMap {
     base: SmartStreamContext,
-    flatmap_fn: FlatmapFn,
+    array_map_fn: ArrayMapFn,
 }
 
-impl SmartStreamFlatmap {
+impl SmartStreamArrayMap {
     pub fn new(
         engine: &SmartEngine,
         module: &SmartStreamModule,
         params: SmartStreamExtraParams,
     ) -> Result<Self> {
         let mut base = SmartStreamContext::new(engine, module, params)?;
-        let map_fn: FlatmapFn = base
+        let map_fn: ArrayMapFn = base
             .instance
-            .get_typed_func(&mut base.store, FLATMAP_FN_NAME)?;
+            .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)?;
 
         Ok(Self {
             base,
-            flatmap_fn: map_fn,
+            array_map_fn: map_fn,
         })
     }
 }
 
-impl SmartStream for SmartStreamFlatmap {
+impl SmartStream for SmartStreamArrayMap {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
         let slice = self.base.write_input(&input)?;
-        let map_output = self.flatmap_fn.call(&mut self.base.store, slice)?;
+        let map_output = self.array_map_fn.call(&mut self.base.store, slice)?;
 
         if map_output < 0 {
             let internal_error = SmartStreamInternalError::try_from(map_output)

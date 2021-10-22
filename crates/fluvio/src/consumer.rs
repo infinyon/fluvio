@@ -725,15 +725,15 @@ impl ConsumerConfigBuilder {
         self
     }
 
-    /// Adds a SmartStream flatmap to this ConsumerConfig
-    pub fn wasm_flatmap<T: Into<Vec<u8>>>(
+    /// Adds a SmartStream array_map to this ConsumerConfig
+    pub fn wasm_array_map<T: Into<Vec<u8>>>(
         &mut self,
-        flatmap: T,
+        array_map: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
         self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(flatmap.into()),
-            kind: SmartStreamKind::Flatmap,
+            wasm: SmartStreamWasm::Raw(array_map.into()),
+            kind: SmartStreamKind::ArrayMap,
             params: params.into(),
         })
     }

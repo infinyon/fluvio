@@ -1,7 +1,7 @@
 use fluvio_smartstream::{smartstream, Record, RecordData, Result};
 
-#[smartstream(flat_map)]
-pub fn flatmap(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
+#[smartstream(array_map)]
+pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     let array = serde_json::from_slice::<Vec<serde_json::Value>>(record.value.as_ref())?;
     let strings = array
         .into_iter()

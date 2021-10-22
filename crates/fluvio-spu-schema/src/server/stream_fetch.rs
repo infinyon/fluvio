@@ -37,8 +37,8 @@ pub const AGGREGATOR_API: i16 = 13;
 // version for gzipped WASM payloads
 pub const GZIP_WASM_API: i16 = 14;
 
-// version for SmartStream flatmap
-pub const FLATMAP_WASM_API: i16 = 15;
+// version for SmartStream array map
+pub const ARRAY_MAP_WASM_API: i16 = 15;
 
 /// Fetch records continuously
 /// Output will be send back as stream
@@ -84,8 +84,8 @@ pub struct SmartStreamPayload {
 pub enum SmartStreamKind {
     Filter,
     Map,
-    #[fluvio(min_version = FLATMAP_WASM_API)]
-    Flatmap,
+    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
+    ArrayMap,
     Aggregate {
         accumulator: Vec<u8>,
     },

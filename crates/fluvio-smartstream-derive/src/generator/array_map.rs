@@ -2,7 +2,7 @@ use quote::quote;
 use proc_macro2::TokenStream;
 use crate::SmartStreamFn;
 
-pub fn generate_flatmap_smartstream(func: &SmartStreamFn, has_params: bool) -> TokenStream {
+pub fn generate_array_map_smartstream(func: &SmartStreamFn, has_params: bool) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
 
@@ -36,7 +36,7 @@ pub fn generate_flatmap_smartstream(func: &SmartStreamFn, has_params: bool) -> T
         mod __system {
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
-            pub unsafe fn flat_map(ptr: *mut u8, len: usize) -> i32 {
+            pub unsafe fn array_map(ptr: *mut u8, len: usize) -> i32 {
                 use fluvio_smartstream::dataplane::smartstream::{
                     SmartStreamInput, SmartStreamInternalError,
                     SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,
@@ -84,7 +84,7 @@ pub fn generate_flatmap_smartstream(func: &SmartStreamFn, has_params: bool) -> T
                             let error = SmartStreamRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
-                                SmartStreamType::Flatmap,
+                                SmartStreamType::ArrayMap,
                                 err,
                             );
                             output.error = Some(error);
