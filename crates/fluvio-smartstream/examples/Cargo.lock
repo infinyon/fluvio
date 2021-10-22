@@ -139,7 +139,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream"
-version = "0.3.1"
+version = "0.3.0"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
@@ -148,7 +148,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream-derive"
-version = "0.3.1"
+version = "0.3.0"
 dependencies = [
  "proc-macro2",
  "quote",
