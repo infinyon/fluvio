@@ -13,7 +13,7 @@ mod metadata {
 
     use std::convert::TryFrom;
     use std::convert::TryInto;
-    use std::fmt::Display;
+    use std::fmt::{Display, Debug};
     use std::io::Error as IoError;
     use std::io::ErrorKind;
 
@@ -22,7 +22,6 @@ mod metadata {
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
     use fluvio_controlplane_metadata::core::{MetadataItem,MetadataContext};
 
-    use crate::AdminSpec;
     use crate::core::Spec;
 
     #[derive(Encoder, Decoder, Default, Clone, Debug)]
@@ -31,7 +30,10 @@ mod metadata {
         derive(serde::Serialize, serde::Deserialize),
         serde(rename_all = "camelCase")
     )]
-    pub struct Metadata<S: AdminSpec>
+    pub struct Metadata<S>
+        where
+        S: Spec + Debug + Encoder + Decoder,
+        S::Status: Debug + Encoder + Decoder,
     {
         pub name: String,
         pub spec: S,
@@ -40,8 +42,9 @@ mod metadata {
 
     impl<S, C> From<MetadataStoreObject<S, C>> for Metadata<S>
     where
-        S: AdminSpec,
+        S: Spec + Encoder + Decoder,
         S::IndexKey: ToString,
+        S::Status: Encoder + Decoder,
         C: MetadataItem,
     {
         fn from(meta: MetadataStoreObject<S, C>) -> Self {
@@ -54,11 +57,12 @@ mod metadata {
     }
 
     impl<S, C> TryFrom<Metadata<S>> for MetadataStoreObject<S, C>
-    where
-        S: AdminSpec,
-        C: MetadataItem,
-        <S as Spec>::IndexKey: TryFrom<String>,
-        <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display,
+        where
+            S: Spec + Encoder + Decoder,
+            S::Status: Encoder + Decoder,
+            C: MetadataItem,
+            <S as Spec>::IndexKey: TryFrom<String>,
+            <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display,
     {
         type Error = IoError;
 

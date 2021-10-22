@@ -58,8 +58,8 @@ mod admin {
         const AdminType: u8;
 
         type ListFilter: ListFilter;
-        type ListType: Encoder + Decoder + Sized;
-        type DeleteKey: Encoder + Decoder + Sized; 
+        type ListType: Encoder + Decoder + Debug + Sized;
+        type DeleteKey: Encoder + Decoder + Debug + Sized; 
 
     }
 

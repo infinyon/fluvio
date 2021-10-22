@@ -10,6 +10,7 @@ use fluvio_controlplane_metadata::message::Message;
 
 
 use crate::{AdminPublicApiKey,AdminRequest,AdminSpec};
+use crate::core::Spec;
 
 use super::Metadata;
 
@@ -40,14 +41,19 @@ impl <S>AdminRequest for WatchRequest<S> where S: AdminSpec
 {}
 
 #[derive(Debug)]
-pub struct WatchResponse<S: AdminSpec>  
+pub struct WatchResponse<S>  
+where
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     type_string: String,
     inner: MetadataUpdate<S>
 }
 
 impl <S>Default for WatchResponse<S>
-    where S: AdminSpec
+    where
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     fn default() -> Self {
         Self {
@@ -60,14 +66,20 @@ impl <S>Default for WatchResponse<S>
 
 /// updates on metadata
 #[derive(Encoder, Decoder, Default, Clone, Debug)]
-pub struct MetadataUpdate<S: AdminSpec>
+pub struct MetadataUpdate<S>
+    where
+        S: Spec + Debug + Encoder + Decoder,
+        S::Status: Debug + Encoder + Decoder,
 {
     pub epoch: Epoch,
     pub changes: Vec<Message<Metadata<S>>>,
     pub all: Vec<Metadata<S>>,
 }
 
-impl<S> MetadataUpdate<S> where S: AdminSpec
+impl<S> MetadataUpdate<S> 
+    where   
+        S: Spec + Debug + Encoder + Decoder,
+        S::Status: Debug + Encoder + Decoder,
 {
     pub fn with_changes(epoch: i64, changes: Vec<Message<Metadata<S>>>) -> Self {
         Self {

@@ -9,7 +9,7 @@ mod convert {
     use super::ManagedConnectorSpec;
 
     impl AdminSpec for ManagedConnectorSpec {
-        const AdminType: u8 = CreateType::MANAGED_CONNECTOR as u8;
+        const AdminType: u8 = CreateType::ManagedConnector as u8;
 
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;

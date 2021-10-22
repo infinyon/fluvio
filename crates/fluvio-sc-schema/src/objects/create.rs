@@ -26,13 +26,13 @@ impl <S> AdminRequest for CreateRequest<S> where S: AdminSpec {}
 
 /// Used for compatibility with older versions of the API
 pub enum CreateType {
-    TOPIC = 0,
-    CUSTOM_SPU = 1,
+    Topic = 0,
+    CustomSPU = 1,
     SPG = 2,
-    MANAGED_CONNECTOR = 3,
-    SMART_MODULE = 4,
+    ManagedConnector = 3,
+    SmartModule = 4,
     TABLE = 5,
-    SMART_STREAM = 6
+    SmartStream = 6
 }
 
 #[allow(clippy::module_inception)]
