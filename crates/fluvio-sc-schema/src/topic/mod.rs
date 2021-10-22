@@ -44,12 +44,14 @@ mod convert {
 
     use crate::objects::CreateType;
     use crate::{AdminSpec,NameFilter};
+    use crate::objects::Metadata;
     use super::TopicSpec;
 
     impl AdminSpec for TopicSpec {
-        const AdminType: u8 = CreateType::Topic;
+        const AdminType: u8 = CreateType::TOPIC as u8;
 
         type ListFilter = NameFilter;
+        type ListType = Metadata<Self>;
 
         type DeleteKey = String;
     }

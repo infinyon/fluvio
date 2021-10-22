@@ -50,22 +50,16 @@ mod admin {
 
     impl ListFilter for NameFilter {}
 
-    pub trait ListType: Encoder + Decoder + Sized{
-    }
 
-    pub trait DeleteKey: Encoder + Decoder + Sized{
-    }
-
-
-    /// Admin spec, they are 
+    /// AdminSpec has list, type, filter, delete key
     pub trait AdminSpec: Spec +  Encoder + Decoder {
 
+        // legacy token for compatibility with previous encoding
         const AdminType: u8;
 
-        /// filter type
         type ListFilter: ListFilter;
-        type ListType: ListType;
-        type DeleteKey: DeleteKey; 
+        type ListType: Encoder + Decoder + Sized;
+        type DeleteKey: Encoder + Decoder + Sized; 
 
     }
 

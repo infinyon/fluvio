@@ -2,19 +2,18 @@ pub use fluvio_controlplane_metadata::table::*;
 
 mod convert {
 
-    use std::io::Error;
-    use std::io::ErrorKind;
-    use std::convert::TryInto;
 
     use crate::objects::CreateType;
+    use crate::objects::Metadata;
     use crate::{AdminSpec,NameFilter};
-    use super::*;
+    use super::TableSpec;
 
     impl AdminSpec for TableSpec {
-        const AdminType: u8 = CreateType::Table;
+        const AdminType: u8 = CreateType::TABLE as u8;
 
         type ListFilter = NameFilter;
-
+        type ListType = Metadata<Self>;
+    
         type DeleteKey = String;
     }
 
