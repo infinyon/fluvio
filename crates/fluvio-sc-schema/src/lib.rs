@@ -36,36 +36,30 @@ pub enum ApiError {
 mod admin {
 
     use std::fmt::Debug;
-    
+
     use dataplane::api::Request;
     use dataplane::core::{Encoder, Decoder};
+
+    use crate::objects::MetadataUpdate;
+
     use super::core::Spec;
 
-
-    pub trait ListFilter: Encoder + Decoder + Sized  + Debug {
-
-    }
+    pub trait ListFilter: Encoder + Decoder + Sized + Debug {}
     /// filter by name
     pub type NameFilter = String;
 
     impl ListFilter for NameFilter {}
 
-
     /// AdminSpec has list, type, filter, delete key
-    pub trait AdminSpec: Spec +  Encoder + Decoder {
-
+    pub trait AdminSpec: Spec + Encoder + Decoder {
         // legacy token for compatibility with previous encoding
         const AdminType: u8;
 
         type ListFilter: ListFilter;
         type ListType: Encoder + Decoder + Debug + Sized;
-        type DeleteKey: Encoder + Decoder + Debug + Sized; 
-
+        type WatchResponseType: Encoder + Decoder + Debug + Sized;
+        type DeleteKey: Encoder + Decoder + Debug + Sized;
     }
-
 
     pub trait AdminRequest: Request {}
 }
-
-
-

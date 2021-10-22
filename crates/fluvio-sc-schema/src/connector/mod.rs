@@ -2,7 +2,7 @@ pub use fluvio_controlplane_metadata::connector::*;
 
 mod convert {
 
-    use crate::objects::CreateType;
+    use crate::objects::{CreateType, MetadataUpdate};
 
     use crate::{AdminSpec, NameFilter};
     use crate::objects::Metadata;
@@ -13,7 +13,7 @@ mod convert {
 
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;
-
+        type WatchResponseType = MetadataUpdate<Self>;
         type DeleteKey = String;
     }
 }

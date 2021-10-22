@@ -20,7 +20,7 @@ mod metadata {
     use dataplane::core::{Encoder, Decoder};
 
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
-    use fluvio_controlplane_metadata::core::{MetadataItem,MetadataContext};
+    use fluvio_controlplane_metadata::core::{MetadataItem, MetadataContext};
 
     use crate::core::Spec;
 
@@ -31,7 +31,7 @@ mod metadata {
         serde(rename_all = "camelCase")
     )]
     pub struct Metadata<S>
-        where
+    where
         S: Spec + Debug + Encoder + Decoder,
         S::Status: Debug + Encoder + Decoder,
     {
@@ -57,12 +57,12 @@ mod metadata {
     }
 
     impl<S, C> TryFrom<Metadata<S>> for MetadataStoreObject<S, C>
-        where
-            S: Spec + Encoder + Decoder,
-            S::Status: Encoder + Decoder,
-            C: MetadataItem,
-            <S as Spec>::IndexKey: TryFrom<String>,
-            <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display,
+    where
+        S: Spec + Encoder + Decoder,
+        S::Status: Encoder + Decoder,
+        C: MetadataItem,
+        <S as Spec>::IndexKey: TryFrom<String>,
+        <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display,
     {
         type Error = IoError;
 

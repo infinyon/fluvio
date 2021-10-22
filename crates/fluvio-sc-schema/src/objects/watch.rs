@@ -8,78 +8,52 @@ use dataplane::api::Request;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 
-
-use crate::{AdminPublicApiKey,AdminRequest,AdminSpec};
+use crate::{AdminPublicApiKey, AdminRequest, AdminSpec};
 use crate::core::Spec;
 
 use super::Metadata;
 
-/// marker trait for List
-pub trait WatchSpec: AdminSpec {
-    /// convert to list request with filters
-    #[allow(clippy::wrong_self_convention)]
-    fn into_list_request(epoch: Epoch) -> WatchRequest<Self>;
-}
-
 /// Watch resources
 /// Argument epoch is not being used, it is always 0
-#[derive(Debug,Encoder,Default, Decoder )]
+#[derive(Debug, Encoder, Default, Decoder)]
 pub struct WatchRequest<S: AdminSpec> {
     epoch: Epoch,
-    data: PhantomData<S>
+    data: PhantomData<S>,
 }
 
-
-impl <S>Request for WatchRequest<S> where S: AdminSpec
+impl<S> Request for WatchRequest<S>
+where
+    S: AdminSpec,
 {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = WatchResponse<S>;
 }
 
-impl <S>AdminRequest for WatchRequest<S> where S: AdminSpec 
-{}
+impl<S> AdminRequest for WatchRequest<S> where S: AdminSpec {}
 
-#[derive(Debug)]
-pub struct WatchResponse<S>  
-where
-    S: Spec + Debug + Encoder + Decoder,
-    S::Status: Debug + Encoder + Decoder,
-{
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct WatchResponse<S: AdminSpec> {
     type_string: String,
-    inner: MetadataUpdate<S>
+    inner: S::WatchResponseType,
 }
-
-impl <S>Default for WatchResponse<S>
-    where
-    S: Spec + Debug + Encoder + Decoder,
-    S::Status: Debug + Encoder + Decoder,
-{
-    fn default() -> Self {
-        Self {
-            type_string: S::LABEL,
-            inner: MetadataUpdate::default()
-        }
-    }
-}
-
 
 /// updates on metadata
 #[derive(Encoder, Decoder, Default, Clone, Debug)]
 pub struct MetadataUpdate<S>
-    where
-        S: Spec + Debug + Encoder + Decoder,
-        S::Status: Debug + Encoder + Decoder,
+where
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     pub epoch: Epoch,
     pub changes: Vec<Message<Metadata<S>>>,
     pub all: Vec<Metadata<S>>,
 }
 
-impl<S> MetadataUpdate<S> 
-    where   
-        S: Spec + Debug + Encoder + Decoder,
-        S::Status: Debug + Encoder + Decoder,
+impl<S> MetadataUpdate<S>
+where
+    S: Spec + Debug + Encoder + Decoder,
+    S::Status: Debug + Encoder + Decoder,
 {
     pub fn with_changes(epoch: i64, changes: Vec<Message<Metadata<S>>>) -> Self {
         Self {

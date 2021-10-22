@@ -387,10 +387,10 @@ impl Encoder for Bytes {
 
     fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), Error>
     where
-        T: BufMut {
-       
-           dest.put_slice(self.as_ref());
-           Ok(())
+        T: BufMut,
+    {
+        dest.put_slice(self.as_ref());
+        Ok(())
     }
 }
 

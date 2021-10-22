@@ -41,10 +41,9 @@ pub mod validate {
 }
 mod convert {
 
-
     use crate::objects::CreateType;
-    use crate::{AdminSpec,NameFilter};
-    use crate::objects::Metadata;
+    use crate::{AdminSpec, NameFilter};
+    use crate::objects::{Metadata, MetadataUpdate};
     use super::TopicSpec;
 
     impl AdminSpec for TopicSpec {
@@ -52,9 +51,8 @@ mod convert {
 
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;
+        type WatchResponseType = MetadataUpdate<Self>;
 
         type DeleteKey = String;
     }
-
-    
 }
