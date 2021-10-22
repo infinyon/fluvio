@@ -197,14 +197,14 @@ impl StreamFetchHandler {
                         })?;
                     Box::new(map)
                 }
-                SmartStreamKind::Flatmap => {
-                    debug!("Instantiating SmartStreamFlatmap");
+                SmartStreamKind::ArrayMap => {
+                    debug!("Instantiating SmartStreamArrayMap");
                     let map = module
-                        .create_flatmap(&sm_engine, payload.params)
+                        .create_array_map(&sm_engine, payload.params)
                         .map_err(|err| {
                             SocketError::Io(IoError::new(
                                 ErrorKind::Other,
-                                format!("Failed to instantiate SmartStreamFlatmap {}", err),
+                                format!("Failed to instantiate SmartStreamArrayMap {}", err),
                             ))
                         })?;
                     Box::new(map)
@@ -1786,8 +1786,8 @@ mod test {
     }
 
     #[fluvio_future::test(ignore)]
-    async fn test_stream_fetch_flatmap() {
-        let test_path = temp_dir().join("test_stream_fetch_flatmap");
+    async fn test_stream_fetch_array_map() {
+        let test_path = temp_dir().join("test_stream_fetch_array_map");
         ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12010";
@@ -1804,7 +1804,7 @@ mod test {
             MultiplexerSocket::shared(FluvioSocket::connect(addr).await.expect("connect"));
 
         // perform for two versions
-        let topic = "test_flatmap";
+        let topic = "test_array_map";
         let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
         let test_id = test.id.clone();
         let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
@@ -1828,10 +1828,10 @@ mod test {
             .await
             .expect("write");
 
-        let wasm = load_wasm_module("fluvio_wasm_flat_map");
+        let wasm = load_wasm_module("fluvio_wasm_array_map");
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
-            kind: SmartStreamKind::Flatmap,
+            kind: SmartStreamKind::ArrayMap,
             ..Default::default()
         };
 

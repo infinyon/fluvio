@@ -107,9 +107,9 @@ pub struct ConsumeOpt {
     #[structopt(long, group("smartstream"))]
     pub map: Option<PathBuf>,
 
-    /// Path to a SmartStream flatmap wasm file
+    /// Path to a SmartStream array_map wasm file
     #[structopt(long, group("smartstream"))]
-    pub flatmap: Option<PathBuf>,
+    pub array_map: Option<PathBuf>,
 
     /// Path to a WASM file for aggregation
     #[structopt(long, group("smartstream"))]
@@ -190,10 +190,10 @@ impl ConsumeOpt {
             let buffer = std::fs::read(map_path)?;
             debug!(len = buffer.len(), "read map bytes");
             builder.wasm_map(buffer, extra_params);
-        } else if let Some(map_path) = &self.flatmap {
+        } else if let Some(map_path) = &self.array_map {
             let buffer = std::fs::read(map_path)?;
-            debug!(len = buffer.len(), "read flatmap bytes");
-            builder.wasm_flatmap(buffer, extra_params);
+            debug!(len = buffer.len(), "read array_map bytes");
+            builder.wasm_array_map(buffer, extra_params);
         } else {
             match (&self.aggregate, &self.initial) {
                 (Some(wasm_path), Some(acc_path)) => {
