@@ -1,6 +1,9 @@
 # Release Notes
 
-## Platform Version 0.9.11 - UNRELEASED
+## Platform Version 0.9.12 - UNRELEASED
+*
+
+## Platform Version 0.9.11 - 2021-10-22
 * Reconnect producer to SPU if network error. ([#770](https://github.com/infinyon/fluvio/issues/770))
 * Merge fluvio-protocol-{api,core,codec} crates into fluvio-protocol ([#1594](https://github.com/infinyon/fluvio/issues/1594))
 * Add `#[smarstream(array_map)]` for expanding one record into many ([#1335](https://github.com/infinyon/fluvio/issues/1335))
