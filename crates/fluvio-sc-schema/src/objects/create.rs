@@ -42,13 +42,6 @@ mod create {
 
     use super::*;
 
-    const TOPIC: u8 = 0;
-    const CUSTOM_SPU: u8 = 1;
-    const SPG: u8 = 2;
-    const MANAGED_CONNECTOR: u8 = 3;
-    const SMART_MODULE: u8 = 4;
-    const TABLE: u8 = 5;
-
     #[derive(Debug, Encoder, Decoder)]
     /// This is not really need but keep for compatibility with exiting enum
     pub struct AllCreatableSpec<S: AdminSpec> {

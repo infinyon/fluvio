@@ -6,13 +6,13 @@ use tracing::{debug, instrument};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
-use fluvio_sc_schema::AdminRequest;
+use fluvio_sc_schema::{AdminRequest, AdminSpec};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
-use crate::metadata::objects::{ListResponse, ListSpec, DeleteSpec, CreateRequest};
+use crate::metadata::objects::{ListResponse, ListRequest, DeleteSpec, CreateRequest};
 use crate::config::ConfigFile;
 use crate::sync::MetadataStores;
 
@@ -143,7 +143,7 @@ impl FluvioAdmin {
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
-        S: Into<AllCreatableSpec>,
+        S: TryInto<AllCreatableSpec<S>>,
     {
         let create_request = CreateRequest {
             name,
@@ -170,18 +170,14 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&self, filters: F) -> Result<Vec<Metadata<S>>, FluvioError>
+    pub async fn list<S, F>(&self, filters: Vec<S::ListFilter>) -> Result<Vec<Metadata<S>>, FluvioError>
     where
-        S: ListSpec + Encoder + Decoder,
-        S::Status: Encoder + Decoder,
-        F: Into<Vec<S::Filter>>,
-        ListResponse: TryInto<Vec<Metadata<S>>>,
-        <ListResponse as TryInto<Vec<Metadata<S>>>>::Error: Display,
+       S: AdminSpec
     {
         use std::io::Error;
         use std::io::ErrorKind;
 
-        let list_request = S::into_list_request(filters.into());
+        let list_request = ListRequest::new(filters);
 
         let response = self.send_receive(list_request).await?;
 
