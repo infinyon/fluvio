@@ -37,7 +37,10 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
     
-    debug!( topic = %create.name,"creating");
+    let name = create.name;
+    let topic = create.spec.to_inner();
+
+    debug!( topic = %name,"creating");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -47,7 +50,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
         if !authorized {
             trace!("authorization failed");
             return Ok(Status::new(
-                create.name.clone(),
+                name.clone(),
                 ErrorCode::PermissionDenied,
                 Some(String::from("permission denied")),
             ));
@@ -59,8 +62,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
         ));
     }
 
-    let name = create.name;
-    let topic = create.spec.to_inner();
+    
 
     // validate topic request
     let mut status = validate_topic_request(&name, &topic, &auth_ctx.global_ctx).await;

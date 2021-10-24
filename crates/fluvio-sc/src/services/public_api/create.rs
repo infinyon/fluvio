@@ -26,32 +26,26 @@ pub async fn handle_create_request<AC: AuthContext>(
         ObjectApiCreateRequest::Topic(create) => {
             super::topic::handle_create_topics_request(create, auth_context).await?
         }
-        ObjectApiCreateRequest::SpuGroup(group) => {
+        ObjectApiCreateRequest::SpuGroup(create) => {
             super::spg::handle_create_spu_group_request(create, auth_context).await?
         }
-        AllCreatableSpec::CustomSpu(custom) => {
+        ObjectApiCreateRequest::CustomSpu(create) => {
             super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
-                name,
-                custom,
-                dry_run,
+                create,
                 auth_context,
             )
             .await
         }
-        AllCreatableSpec::ManagedConnector(spec) => {
+        ObjectApiCreateRequest::ManagedConnector(create) => {
             super::connector::handle_create_managed_connector_request(
-                name,
-                spec,
-                dry_run,
+                create,
                 auth_context,
             )
             .await?
         }
-        AllCreatableSpec::SmartModule(spec) => {
+        ObjectApiCreateRequest::SmartModule(create) => {
             super::smartmodule::handle_create_smart_module_request(
-                name,
-                spec,
-                dry_run,
+                create,
                 auth_context,
             )
             .await?

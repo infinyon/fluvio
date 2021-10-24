@@ -9,8 +9,8 @@ use std::io::{Error as IoError};
 use dataplane::ErrorCode;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::spu::SpuSpec;
-use fluvio_controlplane_metadata::spu::CustomSpuSpec;
+use fluvio_sc_schema::spu::{SpuSpec,CustomSpuSpec};
+use fluvio_sc_schema::objects::CreateRequest;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
@@ -25,14 +25,20 @@ pub struct RegisterCustomSpu {
 
 impl RegisterCustomSpu {
     /// Handler for create spus request
-    #[instrument(skip(name, spec, dry_run, auth_ctx))]
+    #[instrument(skip(create, auth_ctx))]
     pub async fn handle_register_custom_spu_request<AC: AuthContext>(
-        name: String,
-        spec: CustomSpuSpec,
-        dry_run: bool,
+        create: CreateRequest<CustomSpuSpec>,
         auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
-        debug!("api request: create custom-spu '{}({})'", name, spec.id);
+
+        let name = create.name;
+        let spec = create.spec.to_inner();
+
+        debug!(
+            %name,
+            spu_id = spec.id,
+            "creating custom spu");
+
         if let Ok(authorized) = auth_ctx
             .auth
             .allow_type_action(CustomSpuSpec::OBJECT_TYPE, TypeAction::Read)
@@ -60,7 +66,7 @@ impl RegisterCustomSpu {
             return status;
         }
 
-        if dry_run {
+        if create.dry_run {
             return Status::default();
         }
 
