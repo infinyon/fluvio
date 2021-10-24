@@ -36,12 +36,14 @@ use crate::core::Spec;
 
 use decoder::{AdminObjectDecoder,ObjectDecoder,CreateDecoder};
 
+pub type ObjListRequest = ObjectRequest<ObjectDecoder, ObjectApiListRequest>;
+
 #[derive(Debug, Encoder)]
 pub enum AdminPublicRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
     CreateRequest(ObjectRequest<CreateDecoder, ObjectApiCreateRequest>),
     //  DeleteRequest(ObjectRequest<ObjectDecoder,ObjectApiDeleteRequest>),
-    ListRequest(ObjectRequest<ObjectDecoder, ObjectApiListRequest>),
+    ListRequest(ObjListRequest),
     WatchRequest(ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>),
 }
 
@@ -57,6 +59,14 @@ pub struct ObjectRequest<Obj, Body> {
     header: RequestHeader,
     object: Obj,
     body: Body,
+}
+
+impl <Obj,Body> ObjectRequest<Obj,Body> {
+
+    pub fn get_header_request(self) -> (RequestHeader, Body) {
+        (self.header, self.body)
+    }
+
 }
 
 impl<Obj, Body> Encoder for ObjectRequest<Obj, Body>
