@@ -48,6 +48,20 @@ mod create {
         inner: S,
     }
 
+
+    impl <S> AllCreatableSpec<S>
+    where
+        S: AdminSpec,
+    {
+        pub fn inner(&self) -> &S {
+            &self.inner
+        }
+
+        pub fn to_inner(self) -> S {
+            self.inner
+        }
+    }
+
     impl<S> Default for AllCreatableSpec<S>
     where
         S: AdminSpec,

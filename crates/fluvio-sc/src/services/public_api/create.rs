@@ -5,6 +5,7 @@ use tracing::instrument;
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status,ObjCreateRequest};
 use fluvio_sc_schema::objects::{CreateRequest, AllCreatableSpec};
+use fluvio_sc_schema::ObjectApiCreateRequest;
 use fluvio_auth::AuthContext;
 
 use crate::services::auth::AuthServiceContext;
@@ -17,16 +18,16 @@ pub async fn handle_create_request<AC: AuthContext>(
 ) -> Result<ResponseMessage<Status>, IoError> {
     let (header, req) = request.get_header_request();
 
-    let dry_run = req.dry_run;
-    let name = req.name;
-    tracing::debug!("Handling create request for {:?}", req.spec);
+  //  let dry_run = req.dry_run;
+  //  let name = req.name;
+  //  tracing::debug!("Handling create request for {:?}", req.spec);
 
-    let status = match req.spec {
-        AllCreatableSpec::Topic(topic) => {
-            super::topic::handle_create_topics_request(name, dry_run, topic, auth_context).await?
+    let status = match req {
+        ObjectApiCreateRequest::Topic(create) => {
+            super::topic::handle_create_topics_request(create, auth_context).await?
         }
-        AllCreatableSpec::SpuGroup(group) => {
-            super::spg::handle_create_spu_group_request(name, group, dry_run, auth_context).await?
+        ObjectApiCreateRequest::SpuGroup(group) => {
+            super::spg::handle_create_spu_group_request(create, auth_context).await?
         }
         AllCreatableSpec::CustomSpu(custom) => {
             super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
