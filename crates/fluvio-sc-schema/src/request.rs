@@ -9,7 +9,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fmt::Debug;
 
-use fluvio_controlplane_metadata::spu::CustomSpu;
+
 use tracing::{debug, trace};
 use paste::paste;
 
@@ -84,34 +84,20 @@ where
     }
 }
 
-impl<Obj, Body> Decoder for ObjectRequest<Obj, Body>
-where
-    Obj: Debug + Decoder,
-    Body: Debug + Decoder,
-{
-    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
-    where
-        T: Buf,
-    {
-        // decode header
-        let mut header = RequestHeader::default();
-        header.decode(src, version)?;
 
-        // decode header
-        let mut object = Obj::default();
-        header.decode(src, version)?;
-
-        let mut body = Body::default();
-        body.decode(src, &header, version)?;
-
-        Ok(())
-    }
-}
 
 //ObjectApiEnum!(DeleteRequest);
 
 impl ApiMessage for AdminPublicRequest {
     type ApiKey = AdminPublicApiKey;
+
+    fn decode_with_header<T>(_src: &mut T, _header: RequestHeader) -> Result<Self, IoError>
+    where
+        Self: Default + Sized,
+        Self::ApiKey: Sized,
+        T: Buf {
+            panic!("not needed")
+        }
 
     fn decode_from<T>(src: &mut T) -> Result<Self, IoError>
     where
@@ -130,16 +116,18 @@ impl ApiMessage for AdminPublicRequest {
             AdminPublicApiKey::Create => {
                 let mut object = CreateDecoder::default();
                 object.decode(src, header.api_version())?;
-                let body = ObjectApiCreateRequest::default();
+                let mut body = ObjectApiCreateRequest::default();
                 body.decode_object(src, &object, header.api_version())?;
                 Ok(Self::CreateRequest(ObjectRequest {
                     header,
                     object,
                     body,
                 }))
-            }
-            /*
+            },
+            
             AdminPublicApiKey::Delete => {
+                todo!()
+                /* 
                 let mut object = ObjectDecoder::default();
                 object.decode(src, header.api_version())?;
                 let request = ObjectApiDeleteRequest::default();
@@ -149,12 +137,13 @@ impl ApiMessage for AdminPublicRequest {
                     object,
                     body: ObjectApiCreateRequest::default(),
                 }))
+                */
             }
-            */
+            
             AdminPublicApiKey::List => {
                 let mut object = ObjectDecoder::default();
                 object.decode(src, header.api_version())?;
-                let body = ObjectApiListRequest::default();
+                let mut body = ObjectApiListRequest::default();
                 body.decode_object(src, &object, header.api_version())?;
                 Ok(Self::ListRequest(ObjectRequest {
                     header,
@@ -165,7 +154,7 @@ impl ApiMessage for AdminPublicRequest {
             AdminPublicApiKey::Watch => {
                 let mut object = ObjectDecoder::default();
                 object.decode(src, header.api_version())?;
-                let body = ObjectApiWatchRequest::default();
+                let mut body = ObjectApiWatchRequest::default();
                 body.decode_object(src, &object, header.api_version())?;
                 Ok(Self::WatchRequest(ObjectRequest {
                     header,
@@ -177,12 +166,15 @@ impl ApiMessage for AdminPublicRequest {
     }
 }
 
+
+
+
 macro_rules! ObjectApiEnum {
     ($api:ident) => {
 
 
         paste! {
-            #[derive(Debug)]
+            #[derive(Debug,Encoder)]
             pub enum [<ObjectApi $api>] {
                 Topic($api<TopicSpec>),
                 Spu($api<SpuSpec>),
