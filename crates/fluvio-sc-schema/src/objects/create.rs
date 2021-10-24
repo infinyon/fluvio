@@ -45,7 +45,6 @@ mod create {
     #[derive(Debug, Encoder, Decoder)]
     /// This is not really need but keep for compatibility with exiting enum
     pub struct AllCreatableSpec<S: AdminSpec> {
-        _typ: u8,
         inner: S,
     }
 
@@ -55,7 +54,6 @@ mod create {
     {
         fn default() -> Self {
             Self {
-                _typ: S::AdminType,
                 inner: S::default(),
             }
         }

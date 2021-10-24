@@ -9,7 +9,6 @@ use crate::{AdminPublicApiKey, AdminRequest, AdminSpec};
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {
-    object_type: String,
     name_filters: Vec<S::ListFilter>,
 }
 
@@ -19,7 +18,6 @@ where
 {
     pub fn new(name_filters: Vec<S::ListFilter>) -> Self {
         Self {
-            object_type: S::LABEL.to_string(),
             name_filters,
         }
     }
@@ -38,6 +36,5 @@ impl<S> AdminRequest for ListRequest<S> where S: AdminSpec {}
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListResponse<S: AdminSpec> {
-    pub object_type: String,
     objects: Vec<S::ListType>,
 }

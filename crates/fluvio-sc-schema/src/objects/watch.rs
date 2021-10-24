@@ -34,7 +34,6 @@ impl<S> AdminRequest for WatchRequest<S> where S: AdminSpec {}
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct WatchResponse<S: AdminSpec> {
-    type_string: String,
     inner: S::WatchResponseType,
 }
 
