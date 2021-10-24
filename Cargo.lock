@@ -1823,6 +1823,7 @@ dependencies = [
  "fluvio-protocol",
  "fluvio-types",
  "log",
+ "paste",
  "serde",
  "static_assertions",
  "thiserror",
