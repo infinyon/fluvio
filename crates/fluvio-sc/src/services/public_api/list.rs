@@ -3,7 +3,7 @@ use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::objects::{ListRequest, ListResponse};
-use fluvio_sc_schema::{ObjListRequest};
+use fluvio_sc_schema::{ObjListRequest,ObjectApiListRequest};
 use fluvio_auth::{AuthContext};
 
 use crate::services::auth::AuthServiceContext;
@@ -17,7 +17,7 @@ pub async fn handle_list_request<AC: AuthContext>(
     let (header, req) = request.get_header_request();
 
     let response = match req {
-        ListRequest::Topic(filter) => {
+        ObjectApiListRequest::Topic(filter) => {
             super::topic::handle_fetch_topics_request(filter, auth_ctx).await?
         }
         ListRequest::Spu(filter) => super::spu::handle_fetch_spus_request(filter, auth_ctx).await?,

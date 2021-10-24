@@ -15,7 +15,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_request<AC: AuthContext>(
     filters: Vec<NameFilter>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse, Error> {
+) -> Result<ListResponse<ManagedConnectorSpec>, Error> {
     trace!("fetching managed connectors");
 
     if let Ok(authorized) = auth_ctx
@@ -26,7 +26,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         if !authorized {
             debug!("fetch connector authorization failed");
             // If permission denied, return empty list;
-            return Ok(ListResponse::ManagedConnector(vec![]));
+            return Ok(ListResponse::new(vec![]));
         }
     } else {
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
@@ -51,5 +51,5 @@ pub async fn handle_fetch_request<AC: AuthContext>(
     debug!("flv fetch connectors resp: {} items", connectors.len());
     trace!("flv fetch connectors resp {:#?}", connectors);
 
-    Ok(ListResponse::ManagedConnector(connectors))
+    Ok(ListResponse::new(connectors))
 }

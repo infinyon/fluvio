@@ -35,6 +35,14 @@ where
 impl<S> AdminRequest for ListRequest<S> where S: AdminSpec {}
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct ListResponse<S: AdminSpec> {
-    objects: Vec<S::ListType>,
+pub struct ListResponse<S: AdminSpec>(Vec<S::ListType>);
+
+impl <S> ListResponse<S>
+ where S: AdminSpec
+{
+    pub fn new(list: Vec<S::ListType>) -> Self {
+        Self(list)
+    }
 }
+
+

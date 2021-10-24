@@ -9,6 +9,8 @@ pub use list::*;
 pub use watch::*;
 pub use metadata::*;
 
+pub use crate::NameFilter;
+
 mod metadata {
 
     use std::convert::TryFrom;
