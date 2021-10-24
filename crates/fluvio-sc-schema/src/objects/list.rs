@@ -13,15 +13,16 @@ pub struct ListRequest<S: AdminSpec> {
     name_filters: Vec<S::ListFilter>,
 }
 
-impl <S> ListRequest<S> where S: AdminSpec{
-
+impl<S> ListRequest<S>
+where
+    S: AdminSpec,
+{
     pub fn new(name_filters: Vec<S::ListFilter>) -> Self {
         Self {
             object_type: S::LABEL.to_string(),
             name_filters,
         }
     }
-
 }
 
 impl<S> Request for ListRequest<S>

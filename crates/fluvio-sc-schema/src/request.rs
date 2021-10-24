@@ -36,7 +36,7 @@ use crate::core::Spec;
 
 #[derive(Debug, Encoder)]
 pub enum AdminPublicRequest {
-    //  ApiVersionsRequest(ObjectRequest<NullDecoder,ApiVersionsRequest>),
+    ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
     CreateRequest(ObjectRequest<CreateDecoder, ObjectApiCreateRequest>),
     //  DeleteRequest(ObjectRequest<ObjectDecoder,ObjectApiDeleteRequest>),
     ListRequest(ObjectRequest<ObjectDecoder, ObjectApiListRequest>),
@@ -50,19 +50,22 @@ impl Default for AdminPublicRequest {
 }
 
 /// Most of Request except create which has special format
-#[derive(Default,Debug)]
-pub struct ObjectRequest<Obj>
-{
+#[derive(Default, Debug)]
+pub struct ObjectRequest<Obj, Body> {
     header: RequestHeader,
     object: Obj,
+    body: Body,
 }
 
-impl<Obj> Encoder for ObjectRequest<Obj>
+impl<Obj, Body> Encoder for ObjectRequest<Obj, Body>
 where
     Obj: Debug + Encoder,
+    Body: Debug + Encoder,
 {
     fn write_size(&self, version: Version) -> usize {
-        self.header.write_size(version) + self.object.write_size(self.header.api_version())
+        self.header.write_size(version)
+            + self.object.write_size(self.header.api_version())
+            + self.body.write_size(self.header.api_version())
     }
 
     fn encode<T>(&self, out: &mut T, version: Version) -> Result<(), IoError>
@@ -71,7 +74,7 @@ where
     {
         trace!("encoding header: {:#?}", &self.header);
         self.header.encode(out, version)?;
-        
+
         trace!("encoding object: {:#?}", &self.object);
         self.object.encode(out, self.header.api_version())?;
 
@@ -83,7 +86,7 @@ where
 
 impl<Obj, Body> Decoder for ObjectRequest<Obj, Body>
 where
-    Obj: Debug + Decoder  ,
+    Obj: Debug + Decoder,
     Body: Debug + Decoder,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
@@ -105,15 +108,6 @@ where
     }
 }
 
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct ObjectDecoder {}
-
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct NullDecoder {}
-
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct CreateDecoder {}
-
 //ObjectApiEnum!(DeleteRequest);
 
 impl ApiMessage for AdminPublicRequest {
@@ -123,6 +117,8 @@ impl ApiMessage for AdminPublicRequest {
     where
         T: Buf,
     {
+        let header = RequestHeader::decode_from(src, 0)?;
+
         let api_key = header.api_key().try_into()?;
         debug!(
             "decoding admin public request from: {} api: {:#?}",
@@ -131,13 +127,52 @@ impl ApiMessage for AdminPublicRequest {
         );
         match api_key {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
-            AdminPublicApiKey::Object => api_decode!(Self, ObjectRequest, src, header),
+            AdminPublicApiKey::Create => {
+                let mut object = CreateDecoder::default();
+                object.decode(src, header.api_version())?;
+                let body = ObjectApiCreateRequest::default();
+                body.decode_object(src, &object, header.api_version())?;
+                Ok(Self::CreateRequest(ObjectRequest {
+                    header,
+                    object,
+                    body,
+                }))
+            }
             /*
-            AdminPublicApiKey::Create => api_decode!(Self, CreateRequest, src, header),
-            AdminPublicApiKey::Delete => api_decode!(Self, DeleteRequest, src, header),
-            AdminPublicApiKey::List => api_decode!(Self, ListRequest, src, header),
-            AdminPublicApiKey::Watch => api_decode!(Self, WatchRequest, src, header),
+            AdminPublicApiKey::Delete => {
+                let mut object = ObjectDecoder::default();
+                object.decode(src, header.api_version())?;
+                let request = ObjectApiDeleteRequest::default();
+                request.decode_object(src, &object,header.api_version())?;
+                Ok(Self::CreateRequest(ObjectRequest {
+                    header,
+                    object,
+                    body: ObjectApiCreateRequest::default(),
+                }))
+            }
             */
+            AdminPublicApiKey::List => {
+                let mut object = ObjectDecoder::default();
+                object.decode(src, header.api_version())?;
+                let body = ObjectApiListRequest::default();
+                body.decode_object(src, &object, header.api_version())?;
+                Ok(Self::ListRequest(ObjectRequest {
+                    header,
+                    object,
+                    body,
+                }))
+            }
+            AdminPublicApiKey::Watch => {
+                let mut object = ObjectDecoder::default();
+                object.decode(src, header.api_version())?;
+                let body = ObjectApiWatchRequest::default();
+                body.decode_object(src, &object, header.api_version())?;
+                Ok(Self::WatchRequest(ObjectRequest {
+                    header,
+                    object,
+                    body,
+                }))
+            }
         }
     }
 }
@@ -166,7 +201,7 @@ macro_rules! ObjectApiEnum {
             }
 
             impl  [<ObjectApi $api>] {
-                fn decode<T,O>(&mut self, src: &mut T, obj_ty: O,version: Version) -> Result<(), IoError>
+                fn decode_object<T,O>(&mut self, src: &mut T, obj_ty: &O,version: Version) -> Result<(), IoError>
                 where
                     T: Buf,
                     O: AdminObjectDecoder
@@ -213,13 +248,50 @@ ObjectApiEnum!(CreateRequest);
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(WatchRequest);
 
-
 trait AdminObjectDecoder: Debug {
-
     fn is_topic(&self) -> bool;
     fn is_spu(&self) -> bool;
     fn is_partition(&self) -> bool;
     fn is_smart_module(&self) -> bool;
-    
+}
 
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct ObjectDecoder {}
+
+impl AdminObjectDecoder for ObjectDecoder {
+    fn is_topic(&self) -> bool {
+        todo!()
+    }
+
+    fn is_spu(&self) -> bool {
+        todo!()
+    }
+
+    fn is_partition(&self) -> bool {
+        todo!()
+    }
+
+    fn is_smart_module(&self) -> bool {
+        todo!()
+    }
+}
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct CreateDecoder {}
+
+impl AdminObjectDecoder for CreateDecoder {
+    fn is_topic(&self) -> bool {
+        todo!()
+    }
+
+    fn is_spu(&self) -> bool {
+        todo!()
+    }
+
+    fn is_partition(&self) -> bool {
+        todo!()
+    }
+
+    fn is_smart_module(&self) -> bool {
+        todo!()
+    }
 }

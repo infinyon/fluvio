@@ -170,9 +170,12 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&self, filters: Vec<S::ListFilter>) -> Result<Vec<Metadata<S>>, FluvioError>
+    pub async fn list<S, F>(
+        &self,
+        filters: Vec<S::ListFilter>,
+    ) -> Result<Vec<Metadata<S>>, FluvioError>
     where
-       S: AdminSpec
+        S: AdminSpec,
     {
         use std::io::Error;
         use std::io::ErrorKind;
