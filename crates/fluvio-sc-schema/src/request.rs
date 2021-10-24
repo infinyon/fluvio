@@ -34,6 +34,8 @@ use crate::spg::SpuGroupSpec;
 use crate::table::TableSpec;
 use crate::core::Spec;
 
+use decoder::{AdminObjectDecoder,ObjectDecoder,CreateDecoder};
+
 #[derive(Debug, Encoder)]
 pub enum AdminPublicRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
@@ -240,50 +242,69 @@ ObjectApiEnum!(CreateRequest);
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(WatchRequest);
 
-trait AdminObjectDecoder: Debug {
-    fn is_topic(&self) -> bool;
-    fn is_spu(&self) -> bool;
-    fn is_partition(&self) -> bool;
-    fn is_smart_module(&self) -> bool;
-}
+mod decoder {
 
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct ObjectDecoder {}
+    use super::*;
 
-impl AdminObjectDecoder for ObjectDecoder {
-    fn is_topic(&self) -> bool {
-        todo!()
+    pub trait AdminObjectDecoder: Debug {
+        fn is_topic(&self) -> bool;
+        fn is_spu(&self) -> bool;
+        fn is_partition(&self) -> bool;
+        fn is_smart_module(&self) -> bool;
     }
 
-    fn is_spu(&self) -> bool {
-        todo!()
+    #[derive(Debug, Default, Encoder, Decoder)]
+    pub struct ObjectDecoder{
+        ty: String
     }
 
-    fn is_partition(&self) -> bool {
-        todo!()
+    impl AdminObjectDecoder for ObjectDecoder {
+        fn is_topic(&self) -> bool {
+            &self.ty == TopicSpec::LABEL
+        }
+
+        fn is_spu(&self) -> bool {
+            &self.ty == SpuSpec::LABEL
+        }
+
+        fn is_partition(&self) -> bool {
+            &self.ty == PartitionSpec::LABEL
+        }
+
+        fn is_smart_module(&self) -> bool {
+            &self.ty == SmartModuleSpec::LABEL
+        }
     }
 
-    fn is_smart_module(&self) -> bool {
-        todo!()
-    }
-}
-#[derive(Debug, Default, Encoder, Decoder)]
-pub struct CreateDecoder {}
 
-impl AdminObjectDecoder for CreateDecoder {
-    fn is_topic(&self) -> bool {
-        todo!()
-    }
+    const TOPIC: u8 = 0;
+    const CUSTOM_SPU: u8 = 1;
+    const SPG: u8 = 2;
+    const MANAGED_CONNECTOR: u8 = 3;
+    const SMART_MODULE: u8 = 4;
+    const TABLE: u8 = 5;
 
-    fn is_spu(&self) -> bool {
-        todo!()
+    #[derive(Debug, Default, Encoder, Decoder)]
+    pub struct CreateDecoder {
+        ty: u8
     }
 
-    fn is_partition(&self) -> bool {
-        todo!()
+    impl AdminObjectDecoder for CreateDecoder {
+        fn is_topic(&self) -> bool {
+            self.ty == TOPIC
+        }
+
+        fn is_spu(&self) -> bool {
+            false
+        }
+
+        fn is_partition(&self) -> bool {
+            false
+        }
+
+        fn is_smart_module(&self) -> bool {
+            self.ty == SMART_MODULE
+        }
     }
 
-    fn is_smart_module(&self) -> bool {
-        todo!()
-    }
 }
