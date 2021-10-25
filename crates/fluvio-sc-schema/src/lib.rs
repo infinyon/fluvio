@@ -55,35 +55,7 @@ mod admin {
         type DeleteKey: Encoder + Decoder + Debug + Sized;
     }
 
-    pub trait AdminRequest: Request {}
 
-    /// dummy implementation to get non generic API constants such as API Key
-    #[derive(Debug, Clone, PartialEq, Encoder, Default, Decoder)]
-    pub struct AnySpec{}
-
-    impl Spec for AnySpec {
-        const LABEL: &'static str = "Any";
-
-        type Status = AnyStatus;
-
-        type Owner = Self;
-
-        type IndexKey = String;
-    }
-
-    #[derive(Debug, Clone, PartialEq, Encoder, Default, Decoder)]
-    pub struct AnyStatus{}
-
-    impl Status for AnyStatus {
-
-    }
     
-
-    impl AdminSpec for AnySpec {
-        type ListFilter = NameFilter;
-        type ListType = crate::objects::MetadataUpdate<Self>;
-        type WatchResponseType = crate::objects::MetadataUpdate<Self>;
-        type DeleteKey = String;
-    }
 }
 

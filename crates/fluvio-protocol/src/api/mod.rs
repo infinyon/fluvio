@@ -29,8 +29,6 @@ macro_rules! api_decode {
 }
 
 pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
-where
-    M: RequestMiddleWare,
 {
     const API_KEY: u16;
 
@@ -49,6 +47,7 @@ where
     ) -> Result<(), IoError>
     where
         T: Buf,
+        M: RequestMiddleWare
     {
         self.decode(src, version)
     }

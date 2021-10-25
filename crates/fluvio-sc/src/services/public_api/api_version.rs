@@ -3,7 +3,7 @@ use tracing::{trace, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::versions::{ApiVersionKey, ApiVersionsRequest, ApiVersionsResponse, PlatformVersion};
-use fluvio_sc_schema::objects::{CreateRequest, DeleteRequest, ListRequest, WatchRequest};
+use fluvio_sc_schema::objects::{ObjectApiCreateRequest,  DeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest};
 use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_sc_schema::AdminPublicApiKey;
 
@@ -20,8 +20,8 @@ pub async fn handle_api_versions_request(
     // topic versions
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Create,
-        CreateRequest::<TopicSpec>::DEFAULT_API_VERSION,
-        CreateRequest::<TopicSpec>::DEFAULT_API_VERSION,
+        ObjectApiCreateRequest::DEFAULT_API_VERSION,
+        ObjectApiCreateRequest::DEFAULT_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Delete,
@@ -30,13 +30,13 @@ pub async fn handle_api_versions_request(
     ));
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::List,
-        ListRequest::<TopicSpec>::DEFAULT_API_VERSION,
-        ListRequest::<TopicSpec>::DEFAULT_API_VERSION,
+        ObjectApiListRequest::DEFAULT_API_VERSION,
+        ObjectApiListRequest::DEFAULT_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Watch,
-        WatchRequest::<TopicSpec>::DEFAULT_API_VERSION,
-        WatchRequest::<TopicSpec>::DEFAULT_API_VERSION,
+        ObjectApiWatchRequest::DEFAULT_API_VERSION,
+        ObjectApiWatchRequest::DEFAULT_API_VERSION,
     ));
 
     trace!("flv api versions response: {:#?}", response);

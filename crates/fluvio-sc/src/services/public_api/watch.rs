@@ -1,14 +1,15 @@
 use std::sync::Arc;
 use std::fmt::Debug;
 
+use fluvio_sc_schema::ObjectDecoder;
 use tracing::{debug, trace, error, instrument};
 
 use fluvio_types::event::StickyEvent;
 use fluvio_socket::ExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
-use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, Metadata, MetadataUpdate};
-use fluvio_sc_schema::{ObjWatchRequest, ObjWatchResponse,ObjectApiWatchRequest};
+use fluvio_sc_schema::objects::{ObjectApiWatchRequest, WatchRequest, WatchResponse, Metadata, MetadataUpdate};
+
 
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -25,13 +26,13 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 /// handle watch request by spawning watch controller for each store
 #[instrument(skip(request, auth_ctx, sink, end_event))]
 pub fn handle_watch_request<AC>(
-    request: ObjWatchRequest,
+    request: RequestMessage<ObjectApiWatchRequest,ObjectDecoder>,
     auth_ctx: &AuthServiceContext<AC>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
 ) {
     debug!("handling watch request");
-    let (header, obj, req) = request.get_header_request();
+    let (header, req, obj) = request.get_header_request_middleware();
 
     match req {
         ObjectApiWatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
@@ -76,6 +77,14 @@ pub fn handle_watch_request<AC>(
             auth_ctx.global_ctx.tables().clone(),
             header,
         ),
+        _ => {
+            debug!("Unsupported create request: {:?}", req);
+            Status::new(
+                "Creation".to_owned(),
+                ErrorCode::InvalidCreateRequest,
+                Some("invalid create request".to_owned()),
+            )
+        }
     }
 }
 

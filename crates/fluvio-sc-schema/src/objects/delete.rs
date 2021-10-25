@@ -24,7 +24,7 @@ use fluvio_controlplane_metadata::core::Removable;
 
 use crate::Status;
 use crate::AdminPublicApiKey;
-use crate::AdminRequest;
+
 
 pub trait DeleteSpec: Removable {
     /// convert delete key into request
@@ -65,7 +65,6 @@ impl DeleteRequest {
     }
 }
 
-impl AdminRequest for DeleteRequest {}
 
 impl Request for DeleteRequest {
     const API_KEY: u16 = AdminPublicApiKey::Delete as u16;

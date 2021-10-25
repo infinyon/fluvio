@@ -12,13 +12,17 @@ use bytes::{Buf, BufMut};
 use crate::api::RequestHeader;
 use crate::{Decoder, Encoder, Version};
 
+use super::DefaultRequestMiddleWare;
+use super::RequestMiddleWare;
+
 #[derive(Debug, Default)]
-pub struct ResponseMessage<P> {
+pub struct ResponseMessage<P, M = DefaultRequestMiddleWare> {
     pub correlation_id: i32,
+    pub middleware: M,
     pub response: P,
 }
 
-impl<P> ResponseMessage<P> {
+impl<P> ResponseMessage<P,DefaultRequestMiddleWare> {
     pub fn from_header(header: &RequestHeader, response: P) -> Self {
         Self::new(header.correlation_id(), response)
     }
@@ -26,12 +30,25 @@ impl<P> ResponseMessage<P> {
     pub fn new(correlation_id: i32, response: P) -> Self {
         Self {
             correlation_id,
+            middleware: DefaultRequestMiddleWare::default(),
             response,
         }
     }
 }
 
-impl<P> ResponseMessage<P>
+impl<P,M> ResponseMessage<P,M> {
+    pub fn from_header_with_mw(header: &RequestHeader, response: P,middleware: M) -> Self {
+        Self {
+            correlation_id: header.correlation_id(),
+            middleware,
+            response,
+        }
+    }
+
+
+}
+
+impl<P> ResponseMessage<P,DefaultRequestMiddleWare>
 where
     P: Decoder,
 {
@@ -46,6 +63,7 @@ where
         let response = P::decode_from(src, version)?;
         Ok(ResponseMessage {
             correlation_id,
+            middleware: DefaultRequestMiddleWare::default(),
             response,
         })
     }
@@ -79,9 +97,10 @@ where
     }
 }
 
-impl<P> Encoder for ResponseMessage<P>
+impl<P,M> Encoder for ResponseMessage<P,M>
 where
     P: Encoder + Default,
+    M: RequestMiddleWare
 {
     fn write_size(&self, version: Version) -> usize {
         self.correlation_id.write_size(version) + self.response.write_size(version)

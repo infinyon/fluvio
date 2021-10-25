@@ -57,10 +57,7 @@ impl X509Identity {
 
         let response = AuthResponse { success: true };
 
-        let msg = ResponseMessage {
-            correlation_id: 0,
-            response,
-        };
+        let msg = ResponseMessage::new(0, response);
 
         let version = 1;
 

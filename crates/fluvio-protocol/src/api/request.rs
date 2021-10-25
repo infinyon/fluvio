@@ -100,9 +100,6 @@ where
 }
 
 impl<R, M> RequestMessage<R, M>
-where
-    R: Request<M>,
-    M: RequestMiddleWare,
 {
     /// create with header, this assume header is constructed from higher request
     /// no api key check is performed since it is already done
@@ -114,16 +111,29 @@ where
         }
     }
 
-    #[allow(unused)]
+
+    /// destruct to header and request
     pub fn get_header_request(self) -> (RequestHeader, R) {
         (self.header, self.request)
     }
+
+    /// destruct to header, middleware, and reqq
+    pub fn get_header_request_middleware(self) -> (RequestHeader, R, M) {
+        (self.header, self.request, self.middleware)
+    }
+
+
 
     #[allow(unused)]
     #[allow(unused)]
     pub fn request(&self) -> &R {
         &self.request
     }
+}
+
+impl<R, M> RequestMessage<R, M> 
+    where R:Request<M>
+{
 
     #[allow(unused)]
     pub fn decode_response<T>(

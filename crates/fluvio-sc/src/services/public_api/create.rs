@@ -3,9 +3,9 @@ use std::io::Error as IoError;
 use dataplane::ErrorCode;
 use tracing::{debug, instrument};
 
-use dataplane::api::ResponseMessage;
-use fluvio_sc_schema::{Status, ObjCreateRequest};
-use fluvio_sc_schema::ObjectApiCreateRequest;
+use dataplane::api::{RequestMessage, ResponseMessage};
+use fluvio_sc_schema::{ObjectDecoder, Status};
+use fluvio_sc_schema::objects::ObjectApiCreateRequest;
 use fluvio_auth::AuthContext;
 
 use crate::services::auth::AuthServiceContext;
@@ -13,10 +13,10 @@ use crate::services::auth::AuthServiceContext;
 /// Handler for create topic request
 #[instrument(skip(request, auth_context))]
 pub async fn handle_create_request<AC: AuthContext>(
-    request: ObjCreateRequest,
+    request: RequestMessage<ObjectApiCreateRequest,ObjectDecoder>,
     auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, IoError> {
-    let (header, obj, req) = request.get_header_request();
+    let (header,req) = request.get_header_request();
 
     let status = match req {
         ObjectApiCreateRequest::Topic(create) => {
