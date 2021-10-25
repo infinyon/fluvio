@@ -172,7 +172,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(
+    pub async fn list<S>(
         &self,
         filters: Vec<S::ListFilter>,
     ) -> Result<Vec<Metadata<S>>, FluvioError>
@@ -184,6 +184,7 @@ impl FluvioAdmin {
 
         let list_request = ListRequest::new(filters);
 
+        let api_request = S::into_list_request(filters.into());
         let response = self.send_receive(list_request).await?;
 
         response
