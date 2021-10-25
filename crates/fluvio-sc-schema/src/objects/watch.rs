@@ -11,7 +11,10 @@ use fluvio_controlplane_metadata::message::Message;
 use crate::{AdminPublicApiKey, AdminRequest, AdminSpec};
 use crate::core::Spec;
 
-use super::Metadata;
+use super::{Metadata,ObjectApiEnum};
+
+ObjectApiEnum!(WatchRequest);
+ObjectApiEnum!(WatchResponse);
 
 /// Watch resources
 /// Argument epoch is not being used, it is always 0
@@ -21,16 +24,14 @@ pub struct WatchRequest<S: AdminSpec> {
     data: PhantomData<S>,
 }
 
-impl<S> Request for WatchRequest<S>
-where
-    S: AdminSpec,
+impl Request for ObjectApiWatchRequest
 {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = 1;
-    type Response = WatchResponse<S>;
+    type Response = ObjectApiWatchResponse;
 }
 
-impl<S> AdminRequest for WatchRequest<S> where S: AdminSpec {}
+
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct WatchResponse<S: AdminSpec> {

@@ -10,7 +10,7 @@ pub use watch::*;
 pub use metadata::*;
 
 pub use crate::NameFilter;
-pub(crate) use object_macro::ObjectApiEnum;
+pub(crate) use object_macro::{ObjectApiEnum,ObjectApiDecode};
 
 mod metadata {
 
@@ -119,10 +119,32 @@ mod object_macro {
                     }
                 }
 
-                impl <M>dataplane::api::Request<M> for [<ObjectApi $api>]
-                    where M: crate::AdminObjectDecoder
-                {
-                    fn decode_object<T>(&mut self, src: &mut T, mw: &M,version: dataplane::core::Version) -> Result<(), std::io::Error>
+                // We implement decode signature even thought this will be never called.
+                // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
+                // to provide decode implementation but shoudl be never called
+                impl  dataplane::core::Decoder for [<ObjectApi $api>] {
+
+                    fn decode<T>(&mut self, _src: &mut T, _version: dataplane::core::Version) -> Result<(),std::io::Error>
+                    where
+                        T: dataplane::bytes::Buf
+                    {
+                        panic!("should not be called");
+                    }                       
+
+                }
+            }
+        }
+    }
+
+    macro_rules! ObjectApiDecode {
+
+        ($api:ident,$m:ident) => {
+
+            
+            paste::paste! {
+                    
+                
+                    fn decode_object<T>(&mut self, src: &mut T, mw: &$m ,version: dataplane::core::Version) -> Result<(), std::io::Error>
                     where
                         T: dataplane::bytes::Buf,
 
@@ -159,27 +181,13 @@ mod object_macro {
                         }
                     }
 
-                }
-
-                // We implement decode signature even thought this will be never called.
-                // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
-                // to provide decode implementation but shoudl be never called
-                impl  dataplane::core::Decoder for [<ObjectApi $api>] {
-
-                    fn decode<T>(&mut self, _src: &mut T, _version: dataplane::core::Version) -> Result<(),std::io::Error>
-                    where
-                        T: dataplane::bytes::Buf
-                    {
-                        panic!("should not be called");
-                    }                       
-
-                }
-
-
+                
             }
+            
         }
     }
 
     pub(crate) use ObjectApiEnum;
+    pub(crate) use ObjectApiDecode;
 
 }

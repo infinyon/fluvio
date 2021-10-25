@@ -5,8 +5,12 @@ use std::fmt::Debug;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
-use crate::{Status, AdminPublicApiKey, AdminRequest, AdminSpec};
+use crate::{Status, AdminPublicApiKey,AdminSpec};
 pub use create::AllCreatableSpec;
+
+use super::ObjectApiEnum;
+
+ObjectApiEnum!(CreateRequest);
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct CreateRequest<S: AdminSpec> {
@@ -15,16 +19,14 @@ pub struct CreateRequest<S: AdminSpec> {
     pub spec: AllCreatableSpec<S>,
 }
 
-impl<S> Request for CreateRequest<S>
-where
-    S: AdminSpec,
+impl Request for ObjectApiCreateRequest
 {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = Status;
 }
 
-impl<S> AdminRequest for CreateRequest<S> where S: AdminSpec {}
+
 
 /// Used for compatibility with older versions of the API
 pub enum CreateType {

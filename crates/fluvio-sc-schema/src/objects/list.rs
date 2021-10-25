@@ -5,8 +5,8 @@ use std::fmt::Debug;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
-use crate::{AdminPublicApiKey, AdminRequest, AdminSpec};
-use super::ObjectApiEnum;
+use crate::{AdminObjectDecoder, AdminPublicApiKey, AdminSpec,ObjectDecoder};
+use super::{ObjectApiEnum,ObjectApiDecode};
 
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(ListResponse);
@@ -28,14 +28,15 @@ where
     }
 }
 
-impl Request for ObjectApiListRequest
+impl Request<ObjectDecoder> for ObjectApiListRequest
 {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = ObjectApiListResponse;
+
+    ObjectApiDecode!(ListRequest,ObjectDecoder);
 }
 
-impl<S> AdminRequest for ListRequest<S> where S: AdminSpec {}
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListResponse<S: AdminSpec>(Vec<S::ListType>);

@@ -21,7 +21,7 @@ use dataplane::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
 use crate::AdminSpec;
-use crate::objects::{CreateRequest, DeleteRequest, ListRequest, ListResponse, WatchRequest,ObjectApiListRequest};
+use crate::objects::{ObjectApiListRequest,ObjectApiCreateRequest,ObjectApiWatchRequest};
 
 use crate::core::Spec;
 
@@ -33,7 +33,7 @@ pub enum AdminPublicRequest {
     CreateRequest(RequestMessage<CreateDecoder, ObjectApiCreateRequest>),
     //  DeleteRequest(ObjectRequest<ObjectDecoder,ObjectApiDeleteRequest>),
     ListRequest(RequestMessage<ObjectDecoder, ObjectApiListRequest>),
-    WatchRequest(ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>),
+    WatchRequest(RequestMessage<ObjectDecoder, ObjectApiWatchRequest>),
 }
 
 impl Default for AdminPublicRequest {
@@ -71,11 +71,15 @@ impl ApiMessage for AdminPublicRequest {
         match api_key {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
             AdminPublicApiKey::Create => {
+
+                todo!()
+                /* 
                 let mut object = CreateDecoder::default();
                 object.decode(src, header.api_version())?;
                 let mut body = ObjectApiCreateRequest::default();
                 body.decode_object(src, &object, header.api_version())?;
                 Ok(Self::CreateRequest(RequestMessage::new_with_mw(header, object,body)))
+                */
             }
 
             AdminPublicApiKey::Delete => {
@@ -94,6 +98,8 @@ impl ApiMessage for AdminPublicRequest {
             }
 
             AdminPublicApiKey::List => {
+
+                /* 
                 let mut object = ObjectDecoder::default();
                 object.decode(src, header.api_version())?;
                 let mut body = ObjectApiListRequest::default();
@@ -103,8 +109,11 @@ impl ApiMessage for AdminPublicRequest {
                     object,
                     body,
                 }))
+                */
+                todo!()
             }
             AdminPublicApiKey::Watch => {
+                /* 
                 let mut object = ObjectDecoder::default();
                 object.decode(src, header.api_version())?;
                 let mut body = ObjectApiWatchRequest::default();
@@ -114,16 +123,19 @@ impl ApiMessage for AdminPublicRequest {
                     object,
                     body,
                 }))
+                */
+                todo!()
             }
         }
     }
 }
  mod objects {
 
+    use super::*;
    // ObjectApiEnum!(CreateRequest);
    
    // ObjectApiEnum!(WatchRequest);
-
+   /* 
     /// Most of Request except create which has special format
     #[derive(Default, Debug)]
     pub struct ObjectRequest<Obj, Body> {
@@ -205,6 +217,7 @@ impl ApiMessage for AdminPublicRequest {
         }
     }
 
+    */
 
     use crate::topic::TopicSpec;
     use crate::spu::{SpuSpec};
