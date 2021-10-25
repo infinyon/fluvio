@@ -1455,6 +1455,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-sc-schema",
+ "fluvio-smartengine",
  "fluvio-socket",
  "fluvio-spu-schema",
  "fluvio-types",

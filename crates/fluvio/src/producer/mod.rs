@@ -18,6 +18,8 @@ use crate::spu::SpuPool;
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
+use fluvio_spu_schema::server::stream_fetch::{SmartStreamPayload, SmartStreamWasm, SmartStreamKind};
+use std::collections::BTreeMap;
 
 /// An interface for producing events to a particular topic
 ///
@@ -29,6 +31,34 @@ pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
+    pub(crate) wasm_module: Option<SmartStreamPayload>,
+}
+
+#[cfg(feature = "smartengine")]
+impl TopicProducer {
+    /// Adds a SmartStream filter to this TopicProducer
+    pub fn wasm_filter<T: Into<Vec<u8>>>(
+        mut self,
+        filter: T,
+        params: BTreeMap<String, String>,
+    ) -> Self {
+        self.wasm_module = Some(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(filter.into()),
+            kind: SmartStreamKind::Filter,
+            params: params.into(),
+        });
+        self
+    }
+
+    /// Adds a SmartStream map to this TopicProducer
+    pub fn wasm_map<T: Into<Vec<u8>>>(mut self, map: T, params: BTreeMap<String, String>) -> Self {
+        self.wasm_module = Some(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(map.into()),
+            kind: SmartStreamKind::Map,
+            params: params.into(),
+        });
+        self
+    }
 }
 
 impl TopicProducer {
@@ -38,6 +68,7 @@ impl TopicProducer {
             topic,
             pool,
             partitioner,
+            wasm_module: None,
         }
     }
 
@@ -88,10 +119,56 @@ impl TopicProducer {
         let partition_count = topic_spec.partitions();
         let partition_config = PartitionerConfig { partition_count };
 
-        let entries = records
+        let mut entries = records
             .into_iter()
             .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
-            .map(Record::from);
+            .map(Record::from)
+            .collect::<Vec<Record>>();
+
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "smartengine")] {
+                if let Some(ref smart_payload) = self.wasm_module {
+
+                    use fluvio_smartengine::{SmartEngine, SmartStream};
+                    use dataplane::smartstream::{
+                        SmartStreamExtraParams,
+                        SmartStreamInput,
+                    };
+                    let engine = SmartEngine::default();
+                    let smart_module = engine
+                        .create_module_from_binary(
+                            &smart_payload
+                            .wasm
+                            .get_raw()
+                            .expect("failed to get raw wasm"),
+                        )
+                        .expect("Failed to get module from raw wasm");
+
+                    let mut smartstream: Box<dyn SmartStream> = match &smart_payload.kind {
+                        SmartStreamKind::Filter => Box::new(
+                            smart_module
+                            .create_filter(&engine, SmartStreamExtraParams::default())
+                            .expect("Failed to create filter"),
+                        ),
+                        SmartStreamKind::Map => Box::new(
+                            smart_module
+                            .create_map(&engine, SmartStreamExtraParams::default())
+                            .expect("Failed to create map"),
+                        ),
+                        SmartStreamKind::Flatmap => Box::new(
+                            smart_module
+                            .create_flatmap(&engine, SmartStreamExtraParams::default())
+                            .expect("Failed to create map"),
+                        ),
+                        SmartStreamKind::Aggregate { accumulator: _ } => {
+                            todo!("Aggregate not implemented yet")
+                        }
+                    };
+                    let output = smartstream.process(SmartStreamInput::from_records(entries).expect("Failed to build smartstream input")).expect("Failed to process smartstream");
+                    entries = output.successes;
+                }
+            }
+        }
 
         // Calculate the partition for each entry
         // Use a block scope to ensure we drop the partitioner lock
