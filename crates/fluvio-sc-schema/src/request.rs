@@ -30,10 +30,10 @@ pub use objects::*;
 #[derive(Debug, Encoder)]
 pub enum AdminPublicRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-    CreateRequest(RequestMessage<CreateDecoder, ObjectApiCreateRequest>),
+    CreateRequest(RequestMessage<ObjectApiCreateRequest,CreateDecoder>),
     //  DeleteRequest(ObjectRequest<ObjectDecoder,ObjectApiDeleteRequest>),
-    ListRequest(RequestMessage<ObjectDecoder, ObjectApiListRequest>),
-    WatchRequest(RequestMessage<ObjectDecoder, ObjectApiWatchRequest>),
+    ListRequest(RequestMessage<ObjectApiListRequest,ObjectDecoder>),
+    WatchRequest(RequestMessage<ObjectApiWatchRequest,ObjectDecoder>),
 }
 
 impl Default for AdminPublicRequest {
@@ -219,6 +219,7 @@ impl ApiMessage for AdminPublicRequest {
 
     */
 
+    use dataplane::api::RequestMiddleWare;
     use crate::topic::TopicSpec;
     use crate::spu::{SpuSpec};
     use crate::smartmodule::SmartModuleSpec;
@@ -268,6 +269,8 @@ impl ApiMessage for AdminPublicRequest {
     pub struct CreateDecoder {
         ty: u8,
     }
+
+    impl RequestMiddleWare for CreateDecoder{}
 
     impl AdminObjectDecoder for CreateDecoder {
         fn is_topic(&self) -> bool {

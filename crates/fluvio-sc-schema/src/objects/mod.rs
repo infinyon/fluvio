@@ -149,6 +149,7 @@ mod object_macro {
                         T: dataplane::bytes::Buf,
 
                     {
+                        use crate::AdminObjectDecoder;
 
                         if mw.is_topic() {
                             let mut request = $api::<crate::topic::TopicSpec>::default();

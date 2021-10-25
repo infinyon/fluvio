@@ -5,10 +5,10 @@ use std::fmt::Debug;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
-use crate::{Status, AdminPublicApiKey,AdminSpec};
+use crate::{AdminPublicApiKey, AdminSpec, CreateDecoder, Status};
 pub use create::AllCreatableSpec;
 
-use super::ObjectApiEnum;
+use super::{ObjectApiEnum,ObjectApiDecode};
 
 ObjectApiEnum!(CreateRequest);
 
@@ -19,11 +19,13 @@ pub struct CreateRequest<S: AdminSpec> {
     pub spec: AllCreatableSpec<S>,
 }
 
-impl Request for ObjectApiCreateRequest
+impl Request<CreateDecoder> for ObjectApiCreateRequest
 {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = Status;
+
+    ObjectApiDecode!(CreateRequest,CreateDecoder);
 }
 
 
