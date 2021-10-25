@@ -380,20 +380,6 @@ where
     }
 }
 
-impl Encoder for Bytes {
-    fn write_size(&self, _version: Version) -> usize {
-        self.len()
-    }
-
-    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), Error>
-    where
-        T: BufMut,
-    {
-        dest.put_slice(self.as_ref());
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod test {
 
