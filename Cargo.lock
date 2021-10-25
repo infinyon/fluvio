@@ -1733,10 +1733,11 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "bytes",
  "fluvio-future",
+ "fluvio-protocol",
  "fluvio-protocol-derive",
  "flv-util",
  "futures",

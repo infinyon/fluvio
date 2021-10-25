@@ -6,9 +6,7 @@ use bytes::Bytes;
 use bytes::BytesMut;
 use fluvio_future::file_slice::AsyncFileSlice;
 
-use crate::api::Request;
-use crate::api::RequestMessage;
-use crate::api::ResponseMessage;
+use crate::api::{Request,RequestMessage,ResponseMessage};
 use crate::{Encoder, Version};
 
 pub enum StoreValue {
