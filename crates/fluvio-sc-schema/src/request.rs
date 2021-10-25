@@ -10,12 +10,10 @@ use std::io::ErrorKind;
 use std::fmt::Debug;
 
 use tracing::{debug, trace};
-use paste::paste;
+
 
 use dataplane::bytes::{Buf, BufMut};
-use dataplane::api::{ApiMessage};
-use dataplane::api::RequestHeader;
-use dataplane::api::RequestMessage;
+use dataplane::api::{ApiMessage,RequestHeader,RequestMessage,RequestMiddleWare};
 
 use dataplane::api::api_decode;
 use dataplane::core::{Encoder, Decoder, Version};
@@ -23,7 +21,7 @@ use dataplane::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
 use crate::AdminSpec;
-use crate::objects::{CreateRequest, DeleteRequest, ListRequest, ListResponse, WatchRequest};
+use crate::objects::{CreateRequest, DeleteRequest, ListRequest, ListResponse, WatchRequest,ObjectApiListRequest};
 
 use crate::core::Spec;
 
@@ -32,9 +30,9 @@ pub use objects::*;
 #[derive(Debug, Encoder)]
 pub enum AdminPublicRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-    CreateRequest(ObjectRequest<CreateDecoder, ObjectApiCreateRequest>),
+    CreateRequest(RequestMessage<CreateDecoder, ObjectApiCreateRequest>),
     //  DeleteRequest(ObjectRequest<ObjectDecoder,ObjectApiDeleteRequest>),
-    ListRequest(ObjListRequest),
+    ListRequest(RequestMessage<ObjectDecoder, ObjectApiListRequest>),
     WatchRequest(ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>),
 }
 
@@ -77,11 +75,7 @@ impl ApiMessage for AdminPublicRequest {
                 object.decode(src, header.api_version())?;
                 let mut body = ObjectApiCreateRequest::default();
                 body.decode_object(src, &object, header.api_version())?;
-                Ok(Self::CreateRequest(ObjectRequest {
-                    header,
-                    object,
-                    body,
-                }))
+                Ok(Self::CreateRequest(RequestMessage::new_with_mw(header, object,body)))
             }
 
             AdminPublicApiKey::Delete => {
@@ -124,96 +118,11 @@ impl ApiMessage for AdminPublicRequest {
         }
     }
 }
+ mod objects {
 
-mod objects {
-
-    use crate::topic::TopicSpec;
-    use crate::spu::{SpuSpec, CustomSpuSpec};
-    use crate::smartmodule::SmartModuleSpec;
-    use crate::partition::PartitionSpec;
-    use crate::connector::ManagedConnectorSpec;
-    use crate::spg::SpuGroupSpec;
-    use crate::table::TableSpec;
-
-    use super::*;
-
-    pub type ObjListRequest = ObjectRequest<ObjectDecoder, ObjectApiListRequest>;
-    pub type ObjListResponse = ObjectResponse<ObjectDecoder, ObjectApiListResponse>;
-    pub type ObjCreateRequest = ObjectRequest<CreateDecoder, ObjectApiCreateRequest>;
-    pub type ObjWatchRequest = ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>;
-    pub type ObjWatchResponse = ObjectResponse<ObjectDecoder, ObjectApiWatchRequest>;
-
-    macro_rules! ObjectApiEnum {
-        ($api:ident) => {
-
-
-            paste! {
-                #[derive(Debug,Encoder)]
-                pub enum [<ObjectApi $api>] {
-                    Topic($api<TopicSpec>),
-                    Spu($api<SpuSpec>),
-                    CustomSpu($api<CustomSpuSpec>),
-                    SmartModule($api<SmartModuleSpec>),
-                    Partition($api<PartitionSpec>),
-                    ManagedConnector($api<ManagedConnectorSpec>),
-                    SpuGroup($api<SpuGroupSpec>),
-                    Table($api<TableSpec>),
-                }
-
-                impl Default for [<ObjectApi $api>] {
-                    fn default() -> Self {
-                        Self::Topic($api::<TopicSpec>::default())
-                    }
-                }
-
-                impl  [<ObjectApi $api>] {
-                    pub fn decode_object<T,O>(&mut self, src: &mut T, obj_ty: &O,version: Version) -> Result<(), IoError>
-                    where
-                        T: Buf,
-                        O: AdminObjectDecoder
-
-                    {
-
-                        if obj_ty.is_topic() {
-                            let mut request = $api::<TopicSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::Topic(request);
-                            return Ok(())
-                        } else if obj_ty.is_spu() {
-                            let mut request = $api::<SpuSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::Spu(request);
-                            return Ok(())
-                        } else if obj_ty.is_smart_module(){
-                            let mut request = $api::<SmartModuleSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::SmartModule(request);
-                            return Ok(())
-                        } else if obj_ty.is_partition(){
-
-                            let mut request = $api::<PartitionSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::Partition(request);
-
-                            Ok(())
-                        } else  {
-
-                            Err(IoError::new(
-                                ErrorKind::InvalidData,
-                                format!("invalid request type {:#?}", obj_ty),
-                            ))
-                        }
-                    }
-                }
-
-            }
-        }
-    }
-
-    ObjectApiEnum!(CreateRequest);
-    ObjectApiEnum!(ListRequest);
-    ObjectApiEnum!(ListResponse);
-    ObjectApiEnum!(WatchRequest);
+   // ObjectApiEnum!(CreateRequest);
+   
+   // ObjectApiEnum!(WatchRequest);
 
     /// Most of Request except create which has special format
     #[derive(Default, Debug)]
@@ -296,7 +205,14 @@ mod objects {
         }
     }
 
-    pub trait AdminObjectDecoder: Debug {
+
+    use crate::topic::TopicSpec;
+    use crate::spu::{SpuSpec};
+    use crate::smartmodule::SmartModuleSpec;
+    use crate::partition::PartitionSpec;
+
+
+    pub trait AdminObjectDecoder {
         fn is_topic(&self) -> bool;
         fn is_spu(&self) -> bool;
         fn is_partition(&self) -> bool;
@@ -307,6 +223,8 @@ mod objects {
     pub struct ObjectDecoder {
         ty: String,
     }
+
+    impl RequestMiddleWare for ObjectDecoder{}
 
     impl AdminObjectDecoder for ObjectDecoder {
         fn is_topic(&self) -> bool {

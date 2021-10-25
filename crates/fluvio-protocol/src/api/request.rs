@@ -43,7 +43,7 @@ where
 
 impl<R, M> Default for RequestMessage<R, M>
 where
-    R: Request + Default,
+    R: Request<M> + Default,
     M: RequestMiddleWare,
 {
     fn default() -> Self {
@@ -60,7 +60,7 @@ where
 
 impl<R> RequestMessage<R, DefaultRequestMiddleWare>
 where
-    R: Request,
+    R: Request<DefaultRequestMiddleWare>,
 {
     /// create with header, this assume header is constructed from higher request
     /// no api key check is performed since it is already done
@@ -101,12 +101,12 @@ where
 
 impl<R, M> RequestMessage<R, M>
 where
-    R: Request,
+    R: Request<M>,
+    M: RequestMiddleWare,
 {
     /// create with header, this assume header is constructed from higher request
     /// no api key check is performed since it is already done
-    #[allow(unused)]
-    pub fn new_with_body(header: RequestHeader, middleware: M, request: R) -> Self {
+    pub fn new_with_mw(header: RequestHeader, middleware: M, request: R) -> Self {
         Self {
             header,
             middleware,
@@ -159,7 +159,7 @@ where
 
 impl<R, M> Decoder for RequestMessage<R, M>
 where
-    R: Request,
+    R: Request<M>,
     M: RequestMiddleWare,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
@@ -168,14 +168,14 @@ where
     {
         self.header.decode(src, version)?;
         self.middleware.decode(src, version)?;
-        self.request.decode(src, self.header.api_version())?;
+        self.request.decode_object(src, &self.middleware,self.header.api_version())?;
         Ok(())
     }
 }
 
 impl<R,M> Encoder for RequestMessage<R,M>
 where
-    R: Request,
+    R: Request<M>,
     M: RequestMiddleWare
 {
     fn write_size(&self, version: Version) -> usize {

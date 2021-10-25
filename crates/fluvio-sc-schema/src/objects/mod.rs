@@ -10,6 +10,7 @@ pub use watch::*;
 pub use metadata::*;
 
 pub use crate::NameFilter;
+pub(crate) use object_macro::ObjectApiEnum;
 
 mod metadata {
 
@@ -82,4 +83,103 @@ mod metadata {
             })
         }
     }
+}
+
+mod object_macro {
+
+    
+   // pub type ObjCreateRequest = ObjectRequest<CreateDecoder, ObjectApiCreateRequest>;
+   // pub type ObjWatchRequest = ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>;
+   // pub type ObjWatchResponse = ObjectResponse<ObjectDecoder, ObjectApiWatchRequest>;
+
+
+
+    macro_rules! ObjectApiEnum {
+        ($api:ident) => {
+
+            paste::paste! {
+                
+
+                #[derive(Debug,Encoder)]
+                pub enum [<ObjectApi $api>] {
+                    Topic($api<crate::topic::TopicSpec>),
+                    Spu($api<crate::spu::SpuSpec>),
+                    CustomSpu($api<crate::spu::CustomSpuSpec>),
+                    SmartModule($api<crate::smartmodule::SmartModuleSpec>),
+                    Partition($api<crate::partition::PartitionSpec>),
+                    ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
+                    SpuGroup($api<crate::spg::SpuGroupSpec>),
+                    Table($api<crate::table::TableSpec>),
+                    Empty()
+                }
+
+                impl Default for [<ObjectApi $api>] {
+                    fn default() -> Self {
+                        Self::Empty()
+                    }
+                }
+
+                impl <M>dataplane::api::Request<M> for [<ObjectApi $api>]
+                    where M: crate::AdminObjectDecoder
+                {
+                    fn decode_object<T>(&mut self, src: &mut T, mw: &M,version: dataplane::core::Version) -> Result<(), std::io::Error>
+                    where
+                        T: dataplane::bytes::Buf,
+
+                    {
+
+                        if mw.is_topic() {
+                            let mut request = $api::<crate::topic::TopicSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::Topic(request);
+                            return Ok(())
+                        } else if mw.is_spu() {
+                            let mut request = $api::<crate::spu::SpuSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::Spu(request);
+                            return Ok(())
+                        } else if mw.is_smart_module(){
+                            let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::SmartModule(request);
+                            return Ok(())
+                        } else if mw.is_partition(){
+
+                            let mut request = $api::<crate::partition::PartitionSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::Partition(request);
+
+                            Ok(())
+                        } else  {
+
+                            Err(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                format!("invalid request type {:#?}", mw),
+                            ))
+                        }
+                    }
+
+                }
+
+                // We implement decode signature even thought this will be never called.
+                // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
+                // to provide decode implementation but shoudl be never called
+                impl  dataplane::core::Decoder for [<ObjectApi $api>] {
+
+                    fn decode<T>(&mut self, _src: &mut T, _version: dataplane::core::Version) -> Result<(),std::io::Error>
+                    where
+                        T: dataplane::bytes::Buf
+                    {
+                        panic!("should not be called");
+                    }                       
+
+                }
+
+
+            }
+        }
+    }
+
+    pub(crate) use ObjectApiEnum;
+
 }

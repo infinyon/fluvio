@@ -3,6 +3,7 @@ use std::path::Path;
 use std::fs::File;
 use std::io::{Cursor, Error as IoError, ErrorKind, Read};
 use std::convert::TryFrom;
+
 use bytes::Buf;
 use tracing::{debug, trace};
 
@@ -11,7 +12,8 @@ mod response;
 
 pub use self::response::*;
 pub use self::request::*;
-use crate::{Encoder, Decoder};
+
+use crate::{Encoder, Decoder, Version};
 
 pub const MAX_BYTES: i32 = 52428800;
 
@@ -26,7 +28,10 @@ macro_rules! api_decode {
     }};
 }
 
-pub trait Request: Encoder + Decoder + Debug {
+pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
+where
+    M: RequestMiddleWare,
+{
     const API_KEY: u16;
 
     const DEFAULT_API_VERSION: i16 = 0;
@@ -34,6 +39,19 @@ pub trait Request: Encoder + Decoder + Debug {
     const MAX_API_VERSION: i16 = -1;
 
     type Response: Encoder + Decoder + Debug;
+
+    /// used by RequestMessage to decode with middleware
+    fn decode_object<T>(
+        &mut self,
+        src: &mut T,
+        _middleware: &M,
+        version: Version,
+    ) -> Result<(), IoError>
+    where
+        T: Buf,
+    {
+        self.decode(src, version)
+    }
 }
 
 pub trait ApiMessage: Sized + Default {

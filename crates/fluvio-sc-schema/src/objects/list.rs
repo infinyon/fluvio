@@ -6,6 +6,13 @@ use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
 use crate::{AdminPublicApiKey, AdminRequest, AdminSpec};
+use super::ObjectApiEnum;
+
+ObjectApiEnum!(ListRequest);
+ObjectApiEnum!(ListResponse);
+
+//pub type ObjListRequest = ObjectRequest<ObjectDecoder, ObjectApiListRequest>;
+//pub type ObjListResponse = ObjectResponse<ObjectDecoder, ObjectApiListResponse>;
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {
@@ -21,13 +28,11 @@ where
     }
 }
 
-impl<S> Request for ListRequest<S>
-where
-    S: AdminSpec,
+impl Request for ObjectApiListRequest
 {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
     const DEFAULT_API_VERSION: i16 = 1;
-    type Response = ListResponse<S>;
+    type Response = ObjectApiListResponse;
 }
 
 impl<S> AdminRequest for ListRequest<S> where S: AdminSpec {}
