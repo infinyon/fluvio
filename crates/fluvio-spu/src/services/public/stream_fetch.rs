@@ -1787,7 +1787,7 @@ mod test {
 
     #[fluvio_future::test(ignore)]
     async fn test_stream_fetch_array_map() {
-        let test_path = temp_dir().join("test_stream_fetch_array_map");
+        let test_path = temp_dir().join("test_stream_fetch_array_map_json_array");
         ensure_clean_dir(&test_path);
 
         let addr = "127.0.0.1:12010";
@@ -1828,7 +1828,7 @@ mod test {
             .await
             .expect("write");
 
-        let wasm = load_wasm_module("fluvio_wasm_array_map");
+        let wasm = load_wasm_module("fluvio_wasm_array_map_array");
         let wasm_payload = SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(wasm),
             kind: SmartStreamKind::ArrayMap,

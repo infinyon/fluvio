@@ -13,7 +13,9 @@ members = [
     "map_double",
     "map_json",
     "map_regex",
-    "array_map_json",
+    "array_map_json_array",
+    "array_map_json_object",
+    "array_map_json_reddit",
 ]
 
 # lto is need to reduce wasm binary size

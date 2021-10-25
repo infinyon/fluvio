@@ -1,7 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.12 - UNRELEASED
-*
+* Add examples for ArrayMap. ([#1804](https://github.com/infinyon/fluvio/issues/1804))
 
 ## Platform Version 0.9.11 - 2021-10-22
 * Reconnect producer to SPU if network error. ([#770](https://github.com/infinyon/fluvio/issues/770))
