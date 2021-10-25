@@ -219,7 +219,7 @@ impl StreamFetchHandler {
                                 &header,
                                 stream_id,
                                 error_code,
-                                "Invalid SmartStream Aggregate",
+                                "Invalid SmartStream Arraymap",
                             )
                             .await?;
                             return Err(SocketError::Io(IoError::new(
@@ -245,8 +245,15 @@ impl StreamFetchHandler {
                                         "aggregate".to_string(),
                                     ),
                                 );
-                                send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                    .await?;
+                                send_back_error(
+                                    &sink,
+                                    &replica,
+                                    &header,
+                                    stream_id,
+                                    error_code,
+                                    "Invalid SmartStream Aggregate",
+                                )
+                                .await?;
                                 return Err(SocketError::Io(IoError::new(
                                     ErrorKind::Other,
                                     format!("Failed to instantiate SmartStreamAggregate {}", err),
@@ -2070,5 +2077,72 @@ mod test {
         }
 
         server_end_event.notify();
+    }
+
+    #[fluvio_future::test(ignore)]
+    async fn test_stream_fetch_invalid_smartstream() {
+        let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream");
+        ensure_clean_dir(&test_path);
+
+        let addr = "127.0.0.1:12010";
+        let mut spu_config = SpuConfig::default();
+        spu_config.log.base_dir = test_path;
+        let ctx = GlobalContext::new_shared_context(spu_config);
+
+        let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+        // wait for stream controller async to start
+        sleep(Duration::from_millis(100)).await;
+
+        let client_socket =
+            MultiplexerSocket::shared(FluvioSocket::connect(addr).await.expect("connect"));
+
+        // perform for two versions
+        let topic = "test_invalid_smartstream";
+        let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+        let test_id = test.id.clone();
+        let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+        ctx.leaders_state().insert(test_id, replica.clone());
+
+        let wasm = include_bytes!("test_data/filter_missing_attribute.wasm").to_vec();
+        let wasm_payload = SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(wasm),
+            kind: SmartStreamKind::Filter,
+            ..Default::default()
+        };
+
+        let stream_request = DefaultStreamFetchRequest {
+            topic: topic.to_owned(),
+            partition: 0,
+            fetch_offset: 0,
+            isolation: Isolation::ReadUncommitted,
+            max_bytes: 10000,
+            wasm_module: Vec::new(),
+            wasm_payload: Some(wasm_payload),
+            ..Default::default()
+        };
+
+        let mut stream = client_socket
+            .create_stream(RequestMessage::new_request(stream_request), 11)
+            .await
+            .expect("create stream");
+
+        let response = stream
+            .next()
+            .await
+            .expect("should get response")
+            .expect("response should be Ok");
+
+        match response.partition.error_code {
+            ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(name)) => {
+                assert_eq!(name, "filter");
+            }
+            _ => panic!("expected an InvalidSmartStreamModule error"),
+        }
+
+        server_end_event.notify();
+        debug!("terminated controller");
     }
 }
