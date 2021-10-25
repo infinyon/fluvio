@@ -1,8 +1,6 @@
 use std::io::Error;
 use tracing::{debug, instrument};
 
-use dataplane::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::objects::{ListRequest, ListResponse};
 use fluvio_sc_schema::{ObjListRequest, ObjListResponse, ObjectApiListRequest, ObjectApiListResponse};
 use fluvio_auth::{AuthContext};
 

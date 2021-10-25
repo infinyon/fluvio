@@ -138,7 +138,7 @@ mod objects {
     use super::*;
 
     pub type ObjListRequest = ObjectRequest<ObjectDecoder, ObjectApiListRequest>;
-    pub type ObjListResponse = ObjectRequest<ObjectDecoder, ObjectApiListResponse>;
+    pub type ObjListResponse = ObjectResponse<ObjectDecoder, ObjectApiListResponse>;
     pub type ObjCreateRequest = ObjectRequest<CreateDecoder, ObjectApiCreateRequest>;
     pub type ObjWatchRequest = ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>;
 
