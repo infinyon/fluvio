@@ -19,7 +19,6 @@ use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
 use fluvio_spu_schema::server::stream_fetch::{SmartStreamPayload, SmartStreamWasm, SmartStreamKind};
-use std::collections::BTreeMap;
 
 /// An interface for producing events to a particular topic
 ///
@@ -40,7 +39,7 @@ impl TopicProducer {
     pub fn wasm_filter<T: Into<Vec<u8>>>(
         mut self,
         filter: T,
-        params: BTreeMap<String, String>,
+        params: std::collections::BTreeMap<String, String>,
     ) -> Self {
         self.wasm_module = Some(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(filter.into()),
@@ -51,7 +50,11 @@ impl TopicProducer {
     }
 
     /// Adds a SmartStream map to this TopicProducer
-    pub fn wasm_map<T: Into<Vec<u8>>>(mut self, map: T, params: BTreeMap<String, String>) -> Self {
+    pub fn wasm_map<T: Into<Vec<u8>>>(
+        mut self,
+        map: T,
+        params: std::collections::BTreeMap<String, String>,
+    ) -> Self {
         self.wasm_module = Some(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(map.into()),
             kind: SmartStreamKind::Map,
@@ -155,10 +158,10 @@ impl TopicProducer {
                             .create_map(&engine, SmartStreamExtraParams::default())
                             .expect("Failed to create map"),
                         ),
-                        SmartStreamKind::Flatmap => Box::new(
+                        SmartStreamKind::ArrayMap => Box::new(
                             smart_module
-                            .create_flatmap(&engine, SmartStreamExtraParams::default())
-                            .expect("Failed to create map"),
+                            .create_array_map(&engine, SmartStreamExtraParams::default())
+                            .expect("Failed to create array map"),
                         ),
                         SmartStreamKind::Aggregate { accumulator: _ } => {
                             todo!("Aggregate not implemented yet")
