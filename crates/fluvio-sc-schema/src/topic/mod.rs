@@ -47,8 +47,6 @@ mod convert {
     use super::TopicSpec;
 
     impl AdminSpec for TopicSpec {
-        const AdminType: u8 = CreateType::Topic as u8;
-
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;
         type WatchResponseType = MetadataUpdate<Self>;

@@ -48,8 +48,7 @@ mod create {
         inner: S,
     }
 
-
-    impl <S> AllCreatableSpec<S>
+    impl<S> AllCreatableSpec<S>
     where
         S: AdminSpec,
     {

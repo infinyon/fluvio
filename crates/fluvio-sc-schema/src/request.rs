@@ -9,7 +9,6 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::fmt::Debug;
 
-
 use tracing::{debug, trace};
 use paste::paste;
 
@@ -24,14 +23,11 @@ use dataplane::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
 use crate::AdminSpec;
-use crate::objects::{CreateRequest,  DeleteRequest, ListRequest, ListResponse, WatchRequest};
+use crate::objects::{CreateRequest, DeleteRequest, ListRequest, ListResponse, WatchRequest};
 
 use crate::core::Spec;
 
 pub use objects::*;
-
-
-
 
 #[derive(Debug, Encoder)]
 pub enum AdminPublicRequest {
@@ -48,8 +44,6 @@ impl Default for AdminPublicRequest {
     }
 }
 
-
-
 //ObjectApiEnum!(DeleteRequest);
 
 impl ApiMessage for AdminPublicRequest {
@@ -59,9 +53,10 @@ impl ApiMessage for AdminPublicRequest {
     where
         Self: Default + Sized,
         Self::ApiKey: Sized,
-        T: Buf {
-            panic!("not needed")
-        }
+        T: Buf,
+    {
+        panic!("not needed")
+    }
 
     fn decode_from<T>(src: &mut T) -> Result<Self, IoError>
     where
@@ -87,11 +82,11 @@ impl ApiMessage for AdminPublicRequest {
                     object,
                     body,
                 }))
-            },
-            
+            }
+
             AdminPublicApiKey::Delete => {
                 todo!()
-                /* 
+                /*
                 let mut object = ObjectDecoder::default();
                 object.decode(src, header.api_version())?;
                 let request = ObjectApiDeleteRequest::default();
@@ -103,7 +98,7 @@ impl ApiMessage for AdminPublicRequest {
                 }))
                 */
             }
-            
+
             AdminPublicApiKey::List => {
                 let mut object = ObjectDecoder::default();
                 object.decode(src, header.api_version())?;
@@ -129,7 +124,6 @@ impl ApiMessage for AdminPublicRequest {
         }
     }
 }
-
 
 mod objects {
 
@@ -220,9 +214,6 @@ mod objects {
     ObjectApiEnum!(ListResponse);
     ObjectApiEnum!(WatchRequest);
 
-
-
-
     /// Most of Request except create which has special format
     #[derive(Default, Debug)]
     pub struct ObjectRequest<Obj, Body> {
@@ -231,12 +222,10 @@ mod objects {
         pub body: Body,
     }
 
-    impl <Obj,Body> ObjectRequest<Obj,Body> {
-
-        pub fn get_header_request(self) -> (RequestHeader, Body) {
-            (self.header, self.body)
+    impl<Obj, Body> ObjectRequest<Obj, Body> {
+        pub fn get_header_request(self) -> (RequestHeader, Obj, Body) {
+            (self.header, self.object, self.body)
         }
-
     }
 
     impl<Obj, Body> Encoder for ObjectRequest<Obj, Body>
@@ -266,9 +255,6 @@ mod objects {
         }
     }
 
-
-
-
     /// Most of Request except create which has special format
     #[derive(Default, Debug)]
     pub struct ObjectResponse<Obj, Body> {
@@ -276,10 +262,10 @@ mod objects {
         body: Body,
     }
 
-    impl <Obj,Body> ObjectResponse<Obj,Body> {
-
-
-
+    impl<Obj, Body> ObjectResponse<Obj, Body> {
+        pub fn new(object: Obj, body: Body) -> Self {
+            Self { object, body }
+        }
     }
 
     impl<Obj, Body> Encoder for ObjectResponse<Obj, Body>
@@ -288,15 +274,13 @@ mod objects {
         Body: Debug + Encoder,
     {
         fn write_size(&self, version: Version) -> usize {
-            self.object.write_size(version)
-                + self.body.write_size(version)
+            self.object.write_size(version) + self.body.write_size(version)
         }
 
         fn encode<T>(&self, out: &mut T, version: Version) -> Result<(), IoError>
         where
             T: BufMut,
         {
-            
             trace!("encoding object: {:#?}", &self.object);
             self.object.encode(out, version)?;
 
@@ -306,8 +290,6 @@ mod objects {
         }
     }
 
-
-
     pub trait AdminObjectDecoder: Debug {
         fn is_topic(&self) -> bool;
         fn is_spu(&self) -> bool;
@@ -316,8 +298,8 @@ mod objects {
     }
 
     #[derive(Debug, Default, Encoder, Decoder)]
-    pub struct ObjectDecoder{
-        ty: String
+    pub struct ObjectDecoder {
+        ty: String,
     }
 
     impl AdminObjectDecoder for ObjectDecoder {
@@ -338,7 +320,6 @@ mod objects {
         }
     }
 
-
     const TOPIC: u8 = 0;
     const CUSTOM_SPU: u8 = 1;
     const SPG: u8 = 2;
@@ -348,7 +329,7 @@ mod objects {
 
     #[derive(Debug, Default, Encoder, Decoder)]
     pub struct CreateDecoder {
-        ty: u8
+        ty: u8,
     }
 
     impl AdminObjectDecoder for CreateDecoder {
@@ -368,5 +349,4 @@ mod objects {
             self.ty == SMART_MODULE
         }
     }
-
 }

@@ -7,8 +7,6 @@ mod convert {
     use super::SmartModuleSpec;
 
     impl AdminSpec for SmartModuleSpec {
-        const AdminType: u8 = CreateType::SmartModule as u8;
-
         type ListFilter = NameFilter;
         type WatchResponseType = MetadataUpdate<Self>;
 

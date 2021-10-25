@@ -52,9 +52,6 @@ mod admin {
 
     /// AdminSpec has list, type, filter, delete key
     pub trait AdminSpec: Spec + Encoder + Decoder {
-        // legacy token for compatibility with previous encoding
-        const AdminType: u8;
-
         type ListFilter: ListFilter;
         type ListType: Encoder + Decoder + Debug + Sized;
         type WatchResponseType: Encoder + Decoder + Debug + Sized;

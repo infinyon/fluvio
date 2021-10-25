@@ -36,7 +36,6 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
     create: CreateRequest<TopicSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
-    
     let name = create.name;
     let topic = create.spec.to_inner();
 
@@ -62,15 +61,13 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
         ));
     }
 
-    
-
     // validate topic request
     let mut status = validate_topic_request(&name, &topic, &auth_ctx.global_ctx).await;
     if status.is_error() {
         return Ok(status);
     }
     if !create.dry_run {
-        status = process_topic_request(auth_ctx,name, topic).await;
+        status = process_topic_request(auth_ctx, name, topic).await;
     }
 
     trace!("create topics request response {:#?}", status);

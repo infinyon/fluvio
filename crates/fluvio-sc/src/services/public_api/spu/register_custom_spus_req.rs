@@ -9,7 +9,7 @@ use std::io::{Error as IoError};
 use dataplane::ErrorCode;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::spu::{SpuSpec,CustomSpuSpec};
+use fluvio_sc_schema::spu::{SpuSpec, CustomSpuSpec};
 use fluvio_sc_schema::objects::CreateRequest;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
@@ -30,7 +30,6 @@ impl RegisterCustomSpu {
         create: CreateRequest<CustomSpuSpec>,
         auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
-
         let name = create.name;
         let spec = create.spec.to_inner();
 

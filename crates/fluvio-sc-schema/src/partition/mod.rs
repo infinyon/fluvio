@@ -7,9 +7,6 @@ mod convert {
     use super::*;
 
     impl AdminSpec for PartitionSpec {
-        // not used
-        const AdminType: u8 = 0;
-
         type ListFilter = NameFilter;
         type WatchResponseType = MetadataUpdate<Self>;
 

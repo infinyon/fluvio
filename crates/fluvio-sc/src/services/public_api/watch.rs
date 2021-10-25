@@ -95,7 +95,7 @@ where
     S::IndexKey: ToString,
     <S as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S as Spec>::IndexKey: Sync + Send,
-   // MetadataUpdate<S>: Into<WatchResponse<S>>,
+    // MetadataUpdate<S>: Into<WatchResponse<S>>,
 {
     /// start watch controller
     fn update(

@@ -3,7 +3,7 @@ use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::objects::{ListRequest, ListResponse};
-use fluvio_sc_schema::{ObjListRequest,ObjectApiListRequest};
+use fluvio_sc_schema::{ObjListRequest, ObjListResponse, ObjectApiListRequest, ObjectApiListResponse};
 use fluvio_auth::{AuthContext};
 
 use crate::services::auth::AuthServiceContext;
@@ -12,32 +12,36 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_list_request<AC: AuthContext>(
     request: ObjListRequest,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ResponseMessage<ListResponse>, Error> {
+) -> Result<ObjListResponse, Error> {
     debug!("handling list request");
-    let (header, req) = request.get_header_request();
+    let (header, obj, req) = request.get_header_request();
 
     let response = match req {
-        ObjectApiListRequest::Topic(filter) => {
-            super::topic::handle_fetch_topics_request(filter, auth_ctx).await?
-        }
-        ListRequest::Spu(filter) => super::spu::handle_fetch_spus_request(filter, auth_ctx).await?,
-        ListRequest::SpuGroup(filter) => {
-            super::spg::handle_fetch_spu_groups_request(filter, auth_ctx).await?
-        }
-        ListRequest::CustomSpu(filter) => {
-            super::spu::handle_fetch_custom_spu_request(filter, auth_ctx).await?
-        }
-        ListRequest::Partition(filter) => {
-            super::partition::handle_fetch_request(filter, auth_ctx).await?
-        }
-        ListRequest::ManagedConnector(filter) => {
-            super::connector::handle_fetch_request(filter, auth_ctx).await?
-        }
-        ListRequest::SmartModule(filter) => {
-            super::smartmodule::handle_fetch_request(filter, auth_ctx).await?
-        }
-        ListRequest::Table(filter) => super::table::handle_fetch_request(filter, auth_ctx).await?,
+        ObjectApiListRequest::Topic(req) => ObjectApiListResponse::Topic(
+            super::topic::handle_fetch_topics_request(req.name_filters, auth_ctx).await?,
+        ),
+        ObjectApiListRequest::Spu(req) => ObjectApiListResponse::Spu(
+            super::spu::handle_fetch_spus_request(req.name_filters, auth_ctx).await?,
+        ),
+        ObjectApiListRequest::SpuGroup(req) => ObjectApiListResponse::SpuGroup(
+            super::spg::handle_fetch_spu_groups_request(req.name_filters, auth_ctx).await?,
+        ),
+        ObjectApiListRequest::CustomSpu(req) => ObjectApiListResponse::CustomSpu(
+            super::spu::handle_fetch_custom_spu_request(req.name_filters, auth_ctx).await?,
+        ),
+        ObjectApiListRequest::Partition(req) => ObjectApiListResponse::Partition(
+            super::partition::handle_fetch_request(req.name_filters, auth_ctx).await?,
+        ),
+        ObjectApiListRequest::ManagedConnector(req) => ObjectApiListResponse::ManagedConnector(
+            super::connector::handle_fetch_request(req.name_filters, auth_ctx).await?,
+        ),
+        ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
+            super::smartmodule::handle_fetch_request(req.name_filters, auth_ctx).await?,
+        ),
+        ObjectApiListRequest::Table(req) => ObjectApiListResponse::Table(
+            super::table::handle_fetch_request(req.name_filters, auth_ctx).await?,
+        ),
     };
 
-    Ok(ResponseMessage::from_header(&header, response))
+    Ok(ObjListResponse::new(obj, response))
 }

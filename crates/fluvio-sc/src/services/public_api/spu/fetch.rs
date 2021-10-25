@@ -15,7 +15,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
     filters: Vec<String>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse, Error> {
+) -> Result<ListResponse<CustomSpuSpec>, Error> {
     debug!("fetching custom spu list");
 
     if let Ok(authorized) = auth_ctx
@@ -26,7 +26,7 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;
-            return Ok(ListResponse::CustomSpu(vec![]));
+            return Ok(ListResponse::new(vec![]));
         }
     } else {
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
@@ -56,14 +56,14 @@ pub async fn handle_fetch_custom_spu_request<AC: AuthContext>(
     debug!("flv fetch custom resp: {} items", custom_spus.len());
     trace!("flv fetch custom spus resp {:#?}", custom_spus);
 
-    Ok(ListResponse::CustomSpu(custom_spus))
+    Ok(ListResponse::new(custom_spus))
 }
 
 #[instrument(skip(filters, auth_ctx))]
 pub async fn handle_fetch_spus_request<AC: AuthContext>(
     filters: Vec<String>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse, Error> {
+) -> Result<ListResponse<SpuSpec>, Error> {
     debug!("fetching spu list");
 
     if let Ok(authorized) = auth_ctx
@@ -74,7 +74,7 @@ pub async fn handle_fetch_spus_request<AC: AuthContext>(
         if !authorized {
             trace!("authorization failed");
             // If permission denied, return empty list;
-            return Ok(ListResponse::Spu(vec![]));
+            return Ok(ListResponse::new(vec![]));
         }
     }
 
@@ -97,5 +97,5 @@ pub async fn handle_fetch_spus_request<AC: AuthContext>(
     debug!("fetched {} spu items", spus.len());
     trace!("fetch spus items detail: {:#?}", spus);
 
-    Ok(ListResponse::Spu(spus))
+    Ok(ListResponse::new(spus))
 }

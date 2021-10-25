@@ -19,7 +19,6 @@ pub struct ResponseMessage<P> {
 }
 
 impl<P> ResponseMessage<P> {
-    #[allow(unused)]
     pub fn from_header(header: &RequestHeader, response: P) -> Self {
         Self::new(header.correlation_id(), response)
     }

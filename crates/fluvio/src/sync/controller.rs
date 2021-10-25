@@ -13,10 +13,8 @@ use event_listener::{Event, EventListener};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::WatchRequest;
-use fluvio_sc_schema::objects::WatchResponse;
-use fluvio_sc_schema::objects::MetadataUpdate;
-use fluvio_sc_schema::objects::Metadata;
+use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, MetadataUpdate, Metadata};
+use fluvio_sc_schema::AdminSpec;
 
 use crate::metadata::core::Spec;
 
@@ -54,7 +52,7 @@ impl SimpleEvent {
 /// Synchronize metadata from SC
 pub struct MetadataSyncController<S>
 where
-    S: Spec,
+    S: AdminSpec,
 {
     store: StoreContext<S>,
     shutdown: Arc<SimpleEvent>,
@@ -62,18 +60,18 @@ where
 
 impl<S> MetadataSyncController<S>
 where
-    S: Spec + Encoder + Decoder + Sync + Send + 'static,
+    S: AdminSpec + Encoder + Decoder + Sync + Send + 'static,
     <S as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S as Spec>::IndexKey: Sync + Send,
     S::IndexKey: Display,
-    WatchResponse: TryInto<MetadataUpdate<S>> + Send,
-    <WatchResponse as TryInto<MetadataUpdate<S>>>::Error: Display + Send,
+    //WatchResponse: TryInto<MetadataUpdate<S>> + Send,
+    //<WatchResponse as TryInto<MetadataUpdate<S>>>::Error: Display + Send,
     CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
     <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
 {
     pub fn start(
         store: StoreContext<S>,
-        watch_response: AsyncResponse<WatchRequest>,
+        watch_response: AsyncResponse<WatchRequest<S>>,
         shutdown: Arc<SimpleEvent>,
     ) {
         use fluvio_future::task::spawn;

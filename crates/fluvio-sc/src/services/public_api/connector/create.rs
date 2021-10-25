@@ -24,7 +24,6 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
     create: CreateRequest<ManagedConnectorSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-
     let name = create.name;
     let spec = create.spec.to_inner();
 

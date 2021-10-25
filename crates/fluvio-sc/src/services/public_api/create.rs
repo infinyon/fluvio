@@ -1,10 +1,10 @@
 use std::io::Error as IoError;
 
-use tracing::instrument;
+use dataplane::ErrorCode;
+use tracing::{debug, instrument};
 
-use dataplane::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::{Status,ObjCreateRequest};
-use fluvio_sc_schema::objects::{CreateRequest, AllCreatableSpec};
+use dataplane::api::ResponseMessage;
+use fluvio_sc_schema::{Status, ObjCreateRequest};
 use fluvio_sc_schema::ObjectApiCreateRequest;
 use fluvio_auth::AuthContext;
 
@@ -16,11 +16,7 @@ pub async fn handle_create_request<AC: AuthContext>(
     request: ObjCreateRequest,
     auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, IoError> {
-    let (header, req) = request.get_header_request();
-
-  //  let dry_run = req.dry_run;
-  //  let name = req.name;
-  //  tracing::debug!("Handling create request for {:?}", req.spec);
+    let (header, obj, req) = request.get_header_request();
 
     let status = match req {
         ObjectApiCreateRequest::Topic(create) => {
@@ -30,28 +26,25 @@ pub async fn handle_create_request<AC: AuthContext>(
             super::spg::handle_create_spu_group_request(create, auth_context).await?
         }
         ObjectApiCreateRequest::CustomSpu(create) => {
-            super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
-                create,
-                auth_context,
-            )
-            .await
+            super::spu::RegisterCustomSpu::handle_register_custom_spu_request(create, auth_context)
+                .await
         }
         ObjectApiCreateRequest::ManagedConnector(create) => {
-            super::connector::handle_create_managed_connector_request(
-                create,
-                auth_context,
-            )
-            .await?
+            super::connector::handle_create_managed_connector_request(create, auth_context).await?
         }
         ObjectApiCreateRequest::SmartModule(create) => {
-            super::smartmodule::handle_create_smart_module_request(
-                create,
-                auth_context,
-            )
-            .await?
+            super::smartmodule::handle_create_smart_module_request(create, auth_context).await?
         }
-        AllCreatableSpec::Table(spec) => {
-            super::table::handle_create_table_request(name, spec, dry_run, auth_context).await?
+        ObjectApiCreateRequest::Table(create) => {
+            super::table::handle_create_table_request(create, auth_context).await?
+        }
+        _ => {
+            debug!("Unsupported create request: {:?}", req);
+            Status::new(
+                "Creation".to_owned(),
+                ErrorCode::InvalidCreateRequest,
+                Some("invalid create request".to_owned()),
+            )
         }
     };
 

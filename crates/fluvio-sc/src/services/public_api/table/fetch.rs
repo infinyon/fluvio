@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{debug, trace, instrument};
 
-use fluvio_sc_schema::objects::{ListResponse,Metadata};
+use fluvio_sc_schema::objects::{ListResponse, Metadata};
 use fluvio_sc_schema::table::TableSpec;
 use fluvio_sc_schema::{NameFilter};
 use fluvio_auth::{AuthContext, TypeAction};

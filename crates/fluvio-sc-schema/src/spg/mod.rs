@@ -7,8 +7,6 @@ mod convert {
     use super::SpuGroupSpec;
 
     impl AdminSpec for SpuGroupSpec {
-        const AdminType: u8 = CreateType::SPG as u8;
-
         type ListFilter = NameFilter;
         type WatchResponseType = MetadataUpdate<Self>;
 

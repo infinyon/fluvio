@@ -9,7 +9,7 @@ use crate::{AdminPublicApiKey, AdminRequest, AdminSpec};
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {
-    name_filters: Vec<S::ListFilter>,
+    pub name_filters: Vec<S::ListFilter>,
 }
 
 impl<S> ListRequest<S>
@@ -17,9 +17,7 @@ where
     S: AdminSpec,
 {
     pub fn new(name_filters: Vec<S::ListFilter>) -> Self {
-        Self {
-            name_filters,
-        }
+        Self { name_filters }
     }
 }
 
@@ -37,12 +35,11 @@ impl<S> AdminRequest for ListRequest<S> where S: AdminSpec {}
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListResponse<S: AdminSpec>(Vec<S::ListType>);
 
-impl <S> ListResponse<S>
- where S: AdminSpec
+impl<S> ListResponse<S>
+where
+    S: AdminSpec,
 {
     pub fn new(list: Vec<S::ListType>) -> Self {
         Self(list)
     }
 }
-
-

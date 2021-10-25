@@ -9,8 +9,6 @@ mod convert {
     use super::TableSpec;
 
     impl AdminSpec for TableSpec {
-        const AdminType: u8 = CreateType::TABLE as u8;
-
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;
         type WatchResponseType = MetadataUpdate<Self>;
