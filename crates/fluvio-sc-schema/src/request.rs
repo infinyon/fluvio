@@ -141,6 +141,7 @@ mod objects {
     pub type ObjListResponse = ObjectResponse<ObjectDecoder, ObjectApiListResponse>;
     pub type ObjCreateRequest = ObjectRequest<CreateDecoder, ObjectApiCreateRequest>;
     pub type ObjWatchRequest = ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>;
+    pub type ObjWatchResponse = ObjectResponse<ObjectDecoder, ObjectApiWatchRequest>;
 
     macro_rules! ObjectApiEnum {
         ($api:ident) => {
@@ -258,13 +259,18 @@ mod objects {
     /// Most of Request except create which has special format
     #[derive(Default, Debug)]
     pub struct ObjectResponse<Obj, Body> {
+        correlation_id: i32,
         object: Obj,
         body: Body,
     }
 
     impl<Obj, Body> ObjectResponse<Obj, Body> {
-        pub fn new(object: Obj, body: Body) -> Self {
-            Self { object, body }
+        pub fn new(header: &RequestHeader, object: Obj, body: Body) -> Self {
+            Self {
+                correlation_id: header.correlation_id(),
+                object,
+                body,
+            }
         }
     }
 

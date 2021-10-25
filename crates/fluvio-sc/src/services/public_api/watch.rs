@@ -8,7 +8,7 @@ use fluvio_socket::ExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
 use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, Metadata, MetadataUpdate};
-use fluvio_sc_schema::ObjWatchRequest;
+use fluvio_sc_schema::{ObjWatchRequest, ObjWatchResponse,ObjectApiWatchRequest};
 
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -31,46 +31,46 @@ pub fn handle_watch_request<AC>(
     end_event: Arc<StickyEvent>,
 ) {
     debug!("handling watch request");
-    let (header, req) = request.get_header_request();
+    let (header, obj, req) = request.get_header_request();
 
     match req {
-        WatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
+        ObjectApiWatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.topics().clone(),
             header,
         ),
-        WatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
+        ObjectApiWatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
             header,
         ),
-        WatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
+        ObjectApiWatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spgs().clone(),
             header,
         ),
-        WatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
+        ObjectApiWatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
             header,
         ),
-        WatchRequest::ManagedConnector(_) => WatchController::<ManagedConnectorSpec>::update(
+        ObjectApiWatchRequest::ManagedConnector(_) => WatchController::<ManagedConnectorSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.managed_connectors().clone(),
             header,
         ),
-        WatchRequest::SmartModule(_) => WatchController::<SmartModuleSpec>::update(
+        ObjectApiWatchRequest::SmartModule(_) => WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.smart_modules().clone(),
             header,
         ),
-        WatchRequest::Table(_) => WatchController::<TableSpec>::update(
+        ObjectApiWatchRequest::Table(_) => WatchController::<TableSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.tables().clone(),

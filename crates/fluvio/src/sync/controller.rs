@@ -88,7 +88,7 @@ where
             spec = S::LABEL,
         )
     )]
-    async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest>) {
+    async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest<S>>) {
         use tokio::select;
 
         debug!("{} starting dispatch loop", S::LABEL);

@@ -41,5 +41,5 @@ pub async fn handle_list_request<AC: AuthContext>(
         ),
     };
 
-    Ok(ObjListResponse::new(obj, response))
+    Ok(ObjListResponse::new(&header,obj, response))
 }

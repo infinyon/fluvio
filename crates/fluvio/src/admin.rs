@@ -7,6 +7,7 @@ use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
 use fluvio_sc_schema::{AdminRequest, AdminSpec};
+use fluvio_sc_schema::TopicSpec;
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
@@ -117,7 +118,7 @@ impl FluvioAdmin {
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
-        if let Some(watch_version) = versions.lookup_version(WatchRequest::API_KEY) {
+        if let Some(watch_version) = versions.lookup_version(WatchRequest::<TopicSpec>::API_KEY) {
             let socket = MultiplexerSocket::shared(socket);
             let metadata = MetadataStores::start(socket.clone(), watch_version).await?;
             let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
@@ -143,9 +144,10 @@ impl FluvioAdmin {
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
-        S: TryInto<AllCreatableSpec<S>>,
+        S: AdminSpec + Sync + Send,
+        S: Into<AllCreatableSpec<S>>,
     {
-        let create_request = CreateRequest {
+        let create_request: CreateRequest<S> = CreateRequest {
             name,
             dry_run,
             spec: spec.into(),
