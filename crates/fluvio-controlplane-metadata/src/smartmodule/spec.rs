@@ -36,7 +36,7 @@ impl Default for SmartModuleSourceCodeLanguage {
 #[derive(Clone, Default, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleWasm {
-    format: SmartModuleWasmFormat,
+    pub format: SmartModuleWasmFormat,
     #[cfg_attr(feature = "use_serde", serde(with = "base64"))]
     pub payload: Vec<u8>,
 }
