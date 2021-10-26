@@ -41,27 +41,21 @@ pub mod validate {
 }
 mod convert {
 
-    use std::convert::TryInto;
-    use std::io::Error;
-
     use crate::{AdminSpec, NameFilter};
-    use crate::objects::{Metadata, MetadataUpdate, WatchResponse, ObjectApiWatchResponse};
+    use crate::objects::{WatchResponse, ObjectApiWatchResponse};
 
     use super::TopicSpec;
 
     impl AdminSpec for TopicSpec {
         type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
-        type WatchResponseType = MetadataUpdate<Self>;
-
+        type ListType = Self;
+        type WatchResponseType = Self;
         type DeleteKey = String;
     }
 
-    impl TryInto<ObjectApiWatchResponse> for MetadataUpdate<TopicSpec> {
-        type Error = Error;
-
-        fn try_into(self) -> Result<ObjectApiWatchResponse, Self::Error> {
-            Ok(ObjectApiWatchResponse::Topic(WatchResponse::new(self)))
+    impl From<WatchResponse<TopicSpec>> for ObjectApiWatchResponse {
+        fn from(response: WatchResponse<TopicSpec>) -> Self {
+            ObjectApiWatchResponse::Topic(response)
         }
     }
 }

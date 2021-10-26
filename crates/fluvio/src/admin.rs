@@ -6,14 +6,14 @@ use fluvio_future::net::DomainConnector;
 use tracing::{debug, instrument};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
-use fluvio_sc_schema::objects::{AllCreatableSpec, Metadata, ObjectApiWatchRequest};
+use fluvio_sc_schema::objects::{AllCreatableSpec, DeleteRequest, Metadata, ObjectApiWatchRequest};
 use fluvio_sc_schema::{AdminSpec};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
-use crate::metadata::objects::{ListResponse, ListRequest, DeleteSpec, CreateRequest};
+use crate::metadata::objects::{ListResponse, ListRequest, CreateRequest};
 use crate::config::ConfigFile;
 use crate::sync::MetadataStores;
 
@@ -133,10 +133,10 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    async fn send_receive<R,M>(&self, request: R) -> Result<R::Response, SocketError>
+    async fn send_receive<R, M>(&self, request: R) -> Result<R::Response, SocketError>
     where
         R: Request<M> + Send + Sync,
-        M: RequestMiddleWare
+        M: RequestMiddleWare,
     {
         self.socket.send_receive(request).await
     }
@@ -164,10 +164,11 @@ impl FluvioAdmin {
     #[instrument(skip(self, key))]
     pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
     where
-        S: DeleteSpec,
+        S: AdminSpec,
         K: Into<S::DeleteKey>,
     {
-        let delete_request = S::into_request(key);
+        let delete_request = DeleteRequest::new(key);
+
         self.send_receive(delete_request).await?.as_result()?;
         Ok(())
     }

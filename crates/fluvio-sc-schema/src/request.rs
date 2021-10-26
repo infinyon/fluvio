@@ -26,7 +26,7 @@ use crate::core::Spec;
 
 pub use objects::*;
 
-#[derive(Debug, Encoder)]
+#[derive(Debug)]
 pub enum AdminPublicRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
     CreateRequest(RequestMessage<ObjectApiCreateRequest, CreateDecoder>),

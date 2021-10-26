@@ -40,17 +40,14 @@ mod admin {
     use dataplane::core::{Encoder, Decoder};
     use super::core::{Spec};
 
-    pub trait ListFilter: Encoder + Decoder + Sized + Debug {}
     /// filter by name
     pub type NameFilter = String;
 
-    impl ListFilter for NameFilter {}
-
     /// AdminSpec has list, type, filter, delete key
     pub trait AdminSpec: Spec + Encoder + Decoder {
-        type ListFilter: ListFilter;
-        type ListType: Encoder + Decoder + Debug + Sized;
-        type WatchResponseType: Encoder + Decoder + Debug + Sized;
+        type ListFilter: Encoder + Decoder + Sized + Debug;
+        type ListType: Spec + Encoder + Decoder;
+        type WatchResponseType: Spec + Encoder + Decoder;
         type DeleteKey: Encoder + Decoder + Debug + Default + Sized;
     }
 }

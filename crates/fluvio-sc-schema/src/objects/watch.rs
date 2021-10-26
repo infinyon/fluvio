@@ -8,7 +8,7 @@ use dataplane::api::Request;
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 
-use crate::{AdminPublicApiKey, ObjectDecoder, AdminSpec};
+use crate::{AdminPublicApiKey, AdminSpec, ObjectDecoder};
 use crate::core::Spec;
 
 use super::{Metadata, ObjectApiEnum, ObjectApiDecode};
@@ -33,14 +33,20 @@ impl Request<ObjectDecoder> for ObjectApiWatchRequest {
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct WatchResponse<S: AdminSpec>(S::WatchResponseType);
+pub struct WatchResponse<S: AdminSpec>
+where
+    <<S as AdminSpec>::WatchResponseType as Spec>::Status: Encoder + Decoder,
+{
+    inner: MetadataUpdate<S::WatchResponseType>,
+}
 
 impl<S> WatchResponse<S>
 where
     S: AdminSpec,
+    <<S as AdminSpec>::WatchResponseType as Spec>::Status: Encoder + Decoder,
 {
-    pub fn new(response: S::WatchResponseType) -> Self {
-        Self(response)
+    pub fn new(inner: MetadataUpdate<S::WatchResponseType>) -> Self {
+        Self { inner }
     }
 }
 
@@ -48,8 +54,8 @@ where
 #[derive(Encoder, Decoder, Default, Clone, Debug)]
 pub struct MetadataUpdate<S>
 where
-    S: Spec + Debug + Encoder + Decoder,
-    S::Status: Debug + Encoder + Decoder,
+    S: Spec + Encoder + Decoder,
+    S::Status: Encoder + Decoder + Debug,
 {
     pub epoch: Epoch,
     pub changes: Vec<Message<Metadata<S>>>,
@@ -58,8 +64,8 @@ where
 
 impl<S> MetadataUpdate<S>
 where
-    S: Spec + Debug + Encoder + Decoder,
-    S::Status: Debug + Encoder + Decoder,
+    S: Spec + Encoder + Decoder,
+    S::Status: Encoder + Decoder + Debug,
 {
     pub fn with_changes(epoch: i64, changes: Vec<Message<Metadata<S>>>) -> Self {
         Self {

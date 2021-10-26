@@ -122,7 +122,7 @@ where
     <S as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S as Spec>::IndexKey: Sync + Send,
     S: AdminSpec,
-    <S as AdminSpec>::WatchResponseType: TryInto<ObjectApiWatchResponse>,
+    <S as AdminSpec>::WatchResponseType: Into<ObjectApiWatchResponse>,
 {
     /// start watch controller
     fn update(
@@ -220,7 +220,7 @@ where
             MetadataUpdate::with_changes(epoch, changes)
         };
 
-        let obj_response: ObjectApiWatchResponse = WatchResponse::new(updates).try_into()?;
+        let obj_response: ObjectApiWatchResponse = (WatchResponse::<S>::new(updates)).into();
         let resp_msg: ResponseMessage<ObjectApiWatchResponse, M> =
             ResponseMessage::from_header_with_mw(
                 &self.header,

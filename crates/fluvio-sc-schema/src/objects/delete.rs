@@ -24,6 +24,10 @@ impl<S> DeleteRequest<S>
 where
     S: AdminSpec,
 {
+    pub fn new(key: S::DeleteKey) -> Self {
+        Self(key)
+    }
+
     pub fn key(self) -> S::DeleteKey {
         self.0
     }

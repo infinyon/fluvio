@@ -14,16 +14,12 @@ pub(crate) use object_macro::{ObjectApiEnum, ObjectApiDecode};
 
 mod metadata {
 
-    use std::convert::TryFrom;
-    use std::convert::TryInto;
-    use std::fmt::{Display, Debug};
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
+    use std::fmt::{Debug};
 
     use dataplane::core::{Encoder, Decoder};
 
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
-    use fluvio_controlplane_metadata::core::{MetadataItem, MetadataContext};
+    use fluvio_controlplane_metadata::core::{MetadataItem};
 
     use crate::core::Spec;
 
@@ -35,8 +31,8 @@ mod metadata {
     )]
     pub struct Metadata<S>
     where
-        S: Spec + Debug + Encoder + Decoder,
-        S::Status: Debug + Encoder + Decoder,
+        S: Spec + Encoder + Decoder,
+        S::Status: Encoder + Decoder,
     {
         pub name: String,
         pub spec: S,
@@ -58,39 +54,15 @@ mod metadata {
             }
         }
     }
-
-    impl<S, C> TryFrom<Metadata<S>> for MetadataStoreObject<S, C>
-    where
-        S: Spec + Encoder + Decoder,
-        S::Status: Encoder + Decoder,
-        C: MetadataItem,
-        <S as Spec>::IndexKey: TryFrom<String>,
-        <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display,
-    {
-        type Error = IoError;
-
-        fn try_from(value: Metadata<S>) -> Result<Self, Self::Error> {
-            Ok(Self {
-                spec: value.spec,
-                status: value.status,
-                key: value.name.try_into().map_err(|err| {
-                    IoError::new(
-                        ErrorKind::InvalidData,
-                        format!("problem converting: {}", err),
-                    )
-                })?,
-                ctx: MetadataContext::default(),
-            })
-        }
-    }
 }
 
 mod object_macro {
 
-    // pub type ObjCreateRequest = ObjectRequest<CreateDecoder, ObjectApiCreateRequest>;
-    // pub type ObjWatchRequest = ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>;
-    // pub type ObjWatchResponse = ObjectResponse<ObjectDecoder, ObjectApiWatchRequest>;
-
+    /// Macro to objectify generic Request/Response for Admin Objects
+    /// AdminSpec is difficult to turn into TraitObject due to associated types and use of other derived
+    /// properties such as `PartialEq`.  This generates all possible variation of given API.  
+    /// Not all variation will be constructed or used.  It is possible that invalid combination could be
+    /// constructed (for example, Creating SPU) but it is not possible when using client API
     macro_rules! ObjectApiEnum {
         ($api:ident) => {
 
@@ -133,6 +105,7 @@ mod object_macro {
         }
     }
 
+    /// Macro to generate callback from RequestMessage
     macro_rules! ObjectApiDecode {
 
         ($api:ident,$m:ident) => {
