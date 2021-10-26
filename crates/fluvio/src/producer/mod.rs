@@ -145,16 +145,16 @@ impl TopicProducer {
 
         cfg_if::cfg_if! {
             if #[cfg(feature = "smartengine")] {
+                use fluvio_smartengine::{SmartEngine};
+                use dataplane::smartstream::SmartStreamInput;
+                use std::convert::TryFrom;
                 if let Some(smart_payload) = &self.smartstream_config.wasm_module {
 
-                    use fluvio_smartengine::{SmartEngine};
-                    use dataplane::smartstream::SmartStreamInput;
 
                     let engine = SmartEngine::default();
-                    let mut smartstream = engine.create_module_from_payload(smart_payload.clone()).unwrap();
+                    let mut smartstream = engine.create_module_from_payload(smart_payload.clone()).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-                    use std::convert::TryFrom;
-                    let output = smartstream.process(SmartStreamInput::try_from(entries).unwrap()).unwrap();
+                    let output = smartstream.process(SmartStreamInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;
                 }
             }
