@@ -57,34 +57,27 @@ impl SmartEngine {
         let module = Module::from_binary(&self.0, bytes)?;
         Ok(SmartStreamModule {
             module,
-            engine: self
+            engine: self,
         })
     }
-    pub fn create_module_from_payload(self, smart_payload: SmartStreamPayload) -> Result<Box<dyn SmartStream>> {
+    pub fn create_module_from_payload(
+        self,
+        smart_payload: SmartStreamPayload,
+    ) -> Result<Box<dyn SmartStream>> {
         let smart_module = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
         let smart_stream: Box<dyn SmartStream> = match &smart_payload.kind {
-            SmartStreamKind::Filter => Box::new(
-                smart_module
-                .create_filter(smart_payload.params)?
-            ),
-            SmartStreamKind::Map => Box::new(
-                smart_module
-                .create_map(smart_payload.params)?
-            ),
-            SmartStreamKind::ArrayMap => Box::new(
-                smart_module
-                .create_array_map(smart_payload.params)?,
-            ),
+            SmartStreamKind::Filter => Box::new(smart_module.create_filter(smart_payload.params)?),
+            SmartStreamKind::Map => Box::new(smart_module.create_map(smart_payload.params)?),
+            SmartStreamKind::ArrayMap => {
+                Box::new(smart_module.create_array_map(smart_payload.params)?)
+            }
             SmartStreamKind::Aggregate { accumulator } => {
-                Box::new(
-                    smart_module.create_aggregate(smart_payload.params, accumulator.clone())?,
-                )
+                Box::new(smart_module.create_aggregate(smart_payload.params, accumulator.clone())?)
             }
         };
         Ok(smart_stream)
     }
 }
-
 
 impl Debug for SmartEngine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -98,26 +91,17 @@ pub struct SmartStreamModule {
 }
 
 impl SmartStreamModule {
-    fn create_filter(
-        &self,
-        params: SmartStreamExtraParams,
-    ) -> Result<SmartStreamFilter> {
+    fn create_filter(&self, params: SmartStreamExtraParams) -> Result<SmartStreamFilter> {
         let filter = SmartStreamFilter::new(&self.engine, self, params)?;
         Ok(filter)
     }
 
-    fn create_map(
-        &self,
-        params: SmartStreamExtraParams,
-    ) -> Result<SmartStreamMap> {
+    fn create_map(&self, params: SmartStreamExtraParams) -> Result<SmartStreamMap> {
         let map = SmartStreamMap::new(&self.engine, self, params)?;
         Ok(map)
     }
 
-    fn create_array_map(
-        &self,
-        params: SmartStreamExtraParams,
-    ) -> Result<SmartStreamArrayMap> {
+    fn create_array_map(&self, params: SmartStreamExtraParams) -> Result<SmartStreamArrayMap> {
         let map = SmartStreamArrayMap::new(&self.engine, self, params)?;
         Ok(map)
     }

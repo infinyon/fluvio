@@ -20,7 +20,7 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest, SmartStreamKind, StreamFetchRequest,
+    DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest,
     StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
@@ -143,8 +143,7 @@ impl StreamFetchHandler {
                     let error_code = ErrorCode::SmartStreamError(
                         SmartStreamError::InvalidSmartStreamModule(format!("{:?}", payload.kind)),
                     );
-                    send_back_error(&sink, &replica, &header, stream_id, error_code)
-                        .await?;
+                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                     return Ok(());
                 }
             };
