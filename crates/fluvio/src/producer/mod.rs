@@ -30,6 +30,7 @@ pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
+    #[allow(dead_code)]
     pub(crate) wasm_module: Option<SmartStreamPayload>,
 }
 
@@ -126,7 +127,7 @@ impl TopicProducer {
 
         // This should be mutable because when the smartengine feature flag is on, entries will be
         // mutable.
-        #[allow(unused-mut)]
+        #[allow(unused_mut)]
         let mut entries = records
             .into_iter()
             .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
