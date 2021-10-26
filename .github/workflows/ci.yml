@@ -717,7 +717,7 @@ jobs:
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
 
       - name: Start cluster
-        run:
+        run: |
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
           ./fluvio cluster start --develop
 
@@ -739,6 +739,7 @@ jobs:
       - local_cluster_test
       - k8_cluster_test
       - k8_upgrade_test
+      - k8_cli_smoke
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
