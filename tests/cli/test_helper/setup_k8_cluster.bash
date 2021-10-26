@@ -1,6 +1,5 @@
-# TODO: Use FLUVIO_BIN env var instead of expecting `fluvio` in PATH.
-# Search order: $FLUVIO_BIN, $PATH, $(pwd)/fluvio, $HOME/.fluvio/bin/fluvio
+# This should always be loaded after tools_check.bash
 
 setup_file() {
-    run fluvio cluster start
+    run "$FLUVIO_BIN" cluster start
 }
