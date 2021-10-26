@@ -18,7 +18,6 @@ use crate::spu::SpuPool;
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
-use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
 
 /// An interface for producing events to a particular topic
 ///
@@ -30,40 +29,47 @@ pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
-    #[allow(dead_code)]
-    pub(crate) wasm_module: Option<SmartStreamPayload>,
+    pub(crate) smartstream_config: SmartStreamConfig,
 }
+cfg_if::cfg_if! {
+    if #[cfg(feature = "smartengine")] {
+        use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind, SmartStreamPayload};
+        #[derive(Default)]
+        pub struct SmartStreamConfig {
+            pub(crate) wasm_module: Option<SmartStreamPayload>,
+        }
+        impl SmartStreamConfig {
+            /// Adds a SmartStream filter to this TopicProducer
+            pub fn wasm_filter<T: Into<Vec<u8>>>(
+                mut self,
+                filter: T,
+                params: std::collections::BTreeMap<String, String>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(filter.into()),
+                    kind: SmartStreamKind::Filter,
+                    params: params.into(),
+                });
+                self
+            }
 
-#[cfg(feature = "smartengine")]
-impl TopicProducer {
-    /// Adds a SmartStream filter to this TopicProducer
-    pub fn wasm_filter<T: Into<Vec<u8>>>(
-        mut self,
-        filter: T,
-        params: std::collections::BTreeMap<String, String>,
-    ) -> Self {
-        use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind};
-        self.wasm_module = Some(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(filter.into()),
-            kind: SmartStreamKind::Filter,
-            params: params.into(),
-        });
-        self
-    }
-
-    /// Adds a SmartStream map to this TopicProducer
-    pub fn wasm_map<T: Into<Vec<u8>>>(
-        mut self,
-        map: T,
-        params: std::collections::BTreeMap<String, String>,
-    ) -> Self {
-        use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind};
-        self.wasm_module = Some(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(map.into()),
-            kind: SmartStreamKind::Map,
-            params: params.into(),
-        });
-        self
+            /// Adds a SmartStream map to this TopicProducer
+            pub fn wasm_map<T: Into<Vec<u8>>>(
+                mut self,
+                map: T,
+                params: std::collections::BTreeMap<String, String>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(map.into()),
+                    kind: SmartStreamKind::Map,
+                    params: params.into(),
+                });
+                self
+            }
+        }
+    } else {
+        #[derive(Default)]
+        pub struct SmartStreamConfig  {}
     }
 }
 
@@ -74,8 +80,11 @@ impl TopicProducer {
             topic,
             pool,
             partitioner,
-            wasm_module: None,
+            smartstream_config: Default::default(),
         }
+    }
+    pub fn get_smartstream_mut(&mut self) -> &mut SmartStreamConfig {
+        &mut self.smartstream_config
     }
 
     /// Sends a key/value record to this producer's Topic.
@@ -136,7 +145,7 @@ impl TopicProducer {
 
         cfg_if::cfg_if! {
             if #[cfg(feature = "smartengine")] {
-                if let Some(ref smart_payload) = self.wasm_module {
+                if let Some(ref smart_payload) = self.smartstream_config.wasm_module {
 
                     use fluvio_smartengine::{SmartEngine, SmartStream};
                     use dataplane::smartstream::{
@@ -174,7 +183,8 @@ impl TopicProducer {
                             todo!("Aggregate not implemented yet")
                         }
                     };
-                    let output = smartstream.process(SmartStreamInput::from_records(entries).expect("Failed to build smartstream input")).expect("Failed to process smartstream");
+                    use std::convert::TryFrom;
+                    let output = smartstream.process(SmartStreamInput::try_from(entries).expect("Failed to build smartstream input")).expect("Failed to process smartstream");
                     entries = output.successes;
                 }
             }
