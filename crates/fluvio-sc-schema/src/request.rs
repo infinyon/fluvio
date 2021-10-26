@@ -114,7 +114,7 @@ mod objects {
         fn is_smart_module(&self) -> bool;
     }
 
-    #[derive(Debug, Default, Encoder, Decoder)]
+    #[derive(Debug, Clone, Default, Encoder, Decoder)]
     pub struct ObjectDecoder {
         ty: String,
     }
@@ -146,7 +146,7 @@ mod objects {
     const SMART_MODULE: u8 = 4;
     const TABLE: u8 = 5;
 
-    #[derive(Debug, Default, Encoder, Decoder)]
+    #[derive(Debug, Clone, Default, Encoder, Decoder)]
     pub struct CreateDecoder {
         ty: u8,
     }

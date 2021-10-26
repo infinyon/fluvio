@@ -2,6 +2,8 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
+
+use fluvio_protocol::api::RequestMiddleWare;
 use tracing::{trace, instrument};
 use futures_util::{SinkExt};
 use async_lock::Mutex;
@@ -65,13 +67,14 @@ impl FluvioSink {
 
     #[instrument(level = "trace",skip(resp_msg),fields(resp=?resp_msg))]
     /// as server, send back response
-    pub async fn send_response<P>(
+    pub async fn send_response<P,M>(
         &mut self,
-        resp_msg: &ResponseMessage<P>,
+        resp_msg: &ResponseMessage<P,M>,
         version: Version,
     ) -> Result<(), SocketError>
     where
-        ResponseMessage<P>: FlvEncoder + Default + Debug,
+        ResponseMessage<P,M>: FlvEncoder + Default + Debug,
+        M: RequestMiddleWare
     {
         trace!("sending response {:#?}", &resp_msg);
         (&mut self.inner).send((resp_msg, version)).await?;
@@ -198,13 +201,14 @@ impl ExclusiveFlvSink {
     }
 
     /// helper method to send back response
-    pub async fn send_response<P>(
+    pub async fn send_response<P,M>(
         &mut self,
-        resp_msg: &ResponseMessage<P>,
+        resp_msg: &ResponseMessage<P,M>,
         version: Version,
     ) -> Result<(), SocketError>
     where
-        ResponseMessage<P>: FlvEncoder + Default + Debug,
+        ResponseMessage<P,M>: FlvEncoder + Default + Debug,
+        M: RequestMiddleWare
     {
         let mut inner_sink = self.inner.lock().await;
         inner_sink.send_response(resp_msg, version).await

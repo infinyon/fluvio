@@ -1,13 +1,13 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
+use dataplane::api::{Request, RequestMiddleWare};
 use fluvio_future::net::DomainConnector;
 use tracing::{debug, instrument};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
-use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
-use fluvio_sc_schema::{AdminRequest, AdminSpec};
-use fluvio_sc_schema::TopicSpec;
+use fluvio_sc_schema::objects::{AllCreatableSpec, Metadata, ObjectApiWatchRequest};
+use fluvio_sc_schema::{AdminSpec};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
@@ -118,7 +118,7 @@ impl FluvioAdmin {
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
-        if let Some(watch_version) = versions.lookup_version(WatchRequest::<TopicSpec>::API_KEY) {
+        if let Some(watch_version) = versions.lookup_version(ObjectApiWatchRequest::API_KEY) {
             let socket = MultiplexerSocket::shared(socket);
             let metadata = MetadataStores::start(socket.clone(), watch_version).await?;
             let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
@@ -133,9 +133,10 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
+    async fn send_receive<R,M>(&self, request: R) -> Result<R::Response, SocketError>
     where
-        R: AdminRequest + Send + Sync,
+        R: Request<M> + Send + Sync,
+        M: RequestMiddleWare
     {
         self.socket.send_receive(request).await
     }
