@@ -18,7 +18,7 @@ use crate::spu::SpuPool;
 use crate::sync::StoreContext;
 use crate::metadata::partition::PartitionSpec;
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner, PartitionerConfig};
-use fluvio_spu_schema::server::stream_fetch::{SmartStreamPayload, SmartStreamWasm, SmartStreamKind};
+use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
 
 /// An interface for producing events to a particular topic
 ///
@@ -41,6 +41,7 @@ impl TopicProducer {
         filter: T,
         params: std::collections::BTreeMap<String, String>,
     ) -> Self {
+        use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind};
         self.wasm_module = Some(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(filter.into()),
             kind: SmartStreamKind::Filter,
@@ -55,6 +56,7 @@ impl TopicProducer {
         map: T,
         params: std::collections::BTreeMap<String, String>,
     ) -> Self {
+        use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind};
         self.wasm_module = Some(SmartStreamPayload {
             wasm: SmartStreamWasm::Raw(map.into()),
             kind: SmartStreamKind::Map,
@@ -122,6 +124,9 @@ impl TopicProducer {
         let partition_count = topic_spec.partitions();
         let partition_config = PartitionerConfig { partition_count };
 
+        // This should be mutable because when the smartengine feature flag is on, entries will be
+        // mutable.
+        #[allow(unused-mut)]
         let mut entries = records
             .into_iter()
             .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
@@ -137,6 +142,7 @@ impl TopicProducer {
                         SmartStreamExtraParams,
                         SmartStreamInput,
                     };
+                    use fluvio_spu_schema::server::stream_fetch::SmartStreamKind;
                     let engine = SmartEngine::default();
                     let smart_module = engine
                         .create_module_from_binary(
