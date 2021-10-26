@@ -145,46 +145,16 @@ impl TopicProducer {
 
         cfg_if::cfg_if! {
             if #[cfg(feature = "smartengine")] {
-                if let Some(ref smart_payload) = self.smartstream_config.wasm_module {
+                if let Some(smart_payload) = &self.smartstream_config.wasm_module {
 
-                    use fluvio_smartengine::{SmartEngine, SmartStream};
-                    use dataplane::smartstream::{
-                        SmartStreamExtraParams,
-                        SmartStreamInput,
-                    };
-                    use fluvio_spu_schema::server::stream_fetch::SmartStreamKind;
+                    use fluvio_smartengine::{SmartEngine};
+                    use dataplane::smartstream::SmartStreamInput;
+
                     let engine = SmartEngine::default();
-                    let smart_module = engine
-                        .create_module_from_binary(
-                            &smart_payload
-                            .wasm
-                            .get_raw()
-                            .expect("failed to get raw wasm"),
-                        )
-                        .expect("Failed to get module from raw wasm");
+                    let mut smartstream = engine.create_module_from_payload(smart_payload.clone()).unwrap();
 
-                    let mut smartstream: Box<dyn SmartStream> = match &smart_payload.kind {
-                        SmartStreamKind::Filter => Box::new(
-                            smart_module
-                            .create_filter(&engine, SmartStreamExtraParams::default())
-                            .expect("Failed to create filter"),
-                        ),
-                        SmartStreamKind::Map => Box::new(
-                            smart_module
-                            .create_map(&engine, SmartStreamExtraParams::default())
-                            .expect("Failed to create map"),
-                        ),
-                        SmartStreamKind::ArrayMap => Box::new(
-                            smart_module
-                            .create_array_map(&engine, SmartStreamExtraParams::default())
-                            .expect("Failed to create array map"),
-                        ),
-                        SmartStreamKind::Aggregate { accumulator: _ } => {
-                            todo!("Aggregate not implemented yet")
-                        }
-                    };
                     use std::convert::TryFrom;
-                    let output = smartstream.process(SmartStreamInput::try_from(entries).expect("Failed to build smartstream input")).expect("Failed to process smartstream");
+                    let output = smartstream.process(SmartStreamInput::try_from(entries).unwrap()).unwrap();
                     entries = output.successes;
                 }
             }

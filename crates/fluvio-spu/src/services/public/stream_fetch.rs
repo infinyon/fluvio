@@ -133,104 +133,21 @@ impl StreamFetchHandler {
         let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
             let wasm = &payload.wasm.get_raw()?;
             debug!(len = wasm.len(), "creating WASM module with bytes");
-            let module = match sm_engine.create_module_from_binary(wasm) {
-                Ok(module) => module,
-                Err(e) => {
-                    let error = SmartStreamError::InvalidWasmModule(e.to_string());
-                    let error_code = ErrorCode::SmartStreamError(error);
-                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+            let smartstream = match sm_engine.create_module_from_payload(payload.clone()) {
+                Ok(smartstream) => smartstream,
+                Err(err) => {
+                    error!(
+                        error = err.to_string().as_str(),
+                        "Error Instantiating SmartStream"
+                    );
+                    let error_code = ErrorCode::SmartStreamError(
+                        SmartStreamError::InvalidSmartStreamModule(format!("{:?}", payload.kind)),
+                    );
+                    send_back_error(&sink, &replica, &header, stream_id, error_code)
+                        .await?;
                     return Ok(());
                 }
             };
-
-            let smartstream: Box<dyn SmartStream> = match payload.kind {
-                SmartStreamKind::Filter => {
-                    debug!("Instantiating SmartStreamFilter");
-                    let filter = match module.create_filter(&sm_engine, payload.params) {
-                        Ok(filter) => filter,
-                        Err(err) => {
-                            error!(
-                                error = err.to_string().as_str(),
-                                "Error Instantiating SmartStreamFilter"
-                            );
-                            let error_code = ErrorCode::SmartStreamError(
-                                SmartStreamError::InvalidSmartStreamModule("filter".to_string()),
-                            );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
-                            return Ok(());
-                        }
-                    };
-                    Box::new(filter)
-                }
-                SmartStreamKind::Map => {
-                    debug!("Instantiating SmartStreamMap");
-                    let map = match module.create_map(&sm_engine, payload.params) {
-                        Ok(map) => map,
-                        Err(err) => {
-                            error!(
-                                error = err.to_string().as_str(),
-                                "Error Instantiating SmartStreamMap"
-                            );
-
-                            let error_code = ErrorCode::SmartStreamError(
-                                SmartStreamError::InvalidSmartStreamModule("map".to_string()),
-                            );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
-                            return Ok(());
-                        }
-                    };
-                    Box::new(map)
-                }
-                SmartStreamKind::ArrayMap => {
-                    debug!("Instantiating SmartStreamArrayMap");
-                    let array_map = match module.create_array_map(&sm_engine, payload.params) {
-                        Ok(array_map) => array_map,
-                        Err(err) => {
-                            error!(
-                                error = err.to_string().as_str(),
-                                "Error Instantiating SmartStreamArrayMap"
-                            );
-                            let error_code = ErrorCode::SmartStreamError(
-                                SmartStreamError::InvalidSmartStreamModule("array_map".to_string()),
-                            );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
-                            return Ok(());
-                        }
-                    };
-
-                    Box::new(array_map)
-                }
-                SmartStreamKind::Aggregate { accumulator } => {
-                    debug!(
-                        accumulator_len = accumulator.len(),
-                        "Instantiating SmartStreamAggregate"
-                    );
-                    let aggregator =
-                        match module.create_aggregate(&sm_engine, payload.params, accumulator) {
-                            Ok(aggregate) => aggregate,
-                            Err(err) => {
-                                error!(
-                                    error = err.to_string().as_str(),
-                                    "Error Instantiating SmartStreamAggregate"
-                                );
-
-                                let error_code = ErrorCode::SmartStreamError(
-                                    SmartStreamError::InvalidSmartStreamModule(
-                                        "aggregate".to_string(),
-                                    ),
-                                );
-                                send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                    .await?;
-                                return Ok(());
-                            }
-                        };
-                    Box::new(aggregator)
-                }
-            };
-
             (Some(smartstream), u32::MAX)
         } else {
             (None, max_bytes)

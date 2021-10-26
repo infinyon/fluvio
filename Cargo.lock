@@ -1854,6 +1854,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
+ "fluvio-spu-schema",
  "fluvio-storage",
  "nix",
  "tracing",
