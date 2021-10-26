@@ -36,10 +36,9 @@ mod encoding {
         pub record_data: Vec<u8>,
         pub params: SmartStreamExtraParams,
     }
-
-    impl SmartStreamInput {
-        pub fn from_records(records: Vec<Record>) -> Result<Self, std::io::Error> {
-            //let record = vec![Record::new(value)];
+    impl std::convert::TryFrom<Vec<Record>> for SmartStreamInput {
+        type Error = std::io::Error;
+        fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
             let mut record_data = Vec::new();
             let _ = records.encode(&mut record_data, 0)?;
             Ok(SmartStreamInput {
