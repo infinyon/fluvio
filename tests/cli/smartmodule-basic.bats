@@ -12,8 +12,9 @@ setup_file() {
 }
 
 # Create smartmodule
+# Currently just using an empty file
 @test "Create smartmodule" {
-    run "$FLUVIO_BIN" smartmodule create "$SMARTMODULE_NAME" --wasm-file $(mktemp)
+    run "$FLUVIO_BIN" smartmodule create "$SMARTMODULE_NAME" --wasm-file "$(mktemp)"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     [ "$status" -eq 0 ]

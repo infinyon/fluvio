@@ -5,7 +5,6 @@ load test_helper/tools_check.bash
 load test_helper/setup_k8_cluster.bash
 load test_helper/random_string.bash
 
-
 setup_file() {
     TOPIC_NAME=$(random_string)
     export TOPIC_NAME
@@ -18,7 +17,7 @@ setup_file() {
     run "$FLUVIO_BIN" topic create "$TOPIC_NAME" 
     #debug_msg "command $BATS_RUN_COMMAND" # This doesn't do anything.
     debug_msg "status: $status"
-    debug_msg "output: $output"
+    debug_msg "output: ${lines[0]}"
     [ "$status" -eq 0 ]
 }
 
