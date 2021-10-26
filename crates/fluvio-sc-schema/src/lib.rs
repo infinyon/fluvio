@@ -53,8 +53,4 @@ mod admin {
         type WatchResponseType: Encoder + Decoder + Debug + Sized;
         type DeleteKey: Encoder + Decoder + Debug + Default + Sized;
     }
-
-
-    
 }
-

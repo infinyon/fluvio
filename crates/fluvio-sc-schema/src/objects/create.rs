@@ -8,7 +8,7 @@ use dataplane::api::Request;
 use crate::{AdminPublicApiKey, AdminSpec, CreateDecoder, Status};
 pub use create::AllCreatableSpec;
 
-use super::{ObjectApiEnum,ObjectApiDecode};
+use super::{ObjectApiEnum, ObjectApiDecode};
 
 ObjectApiEnum!(CreateRequest);
 
@@ -19,16 +19,13 @@ pub struct CreateRequest<S: AdminSpec> {
     pub spec: AllCreatableSpec<S>,
 }
 
-impl Request<CreateDecoder> for ObjectApiCreateRequest
-{
+impl Request<CreateDecoder> for ObjectApiCreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = Status;
 
-    ObjectApiDecode!(CreateRequest,CreateDecoder);
+    ObjectApiDecode!(CreateRequest, CreateDecoder);
 }
-
-
 
 /// Used for compatibility with older versions of the API
 pub enum CreateType {

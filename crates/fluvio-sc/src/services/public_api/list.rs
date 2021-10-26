@@ -1,20 +1,22 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
-
 use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::{ObjectDecoder, objects::{ObjectApiListRequest, ObjectApiListResponse}};
+use fluvio_sc_schema::{
+    ObjectDecoder,
+    objects::{ObjectApiListRequest, ObjectApiListResponse},
+};
 use fluvio_auth::{AuthContext};
 
 use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(request, auth_ctx))]
 pub async fn handle_list_request<AC: AuthContext>(
-    request: RequestMessage<ObjectApiListRequest,ObjectDecoder>,
+    request: RequestMessage<ObjectApiListRequest, ObjectDecoder>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ResponseMessage<ObjectApiListResponse,ObjectDecoder>, IoError> {
+) -> Result<ResponseMessage<ObjectApiListResponse, ObjectDecoder>, IoError> {
     debug!("handling list request");
     let (header, req, obj) = request.get_header_request_middleware();
 
@@ -52,5 +54,5 @@ pub async fn handle_list_request<AC: AuthContext>(
         }
     };
 
-    Ok(ResponseMessage::from_header_with_mw(&header,response,obj))
+    Ok(ResponseMessage::from_header_with_mw(&header, response, obj))
 }

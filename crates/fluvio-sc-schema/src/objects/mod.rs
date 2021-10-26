@@ -10,7 +10,7 @@ pub use watch::*;
 pub use metadata::*;
 
 pub use crate::NameFilter;
-pub(crate) use object_macro::{ObjectApiEnum,ObjectApiDecode};
+pub(crate) use object_macro::{ObjectApiEnum, ObjectApiDecode};
 
 mod metadata {
 
@@ -87,18 +87,15 @@ mod metadata {
 
 mod object_macro {
 
-    
-   // pub type ObjCreateRequest = ObjectRequest<CreateDecoder, ObjectApiCreateRequest>;
-   // pub type ObjWatchRequest = ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>;
-   // pub type ObjWatchResponse = ObjectResponse<ObjectDecoder, ObjectApiWatchRequest>;
-
-
+    // pub type ObjCreateRequest = ObjectRequest<CreateDecoder, ObjectApiCreateRequest>;
+    // pub type ObjWatchRequest = ObjectRequest<ObjectDecoder, ObjectApiWatchRequest>;
+    // pub type ObjWatchResponse = ObjectResponse<ObjectDecoder, ObjectApiWatchRequest>;
 
     macro_rules! ObjectApiEnum {
         ($api:ident) => {
 
             paste::paste! {
-                
+
 
                 #[derive(Debug,Encoder)]
                 pub enum [<ObjectApi $api>] {
@@ -129,7 +126,7 @@ mod object_macro {
                         T: dataplane::bytes::Buf
                     {
                         panic!("should not be called");
-                    }                       
+                    }
 
                 }
             }
@@ -140,10 +137,10 @@ mod object_macro {
 
         ($api:ident,$m:ident) => {
 
-            
+
             paste::paste! {
-                    
-                
+
+
                     fn decode_object<T>(&mut self, src: &mut T, mw: &$m ,version: dataplane::core::Version) -> Result<(), std::io::Error>
                     where
                         T: dataplane::bytes::Buf,
@@ -182,13 +179,12 @@ mod object_macro {
                         }
                     }
 
-                
+
             }
-            
+
         }
     }
 
     pub(crate) use ObjectApiEnum;
     pub(crate) use ObjectApiDecode;
-
 }

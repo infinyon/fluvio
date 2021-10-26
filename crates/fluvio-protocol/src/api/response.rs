@@ -22,7 +22,7 @@ pub struct ResponseMessage<P, M = DefaultRequestMiddleWare> {
     pub response: P,
 }
 
-impl<P> ResponseMessage<P,DefaultRequestMiddleWare> {
+impl<P> ResponseMessage<P, DefaultRequestMiddleWare> {
     pub fn from_header(header: &RequestHeader, response: P) -> Self {
         Self::new(header.correlation_id(), response)
     }
@@ -36,19 +36,17 @@ impl<P> ResponseMessage<P,DefaultRequestMiddleWare> {
     }
 }
 
-impl<P,M> ResponseMessage<P,M> {
-    pub fn from_header_with_mw(header: &RequestHeader, response: P,middleware: M) -> Self {
+impl<P, M> ResponseMessage<P, M> {
+    pub fn from_header_with_mw(header: &RequestHeader, response: P, middleware: M) -> Self {
         Self {
             correlation_id: header.correlation_id(),
             middleware,
             response,
         }
     }
-
-
 }
 
-impl<P> ResponseMessage<P,DefaultRequestMiddleWare>
+impl<P> ResponseMessage<P, DefaultRequestMiddleWare>
 where
     P: Decoder,
 {
@@ -97,10 +95,10 @@ where
     }
 }
 
-impl<P,M> Encoder for ResponseMessage<P,M>
+impl<P, M> Encoder for ResponseMessage<P, M>
 where
     P: Encoder + Default,
-    M: RequestMiddleWare
+    M: RequestMiddleWare,
 {
     fn write_size(&self, version: Version) -> usize {
         self.correlation_id.write_size(version) + self.response.write_size(version)

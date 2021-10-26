@@ -3,7 +3,9 @@ use tracing::{trace, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::versions::{ApiVersionKey, ApiVersionsRequest, ApiVersionsResponse, PlatformVersion};
-use fluvio_sc_schema::objects::{ObjectApiCreateRequest,  DeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest};
+use fluvio_sc_schema::objects::{
+    ObjectApiCreateRequest, DeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
+};
 use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_sc_schema::AdminPublicApiKey;
 

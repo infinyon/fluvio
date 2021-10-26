@@ -7,7 +7,7 @@ use bytes::BytesMut;
 use fluvio_future::file_slice::AsyncFileSlice;
 
 use crate::api::DefaultRequestMiddleWare;
-use crate::api::{Request,RequestMessage,ResponseMessage};
+use crate::api::{Request, RequestMessage, ResponseMessage};
 use crate::{Encoder, Version};
 
 pub enum StoreValue {
@@ -86,7 +86,7 @@ where
 
 /// This is same as encoding in the RequestMessage but first
 /// includes the lenght and can encode async file slice
-impl<R> FileWrite for RequestMessage<R,DefaultRequestMiddleWare>
+impl<R> FileWrite for RequestMessage<R, DefaultRequestMiddleWare>
 where
     R: FileWrite + Default + Request<DefaultRequestMiddleWare>,
 {

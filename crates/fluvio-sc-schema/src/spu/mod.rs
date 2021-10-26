@@ -2,7 +2,9 @@ pub use fluvio_controlplane_metadata::spu::*;
 
 mod convert {
 
-    use crate::objects::{CreateType, Metadata, MetadataUpdate};
+    use fluvio_controlplane_metadata::spu::CustomSpuKey;
+
+    use crate::objects::{Metadata, MetadataUpdate};
     use crate::{AdminSpec, NameFilter};
     use super::{CustomSpuSpec, SpuSpec};
 
@@ -11,7 +13,7 @@ mod convert {
         type ListType = Metadata<Self>;
         type WatchResponseType = MetadataUpdate<Self>;
 
-        type DeleteKey = String;
+        type DeleteKey = CustomSpuKey;
     }
 
     impl AdminSpec for SpuSpec {

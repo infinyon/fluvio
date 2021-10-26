@@ -13,10 +13,10 @@ use crate::services::auth::AuthServiceContext;
 /// Handler for create topic request
 #[instrument(skip(request, auth_context))]
 pub async fn handle_create_request<AC: AuthContext>(
-    request: RequestMessage<ObjectApiCreateRequest,ObjectDecoder>,
+    request: RequestMessage<ObjectApiCreateRequest, ObjectDecoder>,
     auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, IoError> {
-    let (header,req) = request.get_header_request();
+    let (header, req) = request.get_header_request();
 
     let status = match req {
         ObjectApiCreateRequest::Topic(create) => {

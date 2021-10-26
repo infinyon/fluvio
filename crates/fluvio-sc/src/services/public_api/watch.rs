@@ -8,8 +8,9 @@ use fluvio_types::event::StickyEvent;
 use fluvio_socket::ExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
-use fluvio_sc_schema::objects::{ObjectApiWatchRequest, WatchRequest, WatchResponse, Metadata, MetadataUpdate};
-
+use fluvio_sc_schema::objects::{
+    ObjectApiWatchRequest, WatchRequest, WatchResponse, Metadata, MetadataUpdate,
+};
 
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -26,7 +27,7 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 /// handle watch request by spawning watch controller for each store
 #[instrument(skip(request, auth_ctx, sink, end_event))]
 pub fn handle_watch_request<AC>(
-    request: RequestMessage<ObjectApiWatchRequest,ObjectDecoder>,
+    request: RequestMessage<ObjectApiWatchRequest, ObjectDecoder>,
     auth_ctx: &AuthServiceContext<AC>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
@@ -59,12 +60,14 @@ pub fn handle_watch_request<AC>(
             auth_ctx.global_ctx.partitions().clone(),
             header,
         ),
-        ObjectApiWatchRequest::ManagedConnector(_) => WatchController::<ManagedConnectorSpec>::update(
-            sink,
-            end_event,
-            auth_ctx.global_ctx.managed_connectors().clone(),
-            header,
-        ),
+        ObjectApiWatchRequest::ManagedConnector(_) => {
+            WatchController::<ManagedConnectorSpec>::update(
+                sink,
+                end_event,
+                auth_ctx.global_ctx.managed_connectors().clone(),
+                header,
+            )
+        }
         ObjectApiWatchRequest::SmartModule(_) => WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,

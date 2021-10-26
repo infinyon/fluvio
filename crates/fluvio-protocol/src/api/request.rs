@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 use std::path::Path;
 use std::fmt;
-use std::fmt::{Display,Debug};
+use std::fmt::{Display, Debug};
 
 use tracing::trace;
 use bytes::Buf;
@@ -99,8 +99,7 @@ where
     }
 }
 
-impl<R, M> RequestMessage<R, M>
-{
+impl<R, M> RequestMessage<R, M> {
     /// create with header, this assume header is constructed from higher request
     /// no api key check is performed since it is already done
     pub fn new_with_mw(header: RequestHeader, middleware: M, request: R) -> Self {
@@ -110,7 +109,6 @@ impl<R, M> RequestMessage<R, M>
             request,
         }
     }
-
 
     /// destruct to header and request
     pub fn get_header_request(self) -> (RequestHeader, R) {
@@ -122,8 +120,6 @@ impl<R, M> RequestMessage<R, M>
         (self.header, self.request, self.middleware)
     }
 
-
-
     #[allow(unused)]
     #[allow(unused)]
     pub fn request(&self) -> &R {
@@ -131,10 +127,10 @@ impl<R, M> RequestMessage<R, M>
     }
 }
 
-impl<R, M> RequestMessage<R, M> 
-    where R:Request<M>
+impl<R, M> RequestMessage<R, M>
+where
+    R: Request<M>,
 {
-
     #[allow(unused)]
     pub fn decode_response<T>(
         &self,
@@ -167,6 +163,26 @@ impl<R, M> RequestMessage<R, M>
     }
 }
 
+impl<R, M> RequestMessage<R, M>
+where
+    R: Request<M>,
+    M: RequestMiddleWare,
+{
+    /// decode with already decoded header
+    pub fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
+    where
+        T: Buf,
+        Self: Default,
+    {
+        let mut req = Self {
+            header,
+            ..Default::default()
+        };
+        req.decode(src, req.header.api_version())?;
+        Ok(req)
+    }
+}
+
 impl<R, M> Decoder for RequestMessage<R, M>
 where
     R: Request<M>,
@@ -178,15 +194,16 @@ where
     {
         self.header.decode(src, version)?;
         self.middleware.decode(src, version)?;
-        self.request.decode_object(src, &self.middleware,self.header.api_version())?;
+        self.request
+            .decode_object(src, &self.middleware, self.header.api_version())?;
         Ok(())
     }
 }
 
-impl<R,M> Encoder for RequestMessage<R,M>
+impl<R, M> Encoder for RequestMessage<R, M>
 where
     R: Request<M>,
-    M: RequestMiddleWare
+    M: RequestMiddleWare,
 {
     fn write_size(&self, version: Version) -> usize {
         self.header.write_size(version)
@@ -230,8 +247,7 @@ mod middleware {
 
     impl RequestMiddleWare for DefaultRequestMiddleWare {}
 
-    impl Decoder for DefaultRequestMiddleWare
-    {
+    impl Decoder for DefaultRequestMiddleWare {
         fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), IoError>
         where
             T: Buf,
@@ -240,8 +256,7 @@ mod middleware {
         }
     }
 
-    impl Encoder for DefaultRequestMiddleWare
-    {
+    impl Encoder for DefaultRequestMiddleWare {
         fn write_size(&self, _version: Version) -> usize {
             0
         }
@@ -253,9 +268,6 @@ mod middleware {
             Ok(())
         }
     }
-
-   
-    
 }
 
 #[cfg(test)]

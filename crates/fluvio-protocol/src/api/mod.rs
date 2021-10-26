@@ -28,8 +28,7 @@ macro_rules! api_decode {
     }};
 }
 
-pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
-{
+pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug {
     const API_KEY: u16;
 
     const DEFAULT_API_VERSION: i16 = 0;
@@ -47,7 +46,7 @@ pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
     ) -> Result<(), IoError>
     where
         T: Buf,
-        M: RequestMiddleWare
+        M: RequestMiddleWare,
     {
         self.decode(src, version)
     }
