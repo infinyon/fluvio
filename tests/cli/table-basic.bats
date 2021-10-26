@@ -1,7 +1,9 @@
 #!/usr/bin/env bats
 
-load test_helper/tools_check.bash
-load test_helper/setup_k8_cluster.bash
+setup_file() {
+    load test_helper/tools_check.bash
+    load test_helper/setup_k8_cluster.bash
+}
 
 setup() {
     load test_helper/random_string.bash

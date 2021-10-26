@@ -1,7 +1,9 @@
 #!/usr/bin/env bats
 
-load test_helper/tools_check.bash
-load test_helper/setup_k8_cluster.bash
+setup_file() {
+    load test_helper/tools_check.bash
+    load test_helper/setup_k8_cluster.bash
+}
 
 setup() {
     export CONNECTOR_CONFIG="./test_helper/test-connector-config.yml"
