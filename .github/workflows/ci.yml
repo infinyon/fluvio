@@ -677,6 +677,40 @@ jobs:
         run: |
           make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=./fluvio cli-platform-cross-version-test
 
+  k8_cli_smoke:
+    name: CLI smoke tests
+    needs: build_image
+   # if: false
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
+      - name: Install K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+
+      - name: Print artifacts and mark executable
+        run: ls -la . && chmod +x ./fluvio && ./fluvio version
+
+      - name: Run CLI tests
+        run: |
+          # Randomize the order of the tests
+          bats -T $(ls -1 tests/cli/*.bats|sort -R)
+
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
   docker_push:
