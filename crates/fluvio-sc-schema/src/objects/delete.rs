@@ -7,7 +7,7 @@ use std::fmt::Debug;
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
-use fluvio_controlplane_metadata::k8_types::options::DeleteOptions;
+
 
 use crate::{AdminSpec, ObjectDecoder};
 use crate::Status;

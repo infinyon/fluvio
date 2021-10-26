@@ -42,13 +42,13 @@ pub mod validate {
 mod convert {
 
     use crate::{AdminSpec, NameFilter};
-    use crate::objects::{WatchResponse, ObjectApiWatchResponse};
+    use crate::objects::{Metadata, ObjectApiWatchResponse, WatchResponse};
 
     use super::TopicSpec;
 
     impl AdminSpec for TopicSpec {
         type ListFilter = NameFilter;
-        type ListType = Self;
+        type ListType = Metadata<Self>;
         type WatchResponseType = Self;
         type DeleteKey = String;
     }

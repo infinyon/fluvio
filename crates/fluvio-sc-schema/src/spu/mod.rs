@@ -4,12 +4,12 @@ mod convert {
 
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
-    use crate::{AdminSpec, NameFilter};
+    use crate::{AdminSpec, NameFilter, objects::Metadata};
     use super::{CustomSpuSpec, SpuSpec};
 
     impl AdminSpec for CustomSpuSpec {
         type ListFilter = NameFilter;
-        type ListType = Self;
+        type ListType = Metadata<Self>;
 
         type DeleteKey = CustomSpuKey;
 
@@ -18,7 +18,7 @@ mod convert {
 
     impl AdminSpec for SpuSpec {
         type ListFilter = NameFilter;
-        type ListType = Self;
+        type ListType = Metadata<Self>;
 
         type DeleteKey = String;
 

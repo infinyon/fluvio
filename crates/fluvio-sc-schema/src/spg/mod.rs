@@ -2,8 +2,7 @@ pub use fluvio_controlplane_metadata::spg::*;
 
 mod convert {
 
-    use crate::objects::{Metadata};
-    use crate::{AdminSpec, NameFilter};
+    use crate::{AdminSpec, NameFilter, objects::Metadata};
     use super::SpuGroupSpec;
 
     impl AdminSpec for SpuGroupSpec {
@@ -11,7 +10,7 @@ mod convert {
 
         type DeleteKey = String;
 
-        type ListType = Self;
+        type ListType = Metadata<Self>;
 
         type WatchResponseType = Self;
     }

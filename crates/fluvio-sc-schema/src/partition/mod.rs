@@ -2,7 +2,7 @@ pub use fluvio_controlplane_metadata::partition::*;
 
 mod convert {
 
-    use crate::{AdminSpec, NameFilter};
+    use crate::{AdminSpec, NameFilter, objects::Metadata};
     use super::*;
 
     impl AdminSpec for PartitionSpec {
@@ -11,6 +11,6 @@ mod convert {
 
         type DeleteKey = String;
 
-        type ListType = Self;
+        type ListType = Metadata<Self>;
     }
 }

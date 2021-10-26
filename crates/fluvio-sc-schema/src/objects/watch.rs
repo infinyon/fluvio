@@ -35,7 +35,7 @@ impl Request<ObjectDecoder> for ObjectApiWatchRequest {
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct WatchResponse<S: AdminSpec>
 where
-    <<S as AdminSpec>::WatchResponseType as Spec>::Status: Encoder + Decoder,
+    <S::WatchResponseType as Spec>::Status: Encoder + Decoder,
 {
     inner: MetadataUpdate<S::WatchResponseType>,
 }
@@ -43,7 +43,7 @@ where
 impl<S> WatchResponse<S>
 where
     S: AdminSpec,
-    <<S as AdminSpec>::WatchResponseType as Spec>::Status: Encoder + Decoder,
+    <S::WatchResponseType as Spec>::Status: Encoder + Decoder,
 {
     pub fn new(inner: MetadataUpdate<S::WatchResponseType>) -> Self {
         Self { inner }

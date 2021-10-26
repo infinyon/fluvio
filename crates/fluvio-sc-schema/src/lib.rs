@@ -46,7 +46,7 @@ mod admin {
     /// AdminSpec has list, type, filter, delete key
     pub trait AdminSpec: Spec + Encoder + Decoder {
         type ListFilter: Encoder + Decoder + Sized + Debug;
-        type ListType: Spec + Encoder + Decoder;
+        type ListType: Encoder + Decoder + Debug;
         type WatchResponseType: Spec + Encoder + Decoder;
         type DeleteKey: Encoder + Decoder + Debug + Default + Sized;
     }
