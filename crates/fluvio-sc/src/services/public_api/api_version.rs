@@ -4,9 +4,8 @@ use tracing::{trace, instrument};
 use dataplane::api::{RequestMessage, ResponseMessage, Request};
 use dataplane::versions::{ApiVersionKey, ApiVersionsRequest, ApiVersionsResponse, PlatformVersion};
 use fluvio_sc_schema::objects::{
-    ObjectApiCreateRequest, DeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
+    ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiWatchRequest,
 };
-use fluvio_sc_schema::topic::TopicSpec;
 use fluvio_sc_schema::AdminPublicApiKey;
 
 #[instrument(skip(request))]
@@ -27,8 +26,8 @@ pub async fn handle_api_versions_request(
     ));
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::Delete,
-        DeleteRequest::DEFAULT_API_VERSION,
-        DeleteRequest::DEFAULT_API_VERSION,
+        ObjectApiDeleteRequest::DEFAULT_API_VERSION,
+        ObjectApiDeleteRequest::DEFAULT_API_VERSION,
     ));
     response.api_keys.push(make_version_key(
         AdminPublicApiKey::List,

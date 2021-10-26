@@ -33,8 +33,15 @@ impl Request<ObjectDecoder> for ObjectApiWatchRequest {
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct WatchResponse<S: AdminSpec> {
-    inner: S::WatchResponseType,
+pub struct WatchResponse<S: AdminSpec>(S::WatchResponseType);
+
+impl<S> WatchResponse<S>
+where
+    S: AdminSpec,
+{
+    pub fn new(response: S::WatchResponseType) -> Self {
+        Self(response)
+    }
 }
 
 /// updates on metadata

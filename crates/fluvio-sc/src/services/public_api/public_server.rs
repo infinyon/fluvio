@@ -111,7 +111,7 @@ where
                     &service_context,
                     shared_sink.clone(),
                     end_event.clone(),
-                )
+                )?
 
         );
 

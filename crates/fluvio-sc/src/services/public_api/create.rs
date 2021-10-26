@@ -4,7 +4,7 @@ use dataplane::ErrorCode;
 use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::{ObjectDecoder, Status};
+use fluvio_sc_schema::{CreateDecoder, Status};
 use fluvio_sc_schema::objects::ObjectApiCreateRequest;
 use fluvio_auth::AuthContext;
 
@@ -13,7 +13,7 @@ use crate::services::auth::AuthServiceContext;
 /// Handler for create topic request
 #[instrument(skip(request, auth_context))]
 pub async fn handle_create_request<AC: AuthContext>(
-    request: RequestMessage<ObjectApiCreateRequest, ObjectDecoder>,
+    request: RequestMessage<ObjectApiCreateRequest, CreateDecoder>,
     auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, IoError> {
     let (header, req) = request.get_header_request();

@@ -5,14 +5,11 @@ use std::fmt::Debug;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
-use crate::{AdminObjectDecoder, AdminPublicApiKey, AdminSpec, ObjectDecoder};
+use crate::{AdminPublicApiKey, AdminSpec, ObjectDecoder};
 use super::{ObjectApiEnum, ObjectApiDecode};
 
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(ListResponse);
-
-//pub type ObjListRequest = ObjectRequest<ObjectDecoder, ObjectApiListRequest>;
-//pub type ObjListResponse = ObjectResponse<ObjectDecoder, ObjectApiListResponse>;
 
 #[derive(Debug, Default, Encoder, Decoder)]
 pub struct ListRequest<S: AdminSpec> {

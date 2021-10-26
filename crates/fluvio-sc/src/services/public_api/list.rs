@@ -46,7 +46,7 @@ pub async fn handle_list_request<AC: AuthContext>(
             super::table::handle_fetch_request(req.name_filters, auth_ctx).await?,
         ),
         _ => {
-            debug!("Invalid {:?}", req);
+            debug!("Invalid List Req {:?}", req);
             return Err(IoError::new(
                 ErrorKind::InvalidData,
                 "Not Valid List Object",
