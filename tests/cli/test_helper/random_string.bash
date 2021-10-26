@@ -1,7 +1,5 @@
 #TODO: Offer pattern to set length
 STRING_LEN=7
 
-# Generate random string
-#if [ -z "$RAND_STRING" ]; then
-export RAND_STRING=$(shuf -er -n$STRING_LEN  {A..Z} {a..z} {0..9})
-#fi
+RAND_STRING=$(shuf -er -n"$STRING_LEN" {A..Z} {a..z} {0..9})
+export RAND_STRING
