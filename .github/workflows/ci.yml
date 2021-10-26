@@ -599,7 +599,6 @@ jobs:
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
 
-
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
         run: |
@@ -707,18 +706,26 @@ jobs:
         with:
           name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
           path: /tmp
+
+      # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
           docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
           docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
           docker image ls -a
+
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+
+      - name: Load image into K3d
+        run: k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+
       - name: Print artifacts and mark executable
         run: ls -la . && chmod +x ./fluvio && ./fluvio version
 
       - name: Start cluster
         run: |
-          k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
           ./fluvio cluster start --develop
 
       - name: Run CLI tests
