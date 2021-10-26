@@ -37,9 +37,8 @@ mod admin {
 
     use std::fmt::Debug;
 
-    use dataplane::api::Request;
     use dataplane::core::{Encoder, Decoder};
-    use super::core::{Spec,Status};
+    use super::core::{Spec};
 
     pub trait ListFilter: Encoder + Decoder + Sized + Debug {}
     /// filter by name
@@ -52,7 +51,7 @@ mod admin {
         type ListFilter: ListFilter;
         type ListType: Encoder + Decoder + Debug + Sized;
         type WatchResponseType: Encoder + Decoder + Debug + Sized;
-        type DeleteKey: Encoder + Decoder + Debug + Sized;
+        type DeleteKey: Encoder + Decoder + Debug + Default + Sized;
     }
 
 

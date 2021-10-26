@@ -6,22 +6,20 @@
 
 use std::convert::{TryInto};
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::fmt::Debug;
 
-use tracing::{debug, trace};
+use tracing::{debug};
 
 
-use dataplane::bytes::{Buf, BufMut};
-use dataplane::api::{ApiMessage,RequestHeader,RequestMessage,RequestMiddleWare};
+use dataplane::bytes::{Buf};
+use dataplane::api::{ApiMessage,RequestHeader,RequestMessage};
 
 use dataplane::api::api_decode;
-use dataplane::core::{Encoder, Decoder, Version};
+use dataplane::core::{Encoder, Decoder};
 use dataplane::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
-use crate::AdminSpec;
-use crate::objects::{ObjectApiListRequest,ObjectApiCreateRequest,ObjectApiWatchRequest};
+use crate::objects::{ObjectApiListRequest,ObjectApiCreateRequest,ObjectApiWatchRequest,ObjectApiDeleteRequest};
 
 use crate::core::Spec;
 
@@ -31,7 +29,7 @@ pub use objects::*;
 pub enum AdminPublicRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
     CreateRequest(RequestMessage<ObjectApiCreateRequest,CreateDecoder>),
-    //  DeleteRequest(ObjectRequest<ObjectDecoder,ObjectApiDeleteRequest>),
+    DeleteRequest(RequestMessage<ObjectApiDeleteRequest,ObjectDecoder>),
     ListRequest(RequestMessage<ObjectApiListRequest,ObjectDecoder>),
     WatchRequest(RequestMessage<ObjectApiWatchRequest,ObjectDecoder>),
 }
@@ -42,7 +40,7 @@ impl Default for AdminPublicRequest {
     }
 }
 
-//ObjectApiEnum!(DeleteRequest);
+
 
 impl ApiMessage for AdminPublicRequest {
     type ApiKey = AdminPublicApiKey;
