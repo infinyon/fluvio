@@ -115,6 +115,7 @@ impl MutFileRecords {
         validate(f_sink.get_path()).await
     }
 
+    /// get current file position
     pub fn get_pos(&self) -> Size {
         if self.cached_len > u32::MAX.into() {
             warn!(
@@ -424,6 +425,7 @@ mod tests {
             .expect("create");
 
         debug!("{:?}", msg_sink.flush_policy);
+        assert_eq!(msg_sink.get_pos(), 0);
 
         let mut builder = BatchProducer::builder()
             .base_offset(BASE_OFFSET)
@@ -461,6 +463,7 @@ mod tests {
             .await
             .expect("open");
         assert_eq!(old_msg_sink.get_base_offset(), BASE_OFFSET);
+        assert_eq!(old_msg_sink.get_pos() as usize, write_size * 2);
     }
 
     // This Test configures policy to flush after every NUM_WRITES
