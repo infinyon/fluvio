@@ -2,6 +2,7 @@ pub mod epoch;
 pub mod core;
 pub mod store;
 
+// re-export k8-types crate
 #[cfg(feature = "k8")]
 pub use k8_types;
 
@@ -78,4 +79,3 @@ pub(crate) mod test_fixture {
         }
     }
 }
-
