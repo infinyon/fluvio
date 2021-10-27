@@ -729,7 +729,7 @@ jobs:
           ./fluvio cluster start --develop
 
       - name: Run CLI smoke tests
-        run: make cli-smoke
+        run: make FLUVIO_BIN=./fluvio cli-smoke
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
