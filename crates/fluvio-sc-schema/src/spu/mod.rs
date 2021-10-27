@@ -4,7 +4,10 @@ mod convert {
 
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
-    use crate::{AdminSpec, NameFilter, objects::Metadata};
+    use crate::{
+        AdminSpec, NameFilter,
+        objects::{Metadata, WatchResponse, ObjectApiWatchResponse},
+    };
     use super::{CustomSpuSpec, SpuSpec};
 
     impl AdminSpec for CustomSpuSpec {
@@ -23,5 +26,11 @@ mod convert {
         type DeleteKey = String;
 
         type WatchResponseType = Self;
+    }
+
+    impl From<WatchResponse<SpuSpec>> for ObjectApiWatchResponse {
+        fn from(response: WatchResponse<SpuSpec>) -> Self {
+            ObjectApiWatchResponse::Spu(response)
+        }
     }
 }
