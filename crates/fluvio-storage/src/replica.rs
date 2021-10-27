@@ -190,7 +190,6 @@ impl FileReplica {
             debug!(
                 end_offset = last_segment.get_end_offset(),
                 "segment validated with last offset",
-                
             );
             last_segment
         } else {
@@ -300,8 +299,7 @@ impl FileReplica {
                         } else {
                             debug!(
                                 base_offset = segment.get_base_offset(),
-                                start_offset,
-                                "offset in active segment",
+                                start_offset, "offset in active segment",
                             );
                             segment.records_slice(start_offset, max_offset).await
                         }

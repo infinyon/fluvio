@@ -91,11 +91,12 @@ impl MutFileRecords {
         let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
         debug!("file created");
         let f_slice_root = f_sink.slice_from(0, 0)?;
+        let cached_len = f_sink.get_current_len();
         Ok(MutFileRecords {
             base_offset,
             f_sink: Arc::new(Mutex::new(f_sink)),
             f_slice_root,
-            cached_len: 0,
+            cached_len,
             flush_policy: get_flush_policy_from_config(option),
             write_count: 0,
             flush_count: Arc::new(AtomicU32::new(0)),

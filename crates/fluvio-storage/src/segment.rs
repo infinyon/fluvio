@@ -130,7 +130,6 @@ where
         start_offset: Offset,
         max_offset_opt: Option<Offset>,
     ) -> Result<Option<AsyncFileSlice>, StorageError> {
-        
         match self.find_offset_position(start_offset).await? {
             Some(start_pos) => {
                 debug!(
@@ -171,10 +170,7 @@ where
     ) -> Result<Option<BatchHeaderPos>, StorageError> {
         debug!(offset, "trying to find offset position");
         if offset < self.base_offset {
-            debug!(
-                self.base_offset,
-                "invalid, offset is less than base offset",
-            );
+            debug!(self.base_offset, "invalid, offset is less than base offset",);
             return Ok(None);
         }
         if offset >= self.end_offset {
@@ -199,16 +195,14 @@ where
                 base_offset = batch_pos.get_batch().base_offset,
                 batch_len = batch_pos.get_batch().batch_len,
                 last_offset = batch_pos.get_batch().get_last_offset(),
-                "batch_pos");
+                "batch_pos"
+            );
             let last_offset = batch_pos.get_batch().get_last_offset();
             if last_offset >= offset {
-                debug!(
-                    last_offset,
-                    "found batch last offset"
-                );
+                debug!(last_offset, "found batch last offset");
                 return Ok(Some(batch_pos));
             } else {
-                trace!(last_offset,"skipping batch end offset");
+                trace!(last_offset, "skipping batch end offset");
             }
         }
         Ok(None)
