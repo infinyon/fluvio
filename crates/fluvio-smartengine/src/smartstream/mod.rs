@@ -34,7 +34,7 @@ pub struct SmartEngine(pub(crate) Engine);
 impl SmartEngine {
     #[cfg(feature = "smartmodule")]
     pub async fn create_module_from_smartmodule_spec(
-        &self,
+        self,
         spec: &SmartModuleSpec,
     ) -> Result<SmartStreamModule> {
         use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmFormat};
@@ -50,7 +50,10 @@ impl SmartEngine {
             SmartModuleWasmFormat::Binary => Module::from_binary(&self.0, &buffer)?,
             SmartModuleWasmFormat::Text => return Err(Error::msg("Format not supported")),
         };
-        Ok(SmartStreamModule(module))
+        Ok(SmartStreamModule {
+            module,
+            engine: self
+        })
     }
 
     pub fn create_module_from_binary(self, bytes: &[u8]) -> Result<SmartStreamModule> {

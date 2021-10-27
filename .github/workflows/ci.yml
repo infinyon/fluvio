@@ -307,9 +307,10 @@ jobs:
         wasm-crate:
           - fluvio
           - fluvio-socket
+          - fluvio-smartengine
+          - fluvio-sc-schema
           - fluvio-protocol
           - fluvio-spu-schema
-          - fluvio-sc-schema
           - fluvio-dataplane-protocol
           - fluvio-types
         features:
