@@ -134,9 +134,6 @@ impl TopicProducer {
         let partition_count = topic_spec.partitions();
         let partition_config = PartitionerConfig { partition_count };
 
-        // This should be mutable because when the smartengine feature flag is on, entries will be
-        // mutable.
-
         cfg_if::cfg_if! {
             if #[cfg(feature = "smartengine")] {
                 let mut entries = records
