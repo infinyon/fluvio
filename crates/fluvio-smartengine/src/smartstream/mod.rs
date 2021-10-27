@@ -52,7 +52,7 @@ impl SmartEngine {
         };
         Ok(SmartStreamModule {
             module,
-            engine: self
+            engine: self,
         })
     }
 
