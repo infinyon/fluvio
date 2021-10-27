@@ -2,7 +2,13 @@ use std::{collections::HashMap, time::Duration};
 
 use tracing::{debug, error, trace, instrument};
 use k8_client::ClientError;
-use k8_types::{LabelProvider, LabelSelector, TemplateMeta, TemplateSpec, core::pod::{ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount, VolumeSpec}};
+use k8_types::{
+    LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
+    core::pod::{
+        ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
+        VolumeSpec,
+    },
+};
 
 use fluvio_future::{task::spawn, timer::sleep};
 use fluvio_stream_dispatcher::store::K8ChangeListener;
