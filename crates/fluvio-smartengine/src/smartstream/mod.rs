@@ -4,7 +4,7 @@ use std::fmt::{self, Debug};
 
 use dataplane::smartstream::SmartStreamExtraParams;
 use tracing::{debug, trace};
-use anyhow::{Result, Error};
+use anyhow::{Error, Result};
 use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
 
 use crate::smartstream::filter::SmartStreamFilter;
@@ -25,11 +25,34 @@ pub mod aggregate;
 pub mod file_batch;
 
 pub type WasmSlice = (i32, i32);
+#[cfg(feature = "smartmodule")]
+use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
 
 #[derive(Default, Clone)]
 pub struct SmartEngine(pub(crate) Engine);
 
 impl SmartEngine {
+    #[cfg(feature = "smartmodule")]
+    pub async fn create_module_from_smartmodule_spec(
+        &self,
+        spec: &SmartModuleSpec,
+    ) -> Result<SmartStreamModule> {
+        use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmFormat};
+        use flate2::bufread::GzDecoder;
+        use std::io::Read;
+
+        let wasm_module = &spec.wasm;
+        let mut decoder = GzDecoder::new(&*wasm_module.payload);
+        let mut buffer = Vec::with_capacity(wasm_module.payload.len());
+        decoder.read_to_end(&mut buffer)?;
+
+        let module = match wasm_module.format {
+            SmartModuleWasmFormat::Binary => Module::from_binary(&self.0, &buffer)?,
+            SmartModuleWasmFormat::Text => return Err(Error::msg("Format not supported")),
+        };
+        Ok(SmartStreamModule(module))
+    }
+
     pub fn create_module_from_binary(&self, bytes: &[u8]) -> Result<SmartStreamModule> {
         let module = Module::from_binary(&self.0, bytes)?;
         Ok(SmartStreamModule(module))

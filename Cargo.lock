@@ -1617,7 +1617,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "async-trait",
  "base64",
@@ -1849,6 +1849,8 @@ name = "fluvio-smartengine"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "flate2",
+ "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-storage",
