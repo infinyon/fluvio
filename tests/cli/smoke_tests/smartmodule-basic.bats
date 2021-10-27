@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 
-load test_helper/fluvio_dev.bash
-load test_helper/tools_check.bash
-load test_helper/setup_k8_cluster.bash
-load test_helper/random_string.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/setup_k8_cluster.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/random_string.bash
 
 setup_file() {
     SMARTMODULE_NAME=$(random_string)

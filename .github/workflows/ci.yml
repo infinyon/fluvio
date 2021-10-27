@@ -728,10 +728,8 @@ jobs:
         run: |
           ./fluvio cluster start --develop
 
-      - name: Run CLI tests
-        run: |
-          # Randomize the order of the tests
-          bats -T $(ls -1 tests/cli/*.bats|sort -R)
+      - name: Run CLI smoke tests
+        run: make cli-smoke
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release

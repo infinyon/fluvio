@@ -1,12 +1,11 @@
 #!/usr/bin/env bats
 
-load test_helper/fluvio_dev.bash
-load test_helper/tools_check.bash
-load test_helper/setup_k8_cluster.bash
-#load test_helper/random_string.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/setup_k8_cluster.bash
 
 setup_file() {
-    CONNECTOR_CONFIG="$BATS_TEST_DIRNAME/test_helper/test-connector-config.yml"
+    CONNECTOR_CONFIG="$BATS_TEST_DIRNAME/../test_helper/test-connector-config.yml"
     export CONNECTOR_CONFIG
     INVALID_CONFIG=$(mktemp)
     export INVALID_CONFIG

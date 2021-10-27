@@ -204,10 +204,11 @@ longevity-test: build-test
 	$(TEST_BIN) longevity -- $(VERBOSE_FLAG) --runtime-seconds=60
 endif
 
-
-
 cli-platform-cross-version-test:
 	./tests/cli-platform-cross-version-test.sh $(CLI_VERSION) $(CLUSTER_VERSION)
+
+cli-smoke:
+	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
 
 # test rbac
 #
