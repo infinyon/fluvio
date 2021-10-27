@@ -8,7 +8,6 @@ use std::fmt::Debug;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
-
 use crate::{AdminSpec, ObjectDecoder};
 use crate::Status;
 use crate::AdminPublicApiKey;

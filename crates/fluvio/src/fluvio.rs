@@ -77,7 +77,6 @@ impl Fluvio {
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
-
         use fluvio_protocol::api::Request;
 
         let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
