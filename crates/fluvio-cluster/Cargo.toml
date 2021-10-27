@@ -68,7 +68,7 @@ flv-util = "0.5.2"
 k8-config = { version = "1.3.0" }
 k8-client = { version = "5.0.0" }
 k8-metadata-client = { version = "3.0.0" }
-k8-types = { version = "0.2.0", features = ["app"] }
+k8-types = { version = "0.4.0", features = ["app"] }
 fluvio-types = { path = "../fluvio-types" }
 
 [dev-dependencies]
