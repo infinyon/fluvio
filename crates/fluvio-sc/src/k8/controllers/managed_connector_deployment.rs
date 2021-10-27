@@ -3,11 +3,11 @@ use std::{collections::HashMap, time::Duration};
 use tracing::{debug, error, trace, instrument};
 use k8_client::ClientError;
 use k8_types::{
-    LabelSelector, TemplateSpec, TemplateMeta,
+    LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
     core::pod::{
-        PodSpec, ContainerSpec, VolumeMount, ConfigMapVolumeSource, KeyToPath, VolumeSpec,
+        ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
+        VolumeSpec,
     },
-    LabelProvider,
 };
 
 use fluvio_future::{task::spawn, timer::sleep};
@@ -219,7 +219,7 @@ impl ManagedConnectorDeploymentController {
                 containers: vec![ContainerSpec {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image),
-                    image_pull_policy: Some("IfNotPresent".to_string()),
+                    image_pull_policy: Some(ImagePullPolicy::IfNotPresent),
                     /*
                     env, // TODO
                     */
