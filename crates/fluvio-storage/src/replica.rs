@@ -187,9 +187,9 @@ impl FileReplica {
             trace!("last segment found, validating offsets: {}", last_offset);
             let mut last_segment = MutableSegment::open_for_write(last_offset, &rep_option).await?;
             last_segment.validate().await?;
-            trace!(
-                "segment validated with last offset: {}",
-                last_segment.get_end_offset()
+            debug!(
+                end_offset = last_segment.get_end_offset(),
+                "segment validated with last offset",
             );
             last_segment
         } else {
@@ -298,9 +298,8 @@ impl FileReplica {
                             return OffsetInfo { hw, leo };
                         } else {
                             debug!(
-                                "active segment with base offset: {} found for offset: {}",
-                                segment.get_base_offset(),
-                                start_offset
+                                base_offset = segment.get_base_offset(),
+                                start_offset, "offset in active segment",
                             );
                             segment.records_slice(start_offset, max_offset).await
                         }
