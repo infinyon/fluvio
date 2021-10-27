@@ -31,13 +31,13 @@ teardown_file() {
 @test "Attempt to create test connector again" {
     run "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
     [ "$status" -eq 1 ]
+    [ "${lines[0]}" = "Topic already exists" ]
 }
 
 # Create connector w/ invalid config - Negative test
 @test "Attempt to create test connector with invalid config" {
     run "$FLUVIO_BIN" connector create --config "$INVALID_CONFIG"
     [ "$status" -eq 1 ]
-    [ "${lines[0]}" = "Topic already exists" ]
 }
 
 # List connector
