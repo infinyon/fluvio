@@ -1,19 +1,15 @@
-use std::convert::TryInto;
-use std::convert::TryFrom;
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use tracing::{error, debug, instrument};
-use futures_util::stream::StreamExt;
 use event_listener::{Event, EventListener};
 
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, MetadataUpdate, Metadata};
+use fluvio_sc_schema::objects::{WatchRequest, MetadataUpdate, Metadata};
 use fluvio_sc_schema::AdminSpec;
 
 use crate::metadata::core::Spec;
@@ -54,23 +50,21 @@ pub struct MetadataSyncController<S>
 where
     S: AdminSpec,
 {
-    store: StoreContext<S>,
+    store: StoreContext<S::WatchResponseType>,
     shutdown: Arc<SimpleEvent>,
 }
 
 impl<S> MetadataSyncController<S>
 where
-    S: AdminSpec + Encoder + Decoder + Sync + Send + 'static,
-    <S as Spec>::Status: Sync + Send + Encoder + Decoder,
-    <S as Spec>::IndexKey: Sync + Send,
-    S::IndexKey: Display,
-    //WatchResponse: TryInto<MetadataUpdate<S>> + Send,
-    //<WatchResponse as TryInto<MetadataUpdate<S>>>::Error: Display + Send,
-    CacheMetadataStoreObject<S>: TryFrom<Metadata<S>>,
-    <Metadata<S> as TryInto<CacheMetadataStoreObject<S>>>::Error: Display,
+    S: AdminSpec + 'static,
+    AsyncResponse<WatchRequest<S>>: Send,
+    S::WatchResponseType: Encoder + Decoder + Send + Sync,
+    <S::WatchResponseType as Spec>::Status: Sync + Send + Encoder + Decoder,
+    <S::WatchResponseType as Spec>::IndexKey: Display + Sync + Send,
+    CacheMetadataStoreObject<S::WatchResponseType>: From<Metadata<S::WatchResponseType>>,
 {
     pub fn start(
-        store: StoreContext<S>,
+        store: StoreContext<S::WatchResponseType>,
         watch_response: AsyncResponse<WatchRequest<S>>,
         shutdown: Arc<SimpleEvent>,
     ) {
@@ -106,20 +100,13 @@ where
                 }
 
                 item = response.next() => {
-                    debug!("{} received request",S::LABEL);
+                    debug!(spec = %S::LABEL,"received request");
 
                     match item {
                         Some(Ok(watch_response)) => {
-                            let update_result: Result<MetadataUpdate<S>,_> = watch_response.try_into();
-                            match update_result {
-                                Ok(update) => {
-                                    if let Err(err) = self.sync_metadata(update).await {
-                                        error!("Processing updates: {}", err);
-                                    }
-                                },
-                                Err(err) => {
-                                    error!("Decoding metadata update response, skipping: {}", err);
-                                }
+                            let update_result = MetadataUpdate<S::WatchResponseType> = watch_response.into();
+                            if let Err(err) = self.sync_metadata(update).await {
+                                error!("Processing updates: {}", err);
                             }
                         },
                         Some(Err(err)) => {
@@ -146,27 +133,20 @@ where
             spec = %S::LABEL,
         ),
     )]
-    async fn sync_metadata(&mut self, updates: MetadataUpdate<S>) -> Result<(), IoError> {
+    async fn sync_metadata(
+        &mut self,
+        updates: MetadataUpdate<S::WatchResponseType>,
+    ) -> Result<(), IoError> {
         // Full sync
         if !updates.all.is_empty() {
             debug!(
                 count = updates.all.len(),
                 "Received full sync, setting store objects:"
             );
-            let mut objects: Vec<CacheMetadataStoreObject<S>> = vec![];
+            let mut objects: Vec<CacheMetadataStoreObject<S::WatchResponseType>> = vec![];
             for meta in updates.all.into_iter() {
-                let store_obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
-                match store_obj {
-                    Ok(obj) => {
-                        objects.push(obj);
-                    }
-                    Err(err) => {
-                        return Err(IoError::new(
-                            ErrorKind::InvalidData,
-                            format!("problem converting: {}", err),
-                        ));
-                    }
-                }
+                let store_obj: CacheMetadataStoreObject<S::WatchResponseType> = meta.into();
+                objects.push(store_obj);
             }
             self.store.store().sync_all(objects).await;
             return Ok(());
@@ -183,13 +163,9 @@ where
                 .into_iter()
                 .map(|msg| {
                     let (meta, typ) = (msg.content, msg.header);
-                    let obj: Result<CacheMetadataStoreObject<S>, _> = meta.try_into();
-                    obj.map(|it| (typ, it))
+                    let obj: CacheMetadataStoreObject<S::WatchResponseType> = meta.into();
+                    (typ, obj)
                 })
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| {
-                    IoError::new(ErrorKind::InvalidData, format!("problem converting: {}", e))
-                })?
                 .into_iter()
                 // .map(|it| LSUpdate::Mod(it))
                 .map(|(typ, obj)| match typ {

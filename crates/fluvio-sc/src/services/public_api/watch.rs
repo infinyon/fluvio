@@ -1,4 +1,3 @@
-use std::marker::PhantomData;
 use std::sync::Arc;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
@@ -120,7 +119,7 @@ struct WatchController<S: AdminSpec, M> {
 
 impl<S, M> WatchController<S, M>
 where
-    S: AdminSpec + 'static + Send + Sync,
+    S: AdminSpec + 'static,
     M: RequestMiddleWare + 'static + Clone + Sync + Send,
     S::WatchResponseType: Encoder + Decoder + Send + Sync,
     <S::WatchResponseType as Spec>::Status: Encoder + Decoder + Send + Sync,

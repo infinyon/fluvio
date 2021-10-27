@@ -70,7 +70,7 @@ impl MetadataStores {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
-        let mut req_msg = RequestMessage::new_request(WatchRequest::Spu(0));
+        let mut req_msg = RequestMessage::new_request(WatchRequest::default());
         req_msg.get_mut_header().set_api_version(self.watch_version);
 
         debug!("create spu metadata stream");
@@ -92,7 +92,7 @@ impl MetadataStores {
 
         debug!("start watch for partition");
 
-        let req_msg = RequestMessage::new_request(WatchRequest::Partition(0));
+        let req_msg = RequestMessage::new_request(WatchRequest::default());
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<PartitionSpec>::start(
@@ -111,7 +111,7 @@ impl MetadataStores {
 
         debug!("start watch for topic");
 
-        let req_msg = RequestMessage::new_request(WatchRequest::Topic(0));
+        let req_msg = RequestMessage::new_request(WatchRequest::default());
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<TopicSpec>::start(
