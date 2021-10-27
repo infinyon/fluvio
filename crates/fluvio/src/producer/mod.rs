@@ -136,15 +136,14 @@ impl TopicProducer {
 
         // This should be mutable because when the smartengine feature flag is on, entries will be
         // mutable.
-        #[allow(unused_mut)]
-        let mut entries = records
-            .into_iter()
-            .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
-            .map(Record::from)
-            .collect::<Vec<Record>>();
 
         cfg_if::cfg_if! {
             if #[cfg(feature = "smartengine")] {
+                let mut entries = records
+                    .into_iter()
+                    .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
+                    .map(Record::from)
+                    .collect::<Vec<Record>>();
                 use fluvio_smartengine::{SmartEngine};
                 use dataplane::smartstream::SmartStreamInput;
                 use std::convert::TryFrom;
@@ -157,7 +156,12 @@ impl TopicProducer {
                     let output = smartstream.process(SmartStreamInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;
                 }
-            }
+            } else {
+                let entries = records
+                    .into_iter()
+                    .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
+                    .map(Record::from);
+                }
         }
 
         // Calculate the partition for each entry
