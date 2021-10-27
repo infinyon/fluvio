@@ -109,7 +109,6 @@ impl FluvioAdmin {
     /// ```
     #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        use fluvio_sc_schema::objects::WatchRequest;
         use fluvio_protocol::api::Request;
 
         let connector = DomainConnector::try_from(config.tls.clone())?;
@@ -146,12 +145,11 @@ impl FluvioAdmin {
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
         S: AdminSpec + Sync + Send,
-        S: Into<AllCreatableSpec<S>>,
     {
         let create_request: CreateRequest<S> = CreateRequest {
             name,
             dry_run,
-            spec: spec.into(),
+            spec
         };
 
         self.send_receive(create_request).await?.as_result()?;
