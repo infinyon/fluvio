@@ -14,7 +14,7 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
-default = ["smartengine"]
+default = []
 admin = ["fluvio-sc-schema/use_serde"]
 smartengine = ["fluvio-smartengine"]
 unstable = []

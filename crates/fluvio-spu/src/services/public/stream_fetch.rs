@@ -598,6 +598,7 @@ mod test {
     use dataplane::smartstream::SmartStreamType;
     use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
     use fluvio_spu_schema::server::stream_fetch::SmartStreamWasm;
+    use fluvio_spu_schema::server::stream_fetch::SmartStreamKind;
     use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
