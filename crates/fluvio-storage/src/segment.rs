@@ -124,27 +124,29 @@ where
     }
 
     /// get file slice from offset to end of segment
+    #[instrument(skip(self))]
     pub async fn records_slice(
         &self,
         start_offset: Offset,
         max_offset_opt: Option<Offset>,
     ) -> Result<Option<AsyncFileSlice>, StorageError> {
-        trace!("record slice at: {}", start_offset);
+        
         match self.find_offset_position(start_offset).await? {
             Some(start_pos) => {
-                trace!(
-                    "found batch: {:#?} at: {}",
-                    start_pos.get_batch(),
-                    start_pos.get_pos()
+                debug!(
+                    batch_offset = start_pos.get_batch().base_offset,
+                    batch_len = start_pos.get_batch().batch_len,
+                    pos = start_pos.get_pos(),
+                    "found start pos",
                 );
                 match max_offset_opt {
                     Some(max_offset) => {
                         // check if max offset same as segment end
                         if max_offset == self.get_end_offset() {
-                            trace!("max offset is same as end offset, reading to end");
+                            debug!("max offset is same as end offset, reading to end");
                             Ok(Some(self.msg_log.as_file_slice(start_pos.get_pos())?))
                         } else {
-                            trace!("end offset is supplied: {}", max_offset);
+                            debug!(max_offset);
                             match self.find_offset_position(max_offset).await? {
                                 Some(end_pos) => Ok(Some(self.msg_log.as_file_slice_from_to(
                                     start_pos.get_pos(),
@@ -162,24 +164,23 @@ where
     }
 
     /// find position of the offset
+    #[instrument(skip(self))]
     pub(crate) async fn find_offset_position(
         &self,
         offset: Offset,
     ) -> Result<Option<BatchHeaderPos>, StorageError> {
-        trace!("finding offset position: {}", offset);
+        debug!(offset, "trying to find offset position");
         if offset < self.base_offset {
-            trace!(
-                "invalid offset: {} is below base offset: {}",
-                offset,
-                self.base_offset
+            debug!(
+                self.base_offset,
+                "invalid, offset is less than base offset",
             );
             return Ok(None);
         }
         if offset >= self.end_offset {
-            trace!(
-                "invalid offset: {} exceed end offset: {}",
-                offset,
-                self.end_offset
+            debug!(
+                self.end_offset,
+                "invalid,end offset is greater than end offset"
             );
             return Ok(None);
         }
@@ -189,19 +190,25 @@ where
             None => 0,
             Some(entry) => entry.position(),
         };
-        trace!("found relative pos: {}", position);
+        debug!(file_postition = position, "found file pos");
 
         let mut header_stream = self.open_batch_header_stream(position).await?;
         while let Some(batch_pos) = header_stream.next().await {
+            trace!(
+                pos = batch_pos.get_pos(),
+                base_offset = batch_pos.get_batch().base_offset,
+                batch_len = batch_pos.get_batch().batch_len,
+                last_offset = batch_pos.get_batch().get_last_offset(),
+                "batch_pos");
             let last_offset = batch_pos.get_batch().get_last_offset();
             if last_offset >= offset {
-                trace!(
-                    "found batch last offset which matches offset: {}",
-                    last_offset
+                debug!(
+                    last_offset,
+                    "found batch last offset"
                 );
                 return Ok(Some(batch_pos));
             } else {
-                trace!("skipping batch end offset: {}", last_offset);
+                trace!(last_offset,"skipping batch end offset");
             }
         }
         Ok(None)
