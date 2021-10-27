@@ -3,11 +3,9 @@
 set -eu
 
 PUBLISH_CRATES=(
-    fluvio-protocol-core
     fluvio-smartstream-derive
     fluvio-types
     fluvio-protocol-derive
-    fluvio-protocol-codec
     fluvio-protocol
     fluvio-dataplane-protocol
     fluvio-socket
