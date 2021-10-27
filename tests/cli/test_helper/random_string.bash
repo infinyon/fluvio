@@ -10,5 +10,5 @@ function random_string() {
     fi
 
     export RANDOM_STRING
-    echo $RANDOM_STRING
+    echo "$RANDOM_STRING"
 }
