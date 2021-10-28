@@ -19,17 +19,3 @@ impl Spec for SmartModule {
 }
 
 pub type SmartModuleLocalStore = LocalStore<SmartModule>;
-
-impl SmartModuleLocalStore {
-    #[cfg(test)]
-    pub fn indexed_by_name(&self) -> std::collections::BTreeMap<SmartModuleName, SmartModule> {
-        let mut map: std::collections::BTreeMap<SmartModuleName, SmartModule> =
-            std::collections::BTreeMap::new();
-
-        for sm in self.inner_store().read().values() {
-            map.insert(sm.name.clone(), sm.clone());
-        }
-
-        map
-    }
-}
