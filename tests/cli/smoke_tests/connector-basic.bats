@@ -16,7 +16,7 @@ setup_file() {
 }
 
 teardown_file() {
-    # Delete connector's topic 
+    # Delete connector's topic
     run "$FLUVIO_BIN" topic delete "$CONNECTOR_TOPIC"
 }
 
@@ -29,8 +29,7 @@ teardown_file() {
 # Create same connector - Negative test
 @test "Attempt to create test connector again" {
     run "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
-    [ "$status" -eq 1 ]
-    [ "${lines[0]}" = "Topic already exists" ]
+    [ "$status" -eq 0 ]
 }
 
 # Create connector w/ invalid config - Negative test
@@ -47,13 +46,13 @@ teardown_file() {
 
 # Delete connector
 @test "Delete test connector" {
-    run "$FLUVIO_BIN" connector delete $CONNECTOR_NAME 
+    run "$FLUVIO_BIN" connector delete $CONNECTOR_NAME
     [ "$status" -eq 0 ]
 }
 
 # Delete connector - Negative test
 @test "Attempt to delete test connector that doesn't exist" {
-    run "$FLUVIO_BIN" connector delete $CONNECTOR_NAME 
+    run "$FLUVIO_BIN" connector delete $CONNECTOR_NAME
     [ "$status" -eq 1 ]
 }
 
