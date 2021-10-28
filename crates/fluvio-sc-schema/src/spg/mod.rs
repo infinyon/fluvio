@@ -5,8 +5,8 @@ mod convert {
     use crate::{
         AdminSpec, NameFilter,
         objects::{
-            ListRequest, ListResponse, Metadata, ObjectFrom, ObjectTryFrom, WatchRequest,
-            WatchResponse,
+            DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom, ObjectTryFrom,
+            WatchRequest, WatchResponse,
         },
     };
     use super::SpuGroupSpec;
@@ -33,4 +33,6 @@ mod convert {
 
     ObjectTryFrom!(WatchResponse, SpuGroup);
     ObjectTryFrom!(ListResponse, SpuGroup);
+
+    ObjectFrom!(DeleteRequest, SpuGroup);
 }

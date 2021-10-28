@@ -4,6 +4,7 @@ mod convert {
 
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
+    use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
     use crate::{
@@ -46,4 +47,8 @@ mod convert {
 
     ObjectTryFrom!(WatchResponse, Spu);
     ObjectTryFrom!(ListResponse, Spu);
+
+    ObjectFrom!(DeleteRequest, CustomSpu);
+    ObjectFrom!(ListRequest, CustomSpu);
+    ObjectTryFrom!(ListResponse, CustomSpu);
 }
