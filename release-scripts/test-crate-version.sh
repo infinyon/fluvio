@@ -65,7 +65,6 @@ function download_crate() {
 
 }
 
-
 function compare_crates_src() {
     CRATE_NAME=$1
 
@@ -78,7 +77,6 @@ function compare_crates_src() {
     fi
 
     diff "$DIFF_FLAGS" ./crates/"$CRATE_NAME"/src ./crates_io/"$CRATE_NAME"/src;
-
 }
 
 function compare_crates_version() {
@@ -119,13 +117,13 @@ function compare_crates_content() {
 
         CHANGE_FOUND=false
 
-        toml2json ./crates/"$CRATE_NAME"/Cargo.toml | jq > $REPO_CARGO_JSON
-        toml2json ./crates_io/"$CRATE_NAME"/Cargo.toml.orig | jq > $CRATESIO_CARGO_JSON
+        toml2json ./crates/"$CRATE_NAME"/Cargo.toml | jq > "$REPO_CARGO_JSON"
+        toml2json ./crates_io/"$CRATE_NAME"/Cargo.toml.orig | jq > "$CRATESIO_CARGO_JSON"
 
         # TODO: How to handle edgecase if new keys only exist in crates.io, bc we only 🚩 from the repo keys
         # We need to know if dependencies have been updated
         # Can we enumerate the top-level keys and compareo?q
-        for cargo_keys in $(cat $REPO_CARGO_JSON | jq -r 'keys | @sh' | xargs echo)
+        for cargo_keys in $(jq -r 'keys | @sh' "$REPO_CARGO_JSON" | xargs echo)
         do
 
             # Write repo value to temp file
@@ -136,10 +134,10 @@ function compare_crates_content() {
             # Compare
             # If we see a difference, then return 1
             #echo $cargo_keys
-            jq ".[\"${cargo_keys}\"]" $REPO_CARGO_JSON > $REPO_JSON_KV
-            jq ".[\"${cargo_keys}\"]" $CRATESIO_CARGO_JSON > $CRATESIO_JSON_KV
+            jq ".[\"${cargo_keys}\"]" "$REPO_CARGO_JSON" > "$REPO_JSON_KV"
+            jq ".[\"${cargo_keys}\"]" "$CRATESIO_CARGO_JSON" > "$CRATESIO_JSON_KV"
 
-            if diff -q $REPO_JSON_KV $CRATESIO_JSON_KV >/dev/null;
+            if diff -q "$REPO_JSON_KV" "$CRATESIO_JSON_KV" >/dev/null;
             then
                 :
                 #echo "No changes in toml section: $cargo_keys"
@@ -148,18 +146,16 @@ function compare_crates_content() {
                 echo "🚩 Changes FOUND in toml section: $cargo_keys"
 
                 # Print the diff
-                diff $REPO_JSON_KV $CRATESIO_JSON_KV
+                diff "$REPO_JSON_KV" "$CRATESIO_JSON_KV"
                 
                 CHANGE_FOUND=true
 
             fi
 
             # Cleanup
-            rm -f $REPO_JSON_KV $CRATESIO_JSON_KV
+            rm -f "$REPO_JSON_KV" "$CRATESIO_JSON_KV"
 
         done
-
-
 
         if [[ "$CHANGE_FOUND" == true ]];
         then
