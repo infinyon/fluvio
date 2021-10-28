@@ -2,23 +2,8 @@
 
 set -eu
 
-PUBLISH_CRATES=(
-    fluvio-smartstream-derive
-    fluvio-types
-    fluvio-protocol-derive
-    fluvio-protocol
-    fluvio-dataplane-protocol
-    fluvio-socket
-    fluvio-stream-model
-    fluvio-controlplane-metadata
-    fluvio-spu-schema
-    fluvio-sc-schema
-    fluvio-smartstream
-    fluvio
-    fluvio-stream-dispatcher
-    fluvio-package-index
-    fluvio-extension-common
-)
+# Read in PUBLISH_CRATES var
+source $(dirname -- ${BASH_SOURCE[0]})/publish-list
 
 LOOP_AGAIN=false
 ATTEMPTS=1
