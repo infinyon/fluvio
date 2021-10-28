@@ -2,24 +2,8 @@
 
 set -eu
 
-PUBLISH_CRATES=(
-    fluvio-smartstream
-    fluvio-smartstream-derive
-    #fluvio-smartstream-executor
-    fluvio-types
-    fluvio-protocol-derive
-    fluvio-protocol
-    fluvio-dataplane-protocol
-    fluvio-socket
-    fluvio-stream-model
-    fluvio-controlplane-metadata
-    fluvio-spu-schema
-    fluvio-sc-schema
-    fluvio
-    fluvio-stream-dispatcher
-    fluvio-package-index
-    fluvio-extension-common
-)
+# Read in PUBLISH_CRATES var
+source $(dirname -- ${BASH_SOURCE[0]})/publish-list
 
 ALL_CRATE_CHECK_PASS=true
 CHECK_CRATES=()
@@ -61,7 +45,6 @@ function download_crate() {
     else
         cargo download -x "$CRATE_NAME" -o ./crates_io/"$CRATE_NAME" --quiet
     fi
-
 }
 
 function compare_crates_src() {
@@ -130,8 +113,8 @@ function compare_crates_content() {
             # Write crates_io value to temp file
             CRATESIO_JSON_KV=$(mktemp)
 
-            # Compare
-            # If we see a difference, then return 1
+            # Compare sections and report to user
+
             #echo $cargo_keys
             jq ".[\"${cargo_keys}\"]" "$REPO_CARGO_JSON" > "$REPO_JSON_KV"
             jq ".[\"${cargo_keys}\"]" "$CRATESIO_CARGO_JSON" > "$CRATESIO_JSON_KV"
@@ -156,19 +139,18 @@ function compare_crates_content() {
 
         done
 
-        if [[ "$CHANGE_FOUND" == true ]];
+        # Cleanup
+        rm -f "$REPO_CARGO_JSON" "$CRATESIO_CARGO_JSON"
+
+        if [[ "$CHANGE_FOUND" == false ]];
         then
-            return 1
-        else
-            # Why did the diff fail?
-            echo "🚩🚩 No changes were found but they were expected 🚩🚩"
-            return 1
+            echo "🚩 Changes were not found but they were expected 🚩"
+            echo "🚩 Possible cause: top-level keys removed from repo Cargo.toml 🚩"
         fi
 
+        return 1
     fi
 }
-
-
 
 # ✅ If src + version + Cargo.toml have no changes (This is the most common success case)
 # ✅ If src + version both have changes
@@ -225,9 +207,11 @@ function main() {
         set -x
     fi
 
+    # Tools check
     cargo_download_check;
     toml2json_check;
 
+    # Cleanup previous runs
     rm -rf ./crates_io
     mkdir -p ./crates_io;
 
@@ -270,10 +254,12 @@ function main() {
     if [[ $ALL_CRATE_CHECK_PASS == true ]];
     then
         echo "✅ All crates appear to be ready for publishing"
+        echo
         return 0
     else
         echo "❌ The following crates require attention:"
         printf '* %s\n' "${CHECK_CRATES[@]}" | sort -u
+        echo
         return 1
     fi
 }
