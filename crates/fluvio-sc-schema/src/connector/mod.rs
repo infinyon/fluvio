@@ -15,7 +15,7 @@ mod convert {
         type DeleteKey = String;
 
         fn create_decoder() -> crate::CreateDecoder {
-            crate::CreateDecoder::MANAGED_CONNECTOR
+            crate::CreateDecoder::ManagedConnector
         }
     }
 

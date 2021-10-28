@@ -157,13 +157,13 @@ mod objects {
         #[fluvio(tag = 0)]
         TOPIC,
         #[fluvio(tag = 1)]
-        CUSTOM_SPU,
+        CustomSpu,
         #[fluvio(tag = 2)]
         SPG = 2,
         #[fluvio(tag = 3)]
-        MANAGED_CONNECTOR,
+        ManagedConnector,
         #[fluvio(tag = 4)]
-        SMART_MODULE,
+        SmartModule,
         #[fluvio(tag = 5)]
         TABLE,
     }
@@ -190,7 +190,7 @@ mod objects {
         }
 
         fn is_smart_module(&self) -> bool {
-            matches!(self, Self::SMART_MODULE)
+            matches!(self, Self::SmartModule)
         }
     }
 }

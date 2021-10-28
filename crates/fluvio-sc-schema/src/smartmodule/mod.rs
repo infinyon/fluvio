@@ -17,7 +17,7 @@ mod convert {
         type ListType = Metadata<Self>;
 
         fn create_decoder() -> crate::CreateDecoder {
-            crate::CreateDecoder::SMART_MODULE
+            crate::CreateDecoder::SmartModule
         }
     }
 

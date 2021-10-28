@@ -26,7 +26,7 @@ mod convert {
         type WatchResponseType = Self;
 
         fn create_decoder() -> crate::CreateDecoder {
-            crate::CreateDecoder::CUSTOM_SPU
+            crate::CreateDecoder::CustomSpu
         }
     }
 
