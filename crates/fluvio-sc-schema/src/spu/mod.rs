@@ -3,7 +3,6 @@ pub use fluvio_controlplane_metadata::spu::*;
 mod convert {
 
     use std::convert::TryFrom;
-    use std::convert::TryInto;
     use std::io::Error as IoError;
     use std::io::ErrorKind;
 

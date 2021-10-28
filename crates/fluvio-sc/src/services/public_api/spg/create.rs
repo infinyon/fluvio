@@ -27,7 +27,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     let name = create.name;
-    let spg = create.spec.to_inner();
+    let spg = create.spec;
 
     debug!( spg = %name,
          replica = %spg.replicas,

@@ -5,7 +5,6 @@ mod convert {
     use std::convert::TryFrom;
     use std::io::Error as IoError;
     use std::io::ErrorKind;
-    use std::convert::TryInto;
 
     use crate::{
         AdminSpec, NameFilter, ObjectDecoder,

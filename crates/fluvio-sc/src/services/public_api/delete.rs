@@ -10,7 +10,7 @@ use std::io::Error;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{ObjectDecoder, Status};
-use fluvio_sc_schema::objects::{DeleteRequest, ObjectApiDeleteRequest};
+use fluvio_sc_schema::objects::{ObjectApiDeleteRequest};
 use fluvio_auth::{AuthContext};
 
 use crate::services::auth::AuthServiceContext;

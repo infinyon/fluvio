@@ -31,7 +31,7 @@ impl RegisterCustomSpu {
         auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
         let name = create.name;
-        let spec = create.spec.to_inner();
+        let spec = create.spec;
 
         debug!(
             %name,

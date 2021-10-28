@@ -25,7 +25,7 @@ pub async fn handle_create_table_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     let name = create.name;
-    let spec = create.spec.to_inner();
+    let spec = create.spec;
 
     debug!(%name,"creating table");
 

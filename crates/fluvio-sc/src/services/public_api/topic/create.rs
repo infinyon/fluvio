@@ -37,7 +37,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
     let name = create.name;
-    let topic = create.spec.to_inner();
+    let topic = create.spec;
 
     debug!( topic = %name,"creating");
 
