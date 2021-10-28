@@ -27,7 +27,13 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     debug!("creating managed connector: {}", name);
 
-    if auth_ctx.global_ctx.managed_connectors().store().contains_key(&name).await {
+    if auth_ctx
+        .global_ctx
+        .managed_connectors()
+        .store()
+        .contains_key(&name)
+        .await
+    {
         debug!("connector already exists");
         return Ok(Status::new(
             name.to_string(),
