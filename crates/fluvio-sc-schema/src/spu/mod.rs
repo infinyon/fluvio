@@ -9,12 +9,13 @@ mod convert {
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
     use crate::ObjectDecoder;
+    use crate::objects::ListRequest;
     use crate::objects::ListResponse;
     use crate::{
         AdminSpec, NameFilter,
         objects::{
-            Metadata, WatchResponse, WatchRequest, ObjectApiWatchRequest, ObjectApiWatchResponse,
-            ObjectApiListResponse,
+            ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest,
+            ObjectApiWatchRequest, ObjectApiWatchResponse, ObjectApiListResponse,
         },
     };
     use super::{CustomSpuSpec, SpuSpec};
@@ -45,31 +46,12 @@ mod convert {
         }
     }
 
-    impl From<WatchRequest<SpuSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
-        fn from(req: WatchRequest<SpuSpec>) -> Self {
-            (ObjectApiWatchRequest::Spu(req), SpuSpec::object_decoder())
-        }
-    }
+    ObjectFrom!(WatchRequest, Spu);
+    ObjectFrom!(WatchResponse, Spu);
 
-    impl TryFrom<ObjectApiWatchResponse> for WatchResponse<SpuSpec> {
-        type Error = IoError;
+    ObjectFrom!(ListRequest, Spu);
+    ObjectFrom!(ListResponse, Spu);
 
-        fn try_from(response: ObjectApiWatchResponse) -> Result<Self, Self::Error> {
-            match response {
-                ObjectApiWatchResponse::Spu(response) => Ok(response),
-                _ => Err(IoError::new(ErrorKind::Other, "not  SPU")),
-            }
-        }
-    }
-
-    impl TryFrom<ObjectApiListResponse> for ListResponse<SpuSpec> {
-        type Error = IoError;
-
-        fn try_from(response: ObjectApiListResponse) -> Result<Self, Self::Error> {
-            match response {
-                ObjectApiListResponse::Spu(response) => Ok(response),
-                _ => Err(IoError::new(ErrorKind::Other, "not  SPU")),
-            }
-        }
-    }
+    ObjectTryFrom!(WatchResponse, Spu);
+    ObjectTryFrom!(ListResponse, Spu);
 }

@@ -4,7 +4,10 @@ mod convert {
 
     use crate::{
         AdminSpec, NameFilter,
-        objects::{Metadata, WatchResponse, ObjectApiWatchResponse},
+        objects::{
+            ListRequest, ListResponse, Metadata, ObjectApiWatchResponse, ObjectFrom, ObjectTryFrom,
+            WatchRequest, WatchResponse,
+        },
     };
     use super::SpuGroupSpec;
 
@@ -22,9 +25,12 @@ mod convert {
         }
     }
 
-    impl From<WatchResponse<SpuGroupSpec>> for ObjectApiWatchResponse {
-        fn from(response: WatchResponse<SpuGroupSpec>) -> Self {
-            ObjectApiWatchResponse::SpuGroup(response)
-        }
-    }
+    ObjectFrom!(WatchRequest, SpuGroup);
+    ObjectFrom!(WatchResponse, SpuGroup);
+
+    ObjectFrom!(ListRequest, SpuGroup);
+    ObjectFrom!(ListResponse, SpuGroup);
+
+    ObjectTryFrom!(WatchResponse, SpuGroup);
+    ObjectTryFrom!(ListResponse, SpuGroup);
 }

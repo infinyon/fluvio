@@ -47,6 +47,7 @@ mod convert {
 
     use crate::ObjectDecoder;
     use crate::objects::ListRequest;
+    use crate::objects::ListResponse;
     use crate::{AdminSpec, CreateDecoder, NameFilter};
     use crate::objects::{
         ObjectFrom, ObjectTryFrom, Metadata, ObjectApiListRequest, ObjectApiListResponse,
@@ -70,6 +71,8 @@ mod convert {
     ObjectFrom!(WatchResponse, Topic);
 
     ObjectFrom!(ListRequest, Topic);
+    ObjectFrom!(ListResponse, Topic);
 
     ObjectTryFrom!(WatchResponse, Topic);
+    ObjectTryFrom!(ListResponse, Topic);
 }

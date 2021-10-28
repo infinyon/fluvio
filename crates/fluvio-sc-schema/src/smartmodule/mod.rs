@@ -4,7 +4,10 @@ mod convert {
 
     use crate::{
         AdminSpec, NameFilter,
-        objects::{Metadata, WatchResponse, ObjectApiWatchResponse},
+        objects::{
+            ListRequest, ListResponse, Metadata, ObjectApiWatchResponse, ObjectFrom, ObjectTryFrom,
+            WatchRequest, WatchResponse,
+        },
     };
     use super::SmartModuleSpec;
 
@@ -21,9 +24,12 @@ mod convert {
         }
     }
 
-    impl From<WatchResponse<SmartModuleSpec>> for ObjectApiWatchResponse {
-        fn from(response: WatchResponse<SmartModuleSpec>) -> Self {
-            ObjectApiWatchResponse::SmartModule(response)
-        }
-    }
+    ObjectFrom!(WatchRequest, SmartModule);
+    ObjectFrom!(WatchResponse, SmartModule);
+
+    ObjectFrom!(ListRequest, SmartModule);
+    ObjectFrom!(ListResponse, SmartModule);
+
+    ObjectTryFrom!(WatchResponse, SmartModule);
+    ObjectTryFrom!(ListResponse, SmartModule);
 }

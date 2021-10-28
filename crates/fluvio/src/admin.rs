@@ -182,9 +182,10 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, filters))]
-    pub async fn list<S>(&self, filters: Vec<S::ListFilter>) -> Result<ListResponse<S>, FluvioError>
+    pub async fn list<S, F>(&self, filters: F) -> Result<ListResponse<S>, FluvioError>
     where
         S: AdminSpec,
+        F: Into<Vec<S::ListFilter>>,
         (ObjectApiListRequest, ObjectDecoder): From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,

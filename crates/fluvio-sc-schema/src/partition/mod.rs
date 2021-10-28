@@ -2,12 +2,15 @@ pub use fluvio_controlplane_metadata::partition::*;
 
 mod convert {
 
-    use std::convert::TryFrom;
     use std::io::Error as IoError;
     use std::io::ErrorKind;
 
+    use crate::objects::ListRequest;
+    use crate::objects::ListResponse;
+    use crate::objects::ObjectFrom;
+    use crate::objects::ObjectTryFrom;
     use crate::{
-        AdminSpec, NameFilter, ObjectDecoder,
+        AdminSpec, NameFilter,
         objects::{
             Metadata, ObjectApiWatchResponse, ObjectApiWatchRequest, WatchRequest, WatchResponse,
         },
@@ -27,32 +30,12 @@ mod convert {
         }
     }
 
-    impl From<WatchRequest<PartitionSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
-        fn from(req: WatchRequest<PartitionSpec>) -> Self {
-            (
-                ObjectApiWatchRequest::Partition(req),
-                PartitionSpec::object_decoder(),
-            )
-        }
-    }
+    ObjectFrom!(WatchRequest, Partition);
+    ObjectFrom!(WatchResponse, Partition);
 
-    impl From<WatchResponse<PartitionSpec>> for (ObjectApiWatchResponse, ObjectDecoder) {
-        fn from(response: WatchResponse<PartitionSpec>) -> Self {
-            (
-                ObjectApiWatchResponse::Partition(response),
-                PartitionSpec::object_decoder(),
-            )
-        }
-    }
+    ObjectFrom!(ListRequest, Partition);
+    ObjectFrom!(ListResponse, Partition);
 
-    impl TryFrom<ObjectApiWatchResponse> for WatchResponse<PartitionSpec> {
-        type Error = IoError;
-
-        fn try_from(response: ObjectApiWatchResponse) -> Result<Self, Self::Error> {
-            match response {
-                ObjectApiWatchResponse::Partition(response) => Ok(response),
-                _ => Err(IoError::new(ErrorKind::Other, "not  partition")),
-            }
-        }
-    }
+    ObjectTryFrom!(WatchResponse, Partition);
+    ObjectTryFrom!(ListResponse, Partition);
 }
