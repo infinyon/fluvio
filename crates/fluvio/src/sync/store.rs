@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use fluvio_sc_schema::ObjectDecoder;
+use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use tracing::{debug, instrument};
 
 use fluvio_socket::SharedMultiplexerSocket;
@@ -92,7 +94,9 @@ impl MetadataStores {
 
         debug!("start watch for partition");
 
-        let req_msg = RequestMessage::new_request(WatchRequest::default());
+        let watch_request: WatchRequest<PartitionSpec> = WatchRequest::default();
+        let (watch_req, mw): (ObjectApiWatchRequest, ObjectDecoder) = watch_request.into();
+        let req_msg = RequestMessage::request_with_mw(watch_req, mw);
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
         MetadataSyncController::<PartitionSpec>::start(

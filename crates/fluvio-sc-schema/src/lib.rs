@@ -38,6 +38,8 @@ mod admin {
     use std::fmt::Debug;
 
     use dataplane::core::{Encoder, Decoder};
+    use crate::{CreateDecoder, ObjectDecoder};
+
     use super::core::{Spec};
 
     /// filter by name
@@ -49,5 +51,11 @@ mod admin {
         type ListType: Encoder + Decoder + Debug;
         type WatchResponseType: Spec + Encoder + Decoder;
         type DeleteKey: Encoder + Decoder + Debug + Default;
+
+        fn object_decoder() -> ObjectDecoder {
+            ObjectDecoder::new::<Self>()
+        }
+
+        fn create_decoder() -> CreateDecoder;
     }
 }

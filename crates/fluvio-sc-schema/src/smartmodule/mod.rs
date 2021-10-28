@@ -15,6 +15,10 @@ mod convert {
         type DeleteKey = String;
 
         type ListType = Metadata<Self>;
+
+        fn create_decoder() -> crate::CreateDecoder {
+            crate::CreateDecoder::SMART_MODULE
+        }
     }
 
     impl From<WatchResponse<SmartModuleSpec>> for ObjectApiWatchResponse {

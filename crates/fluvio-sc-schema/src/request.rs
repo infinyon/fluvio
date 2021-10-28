@@ -102,6 +102,7 @@ mod objects {
     use super::*;
 
     use dataplane::api::RequestMiddleWare;
+    use crate::AdminSpec;
     use crate::topic::TopicSpec;
     use crate::spu::{SpuSpec};
     use crate::smartmodule::SmartModuleSpec;
@@ -117,6 +118,17 @@ mod objects {
     #[derive(Debug, Clone, Default, Encoder, Decoder)]
     pub struct ObjectDecoder {
         ty: String,
+    }
+
+    impl ObjectDecoder {
+        pub fn new<S>() -> Self
+        where
+            S: AdminSpec,
+        {
+            Self {
+                ty: S::LABEL.to_string(),
+            }
+        }
     }
 
     impl RequestMiddleWare for ObjectDecoder {}
@@ -139,23 +151,34 @@ mod objects {
         }
     }
 
-    const TOPIC: u8 = 0;
-    const CUSTOM_SPU: u8 = 1;
-    const SPG: u8 = 2;
-    const MANAGED_CONNECTOR: u8 = 3;
-    const SMART_MODULE: u8 = 4;
-    const TABLE: u8 = 5;
+    #[repr(u8)]
+    #[derive(Debug, Clone, Encoder, Decoder)]
+    pub enum CreateDecoder {
+        #[fluvio(tag = 0)]
+        TOPIC,
+        #[fluvio(tag = 1)]
+        CUSTOM_SPU,
+        #[fluvio(tag = 2)]
+        SPG = 2,
+        #[fluvio(tag = 3)]
+        MANAGED_CONNECTOR,
+        #[fluvio(tag = 4)]
+        SMART_MODULE,
+        #[fluvio(tag = 5)]
+        TABLE,
+    }
 
-    #[derive(Debug, Clone, Default, Encoder, Decoder)]
-    pub struct CreateDecoder {
-        ty: u8,
+    impl Default for CreateDecoder {
+        fn default() -> Self {
+            Self::TOPIC
+        }
     }
 
     impl RequestMiddleWare for CreateDecoder {}
 
     impl AdminObjectDecoder for CreateDecoder {
         fn is_topic(&self) -> bool {
-            self.ty == TOPIC
+            matches!(self, Self::TOPIC)
         }
 
         fn is_spu(&self) -> bool {
@@ -167,7 +190,7 @@ mod objects {
         }
 
         fn is_smart_module(&self) -> bool {
-            self.ty == SMART_MODULE
+            matches!(self, Self::SMART_MODULE)
         }
     }
 }

@@ -16,6 +16,10 @@ mod convert {
         type ListType = Metadata<Self>;
 
         type WatchResponseType = Self;
+
+        fn create_decoder() -> crate::CreateDecoder {
+            crate::CreateDecoder::SPG
+        }
     }
 
     impl From<WatchResponse<SpuGroupSpec>> for ObjectApiWatchResponse {

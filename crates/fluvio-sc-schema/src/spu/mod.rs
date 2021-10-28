@@ -17,6 +17,10 @@ mod convert {
         type DeleteKey = CustomSpuKey;
 
         type WatchResponseType = Self;
+
+        fn create_decoder() -> crate::CreateDecoder {
+            crate::CreateDecoder::CUSTOM_SPU
+        }
     }
 
     impl AdminSpec for SpuSpec {
@@ -26,6 +30,10 @@ mod convert {
         type DeleteKey = String;
 
         type WatchResponseType = Self;
+
+        fn create_decoder() -> crate::CreateDecoder {
+            panic!("Spu cannot be created directly")
+        }
     }
 
     impl From<WatchResponse<SpuSpec>> for ObjectApiWatchResponse {

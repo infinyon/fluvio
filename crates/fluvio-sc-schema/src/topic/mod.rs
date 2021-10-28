@@ -41,7 +41,7 @@ pub mod validate {
 }
 mod convert {
 
-    use crate::{AdminSpec, NameFilter};
+    use crate::{AdminSpec, CreateDecoder, NameFilter};
     use crate::objects::{Metadata, ObjectApiWatchResponse, WatchResponse};
 
     use super::TopicSpec;
@@ -51,6 +51,10 @@ mod convert {
         type ListType = Metadata<Self>;
         type WatchResponseType = Self;
         type DeleteKey = String;
+
+        fn create_decoder() -> crate::CreateDecoder {
+            CreateDecoder::TOPIC
+        }
     }
 
     impl From<WatchResponse<TopicSpec>> for ObjectApiWatchResponse {

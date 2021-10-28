@@ -14,6 +14,10 @@ mod convert {
         type WatchResponseType = Self;
 
         type DeleteKey = String;
+
+        fn create_decoder() -> crate::CreateDecoder {
+            crate::CreateDecoder::TABLE
+        }
     }
 
     impl From<WatchResponse<TableSpec>> for ObjectApiWatchResponse {

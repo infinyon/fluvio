@@ -13,6 +13,10 @@ mod convert {
         type ListType = Metadata<Self>;
         type WatchResponseType = Self;
         type DeleteKey = String;
+
+        fn create_decoder() -> crate::CreateDecoder {
+            crate::CreateDecoder::MANAGED_CONNECTOR
+        }
     }
 
     impl From<WatchResponse<ManagedConnectorSpec>> for ObjectApiWatchResponse {
