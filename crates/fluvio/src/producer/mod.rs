@@ -34,6 +34,8 @@ pub struct TopicProducer {
 cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
         use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind, SmartStreamPayload};
+        use std::collections::BTreeMap;
+
         #[derive(Default)]
         pub struct SmartStreamConfig {
             pub(crate) wasm_module: Option<SmartStreamPayload>,
@@ -43,7 +45,7 @@ cfg_if::cfg_if! {
             pub fn wasm_filter<T: Into<Vec<u8>>>(
                 mut self,
                 filter: T,
-                params: std::collections::BTreeMap<String, String>,
+                params: BTreeMap<String, String>,
             ) -> Self {
                 self.wasm_module = Some(SmartStreamPayload {
                     wasm: SmartStreamWasm::Raw(filter.into()),
@@ -57,11 +59,40 @@ cfg_if::cfg_if! {
             pub fn wasm_map<T: Into<Vec<u8>>>(
                 mut self,
                 map: T,
-                params: std::collections::BTreeMap<String, String>,
+                params: BTreeMap<String, String>,
             ) -> Self {
                 self.wasm_module = Some(SmartStreamPayload {
                     wasm: SmartStreamWasm::Raw(map.into()),
                     kind: SmartStreamKind::Map,
+                    params: params.into(),
+                });
+                self
+            }
+
+            /// Adds a SmartStream array_map to this TopicProducer
+            pub fn wasm_array_map<T: Into<Vec<u8>>>(
+                mut self,
+                map: T,
+                params: BTreeMap<String, String>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(map.into()),
+                    kind: SmartStreamKind::ArrayMap,
+                    params: params.into(),
+                });
+                self
+            }
+
+            /// Adds a SmartStream array_map to this TopicProducer
+            pub fn wasm_aggregate<T: Into<Vec<u8>>>(
+                mut self,
+                map: T,
+                params: BTreeMap<String, String>,
+                accumulator: Vec<u8>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(map.into()),
+                    kind: SmartStreamKind::Aggregate { accumulator },
                     params: params.into(),
                 });
                 self
