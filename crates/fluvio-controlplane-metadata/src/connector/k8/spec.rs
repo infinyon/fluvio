@@ -38,7 +38,7 @@ impl Spec for K8ManagedConnectorSpec {
 #[serde(rename_all = "camelCase", default)]
 pub struct K8ManagedConnectorSpec {
     pub name: String,
-    pub version: String,
+    pub version: Option<String>,
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack
     pub topic: String,

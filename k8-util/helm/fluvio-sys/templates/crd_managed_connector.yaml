@@ -35,6 +35,11 @@ spec:
                   type: string
                   minimum: 2
                   maximum: 100
+                connector_version:
+                  type: string
+                  minimum: 2
+                  maximum: 100
+                  nullable: true
                 topic:
                   type: string
                   minimum: 2

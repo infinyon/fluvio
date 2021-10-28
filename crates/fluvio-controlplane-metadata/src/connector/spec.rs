@@ -12,7 +12,7 @@ use std::collections::BTreeMap;
 pub struct ManagedConnectorSpec {
     pub name: String,
 
-    pub version: String,
+    pub version: Option<String>,
 
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack

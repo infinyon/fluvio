@@ -211,14 +211,14 @@ impl ManagedConnectorDeploymentController {
         args.extend(parameters);
 
 
-        let (image, image_pull_policy) = match mc_spec.version.as_str() {
-            "dev" => {
+        let (image, image_pull_policy) = match mc_spec.version.as_ref().map(|v| v.as_str()) {
+            Some("dev") => {
                 (format!("infinyon/fluvio-connect-{}", mc_spec.type_), ImagePullPolicy::Never)
             }
-            "latest" => {
+            Some("latest") | None => {
                 (format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_), ImagePullPolicy::Always)
             }
-            version => {
+            Some(version) => {
                 (format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version), ImagePullPolicy::IfNotPresent)
             }
         };
