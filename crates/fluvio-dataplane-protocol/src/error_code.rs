@@ -102,9 +102,14 @@ pub enum ErrorCode {
     #[fluvio(tag = 5000)]
     #[error("an error occurred while managing a connector")]
     ManagedConnectorError,
+
     #[fluvio(tag = 5001)]
     #[error("the managed connector was not found")]
     ManagedConnectorNotFound,
+
+    #[fluvio(tag = 5002)]
+    #[error("an error occurred while managing a connector")]
+    ManagedConnectorAlreadyExists,
 
     // Smart Module Errors
     #[fluvio(tag = 6000)]

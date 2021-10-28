@@ -29,7 +29,8 @@ teardown_file() {
 # Create same connector - Negative test
 @test "Attempt to create test connector again" {
     run "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
-    [ "$status" -eq 0 ]
+    [ "$status" -eq 1 ]
+    [ "${lines[0]}" = "Connector already exists" ]
 }
 
 # Create connector w/ invalid config - Negative test
@@ -60,6 +61,5 @@ teardown_file() {
 # Create connector w/ but topic already exists
 @test "Attempt to create test connector that creates topics, but the topic exists" {
     run "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
-    [ "$status" -eq 1 ]
-    [ "${lines[0]}" = "Topic already exists" ]
+    [ "$status" -eq 0 ]
 }

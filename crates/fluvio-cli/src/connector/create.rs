@@ -43,7 +43,7 @@ impl CreateManagedConnectorOpt {
             debug!("topic spec: {:?}", topic_spec);
             match admin.create(config.topic, false, topic_spec).await {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    println!("Topic already exists");
+                    //println!("Topic already exists");
                     Ok(())
                 }
                 Ok(_) => Ok(()),
