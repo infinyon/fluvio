@@ -21,8 +21,10 @@ use crate::services::public::StreamPublishers;
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
 use fluvio_smartengine::SmartEngine;
 
+use super::smart_module::SmartModuleLocalStore;
 use super::spus::SharedSpuLocalStore;
 use super::SharedReplicaLocalStore;
+use super::smart_module::SharedSmartModuleLocalStore;
 use super::spus::SpuLocalStore;
 use super::replica::ReplicaStore;
 use super::SharedSpuConfig;
@@ -34,6 +36,7 @@ pub struct GlobalContext<S> {
     config: SharedSpuConfig,
     spu_localstore: SharedSpuLocalStore,
     replica_localstore: SharedReplicaLocalStore,
+    smart_module_localstore: SharedSmartModuleLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
     stream_publishers: StreamPublishers,
@@ -58,6 +61,7 @@ where
         GlobalContext {
             spu_localstore: SpuLocalStore::new_shared(),
             replica_localstore: ReplicaStore::new_shared(),
+            smart_module_localstore: SmartModuleLocalStore::new_shared(),
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
@@ -83,6 +87,10 @@ where
 
     pub fn replica_localstore(&self) -> &ReplicaStore {
         &self.replica_localstore
+    }
+
+    pub fn smart_module_localstore(&self) -> &SmartModuleLocalStore {
+        &self.smart_module_localstore
     }
 
     pub fn leaders_state(&self) -> &ReplicaLeadersState<S> {
