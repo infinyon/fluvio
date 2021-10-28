@@ -19,6 +19,7 @@ use async_lock::Mutex;
 use bytes::{Bytes};
 use event_listener::Event;
 use fluvio_future::net::ConnectionFd;
+use fluvio_protocol::api::RequestMiddleWare;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
@@ -120,12 +121,13 @@ impl MultiplexerSocket {
 
     /// create socket to perform request and response
     #[instrument(skip(req_msg))]
-    pub async fn send_and_receive<R>(
+    pub async fn send_and_receive<R, M>(
         &self,
-        mut req_msg: RequestMessage<R>,
+        mut req_msg: RequestMessage<R, M>,
     ) -> Result<R::Response, SocketError>
     where
-        R: Request,
+        R: Request<M>,
+        M: RequestMiddleWare,
     {
         use once_cell::sync::Lazy;
 

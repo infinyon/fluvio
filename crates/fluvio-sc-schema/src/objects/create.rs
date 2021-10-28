@@ -7,7 +7,6 @@ use dataplane::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec, CreateDecoder, Status};
 
-
 use super::{ObjectApiEnum, ObjectApiDecode};
 
 ObjectApiEnum!(CreateRequest);
@@ -16,7 +15,7 @@ ObjectApiEnum!(CreateRequest);
 pub struct CreateRequest<S: AdminSpec> {
     pub name: String,
     pub dry_run: bool,
-    pub spec: S
+    pub spec: S,
 }
 
 impl Request<CreateDecoder> for ObjectApiCreateRequest {

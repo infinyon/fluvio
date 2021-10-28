@@ -74,13 +74,9 @@ where
     }
 
     /// create from request, header is implicilty created from key in the request
-    #[allow(unused)]
     pub fn new_request(request: R) -> Self {
-        let mut header = RequestHeader::new(R::API_KEY);
-        header.set_api_version(R::DEFAULT_API_VERSION);
-
         Self {
-            header,
+            header: Self::create_header(),
             middleware: DefaultRequestMiddleWare::default(),
             request,
         }
@@ -131,6 +127,21 @@ impl<R, M> RequestMessage<R, M>
 where
     R: Request<M>,
 {
+    pub fn create_header() -> RequestHeader {
+        let mut header = RequestHeader::new(R::API_KEY);
+        header.set_api_version(R::DEFAULT_API_VERSION);
+        header
+    }
+
+    /// create request with middleware
+    pub fn request_with_mw(request: R, middleware: M) -> Self {
+        Self {
+            header: Self::create_header(),
+            middleware,
+            request,
+        }
+    }
+
     #[allow(unused)]
     pub fn decode_response<T>(
         &self,

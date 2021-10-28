@@ -48,6 +48,6 @@ mod admin {
         type ListFilter: Encoder + Decoder + Sized + Debug;
         type ListType: Encoder + Decoder + Debug;
         type WatchResponseType: Spec + Encoder + Decoder;
-        type DeleteKey: Encoder + Decoder + Debug + Default + Sized;
+        type DeleteKey: Encoder + Decoder + Debug + Default;
     }
 }

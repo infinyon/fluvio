@@ -1,13 +1,16 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
+use std::str::pattern::SearchStep;
 
 use dataplane::api::{Request, RequestMiddleWare};
 use fluvio_future::net::DomainConnector;
 use tracing::{debug, instrument};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
-use fluvio_sc_schema::objects::{AllCreatableSpec, DeleteRequest, Metadata, ObjectApiWatchRequest};
-use fluvio_sc_schema::{AdminSpec};
+use fluvio_sc_schema::objects::{
+    DeleteRequest, Metadata, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiWatchRequest,
+};
+use fluvio_sc_schema::{AdminSpec, CreateDecoder, ObjectDecoder};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
@@ -132,12 +135,16 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    async fn send_receive<R, M>(&self, request: R) -> Result<R::Response, SocketError>
+    async fn send_receive<R, M>(
+        &self,
+        request: R,
+        middleware: M,
+    ) -> Result<R::Response, SocketError>
     where
         R: Request<M> + Send + Sync,
-        M: RequestMiddleWare,
+        M: RequestMiddleWare + Send + Sync,
     {
-        self.socket.send_receive(request).await
+        self.socket.send_receive_with_mw(request, middleware).await
     }
 
     /// create new object
@@ -145,14 +152,17 @@ impl FluvioAdmin {
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
         S: AdminSpec + Sync + Send,
+        (ObjectApiCreateRequest, CreateDecoder): From<CreateRequest<S>>,
     {
         let create_request: CreateRequest<S> = CreateRequest {
             name,
             dry_run,
-            spec
+            spec,
         };
 
-        self.send_receive(create_request).await?.as_result()?;
+        let (create_request, mw): (ObjectApiCreateRequest, CreateDecoder) = create_request.into();
+
+        self.send_receive(create_request, mw).await?.as_result()?;
 
         Ok(())
     }
@@ -160,14 +170,15 @@ impl FluvioAdmin {
     /// delete object by key
     /// key is depend on spec, most are string but some allow multiple types
     #[instrument(skip(self, key))]
-    pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
+    pub async fn delete<S>(&self, key: S::DeleteKey) -> Result<(), FluvioError>
     where
         S: AdminSpec,
-        K: Into<S::DeleteKey>,
+        (ObjectApiDeleteRequest, ObjectDecoder): From<DeleteRequest<S>>,
     {
         let delete_request = DeleteRequest::new(key);
+        let (delete_request, mw): (ObjectApiDeleteRequest, ObjectDecoder) = delete_request.into();
 
-        self.send_receive(delete_request).await?.as_result()?;
+        self.send_receive(delete_request, mw).await?.as_result()?;
         Ok(())
     }
 
