@@ -10,7 +10,7 @@ pub use watch::*;
 pub use metadata::*;
 
 pub use crate::NameFilter;
-pub(crate) use object_macro::{ObjectApiEnum, ObjectApiDecode};
+pub(crate) use object_macro::*;
 
 mod metadata {
 
@@ -186,6 +186,53 @@ mod object_macro {
         }
     }
 
+    /// Macro to convert request to ObjectApi
+    macro_rules! ObjectFrom {
+        ($from:ident,$spec:ident,$dec:ty) => {
+            paste::paste! {
+
+                impl From<$from<[<$spec Spec>]>> for ([<ObjectApi $from>],$dec) {
+                    fn from(fr: $from<[<$spec Spec>]>) -> Self {
+                        (
+                            [<ObjectApi $from>]::$spec(fr),
+                            [<$spec Spec>]::object_decoder(),
+                        )
+                    }
+                }
+            }
+        };
+
+        ($from:ident,$spec:ident) => {
+            crate::objects::ObjectFrom!($from, $spec, crate::ObjectDecoder);
+        };
+    }
+
+    macro_rules! ObjectTryFrom {
+        ($from:ident,$spec:ident,$dec:ty) => {
+
+            paste::paste! {
+
+                impl std::convert::TryFrom<[<ObjectApi $from>]> for $from<[<$spec Spec>]> {
+                    type Error = std::io::Error;
+
+                    fn try_from(response: [<ObjectApi $from>]) -> Result<Self, Self::Error> {
+                        match response {
+                            [<ObjectApi $from>]::$spec(response) => Ok(response),
+                            _ => Err(IoError::new(ErrorKind::Other, concat!("not ",stringify!($spec)))),
+                        }
+                    }
+                }
+            }
+        };
+
+        ($from:ident,$spec:ident) => {
+
+            crate::objects::ObjectTryFrom!($from,$spec,crate::ObjectDecoder);
+        }
+    }
+
     pub(crate) use ObjectApiEnum;
     pub(crate) use ObjectApiDecode;
+    pub(crate) use ObjectFrom;
+    pub(crate) use ObjectTryFrom;
 }

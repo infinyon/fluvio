@@ -9,10 +9,12 @@ mod convert {
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
     use crate::ObjectDecoder;
+    use crate::objects::ListResponse;
     use crate::{
         AdminSpec, NameFilter,
         objects::{
             Metadata, WatchResponse, WatchRequest, ObjectApiWatchRequest, ObjectApiWatchResponse,
+            ObjectApiListResponse,
         },
     };
     use super::{CustomSpuSpec, SpuSpec};
@@ -49,18 +51,23 @@ mod convert {
         }
     }
 
-    impl From<WatchResponse<SpuSpec>> for ObjectApiWatchResponse {
-        fn from(response: WatchResponse<SpuSpec>) -> Self {
-            ObjectApiWatchResponse::Spu(response)
-        }
-    }
-
     impl TryFrom<ObjectApiWatchResponse> for WatchResponse<SpuSpec> {
         type Error = IoError;
 
         fn try_from(response: ObjectApiWatchResponse) -> Result<Self, Self::Error> {
             match response {
                 ObjectApiWatchResponse::Spu(response) => Ok(response),
+                _ => Err(IoError::new(ErrorKind::Other, "not  SPU")),
+            }
+        }
+    }
+
+    impl TryFrom<ObjectApiListResponse> for ListResponse<SpuSpec> {
+        type Error = IoError;
+
+        fn try_from(response: ObjectApiListResponse) -> Result<Self, Self::Error> {
+            match response {
+                ObjectApiListResponse::Spu(response) => Ok(response),
                 _ => Err(IoError::new(ErrorKind::Other, "not  SPU")),
             }
         }

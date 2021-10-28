@@ -2,9 +2,14 @@ pub use fluvio_controlplane_metadata::table::*;
 
 mod convert {
 
+    use crate::ObjectDecoder;
+    use crate::objects::ListResponse;
     use crate::{
         AdminSpec, NameFilter,
-        objects::{Metadata, WatchResponse, ObjectApiWatchResponse},
+        objects::{
+            ListRequest, Metadata, ObjectApiListRequest, ObjectApiListResponse,
+            ObjectApiWatchResponse, WatchResponse,
+        },
     };
     use super::TableSpec;
 
@@ -20,9 +25,21 @@ mod convert {
         }
     }
 
-    impl From<WatchResponse<TableSpec>> for ObjectApiWatchResponse {
-        fn from(response: WatchResponse<TableSpec>) -> Self {
-            ObjectApiWatchResponse::Table(response)
+    impl From<ListRequest<TableSpec>> for (ObjectApiListRequest, ObjectDecoder) {
+        fn from(req: ListRequest<TableSpec>) -> Self {
+            (
+                ObjectApiListRequest::Table(req),
+                TableSpec::object_decoder(),
+            )
+        }
+    }
+
+    impl From<ListResponse<TableSpec>> for (ObjectApiListResponse, ObjectDecoder) {
+        fn from(req: ListResponse<TableSpec>) -> Self {
+            (
+                ObjectApiListResponse::Table(req),
+                TableSpec::object_decoder(),
+            )
         }
     }
 }

@@ -46,9 +46,11 @@ mod convert {
     use std::io::ErrorKind;
 
     use crate::ObjectDecoder;
+    use crate::objects::ListRequest;
     use crate::{AdminSpec, CreateDecoder, NameFilter};
     use crate::objects::{
-        Metadata, ObjectApiWatchResponse, WatchResponse, WatchRequest, ObjectApiWatchRequest,
+        ObjectFrom, ObjectTryFrom, Metadata, ObjectApiListRequest, ObjectApiListResponse,
+        ObjectApiWatchResponse, WatchResponse, WatchRequest, ObjectApiWatchRequest,
     };
 
     use super::TopicSpec;
@@ -64,29 +66,10 @@ mod convert {
         }
     }
 
-    impl From<WatchRequest<TopicSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
-        fn from(req: WatchRequest<TopicSpec>) -> Self {
-            (
-                ObjectApiWatchRequest::Topic(req),
-                TopicSpec::object_decoder(),
-            )
-        }
-    }
+    ObjectFrom!(WatchRequest, Topic);
+    ObjectFrom!(WatchResponse, Topic);
 
-    impl From<WatchResponse<TopicSpec>> for ObjectApiWatchResponse {
-        fn from(response: WatchResponse<TopicSpec>) -> Self {
-            ObjectApiWatchResponse::Topic(response)
-        }
-    }
+    ObjectFrom!(ListRequest, Topic);
 
-    impl TryFrom<ObjectApiWatchResponse> for WatchResponse<TopicSpec> {
-        type Error = IoError;
-
-        fn try_from(response: ObjectApiWatchResponse) -> Result<Self, Self::Error> {
-            match response {
-                ObjectApiWatchResponse::Topic(response) => Ok(response),
-                _ => Err(IoError::new(ErrorKind::Other, "not  Topic")),
-            }
-        }
-    }
+    ObjectTryFrom!(WatchResponse, Topic);
 }

@@ -170,19 +170,19 @@ impl DiagnosticsOpt {
             Ok(())
         };
 
-        let topics = admin.list::<TopicSpec, _>([]).await?;
+        let topics = admin.list::<TopicSpec>([]).await?;
         let topics = serde_yaml::to_string(&topics).unwrap();
         write(&topics, "topics")?;
 
-        let partitions = admin.list::<PartitionSpec, _>([]).await?;
+        let partitions = admin.list::<PartitionSpec>([]).await?;
         let partitions = serde_yaml::to_string(&partitions).unwrap();
         write(&partitions, "partitions")?;
 
-        let spus = admin.list::<SpuSpec, _>([]).await?;
+        let spus = admin.list::<SpuSpec>([]).await?;
         let spus = serde_yaml::to_string(&spus).unwrap();
         write(&spus, "spus")?;
 
-        let spgs = admin.list::<SpuGroupSpec, _>([]).await?;
+        let spgs = admin.list::<SpuGroupSpec>([]).await?;
         let spgs = serde_yaml::to_string(&spgs).unwrap();
         write(&spgs, "spgs")?;
 
