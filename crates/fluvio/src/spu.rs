@@ -37,16 +37,17 @@ impl SpuSocket {
         self.socket.is_stale()
     }
 
-    async fn create_stream_with_version<R,M>(
+    async fn create_stream_with_version<R, M>(
         &mut self,
         request: R,
         mw: M,
         version: i16,
-    ) -> Result<AsyncResponse<R,M>, FluvioError> 
-    where R: Request<M>,
-        M: RequestMiddleWare
+    ) -> Result<AsyncResponse<R, M>, FluvioError>
+    where
+        R: Request<M>,
+        M: RequestMiddleWare,
     {
-        let mut req_msg = RequestMessage::request_with_mw(request,mw);
+        let mut req_msg = RequestMessage::request_with_mw(request, mw);
         req_msg.header.set_api_version(version);
         self.socket
             .create_stream(req_msg, DEFAULT_STREAM_QUEUE_SIZE)
@@ -158,16 +159,17 @@ impl SpuPool {
 
     /// create stream to leader replica
     #[instrument(skip(self, replica, request, version))]
-    pub async fn create_stream_with_version<R,M>(
+    pub async fn create_stream_with_version<R, M>(
         &self,
         replica: &ReplicaKey,
         request: R,
         mw: M,
         version: i16,
-    ) -> Result<AsyncResponse<R,M>, FluvioError>
-        where R: Request<M>,
-            M: RequestMiddleWare
-     {
+    ) -> Result<AsyncResponse<R, M>, FluvioError>
+    where
+        R: Request<M>,
+        M: RequestMiddleWare,
+    {
         let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
 
         let partition = if let Some(partition) = partition_search {
@@ -186,13 +188,13 @@ impl SpuPool {
 
         if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
             return spu_socket
-                .create_stream_with_version(request, mw,version)
+                .create_stream_with_version(request, mw, version)
                 .await;
         }
 
         let mut spu_socket = self.connect_to_leader(leader_id).await?;
         let stream = spu_socket
-            .create_stream_with_version(request, mw,version)
+            .create_stream_with_version(request, mw, version)
             .await?;
         client_lock.insert(leader_id, spu_socket);
 

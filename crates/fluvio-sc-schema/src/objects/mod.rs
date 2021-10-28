@@ -14,12 +14,15 @@ pub(crate) use object_macro::{ObjectApiEnum, ObjectApiDecode};
 
 mod metadata {
 
-    use std::fmt::{Debug};
+    use std::convert::{TryFrom, TryInto};
+    use std::fmt::{Debug, Display};
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
 
     use dataplane::core::{Encoder, Decoder};
 
     use fluvio_controlplane_metadata::store::MetadataStoreObject;
-    use fluvio_controlplane_metadata::core::{MetadataItem};
+    use fluvio_controlplane_metadata::core::{MetadataContext, MetadataItem};
 
     use crate::core::Spec;
 
@@ -52,6 +55,31 @@ mod metadata {
                 spec: meta.spec,
                 status: meta.status,
             }
+        }
+    }
+
+    impl<S, C> TryFrom<Metadata<S>> for MetadataStoreObject<S, C>
+    where
+        S: Spec + Encoder + Decoder,
+        S::Status: Encoder + Decoder,
+        C: MetadataItem,
+        <S as Spec>::IndexKey: TryFrom<String>,
+        <<S as Spec>::IndexKey as TryFrom<String>>::Error: Display,
+    {
+        type Error = IoError;
+
+        fn try_from(value: Metadata<S>) -> Result<Self, Self::Error> {
+            Ok(Self {
+                spec: value.spec,
+                status: value.status,
+                key: value.name.try_into().map_err(|err| {
+                    IoError::new(
+                        ErrorKind::InvalidData,
+                        format!("problem converting: {}", err),
+                    )
+                })?,
+                ctx: MetadataContext::default(),
+            })
         }
     }
 }

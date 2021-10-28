@@ -454,7 +454,12 @@ impl PartitionConsumer {
         }
         let mut stream = self
             .pool
-            .create_stream_with_version(&replica, stream_request, DefaultRequestMiddleWare::default(), stream_fetch_version)
+            .create_stream_with_version(
+                &replica,
+                stream_request,
+                DefaultRequestMiddleWare::default(),
+                stream_fetch_version,
+            )
             .await?;
 
         let ft_stream = async move {

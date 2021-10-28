@@ -74,7 +74,7 @@ impl MetadataStores {
 
         let watch_request: WatchRequest<SpuSpec> = WatchRequest::default();
         let (watch_req, mw): (ObjectApiWatchRequest, ObjectDecoder) = watch_request.into();
-        let req_msg = RequestMessage::request_with_mw(watch_req, mw);
+        let mut req_msg = RequestMessage::request_with_mw(watch_req, mw);
         req_msg.get_mut_header().set_api_version(self.watch_version);
 
         debug!("create spu metadata stream");

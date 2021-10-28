@@ -41,6 +41,7 @@ pub mod validate {
 }
 mod convert {
 
+    use std::convert::TryFrom;
     use std::io::Error as IoError;
     use std::io::ErrorKind;
     use std::convert::TryInto;
@@ -79,13 +80,13 @@ mod convert {
         }
     }
 
-    impl TryInto<WatchResponse<TopicSpec>> for ObjectApiWatchResponse {
+    impl TryFrom<ObjectApiWatchResponse> for WatchResponse<TopicSpec> {
         type Error = IoError;
 
-        fn try_into(self) -> Result<WatchResponse<TopicSpec>, Self::Error> {
-            match self {
+        fn try_from(response: ObjectApiWatchResponse) -> Result<Self, Self::Error> {
+            match response {
                 ObjectApiWatchResponse::Topic(response) => Ok(response),
-                _ => Err(IoError::new(ErrorKind::Other, "not  topic")),
+                _ => Err(IoError::new(ErrorKind::Other, "not  Topic")),
             }
         }
     }

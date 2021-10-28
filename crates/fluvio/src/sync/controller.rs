@@ -1,5 +1,5 @@
-use std::convert::TryFrom;
-use std::io::Error as IoError;
+use std::convert::{TryFrom, TryInto};
+use std::io::{Error as IoError, ErrorKind};
 use std::fmt::Display;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -13,7 +13,9 @@ use futures_util::stream::StreamExt;
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::{Metadata, MetadataUpdate, ObjectApiWatchResponse, WatchResponse};
+use fluvio_sc_schema::objects::{
+    Metadata, MetadataUpdate, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
+};
 use fluvio_sc_schema::{AdminSpec, ObjectDecoder};
 
 use crate::metadata::core::Spec;
@@ -58,19 +60,20 @@ pub struct MetadataSyncController<S: AdminSpec, M> {
 
 impl<S, M> MetadataSyncController<S, M>
 where
-    S: AdminSpec + 'static,
-    M: RequestMiddleWare + 'static,
-    AsyncResponse<ObjectApiWatchResponse, ObjectDecoder>: Send,
+    S: AdminSpec + 'static + Sync + Send,
+    M: RequestMiddleWare + 'static + Sync + Send,
+    AsyncResponse<ObjectApiWatchRequest, ObjectDecoder>: Send,
     S::WatchResponseType: Encoder + Decoder + Send + Sync,
     <S::WatchResponseType as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S::WatchResponseType as Spec>::IndexKey: Display + Sync + Send,
-    CacheMetadataStoreObject<S::WatchResponseType>: From<Metadata<S::WatchResponseType>>,
+    <WatchResponse<S> as TryFrom<ObjectApiWatchResponse>>::Error: Display + Send,
+    CacheMetadataStoreObject<S::WatchResponseType>: TryFrom<Metadata<S::WatchResponseType>>,
     WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
-    //   <<WatchResponse<S>: TryFrom<ObjectApiWatchResponse>>::Error: Display + Send
+    <Metadata<S::WatchResponseType> as TryInto<CacheMetadataStoreObject<S::WatchResponseType>>>::Error: Display,
 {
     pub fn start(
         store: StoreContext<S::WatchResponseType>,
-        watch_response: AsyncResponse<ObjectApiWatchResponse, ObjectDecoder>,
+        watch_response: AsyncResponse<ObjectApiWatchRequest, ObjectDecoder>,
         shutdown: Arc<SimpleEvent>,
     ) {
         use fluvio_future::task::spawn;
@@ -93,7 +96,7 @@ where
     )]
     async fn dispatch_loop(
         mut self,
-        mut response: AsyncResponse<ObjectApiWatchResponse, ObjectDecoder>,
+        mut response: AsyncResponse<ObjectApiWatchRequest, ObjectDecoder>,
     ) {
         use tokio::select;
 
@@ -165,8 +168,18 @@ where
             );
             let mut objects: Vec<CacheMetadataStoreObject<S::WatchResponseType>> = vec![];
             for meta in updates.all.into_iter() {
-                let store_obj: CacheMetadataStoreObject<S::WatchResponseType> = meta.into();
-                objects.push(store_obj);
+                let store_obj: Result<CacheMetadataStoreObject<S::WatchResponseType>, _> = meta.try_into();
+                match store_obj {
+                    Ok(obj) => {
+                        objects.push(obj);
+                    }
+                    Err(err) => {
+                        return Err(IoError::new(
+                            ErrorKind::InvalidData,
+                            format!("problem converting: {}", err),
+                        ));
+                    }
+                }
             }
             self.store.store().sync_all(objects).await;
             return Ok(());
@@ -183,9 +196,13 @@ where
                 .into_iter()
                 .map(|msg| {
                     let (meta, typ) = (msg.content, msg.header);
-                    let obj: CacheMetadataStoreObject<S::WatchResponseType> = meta.into();
-                    (typ, obj)
+                    let obj: Result<CacheMetadataStoreObject<S::WatchResponseType>, _> = meta.try_into();
+                    obj.map(|it| (typ, it))
                 })
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| {
+                    IoError::new(ErrorKind::InvalidData, format!("problem converting: {}", e))
+                })?
                 .into_iter()
                 // .map(|it| LSUpdate::Mod(it))
                 .map(|(typ, obj)| match typ {
