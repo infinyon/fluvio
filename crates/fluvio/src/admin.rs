@@ -169,12 +169,13 @@ impl FluvioAdmin {
     /// delete object by key
     /// key is depend on spec, most are string but some allow multiple types
     #[instrument(skip(self, key))]
-    pub async fn delete<S>(&self, key: S::DeleteKey) -> Result<(), FluvioError>
+    pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
     where
         S: AdminSpec,
+        K: Into<S::DeleteKey>,
         (ObjectApiDeleteRequest, ObjectDecoder): From<DeleteRequest<S>>,
     {
-        let delete_request = DeleteRequest::new(key);
+        let delete_request = DeleteRequest::new(key.into());
         let (delete_request, mw): (ObjectApiDeleteRequest, ObjectDecoder) = delete_request.into();
 
         self.send_receive(delete_request, mw).await?.as_result()?;
@@ -182,7 +183,7 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&self, filters: F) -> Result<ListResponse<S>, FluvioError>
+    pub async fn list<S, F>(&self, filters: F) -> Result<Vec<S::ListType>, FluvioError>
     where
         S: AdminSpec,
         F: Into<Vec<S::ListFilter>>,
@@ -193,13 +194,14 @@ impl FluvioAdmin {
         use std::io::Error as IoError;
         use std::io::ErrorKind;
 
-        let list_request = ListRequest::new(filters);
+        let list_request = ListRequest::new(filters.into());
 
         let (list_request, mw): (ObjectApiListRequest, ObjectDecoder) = list_request.into();
         let response = self.send_receive(list_request, mw).await?;
         response
             .try_into()
             .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
+            .map(|out: ListResponse<S>| out.inner())
     }
 }
 

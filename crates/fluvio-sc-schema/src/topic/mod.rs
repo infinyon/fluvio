@@ -41,18 +41,10 @@ pub mod validate {
 }
 mod convert {
 
-    use std::convert::TryFrom;
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
-
-    use crate::ObjectDecoder;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
     use crate::{AdminSpec, CreateDecoder, NameFilter};
-    use crate::objects::{
-        ObjectFrom, ObjectTryFrom, Metadata, ObjectApiListRequest, ObjectApiListResponse,
-        ObjectApiWatchResponse, WatchResponse, WatchRequest, ObjectApiWatchRequest,
-    };
+    use crate::objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest};
 
     use super::TopicSpec;
 

@@ -43,4 +43,8 @@ where
     pub fn new(list: Vec<S::ListType>) -> Self {
         Self(list)
     }
+
+    pub fn inner(self) -> Vec<S::ListType> {
+        self.0
+    }
 }

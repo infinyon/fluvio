@@ -2,21 +2,13 @@ pub use fluvio_controlplane_metadata::spu::*;
 
 mod convert {
 
-    use std::convert::TryFrom;
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
-
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
-    use crate::ObjectDecoder;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
     use crate::{
         AdminSpec, NameFilter,
-        objects::{
-            ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest,
-            ObjectApiWatchRequest, ObjectApiWatchResponse, ObjectApiListResponse,
-        },
+        objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest},
     };
     use super::{CustomSpuSpec, SpuSpec};
 

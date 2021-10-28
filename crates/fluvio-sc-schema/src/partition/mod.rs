@@ -2,18 +2,13 @@ pub use fluvio_controlplane_metadata::partition::*;
 
 mod convert {
 
-    use std::io::Error as IoError;
-    use std::io::ErrorKind;
-
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
     use crate::objects::ObjectFrom;
     use crate::objects::ObjectTryFrom;
     use crate::{
         AdminSpec, NameFilter,
-        objects::{
-            Metadata, ObjectApiWatchResponse, ObjectApiWatchRequest, WatchRequest, WatchResponse,
-        },
+        objects::{Metadata, WatchRequest, WatchResponse},
     };
     use super::*;
 

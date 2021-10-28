@@ -191,10 +191,10 @@ mod object_macro {
         ($from:ident,$spec:ident,$dec:ty) => {
             paste::paste! {
 
-                impl From<$from<[<$spec Spec>]>> for ([<ObjectApi $from>],$dec) {
+                impl From<$from<[<$spec Spec>]>> for (crate::objects::[<ObjectApi $from>],$dec) {
                     fn from(fr: $from<[<$spec Spec>]>) -> Self {
                         (
-                            [<ObjectApi $from>]::$spec(fr),
+                            crate::objects::[<ObjectApi $from>]::$spec(fr),
                             [<$spec Spec>]::object_decoder(),
                         )
                     }
@@ -212,13 +212,13 @@ mod object_macro {
 
             paste::paste! {
 
-                impl std::convert::TryFrom<[<ObjectApi $from>]> for $from<[<$spec Spec>]> {
+                impl std::convert::TryFrom<crate::objects::[<ObjectApi $from>]> for $from<[<$spec Spec>]> {
                     type Error = std::io::Error;
 
-                    fn try_from(response: [<ObjectApi $from>]) -> Result<Self, Self::Error> {
+                    fn try_from(response: crate::objects::[<ObjectApi $from>]) -> Result<Self, Self::Error> {
                         match response {
-                            [<ObjectApi $from>]::$spec(response) => Ok(response),
-                            _ => Err(IoError::new(ErrorKind::Other, concat!("not ",stringify!($spec)))),
+                            crate::objects::[<ObjectApi $from>]::$spec(response) => Ok(response),
+                            _ => Err(std::io::Error::new(std::io::ErrorKind::Other, concat!("not ",stringify!($spec)))),
                         }
                     }
                 }

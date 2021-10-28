@@ -4,7 +4,10 @@ mod convert {
 
     use crate::{
         AdminSpec, NameFilter,
-        objects::{Metadata, WatchResponse, ObjectApiWatchResponse},
+        objects::{
+            ListRequest, ListResponse, Metadata, ObjectFrom, ObjectTryFrom, WatchRequest,
+            WatchResponse,
+        },
     };
     use super::ManagedConnectorSpec;
 
@@ -19,9 +22,12 @@ mod convert {
         }
     }
 
-    impl From<WatchResponse<ManagedConnectorSpec>> for ObjectApiWatchResponse {
-        fn from(response: WatchResponse<ManagedConnectorSpec>) -> Self {
-            ObjectApiWatchResponse::ManagedConnector(response)
-        }
-    }
+    ObjectFrom!(WatchRequest, ManagedConnector);
+    ObjectFrom!(WatchResponse, ManagedConnector);
+
+    ObjectFrom!(ListRequest, ManagedConnector);
+    ObjectFrom!(ListResponse, ManagedConnector);
+
+    ObjectTryFrom!(WatchResponse, ManagedConnector);
+    ObjectTryFrom!(ListResponse, ManagedConnector);
 }
