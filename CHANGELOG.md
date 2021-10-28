@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.12 - UNRELEASED
+## Platform Version 0.9.13 - UNRELEASED
+
+## Platform Version 0.9.12 - 2021-10-27
 * Add examples for ArrayMap. ([#1804](https://github.com/infinyon/fluvio/issues/1804))
 * Report error when missing #[1462] attribute in SmartStream ([#1462](https://github.com/infinyon/fluvio/issues/1462))
 * Fix consumer read after restart #[1815] attribute in SmartStream ([#1815](https://github.com/infinyon/fluvio/issues/1815))
