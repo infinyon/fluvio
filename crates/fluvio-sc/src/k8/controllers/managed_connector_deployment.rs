@@ -6,6 +6,7 @@ use k8_types::{
     LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
     core::pod::{
         ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
+        PodRestartPoilicy,
         VolumeSpec,
     },
 };
@@ -212,13 +213,13 @@ impl ManagedConnectorDeploymentController {
 
         let (image, image_pull_policy) = match mc_spec.version.as_str() {
             "dev" => {
-                (format!("infinyon/fluvio-connect-{}", mc_spec.type_), Some(ImagePullPolicy::Never))
+                (format!("infinyon/fluvio-connect-{}", mc_spec.type_), ImagePullPolicy::Never)
             }
             "latest" => {
-                (format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_), Some(ImagePullPolicy::Always))
+                (format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_), ImagePullPolicy::Always)
             }
             version => {
-                (format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version), Some(ImagePullPolicy::IfNotPresent))
+                (format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version), ImagePullPolicy::IfNotPresent)
             }
         };
         debug!(
@@ -234,7 +235,7 @@ impl ManagedConnectorDeploymentController {
                 containers: vec![ContainerSpec {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image),
-                    image_pull_policy,
+                    image_pull_policy: Some(image_pull_policy),
                     /*
                     env, // TODO
                     */
@@ -247,6 +248,7 @@ impl ManagedConnectorDeploymentController {
                     ..Default::default()
                 }],
                 volumes: vec![config_map_volume_spec],
+                restart_policy: Some(PodRestartPoilicy::OnFailure),
                 //security_context: spu_k8_config.pod_security_context.clone(),
                 //node_selector: Some(spu_pod_config.node_selector.clone()),
                 ..Default::default()
