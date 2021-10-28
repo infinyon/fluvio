@@ -21,7 +21,6 @@ PUBLISH_CRATES=(
     fluvio-extension-common
 )
 
-
 ALL_CRATE_CHECK_PASS=true
 CHECK_CRATES=()
 readonly VERBOSE=${VERBOSE:-false}
