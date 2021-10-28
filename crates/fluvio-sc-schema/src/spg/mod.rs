@@ -2,13 +2,7 @@ pub use fluvio_controlplane_metadata::spg::*;
 
 mod convert {
 
-    use crate::{
-        AdminSpec, NameFilter,
-        objects::{
-            DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom, ObjectTryFrom,
-            WatchRequest, WatchResponse,
-        },
-    };
+    use crate::{AdminSpec, NameFilter, objects::{CreateRequest, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom, ObjectTryFrom, WatchRequest, WatchResponse}};
     use super::SpuGroupSpec;
 
     impl AdminSpec for SpuGroupSpec {
@@ -25,6 +19,7 @@ mod convert {
         }
     }
 
+    ObjectFrom!(CreateRequest, SpuGroup, Create);
     ObjectFrom!(WatchRequest, SpuGroup);
     ObjectFrom!(WatchResponse, SpuGroup);
 
