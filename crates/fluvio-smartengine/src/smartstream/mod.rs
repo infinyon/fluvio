@@ -33,7 +33,7 @@ pub struct SmartEngine(pub(crate) Engine);
 
 impl SmartEngine {
     #[cfg(feature = "smartmodule")]
-    pub async fn create_module_from_smartmodule_spec(
+    pub fn create_module_from_smartmodule_spec(
         self,
         spec: &SmartModuleSpec,
     ) -> Result<SmartStreamModule> {
