@@ -38,6 +38,7 @@ impl Spec for K8ManagedConnectorSpec {
 #[serde(rename_all = "camelCase", default)]
 pub struct K8ManagedConnectorSpec {
     pub name: String,
+    pub version: String,
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack
     pub topic: String,
@@ -58,6 +59,7 @@ mod convert {
                 topic: spec.topic,
                 parameters: spec.parameters,
                 secrets: spec.secrets,
+                version: spec.version,
             }
         }
     }
@@ -70,6 +72,7 @@ mod convert {
                 topic: spec.topic,
                 parameters: spec.parameters,
                 secrets: spec.secrets,
+                version: spec.version,
             }
         }
     }

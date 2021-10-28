@@ -179,7 +179,6 @@ impl ManagedConnectorDeploymentController {
         _namespace: &str,
         _name: &str,
     ) -> K8DeploymentSpec {
-        let image = format!("infinyon/fluvio-connect-{}", mc_spec.type_);
 
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
@@ -202,10 +201,26 @@ impl ManagedConnectorDeploymentController {
             .flat_map(|(key, value)| [format!("--{}={}", key.clone(), value.clone())])
             .collect::<Vec<_>>();
 
+
         // Prefixing the args with a "--" passed to the container is needed for an unclear reason.
-        let mut args = vec!["--".to_string()];
+        let mut args = vec![
+            "--".to_string(),
+            format!("--fluvio-topic={}", mc_spec.topic),
+        ];
         args.extend(parameters);
 
+
+        let (image, image_pull_policy) = match mc_spec.version.as_str() {
+            "dev" => {
+                (format!("infinyon/fluvio-connect-{}", mc_spec.type_), Some(ImagePullPolicy::Never))
+            }
+            "latest" => {
+                (format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_), Some(ImagePullPolicy::Always))
+            }
+            version => {
+                (format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version), Some(ImagePullPolicy::IfNotPresent))
+            }
+        };
         debug!(
             "Starting connector for image: {:?} with arguments {:?}",
             image, args
@@ -219,7 +234,7 @@ impl ManagedConnectorDeploymentController {
                 containers: vec![ContainerSpec {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image),
-                    image_pull_policy: Some(ImagePullPolicy::IfNotPresent),
+                    image_pull_policy,
                     /*
                     env, // TODO
                     */
