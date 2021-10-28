@@ -1,15 +1,12 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
-use std::str::pattern::SearchStep;
+
 
 use dataplane::api::{Request, RequestMiddleWare};
 use fluvio_future::net::DomainConnector;
 use tracing::{debug, instrument};
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
-use fluvio_sc_schema::objects::{
-    DeleteRequest, Metadata, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiWatchRequest,
-};
+
+use fluvio_sc_schema::objects::{DeleteRequest,  ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest};
 use fluvio_sc_schema::{AdminSpec, CreateDecoder, ObjectDecoder};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
@@ -186,21 +183,23 @@ impl FluvioAdmin {
     pub async fn list<S>(
         &self,
         filters: Vec<S::ListFilter>,
-    ) -> Result<Vec<Metadata<S>>, FluvioError>
+    ) -> Result<ListResponse<S>, FluvioError>
     where
         S: AdminSpec,
+        (ObjectApiListRequest, ObjectDecoder): From<ListRequest<S>>,
+        ListResponse<S>: TryFrom<ObjectApiListResponse>,
+        <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
     {
-        use std::io::Error;
+        use std::io::Error as IoError;
         use std::io::ErrorKind;
-
+       
         let list_request = ListRequest::new(filters);
 
-        let api_request = S::into_list_request(filters.into());
-        let response = self.send_receive(list_request).await?;
-
+        let (list_request, mw): (ObjectApiListRequest, ObjectDecoder) = list_request.into();
+        let response = self.send_receive(list_request,mw).await?;
         response
             .try_into()
-            .map_err(|err| Error::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
+            .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
     }
 }
 
