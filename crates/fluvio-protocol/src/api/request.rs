@@ -126,6 +126,7 @@ impl<R, M> RequestMessage<R, M> {
 impl<R, M> RequestMessage<R, M>
 where
     R: Request<M>,
+    M: RequestMiddleWare,
 {
     pub fn create_header() -> RequestHeader {
         let mut header = RequestHeader::new(R::API_KEY);

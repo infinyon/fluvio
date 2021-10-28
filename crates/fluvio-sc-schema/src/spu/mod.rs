@@ -4,9 +4,12 @@ mod convert {
 
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
+    use crate::ObjectDecoder;
     use crate::{
         AdminSpec, NameFilter,
-        objects::{Metadata, WatchResponse, ObjectApiWatchResponse},
+        objects::{
+            Metadata, WatchResponse, WatchRequest, ObjectApiWatchRequest, ObjectApiWatchResponse,
+        },
     };
     use super::{CustomSpuSpec, SpuSpec};
 
@@ -33,6 +36,12 @@ mod convert {
 
         fn create_decoder() -> crate::CreateDecoder {
             panic!("Spu cannot be created directly")
+        }
+    }
+
+    impl From<WatchRequest<SpuSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
+        fn from(req: WatchRequest<SpuSpec>) -> Self {
+            (ObjectApiWatchRequest::Spu(req), SpuSpec::object_decoder())
         }
     }
 

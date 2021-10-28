@@ -41,8 +41,11 @@ pub mod validate {
 }
 mod convert {
 
+    use crate::ObjectDecoder;
     use crate::{AdminSpec, CreateDecoder, NameFilter};
-    use crate::objects::{Metadata, ObjectApiWatchResponse, WatchResponse};
+    use crate::objects::{
+        Metadata, ObjectApiWatchResponse, WatchResponse, WatchRequest, ObjectApiWatchRequest,
+    };
 
     use super::TopicSpec;
 
@@ -54,6 +57,15 @@ mod convert {
 
         fn create_decoder() -> crate::CreateDecoder {
             CreateDecoder::TOPIC
+        }
+    }
+
+    impl From<WatchRequest<TopicSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
+        fn from(req: WatchRequest<TopicSpec>) -> Self {
+            (
+                ObjectApiWatchRequest::Topic(req),
+                TopicSpec::object_decoder(),
+            )
         }
     }
 

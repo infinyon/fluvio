@@ -72,13 +72,15 @@ impl MetadataStores {
         use dataplane::api::RequestMessage;
         use fluvio_sc_schema::objects::WatchRequest;
 
-        let mut req_msg = RequestMessage::new_request(WatchRequest::default());
+        let watch_request: WatchRequest<SpuSpec> = WatchRequest::default();
+        let (watch_req, mw): (ObjectApiWatchRequest, ObjectDecoder) = watch_request.into();
+        let req_msg = RequestMessage::request_with_mw(watch_req, mw);
         req_msg.get_mut_header().set_api_version(self.watch_version);
 
         debug!("create spu metadata stream");
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<SpuSpec>::start(
+        MetadataSyncController::<SpuSpec, ObjectDecoder>::start(
             self.spus.clone(),
             async_response,
             self.shutdown.clone(),
@@ -99,7 +101,7 @@ impl MetadataStores {
         let req_msg = RequestMessage::request_with_mw(watch_req, mw);
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<PartitionSpec>::start(
+        MetadataSyncController::<PartitionSpec, ObjectDecoder>::start(
             self.partitions.clone(),
             async_response,
             self.shutdown.clone(),
@@ -115,10 +117,12 @@ impl MetadataStores {
 
         debug!("start watch for topic");
 
-        let req_msg = RequestMessage::new_request(WatchRequest::default());
+        let watch_request: WatchRequest<TopicSpec> = WatchRequest::default();
+        let (watch_req, mw): (ObjectApiWatchRequest, ObjectDecoder) = watch_request.into();
+        let req_msg = RequestMessage::request_with_mw(watch_req, mw);
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<TopicSpec>::start(
+        MetadataSyncController::<TopicSpec, ObjectDecoder>::start(
             self.topics.clone(),
             async_response,
             self.shutdown.clone(),

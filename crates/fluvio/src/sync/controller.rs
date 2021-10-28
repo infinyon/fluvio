@@ -11,7 +11,9 @@ use event_listener::{Event, EventListener};
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::{Metadata, MetadataUpdate, ObjectApiWatchResponse, WatchRequest};
+use fluvio_sc_schema::objects::{
+    Metadata, MetadataUpdate, ObjectApiWatchResponse, WatchRequest, WatchResponse,
+};
 use fluvio_sc_schema::AdminSpec;
 
 use crate::metadata::core::Spec;
@@ -57,12 +59,13 @@ pub struct MetadataSyncController<S: AdminSpec, M> {
 impl<S, M> MetadataSyncController<S, M>
 where
     S: AdminSpec + 'static,
-    M: RequestMiddleWare,
-    AsyncResponse<WatchRequest<S>>: Send,
+    M: RequestMiddleWare + 'static,
+    AsyncResponse<ObjectApiWatchResponse>: Send,
     S::WatchResponseType: Encoder + Decoder + Send + Sync,
     <S::WatchResponseType as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S::WatchResponseType as Spec>::IndexKey: Display + Sync + Send,
     CacheMetadataStoreObject<S::WatchResponseType>: From<Metadata<S::WatchResponseType>>,
+    WatchResponse<S>: From<ObjectApiWatchResponse>,
 {
     pub fn start(
         store: StoreContext<S::WatchResponseType>,
@@ -74,7 +77,7 @@ where
         let controller = Self {
             store,
             shutdown,
-            data: PhantomData::new(),
+            data: PhantomData,
         };
 
         debug!(spec = %S::LABEL, "spawning sync controller");
@@ -87,7 +90,7 @@ where
             spec = S::LABEL,
         )
     )]
-    async fn dispatch_loop(mut self, mut response: AsyncResponse<WatchRequest<S>>) {
+    async fn dispatch_loop(mut self, mut response: AsyncResponse<ObjectApiWatchResponse>) {
         use tokio::select;
 
         debug!("{} starting dispatch loop", S::LABEL);
@@ -109,8 +112,8 @@ where
 
                     match item {
                         Some(Ok(watch_response)) => {
-                            let update: MetadataUpdate<S::WatchResponseType> = watch_response.into();
-                            if let Err(err) = self.sync_metadata(update).await {
+                            let update: WatchResponse<S> = watch_response.into();
+                            if let Err(err) = self.sync_metadata(update.inner()).await {
                                 error!("Processing updates: {}", err);
                             }
                         },

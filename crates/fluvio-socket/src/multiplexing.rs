@@ -215,13 +215,14 @@ impl MultiplexerSocket {
 
     /// create stream response
     #[instrument(skip(self,req_msg), fields(api = R::API_KEY))]
-    pub async fn create_stream<R>(
+    pub async fn create_stream<R, M>(
         &self,
-        mut req_msg: RequestMessage<R>,
+        mut req_msg: RequestMessage<R, M>,
         queue_len: usize,
     ) -> Result<AsyncResponse<R>, SocketError>
     where
-        R: Request,
+        R: Request<M>,
+        M: RequestMiddleWare,
     {
         let correlation_id = self.next_correlation_id();
 

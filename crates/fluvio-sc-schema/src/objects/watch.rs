@@ -48,6 +48,10 @@ where
     pub fn new(inner: MetadataUpdate<S::WatchResponseType>) -> Self {
         Self { inner }
     }
+
+    pub fn inner(self) -> MetadataUpdate<S::WatchResponseType> {
+        self.inner
+    }
 }
 
 /// updates on metadata

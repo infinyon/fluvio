@@ -4,7 +4,9 @@ mod convert {
 
     use crate::{
         AdminSpec, NameFilter, ObjectDecoder,
-        objects::{Metadata, WatchResponse, ObjectApiWatchResponse},
+        objects::{
+            Metadata, ObjectApiWatchResponse, ObjectApiWatchRequest, WatchRequest, WatchResponse,
+        },
     };
     use super::*;
 
@@ -18,6 +20,15 @@ mod convert {
 
         fn create_decoder() -> crate::CreateDecoder {
             panic!("Partition cannot be created directly")
+        }
+    }
+
+    impl From<WatchRequest<PartitionSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
+        fn from(req: WatchRequest<PartitionSpec>) -> Self {
+            (
+                ObjectApiWatchRequest::Partition(req),
+                PartitionSpec::object_decoder(),
+            )
         }
     }
 
