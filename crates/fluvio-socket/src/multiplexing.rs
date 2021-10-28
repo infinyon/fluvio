@@ -219,7 +219,7 @@ impl MultiplexerSocket {
         &self,
         mut req_msg: RequestMessage<R, M>,
         queue_len: usize,
-    ) -> Result<AsyncResponse<R>, SocketError>
+    ) -> Result<AsyncResponse<R, M>, SocketError>
     where
         R: Request<M>,
         M: RequestMiddleWare,
@@ -258,6 +258,7 @@ impl MultiplexerSocket {
             header: req_msg.header,
             correlation_id,
             data: PhantomData,
+            data1: PhantomData,
         })
     }
 }
@@ -265,23 +266,28 @@ impl MultiplexerSocket {
 /// Implement async socket where response are send back async manner
 /// they are queued using channel
 #[pin_project(PinnedDrop)]
-pub struct AsyncResponse<R> {
+pub struct AsyncResponse<R, M> {
     #[pin]
     receiver: Receiver<Option<Bytes>>,
     header: RequestHeader,
     correlation_id: i32,
     data: PhantomData<R>,
+    data1: PhantomData<M>,
 }
 
 #[pinned_drop]
-impl<R> PinnedDrop for AsyncResponse<R> {
+impl<R, M> PinnedDrop for AsyncResponse<R, M> {
     fn drop(self: Pin<&mut Self>) {
         self.receiver.close();
         debug!("multiplexer stream: {} closed", self.correlation_id);
     }
 }
 
-impl<R: Request> Stream for AsyncResponse<R> {
+impl<R, M> Stream for AsyncResponse<R, M>
+where
+    R: Request<M>,
+    M: RequestMiddleWare,
+{
     type Item = Result<R::Response, SocketError>;
 
     #[instrument(

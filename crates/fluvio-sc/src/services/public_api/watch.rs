@@ -124,7 +124,7 @@ where
     S::WatchResponseType: Encoder + Decoder + Send + Sync,
     <S::WatchResponseType as Spec>::Status: Encoder + Decoder + Send + Sync,
     <S::WatchResponseType as Spec>::IndexKey: ToString + Send + Sync,
-    ObjectApiWatchResponse: From<WatchResponse<S>>,
+    (ObjectApiWatchResponse, ObjectDecoder): From<WatchResponse<S>>,
 {
     /// start watch controller
     fn update(
@@ -223,13 +223,9 @@ where
         };
 
         let response: WatchResponse<S> = WatchResponse::new(updates);
-        let obj_response: ObjectApiWatchResponse = response.into();
+        let (res, mw): (ObjectApiWatchResponse, ObjectDecoder) = response.into();
         let resp_msg: ResponseMessage<ObjectApiWatchResponse, M> =
-            ResponseMessage::from_header_with_mw(
-                &self.header,
-                obj_response,
-                self.middleware.clone(),
-            );
+            ResponseMessage::from_header_with_mw(&self.header, res, self.middleware.clone());
 
         // try to send response, if it fails then we need to end
         if let Err(err) = self

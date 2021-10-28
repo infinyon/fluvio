@@ -1,3 +1,4 @@
+use std::convert::TryFrom;
 use std::io::Error as IoError;
 use std::fmt::Display;
 use std::marker::PhantomData;
@@ -7,14 +8,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use dataplane::api::RequestMiddleWare;
 use tracing::{error, debug, instrument};
 use event_listener::{Event, EventListener};
+use futures_util::stream::StreamExt;
 
 use dataplane::core::Encoder;
 use dataplane::core::Decoder;
 use fluvio_socket::AsyncResponse;
-use fluvio_sc_schema::objects::{
-    Metadata, MetadataUpdate, ObjectApiWatchResponse, WatchRequest, WatchResponse,
-};
-use fluvio_sc_schema::AdminSpec;
+use fluvio_sc_schema::objects::{Metadata, MetadataUpdate, ObjectApiWatchResponse, WatchResponse};
+use fluvio_sc_schema::{AdminSpec, ObjectDecoder};
 
 use crate::metadata::core::Spec;
 
@@ -60,16 +60,17 @@ impl<S, M> MetadataSyncController<S, M>
 where
     S: AdminSpec + 'static,
     M: RequestMiddleWare + 'static,
-    AsyncResponse<ObjectApiWatchResponse>: Send,
+    AsyncResponse<ObjectApiWatchResponse, ObjectDecoder>: Send,
     S::WatchResponseType: Encoder + Decoder + Send + Sync,
     <S::WatchResponseType as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S::WatchResponseType as Spec>::IndexKey: Display + Sync + Send,
     CacheMetadataStoreObject<S::WatchResponseType>: From<Metadata<S::WatchResponseType>>,
-    WatchResponse<S>: From<ObjectApiWatchResponse>,
+    WatchResponse<S>: TryFrom<ObjectApiWatchResponse>,
+    //   <<WatchResponse<S>: TryFrom<ObjectApiWatchResponse>>::Error: Display + Send
 {
     pub fn start(
         store: StoreContext<S::WatchResponseType>,
-        watch_response: AsyncResponse<ObjectApiWatchResponse>,
+        watch_response: AsyncResponse<ObjectApiWatchResponse, ObjectDecoder>,
         shutdown: Arc<SimpleEvent>,
     ) {
         use fluvio_future::task::spawn;
@@ -90,7 +91,10 @@ where
             spec = S::LABEL,
         )
     )]
-    async fn dispatch_loop(mut self, mut response: AsyncResponse<ObjectApiWatchResponse>) {
+    async fn dispatch_loop(
+        mut self,
+        mut response: AsyncResponse<ObjectApiWatchResponse, ObjectDecoder>,
+    ) {
         use tokio::select;
 
         debug!("{} starting dispatch loop", S::LABEL);
@@ -112,10 +116,18 @@ where
 
                     match item {
                         Some(Ok(watch_response)) => {
-                            let update: WatchResponse<S> = watch_response.into();
-                            if let Err(err) = self.sync_metadata(update.inner()).await {
-                                error!("Processing updates: {}", err);
+                            let update_result: Result<WatchResponse<S>,_> = watch_response.try_into();
+                            match update_result {
+                                Ok(update) => {
+                                    if let Err(err) = self.sync_metadata(update.inner()).await {
+                                        error!("Processing updates: {}", err);
+                                    }
+                                },
+                                Err(err) => {
+                                    error!("Decoding metadata update response, skipping: {}", err);
+                                }
                             }
+
                         },
                         Some(Err(err)) => {
                             error!("Receiving response, ending: {}", err);

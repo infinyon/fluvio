@@ -6,7 +6,7 @@
 
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, trace, instrument};
+use tracing::{trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;

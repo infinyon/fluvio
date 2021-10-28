@@ -41,6 +41,10 @@ pub mod validate {
 }
 mod convert {
 
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+    use std::convert::TryInto;
+
     use crate::ObjectDecoder;
     use crate::{AdminSpec, CreateDecoder, NameFilter};
     use crate::objects::{
@@ -72,6 +76,17 @@ mod convert {
     impl From<WatchResponse<TopicSpec>> for ObjectApiWatchResponse {
         fn from(response: WatchResponse<TopicSpec>) -> Self {
             ObjectApiWatchResponse::Topic(response)
+        }
+    }
+
+    impl TryInto<WatchResponse<TopicSpec>> for ObjectApiWatchResponse {
+        type Error = IoError;
+
+        fn try_into(self) -> Result<WatchResponse<TopicSpec>, Self::Error> {
+            match self {
+                ObjectApiWatchResponse::Topic(response) => Ok(response),
+                _ => Err(IoError::new(ErrorKind::Other, "not  topic")),
+            }
         }
     }
 }

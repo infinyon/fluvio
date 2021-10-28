@@ -2,6 +2,10 @@ pub use fluvio_controlplane_metadata::spu::*;
 
 mod convert {
 
+    use std::convert::TryInto;
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+
     use fluvio_controlplane_metadata::spu::CustomSpuKey;
 
     use crate::ObjectDecoder;
@@ -48,6 +52,17 @@ mod convert {
     impl From<WatchResponse<SpuSpec>> for ObjectApiWatchResponse {
         fn from(response: WatchResponse<SpuSpec>) -> Self {
             ObjectApiWatchResponse::Spu(response)
+        }
+    }
+
+    impl TryInto<WatchResponse<SpuSpec>> for ObjectApiWatchResponse {
+        type Error = IoError;
+
+        fn try_into(self) -> Result<WatchResponse<SpuSpec>, Self::Error> {
+            match self {
+                ObjectApiWatchResponse::Spu(response) => Ok(response),
+                _ => Err(IoError::new(ErrorKind::Other, "not  spu")),
+            }
         }
     }
 }

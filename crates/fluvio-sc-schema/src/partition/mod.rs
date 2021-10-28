@@ -2,6 +2,10 @@ pub use fluvio_controlplane_metadata::partition::*;
 
 mod convert {
 
+    use std::io::Error as IoError;
+    use std::io::ErrorKind;
+    use std::convert::TryInto;
+
     use crate::{
         AdminSpec, NameFilter, ObjectDecoder,
         objects::{
@@ -38,6 +42,17 @@ mod convert {
                 ObjectApiWatchResponse::Partition(response),
                 PartitionSpec::object_decoder(),
             )
+        }
+    }
+
+    impl TryInto<WatchResponse<PartitionSpec>> for ObjectApiWatchResponse {
+        type Error = IoError;
+
+        fn try_into(self) -> Result<WatchResponse<PartitionSpec>, Self::Error> {
+            match self {
+                ObjectApiWatchResponse::Partition(response) => Ok(response),
+                _ => Err(IoError::new(ErrorKind::Other, "not  partition")),
+            }
         }
     }
 }
