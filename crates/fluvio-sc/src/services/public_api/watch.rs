@@ -224,8 +224,7 @@ where
 
         let response: WatchResponse<S> = WatchResponse::new(updates);
         let (res, mw): (ObjectApiWatchResponse, ObjectDecoder) = response.into();
-        let resp_msg: ResponseMessage<ObjectApiWatchResponse, M> =
-            ResponseMessage::from_header_with_mw(&self.header, res, self.middleware.clone());
+        let resp_msg = ResponseMessage::from_header_with_mw(&self.header, res, mw);
 
         // try to send response, if it fails then we need to end
         if let Err(err) = self

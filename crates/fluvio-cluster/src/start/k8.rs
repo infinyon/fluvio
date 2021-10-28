@@ -1005,7 +1005,7 @@ impl ClusterInstaller {
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
 
-            let spu = admin.list::<SpuSpec>(vec![]).await?;
+            let spu = admin.list::<SpuSpec, _>([]).await?;
 
             debug!(?spu);
 

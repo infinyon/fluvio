@@ -187,15 +187,24 @@ mod object_macro {
     }
 
     /// Macro to convert request to ObjectApi
+    /// This should generate code such as:
+    /// impl From<WatchRequest<TopicSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
+    /// fn from(req: WatchRequest<TopicSpec>) -> Self {
+    ///    (
+    ///       ObjectApiWatchRequest::Topic(req),
+    ///        TopicSpec::object_decoder(),
+    ///    )
+    /// }
+    /// ObjectFrom!(WatchRequest, Topic);
     macro_rules! ObjectFrom {
         ($from:ident,$spec:ident,$dec:ty) => {
             paste::paste! {
 
-                impl From<$from<[<$spec Spec>]>> for (crate::objects::[<ObjectApi $from>],$dec) {
+                impl From<$from<[<$spec Spec>]>> for (crate::objects::[<ObjectApi $from>],crate::[<$dec Decoder>]) {
                     fn from(fr: $from<[<$spec Spec>]>) -> Self {
                         (
                             crate::objects::[<ObjectApi $from>]::$spec(fr),
-                            [<$spec Spec>]::object_decoder(),
+                            [<$spec Spec>]::[<$dec:lower _decoder>](),
                         )
                     }
                 }
@@ -203,7 +212,7 @@ mod object_macro {
         };
 
         ($from:ident,$spec:ident) => {
-            crate::objects::ObjectFrom!($from, $spec, crate::ObjectDecoder);
+            crate::objects::ObjectFrom!($from, $spec,Object);
         };
     }
 
