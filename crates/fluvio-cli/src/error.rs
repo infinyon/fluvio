@@ -111,6 +111,10 @@ impl CliError {
                     println!("Topic already exists");
                     Ok(())
                 }
+                ApiError::Code(ErrorCode::ManagedConnectorAlreadyExists, _) => {
+                    println!("Connector already exists");
+                    Ok(())
+                }
                 ApiError::Code(ErrorCode::TopicNotFound, _) => {
                     println!("Topic not found");
                     Ok(())

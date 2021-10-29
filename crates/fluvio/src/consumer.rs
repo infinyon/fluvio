@@ -733,6 +733,20 @@ impl ConsumerConfigBuilder {
         self
     }
 
+    /// Adds a SmartStream filter_map to this ConsumerConfig
+    pub fn wasm_filter_map<T: Into<Vec<u8>>>(
+        &mut self,
+        filter_map: T,
+        params: BTreeMap<String, String>,
+    ) -> &mut Self {
+        self.wasm_module(SmartStreamPayload {
+            wasm: SmartStreamWasm::Raw(filter_map.into()),
+            kind: SmartStreamKind::FilterMap,
+            params: params.into(),
+        });
+        self
+    }
+
     /// Adds a SmartStream array_map to this ConsumerConfig
     pub fn wasm_array_map<T: Into<Vec<u8>>>(
         &mut self,

@@ -1,0 +1,19 @@
+# This list is approximately sorted for dependency resolution
+# Used by publish crate and crate version check scripts
+
+PUBLISH_CRATES=(
+    fluvio-smartstream-derive
+    fluvio-types
+    fluvio-protocol-derive
+    fluvio-protocol
+    fluvio-dataplane-protocol
+    fluvio-socket
+    fluvio-stream-model
+    fluvio-controlplane-metadata
+    fluvio-spu-schema
+    fluvio-sc-schema
+    fluvio
+    fluvio-stream-dispatcher
+    fluvio-package-index
+    fluvio-extension-common
+)

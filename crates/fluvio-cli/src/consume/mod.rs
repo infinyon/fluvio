@@ -20,7 +20,8 @@ use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
-    format_text_record, format_binary_record, format_dynamic_record, format_raw_record, format_json,
+    format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
+    format_json, print_table_record,
 };
 use handlebars::Handlebars;
 
@@ -106,6 +107,10 @@ pub struct ConsumeOpt {
     /// Path to a SmartStream map wasm file
     #[structopt(long, group("smartstream"))]
     pub map: Option<PathBuf>,
+
+    /// Path to a SmartStream filter_map wasm file
+    #[structopt(long, group("smartstream"))]
+    pub filter_map: Option<PathBuf>,
 
     /// Path to a SmartStream array_map wasm file
     #[structopt(long, group("smartstream"))]
@@ -194,6 +199,10 @@ impl ConsumeOpt {
             let buffer = std::fs::read(map_path)?;
             debug!(len = buffer.len(), "read array_map bytes");
             builder.wasm_array_map(buffer, extra_params);
+        } else if let Some(filter_map_path) = &self.filter_map {
+            let buffer = std::fs::read(filter_map_path)?;
+            debug!(len = buffer.len(), "read filter-map bytes");
+            builder.wasm_filter_map(buffer, extra_params);
         } else {
             match (&self.aggregate, &self.initial) {
                 (Some(wasm_path), Some(acc_path)) => {
@@ -247,6 +256,8 @@ impl ConsumeOpt {
             }
         };
 
+        // This is used by table output, to print the table titles only once
+        let mut record_count = 0;
         while let Some(result) = stream.next().await {
             let result: std::result::Result<Record, _> = result;
             let record = match result {
@@ -258,7 +269,8 @@ impl ConsumeOpt {
                 Err(other) => return Err(other.into()),
             };
 
-            self.print_record(templates.as_ref(), &record);
+            self.print_record(templates.as_ref(), &record, record_count);
+            record_count += 1;
         }
 
         debug!("fetch loop exited");
@@ -266,7 +278,7 @@ impl ConsumeOpt {
     }
 
     /// Process fetch topic response based on output type
-    pub fn print_record(&self, templates: Option<&Handlebars>, record: &Record) {
+    pub fn print_record(&self, templates: Option<&Handlebars>, record: &Record, count: i32) {
         let formatted_key = record
             .key()
             .map(|key| String::from_utf8_lossy(key).to_string())
@@ -284,6 +296,9 @@ impl ConsumeOpt {
                 Some(format_dynamic_record(record.value()))
             }
             (Some(ConsumeOutputType::raw), None) => Some(format_raw_record(record.value())),
+            (Some(ConsumeOutputType::table), None) => {
+                Some(print_table_record(record.value(), count))
+            }
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
                 let object = serde_json::json!({
@@ -296,15 +311,18 @@ impl ConsumeOpt {
             }
         };
 
-        match formatted_value {
-            Some(value) if self.key_value => {
-                println!("[{}] {}", formatted_key, value);
+        // If the consume type is table, we don't want to accidentally print a newline
+        if self.output != Some(ConsumeOutputType::table) {
+            match formatted_value {
+                Some(value) if self.key_value => {
+                    println!("[{}] {}", formatted_key, value);
+                }
+                Some(value) => {
+                    println!("{}", value);
+                }
+                // (Some(_), None) only if JSON cannot be printed, so skip.
+                _ => debug!("Skipping record that cannot be formatted"),
             }
-            Some(value) => {
-                println!("{}", value);
-            }
-            // (Some(_), None) only if JSON cannot be printed, so skip.
-            _ => debug!("Skipping record that cannot be formatted"),
         }
     }
 
@@ -413,6 +431,7 @@ arg_enum! {
         binary,
         json,
         raw,
+        table,
     }
 }
 

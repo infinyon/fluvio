@@ -9,6 +9,7 @@ use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instan
 
 use crate::smartstream::filter::SmartStreamFilter;
 use crate::smartstream::map::SmartStreamMap;
+use crate::filter_map::SmartStreamFilterMap;
 use crate::smartstream::array_map::SmartStreamArrayMap;
 use crate::smartstream::aggregate::SmartStreamAggregate;
 use dataplane::core::{Encoder, Decoder};
@@ -21,6 +22,7 @@ mod memory;
 pub mod filter;
 pub mod map;
 pub mod array_map;
+pub mod filter_map;
 pub mod aggregate;
 pub mod file_batch;
 
@@ -91,6 +93,15 @@ impl SmartStreamModule {
     ) -> Result<SmartStreamMap> {
         let map = SmartStreamMap::new(engine, self, params)?;
         Ok(map)
+    }
+
+    pub fn create_filter_map(
+        &self,
+        engine: &SmartEngine,
+        params: SmartStreamExtraParams,
+    ) -> Result<SmartStreamFilterMap> {
+        let filter_map = SmartStreamFilterMap::new(engine, self, params)?;
+        Ok(filter_map)
     }
 
     pub fn create_array_map(

@@ -260,7 +260,6 @@ jobs:
       - name: Crate version check
         if: ${{ matrix.check == 'crate_version' }}
         run: |
-          cargo install cargo-download
           ./release-scripts/test-crate-version.sh
 
   check_wasm:

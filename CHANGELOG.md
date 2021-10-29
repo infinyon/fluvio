@@ -1,6 +1,9 @@
 # Release Notes
 
 ## Platform Version 0.9.13 - UNRELEASED
+* Fix connector create with `create_topic` option to succeed if topic already exists. ([#1823](https://github.com/infinyon/fluvio/pull/1823))
+* Add `#[smartstream(filter_map)]` for filtering and transforming at the same time. ([#1826](https://github.com/infinyon/fluvio/issues/1826))
+* Add table display output option to consumer for json objects ([#1642](https://github.com/infinyon/fluvio/issues/1642))
 
 ## Platform Version 0.9.12 - 2021-10-27
 * Add examples for ArrayMap. ([#1804](https://github.com/infinyon/fluvio/issues/1804))
