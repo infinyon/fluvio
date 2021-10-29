@@ -150,9 +150,12 @@ mod test {
     fn test_watch_response_encode_decoding() {
         use dataplane::api::Request;
 
+        fluvio_future::subscriber::init_logger();
+
         let (res, mw) = create_res();
         let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
         header.set_client_id("test");
+        header.set_correlation_id(11);
         let res_msg = ResponseMessage::from_header_with_mw(&header, res, mw);
 
         let mut src = vec![];

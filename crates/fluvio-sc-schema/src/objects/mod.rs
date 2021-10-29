@@ -146,44 +146,53 @@ mod object_macro {
                         T: dataplane::bytes::Buf,
 
                     {
+                        tracing::trace!(version,"decoding object");
                         use crate::AdminObjectDecoder;
 
                         if mw.is_topic() {
+                            tracing::trace!("detected topic");
                             let mut request = $api::<crate::topic::TopicSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::Topic(request);
                             return Ok(())
                         } else if mw.is_spu() {
+                            tracing::trace!("detected spu");
                             let mut request = $api::<crate::spu::SpuSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::Spu(request);
                             return Ok(())
                         } else if mw.is_table() {
+                            tracing::trace!("detected table");
                             let mut request = $api::<crate::table::TableSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::Table(request);
                             return Ok(())
                         } else if mw.is_custom_spu() {
+                            tracing::trace!("detected custom spu");
                             let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::CustomSpu(request);
                             return Ok(())
                         } else if mw.is_spg() {
+                            tracing::trace!("detected custom spu");
                             let mut request = $api::<crate::spg::SpuGroupSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::SpuGroup(request);
                             return Ok(())
                         } else if mw.is_smart_module(){
+                            tracing::trace!("detected smartmodule");
                             let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::SmartModule(request);
                             return Ok(())
                         } else if mw.is_partition(){
+                            tracing::trace!("detected partition");
                             let mut request = $api::<crate::partition::PartitionSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::Partition(request);
                             Ok(())
                         } else if mw.is_connector(){
+                            tracing::trace!("detected connector");
                             let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::ManagedConnector(request);

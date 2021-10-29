@@ -105,12 +105,14 @@ where
     where
         T: Buf,
     {
+        trace!(version = version, "start decoding correlation");
         let mut correlation_id: i32 = 0;
         correlation_id.decode(src, version)?;
-        trace!(correlation_id, "using correlation id");
 
+        trace!(version = version, "starting decoding middleware");
         let mut middleware = M::default();
         middleware.decode(src, version)?;
+        trace!(version = version, "starting decoding response");
         let response = P::decode_from_with_middleware(src, &middleware, version)?;
         Ok(ResponseMessage {
             correlation_id,
@@ -126,21 +128,26 @@ where
     M: RequestMiddleWare,
 {
     fn write_size(&self, version: Version) -> usize {
-        self.correlation_id.write_size(version) + self.response.write_size(version)
+        self.correlation_id.write_size(version)
+            + self.middleware.write_size(version)
+            + self.response.write_size(version)
     }
 
     fn encode<T>(&self, out: &mut T, version: Version) -> Result<(), IoError>
     where
         T: BufMut,
     {
-        let len = self.write_size(version);
         trace!(
             "encoding kf response: {} version: {}, len: {}",
             std::any::type_name::<P>(),
             version,
-            len
+            len = self.write_size(version)
         );
+        trace!(self.correlation_id, "writing correlation id");
         self.correlation_id.encode(out, version)?;
+        trace!(verion = version, "writing middleware");
+        self.middleware.encode(out, version)?;
+        trace!(version = version, "writing middleware");
         self.response.encode(out, version)?;
         Ok(())
     }

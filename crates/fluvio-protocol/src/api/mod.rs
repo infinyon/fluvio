@@ -58,6 +58,7 @@ where
     where
         T: Buf,
     {
+        trace!("using non object decoding");
         self.decode(src, version)
     }
 }
