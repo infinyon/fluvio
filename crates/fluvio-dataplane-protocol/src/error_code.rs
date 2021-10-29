@@ -14,6 +14,7 @@ use crate::smartstream::SmartStreamRuntimeError;
 
 #[repr(i16)]
 #[derive(thiserror::Error, Encoder, Decoder, PartialEq, Debug, Clone)]
+#[non_exhaustive]
 pub enum ErrorCode {
     #[fluvio(tag = -1)]
     #[error("An unknown server error occurred")]
