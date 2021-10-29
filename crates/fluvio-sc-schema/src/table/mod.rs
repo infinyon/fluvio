@@ -2,7 +2,9 @@ pub use fluvio_controlplane_metadata::table::*;
 
 mod convert {
 
-    use crate::objects::{ListResponse, ObjectFrom, ObjectTryFrom, WatchRequest};
+    use crate::objects::{
+        CreateRequest, DeleteRequest, ListResponse, ObjectFrom, ObjectTryFrom, WatchRequest,
+    };
     use crate::{
         AdminSpec, NameFilter,
         objects::{ListRequest, Metadata, WatchResponse},
@@ -21,11 +23,12 @@ mod convert {
         }
     }
 
+    ObjectFrom!(CreateRequest, Table, Create);
     ObjectFrom!(WatchRequest, Table);
     ObjectFrom!(WatchResponse, Table);
-
     ObjectFrom!(ListRequest, Table);
     ObjectFrom!(ListResponse, Table);
+    ObjectFrom!(DeleteRequest, Table);
 
     ObjectTryFrom!(WatchResponse, Table);
     ObjectTryFrom!(ListResponse, Table);

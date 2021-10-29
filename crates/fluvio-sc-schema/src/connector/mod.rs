@@ -5,8 +5,8 @@ mod convert {
     use crate::{
         AdminSpec, NameFilter,
         objects::{
-            CreateRequest, ListRequest, ListResponse, Metadata, ObjectFrom, ObjectTryFrom,
-            WatchRequest, WatchResponse,
+            CreateRequest, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
+            ObjectTryFrom, WatchRequest, WatchResponse,
         },
     };
     use super::ManagedConnectorSpec;
@@ -25,9 +25,9 @@ mod convert {
     ObjectFrom!(CreateRequest, ManagedConnector, Create);
     ObjectFrom!(WatchRequest, ManagedConnector);
     ObjectFrom!(WatchResponse, ManagedConnector);
-
     ObjectFrom!(ListRequest, ManagedConnector);
     ObjectFrom!(ListResponse, ManagedConnector);
+    ObjectFrom!(DeleteRequest, ManagedConnector);
 
     ObjectTryFrom!(WatchResponse, ManagedConnector);
     ObjectTryFrom!(ListResponse, ManagedConnector);

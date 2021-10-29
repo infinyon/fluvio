@@ -34,7 +34,9 @@ impl CreateTableOpt {
 
         debug!("creating table: {} spec: {:#?}", self.name, table_spec);
         let admin = fluvio.admin().await;
-        admin.create(self.name.clone(), false, table_spec).await?;
+        admin
+            .create::<TableSpec>(self.name.clone(), false, table_spec)
+            .await?;
         println!("table \"{}\" created", self.name);
 
         Ok(())

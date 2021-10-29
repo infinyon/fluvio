@@ -42,6 +42,7 @@ pub mod validate {
 mod convert {
 
     use crate::objects::CreateRequest;
+    use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
     use crate::{AdminSpec, CreateDecoder, NameFilter};
@@ -63,9 +64,9 @@ mod convert {
     ObjectFrom!(CreateRequest, Topic, Create);
     ObjectFrom!(WatchRequest, Topic);
     ObjectFrom!(WatchResponse, Topic);
-
     ObjectFrom!(ListRequest, Topic);
     ObjectFrom!(ListResponse, Topic);
+    ObjectFrom!(DeleteRequest, Topic);
 
     ObjectTryFrom!(WatchResponse, Topic);
     ObjectTryFrom!(ListResponse, Topic);

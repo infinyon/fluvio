@@ -5,8 +5,8 @@ mod convert {
     use crate::{
         AdminSpec, NameFilter,
         objects::{
-            ListRequest, ListResponse, Metadata, ObjectFrom, ObjectTryFrom, WatchRequest,
-            WatchResponse,
+            CreateRequest, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
+            ObjectTryFrom, WatchRequest, WatchResponse,
         },
     };
     use super::SmartModuleSpec;
@@ -24,11 +24,12 @@ mod convert {
         }
     }
 
+    ObjectFrom!(CreateRequest, SmartModule, Create);
     ObjectFrom!(WatchRequest, SmartModule);
     ObjectFrom!(WatchResponse, SmartModule);
-
     ObjectFrom!(ListRequest, SmartModule);
     ObjectFrom!(ListResponse, SmartModule);
+    ObjectFrom!(DeleteRequest, SmartModule);
 
     ObjectTryFrom!(WatchResponse, SmartModule);
     ObjectTryFrom!(ListResponse, SmartModule);
