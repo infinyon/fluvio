@@ -1,5 +1,4 @@
-pub use fluvio_controlplane_metadata::spu::{CustomSpuSpec,CustomSpuKey};
-
+pub use fluvio_controlplane_metadata::spu::{CustomSpuSpec, CustomSpuKey};
 
 use crate::objects::CreateRequest;
 use crate::objects::DeleteRequest;
@@ -9,7 +8,6 @@ use crate::{
     AdminSpec, NameFilter,
     objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest},
 };
-
 
 impl AdminSpec for CustomSpuSpec {
     type ListFilter = NameFilter;
@@ -24,7 +22,6 @@ impl AdminSpec for CustomSpuSpec {
     }
 }
 
-
 ObjectFrom!(CreateRequest, CustomSpu, Create);
 ObjectFrom!(DeleteRequest, CustomSpu);
 ObjectFrom!(ListRequest, CustomSpu);
@@ -33,4 +30,3 @@ ObjectFrom!(WatchResponse, CustomSpu);
 
 ObjectTryFrom!(WatchResponse, CustomSpu);
 ObjectTryFrom!(ListResponse, CustomSpu);
-

@@ -159,24 +159,37 @@ mod object_macro {
                             request.decode(src, version)?;
                             *self = Self::Spu(request);
                             return Ok(())
-                        } else if mw.is_custom_spu() {
-                           // let mut request = $api::<crate::spu::CustomSpu>::default();
-                           // request.decode(src, version)?;
-                           // *self = Self::CustomSpu(request);
+                        } else if mw.is_table() {
+                            let mut request = $api::<crate::table::TableSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::Table(request);
                             return Ok(())
-
+                        } else if mw.is_custom_spu() {
+                            let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::CustomSpu(request);
+                            return Ok(())
+                        } else if mw.is_spg() {
+                            let mut request = $api::<crate::spg::SpuGroupSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::SpuGroup(request);
+                            return Ok(())
                         } else if mw.is_smart_module(){
                             let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::SmartModule(request);
                             return Ok(())
                         } else if mw.is_partition(){
-
                             let mut request = $api::<crate::partition::PartitionSpec>::default();
                             request.decode(src, version)?;
                             *self = Self::Partition(request);
-
                             Ok(())
+                        } else if mw.is_connector(){
+                            let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
+                            request.decode(src, version)?;
+                            *self = Self::ManagedConnector(request);
+                            Ok(())
+
                         } else  {
 
                             Err(std::io::Error::new(

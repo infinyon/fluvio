@@ -21,10 +21,8 @@ use crate::AdminPublicApiKey;
 use crate::objects::{
     ObjectApiListRequest, ObjectApiCreateRequest, ObjectApiWatchRequest, ObjectApiDeleteRequest,
 };
-use crate::{CreateDecoder,ObjectDecoder};
+use crate::{CreateDecoder, ObjectDecoder};
 use crate::core::Spec;
-
-
 
 #[derive(Debug)]
 pub enum AdminPublicRequest {
@@ -102,7 +100,7 @@ mod objects {
     use super::*;
 
     use dataplane::api::RequestMiddleWare;
-    use crate::AdminSpec;
+
     use crate::topic::TopicSpec;
     use crate::spu::{SpuSpec};
     use crate::smartmodule::SmartModuleSpec;
@@ -118,17 +116,6 @@ mod objects {
     #[derive(Debug, Clone, Default, Encoder, Decoder)]
     pub struct ObjectDecoder {
         ty: String,
-    }
-
-    impl ObjectDecoder {
-        pub fn new<S>() -> Self
-        where
-            S: AdminSpec,
-        {
-            Self {
-                ty: S::LABEL.to_string(),
-            }
-        }
     }
 
     impl RequestMiddleWare for ObjectDecoder {}
