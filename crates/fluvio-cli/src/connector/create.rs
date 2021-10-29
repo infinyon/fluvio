@@ -7,9 +7,13 @@
 use structopt::StructOpt;
 use tracing::debug;
 
-use fluvio::Fluvio;
-use fluvio::metadata::topic::{TopicSpec, TopicReplicaParam};
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio::{Fluvio, FluvioError};
+use fluvio::metadata::{
+    topic::{TopicSpec, TopicReplicaParam},
+    connector::ManagedConnectorSpec,
+};
+use fluvio_sc_schema::ApiError;
+use fluvio_sc_schema::errors::ErrorCode;
 
 use crate::CliError;
 use super::ConnectorConfig;
@@ -37,7 +41,14 @@ impl CreateManagedConnectorOpt {
         if config.create_topic {
             let topic_spec = TopicSpec::Computed(TopicReplicaParam::new(1, 1, false));
             debug!("topic spec: {:?}", topic_spec);
-            admin.create(config.topic, false, topic_spec).await?;
+            match admin.create(config.topic, false, topic_spec).await {
+                Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
+                    //println!("Topic already exists");
+                    Ok(())
+                }
+                Ok(_) => Ok(()),
+                Err(e) => Err(e),
+            }?;
         }
         admin.create(name.to_string(), false, spec).await?;
 

@@ -27,6 +27,21 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     debug!("creating managed connector: {}", name);
 
+    if auth_ctx
+        .global_ctx
+        .managed_connectors()
+        .store()
+        .contains_key(&name)
+        .await
+    {
+        debug!("connector already exists");
+        return Ok(Status::new(
+            name.to_string(),
+            ErrorCode::ManagedConnectorAlreadyExists,
+            Some(format!("connector '{}' already defined", name)),
+        ));
+    }
+
     if let Ok(authorized) = auth_ctx
         .auth
         .allow_type_action(ManagedConnectorSpec::OBJECT_TYPE, TypeAction::Create)

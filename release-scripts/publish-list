@@ -12,7 +12,6 @@ PUBLISH_CRATES=(
     fluvio-controlplane-metadata
     fluvio-spu-schema
     fluvio-sc-schema
-    fluvio-smartstream
     fluvio
     fluvio-stream-dispatcher
     fluvio-package-index

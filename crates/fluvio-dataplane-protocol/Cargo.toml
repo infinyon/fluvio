@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-dataplane-protocol"
-version = "0.7.5"
+version = "0.8.0"
 edition = "2018"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "data plane protocol"
