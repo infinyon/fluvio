@@ -9,6 +9,7 @@ use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instan
 
 use crate::smartstream::filter::SmartStreamFilter;
 use crate::smartstream::map::SmartStreamMap;
+use crate::filter_map::SmartStreamFilterMap;
 use crate::smartstream::array_map::SmartStreamArrayMap;
 use crate::smartstream::aggregate::SmartStreamAggregate;
 use dataplane::core::{Encoder, Decoder};
@@ -21,6 +22,7 @@ mod memory;
 pub mod filter;
 pub mod map;
 pub mod array_map;
+pub mod filter_map;
 pub mod aggregate;
 pub mod file_batch;
 
@@ -70,6 +72,7 @@ impl SmartEngine {
         let smart_module = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
         let smart_stream: Box<dyn SmartStream> = match &smart_payload.kind {
             SmartStreamKind::Filter => Box::new(smart_module.create_filter(smart_payload.params)?),
+            SmartStreamKind::FilterMap => Box::new(smart_module.create_filter_map(smart_payload.params)?),
             SmartStreamKind::Map => Box::new(smart_module.create_map(smart_payload.params)?),
             SmartStreamKind::ArrayMap => {
                 Box::new(smart_module.create_array_map(smart_payload.params)?)
@@ -104,7 +107,18 @@ impl SmartStreamModule {
         Ok(map)
     }
 
-    fn create_array_map(&self, params: SmartStreamExtraParams) -> Result<SmartStreamArrayMap> {
+    fn create_filter_map(
+        &self,
+        params: SmartStreamExtraParams,
+    ) -> Result<SmartStreamFilterMap> {
+        let filter_map = SmartStreamFilterMap::new(&self.engine, self, params)?;
+        Ok(filter_map)
+    }
+
+    fn create_array_map(
+        &self,
+        params: SmartStreamExtraParams,
+    ) -> Result<SmartStreamArrayMap> {
         let map = SmartStreamArrayMap::new(&self.engine, self, params)?;
         Ok(map)
     }
