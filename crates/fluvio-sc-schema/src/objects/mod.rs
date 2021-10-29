@@ -159,6 +159,12 @@ mod object_macro {
                             request.decode(src, version)?;
                             *self = Self::Spu(request);
                             return Ok(())
+                        } else if mw.is_custom_spu() {
+                           // let mut request = $api::<crate::spu::CustomSpu>::default();
+                           // request.decode(src, version)?;
+                           // *self = Self::CustomSpu(request);
+                            return Ok(())
+
                         } else if mw.is_smart_module(){
                             let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
                             request.decode(src, version)?;
@@ -186,7 +192,10 @@ mod object_macro {
         }
     }
 
-    /// Macro to convert request to ObjectApi
+    /// Macro to convert request with generic signature with ObjectAPI which is non generic which then can be transported
+    /// over network.
+    /// This conversion is possible because ObjectAPI (ex: ObjectApiListRequst) is built on Enum with matching object
+    /// which make it possible to convert ListRequest<TopicSpec> => ObjectApiListRequest::Topic(req)
     /// This should generate code such as:
     /// impl From<WatchRequest<TopicSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
     /// fn from(req: WatchRequest<TopicSpec>) -> Self {

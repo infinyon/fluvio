@@ -10,11 +10,13 @@ pub mod table;
 mod apis;
 mod request;
 mod response;
+mod middleware;
 
 pub use apis::AdminPublicApiKey;
 pub use request::*;
 pub use response::*;
 pub use admin::*;
+pub use middleware::*;
 
 pub mod errors {
     pub use dataplane::ErrorCode;
