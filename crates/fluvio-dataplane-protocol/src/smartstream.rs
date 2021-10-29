@@ -167,6 +167,7 @@ mod encoding {
         Filter,
         Map,
         ArrayMap,
+        FilterMap,
         Aggregate,
     }
 
