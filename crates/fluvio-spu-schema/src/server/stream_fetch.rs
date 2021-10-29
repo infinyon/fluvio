@@ -16,8 +16,6 @@ use dataplane::record::RecordSet;
 use dataplane::Isolation;
 use dataplane::smartstream::SmartStreamExtraParams;
 
-use fluvio_types::SmartModuleName;
-
 use flate2::{
     Compression,
     bufread::{GzEncoder, GzDecoder},
@@ -60,7 +58,7 @@ where
     #[fluvio(min_version = 12)]
     pub wasm_payload: Option<SmartStreamPayload>,
     #[fluvio(min_version = 16)]
-    pub named_smart_module: Option<NamedSmartModule>,
+    pub smart_module: Option<SmartModuleInvocation>,
     pub data: PhantomData<R>,
 }
 
@@ -89,10 +87,24 @@ pub struct SmartStreamPayload {
 /// This includes the WASM module name as well as the invocation being used.
 /// It also carries any data that is required for specific invocations of SmartModules.
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
-pub struct NamedSmartModule {
-    pub name: SmartModuleName,
+pub struct SmartModuleInvocation {
+    pub wasm: SmartModuleInvocationWasm,
     pub kind: SmartStreamKind,
     pub params: SmartStreamExtraParams,
+}
+
+#[derive(Debug, Clone, Encoder, Decoder)]
+pub enum SmartModuleInvocationWasm {
+    /// Name of SmartModule
+    Predefined(String),
+    /// Compressed WASM module payload using Gzip
+    AdHoc(Vec<u8>)
+}
+
+impl Default for SmartModuleInvocationWasm {
+    fn default() -> Self {
+        Self::AdHoc(Vec::new())
+    }
 }
 
 /// Indicates the type of SmartStream as well as any special data required

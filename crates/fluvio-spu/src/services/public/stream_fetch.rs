@@ -19,7 +19,7 @@ use dataplane::{
 };
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, FileStreamFetchRequest, SmartStreamKind, SmartStreamPayload, SmartStreamWasm, StreamFetchRequest, StreamFetchResponse};
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, FileStreamFetchRequest, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamPayload, SmartStreamWasm, StreamFetchRequest, StreamFetchResponse};
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
@@ -130,16 +130,30 @@ impl StreamFetchHandler {
         let wasm_payload = if let Some (wasm_payload) = msg.wasm_payload {
             Some(wasm_payload)
         } else {
-            if let Some (named_smart_module) = msg.named_smart_module {
-                if let Some (smart_module) = ctx.smart_module_localstore().spec(&named_smart_module.name) {
-                    let wasm = SmartStreamWasm::Gzip(smart_module.wasm.payload);
-                    Some(SmartStreamPayload {
-                        wasm,
-                        kind: named_smart_module.kind,
-                        params: named_smart_module.params,
-                    })
-                } else {
-                    None
+            if let Some (smart_module_invocation) = msg.smart_module {
+
+                match smart_module_invocation.wasm {
+                    SmartModuleInvocationWasm::Predefined(name) => {
+
+                        if let Some (smart_module) = ctx.smart_module_localstore().spec(&name) {
+                            let wasm = SmartStreamWasm::Gzip(smart_module.wasm.payload);
+                            Some(SmartStreamPayload {
+                                wasm,
+                                kind: smart_module_invocation.kind,
+                                params: smart_module_invocation.params,
+                            })
+                        } else {
+                            None
+                        }
+                    },
+                    SmartModuleInvocationWasm::AdHoc(bytes) => {
+                        let wasm = SmartStreamWasm::Gzip(bytes);
+                        Some(SmartStreamPayload {
+                            wasm,
+                            kind: smart_module_invocation.kind,
+                            params: smart_module_invocation.params,
+                        })
+                    }
                 }
             } else {
                 None

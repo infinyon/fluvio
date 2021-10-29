@@ -8,7 +8,7 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, NamedSmartModule, SmartStreamKind, SmartStreamPayload, SmartStreamWasm, WASM_MODULE_PERSISTENT_API, WASM_MODULE_V2_API};
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartModuleInvocation, SmartStreamKind, SmartStreamPayload, SmartStreamWasm, WASM_MODULE_PERSISTENT_API, WASM_MODULE_V2_API};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
@@ -426,13 +426,13 @@ impl PartitionConsumer {
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
-        if let Some(named_smart_module) = config.named_smart_module {
+        if let Some(smart_module) = config.smart_module {
             if stream_fetch_version < WASM_MODULE_PERSISTENT_API as i16 {
                 return Err(FluvioError::Other("SPU does not support persistent WASM".to_owned()));
             }
 
             debug!("Using persistent WASM API");
-            stream_request.named_smart_module = Some(named_smart_module);
+            stream_request.smart_module = Some(smart_module);
         }
 
         if let Some(mut module) = config.wasm_module {
@@ -687,8 +687,8 @@ pub struct ConsumerConfig {
     pub(crate) isolation: Isolation,
     #[builder(private, default, setter(into, strip_option))]
     pub(crate) wasm_module: Option<SmartStreamPayload>,
-    #[builder(private, default, setter(into, strip_option))]
-    pub(crate) named_smart_module: Option<NamedSmartModule>,
+    #[builder(default)]
+    pub(crate) smart_module: Option<SmartModuleInvocation>,
 }
 
 impl ConsumerConfig {
