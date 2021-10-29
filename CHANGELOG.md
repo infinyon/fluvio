@@ -9,6 +9,7 @@
 * Add examples for ArrayMap. ([#1804](https://github.com/infinyon/fluvio/issues/1804))
 * Report error when missing #[1462] attribute in SmartStream ([#1462](https://github.com/infinyon/fluvio/issues/1462))
 * Fix consumer read after restart #[1815] attribute in SmartStream ([#1815](https://github.com/infinyon/fluvio/issues/1815))
+* Added smartengine feature flag to fluvio client which adds ability to apply smartstream on producer. ([#1788](https://github.com/infinyon/fluvio/pull/1788))
 
 ## Platform Version 0.9.11 - 2021-10-22
 * Reconnect producer to SPU if network error. ([#770](https://github.com/infinyon/fluvio/issues/770))

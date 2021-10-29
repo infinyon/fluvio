@@ -14,7 +14,9 @@ name = "fluvio"
 path = "src/lib.rs"
 
 [features]
+default = []
 admin = ["fluvio-sc-schema/use_serde"]
+smartengine = ["fluvio-smartengine"]
 unstable = []
 
 [dependencies]
@@ -49,9 +51,11 @@ dataplane = { version = "0.8.0", path = "../fluvio-dataplane-protocol", package 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "4.0.0"
+fluvio-smartengine = { path = "../fluvio-smartengine/", optional = true}
 
 [target.'cfg(unix)'.dependencies]
 fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema", features = ["file"] }
+
 [target.'cfg(windows)'.dependencies]
 fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema" }
 

@@ -20,8 +20,7 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest, SmartStreamKind, StreamFetchRequest,
-    StreamFetchResponse,
+    DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
@@ -133,116 +132,22 @@ impl StreamFetchHandler {
         let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
             let wasm = &payload.wasm.get_raw()?;
             debug!(len = wasm.len(), "creating WASM module with bytes");
-            let module = match sm_engine.create_module_from_binary(wasm) {
-                Ok(module) => module,
-                Err(e) => {
-                    let error = SmartStreamError::InvalidWasmModule(e.to_string());
-                    let error_code = ErrorCode::SmartStreamError(error);
+            let smartstream = match sm_engine.create_module_from_payload(payload.clone()) {
+                Ok(smartstream) => smartstream,
+                Err(err) => {
+                    error!(
+                        error = err.to_string().as_str(),
+                        "Error Instantiating SmartStream"
+                    );
+                    let error_code =
+                        ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(
+                            format!("{:?}", payload.kind),
+                            err.to_string(),
+                        ));
                     send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                     return Ok(());
                 }
             };
-
-            let smartstream: Box<dyn SmartStream> = match payload.kind {
-                SmartStreamKind::Filter => {
-                    debug!("Instantiating SmartStreamFilter");
-                    let filter = match module.create_filter(&sm_engine, payload.params) {
-                        Ok(filter) => filter,
-                        Err(err) => {
-                            error!(
-                                error = err.to_string().as_str(),
-                                "Error Instantiating SmartStreamFilter"
-                            );
-                            let error_code = ErrorCode::SmartStreamError(
-                                SmartStreamError::InvalidSmartStreamModule("filter".to_string()),
-                            );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
-                            return Ok(());
-                        }
-                    };
-                    Box::new(filter)
-                }
-                SmartStreamKind::Map => {
-                    debug!("Instantiating SmartStreamMap");
-                    let map = match module.create_map(&sm_engine, payload.params) {
-                        Ok(map) => map,
-                        Err(err) => {
-                            error!(
-                                error = err.to_string().as_str(),
-                                "Error Instantiating SmartStreamMap"
-                            );
-
-                            let error_code = ErrorCode::SmartStreamError(
-                                SmartStreamError::InvalidSmartStreamModule("map".to_string()),
-                            );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
-                            return Ok(());
-                        }
-                    };
-                    Box::new(map)
-                }
-                SmartStreamKind::FilterMap => {
-                    debug!("Instantiating SmartStreamFilterMap");
-                    let filter_map = module
-                        .create_filter_map(&sm_engine, payload.params)
-                        .map_err(|err| {
-                            SocketError::Io(IoError::new(
-                                ErrorKind::Other,
-                                format!("Failed to instantiate SmartStreamFilterMap {}", err),
-                            ))
-                        })?;
-                    Box::new(filter_map)
-                }
-                SmartStreamKind::ArrayMap => {
-                    debug!("Instantiating SmartStreamArrayMap");
-                    let array_map = match module.create_array_map(&sm_engine, payload.params) {
-                        Ok(array_map) => array_map,
-                        Err(err) => {
-                            error!(
-                                error = err.to_string().as_str(),
-                                "Error Instantiating SmartStreamArrayMap"
-                            );
-                            let error_code = ErrorCode::SmartStreamError(
-                                SmartStreamError::InvalidSmartStreamModule("array_map".to_string()),
-                            );
-                            send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                .await?;
-                            return Ok(());
-                        }
-                    };
-
-                    Box::new(array_map)
-                }
-                SmartStreamKind::Aggregate { accumulator } => {
-                    debug!(
-                        accumulator_len = accumulator.len(),
-                        "Instantiating SmartStreamAggregate"
-                    );
-                    let aggregator =
-                        match module.create_aggregate(&sm_engine, payload.params, accumulator) {
-                            Ok(aggregate) => aggregate,
-                            Err(err) => {
-                                error!(
-                                    error = err.to_string().as_str(),
-                                    "Error Instantiating SmartStreamAggregate"
-                                );
-
-                                let error_code = ErrorCode::SmartStreamError(
-                                    SmartStreamError::InvalidSmartStreamModule(
-                                        "aggregate".to_string(),
-                                    ),
-                                );
-                                send_back_error(&sink, &replica, &header, stream_id, error_code)
-                                    .await?;
-                                return Ok(());
-                            }
-                        };
-                    Box::new(aggregator)
-                }
-            };
-
             (Some(smartstream), u32::MAX)
         } else {
             (None, max_bytes)
@@ -695,6 +600,7 @@ mod test {
     use dataplane::smartstream::SmartStreamType;
     use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
     use fluvio_spu_schema::server::stream_fetch::SmartStreamWasm;
+    use fluvio_spu_schema::server::stream_fetch::SmartStreamKind;
     use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
     use crate::core::GlobalContext;
     use crate::config::SpuConfig;
@@ -1823,12 +1729,12 @@ mod test {
             .expect("should get response")
             .expect("response should be Ok");
 
-        assert!(
-            matches!(
-                response.partition.error_code,
-                ErrorCode::SmartStreamError(SmartStreamError::InvalidWasmModule(_))
-            ),
-            "expected a SmartStream Module error for invalid WASM module"
+        assert_eq!(
+            response.partition.error_code,
+            ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(
+                "Filter".to_string(),
+                "failed to parse WebAssembly module".to_string()
+            ))
         );
 
         server_end_event.notify();
@@ -2208,8 +2114,11 @@ mod test {
             .expect("response should be Ok");
 
         match response.partition.error_code {
-            ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(name)) => {
-                assert_eq!(name, "filter");
+            ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(
+                name,
+                _reason,
+            )) => {
+                assert_eq!(name, "Filter");
             }
             _ => panic!("expected an InvalidSmartStreamModule error"),
         }

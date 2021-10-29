@@ -295,6 +295,42 @@ jobs:
       - name: Build WASM for ${{ matrix.wasm-crate }}
         run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --target wasm32-unknown-unknown
 
+  check_crate_feature_flags:
+    name: Check ${{matrix.features}} for (${{ matrix.wasm-crate }})
+    needs: config
+    if: ${{ needs.config.outputs.check == 'true' }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        wasm-crate:
+          - fluvio
+          - fluvio-socket
+          - fluvio-smartengine
+          - fluvio-sc-schema
+          - fluvio-protocol
+          - fluvio-spu-schema
+          - fluvio-dataplane-protocol
+          - fluvio-types
+        features:
+          - no-default-features
+          - all-features
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - name: check for ${{ matrix.wasm-crate }} with ${{matrix.features}}
+        run: cargo check --manifest-path ./crates/${{matrix.wasm-crate}}/Cargo.toml --${{matrix.features}}
+
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
     needs: config
