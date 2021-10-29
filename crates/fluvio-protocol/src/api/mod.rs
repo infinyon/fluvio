@@ -28,11 +28,13 @@ macro_rules! api_decode {
     }};
 }
 
-/*
 /// Decode with Middleware
-pub trait MiddlewareDecoder: Decoder {
+pub trait MiddlewareDecoder<M>: Decoder
+where
+    M: RequestMiddleWare,
+{
     /// decode with middleware
-    fn decode_from_with_middleware<T, M>(
+    fn decode_from_with_middleware<T>(
         src: &mut T,
         middleware: &M,
         version: Version,
@@ -40,10 +42,9 @@ pub trait MiddlewareDecoder: Decoder {
     where
         T: Buf,
         Self: Default,
-        M: RequestMiddleWare,
     {
         let mut decoder = Self::default();
-        decoder.decode_with_middleware(src, middleware, version)?;
+        decoder.decode_object(src, middleware, version)?;
         Ok(decoder)
     }
 
@@ -56,12 +57,10 @@ pub trait MiddlewareDecoder: Decoder {
     ) -> Result<(), IoError>
     where
         T: Buf,
-        M: RequestMiddleWare,
     {
         self.decode(src, version)
     }
 }
-*/
 
 pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
 where
@@ -84,7 +83,6 @@ where
     ) -> Result<(), IoError>
     where
         T: Buf,
-        M: RequestMiddleWare,
     {
         self.decode(src, version)
     }

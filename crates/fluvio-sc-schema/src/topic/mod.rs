@@ -80,7 +80,10 @@ mod test {
     use dataplane::api::{RequestHeader, RequestMessage, ResponseMessage};
     use dataplane::core::{Encoder, Decoder};
 
-    use crate::objects::{ListRequest, MetadataUpdate, ObjectApiListRequest, ObjectApiWatchRequest,ObjectApiWatchResponse, WatchResponse};
+    use crate::objects::{
+        ListRequest, MetadataUpdate, ObjectApiListRequest, ObjectApiWatchRequest,
+        ObjectApiWatchResponse, WatchResponse,
+    };
     use crate::ObjectDecoder;
     use super::*;
 
@@ -143,7 +146,6 @@ mod test {
         assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
     }
 
-
     #[test]
     fn test_watch_response_encode_decoding() {
         use dataplane::api::Request;
@@ -151,22 +153,17 @@ mod test {
         let (res, mw) = create_res();
         let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
         header.set_client_id("test");
-        let res_msg = ResponseMessage::from_header_with_mw(&header,res, mw);
+        let res_msg = ResponseMessage::from_header_with_mw(&header, res, mw);
 
         let mut src = vec![];
         res_msg.encode(&mut src, 0).expect("encoding");
 
-        /* 
-        let dec_msg: ResponseMessage<ObjectApiWatchRequest, ObjectDecoder> =
-            ResponseMessage::decode_from(
+        let dec_msg: ResponseMessage<ObjectApiWatchResponse, ObjectDecoder> =
+            ResponseMessage::decode_from_with_middleware(
                 &mut Cursor::new(&src),
-                ObjectApiListRequest::API_KEY as i16,
+                ObjectApiWatchRequest::API_KEY as i16,
             )
             .expect("decode");
-        assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
-        */
+        assert!(matches!(dec_msg.response, ObjectApiWatchResponse::Topic(_)));
     }
-
-
-
 }

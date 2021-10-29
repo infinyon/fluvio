@@ -13,6 +13,7 @@ use crate::api::RequestHeader;
 use crate::{Decoder, Encoder, Version};
 
 use super::DefaultRequestMiddleWare;
+use super::MiddlewareDecoder;
 use super::RequestMiddleWare;
 
 #[derive(Debug, Default)]
@@ -95,13 +96,12 @@ where
     }
 }
 
-/*
 impl<P, M> ResponseMessage<P, M>
 where
-    P: MiddlewareDecoder,
+    P: MiddlewareDecoder<M>,
     M: RequestMiddleWare,
 {
-    pub fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, IoError>
+    pub fn decode_from_with_middleware<T>(src: &mut T, version: Version) -> Result<Self, IoError>
     where
         T: Buf,
     {
@@ -118,36 +118,7 @@ where
             response,
         })
     }
-
-    pub fn decode_from_file<H: AsRef<Path>>(
-        file_name: H,
-        version: Version,
-    ) -> Result<Self, IoError> {
-        debug!("decoding from file: {:#?}", file_name.as_ref());
-        let mut f = File::open(file_name)?;
-        let mut buffer: [u8; 1000] = [0; 1000];
-
-        f.read_exact(&mut buffer)?;
-        let data = buffer.to_vec();
-
-        let mut src = Cursor::new(&data);
-
-        // ResponseMessage implementation of fluvio_protocol::storage::FileWrite trait first encodes the length
-        // of the ResponseMessage
-        let mut size: i32 = 0;
-        size.decode(&mut src, version)?;
-        trace!("decoded response size: {} bytes", size);
-
-        if src.remaining() < size as usize {
-            return Err(IoError::new(
-                ErrorKind::UnexpectedEof,
-                "not enought for response",
-            ));
-        }
-        Self::decode_from(&mut src, version)
-    }
 }
-*/
 
 impl<P, M> Encoder for ResponseMessage<P, M>
 where

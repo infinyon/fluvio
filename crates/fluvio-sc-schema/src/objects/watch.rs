@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use dataplane::core::{Encoder, Decoder};
-use dataplane::api::Request;
+use dataplane::api::{MiddlewareDecoder, Request};
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 
@@ -52,6 +52,10 @@ where
     pub fn inner(self) -> MetadataUpdate<S::WatchResponseType> {
         self.inner
     }
+}
+
+impl MiddlewareDecoder<ObjectDecoder> for ObjectApiWatchResponse {
+    ObjectApiDecode!(WatchResponse, ObjectDecoder);
 }
 
 /// updates on metadata
