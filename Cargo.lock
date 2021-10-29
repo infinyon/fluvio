@@ -1954,6 +1954,7 @@ dependencies = [
  "flate2",
  "fluvio-dataplane-protocol",
  "fluvio-protocol",
+ "fluvio-types",
  "log",
  "serde",
  "static_assertions",

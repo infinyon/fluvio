@@ -16,6 +16,8 @@ use dataplane::record::RecordSet;
 use dataplane::Isolation;
 use dataplane::smartstream::SmartStreamExtraParams;
 
+use fluvio_types::SmartModuleName;
+
 use flate2::{
     Compression,
     bufread::{GzEncoder, GzDecoder},
@@ -30,6 +32,7 @@ use super::SpuServerApiKey;
 // version for WASM_MODULE
 pub const WASM_MODULE_API: i16 = 11;
 pub const WASM_MODULE_V2_API: i16 = 12;
+pub const WASM_MODULE_PERSISTENT_API: i16 = 16;
 
 // version for aggregator smartstream
 pub const AGGREGATOR_API: i16 = 13;
@@ -56,6 +59,8 @@ where
     pub wasm_module: Vec<u8>,
     #[fluvio(min_version = 12)]
     pub wasm_payload: Option<SmartStreamPayload>,
+    #[fluvio(min_version = 16)]
+    pub named_smart_module: Option<NamedSmartModule>,
     pub data: PhantomData<R>,
 }
 
@@ -75,6 +80,17 @@ where
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartStreamPayload {
     pub wasm: SmartStreamWasm,
+    pub kind: SmartStreamKind,
+    pub params: SmartStreamExtraParams,
+}
+
+/// The request payload when using a Consumer SmartModule.
+///
+/// This includes the WASM module name as well as the invocation being used.
+/// It also carries any data that is required for specific invocations of SmartModules.
+#[derive(Debug, Default, Clone, Encoder, Decoder)]
+pub struct NamedSmartModule {
+    pub name: SmartModuleName,
     pub kind: SmartStreamKind,
     pub params: SmartStreamExtraParams,
 }

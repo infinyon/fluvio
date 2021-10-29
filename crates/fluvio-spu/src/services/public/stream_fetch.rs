@@ -19,10 +19,7 @@ use dataplane::{
 };
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
-use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest, SmartStreamKind, StreamFetchRequest,
-    StreamFetchResponse,
-};
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, FileStreamFetchRequest, SmartStreamKind, SmartStreamPayload, SmartStreamWasm, StreamFetchRequest, StreamFetchResponse};
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
@@ -130,7 +127,26 @@ impl StreamFetchHandler {
         let max_bytes = msg.max_bytes as u32;
         let sm_engine = ctx.smartstream_owned();
 
-        let (smartstream, max_fetch_bytes) = if let Some(payload) = msg.wasm_payload {
+        let wasm_payload = if let Some (wasm_payload) = msg.wasm_payload {
+            Some(wasm_payload)
+        } else {
+            if let Some (named_smart_module) = msg.named_smart_module {
+                if let Some (smart_module) = ctx.smart_module_localstore().spec(&named_smart_module.name) {
+                    let wasm = SmartStreamWasm::Gzip(smart_module.wasm.payload);
+                    Some(SmartStreamPayload {
+                        wasm,
+                        kind: named_smart_module.kind,
+                        params: named_smart_module.params,
+                    })
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        };
+
+        let (smartstream, max_fetch_bytes) = if let Some(payload) = wasm_payload {
             let wasm = &payload.wasm.get_raw()?;
             debug!(len = wasm.len(), "creating WASM module with bytes");
             let module = match sm_engine.create_module_from_binary(wasm) {
