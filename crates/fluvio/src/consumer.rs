@@ -8,7 +8,8 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartModuleInvocation, SmartStreamKind, SmartStreamPayload, SmartStreamWasm, WASM_MODULE_PERSISTENT_API, WASM_MODULE_V2_API};
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartStreamPayload, SmartStreamWasm, WASM_MODULE_PERSISTENT_API, WASM_MODULE_V2_API};
+pub use fluvio_spu_schema::server::stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
@@ -706,6 +707,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream filter to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_filter<T: Into<Vec<u8>>>(
         &mut self,
         filter: T,
@@ -720,6 +722,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream map to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_map<T: Into<Vec<u8>>>(
         &mut self,
         map: T,
@@ -734,6 +737,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream filter_map to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_filter_map<T: Into<Vec<u8>>>(
         &mut self,
         filter_map: T,
@@ -748,6 +752,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream array_map to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_array_map<T: Into<Vec<u8>>>(
         &mut self,
         array_map: T,
@@ -761,6 +766,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Set a WASM aggregator function and initial accumulator value
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_aggregate<T: Into<Vec<u8>>, U: Into<Vec<u8>>>(
         &mut self,
         aggregate: T,
