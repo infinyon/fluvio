@@ -23,8 +23,9 @@ use crate::objects::{
 };
 use crate::{CreateDecoder, ObjectDecoder};
 
+/// Non generic AdminRequest, This is typically used Decoding
 #[derive(Debug)]
-pub enum AdminPublicRequest {
+pub enum AdminPublicDecodedRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
     CreateRequest(RequestMessage<ObjectApiCreateRequest, CreateDecoder>),
     DeleteRequest(RequestMessage<ObjectApiDeleteRequest, ObjectDecoder>),
@@ -32,13 +33,13 @@ pub enum AdminPublicRequest {
     WatchRequest(RequestMessage<ObjectApiWatchRequest, ObjectDecoder>),
 }
 
-impl Default for AdminPublicRequest {
+impl Default for AdminPublicDecodedRequest {
     fn default() -> Self {
         Self::ApiVersionsRequest(RequestMessage::<ApiVersionsRequest>::default())
     }
 }
 
-impl ApiMessage for AdminPublicRequest {
+impl ApiMessage for AdminPublicDecodedRequest {
     type ApiKey = AdminPublicApiKey;
 
     fn decode_with_header<T>(_src: &mut T, _header: RequestHeader) -> Result<Self, IoError>
@@ -105,7 +106,7 @@ mod test {
     use dataplane::api::ApiMessage;
 
     use crate::objects::{ListRequest, ObjectApiListRequest};
-    use crate::{AdminPublicRequest, ObjectDecoder};
+    use crate::{AdminPublicDecodedRequest, ObjectDecoder};
     use crate::topic::TopicSpec;
 
     fn create_req() -> (ObjectApiListRequest, ObjectDecoder) {
@@ -114,7 +115,7 @@ mod test {
     }
 
     #[test]
-    fn test_encode_decoding() {
+    fn test_list_encode_decoding() {
         use dataplane::api::Request;
 
         let (list_req, mw) = create_req();
@@ -128,8 +129,9 @@ mod test {
         let mut src = vec![];
         req_msg.encode(&mut src, 0).expect("encoding");
 
-        let _dec_req: AdminPublicRequest =
-            AdminPublicRequest::decode_from(&mut Cursor::new(&src)).expect("decode");
-        // assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
+        let dec_req: AdminPublicDecodedRequest =
+            AdminPublicDecodedRequest::decode_from(&mut Cursor::new(&src)).expect("decode");
+
+        assert!(matches!(dec_req, AdminPublicDecodedRequest::ListRequest(_)));
     }
 }

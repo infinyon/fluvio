@@ -190,7 +190,10 @@ where
             header,
             ..Default::default()
         };
-        req.decode(src, req.header.api_version())?;
+
+        req.middleware.decode(src, version)?;
+        req.request
+            .decode_with_middleware(src, &req.middleware, version)?;
         Ok(req)
     }
 }
@@ -207,7 +210,7 @@ where
         self.header.decode(src, version)?;
         self.middleware.decode(src, version)?;
         self.request
-            .decode_object(src, &self.middleware, self.header.api_version())?;
+            .decode_with_middleware(src, &self.middleware, self.header.api_version())?;
         Ok(())
     }
 }

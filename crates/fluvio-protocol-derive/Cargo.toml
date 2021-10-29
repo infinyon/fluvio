@@ -23,4 +23,4 @@ features = ["full"]
 
 [dev-dependencies]
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
-fluvio-protocol = { version = "0.6", path = "../fluvio-protocol", features = ["derive", "api"] }
+fluvio-protocol = { version = "0.7", path = "../fluvio-protocol", features = ["derive", "api"] }

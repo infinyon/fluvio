@@ -28,20 +28,26 @@ macro_rules! api_decode {
     }};
 }
 
-pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
-where
-    M: RequestMiddleWare,
-{
-    const API_KEY: u16;
-
-    const DEFAULT_API_VERSION: i16 = 0;
-    const MIN_API_VERSION: i16 = 0;
-    const MAX_API_VERSION: i16 = -1;
-
-    type Response: Encoder + Decoder + Debug;
+/// Decode with Middleware
+pub trait MiddlewareDecoder: Decoder {
+    /// decode with middleware
+    fn decode_from_with_middleware<T, M>(
+        src: &mut T,
+        middleware: &M,
+        version: Version,
+    ) -> Result<Self, IoError>
+    where
+        T: Buf,
+        Self: Default,
+        M: RequestMiddleWare,
+    {
+        let mut decoder = Self::default();
+        decoder.decode_with_middleware(src, middleware, version)?;
+        Ok(decoder)
+    }
 
     /// used by RequestMessage to decode with middleware
-    fn decode_object<T>(
+    fn decode_with_middleware<T, M>(
         &mut self,
         src: &mut T,
         _middleware: &M,
@@ -54,6 +60,21 @@ where
         self.decode(src, version)
     }
 }
+
+pub trait Request<M = DefaultRequestMiddleWare>: Encoder + MiddlewareDecoder + Debug
+where
+    M: RequestMiddleWare,
+{
+    const API_KEY: u16;
+
+    const DEFAULT_API_VERSION: i16 = 0;
+    const MIN_API_VERSION: i16 = 0;
+    const MAX_API_VERSION: i16 = -1;
+
+    type Response: Response;
+}
+
+pub trait Response: Encoder + MiddlewareDecoder + Debug {}
 
 /// Decode RequestMessage which is usually mapped as Enum
 /// This is needed because we can't directly mapp

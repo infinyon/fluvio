@@ -22,7 +22,7 @@ default = []
 
 [dependencies]
 tracing = "0.1"
-tracing-subscriber = "0.2"
+tracing-subscriber = "0.3"
 structopt = { version = "0.3.16", default-features = false }
 thiserror = "1.0.20"
 semver = "1.0.0"
@@ -32,4 +32,4 @@ serde_json = "1.0.64"
 fluvio-future = { version = "0.3.0", features = ["subscriber"] }
 fluvio-sc = { version = "0.0.0", path = "../fluvio-sc" }
 fluvio-spu = { version = "0.0.0", path = "../fluvio-spu" }
-fluvio-extension-common = { version = "0.5.0", path = "../fluvio-extension-common" }
+fluvio-extension-common = { version = "0.6.0", path = "../fluvio-extension-common" }

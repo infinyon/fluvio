@@ -13,6 +13,7 @@ use crate::api::RequestHeader;
 use crate::{Decoder, Encoder, Version};
 
 use super::DefaultRequestMiddleWare;
+use super::MiddlewareDecoder;
 use super::RequestMiddleWare;
 
 #[derive(Debug, Default)]
@@ -46,9 +47,10 @@ impl<P, M> ResponseMessage<P, M> {
     }
 }
 
-impl<P> ResponseMessage<P, DefaultRequestMiddleWare>
+impl<P, M> ResponseMessage<P, M>
 where
-    P: Decoder,
+    P: MiddlewareDecoder,
+    M: RequestMiddleWare,
 {
     pub fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, IoError>
     where
@@ -56,12 +58,14 @@ where
     {
         let mut correlation_id: i32 = 0;
         correlation_id.decode(src, version)?;
-        trace!("decoded correlation id: {}", correlation_id);
+        trace!(correlation_id, "using correlation id");
 
-        let response = P::decode_from(src, version)?;
+        let mut middleware = M::default();
+        middleware.decode(src, version)?;
+        let response = P::decode_from_with_middleware(src, &middleware, version)?;
         Ok(ResponseMessage {
             correlation_id,
-            middleware: DefaultRequestMiddleWare::default(),
+            middleware,
             response,
         })
     }
