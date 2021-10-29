@@ -6,7 +6,7 @@
 
 use std::io::{Error, ErrorKind};
 
-use tracing::{trace, instrument};
+use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
@@ -26,6 +26,8 @@ pub async fn handle_create_managed_connector_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     let name = create.name;
     let spec = create.spec;
+
+    debug!("creating managed connector: {}", name);
 
     if auth_ctx
         .global_ctx

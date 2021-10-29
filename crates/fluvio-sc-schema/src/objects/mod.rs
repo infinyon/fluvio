@@ -129,8 +129,17 @@ mod object_macro {
                     }
 
                 }
+            }
+        }
+    }
 
-                impl dataplane::api::MiddlewareDecoder for [<ObjectApi $api>] {
+    /// Macro to generate callback from RequestMessage
+    macro_rules! ObjectApiDecode {
+
+        ($api:ident,$m:ident) => {
+
+
+            paste::paste! {
 
                     fn decode_object<T>(&mut self, src: &mut T, mw: &$m ,version: dataplane::core::Version) -> Result<(), std::io::Error>
                     where
@@ -189,8 +198,8 @@ mod object_macro {
                         }
                     }
 
-                }
             }
+
         }
     }
 
