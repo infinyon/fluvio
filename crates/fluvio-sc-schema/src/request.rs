@@ -135,19 +135,19 @@ mod objects {
 
     impl AdminObjectDecoder for ObjectDecoder {
         fn is_topic(&self) -> bool {
-            &self.ty == TopicSpec::LABEL
+            self.ty == TopicSpec::LABEL
         }
 
         fn is_spu(&self) -> bool {
-            &self.ty == SpuSpec::LABEL
+            self.ty == SpuSpec::LABEL
         }
 
         fn is_partition(&self) -> bool {
-            &self.ty == PartitionSpec::LABEL
+            self.ty == PartitionSpec::LABEL
         }
 
         fn is_smart_module(&self) -> bool {
-            &self.ty == SmartModuleSpec::LABEL
+            self.ty == SmartModuleSpec::LABEL
         }
     }
 
