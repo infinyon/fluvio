@@ -77,6 +77,7 @@ mod test {
 
     use std::io::Cursor;
 
+    use dataplane::api::RequestMessage;
     use dataplane::core::{Encoder, Decoder};
 
     use crate::objects::{ListRequest, ObjectApiListRequest};
@@ -99,13 +100,36 @@ mod test {
     #[test]
     #[should_panic]
     // ObjectApi should not be able to decode directly, always thru middleware (ObjectDecoder or CreateDecoder)
-    fn test_encoding() {
+    fn test_panic_decoding() {
         let (req, _mw) = create_req();
 
         let mut src = vec![];
         req.encode(&mut src, 0).expect("encoding");
 
         let _r = ObjectApiListRequest::decode_from(&mut Cursor::new(&src), 0).expect("decode");
-        // assert!(matches!(req_dec,ObjectApiListRequest::Topic(_)));
+    }
+
+    #[test]
+    fn test_encode_decoding() {
+        use dataplane::api::Request;
+
+        let (req, mw) = create_req();
+
+        let mut req_msg = RequestMessage::request_with_mw(req, mw);
+        req_msg
+            .get_mut_header()
+            .set_client_id("test")
+            .set_api_version(ObjectApiListRequest::API_KEY as i16);
+
+        let mut src = vec![];
+        req_msg.encode(&mut src, 0).expect("encoding");
+
+        let dec_msg: RequestMessage<ObjectApiListRequest, ObjectDecoder> =
+            RequestMessage::decode_from(
+                &mut Cursor::new(&src),
+                ObjectApiListRequest::API_KEY as i16,
+            )
+            .expect("decode");
+        assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
     }
 }
