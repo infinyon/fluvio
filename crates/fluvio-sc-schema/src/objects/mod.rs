@@ -125,7 +125,7 @@ mod object_macro {
                     where
                         T: dataplane::bytes::Buf
                     {
-                        panic!("should not be called");
+                        panic!("Object API can only be called with middleware");
                     }
 
                 }

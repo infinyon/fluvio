@@ -27,7 +27,7 @@ pub(crate) trait AdminObjectDecoder {
     fn is_connector(&self) -> bool;
 }
 
-#[derive(Debug, Clone, Default, Encoder, Decoder)]
+#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
 pub struct ObjectDecoder {
     ty: String,
 }

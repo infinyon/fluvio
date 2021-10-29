@@ -71,3 +71,41 @@ mod convert {
     ObjectTryFrom!(WatchResponse, Topic);
     ObjectTryFrom!(ListResponse, Topic);
 }
+
+#[cfg(test)]
+mod test {
+
+    use std::io::Cursor;
+
+    use dataplane::core::{Encoder, Decoder};
+
+    use crate::objects::{ListRequest, ObjectApiListRequest};
+    use crate::ObjectDecoder;
+    use super::*;
+
+    fn create_req() -> (ObjectApiListRequest, ObjectDecoder) {
+        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
+        list_request.into()
+    }
+
+    #[test]
+    fn test_from() {
+        let (req, mw) = create_req();
+
+        assert!(matches!(req, ObjectApiListRequest::Topic(_)));
+        assert_eq!(mw, ObjectDecoder::new::<TopicSpec>());
+    }
+
+    #[test]
+    #[should_panic]
+    // ObjectApi should not be able to decode directly, always thru middleware (ObjectDecoder or CreateDecoder)
+    fn test_encoding() {
+        let (req, _mw) = create_req();
+
+        let mut src = vec![];
+        req.encode(&mut src, 0).expect("encoding");
+
+        let _r = ObjectApiListRequest::decode_from(&mut Cursor::new(&src), 0).expect("decode");
+        // assert!(matches!(req_dec,ObjectApiListRequest::Topic(_)));
+    }
+}
