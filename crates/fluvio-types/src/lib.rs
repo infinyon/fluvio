@@ -19,6 +19,8 @@ pub type Name = String;
 pub type SpuName = String;
 pub type SpuId = i32;
 
+pub type SmartModuleName = String;
+
 pub type IsOnline = bool;
 pub type IsOk = bool;
 

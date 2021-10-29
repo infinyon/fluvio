@@ -1,4 +1,6 @@
+use fluvio_controlplane_metadata::message::SmartModuleMsg;
 use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_future::timer::sleep;
 use fluvio_service::ConnectInfo;
 use std::sync::Arc;
@@ -18,7 +20,7 @@ use fluvio_service::{FluvioService, wait_for_request};
 use fluvio_socket::{FluvioSocket, SocketError, FluvioSink};
 use fluvio_controlplane::{
     InternalScRequest, InternalScKey, RegisterSpuResponse, UpdateLrsRequest, UpdateReplicaRequest,
-    UpdateSpuRequest, ReplicaRemovedRequest,
+    UpdateSpuRequest, ReplicaRemovedRequest, UpdateSmartModuleRequest,
 };
 use fluvio_controlplane_metadata::message::{ReplicaMsg, Message, SpuMsg};
 
@@ -108,6 +110,7 @@ async fn dispatch_loop(
 ) -> Result<(), SocketError> {
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
+    let mut sm_spec_listener = context.smart_modules().change_listener();
 
     // send initial changes
 
@@ -119,6 +122,7 @@ async fn dispatch_loop(
 
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
+        send_smart_module_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
 
         trace!(spu_id, "waiting for SPU channel");
 
@@ -360,6 +364,60 @@ async fn send_replica_spec_changes(
     };
 
     debug!(?request, "sending replica to spu");
+
+    let mut message = RequestMessage::new_request(request);
+    message.get_mut_header().set_client_id("sc");
+
+    sink.send_request(&message).await?;
+    Ok(())
+}
+
+#[instrument(skip(sink))]
+async fn send_smart_module_changes(
+    listener: &mut K8ChangeListener<SmartModuleSpec>,
+    sink: &mut FluvioSink,
+    spu_id: SpuId,
+) -> Result<(), SocketError> {
+    use crate::stores::ChangeFlag;
+
+    if !listener.has_change() {
+        debug!("changes is empty, skipping");
+        return Ok(());
+    }
+
+    let changes = listener
+        .sync_changes_with_filter(&ChangeFlag {
+            spec: true,
+            status: false,
+            meta: true,
+        })
+        .await;
+    if changes.is_empty() {
+        debug!("spec changes is empty, skipping");
+        return Ok(());
+    }
+
+    let epoch = changes.epoch;
+
+    let is_sync_all = changes.is_sync_all();
+    let (updates, deletes) = changes.parts();
+
+    let request = if is_sync_all {
+        UpdateSmartModuleRequest::with_all(epoch, updates.into_iter().map(|sm| sm.into()).collect())
+    } else {
+        let mut changes: Vec<SmartModuleMsg> = updates
+            .into_iter()
+            .map(|sm| Message::update(sm.into()))
+            .collect();
+        let mut deletes = deletes
+            .into_iter()
+            .map(|sm| Message::delete(sm.into()))
+            .collect();
+        changes.append(&mut deletes);
+        UpdateSmartModuleRequest::with_changes(epoch, changes)
+    };
+
+    debug!(?request, "sending sm to spu");
 
     let mut message = RequestMessage::new_request(request);
     message.get_mut_header().set_client_id("sc");

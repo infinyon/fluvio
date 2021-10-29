@@ -12,6 +12,7 @@ pub use self::requests::update_replica::*;
 pub use self::requests::register_spu::*;
 pub use self::requests::update_lrs::*;
 pub use self::requests::remove::*;
+pub use self::requests::update_smart_module::*;
 
 use dataplane::api::RequestMessage;
 

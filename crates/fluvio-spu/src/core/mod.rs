@@ -3,6 +3,7 @@ mod store;
 
 pub mod spus;
 pub mod replica;
+pub mod smart_module;
 
 pub use self::global_context::{GlobalContext, ReplicaChange};
 pub use self::store::Spec;
