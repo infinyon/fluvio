@@ -14,7 +14,7 @@ use dataplane::bytes::{Buf};
 use dataplane::api::{ApiMessage, RequestHeader, RequestMessage};
 
 use dataplane::api::api_decode;
-use dataplane::core::{Encoder, Decoder};
+use dataplane::core::{Decoder};
 use dataplane::versions::ApiVersionsRequest;
 
 use crate::AdminPublicApiKey;
@@ -22,7 +22,6 @@ use crate::objects::{
     ObjectApiListRequest, ObjectApiCreateRequest, ObjectApiWatchRequest, ObjectApiDeleteRequest,
 };
 use crate::{CreateDecoder, ObjectDecoder};
-use crate::core::Spec;
 
 #[derive(Debug)]
 pub enum AdminPublicRequest {
@@ -95,89 +94,42 @@ impl ApiMessage for AdminPublicRequest {
         }
     }
 }
-mod objects {
 
-    use super::*;
+#[cfg(test)]
+mod test {
 
-    use dataplane::api::RequestMiddleWare;
+    use std::io::Cursor;
 
+    use dataplane::api::RequestMessage;
+    use dataplane::core::{Encoder, Decoder};
+    use dataplane::api::ApiMessage;
+
+    use crate::objects::{ListRequest, ObjectApiListRequest};
+    use crate::{AdminPublicRequest, ObjectDecoder};
     use crate::topic::TopicSpec;
-    use crate::spu::{SpuSpec};
-    use crate::smartmodule::SmartModuleSpec;
-    use crate::partition::PartitionSpec;
 
-    pub trait AdminObjectDecoder {
-        fn is_topic(&self) -> bool;
-        fn is_spu(&self) -> bool;
-        fn is_partition(&self) -> bool;
-        fn is_smart_module(&self) -> bool;
+    fn create_req() -> (ObjectApiListRequest, ObjectDecoder) {
+        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
+        list_request.into()
     }
 
-    #[derive(Debug, Clone, Default, Encoder, Decoder)]
-    pub struct ObjectDecoder {
-        ty: String,
-    }
+    #[test]
+    fn test_encode_decoding() {
+        use dataplane::api::Request;
 
-    impl RequestMiddleWare for ObjectDecoder {}
+        let (list_req, mw) = create_req();
 
-    impl AdminObjectDecoder for ObjectDecoder {
-        fn is_topic(&self) -> bool {
-            self.ty == TopicSpec::LABEL
-        }
+        let mut req_msg = RequestMessage::request_with_mw(list_req, mw);
+        req_msg
+            .get_mut_header()
+            .set_client_id("test")
+            .set_api_version(ObjectApiListRequest::API_KEY as i16);
 
-        fn is_spu(&self) -> bool {
-            self.ty == SpuSpec::LABEL
-        }
+        let mut src = vec![];
+        req_msg.encode(&mut src, 0).expect("encoding");
 
-        fn is_partition(&self) -> bool {
-            self.ty == PartitionSpec::LABEL
-        }
-
-        fn is_smart_module(&self) -> bool {
-            self.ty == SmartModuleSpec::LABEL
-        }
-    }
-
-    #[repr(u8)]
-    #[derive(Debug, Clone, Encoder, Decoder)]
-    pub enum CreateDecoder {
-        #[fluvio(tag = 0)]
-        TOPIC,
-        #[fluvio(tag = 1)]
-        CustomSpu,
-        #[fluvio(tag = 2)]
-        SPG = 2,
-        #[fluvio(tag = 3)]
-        ManagedConnector,
-        #[fluvio(tag = 4)]
-        SmartModule,
-        #[fluvio(tag = 5)]
-        TABLE,
-    }
-
-    impl Default for CreateDecoder {
-        fn default() -> Self {
-            Self::TOPIC
-        }
-    }
-
-    impl RequestMiddleWare for CreateDecoder {}
-
-    impl AdminObjectDecoder for CreateDecoder {
-        fn is_topic(&self) -> bool {
-            matches!(self, Self::TOPIC)
-        }
-
-        fn is_spu(&self) -> bool {
-            false
-        }
-
-        fn is_partition(&self) -> bool {
-            false
-        }
-
-        fn is_smart_module(&self) -> bool {
-            matches!(self, Self::SmartModule)
-        }
+        let _dec_req: AdminPublicRequest =
+            AdminPublicRequest::decode_from(&mut Cursor::new(&src)).expect("decode");
+        // assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
     }
 }

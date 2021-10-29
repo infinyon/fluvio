@@ -55,6 +55,9 @@ where
     }
 }
 
+/// Decode RequestMessage which is usually mapped as Enum
+/// This is needed because we can't directly mapp
+
 pub trait ApiMessage: Sized + Default {
     type ApiKey: Decoder + Debug;
 
