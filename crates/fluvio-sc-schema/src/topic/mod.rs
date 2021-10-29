@@ -77,16 +77,26 @@ mod test {
 
     use std::io::Cursor;
 
-    use dataplane::api::RequestMessage;
+    use dataplane::api::{RequestHeader, RequestMessage, ResponseMessage};
     use dataplane::core::{Encoder, Decoder};
 
-    use crate::objects::{ListRequest, ObjectApiListRequest};
+    use crate::objects::{ListRequest, MetadataUpdate, ObjectApiListRequest, ObjectApiWatchRequest,ObjectApiWatchResponse, WatchResponse};
     use crate::ObjectDecoder;
     use super::*;
 
     fn create_req() -> (ObjectApiListRequest, ObjectDecoder) {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
         list_request.into()
+    }
+
+    fn create_res() -> (ObjectApiWatchResponse, ObjectDecoder) {
+        let update = MetadataUpdate {
+            epoch: 2,
+            changes: vec![],
+            all: vec![],
+        };
+        let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
+        watch_response.into()
     }
 
     #[test]
@@ -132,4 +142,31 @@ mod test {
             .expect("decode");
         assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
     }
+
+
+    #[test]
+    fn test_watch_response_encode_decoding() {
+        use dataplane::api::Request;
+
+        let (res, mw) = create_res();
+        let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
+        header.set_client_id("test");
+        let res_msg = ResponseMessage::from_header_with_mw(&header,res, mw);
+
+        let mut src = vec![];
+        res_msg.encode(&mut src, 0).expect("encoding");
+
+        /* 
+        let dec_msg: ResponseMessage<ObjectApiWatchRequest, ObjectDecoder> =
+            ResponseMessage::decode_from(
+                &mut Cursor::new(&src),
+                ObjectApiListRequest::API_KEY as i16,
+            )
+            .expect("decode");
+        assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
+        */
+    }
+
+
+
 }

@@ -102,7 +102,7 @@ mod test {
     use std::io::Cursor;
 
     use dataplane::api::RequestMessage;
-    use dataplane::core::{Encoder, Decoder};
+    use dataplane::core::{Encoder};
     use dataplane::api::ApiMessage;
 
     use crate::objects::{ListRequest, ObjectApiListRequest};
