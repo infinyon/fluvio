@@ -1,56 +1,35 @@
-pub use fluvio_controlplane_metadata::spu::*;
+pub use fluvio_controlplane_metadata::spu::{SpuSpec};
 
-mod convert {
 
-    use fluvio_controlplane_metadata::spu::CustomSpuKey;
+use crate::objects::ListRequest;
+use crate::objects::ListResponse;
+use crate::{
+    AdminSpec, NameFilter,
+    objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest},
+};
 
-    use crate::objects::CreateRequest;
-    use crate::objects::DeleteRequest;
-    use crate::objects::ListRequest;
-    use crate::objects::ListResponse;
-    use crate::{
-        AdminSpec, NameFilter,
-        objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest},
-    };
-    use super::{CustomSpuSpec, SpuSpec};
 
-    impl AdminSpec for CustomSpuSpec {
-        type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
 
-        type DeleteKey = CustomSpuKey;
+impl AdminSpec for SpuSpec {
+    type ListFilter = NameFilter;
+    type ListType = Metadata<Self>;
 
-        type WatchResponseType = Self;
+    type DeleteKey = String;
 
-        fn create_decoder() -> crate::CreateDecoder {
-            crate::CreateDecoder::CustomSpu
-        }
+    type WatchResponseType = Self;
+
+    fn create_decoder() -> crate::CreateDecoder {
+        panic!("Spu cannot be created directly")
     }
-
-    impl AdminSpec for SpuSpec {
-        type ListFilter = NameFilter;
-        type ListType = Metadata<Self>;
-
-        type DeleteKey = String;
-
-        type WatchResponseType = Self;
-
-        fn create_decoder() -> crate::CreateDecoder {
-            panic!("Spu cannot be created directly")
-        }
-    }
-
-    ObjectFrom!(WatchRequest, Spu);
-    ObjectFrom!(WatchResponse, Spu);
-
-    ObjectFrom!(ListRequest, Spu);
-    ObjectFrom!(ListResponse, Spu);
-
-    ObjectTryFrom!(WatchResponse, Spu);
-    ObjectTryFrom!(ListResponse, Spu);
-
-    ObjectFrom!(CreateRequest, CustomSpu, Create);
-    ObjectFrom!(DeleteRequest, CustomSpu);
-    ObjectFrom!(ListRequest, CustomSpu);
-    ObjectTryFrom!(ListResponse, CustomSpu);
 }
+
+ObjectFrom!(WatchRequest, Spu);
+ObjectFrom!(WatchResponse, Spu);
+
+ObjectFrom!(ListRequest, Spu);
+ObjectFrom!(ListResponse, Spu);
+
+ObjectTryFrom!(WatchResponse, Spu);
+ObjectTryFrom!(ListResponse, Spu);
+
+

@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio::metadata::spu::CustomSpuSpec;
+use fluvio::metadata::customspu::CustomSpuSpec;
 use flv_util::socket_helpers::ServerAddress;
 use crate::cli::ClusterCliError;
 

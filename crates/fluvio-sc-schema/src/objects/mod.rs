@@ -101,7 +101,7 @@ mod object_macro {
                 pub enum [<ObjectApi $api>] {
                     Topic($api<crate::topic::TopicSpec>),
                     Spu($api<crate::spu::SpuSpec>),
-                    CustomSpu($api<crate::spu::CustomSpuSpec>),
+                    CustomSpu($api<crate::customspu::CustomSpuSpec>),
                     SmartModule($api<crate::smartmodule::SmartModuleSpec>),
                     Partition($api<crate::partition::PartitionSpec>),
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),

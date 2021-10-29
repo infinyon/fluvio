@@ -213,6 +213,11 @@ pub mod metadata {
     pub mod smartmodule {
         pub use fluvio_sc_schema::smartmodule::*;
     }
+
+    pub mod customspu {
+        pub use fluvio_sc_schema::customspu::*;
+    }
+
     pub mod spu {
         pub use fluvio_sc_schema::spu::*;
     }
