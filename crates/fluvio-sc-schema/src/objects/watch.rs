@@ -54,11 +54,15 @@ where
     }
 }
 
-/*
-impl MiddlewareDecoder<ObjectDecoder> for ObjectApiWatchResponse {
+
+impl MiddlewareDecoder for ObjectApiWatchResponse {
     ObjectApiDecode!(WatchResponse, ObjectDecoder);
+
+    type Middleware = ObjectDecoder;
+
+    
 }
-*/
+
 
 /// updates on metadata
 #[derive(Encoder, Decoder, Default, Clone, Debug)]

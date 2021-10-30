@@ -151,6 +151,8 @@ mod test {
         // this fails now because ObjectApiWatchResponse does not implement object decoder
         use dataplane::api::MiddlewareDecoder;
 
+        fluvio_future::subscriber::init_logger();
+
         let update = MetadataUpdate {
             epoch: 2,
             changes: vec![],
@@ -169,12 +171,11 @@ mod test {
         let mut src = vec![];
         obj_res.encode(&mut src, 0).expect("encoding");
 
-        /* 
-        let mut dec_obj = ObjectApiWatchResponse::default();
-        dec_obj
-            .decode_with_middleware(&mut Cursor::new(&src), &m, 0)
+        
+        let mut dec_obj = ObjectApiWatchResponse
+            ::decode_from_with_middleware(&mut Cursor::new(&src), &m, 0)
             .expect("decode");
-        */
+        
     }
 
     /* 
