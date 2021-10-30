@@ -145,9 +145,9 @@ where
         );
         trace!(self.correlation_id, "writing correlation id");
         self.correlation_id.encode(out, version)?;
-        trace!(verion = version, "writing middleware");
+        trace!(version, "writing middleware");
         self.middleware.encode(out, version)?;
-        trace!(version = version, "writing middleware");
+        trace!(version, "writing middleware");
         self.response.encode(out, version)?;
         Ok(())
     }

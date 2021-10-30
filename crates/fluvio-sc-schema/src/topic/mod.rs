@@ -77,7 +77,7 @@ mod test {
 
     use std::io::Cursor;
 
-    use dataplane::api::{RequestHeader, RequestMessage, ResponseMessage};
+    use dataplane::api::{MiddlewareDecoder, RequestHeader, RequestMessage, ResponseMessage};
     use dataplane::core::{Encoder, Decoder};
 
     use crate::objects::{
@@ -146,13 +146,10 @@ mod test {
         assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
     }
 
+    // test encoding and decoding of metadata update
     #[test]
     fn test_watch_response_encoding() {
-        // this fails now because ObjectApiWatchResponse does not implement object decoder
-        use dataplane::api::MiddlewareDecoder;
-
-        fluvio_future::subscriber::init_logger();
-
+        
         let update = MetadataUpdate {
             epoch: 2,
             changes: vec![],
@@ -166,19 +163,9 @@ mod test {
         let dec =
             WatchResponse::<TopicSpec>::decode_from(&mut Cursor::new(&src), 0).expect("decode");
         assert_eq!(dec.inner().epoch, 2);
-
-        let (obj_res, m): (ObjectApiWatchResponse, ObjectDecoder) = watch_response.into();
-        let mut src = vec![];
-        obj_res.encode(&mut src, 0).expect("encoding");
-
-        
-        let mut dec_obj = ObjectApiWatchResponse
-            ::decode_from_with_middleware(&mut Cursor::new(&src), &m, 0)
-            .expect("decode");
-        
     }
 
-    /* 
+    
     #[test]
     fn test_watch_response_encode_decoding() {
         use dataplane::api::Request;
@@ -193,7 +180,9 @@ mod test {
         let res_msg = ResponseMessage::from_header_with_mw(&header, res, mw);
 
         let mut src = vec![];
-        res_msg.encode(&mut src, 0).expect("encoding");
+        res_msg.encode(&mut src, ObjectApiWatchRequest::API_KEY as i16).expect("encoding");
+
+        assert_eq!(src.len(), res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16));
 
         let dec_msg: ResponseMessage<ObjectApiWatchResponse, ObjectDecoder> =
             ResponseMessage::decode_from_with_middleware(
@@ -203,5 +192,5 @@ mod test {
             .expect("decode");
         assert!(matches!(dec_msg.response, ObjectApiWatchResponse::Topic(_)));
     }
-    */
+    
 }
