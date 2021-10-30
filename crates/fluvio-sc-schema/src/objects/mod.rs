@@ -97,7 +97,7 @@ mod object_macro {
             paste::paste! {
 
 
-                #[derive(Debug,Encoder)]
+                #[derive(Debug)]
                 pub enum [<ObjectApi $api>] {
                     Topic($api<crate::topic::TopicSpec>),
                     Spu($api<crate::spu::SpuSpec>),
@@ -116,16 +116,152 @@ mod object_macro {
                     }
                 }
 
+                impl [<ObjectApi $api>] {
+                    fn type_string(&self) -> &'static str {
+                        use fluvio_controlplane_metadata::core::Spec;
+                        match self {
+                            Self::Topic(_) => crate::topic::TopicSpec::LABEL,
+                            Self::Spu(_) => crate::spu::SpuSpec::LABEL,
+                            Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
+                            Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
+                            Self::Partition(_) => crate::partition::PartitionSpec::LABEL,
+                            Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
+                            Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,                            
+                            Self::Table(_) => crate::table::TableSpec::LABEL,
+                            Self::Empty() => panic!("cant encode empty")
+                        }
+                    }
+                }
+
+                impl  dataplane::core::Encoder for [<ObjectApi $api>] {
+
+                    fn write_size(&self, version: dataplane::core::Version) -> usize {
+                        let type_size = self.type_string().to_owned().write_size(version);
+            
+                        type_size
+                            + match self {
+                                Self::Topic(s) => s.write_size(version),
+                                Self::Spu(s) => s.write_size(version),
+                                Self::CustomSpu(s) => s.write_size(version),
+                                Self::Partition(s) => s.write_size(version),
+                                Self::SmartModule(s) => s.write_size(version),
+                                Self::ManagedConnector(s) => s.write_size(version),
+                                Self::SpuGroup(s) => s.write_size(version),
+                                Self::Table(s) => s.write_size(version),
+                                Self::Empty() => 0,                                
+                            }
+                    }
+
+                    fn encode<T>(&self, dest: &mut T, version: dataplane::core::Version) -> Result<(), std::io::Error>
+                    where
+                        T: dataplane::bytes::BufMut,
+                    {
+                        self.type_string().to_owned().encode(dest, version)?;
+
+                        match self {
+                            Self::Topic(s) => s.encode(dest, version)?,
+                            Self::CustomSpu(s) => s.encode(dest, version)?,
+                            Self::SpuGroup(s) => s.encode(dest, version)?,
+                            Self::Spu(s) => s.encode(dest, version)?,
+                            Self::Partition(s) => s.encode(dest, version)?,
+                            Self::ManagedConnector(s) => s.encode(dest, version)?,
+                            Self::SmartModule(s) => s.encode(dest, version)?,
+                            Self::Table(s) => s.encode(dest, version)?,
+                            Self::Empty() => panic!("can't encode empty")
+                        }
+
+                        Ok(())
+                    }
+
+                }
+            
+
                 // We implement decode signature even thought this will be never called.
                 // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
                 // to provide decode implementation but shoudl be never called
                 impl  dataplane::core::Decoder for [<ObjectApi $api>] {
 
-                    fn decode<T>(&mut self, _src: &mut T, _version: dataplane::core::Version) -> Result<(),std::io::Error>
+                    fn decode<T>(&mut self, src: &mut T, version: dataplane::core::Version) -> Result<(),std::io::Error>
                     where
                         T: dataplane::bytes::Buf
                     {
-                        panic!("Object API can only be called with middleware");
+                        use fluvio_controlplane_metadata::core::Spec;
+
+                        let mut typ = "".to_owned();
+                        typ.decode(src, version)?;
+                        tracing::trace!("decoded type: {}", typ);
+                        
+                        match typ.as_ref() {
+                            crate::topic::TopicSpec::LABEL => {
+                                tracing::trace!("detected topic");
+                                let mut request = $api::<crate::topic::TopicSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Topic(request);
+                                return Ok(())
+                            }
+            
+                            crate::spu::SpuSpec::LABEL  => {
+                                tracing::trace!("detected spu");
+                                let mut request = $api::<crate::spu::SpuSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Spu(request);
+                                return Ok(())
+                            }
+            
+                            crate::table::TableSpec::LABEL => {
+                                tracing::trace!("detected table");
+                                let mut request = $api::<crate::table::TableSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Table(request);
+                                return Ok(())
+                            }
+            
+                            crate::customspu::CustomSpuSpec::LABEL => {
+                                tracing::trace!("detected custom spu");
+                                let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::CustomSpu(request);
+                                return Ok(())
+                            }
+            
+                            crate::spg::SpuGroupSpec::LABEL => {
+                                tracing::trace!("detected custom spu");
+                                let mut request = $api::<crate::spg::SpuGroupSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::SpuGroup(request);
+                                return Ok(())
+                            }
+            
+                            crate::smartmodule::SmartModuleSpec::LABEL => {
+                                tracing::trace!("detected smartmodule");
+                                let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::SmartModule(request);
+                                return Ok(())
+                            }
+            
+                            crate::partition::PartitionSpec::LABEL => {
+                                tracing::trace!("detected partition");
+                                let mut request = $api::<crate::partition::PartitionSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Partition(request);
+                                Ok(())
+                            }
+            
+                            crate::connector::ManagedConnectorSpec::LABEL => {
+                                tracing::trace!("detected connector");
+                                let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::ManagedConnector(request);
+                                Ok(())
+                            }
+            
+                            // Unexpected type
+                            _ => Err(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                format!("invalid object type {:#?}", typ),
+                            ))
+                        }
                     }
 
                 }
@@ -133,84 +269,7 @@ mod object_macro {
         }
     }
 
-    /// Macro to generate callback from RequestMessage
-    macro_rules! ObjectApiDecode {
-
-        ($api:ident,$m:ident) => {
-
-
-            paste::paste! {
-
-                    fn decode_with_middleware<T>(&mut self, src: &mut T, mw: &$m ,version: dataplane::core::Version) -> Result<(), std::io::Error>
-                    where
-                        T: dataplane::bytes::Buf,
-
-                    {
-                        tracing::trace!(version,"decoding object");
-                        use crate::AdminObjectDecoder;
-
-                        if mw.is_topic() {
-                            tracing::trace!("detected topic");
-                            let mut request = $api::<crate::topic::TopicSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::Topic(request);
-                            return Ok(())
-                        } else if mw.is_spu() {
-                            tracing::trace!("detected spu");
-                            let mut request = $api::<crate::spu::SpuSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::Spu(request);
-                            return Ok(())
-                        } else if mw.is_table() {
-                            tracing::trace!("detected table");
-                            let mut request = $api::<crate::table::TableSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::Table(request);
-                            return Ok(())
-                        } else if mw.is_custom_spu() {
-                            tracing::trace!("detected custom spu");
-                            let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::CustomSpu(request);
-                            return Ok(())
-                        } else if mw.is_spg() {
-                            tracing::trace!("detected custom spu");
-                            let mut request = $api::<crate::spg::SpuGroupSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::SpuGroup(request);
-                            return Ok(())
-                        } else if mw.is_smart_module(){
-                            tracing::trace!("detected smartmodule");
-                            let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::SmartModule(request);
-                            return Ok(())
-                        } else if mw.is_partition(){
-                            tracing::trace!("detected partition");
-                            let mut request = $api::<crate::partition::PartitionSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::Partition(request);
-                            Ok(())
-                        } else if mw.is_connector(){
-                            tracing::trace!("detected connector");
-                            let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
-                            request.decode(src, version)?;
-                            *self = Self::ManagedConnector(request);
-                            Ok(())
-
-                        } else  {
-
-                            Err(std::io::Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                format!("invalid request type {:#?}", mw),
-                            ))
-                        }
-                    }
-
-            }
-
-        }
-    }
+    
 
     /// Macro to convert request with generic signature with ObjectAPI which is non generic which then can be transported
     /// over network.
@@ -270,7 +329,6 @@ mod object_macro {
     }
 
     pub(crate) use ObjectApiEnum;
-    pub(crate) use ObjectApiDecode;
     pub(crate) use ObjectFrom;
     pub(crate) use ObjectTryFrom;
 }
