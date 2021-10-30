@@ -20,6 +20,8 @@ mod convert {
 
         type WatchResponseType = Self;
 
+        const CREATE_TYPE: u8 =2;
+
         fn create_decoder() -> crate::CreateDecoder {
             crate::CreateDecoder::SPG
         }

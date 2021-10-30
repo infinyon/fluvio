@@ -15,7 +15,7 @@ mod convert {
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;
         type WatchResponseType = Self;
-
+        const CREATE_TYPE: u8 =5;
         type DeleteKey = String;
 
         fn create_decoder() -> crate::CreateDecoder {

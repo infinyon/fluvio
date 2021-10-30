@@ -16,6 +16,7 @@ mod convert {
         type ListType = Metadata<Self>;
         type WatchResponseType = Self;
         type DeleteKey = String;
+        const CREATE_TYPE: u8 =3;
 
         fn create_decoder() -> crate::CreateDecoder {
             crate::CreateDecoder::ManagedConnector

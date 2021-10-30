@@ -55,6 +55,9 @@ mod admin {
         type WatchResponseType: Spec + Encoder + Decoder;
         type DeleteKey: Encoder + Decoder + Debug + Default;
 
+        /// this is optional encoding
+        const CREATE_TYPE: u8 =0;
+
         fn object_decoder() -> ObjectDecoder {
             ObjectDecoder::new::<Self>()
         }

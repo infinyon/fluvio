@@ -56,6 +56,8 @@ mod convert {
         type WatchResponseType = Self;
         type DeleteKey = String;
 
+        const CREATE_TYPE: u8 =0;
+
         fn create_decoder() -> crate::CreateDecoder {
             CreateDecoder::TOPIC
         }
