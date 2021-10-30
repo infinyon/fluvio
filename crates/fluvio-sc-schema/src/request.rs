@@ -21,7 +21,6 @@ use crate::AdminPublicApiKey;
 use crate::objects::{
     ObjectApiListRequest, ObjectApiCreateRequest, ObjectApiWatchRequest, ObjectApiDeleteRequest,
 };
-use crate::{CreateDecoder, ObjectDecoder};
 
 /// Non generic AdminRequest, This is typically used Decoding
 #[derive(Debug)]
@@ -65,28 +64,26 @@ impl ApiMessage for AdminPublicDecodedRequest {
         );
         match api_key {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
-            AdminPublicApiKey::Create => Ok(Self::CreateRequest(RequestMessage::<
-                ObjectApiCreateRequest,
-            >::decode_with_header(
-                src, header
-            )?)),
-            AdminPublicApiKey::Delete => Ok(Self::DeleteRequest(RequestMessage::<
-                ObjectApiDeleteRequest,
-            >::decode_with_header(
-                src, header
-            )?)),
+            AdminPublicApiKey::Create => {
+                Ok(Self::CreateRequest(
+                    RequestMessage::<ObjectApiCreateRequest>::decode_with_header(src, header)?,
+                ))
+            }
+            AdminPublicApiKey::Delete => {
+                Ok(Self::DeleteRequest(
+                    RequestMessage::<ObjectApiDeleteRequest>::decode_with_header(src, header)?,
+                ))
+            }
 
-            AdminPublicApiKey::List => Ok(Self::ListRequest(RequestMessage::<
-                ObjectApiListRequest,
-            >::decode_with_header(
-                src, header
-            )?)),
+            AdminPublicApiKey::List => Ok(Self::ListRequest(
+                RequestMessage::<ObjectApiListRequest>::decode_with_header(src, header)?,
+            )),
 
-            AdminPublicApiKey::Watch => Ok(Self::WatchRequest(RequestMessage::<
-                ObjectApiWatchRequest,
-            >::decode_with_header(
-                src, header
-            )?)),
+            AdminPublicApiKey::Watch => {
+                Ok(Self::WatchRequest(
+                    RequestMessage::<ObjectApiWatchRequest>::decode_with_header(src, header)?,
+                ))
+            }
         }
     }
 }
@@ -101,10 +98,10 @@ mod test {
     use dataplane::api::ApiMessage;
 
     use crate::objects::{ListRequest, ObjectApiListRequest};
-    use crate::{AdminPublicDecodedRequest, ObjectDecoder};
+    use crate::{AdminPublicDecodedRequest};
     use crate::topic::TopicSpec;
 
-    fn create_req() -> (ObjectApiListRequest, ObjectDecoder) {
+    fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
         list_request.into()
     }
@@ -113,9 +110,9 @@ mod test {
     fn test_list_encode_decoding() {
         use dataplane::api::Request;
 
-        let (list_req, mw) = create_req();
+        let list_req = create_req();
 
-        let mut req_msg = RequestMessage::request_with_mw(list_req, mw);
+        let mut req_msg = RequestMessage::new_request(list_req);
         req_msg
             .get_mut_header()
             .set_client_id("test")

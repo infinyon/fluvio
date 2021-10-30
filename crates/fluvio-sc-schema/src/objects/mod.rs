@@ -283,19 +283,16 @@ mod object_macro {
         ($from:ident,$spec:ident,$dec:ty) => {
             paste::paste! {
 
-                impl From<$from<[<$spec Spec>]>> for (crate::objects::[<ObjectApi $from>],crate::[<$dec Decoder>]) {
+                impl From<$from<[<$spec Spec>]>> for crate::objects::[<ObjectApi $from>] {
                     fn from(fr: $from<[<$spec Spec>]>) -> Self {
-                        (
-                            crate::objects::[<ObjectApi $from>]::$spec(fr),
-                            [<$spec Spec>]::[<$dec:lower _decoder>](),
-                        )
+                        crate::objects::[<ObjectApi $from>]::$spec(fr)
                     }
                 }
             }
         };
 
         ($from:ident,$spec:ident) => {
-            crate::objects::ObjectFrom!($from, $spec,Object);
+            crate::objects::ObjectFrom!($from, $spec, Object);
         };
     }
 

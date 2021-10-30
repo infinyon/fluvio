@@ -5,7 +5,7 @@ use std::fmt::Debug;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
-use crate::{AdminPublicApiKey, AdminSpec,Status};
+use crate::{AdminPublicApiKey, AdminSpec, Status};
 
 use super::{CreateApiEnum};
 

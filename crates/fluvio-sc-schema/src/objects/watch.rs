@@ -8,7 +8,7 @@ use dataplane::api::{Request};
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 
-use crate::{AdminPublicApiKey, AdminSpec, ObjectDecoder};
+use crate::{AdminPublicApiKey, AdminSpec};
 use crate::core::Spec;
 
 use super::{Metadata, ObjectApiEnum};
@@ -28,7 +28,6 @@ impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = ObjectApiWatchResponse;
-
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
@@ -52,8 +51,6 @@ where
         self.inner
     }
 }
-
-
 
 /// updates on metadata
 #[derive(Encoder, Decoder, Default, Clone, Debug)]

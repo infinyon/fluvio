@@ -19,10 +19,6 @@ mod convert {
         type DeleteKey = String;
 
         type ListType = Metadata<Self>;
-
-        fn create_decoder() -> crate::CreateDecoder {
-            panic!("Partition cannot be created directly")
-        }
     }
 
     ObjectFrom!(WatchRequest, Partition);

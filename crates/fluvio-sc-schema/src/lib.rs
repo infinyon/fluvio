@@ -11,13 +11,11 @@ pub mod table;
 mod apis;
 mod request;
 mod response;
-mod middleware;
 
 pub use apis::AdminPublicApiKey;
 pub use request::*;
 pub use response::*;
 pub use admin::*;
-pub use middleware::*;
 
 pub mod errors {
     pub use dataplane::ErrorCode;
@@ -41,7 +39,6 @@ mod admin {
     use std::fmt::Debug;
 
     use dataplane::core::{Encoder, Decoder};
-    use crate::{CreateDecoder, ObjectDecoder};
 
     use super::core::{Spec};
 
@@ -56,12 +53,6 @@ mod admin {
         type DeleteKey: Encoder + Decoder + Debug + Default;
 
         /// this is optional encoding
-        const CREATE_TYPE: u8 =0;
-
-        fn object_decoder() -> ObjectDecoder {
-            ObjectDecoder::new::<Self>()
-        }
-
-        fn create_decoder() -> CreateDecoder;
+        const CREATE_TYPE: u8 = 0;
     }
 }

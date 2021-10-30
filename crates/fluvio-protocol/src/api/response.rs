@@ -142,7 +142,6 @@ where
             len = self.write_size(version),
             "encoding Response<{}>",
             std::any::type_name::<P>(),
-            
         );
         trace!(self.correlation_id, "writing correlation id");
         self.correlation_id.encode(out, version)?;

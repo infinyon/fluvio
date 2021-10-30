@@ -45,7 +45,7 @@ mod convert {
     use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
     use crate::objects::ListResponse;
-    use crate::{AdminSpec, CreateDecoder, NameFilter};
+    use crate::{AdminSpec, NameFilter};
     use crate::objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest};
 
     use super::TopicSpec;
@@ -55,12 +55,6 @@ mod convert {
         type ListType = Metadata<Self>;
         type WatchResponseType = Self;
         type DeleteKey = String;
-
-        
-
-        fn create_decoder() -> crate::CreateDecoder {
-            CreateDecoder::TOPIC
-        }
     }
 
     ObjectFrom!(CreateRequest, Topic, Create);
@@ -79,24 +73,23 @@ mod test {
 
     use std::io::Cursor;
 
-    use dataplane::api::{MiddlewareDecoder, RequestHeader, RequestMessage, ResponseMessage};
+    use dataplane::api::{RequestHeader, RequestMessage, ResponseMessage};
     use dataplane::core::{Encoder, Decoder};
     use dataplane::api::Request;
-
 
     use crate::objects::{
         ListRequest, MetadataUpdate, ObjectApiListRequest, ObjectApiWatchRequest,
         ObjectApiWatchResponse, WatchResponse,
     };
-    use crate::ObjectDecoder;
+
     use super::*;
 
-    fn create_req() -> (ObjectApiListRequest, ObjectDecoder) {
+    fn create_req() -> ObjectApiListRequest {
         let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
         list_request.into()
     }
 
-    fn create_res() -> (ObjectApiWatchResponse, ObjectDecoder) {
+    fn create_res() -> ObjectApiWatchResponse {
         let update = MetadataUpdate {
             epoch: 2,
             changes: vec![],
@@ -108,17 +101,16 @@ mod test {
 
     #[test]
     fn test_from() {
-        let (req, mw) = create_req();
+        let req = create_req();
 
         assert!(matches!(req, ObjectApiListRequest::Topic(_)));
-        assert_eq!(mw, ObjectDecoder::new::<TopicSpec>());
     }
 
     #[test]
     #[should_panic]
     // ObjectApi should not be able to decode directly, always thru middleware (ObjectDecoder or CreateDecoder)
     fn test_panic_decoding() {
-        let (req, _mw) = create_req();
+        let req = create_req();
 
         let mut src = vec![];
         req.encode(&mut src, 0).expect("encoding");
@@ -130,9 +122,9 @@ mod test {
     fn test_encode_decoding() {
         use dataplane::api::Request;
 
-        let (req, mw) = create_req();
+        let req = create_req();
 
-        let mut req_msg = RequestMessage::request_with_mw(req, mw);
+        let mut req_msg = RequestMessage::new_request(req);
         req_msg
             .get_mut_header()
             .set_client_id("test")
@@ -141,19 +133,17 @@ mod test {
         let mut src = vec![];
         req_msg.encode(&mut src, 0).expect("encoding");
 
-        let dec_msg: RequestMessage<ObjectApiListRequest, ObjectDecoder> =
-            RequestMessage::decode_from(
-                &mut Cursor::new(&src),
-                ObjectApiListRequest::API_KEY as i16,
-            )
-            .expect("decode");
+        let dec_msg: RequestMessage<ObjectApiListRequest> = RequestMessage::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiListRequest::API_KEY as i16,
+        )
+        .expect("decode");
         assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
     }
 
     // test encoding and decoding of metadata update
     #[test]
     fn test_watch_response_encoding() {
-        
         fluvio_future::subscriber::init_logger();
         let update = MetadataUpdate {
             epoch: 2,
@@ -163,41 +153,47 @@ mod test {
         let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
 
         let mut src = vec![];
-        watch_response.encode(&mut src, ObjectApiWatchRequest::API_KEY as i16).expect("encoding");
+        watch_response
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
+            .expect("encoding");
         //watch_response.encode(&mut src, 0).expect("encoding");
-        println!("output: {:#?}",src);
-        let dec =
-            WatchResponse::<TopicSpec>::decode_from(&mut Cursor::new(&src), ObjectApiWatchRequest::API_KEY as i16).expect("decode");
+        println!("output: {:#?}", src);
+        let dec = WatchResponse::<TopicSpec>::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiWatchRequest::API_KEY as i16,
+        )
+        .expect("decode");
         assert_eq!(dec.inner().epoch, 2);
     }
 
-    
     #[test]
     fn test_obj_watch_response_encode_decoding() {
-        
         fluvio_future::subscriber::init_logger();
 
-        let (res, mw) = create_res();
+        let res = create_res();
 
         let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
         header.set_client_id("test");
         header.set_correlation_id(11);
-        let res_msg = ResponseMessage::from_header_with_mw(&header, res, mw);
+        let res_msg = ResponseMessage::from_header(&header, res);
 
         let mut src = vec![];
-        res_msg.encode(&mut src, ObjectApiWatchRequest::API_KEY as i16).expect("encoding");
+        res_msg
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
+            .expect("encoding");
 
-        println!("output: {:#?}",src);
+        println!("output: {:#?}", src);
 
-        assert_eq!(src.len(), res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16));
+        assert_eq!(
+            src.len(),
+            res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16)
+        );
 
-        let dec_msg: ResponseMessage<ObjectApiWatchResponse, ObjectDecoder> =
-            ResponseMessage::decode_from_with_middleware(
-                &mut Cursor::new(&src),
-                ObjectApiWatchRequest::API_KEY as i16,
-            )
-            .expect("decode");
+        let dec_msg: ResponseMessage<ObjectApiWatchResponse> = ResponseMessage::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiWatchRequest::API_KEY as i16,
+        )
+        .expect("decode");
         assert!(matches!(dec_msg.response, ObjectApiWatchResponse::Topic(_)));
     }
-    
 }

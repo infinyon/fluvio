@@ -16,13 +16,9 @@ mod convert {
         type WatchResponseType = Self;
 
         type DeleteKey = String;
-        const CREATE_TYPE: u8 =4;
+        const CREATE_TYPE: u8 = 4;
 
         type ListType = Metadata<Self>;
-
-        fn create_decoder() -> crate::CreateDecoder {
-            crate::CreateDecoder::SmartModule
-        }
     }
 
     ObjectFrom!(CreateRequest, SmartModule, Create);

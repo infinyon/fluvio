@@ -17,11 +17,7 @@ impl AdminSpec for CustomSpuSpec {
 
     type WatchResponseType = Self;
 
-    const CREATE_TYPE: u8 =1;
-
-    fn create_decoder() -> crate::CreateDecoder {
-        crate::CreateDecoder::CustomSpu
-    }
+    const CREATE_TYPE: u8 = 1;
 }
 
 ObjectFrom!(CreateRequest, CustomSpu, Create);

@@ -14,10 +14,6 @@ impl AdminSpec for SpuSpec {
     type DeleteKey = String;
 
     type WatchResponseType = Self;
-
-    fn create_decoder() -> crate::CreateDecoder {
-        panic!("Spu cannot be created directly")
-    }
 }
 
 ObjectFrom!(WatchRequest, Spu);
