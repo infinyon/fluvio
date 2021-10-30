@@ -3,7 +3,6 @@ use std::path::Path;
 use std::fs::File;
 use std::io::{Cursor, Error as IoError, ErrorKind, Read};
 use std::convert::TryFrom;
-
 use bytes::Buf;
 use tracing::{debug, trace};
 
@@ -12,8 +11,7 @@ mod response;
 
 pub use self::response::*;
 pub use self::request::*;
-
-use crate::{Encoder, Decoder, Version};
+use crate::{Encoder, Decoder};
 
 pub const MAX_BYTES: i32 = 52428800;
 
@@ -28,40 +26,7 @@ macro_rules! api_decode {
     }};
 }
 
-/// Decode with Middleware
-pub trait MiddlewareDecoder: Default {
-    type Middleware: RequestMiddleWare;
-
-    /// decode with middleware
-    fn decode_from_with_middleware<T>(
-        src: &mut T,
-        middleware: &Self::Middleware,
-        version: Version,
-    ) -> Result<Self, IoError>
-    where
-        T: Buf,
-        Self: Default,
-    {
-        let mut decoder = Self::default();
-        decoder.decode_with_middleware(src, middleware, version)?;
-        Ok(decoder)
-    }
-
-    /// used by RequestMessage to decode with middleware
-    fn decode_with_middleware<T>(
-        &mut self,
-        src: &mut T,
-        middleware: &Self::Middleware,
-        version: Version,
-    ) -> Result<(), IoError>
-    where
-        T: Buf;
-}
-
-pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
-where
-    M: Encoder + Decoder + Debug + Default,
-{
+pub trait Request: Encoder + Decoder + Debug {
     const API_KEY: u16;
 
     const DEFAULT_API_VERSION: i16 = 0;
@@ -69,23 +34,7 @@ where
     const MAX_API_VERSION: i16 = -1;
 
     type Response: Encoder + Decoder + Debug;
-
-    /// used by RequestMessage to decode with middleware
-    fn decode_with_middleware<T>(
-        &mut self,
-        src: &mut T,
-        _middleware: &M,
-        version: Version,
-    ) -> Result<(), IoError>
-    where
-        T: Buf,
-    {
-        self.decode(src, version)
-    }
 }
-
-/// Decode RequestMessage which is usually mapped as Enum
-/// This is needed because we can't directly mapp
 
 pub trait ApiMessage: Sized + Default {
     type ApiKey: Decoder + Debug;

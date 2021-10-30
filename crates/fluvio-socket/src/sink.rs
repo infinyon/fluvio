@@ -2,7 +2,6 @@ use std::fmt;
 use std::fmt::Debug;
 use std::sync::Arc;
 
-use fluvio_protocol::api::RequestMiddleWare;
 use tracing::{trace, instrument};
 use futures_util::{SinkExt};
 use async_lock::Mutex;
@@ -56,12 +55,9 @@ impl FluvioSink {
 
     /// as client, send request to server
     #[instrument(level = "trace",skip(req_msg),fields(req=?req_msg))]
-    pub async fn send_request<R, M>(
-        &mut self,
-        req_msg: &RequestMessage<R, M>,
-    ) -> Result<(), SocketError>
+    pub async fn send_request<R>(&mut self, req_msg: &RequestMessage<R>) -> Result<(), SocketError>
     where
-        RequestMessage<R, M>: FlvEncoder + Default + Debug,
+        RequestMessage<R>: FlvEncoder + Default + Debug,
     {
         (&mut self.inner).send((req_msg, 0)).await?;
         Ok(())
@@ -69,14 +65,13 @@ impl FluvioSink {
 
     #[instrument(level = "trace",skip(resp_msg),fields(resp=?resp_msg))]
     /// as server, send back response
-    pub async fn send_response<P, M>(
+    pub async fn send_response<P>(
         &mut self,
-        resp_msg: &ResponseMessage<P, M>,
+        resp_msg: &ResponseMessage<P>,
         version: Version,
     ) -> Result<(), SocketError>
     where
-        ResponseMessage<P, M>: FlvEncoder + Default + Debug,
-        M: RequestMiddleWare,
+        ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
         trace!("sending response {:#?}", &resp_msg);
         (&mut self.inner).send((resp_msg, version)).await?;
@@ -194,26 +189,22 @@ impl ExclusiveFlvSink {
         self.inner.lock().await
     }
 
-    pub async fn send_request<R, M>(
-        &self,
-        req_msg: &RequestMessage<R, M>,
-    ) -> Result<(), SocketError>
+    pub async fn send_request<R>(&self, req_msg: &RequestMessage<R>) -> Result<(), SocketError>
     where
-        RequestMessage<R, M>: FlvEncoder + Default + Debug,
+        RequestMessage<R>: FlvEncoder + Default + Debug,
     {
         let mut inner_sink = self.inner.lock().await;
         inner_sink.send_request(req_msg).await
     }
 
     /// helper method to send back response
-    pub async fn send_response<P, M>(
+    pub async fn send_response<P>(
         &mut self,
-        resp_msg: &ResponseMessage<P, M>,
+        resp_msg: &ResponseMessage<P>,
         version: Version,
     ) -> Result<(), SocketError>
     where
-        ResponseMessage<P, M>: FlvEncoder + Default + Debug,
-        M: RequestMiddleWare,
+        ResponseMessage<P>: FlvEncoder + Default + Debug,
     {
         let mut inner_sink = self.inner.lock().await;
         inner_sink.send_response(resp_msg, version).await

@@ -19,7 +19,6 @@ use async_lock::Mutex;
 use bytes::{Bytes};
 use event_listener::Event;
 use fluvio_future::net::ConnectionFd;
-use fluvio_protocol::api::RequestMiddleWare;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
@@ -121,13 +120,12 @@ impl MultiplexerSocket {
 
     /// create socket to perform request and response
     #[instrument(skip(req_msg))]
-    pub async fn send_and_receive<R, M>(
+    pub async fn send_and_receive<R>(
         &self,
-        mut req_msg: RequestMessage<R, M>,
+        mut req_msg: RequestMessage<R>,
     ) -> Result<R::Response, SocketError>
     where
-        R: Request<M>,
-        M: RequestMiddleWare,
+        R: Request,
     {
         use once_cell::sync::Lazy;
 
@@ -215,14 +213,13 @@ impl MultiplexerSocket {
 
     /// create stream response
     #[instrument(skip(self,req_msg), fields(api = R::API_KEY))]
-    pub async fn create_stream<R, M>(
+    pub async fn create_stream<R>(
         &self,
-        mut req_msg: RequestMessage<R, M>,
+        mut req_msg: RequestMessage<R>,
         queue_len: usize,
-    ) -> Result<AsyncResponse<R, M>, SocketError>
+    ) -> Result<AsyncResponse<R>, SocketError>
     where
-        R: Request<M>,
-        M: RequestMiddleWare,
+        R: Request,
     {
         let correlation_id = self.next_correlation_id();
 
@@ -258,7 +255,6 @@ impl MultiplexerSocket {
             header: req_msg.header,
             correlation_id,
             data: PhantomData,
-            data1: PhantomData,
         })
     }
 }
@@ -266,28 +262,23 @@ impl MultiplexerSocket {
 /// Implement async socket where response are send back async manner
 /// they are queued using channel
 #[pin_project(PinnedDrop)]
-pub struct AsyncResponse<R, M> {
+pub struct AsyncResponse<R> {
     #[pin]
     receiver: Receiver<Option<Bytes>>,
     header: RequestHeader,
     correlation_id: i32,
     data: PhantomData<R>,
-    data1: PhantomData<M>,
 }
 
 #[pinned_drop]
-impl<R, M> PinnedDrop for AsyncResponse<R, M> {
+impl<R> PinnedDrop for AsyncResponse<R> {
     fn drop(self: Pin<&mut Self>) {
         self.receiver.close();
         debug!("multiplexer stream: {} closed", self.correlation_id);
     }
 }
 
-impl<R, M> Stream for AsyncResponse<R, M>
-where
-    R: Request<M>,
-    M: RequestMiddleWare,
-{
+impl<R: Request> Stream for AsyncResponse<R> {
     type Item = Result<R::Response, SocketError>;
 
     #[instrument(

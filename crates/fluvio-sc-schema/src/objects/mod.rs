@@ -389,6 +389,7 @@ mod create_macro {
                         T: dataplane::bytes::BufMut,
                     {
 
+                        self.type_value().encode(dest, version)?;
                         match self {
                             Self::Topic(s) => s.encode(dest, version)?,
                             Self::CustomSpu(s) => s.encode(dest, version)?,

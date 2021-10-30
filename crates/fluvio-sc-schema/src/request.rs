@@ -55,7 +55,7 @@ impl ApiMessage for AdminPublicDecodedRequest {
         T: Buf,
     {
         let header = RequestHeader::decode_from(src, 0)?;
-
+        let version = header.api_version();
         let api_key = header.api_key().try_into()?;
         debug!(
             "decoding admin public request from: {} api: {:#?}",
@@ -64,26 +64,24 @@ impl ApiMessage for AdminPublicDecodedRequest {
         );
         match api_key {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
-            AdminPublicApiKey::Create => {
-                Ok(Self::CreateRequest(
-                    RequestMessage::<ObjectApiCreateRequest>::decode_with_header(src, header)?,
-                ))
-            }
-            AdminPublicApiKey::Delete => {
-                Ok(Self::DeleteRequest(
-                    RequestMessage::<ObjectApiDeleteRequest>::decode_with_header(src, header)?,
-                ))
-            }
+            AdminPublicApiKey::Create => Ok(Self::CreateRequest(RequestMessage::new(
+                header,
+                ObjectApiCreateRequest::decode_from(src, version)?,
+            ))),
+            AdminPublicApiKey::Delete => Ok(Self::DeleteRequest(RequestMessage::new(
+                header,
+                ObjectApiDeleteRequest::decode_from(src, version)?,
+            ))),
 
-            AdminPublicApiKey::List => Ok(Self::ListRequest(
-                RequestMessage::<ObjectApiListRequest>::decode_with_header(src, header)?,
-            )),
+            AdminPublicApiKey::List => Ok(Self::ListRequest(RequestMessage::new(
+                header,
+                ObjectApiListRequest::decode_from(src, version)?,
+            ))),
 
-            AdminPublicApiKey::Watch => {
-                Ok(Self::WatchRequest(
-                    RequestMessage::<ObjectApiWatchRequest>::decode_with_header(src, header)?,
-                ))
-            }
+            AdminPublicApiKey::Watch => Ok(Self::WatchRequest(RequestMessage::new(
+                header,
+                ObjectApiWatchRequest::decode_from(src, version)?,
+            ))),
         }
     }
 }

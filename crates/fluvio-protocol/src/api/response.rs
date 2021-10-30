@@ -12,18 +12,14 @@ use bytes::{Buf, BufMut};
 use crate::api::RequestHeader;
 use crate::{Decoder, Encoder, Version};
 
-use super::DefaultRequestMiddleWare;
-use super::MiddlewareDecoder;
-use super::RequestMiddleWare;
-
 #[derive(Debug, Default)]
-pub struct ResponseMessage<P, M = DefaultRequestMiddleWare> {
+pub struct ResponseMessage<P> {
     pub correlation_id: i32,
-    pub middleware: M,
     pub response: P,
 }
 
-impl<P> ResponseMessage<P, DefaultRequestMiddleWare> {
+impl<P> ResponseMessage<P> {
+    #[allow(unused)]
     pub fn from_header(header: &RequestHeader, response: P) -> Self {
         Self::new(header.correlation_id(), response)
     }
@@ -31,23 +27,12 @@ impl<P> ResponseMessage<P, DefaultRequestMiddleWare> {
     pub fn new(correlation_id: i32, response: P) -> Self {
         Self {
             correlation_id,
-            middleware: DefaultRequestMiddleWare::default(),
             response,
         }
     }
 }
 
-impl<P, M> ResponseMessage<P, M> {
-    pub fn from_header_with_mw(header: &RequestHeader, response: P, middleware: M) -> Self {
-        Self {
-            correlation_id: header.correlation_id(),
-            middleware,
-            response,
-        }
-    }
-}
-
-impl<P> ResponseMessage<P, DefaultRequestMiddleWare>
+impl<P> ResponseMessage<P>
 where
     P: Decoder,
 {
@@ -62,7 +47,6 @@ where
         let response = P::decode_from(src, version)?;
         Ok(ResponseMessage {
             correlation_id,
-            middleware: DefaultRequestMiddleWare::default(),
             response,
         })
     }
@@ -96,58 +80,26 @@ where
     }
 }
 
-impl<P, M> ResponseMessage<P, M>
-where
-    P: MiddlewareDecoder<Middleware = M>,
-    M: RequestMiddleWare,
-{
-    pub fn decode_from_with_middleware<T>(src: &mut T, version: Version) -> Result<Self, IoError>
-    where
-        T: Buf,
-    {
-        trace!(version = version, "start decoding correlation");
-        let mut correlation_id: i32 = 0;
-        correlation_id.decode(src, version)?;
-
-        trace!(version = version, "starting decoding middleware");
-        let mut middleware = M::default();
-        middleware.decode(src, version)?;
-        trace!(version = version, "starting decoding response");
-        let response = P::decode_from_with_middleware(src, &middleware, version)?;
-        Ok(ResponseMessage {
-            correlation_id,
-            middleware,
-            response,
-        })
-    }
-}
-
-impl<P, M> Encoder for ResponseMessage<P, M>
+impl<P> Encoder for ResponseMessage<P>
 where
     P: Encoder + Default,
-    M: RequestMiddleWare,
 {
     fn write_size(&self, version: Version) -> usize {
-        self.correlation_id.write_size(version)
-            + self.middleware.write_size(version)
-            + self.response.write_size(version)
+        self.correlation_id.write_size(version) + self.response.write_size(version)
     }
 
     fn encode<T>(&self, out: &mut T, version: Version) -> Result<(), IoError>
     where
         T: BufMut,
     {
+        let len = self.write_size(version);
         trace!(
-            version = version,
-            len = self.write_size(version),
-            "encoding Response<{}>",
+            "encoding kf response: {} version: {}, len: {}",
             std::any::type_name::<P>(),
+            version,
+            len
         );
-        trace!(self.correlation_id, "writing correlation id");
         self.correlation_id.encode(out, version)?;
-        trace!(version, "writing middleware");
-        self.middleware.encode(out, version)?;
-        trace!(version, "writing response");
         self.response.encode(out, version)?;
         Ok(())
     }

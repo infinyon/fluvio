@@ -23,8 +23,8 @@ tokio = { version = "1.3.0", features = ["macros"] }
 # Fluvio dependencies
 futures-util = { version = "0.3.5" }
 fluvio-future = { version = "0.3.0" }
-fluvio-socket = { version = "0.11.0", path = "../fluvio-socket" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = ["derive", "api", "codec"] }
+fluvio-socket = { version = "0.10.0", path = "../fluvio-socket" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.6", features = ["derive", "api", "codec"] }
 fluvio-types = { version = "0.2.3", features = ["events"], path = "../fluvio-types" }
 
 [dev-dependencies]
