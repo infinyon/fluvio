@@ -485,3 +485,154 @@ mod create_macro {
 
     pub(crate) use CreateApiEnum;
 }
+
+#[cfg(test)]
+mod test {
+
+    use std::io::Cursor;
+
+    use dataplane::api::{RequestHeader, RequestMessage, ResponseMessage};
+    use dataplane::core::{Encoder, Decoder};
+    use dataplane::api::Request;
+
+    use crate::objects::{
+        CreateRequest, ListRequest, MetadataUpdate, ObjectApiCreateRequest, ObjectApiListRequest,
+        ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
+    };
+
+    use crate::topic::TopicSpec;
+    use crate::customspu::CustomSpuSpec;
+
+    fn create_req() -> ObjectApiListRequest {
+        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
+        list_request.into()
+    }
+
+    fn create_res() -> ObjectApiWatchResponse {
+        let update = MetadataUpdate {
+            epoch: 2,
+            changes: vec![],
+            all: vec![],
+        };
+        let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
+        watch_response.into()
+    }
+
+    #[test]
+    fn test_from() {
+        let req = create_req();
+
+        assert!(matches!(req, ObjectApiListRequest::Topic(_)));
+    }
+
+    #[test]
+    fn test_encode_decoding() {
+        use dataplane::api::Request;
+
+        let req = create_req();
+
+        let mut req_msg = RequestMessage::new_request(req);
+        req_msg
+            .get_mut_header()
+            .set_client_id("test")
+            .set_api_version(ObjectApiListRequest::API_KEY as i16);
+
+        let mut src = vec![];
+        req_msg.encode(&mut src, 0).expect("encoding");
+
+        let dec_msg: RequestMessage<ObjectApiListRequest> = RequestMessage::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiListRequest::API_KEY as i16,
+        )
+        .expect("decode");
+        assert!(matches!(dec_msg.request, ObjectApiListRequest::Topic(_)));
+    }
+
+    // test encoding and decoding of metadata update
+    #[test]
+    fn test_watch_response_encoding() {
+        fluvio_future::subscriber::init_logger();
+        let update = MetadataUpdate {
+            epoch: 2,
+            changes: vec![],
+            all: vec![],
+        };
+        let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
+
+        let mut src = vec![];
+        watch_response
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
+            .expect("encoding");
+        //watch_response.encode(&mut src, 0).expect("encoding");
+        println!("output: {:#?}", src);
+        let dec = WatchResponse::<TopicSpec>::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiWatchRequest::API_KEY as i16,
+        )
+        .expect("decode");
+        assert_eq!(dec.inner().epoch, 2);
+    }
+
+    #[test]
+    fn test_obj_watch_response_encode_decoding() {
+        fluvio_future::subscriber::init_logger();
+
+        let res = create_res();
+
+        let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
+        header.set_client_id("test");
+        header.set_correlation_id(11);
+        let res_msg = ResponseMessage::from_header(&header, res);
+
+        let mut src = vec![];
+        res_msg
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
+            .expect("encoding");
+
+        println!("output: {:#?}", src);
+
+        assert_eq!(
+            src.len(),
+            res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16)
+        );
+
+        let dec_msg: ResponseMessage<ObjectApiWatchResponse> = ResponseMessage::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiWatchRequest::API_KEY as i16,
+        )
+        .expect("decode");
+        assert!(matches!(dec_msg.response, ObjectApiWatchResponse::Topic(_)));
+    }
+
+    #[test]
+    fn test_create_encode_decoding() {
+        use dataplane::api::Request;
+
+        let create: CreateRequest<CustomSpuSpec> = CreateRequest {
+            name: "test".to_string(),
+            dry_run: false,
+            spec: CustomSpuSpec::default(),
+        };
+
+        let req: ObjectApiCreateRequest = create.into();
+
+        let mut req_msg = RequestMessage::new_request(req);
+        req_msg
+            .get_mut_header()
+            .set_client_id("test")
+            .set_api_version(ObjectApiCreateRequest::API_KEY as i16);
+
+        let mut src = vec![];
+        req_msg.encode(&mut src, 0).expect("encoding");
+
+        let dec_msg: RequestMessage<ObjectApiCreateRequest> = RequestMessage::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiCreateRequest::API_KEY as i16,
+        )
+        .expect("decode");
+        assert!(matches!(
+            dec_msg.request,
+            ObjectApiCreateRequest::CustomSpu(_)
+        ));
+    }
+}
