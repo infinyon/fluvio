@@ -23,7 +23,7 @@ mod convert {
         const CREATE_TYPE: u8 = 2;
     }
 
-    ObjectFrom!(CreateRequest, SpuGroup, Create);
+    ObjectFrom!(CreateRequest, SpuGroup);
     ObjectFrom!(WatchRequest, SpuGroup);
     ObjectFrom!(WatchResponse, SpuGroup);
 

@@ -19,7 +19,7 @@ mod convert {
         const CREATE_TYPE: u8 = 3;
     }
 
-    ObjectFrom!(CreateRequest, ManagedConnector, Create);
+    ObjectFrom!(CreateRequest, ManagedConnector);
     ObjectFrom!(WatchRequest, ManagedConnector);
     ObjectFrom!(WatchResponse, ManagedConnector);
     ObjectFrom!(ListRequest, ManagedConnector);

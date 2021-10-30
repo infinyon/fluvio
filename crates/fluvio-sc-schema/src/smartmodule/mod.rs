@@ -21,7 +21,7 @@ mod convert {
         type ListType = Metadata<Self>;
     }
 
-    ObjectFrom!(CreateRequest, SmartModule, Create);
+    ObjectFrom!(CreateRequest, SmartModule);
     ObjectFrom!(WatchRequest, SmartModule);
     ObjectFrom!(WatchResponse, SmartModule);
     ObjectFrom!(ListRequest, SmartModule);

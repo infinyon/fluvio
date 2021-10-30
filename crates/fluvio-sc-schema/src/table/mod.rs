@@ -19,7 +19,7 @@ mod convert {
         type DeleteKey = String;
     }
 
-    ObjectFrom!(CreateRequest, Table, Create);
+    ObjectFrom!(CreateRequest, Table);
     ObjectFrom!(WatchRequest, Table);
     ObjectFrom!(WatchResponse, Table);
     ObjectFrom!(ListRequest, Table);

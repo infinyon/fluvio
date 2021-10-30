@@ -57,7 +57,7 @@ mod convert {
         type DeleteKey = String;
     }
 
-    ObjectFrom!(CreateRequest, Topic, Create);
+    ObjectFrom!(CreateRequest, Topic);
     ObjectFrom!(WatchRequest, Topic);
     ObjectFrom!(WatchResponse, Topic);
     ObjectFrom!(ListRequest, Topic);

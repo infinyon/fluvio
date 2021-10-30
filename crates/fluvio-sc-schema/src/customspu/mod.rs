@@ -20,7 +20,7 @@ impl AdminSpec for CustomSpuSpec {
     const CREATE_TYPE: u8 = 1;
 }
 
-ObjectFrom!(CreateRequest, CustomSpu, Create);
+ObjectFrom!(CreateRequest, CustomSpu);
 ObjectFrom!(DeleteRequest, CustomSpu);
 ObjectFrom!(ListRequest, CustomSpu);
 ObjectFrom!(ListResponse, CustomSpu);
