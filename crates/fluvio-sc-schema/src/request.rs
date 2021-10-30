@@ -27,10 +27,10 @@ use crate::{CreateDecoder, ObjectDecoder};
 #[derive(Debug)]
 pub enum AdminPublicDecodedRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-    CreateRequest(RequestMessage<ObjectApiCreateRequest, CreateDecoder>),
-    DeleteRequest(RequestMessage<ObjectApiDeleteRequest, ObjectDecoder>),
-    ListRequest(RequestMessage<ObjectApiListRequest, ObjectDecoder>),
-    WatchRequest(RequestMessage<ObjectApiWatchRequest, ObjectDecoder>),
+    CreateRequest(RequestMessage<ObjectApiCreateRequest>),
+    DeleteRequest(RequestMessage<ObjectApiDeleteRequest>),
+    ListRequest(RequestMessage<ObjectApiListRequest>),
+    WatchRequest(RequestMessage<ObjectApiWatchRequest>),
 }
 
 impl Default for AdminPublicDecodedRequest {
@@ -67,28 +67,23 @@ impl ApiMessage for AdminPublicDecodedRequest {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
             AdminPublicApiKey::Create => Ok(Self::CreateRequest(RequestMessage::<
                 ObjectApiCreateRequest,
-                CreateDecoder,
             >::decode_with_header(
                 src, header
             )?)),
-
             AdminPublicApiKey::Delete => Ok(Self::DeleteRequest(RequestMessage::<
                 ObjectApiDeleteRequest,
-                ObjectDecoder,
             >::decode_with_header(
                 src, header
             )?)),
 
             AdminPublicApiKey::List => Ok(Self::ListRequest(RequestMessage::<
                 ObjectApiListRequest,
-                ObjectDecoder,
             >::decode_with_header(
                 src, header
             )?)),
 
             AdminPublicApiKey::Watch => Ok(Self::WatchRequest(RequestMessage::<
                 ObjectApiWatchRequest,
-                ObjectDecoder,
             >::decode_with_header(
                 src, header
             )?)),

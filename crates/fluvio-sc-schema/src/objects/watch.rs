@@ -4,14 +4,14 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use dataplane::core::{Encoder, Decoder};
-use dataplane::api::{MiddlewareDecoder, Request};
+use dataplane::api::{Request};
 use fluvio_controlplane_metadata::store::Epoch;
 use fluvio_controlplane_metadata::message::Message;
 
 use crate::{AdminPublicApiKey, AdminSpec, ObjectDecoder};
 use crate::core::Spec;
 
-use super::{Metadata, ObjectApiEnum, ObjectApiDecode};
+use super::{Metadata, ObjectApiEnum};
 
 ObjectApiEnum!(WatchRequest);
 ObjectApiEnum!(WatchResponse);
@@ -24,12 +24,11 @@ pub struct WatchRequest<S: AdminSpec> {
     data: PhantomData<S>,
 }
 
-impl Request<ObjectDecoder> for ObjectApiWatchRequest {
+impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = ObjectApiWatchResponse;
 
-    ObjectApiDecode!(WatchRequest, ObjectDecoder);
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
@@ -54,14 +53,6 @@ where
     }
 }
 
-
-impl MiddlewareDecoder for ObjectApiWatchResponse {
-    ObjectApiDecode!(WatchResponse, ObjectDecoder);
-
-    type Middleware = ObjectDecoder;
-
-    
-}
 
 
 /// updates on metadata

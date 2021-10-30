@@ -11,6 +11,7 @@ pub use metadata::*;
 
 pub use crate::NameFilter;
 pub(crate) use object_macro::*;
+pub(crate) use create_macro::*;
 
 mod metadata {
 
@@ -358,7 +359,7 @@ mod create_macro {
 
                 impl [<ObjectApi $api>] {
                     fn type_value(&self) -> u8 {
-                        use fluvio_controlplane_metadata::core::Spec;
+                        //use fluvio_controlplane_metadata::core::Spec;
                         match self {
                             Self::Topic(_) => crate::topic::TopicSpec::CREATE_TYPE,
                             Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::CREATE_TYPE,
@@ -383,7 +384,6 @@ mod create_macro {
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::Table(s) => s.write_size(version),
-                                Self::Empty() => 0,
                             }
                     }
 
@@ -392,16 +392,13 @@ mod create_macro {
                         T: dataplane::bytes::BufMut,
                     {
 
-
                         match self {
                             Self::Topic(s) => s.encode(dest, version)?,
                             Self::CustomSpu(s) => s.encode(dest, version)?,
-                            Self::Spu(s) => s.encode(dest, version)?,
-                            Self::Partition(s) => s.encode(dest, version)?,
                             Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
+                            Self::SpuGroup(s) => s.encode(dest,version)?,
                             Self::Table(s) => s.encode(dest, version)?,
-                            Self::Empty() => panic!("can't encode empty")
                         }
 
                         Ok(())
@@ -419,11 +416,11 @@ mod create_macro {
                     where
                         T: dataplane::bytes::Buf
                     {
-                        use fluvio_controlplane_metadata::core::Spec;
+                        //use fluvio_controlplane_metadata::core::Spec;
 
                         let mut typ: u8 = 0;
                         typ.decode(src, version)?;
-                        trace!("decoded type: {}", typ);
+                        tracing::trace!("decoded type: {}", typ);
 
 
                         match typ {
@@ -435,7 +432,7 @@ mod create_macro {
                                 return Ok(())
                             }
 
-                            crate::table::TableSpec::LABEL => {
+                            crate::table::TableSpec::CREATE_TYPE => {
                                 tracing::trace!("detected table");
                                 let mut request = $api::<crate::table::TableSpec>::default();
                                 request.decode(src, version)?;
@@ -443,7 +440,7 @@ mod create_macro {
                                 return Ok(())
                             }
 
-                            crate::customspu::CustomSpuSpec::LABEL => {
+                            crate::customspu::CustomSpuSpec::CREATE_TYPE => {
                                 tracing::trace!("detected custom spu");
                                 let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
                                 request.decode(src, version)?;
@@ -451,7 +448,7 @@ mod create_macro {
                                 return Ok(())
                             }
 
-                            crate::spg::SpuGroupSpec::LABEL => {
+                            crate::spg::SpuGroupSpec::CREATE_TYPE => {
                                 tracing::trace!("detected custom spu");
                                 let mut request = $api::<crate::spg::SpuGroupSpec>::default();
                                 request.decode(src, version)?;
@@ -459,7 +456,7 @@ mod create_macro {
                                 return Ok(())
                             }
 
-                            crate::smartmodule::SmartModuleSpec::LABEL => {
+                            crate::smartmodule::SmartModuleSpec::CREATE_TYPE => {
                                 tracing::trace!("detected smartmodule");
                                 let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
                                 request.decode(src, version)?;
@@ -467,7 +464,7 @@ mod create_macro {
                                 return Ok(())
                             }
 
-                            crate::connector::ManagedConnectorSpec::LABEL => {
+                            crate::connector::ManagedConnectorSpec::CREATE_TYPE => {
                                 tracing::trace!("detected connector");
                                 let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
                                 request.decode(src, version)?;
@@ -478,7 +475,7 @@ mod create_macro {
                             // Unexpected type
                             _ => Err(std::io::Error::new(
                                 std::io::ErrorKind::InvalidData,
-                                format!("invalid object type {:#?}", typ),
+                                format!("invalid create type {:#?}", typ),
                             ))
                         }
                     }

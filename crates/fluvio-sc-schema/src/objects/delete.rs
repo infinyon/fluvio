@@ -11,7 +11,7 @@ use dataplane::api::Request;
 use crate::{AdminSpec, ObjectDecoder};
 use crate::Status;
 use crate::AdminPublicApiKey;
-use super::{ObjectApiEnum, ObjectApiDecode};
+use super::{ObjectApiEnum};
 
 ObjectApiEnum!(DeleteRequest);
 
@@ -32,10 +32,9 @@ where
     }
 }
 
-impl Request<ObjectDecoder> for ObjectApiDeleteRequest {
+impl Request for ObjectApiDeleteRequest {
     const API_KEY: u16 = AdminPublicApiKey::Delete as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = Status;
 
-    ObjectApiDecode!(DeleteRequest, ObjectDecoder);
 }

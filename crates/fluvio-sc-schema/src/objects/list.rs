@@ -6,7 +6,7 @@ use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
 use crate::{AdminPublicApiKey, AdminSpec, ObjectDecoder};
-use super::{ObjectApiEnum, ObjectApiDecode};
+use super::{ObjectApiEnum};
 
 ObjectApiEnum!(ListRequest);
 ObjectApiEnum!(ListResponse);
@@ -25,12 +25,10 @@ where
     }
 }
 
-impl Request<ObjectDecoder> for ObjectApiListRequest {
+impl Request for ObjectApiListRequest {
     const API_KEY: u16 = AdminPublicApiKey::List as u16;
     const DEFAULT_API_VERSION: i16 = 1;
     type Response = ObjectApiListResponse;
-
-    ObjectApiDecode!(ListRequest, ObjectDecoder);
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
