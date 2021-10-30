@@ -23,6 +23,8 @@ pub async fn handle_delete_request<AC: AuthContext>(
 ) -> Result<ResponseMessage<Status>, Error> {
     let (header, del_req) = request.get_header_request();
 
+    debug!("del request: {:#?}", del_req);
+
     let status = match del_req {
         ObjectApiDeleteRequest::Topic(req) => {
             super::topic::handle_delete_topic(req.key(), auth_ctx).await?

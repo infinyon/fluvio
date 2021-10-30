@@ -156,6 +156,8 @@ impl FluvioAdmin {
 
         let create_request: ObjectApiCreateRequest = create_request.into();
 
+        debug!("sending create request: {:#?}", create_request);
+
         self.send_receive(create_request).await?.as_result()?;
 
         Ok(())
@@ -172,6 +174,8 @@ impl FluvioAdmin {
     {
         let delete_request = DeleteRequest::new(key.into());
         let delete_request: ObjectApiDeleteRequest = delete_request.into();
+
+        debug!("sending delete request: {:#?}", delete_request);
 
         self.send_receive(delete_request).await?.as_result()?;
         Ok(())

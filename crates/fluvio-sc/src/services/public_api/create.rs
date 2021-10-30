@@ -1,6 +1,6 @@
 use std::io::Error as IoError;
 
-use tracing::{instrument};
+use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
@@ -16,6 +16,8 @@ pub async fn handle_create_request<AC: AuthContext>(
     auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, IoError> {
     let (header, req) = request.get_header_request();
+
+    debug!("create request: {:#?}", req);
 
     let status = match req {
         ObjectApiCreateRequest::Topic(create) => {

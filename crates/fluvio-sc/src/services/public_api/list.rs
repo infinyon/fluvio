@@ -15,8 +15,8 @@ pub async fn handle_list_request<AC: AuthContext>(
     request: RequestMessage<ObjectApiListRequest>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<ObjectApiListResponse>, IoError> {
-    debug!("handling list request");
     let (header, req) = request.get_header_request();
+    debug!("list request: {:#?}", req);
 
     let response = match req {
         ObjectApiListRequest::Topic(req) => ObjectApiListResponse::Topic(
