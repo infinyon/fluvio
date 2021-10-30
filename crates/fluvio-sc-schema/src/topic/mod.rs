@@ -147,12 +147,42 @@ mod test {
     }
 
     #[test]
+    fn test_watch_response_encoding() {
+        // this fails now because ObjectApiWatchResponse does not implement object decoder
+        use dataplane::api::MiddlewareDecoder;
+
+        let update = MetadataUpdate {
+            epoch: 2,
+            changes: vec![],
+            all: vec![],
+        };
+        let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
+
+        let mut src = vec![];
+        watch_response.encode(&mut src, 0).expect("encoding");
+
+        let dec =
+            WatchResponse::<TopicSpec>::decode_from(&mut Cursor::new(&src), 0).expect("decode");
+        assert_eq!(dec.inner().epoch, 2);
+
+        let (obj_res, m): (ObjectApiWatchResponse, ObjectDecoder) = watch_response.into();
+        let mut src = vec![];
+        obj_res.encode(&mut src, 0).expect("encoding");
+
+        let mut dec_obj = ObjectApiWatchResponse::default();
+        dec_obj
+            .decode_object(&mut Cursor::new(&src), &m, 0)
+            .expect("decode");
+    }
+
+    #[test]
     fn test_watch_response_encode_decoding() {
         use dataplane::api::Request;
 
         fluvio_future::subscriber::init_logger();
 
         let (res, mw) = create_res();
+
         let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
         header.set_client_id("test");
         header.set_correlation_id(11);

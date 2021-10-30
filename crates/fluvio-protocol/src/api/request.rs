@@ -11,7 +11,7 @@ use crate::Decoder;
 use crate::Encoder;
 use crate::Version;
 
-use super::Request;
+use super::{Request};
 use super::RequestHeader;
 use super::response::ResponseMessage;
 
