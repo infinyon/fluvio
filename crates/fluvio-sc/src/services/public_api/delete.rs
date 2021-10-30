@@ -9,7 +9,7 @@ use tracing::{debug, instrument, trace};
 use std::io::Error;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
-use fluvio_sc_schema::{ObjectDecoder, Status};
+use fluvio_sc_schema::{Status};
 use fluvio_sc_schema::objects::{ObjectApiDeleteRequest};
 use fluvio_auth::{AuthContext};
 
@@ -18,7 +18,7 @@ use crate::services::auth::AuthServiceContext;
 /// Handler for delete topic request
 #[instrument(skip(request, auth_ctx))]
 pub async fn handle_delete_request<AC: AuthContext>(
-    request: RequestMessage<ObjectApiDeleteRequest, ObjectDecoder>,
+    request: RequestMessage<ObjectApiDeleteRequest>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, Error> {
     let (header, del_req) = request.get_header_request();

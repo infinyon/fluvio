@@ -1,11 +1,9 @@
 use std::convert::{TryFrom, TryInto};
 use std::io::{Error as IoError, ErrorKind};
 use std::fmt::Display;
-use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use dataplane::api::RequestMiddleWare;
 use tracing::{error, debug, instrument};
 use event_listener::{Event, EventListener};
 use futures_util::stream::StreamExt;
@@ -16,7 +14,7 @@ use fluvio_socket::AsyncResponse;
 use fluvio_sc_schema::objects::{
     Metadata, MetadataUpdate, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
 };
-use fluvio_sc_schema::{AdminSpec, ObjectDecoder};
+use fluvio_sc_schema::{AdminSpec};
 
 use crate::metadata::core::Spec;
 
@@ -52,17 +50,15 @@ impl SimpleEvent {
 }
 
 /// Synchronize metadata from SC
-pub struct MetadataSyncController<S: AdminSpec, M> {
+pub struct MetadataSyncController<S: AdminSpec> {
     store: StoreContext<S::WatchResponseType>,
     shutdown: Arc<SimpleEvent>,
-    data: PhantomData<M>,
 }
 
-impl<S, M> MetadataSyncController<S, M>
+impl<S> MetadataSyncController<S>
 where
     S: AdminSpec + 'static + Sync + Send,
-    M: RequestMiddleWare + 'static + Sync + Send,
-    AsyncResponse<ObjectApiWatchRequest, ObjectDecoder>: Send,
+    AsyncResponse<ObjectApiWatchRequest>: Send,
     S::WatchResponseType: Encoder + Decoder + Send + Sync,
     <S::WatchResponseType as Spec>::Status: Sync + Send + Encoder + Decoder,
     <S::WatchResponseType as Spec>::IndexKey: Display + Sync + Send,
@@ -73,7 +69,7 @@ where
 {
     pub fn start(
         store: StoreContext<S::WatchResponseType>,
-        watch_response: AsyncResponse<ObjectApiWatchRequest, ObjectDecoder>,
+        watch_response: AsyncResponse<ObjectApiWatchRequest>,
         shutdown: Arc<SimpleEvent>,
     ) {
         use fluvio_future::task::spawn;
@@ -81,7 +77,6 @@ where
         let controller = Self {
             store,
             shutdown,
-            data: PhantomData,
         };
 
         debug!(spec = %S::LABEL, "spawning sync controller");
@@ -96,7 +91,7 @@ where
     )]
     async fn dispatch_loop(
         mut self,
-        mut response: AsyncResponse<ObjectApiWatchRequest, ObjectDecoder>,
+        mut response: AsyncResponse<ObjectApiWatchRequest>,
     ) {
         use tokio::select;
 

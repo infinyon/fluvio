@@ -3,8 +3,6 @@ use std::fmt;
 use std::fmt::Display;
 use std::sync::Arc;
 
-use dataplane::api::DefaultRequestMiddleWare;
-use dataplane::api::RequestMiddleWare;
 use tracing::{debug, instrument};
 
 use dataplane::api::RequestMessage;
@@ -225,25 +223,7 @@ impl VersionedSerialSocket {
     where
         R: Request + Send + Sync,
     {
-        // send request & save response
-        self.send_receive_with_mw(request, DefaultRequestMiddleWare::default())
-            .await
-    }
-
-    pub async fn send_receive_with_mw<R, M>(
-        &self,
-        request: R,
-        middleware: M,
-    ) -> Result<R::Response, SocketError>
-    where
-        R: Request<M> + Send + Sync,
-        M: RequestMiddleWare + Send + Sync,
-    {
-        let req_msg = self.new_request(
-            request,
-            self.versions.lookup_version(R::API_KEY),
-            middleware,
-        );
+        let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
 
         // send request & save response
         self.socket.send_and_receive(req_msg).await
@@ -251,12 +231,11 @@ impl VersionedSerialSocket {
 
     /// create new request based on version
     #[instrument(level = "trace", skip(self, request, version))]
-    fn new_request<R, M>(&self, request: R, version: Option<i16>, mw: M) -> RequestMessage<R, M>
+    fn new_request<R>(&self, request: R, version: Option<i16>) -> RequestMessage<R>
     where
-        R: Request<M> + Send,
-        M: RequestMiddleWare,
+        R: Request + Send,
     {
-        let mut req_msg = RequestMessage::request_with_mw(request, mw);
+        let mut req_msg = RequestMessage::new_request(request);
         req_msg
             .get_mut_header()
             .set_client_id(&self.config().client_id);

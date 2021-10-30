@@ -1,7 +1,7 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
-use dataplane::api::{Request, RequestMiddleWare};
+use dataplane::api::{Request};
 use fluvio_future::net::DomainConnector;
 use tracing::{debug, instrument};
 
@@ -9,7 +9,7 @@ use fluvio_sc_schema::objects::{
     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
     ObjectApiListResponse, ObjectApiWatchRequest,
 };
-use fluvio_sc_schema::{AdminSpec, CreateDecoder, ObjectDecoder};
+use fluvio_sc_schema::{AdminSpec};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
@@ -134,16 +134,11 @@ impl FluvioAdmin {
     }
 
     #[instrument(skip(self, request))]
-    async fn send_receive<R, M>(
-        &self,
-        request: R,
-        middleware: M,
-    ) -> Result<R::Response, SocketError>
+    async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
     where
-        R: Request<M> + Send + Sync,
-        M: RequestMiddleWare + Send + Sync,
+        R: Request + Send + Sync,
     {
-        self.socket.send_receive_with_mw(request, middleware).await
+        self.socket.send_receive(request).await
     }
 
     /// create new object
@@ -151,7 +146,7 @@ impl FluvioAdmin {
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
         S: AdminSpec + Sync + Send,
-        (ObjectApiCreateRequest, CreateDecoder): From<CreateRequest<S>>,
+        ObjectApiCreateRequest: From<CreateRequest<S>>,
     {
         let create_request: CreateRequest<S> = CreateRequest {
             name,
@@ -159,9 +154,9 @@ impl FluvioAdmin {
             spec,
         };
 
-        let (create_request, mw): (ObjectApiCreateRequest, CreateDecoder) = create_request.into();
+        let create_request: ObjectApiCreateRequest = create_request.into();
 
-        self.send_receive(create_request, mw).await?.as_result()?;
+        self.send_receive(create_request).await?.as_result()?;
 
         Ok(())
     }
@@ -173,12 +168,12 @@ impl FluvioAdmin {
     where
         S: AdminSpec,
         K: Into<S::DeleteKey>,
-        (ObjectApiDeleteRequest, ObjectDecoder): From<DeleteRequest<S>>,
+        ObjectApiDeleteRequest: From<DeleteRequest<S>>,
     {
         let delete_request = DeleteRequest::new(key.into());
-        let (delete_request, mw): (ObjectApiDeleteRequest, ObjectDecoder) = delete_request.into();
+        let delete_request: ObjectApiDeleteRequest = delete_request.into();
 
-        self.send_receive(delete_request, mw).await?.as_result()?;
+        self.send_receive(delete_request).await?.as_result()?;
         Ok(())
     }
 
@@ -187,7 +182,7 @@ impl FluvioAdmin {
     where
         S: AdminSpec,
         F: Into<Vec<S::ListFilter>>,
-        (ObjectApiListRequest, ObjectDecoder): From<ListRequest<S>>,
+        ObjectApiListRequest: From<ListRequest<S>>,
         ListResponse<S>: TryFrom<ObjectApiListResponse>,
         <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
     {
@@ -196,8 +191,8 @@ impl FluvioAdmin {
 
         let list_request = ListRequest::new(filters.into());
 
-        let (list_request, mw): (ObjectApiListRequest, ObjectDecoder) = list_request.into();
-        let response = self.send_receive(list_request, mw).await?;
+        let list_request: ObjectApiListRequest = list_request.into();
+        let response = self.send_receive(list_request).await?;
         response
             .try_into()
             .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())

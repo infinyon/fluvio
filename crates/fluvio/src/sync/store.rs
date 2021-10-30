@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use fluvio_sc_schema::ObjectDecoder;
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use tracing::{debug, instrument};
 
@@ -73,14 +72,14 @@ impl MetadataStores {
         use fluvio_sc_schema::objects::WatchRequest;
 
         let watch_request: WatchRequest<SpuSpec> = WatchRequest::default();
-        let (watch_req, mw): (ObjectApiWatchRequest, ObjectDecoder) = watch_request.into();
-        let mut req_msg = RequestMessage::request_with_mw(watch_req, mw);
+        let watch_req: ObjectApiWatchRequest = watch_request.into();
+        let mut req_msg = RequestMessage::new_request(watch_req);
         req_msg.get_mut_header().set_api_version(self.watch_version);
 
         debug!("create spu metadata stream");
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<SpuSpec, ObjectDecoder>::start(
+        MetadataSyncController::<SpuSpec>::start(
             self.spus.clone(),
             async_response,
             self.shutdown.clone(),
@@ -97,11 +96,11 @@ impl MetadataStores {
         debug!("start watch for partition");
 
         let watch_request: WatchRequest<PartitionSpec> = WatchRequest::default();
-        let (watch_req, mw): (ObjectApiWatchRequest, ObjectDecoder) = watch_request.into();
-        let req_msg = RequestMessage::request_with_mw(watch_req, mw);
+        let watch_req: ObjectApiWatchRequest = watch_request.into();
+        let req_msg = RequestMessage::new_request(watch_req);
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<PartitionSpec, ObjectDecoder>::start(
+        MetadataSyncController::<PartitionSpec>::start(
             self.partitions.clone(),
             async_response,
             self.shutdown.clone(),
@@ -118,11 +117,11 @@ impl MetadataStores {
         debug!("start watch for topic");
 
         let watch_request: WatchRequest<TopicSpec> = WatchRequest::default();
-        let (watch_req, mw): (ObjectApiWatchRequest, ObjectDecoder) = watch_request.into();
-        let req_msg = RequestMessage::request_with_mw(watch_req, mw);
+        let watch_req: ObjectApiWatchRequest = watch_request.into();
+        let req_msg = RequestMessage::new_request(watch_req);
         let async_response = self.socket.create_stream(req_msg, 10).await?;
 
-        MetadataSyncController::<TopicSpec, ObjectDecoder>::start(
+        MetadataSyncController::<TopicSpec>::start(
             self.topics.clone(),
             async_response,
             self.shutdown.clone(),

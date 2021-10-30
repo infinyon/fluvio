@@ -1,7 +1,6 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-use dataplane::api::DefaultRequestMiddleWare;
 use futures_util::stream::{Stream, select_all};
 use tracing::{debug, error, trace, instrument};
 use once_cell::sync::Lazy;
@@ -454,12 +453,7 @@ impl PartitionConsumer {
         }
         let mut stream = self
             .pool
-            .create_stream_with_version(
-                &replica,
-                stream_request,
-                DefaultRequestMiddleWare::default(),
-                stream_fetch_version,
-            )
+            .create_stream_with_version(&replica, stream_request, stream_fetch_version)
             .await?;
 
         let ft_stream = async move {

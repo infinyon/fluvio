@@ -1,11 +1,9 @@
 use std::io::Error as IoError;
-use std::io::ErrorKind;
 
 use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{
-    ObjectDecoder,
     objects::{ObjectApiListRequest, ObjectApiListResponse},
 };
 use fluvio_auth::{AuthContext};
@@ -14,11 +12,11 @@ use crate::services::auth::AuthServiceContext;
 
 #[instrument(skip(request, auth_ctx))]
 pub async fn handle_list_request<AC: AuthContext>(
-    request: RequestMessage<ObjectApiListRequest, ObjectDecoder>,
+    request: RequestMessage<ObjectApiListRequest>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ResponseMessage<ObjectApiListResponse, ObjectDecoder>, IoError> {
+) -> Result<ResponseMessage<ObjectApiListResponse>, IoError> {
     debug!("handling list request");
-    let (header, req, obj) = request.get_header_request_middleware();
+    let (header, req) = request.get_header_request();
 
     let response = match req {
         ObjectApiListRequest::Topic(req) => ObjectApiListResponse::Topic(
@@ -45,14 +43,7 @@ pub async fn handle_list_request<AC: AuthContext>(
         ObjectApiListRequest::Table(req) => ObjectApiListResponse::Table(
             super::table::handle_fetch_request(req.name_filters, auth_ctx).await?,
         ),
-        _ => {
-            debug!("Invalid List Req {:?}", req);
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                "Not Valid List Object",
-            ));
-        }
     };
 
-    Ok(ResponseMessage::from_header_with_mw(&header, response, obj))
+    Ok(ResponseMessage::from_header(&header, response))
 }
