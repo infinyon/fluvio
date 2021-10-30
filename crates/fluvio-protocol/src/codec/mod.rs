@@ -75,7 +75,7 @@ impl Encoder<Bytes> for FluvioCodec {
     type Error = IoError;
 
     fn encode(&mut self, data: Bytes, buf: &mut BytesMut) -> Result<(), IoError> {
-        trace!("Encoder: Encoding raw data with {} bytes", data.len());
+        trace!(len = data.len(), "Encoding raw data bytes");
         buf.put(data);
         Ok(())
     }
@@ -89,7 +89,7 @@ impl<T: FluvioEncoder> Encoder<FluvioCodecData<T>> for FluvioCodec {
         let (src, version) = src;
 
         let size = src.write_size(version) as i32;
-        trace!("encoding data with {} bytes.", size);
+        trace!(size = "encoding data with write size");
         buf.reserve(4 + size as usize);
 
         // First 4 bytes are the size of the message.

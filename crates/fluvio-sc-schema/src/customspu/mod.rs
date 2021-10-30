@@ -23,6 +23,7 @@ impl AdminSpec for CustomSpuSpec {
 ObjectFrom!(CreateRequest, CustomSpu, Create);
 ObjectFrom!(DeleteRequest, CustomSpu);
 ObjectFrom!(ListRequest, CustomSpu);
+ObjectFrom!(ListResponse, CustomSpu);
 ObjectFrom!(WatchRequest, CustomSpu);
 ObjectFrom!(WatchResponse, CustomSpu);
 

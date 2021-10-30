@@ -32,17 +32,19 @@ impl Request for ObjectApiListRequest {
 }
 
 #[derive(Debug, Default, Encoder, Decoder)]
-pub struct ListResponse<S: AdminSpec>(Vec<S::ListType>);
+pub struct ListResponse<S: AdminSpec> {
+    inner: Vec<S::ListType>,
+}
 
 impl<S> ListResponse<S>
 where
     S: AdminSpec,
 {
-    pub fn new(list: Vec<S::ListType>) -> Self {
-        Self(list)
+    pub fn new(inner: Vec<S::ListType>) -> Self {
+        Self { inner }
     }
 
     pub fn inner(self) -> Vec<S::ListType> {
-        self.0
+        self.inner
     }
 }

@@ -154,7 +154,11 @@ mod object_macro {
                     where
                         T: dataplane::bytes::BufMut,
                     {
-                        self.type_string().to_owned().encode(dest, version)?;
+                        tracing::debug!("xxxxxxxxxxx");
+                        let ty = self.type_string().to_owned();
+
+                        tracing::trace!(%ty,len = self.write_size(version),"encoding objects");
+                        ty.encode(dest, version)?;
 
                         match self {
                             Self::Topic(s) => s.encode(dest, version)?,
@@ -186,7 +190,7 @@ mod object_macro {
 
                         let mut typ = "".to_owned();
                         typ.decode(src, version)?;
-                        tracing::trace!("decoded type: {}", typ);
+                        tracing::trace!(%typ,"decoded type");
 
                         match typ.as_ref() {
                             crate::topic::TopicSpec::LABEL => {
@@ -489,15 +493,17 @@ mod create_macro {
 #[cfg(test)]
 mod test {
 
+    use std::convert::TryInto;
     use std::io::Cursor;
 
     use dataplane::api::{RequestHeader, RequestMessage, ResponseMessage};
     use dataplane::core::{Encoder, Decoder};
     use dataplane::api::Request;
+    use fluvio_controlplane_metadata::spu::SpuStatus;
 
     use crate::objects::{
-        CreateRequest, ListRequest, MetadataUpdate, ObjectApiCreateRequest, ObjectApiListRequest,
-        ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
+        ObjectApiListResponse, ListRequest, ListResponse, Metadata, MetadataUpdate,
+        ObjectApiListRequest, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
     };
 
     use crate::topic::TopicSpec;
@@ -605,34 +611,70 @@ mod test {
     }
 
     #[test]
-    fn test_create_encode_decoding() {
-        use dataplane::api::Request;
+    fn test_obj_watch_api_decoding() {
+        fluvio_future::subscriber::init_logger();
 
-        let create: CreateRequest<CustomSpuSpec> = CreateRequest {
-            name: "test".to_string(),
-            dry_run: false,
-            spec: CustomSpuSpec::default(),
-        };
+        let res = create_res();
 
-        let req: ObjectApiCreateRequest = create.into();
-
-        let mut req_msg = RequestMessage::new_request(req);
-        req_msg
-            .get_mut_header()
-            .set_client_id("test")
-            .set_api_version(ObjectApiCreateRequest::API_KEY as i16);
+        let mut header = RequestHeader::new(ObjectApiWatchRequest::API_KEY);
+        header.set_client_id("test");
+        header.set_correlation_id(11);
+        let res_msg = ResponseMessage::from_header(&header, res);
 
         let mut src = vec![];
-        req_msg.encode(&mut src, 0).expect("encoding");
+        res_msg
+            .encode(&mut src, ObjectApiWatchRequest::API_KEY as i16)
+            .expect("encoding");
 
-        let dec_msg: RequestMessage<ObjectApiCreateRequest> = RequestMessage::decode_from(
+        println!("output: {:#?}", src);
+
+        assert_eq!(
+            src.len(),
+            res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16)
+        );
+
+        let dec_msg: ResponseMessage<ObjectApiWatchResponse> = ResponseMessage::decode_from(
             &mut Cursor::new(&src),
-            ObjectApiCreateRequest::API_KEY as i16,
+            ObjectApiWatchRequest::API_KEY as i16,
+        )
+        .expect("decode");
+        assert!(matches!(dec_msg.response, ObjectApiWatchResponse::Topic(_)));
+    }
+
+    #[test]
+    fn test_list_response_encode_decoding() {
+        use dataplane::api::Request;
+
+        fluvio_future::subscriber::init_logger();
+
+        let list = ListResponse::<CustomSpuSpec>::new(vec![Metadata {
+            name: "test".to_string(),
+            spec: CustomSpuSpec::default(),
+            status: SpuStatus::default(),
+        }]);
+
+        let resp: ObjectApiListResponse = list.into();
+
+        let mut header = RequestHeader::new(ObjectApiListRequest::API_KEY);
+        header.set_client_id("test");
+        header.set_correlation_id(11);
+        let res_msg = ResponseMessage::from_header(&header, resp);
+        let mut src = vec![];
+        res_msg.encode(&mut src, 0).expect("encoding");
+
+        println!("output: {:#?}", src);
+
+        let dec_msg: ResponseMessage<ObjectApiListResponse> = ResponseMessage::decode_from(
+            &mut Cursor::new(&src),
+            ObjectApiListRequest::API_KEY as i16,
         )
         .expect("decode");
         assert!(matches!(
-            dec_msg.request,
-            ObjectApiCreateRequest::CustomSpu(_)
+            dec_msg.response,
+            ObjectApiListResponse::CustomSpu(_)
         ));
+
+        let list_res: ListResponse<CustomSpuSpec> = dec_msg.response.try_into().expect("extract");
+        assert_eq!(list_res.inner().len(), 1);
     }
 }

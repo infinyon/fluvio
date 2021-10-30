@@ -1733,7 +1733,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1884,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.10.3"
+version = "0.10.4"
 dependencies = [
  "async-channel",
  "async-lock",

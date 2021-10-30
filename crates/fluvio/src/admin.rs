@@ -193,6 +193,7 @@ impl FluvioAdmin {
 
         let list_request: ObjectApiListRequest = list_request.into();
         let response = self.send_receive(list_request).await?;
+        debug!(response = ?response, "list response");
         response
             .try_into()
             .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())

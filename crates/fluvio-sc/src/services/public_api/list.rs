@@ -45,5 +45,7 @@ pub async fn handle_list_request<AC: AuthContext>(
         ),
     };
 
+    debug!("response: {:#?}", response);
+
     Ok(ResponseMessage::from_header(&header, response))
 }
