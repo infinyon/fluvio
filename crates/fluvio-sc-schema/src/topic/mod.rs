@@ -79,6 +79,8 @@ mod test {
 
     use dataplane::api::{MiddlewareDecoder, RequestHeader, RequestMessage, ResponseMessage};
     use dataplane::core::{Encoder, Decoder};
+    use dataplane::api::Request;
+
 
     use crate::objects::{
         ListRequest, MetadataUpdate, ObjectApiListRequest, ObjectApiWatchRequest,
@@ -150,6 +152,7 @@ mod test {
     #[test]
     fn test_watch_response_encoding() {
         
+        fluvio_future::subscriber::init_logger();
         let update = MetadataUpdate {
             epoch: 2,
             changes: vec![],
@@ -158,18 +161,18 @@ mod test {
         let watch_response: WatchResponse<TopicSpec> = WatchResponse::new(update);
 
         let mut src = vec![];
-        watch_response.encode(&mut src, 0).expect("encoding");
-
+        watch_response.encode(&mut src, ObjectApiWatchRequest::API_KEY as i16).expect("encoding");
+        //watch_response.encode(&mut src, 0).expect("encoding");
+        println!("output: {:#?}",src);
         let dec =
-            WatchResponse::<TopicSpec>::decode_from(&mut Cursor::new(&src), 0).expect("decode");
+            WatchResponse::<TopicSpec>::decode_from(&mut Cursor::new(&src), ObjectApiWatchRequest::API_KEY as i16).expect("decode");
         assert_eq!(dec.inner().epoch, 2);
     }
 
     
     #[test]
-    fn test_watch_response_encode_decoding() {
-        use dataplane::api::Request;
-
+    fn test_obj_watch_response_encode_decoding() {
+        
         fluvio_future::subscriber::init_logger();
 
         let (res, mw) = create_res();
@@ -181,6 +184,8 @@ mod test {
 
         let mut src = vec![];
         res_msg.encode(&mut src, ObjectApiWatchRequest::API_KEY as i16).expect("encoding");
+
+        println!("output: {:#?}",src);
 
         assert_eq!(src.len(), res_msg.write_size(ObjectApiWatchRequest::API_KEY as i16));
 

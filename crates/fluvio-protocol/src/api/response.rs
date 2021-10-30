@@ -138,16 +138,17 @@ where
         T: BufMut,
     {
         trace!(
-            "encoding kf response: {} version: {}, len: {}",
+            version = version,
+            len = self.write_size(version),
+            "encoding Response<{}>",
             std::any::type_name::<P>(),
-            version,
-            len = self.write_size(version)
+            
         );
         trace!(self.correlation_id, "writing correlation id");
         self.correlation_id.encode(out, version)?;
         trace!(version, "writing middleware");
         self.middleware.encode(out, version)?;
-        trace!(version, "writing middleware");
+        trace!(version, "writing response");
         self.response.encode(out, version)?;
         Ok(())
     }

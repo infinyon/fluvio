@@ -231,12 +231,11 @@ where
     where
         T: BufMut,
     {
-        let len = self.write_size(version);
         trace!(
-            "encoding kf request: {} version: {}, len: {}",
-            std::any::type_name::<R>(),
             version,
-            len
+            len = self.write_size(version),
+            "encoding Request<{}>",
+            std::any::type_name::<R>(),
         );
 
         trace!("encoding request header: {:#?}", &self.header);
