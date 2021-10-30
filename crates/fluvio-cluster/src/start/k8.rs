@@ -1157,7 +1157,7 @@ impl ClusterInstaller {
                 ..SpuGroupSpec::default()
             };
 
-            admin.create::<SpuGroupSpec>(name, false, spu_spec).await?;
+            admin.create(name, false, spu_spec).await?;
 
             self.pb.println(
                 InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),

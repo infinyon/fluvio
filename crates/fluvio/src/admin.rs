@@ -3,7 +3,7 @@ use std::fmt::Display;
 
 use dataplane::api::{Request};
 use fluvio_future::net::DomainConnector;
-use tracing::{debug, instrument};
+use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{
     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
@@ -193,7 +193,7 @@ impl FluvioAdmin {
 
         let list_request: ObjectApiListRequest = list_request.into();
         let response = self.send_receive(list_request).await?;
-        debug!(response = ?response, "list response");
+        trace!("list response: {:#?}", response);
         response
             .try_into()
             .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())

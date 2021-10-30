@@ -90,8 +90,7 @@ mod object_macro {
     /// Macro to objectify generic Request/Response for Admin Objects
     /// AdminSpec is difficult to turn into TraitObject due to associated types and use of other derived
     /// properties such as `PartialEq`.  This generates all possible variation of given API.  
-    /// Not all variation will be constructed or used.  It is possible that invalid combination could be
-    /// constructed (for example, Creating SPU) but it is not possible when using client API
+    /// Not all variation will be constructed or used
     macro_rules! ObjectApiEnum {
         ($api:ident) => {
 
@@ -154,7 +153,6 @@ mod object_macro {
                     where
                         T: dataplane::bytes::BufMut,
                     {
-                        tracing::debug!("xxxxxxxxxxx");
                         let ty = self.type_string().to_owned();
 
                         tracing::trace!(%ty,len = self.write_size(version),"encoding objects");
@@ -177,9 +175,6 @@ mod object_macro {
                 }
 
 
-                // We implement decode signature even thought this will be never called.
-                // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
-                // to provide decode implementation but shoudl be never called
                 impl  dataplane::core::Decoder for [<ObjectApi $api>] {
 
                     fn decode<T>(&mut self, src: &mut T, version: dataplane::core::Version) -> Result<(),std::io::Error>
@@ -275,12 +270,9 @@ mod object_macro {
     /// This conversion is possible because ObjectAPI (ex: ObjectApiListRequst) is built on Enum with matching object
     /// which make it possible to convert ListRequest<TopicSpec> => ObjectApiListRequest::Topic(req)
     /// This should generate code such as:
-    /// impl From<WatchRequest<TopicSpec>> for (ObjectApiWatchRequest, ObjectDecoder) {
+    /// impl From<WatchRequest<TopicSpec>> for ObjectApiWatchRequest {
     /// fn from(req: WatchRequest<TopicSpec>) -> Self {
-    ///    (
-    ///       ObjectApiWatchRequest::Topic(req),
-    ///        TopicSpec::object_decoder(),
-    ///    )
+    ///       ObjectApiWatchRequest::Topic(req
     /// }
     /// ObjectFrom!(WatchRequest, Topic);
     macro_rules! ObjectFrom {
@@ -300,8 +292,10 @@ mod object_macro {
         };
     }
 
+    /// Convert unknown object type to ObjectApi<T>
+    /// Since we don't know the type of object, we perform Try
     macro_rules! ObjectTryFrom {
-        ($from:ident,$spec:ident,$dec:ty) => {
+        ($from:ident,$spec:ident) => {
 
             paste::paste! {
 
@@ -317,11 +311,6 @@ mod object_macro {
                 }
             }
         };
-
-        ($from:ident,$spec:ident) => {
-
-            crate::objects::ObjectTryFrom!($from,$spec,crate::ObjectDecoder);
-        }
     }
 
     pub(crate) use ObjectApiEnum;
@@ -331,11 +320,7 @@ mod object_macro {
 
 mod create_macro {
 
-    /// Macro to objectify generic Request/Response for Admin Objects
-    /// AdminSpec is difficult to turn into TraitObject due to associated types and use of other derived
-    /// properties such as `PartialEq`.  This generates all possible variation of given API.  
-    /// Not all variation will be constructed or used.  It is possible that invalid combination could be
-    /// constructed (for example, Creating SPU) but it is not possible when using client API
+    /// Macro to Similar to ObjectApiFrom but specialize to create which has reduce number of objects
     macro_rules! CreateApiEnum {
         ($api:ident) => {
 
@@ -360,7 +345,7 @@ mod create_macro {
 
                 impl [<ObjectApi $api>] {
                     fn type_value(&self) -> u8 {
-                        //use fluvio_controlplane_metadata::core::Spec;
+
                         match self {
                             Self::Topic(_) => crate::topic::TopicSpec::CREATE_TYPE,
                             Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::CREATE_TYPE,
@@ -418,7 +403,6 @@ mod create_macro {
                     where
                         T: dataplane::bytes::Buf
                     {
-                        //use fluvio_controlplane_metadata::core::Spec;
 
                         let mut typ: u8 = 0;
                         typ.decode(src, version)?;
