@@ -193,14 +193,15 @@ where
         };
 
         req.middleware.decode(src, version)?;
-        req.request.decode_object(src, &req.middleware, version)?;
+        req.request
+            .decode_with_middleware(src, &req.middleware, version)?;
         Ok(req)
     }
 }
 
 impl<R, M> Decoder for RequestMessage<R, M>
 where
-    R: Request<M> + Default,
+    R: Request<M>,
     M: RequestMiddleWare,
 {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), IoError>
@@ -210,7 +211,7 @@ where
         self.header.decode(src, version)?;
         self.middleware.decode(src, version)?;
         self.request
-            .decode_object(src, &self.middleware, self.header.api_version())?;
+            .decode_with_middleware(src, &self.middleware, self.header.api_version())?;
         Ok(())
     }
 }

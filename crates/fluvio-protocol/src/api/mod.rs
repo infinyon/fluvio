@@ -29,14 +29,13 @@ macro_rules! api_decode {
 }
 
 /// Decode with Middleware
-pub trait MiddlewareDecoder<M>: Decoder
-where
-    M: RequestMiddleWare,
-{
+pub trait MiddlewareDecoder: Default {
+    type Middleware: RequestMiddleWare;
+
     /// decode with middleware
     fn decode_from_with_middleware<T>(
         src: &mut T,
-        middleware: &M,
+        middleware: &Self::Middleware,
         version: Version,
     ) -> Result<Self, IoError>
     where
@@ -44,28 +43,24 @@ where
         Self: Default,
     {
         let mut decoder = Self::default();
-        decoder.decode_object(src, middleware, version)?;
+        decoder.decode_with_middleware(src, middleware, version)?;
         Ok(decoder)
     }
 
     /// used by RequestMessage to decode with middleware
-    fn decode_object<T>(
+    fn decode_with_middleware<T>(
         &mut self,
         src: &mut T,
-        _middleware: &M,
+        middleware: &Self::Middleware,
         version: Version,
     ) -> Result<(), IoError>
     where
-        T: Buf,
-    {
-        trace!("using non object decoding");
-        self.decode(src, version)
-    }
+        T: Buf;
 }
 
 pub trait Request<M = DefaultRequestMiddleWare>: Encoder + Decoder + Debug
 where
-    M: RequestMiddleWare,
+    M: Encoder + Decoder + Debug + Default,
 {
     const API_KEY: u16;
 
@@ -76,7 +71,7 @@ where
     type Response: Encoder + Decoder + Debug;
 
     /// used by RequestMessage to decode with middleware
-    fn decode_object<T>(
+    fn decode_with_middleware<T>(
         &mut self,
         src: &mut T,
         _middleware: &M,

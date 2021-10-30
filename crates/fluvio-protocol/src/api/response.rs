@@ -98,7 +98,7 @@ where
 
 impl<P, M> ResponseMessage<P, M>
 where
-    P: MiddlewareDecoder<M>,
+    P: MiddlewareDecoder<Middleware = M>,
     M: RequestMiddleWare,
 {
     pub fn decode_from_with_middleware<T>(src: &mut T, version: Version) -> Result<Self, IoError>

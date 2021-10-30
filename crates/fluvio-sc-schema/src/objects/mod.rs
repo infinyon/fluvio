@@ -141,7 +141,7 @@ mod object_macro {
 
             paste::paste! {
 
-                    fn decode_object<T>(&mut self, src: &mut T, mw: &$m ,version: dataplane::core::Version) -> Result<(), std::io::Error>
+                    fn decode_with_middleware<T>(&mut self, src: &mut T, mw: &$m ,version: dataplane::core::Version) -> Result<(), std::io::Error>
                     where
                         T: dataplane::bytes::Buf,
 
