@@ -45,14 +45,19 @@ mod admin {
     /// filter by name
     pub type NameFilter = String;
 
-    /// AdminSpec has list, type, filter, delete key
+    /// AdminSpec can perform list and watch
     pub trait AdminSpec: Spec + Encoder + Decoder {
         type ListFilter: Encoder + Decoder + Sized + Debug;
         type ListType: Encoder + Decoder + Debug;
         type WatchResponseType: Spec + Encoder + Decoder;
-        type DeleteKey: Encoder + Decoder + Debug + Default;
+    }
 
-        /// this is optional encoding
-        const CREATE_TYPE: u8 = 0;
+    /// Not every Admin Object can be created directly
+    pub trait CreatableAdminSpec: Spec + Encoder + Decoder {
+        const CREATE_TYPE: u8;
+    }
+
+    pub trait DeletableAdminSpec: Spec + Encoder + Decoder {
+        type DeleteKey: Encoder + Decoder + Debug + Default;
     }
 }

@@ -9,7 +9,7 @@ use fluvio_sc_schema::objects::{
     DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
     ObjectApiListResponse, ObjectApiWatchRequest,
 };
-use fluvio_sc_schema::{AdminSpec};
+use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
@@ -145,7 +145,7 @@ impl FluvioAdmin {
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
-        S: AdminSpec + Sync + Send,
+        S: CreatableAdminSpec + Sync + Send,
         ObjectApiCreateRequest: From<CreateRequest<S>>,
     {
         let create_request: CreateRequest<S> = CreateRequest {
@@ -168,7 +168,7 @@ impl FluvioAdmin {
     #[instrument(skip(self, key))]
     pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
     where
-        S: AdminSpec,
+        S: DeletableAdminSpec + Sync + Send,
         K: Into<S::DeleteKey>,
         ObjectApiDeleteRequest: From<DeleteRequest<S>>,
     {

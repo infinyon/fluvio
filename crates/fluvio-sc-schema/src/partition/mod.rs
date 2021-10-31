@@ -15,9 +15,6 @@ mod convert {
     impl AdminSpec for PartitionSpec {
         type ListFilter = NameFilter;
         type WatchResponseType = Self;
-
-        type DeleteKey = String;
-
         type ListType = Metadata<Self>;
     }
 

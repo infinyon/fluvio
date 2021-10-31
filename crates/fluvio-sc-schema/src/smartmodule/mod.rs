@@ -3,7 +3,7 @@ pub use fluvio_controlplane_metadata::smartmodule::*;
 mod convert {
 
     use crate::{
-        AdminSpec, NameFilter,
+        AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
         objects::{
             CreateRequest, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
             ObjectTryFrom, WatchRequest, WatchResponse,
@@ -14,11 +14,15 @@ mod convert {
     impl AdminSpec for SmartModuleSpec {
         type ListFilter = NameFilter;
         type WatchResponseType = Self;
-
-        type DeleteKey = String;
-        const CREATE_TYPE: u8 = 4;
-
         type ListType = Metadata<Self>;
+    }
+
+    impl CreatableAdminSpec for SmartModuleSpec {
+        const CREATE_TYPE: u8 = 4;
+    }
+
+    impl DeletableAdminSpec for SmartModuleSpec {
+        type DeleteKey = String;
     }
 
     ObjectFrom!(CreateRequest, SmartModule);

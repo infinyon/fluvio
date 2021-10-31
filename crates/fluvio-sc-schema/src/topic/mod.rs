@@ -41,6 +41,8 @@ pub mod validate {
 }
 mod convert {
 
+    use crate::CreatableAdminSpec;
+    use crate::DeletableAdminSpec;
     use crate::objects::CreateRequest;
     use crate::objects::DeleteRequest;
     use crate::objects::ListRequest;
@@ -54,6 +56,13 @@ mod convert {
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;
         type WatchResponseType = Self;
+    }
+
+    impl CreatableAdminSpec for TopicSpec {
+        const CREATE_TYPE: u8 = 0;
+    }
+
+    impl DeletableAdminSpec for TopicSpec {
         type DeleteKey = String;
     }
 

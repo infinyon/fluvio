@@ -10,9 +10,6 @@ use crate::{
 impl AdminSpec for SpuSpec {
     type ListFilter = NameFilter;
     type ListType = Metadata<Self>;
-
-    type DeleteKey = String;
-
     type WatchResponseType = Self;
 }
 
