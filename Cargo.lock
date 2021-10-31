@@ -1438,7 +1438,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.9.10"
+version = "0.10.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1656,7 +1656,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.5.0"
+version = "0.5.1"
 dependencies = [
  "async-trait",
  "fluvio",
@@ -1733,7 +1733,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.6.1"
+version = "0.6.2"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1769,7 +1769,7 @@ dependencies = [
  "structopt",
  "thiserror",
  "tracing",
- "tracing-subscriber 0.2.25",
+ "tracing-subscriber 0.3.1",
 ]
 
 [[package]]
@@ -1816,13 +1816,15 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.10.4"
+version = "0.11.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
+ "fluvio-future",
  "fluvio-protocol",
  "fluvio-types",
  "log",
+ "paste",
  "serde",
  "static_assertions",
  "thiserror",
@@ -1882,7 +1884,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.10.3"
+version = "0.10.4"
 dependencies = [
  "async-channel",
  "async-lock",

@@ -12,7 +12,8 @@ use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_controlplane_metadata::spg::SpuGroupSpec;
+use fluvio_sc_schema::objects::CreateRequest;
+use fluvio_sc_schema::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
 
@@ -20,14 +21,17 @@ use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for spu groups request
-#[instrument(skip(name, spec, _dry_run, auth_ctx))]
+#[instrument(skip(create, auth_ctx))]
 pub async fn handle_create_spu_group_request<AC: AuthContext>(
-    name: String,
-    spec: SpuGroupSpec,
-    _dry_run: bool,
+    create: CreateRequest<SpuGroupSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    debug!("creating spu group: {}, replica: {}", name, spec.replicas);
+    let name = create.name;
+    let spg = create.spec;
+
+    debug!( spg = %name,
+         replica = %spg.replicas,
+         "creating spg");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -46,7 +50,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let status = process_custom_spu_request(&auth_ctx.global_ctx, name, spec).await;
+    let status = process_custom_spu_request(&auth_ctx.global_ctx, name, spg).await;
     trace!("create spu-group response {:#?}", status);
 
     Ok(status)

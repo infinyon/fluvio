@@ -2,8 +2,9 @@ use std::io::{Error, ErrorKind};
 
 use tracing::{debug, trace, instrument};
 
-use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
+use fluvio_sc_schema::objects::{ListResponse, Metadata};
 use fluvio_sc_schema::table::TableSpec;
+use fluvio_sc_schema::{NameFilter};
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_controlplane_metadata::extended::SpecExt;
@@ -14,7 +15,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_request<AC: AuthContext>(
     filters: Vec<NameFilter>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse, Error> {
+) -> Result<ListResponse<TableSpec>, Error> {
     trace!("fetching tables");
 
     if let Ok(authorized) = auth_ctx
@@ -25,7 +26,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         if !authorized {
             debug!("fetch table authorization failed");
             // If permission denied, return empty list;
-            return Ok(ListResponse::Table(vec![]));
+            return Ok(ListResponse::new(vec![]));
         }
     } else {
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
@@ -50,5 +51,5 @@ pub async fn handle_fetch_request<AC: AuthContext>(
     debug!("flv fetch tables resp: {} items", tables.len());
     trace!("flv fetch tables resp {:#?}", tables);
 
-    Ok(ListResponse::Table(tables))
+    Ok(ListResponse::new(tables))
 }

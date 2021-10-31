@@ -40,6 +40,12 @@ pub enum ErrorCode {
     #[fluvio(tag = 56)]
     #[error("a storage error occurred")]
     StorageError,
+    #[fluvio(tag = 60)]
+    #[error("invalid create request")]
+    InvalidCreateRequest,
+    #[fluvio(tag = 61)]
+    #[error("invalid Delete request")]
+    InvalidDeleteRequest,
 
     // Spu errors
     #[fluvio(tag = 1000)]

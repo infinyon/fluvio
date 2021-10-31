@@ -9,8 +9,9 @@ use std::io::{Error, ErrorKind};
 use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
-use fluvio_sc_schema::Status;
-use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_sc_schema::{Status};
+use fluvio_sc_schema::objects::CreateRequest;
+use fluvio_sc_schema::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
 
@@ -18,14 +19,15 @@ use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for smart module request
-#[instrument(skip(name, spec, _dry_run, auth_ctx))]
+#[instrument(skip(create, auth_ctx))]
 pub async fn handle_create_smart_module_request<AC: AuthContext>(
-    name: String,
-    spec: SmartModuleSpec,
-    _dry_run: bool,
+    create: CreateRequest<SmartModuleSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    debug!("creating smart module: {}", name);
+    let name = create.name;
+    let spec = create.spec;
+
+    debug!(%name,"creating smart module");
 
     if let Ok(authorized) = auth_ctx
         .auth

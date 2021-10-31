@@ -17,7 +17,9 @@ use tracing::{debug, trace, instrument};
 use dataplane::ErrorCode;
 
 use fluvio_sc_schema::Status;
-use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_sc_schema::objects::CreateRequest;
+use fluvio_sc_schema::topic::TopicSpec;
+
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
@@ -29,14 +31,15 @@ use crate::controllers::topics::validate_assigned_topic_parameters;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for create topic request
-#[instrument(skip(name, dry_run, topic_spec, auth_ctx))]
+#[instrument(skip(create, auth_ctx))]
 pub async fn handle_create_topics_request<AC: AuthContext>(
-    name: String,
-    dry_run: bool,
-    topic_spec: TopicSpec,
+    create: CreateRequest<TopicSpec>,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
-    debug!("api request: create topic '{}'", name);
+    let name = create.name;
+    let topic = create.spec;
+
+    debug!( topic = %name,"creating");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -59,12 +62,12 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
     }
 
     // validate topic request
-    let mut status = validate_topic_request(&name, &topic_spec, &auth_ctx.global_ctx).await;
+    let mut status = validate_topic_request(&name, &topic, &auth_ctx.global_ctx).await;
     if status.is_error() {
         return Ok(status);
     }
-    if !dry_run {
-        status = process_topic_request(auth_ctx, name, topic_spec).await;
+    if !create.dry_run {
+        status = process_topic_request(auth_ctx, name, topic).await;
     }
 
     trace!("create topics request response {:#?}", status);

@@ -26,11 +26,11 @@ pub trait Encoder {
         T: BufMut;
 
     fn as_bytes(&self, version: Version) -> Result<Bytes, Error> {
-        trace!("encoding as bytes");
         let mut out = vec![];
         self.encode(&mut out, version)?;
         let mut buf = BytesMut::with_capacity(out.len());
         buf.put_slice(&out);
+        trace!(len = buf.len(), "encoding as bytes");
         Ok(buf.freeze())
     }
 }

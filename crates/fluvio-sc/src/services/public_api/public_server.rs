@@ -24,7 +24,7 @@ use fluvio_socket::FluvioSocket;
 use fluvio_socket::SocketError;
 use fluvio_service::FluvioService;
 use fluvio_sc_schema::AdminPublicApiKey;
-use fluvio_sc_schema::AdminPublicRequest;
+use fluvio_sc_schema::AdminPublicDecodedRequest;
 
 use crate::services::auth::{AuthGlobalContext, AuthServiceContext};
 
@@ -46,7 +46,7 @@ where
     <A as Authorization>::Context: Send + Sync,
 {
     type Context = AuthGlobalContext<A>;
-    type Request = AdminPublicRequest;
+    type Request = AdminPublicDecodedRequest;
 
     #[instrument(skip(self, ctx))]
     async fn respond(
@@ -69,7 +69,7 @@ where
         ));
 
         let (sink, mut stream) = socket.split();
-        let mut api_stream = stream.api_stream::<AdminPublicRequest, AdminPublicApiKey>();
+        let mut api_stream = stream.api_stream::<AdminPublicDecodedRequest, AdminPublicApiKey>();
         let mut shared_sink = sink.as_shared();
 
         let end_event = StickyEvent::shared();
@@ -78,40 +78,40 @@ where
             api_stream,
             "PublicAPI",
 
-            AdminPublicRequest::ApiVersionsRequest(request) => call_service!(
+            AdminPublicDecodedRequest::ApiVersionsRequest(request) => call_service!(
                 request,
                 super::api_version::handle_api_versions_request(request),
                 shared_sink,
                 "ApiVersionRequest"
             ),
 
-            AdminPublicRequest::CreateRequest(request) => call_service!(
+            AdminPublicDecodedRequest::CreateRequest(request) => call_service!(
                 request,
                 super::create::handle_create_request(request, &service_context),
                 shared_sink,
                 "create  handler"
             ),
-            AdminPublicRequest::DeleteRequest(request) => call_service!(
+            AdminPublicDecodedRequest::DeleteRequest(request) => call_service!(
                 request,
                 super::delete::handle_delete_request(request, &service_context),
                 shared_sink,
                 "delete  handler"
             ),
 
-            AdminPublicRequest::ListRequest(request) => call_service!(
+            AdminPublicDecodedRequest::ListRequest(request) => call_service!(
                 request,
                 super::list::handle_list_request(request, &service_context),
                 shared_sink,
                 "list handler"
             ),
-            AdminPublicRequest::WatchRequest(request) =>
+            AdminPublicDecodedRequest::WatchRequest(request) =>
 
                 super::watch::handle_watch_request(
                     request,
                     &service_context,
                     shared_sink.clone(),
                     end_event.clone(),
-                )
+                )?
 
         );
 

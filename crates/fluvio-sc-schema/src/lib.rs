@@ -1,5 +1,6 @@
 pub mod topic;
 pub mod spu;
+pub mod customspu;
 pub mod spg;
 pub mod connector;
 pub mod smartmodule;
@@ -34,7 +35,24 @@ pub enum ApiError {
 }
 
 mod admin {
-    use dataplane::api::Request;
 
-    pub trait AdminRequest: Request {}
+    use std::fmt::Debug;
+
+    use dataplane::core::{Encoder, Decoder};
+
+    use super::core::{Spec};
+
+    /// filter by name
+    pub type NameFilter = String;
+
+    /// AdminSpec has list, type, filter, delete key
+    pub trait AdminSpec: Spec + Encoder + Decoder {
+        type ListFilter: Encoder + Decoder + Sized + Debug;
+        type ListType: Encoder + Decoder + Debug;
+        type WatchResponseType: Spec + Encoder + Decoder;
+        type DeleteKey: Encoder + Decoder + Debug + Default;
+
+        /// this is optional encoding
+        const CREATE_TYPE: u8 = 0;
+    }
 }

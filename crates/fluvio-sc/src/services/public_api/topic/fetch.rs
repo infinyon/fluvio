@@ -13,7 +13,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_topics_request<AC: AuthContext>(
     filters: Vec<String>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse, Error> {
+) -> Result<ListResponse<TopicSpec>, Error> {
     debug!("retrieving topic list: {:#?}", filters);
 
     if let Ok(authorized) = auth_ctx
@@ -23,7 +23,7 @@ pub async fn handle_fetch_topics_request<AC: AuthContext>(
     {
         if !authorized {
             trace!("authorization failed");
-            return Ok(ListResponse::Topic(vec![]));
+            return Ok(ListResponse::new(vec![]));
         }
     } else {
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
@@ -48,5 +48,5 @@ pub async fn handle_fetch_topics_request<AC: AuthContext>(
     debug!("flv fetch topics resp: {} items", topics.len());
     trace!("flv fetch topics resp {:#?}", topics);
 
-    Ok(ListResponse::Topic(topics))
+    Ok(ListResponse::new(topics))
 }

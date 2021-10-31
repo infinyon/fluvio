@@ -200,6 +200,8 @@ pub async fn consumer<S: Into<String>>(
 /// re-export metadata from sc-api
 pub mod metadata {
 
+    pub use fluvio_sc_schema::AdminSpec;
+
     pub mod topic {
         pub use fluvio_sc_schema::topic::*;
     }
@@ -211,6 +213,11 @@ pub mod metadata {
     pub mod smartmodule {
         pub use fluvio_sc_schema::smartmodule::*;
     }
+
+    pub mod customspu {
+        pub use fluvio_sc_schema::customspu::*;
+    }
+
     pub mod spu {
         pub use fluvio_sc_schema::spu::*;
     }

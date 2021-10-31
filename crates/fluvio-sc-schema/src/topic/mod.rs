@@ -41,61 +41,29 @@ pub mod validate {
 }
 mod convert {
 
-    use std::convert::TryInto;
-    use std::io::Error;
-    use std::io::ErrorKind;
+    use crate::objects::CreateRequest;
+    use crate::objects::DeleteRequest;
+    use crate::objects::ListRequest;
+    use crate::objects::ListResponse;
+    use crate::{AdminSpec, NameFilter};
+    use crate::objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest};
 
-    use crate::objects::*;
-    use super::*;
+    use super::TopicSpec;
 
-    impl From<TopicSpec> for AllCreatableSpec {
-        fn from(spec: TopicSpec) -> Self {
-            Self::Topic(spec)
-        }
+    impl AdminSpec for TopicSpec {
+        type ListFilter = NameFilter;
+        type ListType = Metadata<Self>;
+        type WatchResponseType = Self;
+        type DeleteKey = String;
     }
 
-    impl DeleteSpec for TopicSpec {
-        fn into_request<K>(key: K) -> DeleteRequest
-        where
-            K: Into<Self::DeleteKey>,
-        {
-            DeleteRequest::Topic(key.into())
-        }
-    }
+    ObjectFrom!(CreateRequest, Topic);
+    ObjectFrom!(WatchRequest, Topic);
+    ObjectFrom!(WatchResponse, Topic);
+    ObjectFrom!(ListRequest, Topic);
+    ObjectFrom!(ListResponse, Topic);
+    ObjectFrom!(DeleteRequest, Topic);
 
-    impl ListSpec for TopicSpec {
-        type Filter = NameFilter;
-
-        fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
-            ListRequest::Topic(filters)
-        }
-    }
-
-    impl TryInto<Vec<Metadata<TopicSpec>>> for ListResponse {
-        type Error = Error;
-
-        fn try_into(self) -> Result<Vec<Metadata<TopicSpec>>, Self::Error> {
-            match self {
-                ListResponse::Topic(s) => Ok(s),
-                _ => Err(Error::new(ErrorKind::Other, "not spg")),
-            }
-        }
-    }
-
-    impl From<MetadataUpdate<TopicSpec>> for WatchResponse {
-        fn from(update: MetadataUpdate<TopicSpec>) -> Self {
-            Self::Topic(update)
-        }
-    }
-
-    impl TryInto<MetadataUpdate<TopicSpec>> for WatchResponse {
-        type Error = Error;
-
-        fn try_into(self) -> Result<MetadataUpdate<TopicSpec>, Self::Error> {
-            match self {
-                WatchResponse::Topic(m) => Ok(m),
-                _ => Err(Error::new(ErrorKind::Other, "not topic")),
-            }
-        }
-    }
+    ObjectTryFrom!(WatchResponse, Topic);
+    ObjectTryFrom!(ListResponse, Topic);
 }

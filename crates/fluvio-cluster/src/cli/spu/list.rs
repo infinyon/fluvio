@@ -9,7 +9,7 @@ use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spu::SpuSpec;
-use fluvio::metadata::spu::CustomSpuSpec;
+use fluvio::metadata::customspu::CustomSpuSpec;
 use fluvio::metadata::objects::Metadata;
 
 use crate::cli::ClusterCliError;
