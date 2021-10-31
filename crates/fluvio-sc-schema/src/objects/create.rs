@@ -5,14 +5,14 @@ use std::fmt::Debug;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 
-use crate::{AdminPublicApiKey, AdminSpec, Status};
+use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
 
 use super::{CreateApiEnum};
 
 CreateApiEnum!(CreateRequest);
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct CreateRequest<S: AdminSpec> {
+pub struct CreateRequest<S: CreatableAdminSpec> {
     pub name: String,
     pub dry_run: bool,
     pub spec: S,

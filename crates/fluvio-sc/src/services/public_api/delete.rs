@@ -4,7 +4,6 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use dataplane::ErrorCode;
 use tracing::{debug, instrument, trace};
 use std::io::Error;
 
@@ -43,14 +42,6 @@ pub async fn handle_delete_request<AC: AuthContext>(
         }
         ObjectApiDeleteRequest::Table(req) => {
             super::table::handle_delete_table(req.key(), auth_ctx).await?
-        }
-        _ => {
-            debug!("Unsupported delete request: {:?}", del_req);
-            Status::new(
-                "Delete".to_owned(),
-                ErrorCode::InvalidCreateRequest,
-                Some("invalid delete request".to_owned()),
-            )
         }
     };
 

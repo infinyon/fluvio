@@ -12,6 +12,7 @@ pub use metadata::*;
 pub use crate::NameFilter;
 pub(crate) use object_macro::*;
 pub(crate) use create_macro::*;
+pub(crate) use delete_macro::*;
 
 mod metadata {
 
@@ -318,6 +319,154 @@ mod object_macro {
     pub(crate) use ObjectTryFrom;
 }
 
+mod delete_macro {
+
+    /// Macro to for converting delete object to generic Delete
+    macro_rules! DeleteApiEnum {
+        ($api:ident) => {
+
+            paste::paste! {
+
+                #[derive(Debug)]
+                pub enum [<ObjectApi $api>] {
+                    Topic($api<crate::topic::TopicSpec>),
+                    CustomSpu($api<crate::customspu::CustomSpuSpec>),
+                    SmartModule($api<crate::smartmodule::SmartModuleSpec>),
+                    ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
+                    SpuGroup($api<crate::spg::SpuGroupSpec>),
+                    Table($api<crate::table::TableSpec>),
+                }
+
+                impl Default for [<ObjectApi $api>] {
+                    fn default() -> Self {
+                        Self::Topic($api::<crate::topic::TopicSpec>::default())
+                    }
+                }
+
+                impl [<ObjectApi $api>] {
+                    fn type_string(&self) -> &'static str {
+                        use fluvio_controlplane_metadata::core::Spec;
+                        match self {
+                            Self::Topic(_) => crate::topic::TopicSpec::LABEL,
+                            Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
+                            Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
+                            Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
+                            Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
+                            Self::Table(_) => crate::table::TableSpec::LABEL,
+                        }
+                    }
+                }
+
+                impl  dataplane::core::Encoder for [<ObjectApi $api>] {
+
+                    fn write_size(&self, version: dataplane::core::Version) -> usize {
+                        let type_size = self.type_string().to_owned().write_size(version);
+
+                        type_size
+                            + match self {
+                                Self::Topic(s) => s.write_size(version),
+                                Self::CustomSpu(s) => s.write_size(version),
+                                Self::SmartModule(s) => s.write_size(version),
+                                Self::ManagedConnector(s) => s.write_size(version),
+                                Self::SpuGroup(s) => s.write_size(version),
+                                Self::Table(s) => s.write_size(version),
+                            }
+                    }
+
+                    fn encode<T>(&self, dest: &mut T, version: dataplane::core::Version) -> Result<(), std::io::Error>
+                    where
+                        T: dataplane::bytes::BufMut,
+                    {
+                        let ty = self.type_string().to_owned();
+
+                        tracing::trace!(%ty,len = self.write_size(version),"encoding objects");
+                        ty.encode(dest, version)?;
+
+                        match self {
+                            Self::Topic(s) => s.encode(dest, version)?,
+                            Self::CustomSpu(s) => s.encode(dest, version)?,
+                            Self::SpuGroup(s) => s.encode(dest, version)?,
+                            Self::ManagedConnector(s) => s.encode(dest, version)?,
+                            Self::SmartModule(s) => s.encode(dest, version)?,
+                            Self::Table(s) => s.encode(dest, version)?
+                        }
+
+                        Ok(())
+                    }
+
+                }
+
+
+                impl  dataplane::core::Decoder for [<ObjectApi $api>] {
+
+                    fn decode<T>(&mut self, src: &mut T, version: dataplane::core::Version) -> Result<(),std::io::Error>
+                    where
+                        T: dataplane::bytes::Buf
+                    {
+                        use fluvio_controlplane_metadata::core::Spec;
+
+                        let mut typ = "".to_owned();
+                        typ.decode(src, version)?;
+                        tracing::trace!(%typ,"decoded type");
+
+                        match typ.as_ref() {
+                            crate::topic::TopicSpec::LABEL => {
+                                tracing::trace!("detected topic");
+                                let mut request = $api::<crate::topic::TopicSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Topic(request);
+                                return Ok(())
+                            }
+
+                            crate::table::TableSpec::LABEL => {
+                                tracing::trace!("detected table");
+                                let mut request = $api::<crate::table::TableSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::Table(request);
+                                return Ok(())
+                            }
+
+                            crate::customspu::CustomSpuSpec::LABEL => {
+                                tracing::trace!("detected custom spu");
+                                let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::CustomSpu(request);
+                                return Ok(())
+                            }
+
+                            crate::spg::SpuGroupSpec::LABEL => {
+                                tracing::trace!("detected custom spu");
+                                let mut request = $api::<crate::spg::SpuGroupSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::SpuGroup(request);
+                                return Ok(())
+                            }
+
+
+                            crate::connector::ManagedConnectorSpec::LABEL => {
+                                tracing::trace!("detected connector");
+                                let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::ManagedConnector(request);
+                                Ok(())
+                            }
+
+                            // Unexpected type
+                            _ => Err(std::io::Error::new(
+                                std::io::ErrorKind::InvalidData,
+                                format!("invalid object type {:#?}", typ),
+                            ))
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+
+    pub(crate) use DeleteApiEnum;
+}
+
 mod create_macro {
 
     /// Macro to Similar to ObjectApiFrom but specialize to create which has reduce number of objects
@@ -345,7 +494,7 @@ mod create_macro {
 
                 impl [<ObjectApi $api>] {
                     fn type_value(&self) -> u8 {
-
+                        use crate::CreatableAdminSpec;
                         match self {
                             Self::Topic(_) => crate::topic::TopicSpec::CREATE_TYPE,
                             Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::CREATE_TYPE,
@@ -403,6 +552,7 @@ mod create_macro {
                     where
                         T: dataplane::bytes::Buf
                     {
+                        use crate::CreatableAdminSpec;
 
                         let mut typ: u8 = 0;
                         typ.decode(src, version)?;

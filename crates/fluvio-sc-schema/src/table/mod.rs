@@ -2,6 +2,7 @@ pub use fluvio_controlplane_metadata::table::*;
 
 mod convert {
 
+    use crate::{CreatableAdminSpec, DeletableAdminSpec};
     use crate::objects::{
         CreateRequest, DeleteRequest, ListResponse, ObjectFrom, ObjectTryFrom, WatchRequest,
     };
@@ -15,7 +16,13 @@ mod convert {
         type ListFilter = NameFilter;
         type ListType = Metadata<Self>;
         type WatchResponseType = Self;
+    }
+
+    impl CreatableAdminSpec for TableSpec {
         const CREATE_TYPE: u8 = 5;
+    }
+
+    impl DeletableAdminSpec for TableSpec {
         type DeleteKey = String;
     }
 
