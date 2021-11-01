@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
@@ -13,7 +12,7 @@ pub struct CreateSmartStreamOpt {
 }
 
 impl CreateSmartStreamOpt {
-    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+    pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
         todo!()
     }
 }

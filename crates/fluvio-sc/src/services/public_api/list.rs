@@ -43,6 +43,10 @@ pub async fn handle_list_request<AC: AuthContext>(
         ObjectApiListRequest::Table(req) => ObjectApiListResponse::Table(
             super::table::handle_fetch_request(req.name_filters, auth_ctx).await?,
         ),
+        ObjectApiListRequest::SmartStream(req) => {
+            //super::smartstream::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            todo!()
+        }
     };
 
     debug!("response: {:#?}", response);

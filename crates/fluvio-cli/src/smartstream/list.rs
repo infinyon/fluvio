@@ -20,7 +20,7 @@ impl ListSmartStreamOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
         let lists = admin.list::<SmartStreamSpec, _>(vec![]).await?;
-        output::smart_modules_response_to_output(out, lists, self.output.format)
+        output::smart_stream_response_to_output(out, lists, self.output.format)
     }
 }
 mod output {
@@ -41,7 +41,7 @@ mod output {
     use fluvio_extension_common::Terminal;
 
     use fluvio::metadata::objects::Metadata;
-    use fluvio::metadata::smartmodule::SmartModuleSpec;
+    use fluvio::metadata::smartstream::SmartStreamSpec;
 
     use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
@@ -53,7 +53,6 @@ mod output {
     // -----------------------------------
     // Format Output
     // -----------------------------------
-
 
     pub fn smart_stream_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,

@@ -2,62 +2,43 @@ pub use fluvio_controlplane_metadata::smartstream::*;
 
 mod convert {
 
-    use std::io::Error;
-    use std::io::ErrorKind;
-    use std::convert::TryInto;
+    use crate::AdminSpec;
+    use crate::CreatableAdminSpec;
+    use crate::DeletableAdminSpec;
+    use crate::NameFilter;
+    use crate::objects::CreateFrom;
+    use crate::objects::DeleteRequest;
+    use crate::objects::ListRequest;
+    use crate::objects::ListResponse;
+    use crate::objects::Metadata;
+    use crate::objects::ObjectFrom;
+    use crate::objects::ObjectTryFrom;
+    use crate::objects::WatchRequest;
+    use crate::objects::WatchResponse;
 
-    use crate::objects::*;
-    use super::*;
+    use super::SmartStreamSpec;
 
-    impl From<SmartStreamSpec> for AllCreatableSpec {
-        fn from(spec: SmartStreamSpec) -> Self {
-            Self::SmartStream(spec)
-        }
+    impl AdminSpec for SmartStreamSpec {
+        type ListFilter = NameFilter;
+        type WatchResponseType = Self;
+        type ListType = Metadata<Self>;
     }
 
-    impl DeleteSpec for SmartStreamSpec {
-        fn into_request<K>(key: K) -> DeleteRequest
-        where
-            K: Into<Self::DeleteKey>,
-        {
-            DeleteRequest::SmartStream(key.into())
-        }
+    impl CreatableAdminSpec for SmartStreamSpec {
+        const CREATE_TYPE: u8 = 10;
     }
 
-    impl ListSpec for SmartStreamSpec {
-        type Filter = NameFilter;
-
-        fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
-            ListRequest::SmartStream(filters)
-        }
+    impl DeletableAdminSpec for SmartStreamSpec {
+        type DeleteKey = String;
     }
 
-    impl TryInto<Vec<Metadata<SmartStreamSpec>>> for ListResponse {
-        type Error = Error;
+    CreateFrom!(SmartStreamSpec, SmartStream);
+    ObjectFrom!(WatchRequest, SmartStream);
+    ObjectFrom!(WatchResponse, SmartStream);
+    ObjectFrom!(ListRequest, SmartStream);
+    ObjectFrom!(ListResponse, SmartStream);
+    ObjectFrom!(DeleteRequest, SmartStream);
 
-        fn try_into(self) -> Result<Vec<Metadata<SmartStreamSpec>>, Self::Error> {
-            match self {
-                ListResponse::SmartStream(s) => Ok(s),
-                _ => Err(Error::new(ErrorKind::Other, "not smartmodule")),
-            }
-        }
-    }
-
-    impl From<MetadataUpdate<SmartStreamSpec>> for WatchResponse {
-        fn from(update: MetadataUpdate<SmartStreamSpec>) -> Self {
-            Self::SmartStream(update)
-        }
-    }
-
-    impl TryInto<MetadataUpdate<SmartStreamSpec>> for WatchResponse {
-        type Error = Error;
-
-        fn try_into(self) -> Result<MetadataUpdate<SmartStreamSpec>, Self::Error> {
-            match self {
-                WatchResponse::SmartStream(m) => Ok(m),
-                _ => Err(Error::new(ErrorKind::Other, "not smartmodule")),
-            }
-        }
-    }
-
+    ObjectTryFrom!(WatchResponse, SmartStream);
+    ObjectTryFrom!(ListResponse, SmartStream);
 }

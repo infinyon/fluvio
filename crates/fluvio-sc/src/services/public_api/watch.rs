@@ -21,7 +21,6 @@ use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::table::TableSpec;
 
-
 use crate::services::auth::AuthServiceContext;
 use crate::stores::{StoreContext, K8ChangeListener};
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;

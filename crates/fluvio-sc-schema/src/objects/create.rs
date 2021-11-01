@@ -4,6 +4,7 @@ use std::fmt::Debug;
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
+use fluvio_controlplane_metadata::smartstream::SmartStreamSpec;
 use fluvio_protocol::Version;
 use crate::topic::TopicSpec;
 use crate::customspu::CustomSpuSpec;
@@ -46,6 +47,7 @@ pub enum ObjectCreateRequest {
     ManagedConnector(ManagedConnectorSpec),
     SpuGroup(SpuGroupSpec),
     Table(TableSpec),
+    SmartStream(SmartStreamSpec),
 }
 
 impl Default for ObjectCreateRequest {
@@ -63,6 +65,7 @@ impl ObjectCreateRequest {
             Self::ManagedConnector(_) => ManagedConnectorSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
             Self::Table(_) => TableSpec::CREATE_TYPE,
+            Self::SmartStream(_) => SmartStreamSpec::CREATE_TYPE,
         }
     }
 }
@@ -79,6 +82,7 @@ impl Encoder for ObjectCreateRequest {
                 Self::ManagedConnector(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
                 Self::Table(s) => s.write_size(version),
+                Self::SmartStream(s) => s.write_size(version),
             }
     }
 
@@ -98,6 +102,7 @@ impl Encoder for ObjectCreateRequest {
             Self::SmartModule(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
             Self::Table(s) => s.encode(dest, version)?,
+            Self::SmartStream(s) => s.encode(dest, version)?,
         }
 
         Ok(())
@@ -162,6 +167,14 @@ impl dataplane::core::Decoder for ObjectCreateRequest {
                 let mut request = ManagedConnectorSpec::default();
                 request.decode(src, version)?;
                 *self = Self::ManagedConnector(request);
+                Ok(())
+            }
+
+            SmartStreamSpec::CREATE_TYPE => {
+                tracing::trace!("detected smartstream");
+                let mut request = SmartStreamSpec::default();
+                request.decode(src, version)?;
+                *self = Self::SmartStream(request);
                 Ok(())
             }
 
