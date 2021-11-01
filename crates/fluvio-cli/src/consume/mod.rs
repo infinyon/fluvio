@@ -189,33 +189,33 @@ impl ConsumeOpt {
         };
 
         let smart_module = if let Some(name_or_path) = &self.filter {
-            create_smart_module(name_or_path, SmartStreamKind::Filter, extra_params)
+            Some(create_smart_module(name_or_path, SmartStreamKind::Filter, extra_params)?)
         } else if let Some(name_or_path) = &self.map {
-            create_smart_module(name_or_path, SmartStreamKind::Map, extra_params)
+            Some(create_smart_module(name_or_path, SmartStreamKind::Map, extra_params)?)
         } else if let Some(name_or_path) = &self.array_map {
-            create_smart_module(name_or_path, SmartStreamKind::ArrayMap, extra_params)
+            Some(create_smart_module(name_or_path, SmartStreamKind::ArrayMap, extra_params)?)
         } else if let Some(name_or_path) = &self.filter_map {
-            create_smart_module(name_or_path, SmartStreamKind::FilterMap, extra_params)
+            Some(create_smart_module(name_or_path, SmartStreamKind::FilterMap, extra_params)?)
         } else {
             match (&self.aggregate, &self.initial) {
                 (Some(name_or_path), Some(acc_path)) => {
                     let accumulator = std::fs::read(acc_path)?;
-                    create_smart_module(name_or_path, SmartStreamKind::Aggregate {
+                    Some(create_smart_module(name_or_path, SmartStreamKind::Aggregate {
                         accumulator
-                    }, extra_params)
+                    }, extra_params)?)
                 }
                 (Some(name_or_path), None) => {
-                    create_smart_module(name_or_path, SmartStreamKind::Aggregate {
+                    Some(create_smart_module(name_or_path, SmartStreamKind::Aggregate {
                         accumulator: Vec::new()
-                    }, extra_params)
+                    }, extra_params)?)
                 }
                 (None, Some(_)) => {
                     println!("In order to use --accumulator, you must also specify --aggregate");
                     return Ok(());
                 }
-                (None, None) => Ok(None),
+                (None, None) => None,
             }
-        }?;
+        };
 
         builder.smart_module(smart_module);
 
