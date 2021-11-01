@@ -11,13 +11,13 @@
 
 use std::io::{Error as IoError, ErrorKind};
 
+use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
 
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::CreateRequest;
 use fluvio_sc_schema::topic::TopicSpec;
 
 use fluvio_auth::{AuthContext, TypeAction};
@@ -33,11 +33,11 @@ use crate::services::auth::AuthServiceContext;
 /// Handler for create topic request
 #[instrument(skip(create, auth_ctx))]
 pub async fn handle_create_topics_request<AC: AuthContext>(
-    create: CreateRequest<TopicSpec>,
+    create: CommonCreateRequest,
+    topic: TopicSpec,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, IoError> {
     let name = create.name;
-    let topic = create.spec;
 
     debug!( topic = %name,"creating");
 

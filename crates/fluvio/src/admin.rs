@@ -6,8 +6,8 @@ use fluvio_future::net::DomainConnector;
 use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{
-    DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest, ObjectApiListRequest,
-    ObjectApiListResponse, ObjectApiWatchRequest,
+    CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
+    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest,
 };
 use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::SocketError;
@@ -15,7 +15,7 @@ use fluvio_socket::MultiplexerSocket;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
-use crate::metadata::objects::{ListResponse, ListRequest, CreateRequest};
+use crate::metadata::objects::{ListResponse, ListRequest};
 use crate::config::ConfigFile;
 use crate::sync::MetadataStores;
 
@@ -146,15 +146,11 @@ impl FluvioAdmin {
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
         S: CreatableAdminSpec + Sync + Send,
-        ObjectApiCreateRequest: From<CreateRequest<S>>,
+        ObjectApiCreateRequest: From<(CommonCreateRequest, S)>,
     {
-        let create_request: CreateRequest<S> = CreateRequest {
-            name,
-            dry_run,
-            spec,
-        };
+        let common_request = CommonCreateRequest { name, dry_run };
 
-        let create_request: ObjectApiCreateRequest = create_request.into();
+        let create_request: ObjectApiCreateRequest = (common_request, spec).into();
 
         debug!("sending create request: {:#?}", create_request);
 

@@ -11,7 +11,6 @@ pub use metadata::*;
 
 pub use crate::NameFilter;
 pub(crate) use object_macro::*;
-pub(crate) use create_macro::*;
 pub(crate) use delete_macro::*;
 
 mod metadata {
@@ -277,7 +276,7 @@ mod object_macro {
     /// }
     /// ObjectFrom!(WatchRequest, Topic);
     macro_rules! ObjectFrom {
-        ($from:ident,$spec:ident,$dec:ty) => {
+        ($from:ident,$spec:ident) => {
             paste::paste! {
 
                 impl From<$from<[<$spec Spec>]>> for crate::objects::[<ObjectApi $from>] {
@@ -465,163 +464,6 @@ mod delete_macro {
     }
 
     pub(crate) use DeleteApiEnum;
-}
-
-mod create_macro {
-
-    /// Macro to Similar to ObjectApiFrom but specialize to create which has reduce number of objects
-    macro_rules! CreateApiEnum {
-        ($api:ident) => {
-
-            paste::paste! {
-
-
-                #[derive(Debug)]
-                pub enum [<ObjectApi $api>] {
-                    Topic($api<crate::topic::TopicSpec>),
-                    CustomSpu($api<crate::customspu::CustomSpuSpec>),
-                    SmartModule($api<crate::smartmodule::SmartModuleSpec>),
-                    ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
-                    SpuGroup($api<crate::spg::SpuGroupSpec>),
-                    Table($api<crate::table::TableSpec>),
-                }
-
-                impl Default for [<ObjectApi $api>] {
-                    fn default() -> Self {
-                        Self::Topic($api::<crate::topic::TopicSpec>::default())
-                    }
-                }
-
-                impl [<ObjectApi $api>] {
-                    fn type_value(&self) -> u8 {
-                        use crate::CreatableAdminSpec;
-                        match self {
-                            Self::Topic(_) => crate::topic::TopicSpec::CREATE_TYPE,
-                            Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::CREATE_TYPE,
-                            Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::CREATE_TYPE,
-                            Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::CREATE_TYPE,
-                            Self::SpuGroup(_) => crate::spg::SpuGroupSpec::CREATE_TYPE,
-                            Self::Table(_) => crate::table::TableSpec::CREATE_TYPE,
-                        }
-                    }
-                }
-
-                impl  dataplane::core::Encoder for [<ObjectApi $api>] {
-
-                    fn write_size(&self, version: dataplane::core::Version) -> usize {
-                        let type_size = (0u8).write_size(version);
-
-                        type_size
-                            + match self {
-                                Self::Topic(s) => s.write_size(version),
-                                Self::CustomSpu(s) => s.write_size(version),
-                                Self::SmartModule(s) => s.write_size(version),
-                                Self::ManagedConnector(s) => s.write_size(version),
-                                Self::SpuGroup(s) => s.write_size(version),
-                                Self::Table(s) => s.write_size(version),
-                            }
-                    }
-
-                    fn encode<T>(&self, dest: &mut T, version: dataplane::core::Version) -> Result<(), std::io::Error>
-                    where
-                        T: dataplane::bytes::BufMut,
-                    {
-
-                        self.type_value().encode(dest, version)?;
-                        match self {
-                            Self::Topic(s) => s.encode(dest, version)?,
-                            Self::CustomSpu(s) => s.encode(dest, version)?,
-                            Self::ManagedConnector(s) => s.encode(dest, version)?,
-                            Self::SmartModule(s) => s.encode(dest, version)?,
-                            Self::SpuGroup(s) => s.encode(dest,version)?,
-                            Self::Table(s) => s.encode(dest, version)?,
-                        }
-
-                        Ok(())
-                    }
-
-                }
-
-
-                // We implement decode signature even thought this will be never called.
-                // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
-                // to provide decode implementation but shoudl be never called
-                impl  dataplane::core::Decoder for [<ObjectApi $api>] {
-
-                    fn decode<T>(&mut self, src: &mut T, version: dataplane::core::Version) -> Result<(),std::io::Error>
-                    where
-                        T: dataplane::bytes::Buf
-                    {
-                        use crate::CreatableAdminSpec;
-
-                        let mut typ: u8 = 0;
-                        typ.decode(src, version)?;
-                        tracing::trace!("decoded type: {}", typ);
-
-
-                        match typ {
-                            crate::topic::TopicSpec::CREATE_TYPE => {
-                                tracing::trace!("detected topic");
-                                let mut request = $api::<crate::topic::TopicSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Topic(request);
-                                return Ok(())
-                            }
-
-                            crate::table::TableSpec::CREATE_TYPE => {
-                                tracing::trace!("detected table");
-                                let mut request = $api::<crate::table::TableSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::Table(request);
-                                return Ok(())
-                            }
-
-                            crate::customspu::CustomSpuSpec::CREATE_TYPE => {
-                                tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::customspu::CustomSpuSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::CustomSpu(request);
-                                return Ok(())
-                            }
-
-                            crate::spg::SpuGroupSpec::CREATE_TYPE => {
-                                tracing::trace!("detected custom spu");
-                                let mut request = $api::<crate::spg::SpuGroupSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SpuGroup(request);
-                                return Ok(())
-                            }
-
-                            crate::smartmodule::SmartModuleSpec::CREATE_TYPE => {
-                                tracing::trace!("detected smartmodule");
-                                let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::SmartModule(request);
-                                return Ok(())
-                            }
-
-                            crate::connector::ManagedConnectorSpec::CREATE_TYPE => {
-                                tracing::trace!("detected connector");
-                                let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
-                                request.decode(src, version)?;
-                                *self = Self::ManagedConnector(request);
-                                Ok(())
-                            }
-
-                            // Unexpected type
-                            _ => Err(std::io::Error::new(
-                                std::io::ErrorKind::InvalidData,
-                                format!("invalid create type {:#?}", typ),
-                            ))
-                        }
-                    }
-
-                }
-            }
-        }
-    }
-
-    pub(crate) use CreateApiEnum;
 }
 
 #[cfg(test)]

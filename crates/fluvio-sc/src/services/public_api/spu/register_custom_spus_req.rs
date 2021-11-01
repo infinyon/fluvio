@@ -11,7 +11,7 @@ use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_sc_schema::Status;
 use fluvio_sc_schema::spu::SpuSpec;
 use fluvio_sc_schema::customspu::CustomSpuSpec;
-use fluvio_sc_schema::objects::CreateRequest;
+use fluvio_sc_schema::objects::{CommonCreateRequest};
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::extended::SpecExt;
 
@@ -28,11 +28,11 @@ impl RegisterCustomSpu {
     /// Handler for create spus request
     #[instrument(skip(create, auth_ctx))]
     pub async fn handle_register_custom_spu_request<AC: AuthContext>(
-        create: CreateRequest<CustomSpuSpec>,
+        create: CommonCreateRequest,
+        spec: CustomSpuSpec,
         auth_ctx: &AuthServiceContext<AC>,
     ) -> Status {
         let name = create.name;
-        let spec = create.spec;
 
         debug!(
             %name,
