@@ -428,6 +428,7 @@ impl PartitionConsumer {
             .unwrap_or((WASM_MODULE_API - 1) as i16);
 
         if let Some(smart_module) = config.smart_module {
+            println!("vers {:?}", stream_fetch_version);
             if stream_fetch_version < WASM_MODULE_PERSISTENT_API as i16 {
                 return Err(FluvioError::Other("SPU does not support persistent WASM".to_owned()));
             }
