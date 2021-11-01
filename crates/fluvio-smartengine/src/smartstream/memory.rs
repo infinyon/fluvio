@@ -34,7 +34,7 @@ pub fn copy_memory_to_instance(
         .get_func(&mut *store, ALLOC_FN)
         .ok_or_else(|| anyhow!("missing alloc"))?;
 
-    let mut alloc_result = vec![];
+    let mut alloc_result = [Val::I32(0)];
     alloc.call(
         &mut *store,
         &[Val::from(bytes.len() as i32)],
