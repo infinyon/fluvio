@@ -141,7 +141,10 @@ impl StreamFetchHandler {
                             params: smart_module_invocation.params,
                         })
                     } else {
-                        None
+                        let error = SmartStreamError::SmartModuleNotFound(name);
+                        let error_code = ErrorCode::SmartStreamError(error);
+                        send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                        return Ok(());
                     }
                 }
                 SmartModuleInvocationWasm::AdHoc(bytes) => {
