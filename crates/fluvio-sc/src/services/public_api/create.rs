@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
-use fluvio_sc_schema::objects::ObjectApiCreateRequest;
+use fluvio_sc_schema::objects::{ObjectApiCreateRequest, ObjectCreateRequest};
 use fluvio_auth::AuthContext;
 
 use crate::services::auth::AuthServiceContext;
@@ -15,29 +15,35 @@ pub async fn handle_create_request<AC: AuthContext>(
     request: RequestMessage<ObjectApiCreateRequest>,
     auth_context: &AuthServiceContext<AC>,
 ) -> Result<ResponseMessage<Status>, IoError> {
-    let (header, req) = request.get_header_request();
+    let (header, obj_req) = request.get_header_request();
 
-    debug!("create request: {:#?}", req);
-
-    let status = match req {
-        ObjectApiCreateRequest::Topic(create) => {
-            super::topic::handle_create_topics_request(create, auth_context).await?
+    debug!("create request: {:#?}", obj_req);
+    let ObjectApiCreateRequest { common, request } = obj_req;
+    let status = match request {
+        ObjectCreateRequest::Topic(create) => {
+            super::topic::handle_create_topics_request(common, create, auth_context).await?
         }
-        ObjectApiCreateRequest::SpuGroup(create) => {
-            super::spg::handle_create_spu_group_request(create, auth_context).await?
+        ObjectCreateRequest::SpuGroup(create) => {
+            super::spg::handle_create_spu_group_request(common, create, auth_context).await?
         }
-        ObjectApiCreateRequest::CustomSpu(create) => {
-            super::spu::RegisterCustomSpu::handle_register_custom_spu_request(create, auth_context)
-                .await
+        ObjectCreateRequest::CustomSpu(create) => {
+            super::spu::RegisterCustomSpu::handle_register_custom_spu_request(
+                common,
+                create,
+                auth_context,
+            )
+            .await
         }
-        ObjectApiCreateRequest::ManagedConnector(create) => {
-            super::connector::handle_create_managed_connector_request(create, auth_context).await?
+        ObjectCreateRequest::ManagedConnector(create) => {
+            super::connector::handle_create_managed_connector_request(common, create, auth_context)
+                .await?
         }
-        ObjectApiCreateRequest::SmartModule(create) => {
-            super::smartmodule::handle_create_smart_module_request(create, auth_context).await?
+        ObjectCreateRequest::SmartModule(create) => {
+            super::smartmodule::handle_create_smart_module_request(common, create, auth_context)
+                .await?
         }
-        ObjectApiCreateRequest::Table(create) => {
-            super::table::handle_create_table_request(create, auth_context).await?
+        ObjectCreateRequest::Table(create) => {
+            super::table::handle_create_table_request(common, create, auth_context).await?
         }
     };
 

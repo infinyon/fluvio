@@ -10,7 +10,7 @@ use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::CreateRequest;
+use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::connector::ManagedConnectorSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -21,11 +21,11 @@ use crate::services::auth::AuthServiceContext;
 /// Handler for managed connector request
 #[instrument(skip(create, auth_ctx))]
 pub async fn handle_create_managed_connector_request<AC: AuthContext>(
-    create: CreateRequest<ManagedConnectorSpec>,
+    create: CommonCreateRequest,
+    spec: ManagedConnectorSpec,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     let name = create.name;
-    let spec = create.spec;
 
     debug!("creating managed connector: {}", name);
 

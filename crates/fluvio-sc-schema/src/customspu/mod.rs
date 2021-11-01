@@ -2,7 +2,7 @@ pub use fluvio_controlplane_metadata::spu::{CustomSpuSpec, CustomSpuKey};
 
 use crate::CreatableAdminSpec;
 use crate::DeletableAdminSpec;
-use crate::objects::CreateRequest;
+use crate::objects::CreateFrom;
 use crate::objects::DeleteRequest;
 use crate::objects::ListRequest;
 use crate::objects::ListResponse;
@@ -25,7 +25,7 @@ impl DeletableAdminSpec for CustomSpuSpec {
     type DeleteKey = CustomSpuKey;
 }
 
-ObjectFrom!(CreateRequest, CustomSpu);
+CreateFrom!(CustomSpuSpec, CustomSpu);
 ObjectFrom!(DeleteRequest, CustomSpu);
 ObjectFrom!(ListRequest, CustomSpu);
 ObjectFrom!(ListResponse, CustomSpu);

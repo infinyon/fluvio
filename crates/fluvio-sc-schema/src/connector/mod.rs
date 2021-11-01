@@ -5,7 +5,7 @@ mod convert {
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
         objects::{
-            CreateRequest, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
+            CreateFrom, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
             ObjectTryFrom, WatchRequest, WatchResponse,
         },
     };
@@ -25,7 +25,7 @@ mod convert {
         type DeleteKey = String;
     }
 
-    ObjectFrom!(CreateRequest, ManagedConnector);
+    CreateFrom!(ManagedConnectorSpec, ManagedConnector);
     ObjectFrom!(WatchRequest, ManagedConnector);
     ObjectFrom!(WatchResponse, ManagedConnector);
     ObjectFrom!(ListRequest, ManagedConnector);

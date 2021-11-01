@@ -12,7 +12,7 @@ use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::objects::CreateRequest;
+use fluvio_sc_schema::objects::{CommonCreateRequest};
 use fluvio_sc_schema::spg::SpuGroupSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
@@ -21,13 +21,13 @@ use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for spu groups request
-#[instrument(skip(create, auth_ctx))]
+#[instrument(skip(common, auth_ctx))]
 pub async fn handle_create_spu_group_request<AC: AuthContext>(
-    create: CreateRequest<SpuGroupSpec>,
+    common: CommonCreateRequest,
+    spg: SpuGroupSpec,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    let name = create.name;
-    let spg = create.spec;
+    let name = common.name;
 
     debug!( spg = %name,
          replica = %spg.replicas,
