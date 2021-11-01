@@ -34,7 +34,12 @@ pub fn copy_memory_to_instance(
         .get_func(&mut *store, ALLOC_FN)
         .ok_or_else(|| anyhow!("missing alloc"))?;
 
-    let alloc_result = alloc.call(&mut *store, &[Val::from(bytes.len() as i32)])?;
+    let mut alloc_result = [Val::I32(0)];
+    alloc.call(
+        &mut *store,
+        &[Val::from(bytes.len() as i32)],
+        &mut alloc_result,
+    )?;
 
     let guest_ptr_offset = match alloc_result
         .get(0)
