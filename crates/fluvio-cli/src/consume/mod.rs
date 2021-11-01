@@ -5,12 +5,15 @@
 //!
 
 use std::{io::Error as IoError, path::PathBuf};
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Read};
 use std::collections::{BTreeMap};
+use flate2::Compression;
+use flate2::bufread::GzEncoder;
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
+
 mod record_format;
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
@@ -420,8 +423,11 @@ impl ConsumeOpt {
 
 fn create_smart_module(name_or_path: &str, kind: SmartStreamKind, params: BTreeMap<String, String>) -> Result<SmartModuleInvocation> {
     let wasm = if PathBuf::from(name_or_path).exists() {
-        let buffer = std::fs::read(name_or_path)?;
-        debug!(len = buffer.len(), "read wasm bytes");
+        let raw_buffer = std::fs::read(name_or_path)?;
+        debug!(len = raw_buffer.len(), "read wasm bytes");
+        let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
+        let mut buffer = Vec::with_capacity(raw_buffer.len());
+        encoder.read_to_end(&mut buffer)?;
         SmartModuleInvocationWasm::AdHoc(buffer)
     } else {
         SmartModuleInvocationWasm::Predefined(name_or_path.to_owned())
