@@ -714,7 +714,7 @@ jobs:
   k8_cli_smoke:
     name: CLI smoke tests
     needs: build_image
-    if: ${{ false }}
+    #if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
