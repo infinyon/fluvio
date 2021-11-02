@@ -15,11 +15,7 @@ pub struct SmartStreamSpec {
 }
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(untagged)
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartStreamInput {
     #[serde(rename = "topic")]
     Topic(SmartStreamRef),
@@ -43,10 +39,8 @@ pub struct SmartStreamRef {
     pub name: String,
 }
 
-
 #[cfg(test)]
 mod test {
-
 
     use super::SmartStreamSpec;
 
@@ -65,6 +59,4 @@ mod test {
         )
         .expect("spec");
     }
-
-
 }
