@@ -1639,6 +1639,7 @@ dependencies = [
  "flv-util",
  "log",
  "serde",
+ "serde_json",
  "tracing",
 ]
 

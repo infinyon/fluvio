@@ -42,3 +42,29 @@ impl Default for SmartStreamInput {
 pub struct SmartStreamRef {
     pub name: String,
 }
+
+
+#[cfg(test)]
+mod test {
+
+
+    use super::SmartStreamSpec;
+
+    #[test]
+    fn test_smartstream_spec_deserialiation() {
+        let _spec: SmartStreamSpec = serde_json::from_str(
+            r#"
+                {
+                    "left": {
+                        "topic": {
+                            "name": "test"
+                        }
+                    }
+                }
+            "#,
+        )
+        .expect("spec");
+    }
+
+
+}
