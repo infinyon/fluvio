@@ -30,7 +30,6 @@ use super::SpuServerApiKey;
 // version for WASM_MODULE
 pub const WASM_MODULE_API: i16 = 11;
 pub const WASM_MODULE_V2_API: i16 = 12;
-pub const WASM_MODULE_PERSISTENT_API: i16 = 16;
 
 // version for aggregator smartstream
 pub const AGGREGATOR_API: i16 = 13;
@@ -40,6 +39,9 @@ pub const GZIP_WASM_API: i16 = 14;
 
 // version for SmartStream array map
 pub const ARRAY_MAP_WASM_API: i16 = 15;
+
+// version for persistent SmartModule
+pub const WASM_MODULE_PERSISTENT_API: i16 = 16;
 
 /// Fetch records continuously
 /// Output will be send back as stream
@@ -98,7 +100,7 @@ pub enum SmartModuleInvocationWasm {
     /// Name of SmartModule
     Predefined(String),
     /// Compressed WASM module payload using Gzip
-    AdHoc(Vec<u8>)
+    AdHoc(Vec<u8>),
 }
 
 impl Default for SmartModuleInvocationWasm {

@@ -8,8 +8,13 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartStreamPayload, SmartStreamWasm, WASM_MODULE_PERSISTENT_API, WASM_MODULE_V2_API};
-pub use fluvio_spu_schema::server::stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind};
+use fluvio_spu_schema::server::stream_fetch::{
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartStreamPayload,
+    SmartStreamWasm, WASM_MODULE_API, WASM_MODULE_PERSISTENT_API, WASM_MODULE_V2_API,
+};
+pub use fluvio_spu_schema::server::stream_fetch::{
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind,
+};
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
@@ -399,7 +404,6 @@ impl PartitionConsumer {
     {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
-        use fluvio_spu_schema::server::stream_fetch::WASM_MODULE_API;
         use fluvio_protocol::api::Request;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
@@ -430,35 +434,28 @@ impl PartitionConsumer {
         if let Some(smart_module) = config.smart_module {
             println!("vers {:?}", stream_fetch_version);
             if stream_fetch_version < WASM_MODULE_PERSISTENT_API as i16 {
-                return Err(FluvioError::Other("SPU does not support persistent WASM".to_owned()));
-            }
-
-            debug!("Using persistent WASM API");
-            stream_request.smart_module = Some(smart_module);
-        }
-
-        if let Some(mut module) = config.wasm_module {
-            if stream_fetch_version < WASM_MODULE_API as i16 {
-                return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
-            }
-
-            if stream_fetch_version < WASM_MODULE_V2_API as i16 {
-                // SmartStream V1
-                debug!("Using WASM V1 API");
-                let wasm = module.wasm.get_raw()?;
-                stream_request.wasm_module = wasm.into_owned();
-            } else {
-                // SmartStream V2
-                debug!("Using WASM V2 API");
-                if stream_fetch_version < GZIP_WASM_API as i16 {
-                    module.wasm.to_raw()?;
+                if let SmartModuleInvocationWasm::AdHoc(wasm) = smart_module.wasm {
+                    let legacy_module = SmartStreamPayload {
+                        wasm: SmartStreamWasm::Gzip(wasm),
+                        kind: smart_module.kind,
+                        params: smart_module.params,
+                    };
+                    legacy_set_wasm(stream_fetch_version, &mut stream_request, legacy_module)?;
                 } else {
-                    debug!("Using compressed WASM API");
-                    module.wasm.to_gzip()?;
+                    return Err(FluvioError::Other(
+                        "SPU does not support persistent WASM".to_owned(),
+                    ));
                 }
-                stream_request.wasm_payload = Some(module);
+            } else {
+                debug!("Using persistent WASM API");
+                stream_request.smart_module = Some(smart_module);
             }
         }
+
+        if let Some(module) = config.wasm_module {
+            legacy_set_wasm(stream_fetch_version, &mut stream_request, module)?;
+        }
+
         let mut stream = self
             .pool
             .create_stream_with_version(&replica, stream_request, stream_fetch_version)
@@ -545,6 +542,35 @@ impl PartitionConsumer {
 
         Ok(stream)
     }
+}
+
+fn legacy_set_wasm(
+    stream_fetch_version: i16,
+    stream_request: &mut DefaultStreamFetchRequest,
+    mut module: SmartStreamPayload,
+) -> Result<(), FluvioError> {
+    if stream_fetch_version < WASM_MODULE_API as i16 {
+        return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
+    }
+
+    if stream_fetch_version < WASM_MODULE_V2_API as i16 {
+        // SmartStream V1
+        debug!("Using WASM V1 API");
+        let wasm = module.wasm.get_raw()?;
+        stream_request.wasm_module = wasm.into_owned();
+    } else {
+        // SmartStream V2
+        debug!("Using WASM V2 API");
+        if stream_fetch_version < GZIP_WASM_API as i16 {
+            module.wasm.to_raw()?;
+        } else {
+            debug!("Using compressed WASM API");
+            module.wasm.to_gzip()?;
+        }
+        stream_request.wasm_payload = Some(module);
+    }
+
+    Ok(())
 }
 
 /// Wrap an inner record stream and only stream until a given number of records have been fetched.

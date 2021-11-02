@@ -192,26 +192,46 @@ impl ConsumeOpt {
         };
 
         let smart_module = if let Some(name_or_path) = &self.filter {
-            Some(create_smart_module(name_or_path, SmartStreamKind::Filter, extra_params)?)
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::Filter,
+                extra_params,
+            )?)
         } else if let Some(name_or_path) = &self.map {
-            Some(create_smart_module(name_or_path, SmartStreamKind::Map, extra_params)?)
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::Map,
+                extra_params,
+            )?)
         } else if let Some(name_or_path) = &self.array_map {
-            Some(create_smart_module(name_or_path, SmartStreamKind::ArrayMap, extra_params)?)
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::ArrayMap,
+                extra_params,
+            )?)
         } else if let Some(name_or_path) = &self.filter_map {
-            Some(create_smart_module(name_or_path, SmartStreamKind::FilterMap, extra_params)?)
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::FilterMap,
+                extra_params,
+            )?)
         } else {
             match (&self.aggregate, &self.initial) {
                 (Some(name_or_path), Some(acc_path)) => {
                     let accumulator = std::fs::read(acc_path)?;
-                    Some(create_smart_module(name_or_path, SmartStreamKind::Aggregate {
-                        accumulator
-                    }, extra_params)?)
+                    Some(create_smart_module(
+                        name_or_path,
+                        SmartStreamKind::Aggregate { accumulator },
+                        extra_params,
+                    )?)
                 }
-                (Some(name_or_path), None) => {
-                    Some(create_smart_module(name_or_path, SmartStreamKind::Aggregate {
-                        accumulator: Vec::new()
-                    }, extra_params)?)
-                }
+                (Some(name_or_path), None) => Some(create_smart_module(
+                    name_or_path,
+                    SmartStreamKind::Aggregate {
+                        accumulator: Vec::new(),
+                    },
+                    extra_params,
+                )?),
                 (None, Some(_)) => {
                     println!("In order to use --accumulator, you must also specify --aggregate");
                     return Ok(());
@@ -421,7 +441,11 @@ impl ConsumeOpt {
     }
 }
 
-fn create_smart_module(name_or_path: &str, kind: SmartStreamKind, params: BTreeMap<String, String>) -> Result<SmartModuleInvocation> {
+fn create_smart_module(
+    name_or_path: &str,
+    kind: SmartStreamKind,
+    params: BTreeMap<String, String>,
+) -> Result<SmartModuleInvocation> {
     let wasm = if PathBuf::from(name_or_path).exists() {
         let raw_buffer = std::fs::read(name_or_path)?;
         debug!(len = raw_buffer.len(), "read wasm bytes");
