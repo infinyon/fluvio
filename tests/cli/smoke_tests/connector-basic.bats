@@ -1,8 +1,9 @@
 #!/usr/bin/env bats
 
-load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
 load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/setup_k8_cluster.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-support/load.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-assert/load.bash
 
 setup_file() {
     CONNECTOR_CONFIG="$BATS_TEST_DIRNAME/../test_helper/test-connector-config.yml"
@@ -23,20 +24,20 @@ teardown_file() {
 # Create connector
 @test "Create test connector" {
     run "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Create same connector - Negative test
 @test "Attempt to create test connector again" {
     run "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
-    [ "$status" -eq 1 ]
-    [ "${lines[0]}" = "Connector already exists" ]
+    assert_failure
+    assert_output --partial "Connector already exists"
 }
 
 # Create connector w/ invalid config - Negative test
 @test "Attempt to create test connector with invalid config" {
     run "$FLUVIO_BIN" connector create --config "$INVALID_CONFIG"
-    [ "$status" -eq 1 ]
+    assert_failure
 }
 
 # List connector
@@ -48,18 +49,18 @@ teardown_file() {
 # Delete connector
 @test "Delete test connector" {
     run "$FLUVIO_BIN" connector delete $CONNECTOR_NAME
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Delete connector - Negative test
 @test "Attempt to delete test connector that doesn't exist" {
     run "$FLUVIO_BIN" connector delete $CONNECTOR_NAME
-    [ "$status" -eq 1 ]
+    assert_failure
 }
 
 # This is assuming the previous test connector config has `create_topic: true`
 # Create connector w/ but topic already exists
 @test "Attempt to create test connector that creates topics, but the topic exists" {
     run "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
-    [ "$status" -eq 0 ]
+    assert_success
 }

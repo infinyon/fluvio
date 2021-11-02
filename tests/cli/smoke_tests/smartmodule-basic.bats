@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 
-load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
 load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/setup_k8_cluster.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/random_string.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-support/load.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-assert/load.bash
 
 setup_file() {
     SMARTMODULE_NAME=$(random_string)
@@ -17,7 +17,7 @@ setup_file() {
     run "$FLUVIO_BIN" smartmodule create "$SMARTMODULE_NAME" --wasm-file "$(mktemp)"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Create smartmodule - Negative test
@@ -26,8 +26,8 @@ setup_file() {
     run "$FLUVIO_BIN" smartmodule create "$SMARTMODULE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
-    [ "$status" -eq 1 ]
-    [ "${lines[0]}" = "Smartmodule already exists" ]
+    assert_failure
+    assert_output --partial "Smartmodule already exists"
 }
 
 # Describe smartmodule
@@ -36,7 +36,7 @@ setup_file() {
     run "$FLUVIO_BIN" smartmodule describe "$SMARTMODULE_NAME" 
     debug_msg "status: $status"
     debug_msg "output: $output"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # List smartmodule
@@ -44,7 +44,7 @@ setup_file() {
     run "$FLUVIO_BIN" smartmodule list
     debug_msg "status: $status"
     debug_msg "output: $output"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Delete smartmodule
@@ -52,7 +52,7 @@ setup_file() {
     run "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Delete smartmodule - Negative test
@@ -60,6 +60,6 @@ setup_file() {
     run "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[3]}"
-    [ "$status" -eq 1 ]
-    [[ "${lines[3]}" =~ 'SmartModuleNotFound' ]]
+    assert_failure
+    assert_output --partial "SmartModuleNotFound"
 }

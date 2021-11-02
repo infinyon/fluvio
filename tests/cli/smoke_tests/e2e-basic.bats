@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 
-load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
 load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/setup_k8_cluster.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/random_string.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-support/load.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-assert/load.bash
 
 setup_file() {
     TOPIC_NAME=$(random_string)
@@ -23,7 +23,7 @@ teardown_file() {
 @test "Create a topic" {
     debug_msg "topic: $TOPIC_NAME"
     run "$FLUVIO_BIN" topic create "$TOPIC_NAME"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Produce message 
@@ -34,7 +34,7 @@ teardown_file() {
     }
 
     run produce_w_pipe
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Consume message and compare message
@@ -45,6 +45,6 @@ teardown_file() {
 
     debug_msg "${lines[0]}"
 
-    [[ "${lines[0]}" =~ $MESSAGE ]]
-    [ "$status" -eq 0 ]
+    assert_output --partial "$MESSAGE"
+    assert_success
 }
