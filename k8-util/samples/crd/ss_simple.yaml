@@ -1,0 +1,8 @@
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartStream
+metadata:
+  name: ss1
+spec:
+  left:
+    topic:
+      name: test
