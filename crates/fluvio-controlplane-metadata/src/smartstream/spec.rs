@@ -5,11 +5,30 @@
 
 use dataplane::core::{Encoder, Decoder};
 
+//use crate::smartmodule::SmartModuleInputKind;
+
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartStreamSpec {
-    pub inputs: SmartStreamInput,
-    pub streams: Vec<SmartStreamSelector>,
+    pub left: SmartStreamInput,
+    pub right: Option<SmartStreamInput>,
+}
+
+#[derive(Debug,Clone, PartialEq, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub enum SmartStreamInput {
+    Topic(SmartStreamRef),
+    SmartStream(SmartStreamRef),
+}
+
+impl Default for SmartStreamInput {
+    fn default() -> Self {
+        SmartStreamInput::Topic(SmartStreamRef::default())
+    }
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
@@ -18,19 +37,6 @@ pub struct SmartStreamSpec {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct SmartStreamInput {
-    pub topic_selector: TopicSelector,
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct TopicSelector {
+pub struct SmartStreamRef {
     pub name: String,
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartStreamSelector {
-    pub name: String,
-    pub id: String,
 }
