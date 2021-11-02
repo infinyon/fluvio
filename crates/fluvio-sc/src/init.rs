@@ -36,7 +36,9 @@ where
     use crate::stores::connector::ManagedConnectorSpec;
     use crate::stores::table::TableSpec;
     use crate::stores::smartmodule::SmartModuleSpec;
-    info!("SC Platform Version: {}", &*crate::VERSION);
+    use crate::stores::smartstream::SmartStreamSpec;
+
+    info!(PlatformVersion = &*crate::VERSION, "SC Platform Version");
 
     let mut sys = System::new_all();
     sys.refresh_all();
@@ -91,10 +93,17 @@ where
         metadata_client.clone(),
         ctx.tables().clone(),
     );
+
     K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
+        namespace.clone(),
+        metadata_client.clone(),
+        ctx.smart_modules().clone(),
+    );
+
+    K8ClusterStateDispatcher::<SmartStreamSpec, C>::start(
         namespace,
         metadata_client,
-        ctx.smart_modules().clone(),
+        ctx.smartstreams().clone(),
     );
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));

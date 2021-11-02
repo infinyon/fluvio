@@ -11,6 +11,7 @@ pub const PENDING_REASON: &str = "waiting for live spus";
 mod k8;
 #[cfg(feature = "k8")]
 pub use k8::*;
+// Vec<<S as AdminSpec>::ListType>
 
 mod metadata {
 
