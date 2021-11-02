@@ -14,14 +14,16 @@ pub struct SmartStreamSpec {
     pub right: Option<SmartStreamInput>,
 }
 
-#[derive(Debug,Clone, PartialEq, Encoder, Decoder)]
+#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
+    serde(untagged)
 )]
 pub enum SmartStreamInput {
+    #[serde(rename = "topic")]
     Topic(SmartStreamRef),
+    #[serde(rename = "smartstream")]
     SmartStream(SmartStreamRef),
 }
 
