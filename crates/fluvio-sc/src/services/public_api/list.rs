@@ -1,6 +1,5 @@
 use std::io::Error as IoError;
 
-use fluvio_controlplane_metadata::smartstream::SmartStreamSpec;
 use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
@@ -36,16 +35,27 @@ pub async fn handle_list_request<AC: AuthContext>(
             super::partition::handle_fetch_request(req.name_filters, auth_ctx).await?,
         ),
         ObjectApiListRequest::ManagedConnector(req) => ObjectApiListResponse::ManagedConnector(
-            super::connector::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            fetch::handle_fetch_request(
+                req.name_filters,
+                auth_ctx,
+                auth_ctx.global_ctx.managed_connectors(),
+            )
+            .await?,
         ),
         ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
-            super::smartmodule::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            fetch::handle_fetch_request(
+                req.name_filters,
+                auth_ctx,
+                auth_ctx.global_ctx.smart_modules(),
+            )
+            .await?,
         ),
         ObjectApiListRequest::Table(req) => ObjectApiListResponse::Table(
-            super::table::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            fetch::handle_fetch_request(req.name_filters, auth_ctx, auth_ctx.global_ctx.tables())
+                .await?,
         ),
         ObjectApiListRequest::SmartStream(req) => ObjectApiListResponse::SmartStream(
-            fetch::handle_fetch_request::<_, SmartStreamSpec>(
+            fetch::handle_fetch_request(
                 req.name_filters,
                 auth_ctx,
                 auth_ctx.global_ctx.smartstreams(),
