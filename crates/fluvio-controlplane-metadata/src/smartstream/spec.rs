@@ -10,6 +10,12 @@ use dataplane::core::{Encoder, Decoder};
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartStreamSpec {
+    pub inputs: SmartStreamInputs,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartStreamInputs {
     pub left: SmartStreamInput,
     pub right: Option<SmartStreamInput>,
 }
@@ -39,14 +45,35 @@ pub struct SmartStreamRef {
     pub name: String,
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct SmartStreamModules {
+    transform: Vec<SmartStreamModuleRef>,
+    outputs: Vec<SmartStreamModuleRef>,
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct SmartStreamModuleRef {
+    pub name: String,
+}
+
 #[cfg(test)]
 mod test {
 
-    use super::SmartStreamSpec;
+    use super::SmartStreamInputs;
 
     #[test]
     fn test_smartstream_spec_deserialiation() {
-        let _spec: SmartStreamSpec = serde_json::from_str(
+        let _spec: SmartStreamInputs = serde_json::from_str(
             r#"
                 {
                     "left": {
