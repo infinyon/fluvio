@@ -43,6 +43,10 @@ pub async fn handle_delete_request<AC: AuthContext>(
         ObjectApiDeleteRequest::Table(req) => {
             super::table::handle_delete_table(req.key(), auth_ctx).await?
         }
+        ObjectApiDeleteRequest::SmartStream(_req) => {
+            //super::table::handle_delete_table(req.key(), auth_ctx).await?
+            todo!()
+        }
     };
 
     trace!("flv delete topics resp {:#?}", status);

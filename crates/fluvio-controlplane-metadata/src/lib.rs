@@ -6,6 +6,7 @@ pub mod message;
 pub mod connector;
 pub mod smartmodule;
 pub mod table;
+pub mod smartstream;
 
 pub use fluvio_stream_model::core;
 

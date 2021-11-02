@@ -1,17 +1,13 @@
 mod spec;
 mod status;
-pub mod store;
 
 pub use self::spec::*;
 pub use self::status::*;
-
-pub const PENDING_REASON: &str = "waiting for live spus";
 
 #[cfg(feature = "k8")]
 mod k8;
 #[cfg(feature = "k8")]
 pub use k8::*;
-// Vec<<S as AdminSpec>::ListType>
 
 mod metadata {
 
@@ -20,24 +16,24 @@ mod metadata {
 
     use super::*;
 
-    impl Spec for TopicSpec {
-        const LABEL: &'static str = "Topic";
+    impl Spec for SmartStreamSpec {
+        const LABEL: &'static str = "SmartStream";
         type IndexKey = String;
-        type Status = TopicStatus;
+        type Status = SmartStreamStatus;
         type Owner = Self;
     }
 
-    impl SpecExt for TopicSpec {
+    impl SpecExt for SmartStreamSpec {
         const OBJECT_TYPE: ObjectType = ObjectType::Topic;
     }
 
-    impl Removable for TopicSpec {
+    impl Removable for SmartStreamSpec {
         type DeleteKey = String;
     }
 
-    impl Creatable for TopicSpec {}
+    impl Creatable for SmartStreamSpec {}
 
-    impl Status for TopicStatus {}
+    impl Status for SmartStreamStatus {}
 
     #[cfg(feature = "k8")]
     mod extended {
@@ -49,13 +45,11 @@ mod metadata {
         use crate::k8_types::K8Obj;
         use crate::store::k8::default_convert_from_k8;
 
-        use super::TopicSpec;
+        use super::SmartStreamSpec;
 
-        impl K8ExtendedSpec for TopicSpec {
+        impl K8ExtendedSpec for SmartStreamSpec {
             type K8Spec = Self;
             type K8Status = Self::Status;
-
-            const DELETE_WAIT_DEPENDENTS: bool = true;
 
             fn convert_from_k8(
                 k8_obj: K8Obj<Self::K8Spec>,

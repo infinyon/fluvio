@@ -19,6 +19,7 @@ use crate::common::target::TargetError;
 pub type Result<T, E = CliError> = core::result::Result<T, E>;
 
 #[derive(thiserror::Error, Debug)]
+#[allow(clippy::enum_variant_names)]
 pub enum CliError {
     #[error(transparent)]
     IoError(#[from] IoError),

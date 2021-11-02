@@ -11,3 +11,7 @@ pub use crate::dispatcher::store::*;
 pub mod actions {
     pub use crate::dispatcher::actions::*;
 }
+
+pub mod smartstream {
+    pub use fluvio_controlplane_metadata::smartstream::*;
+}

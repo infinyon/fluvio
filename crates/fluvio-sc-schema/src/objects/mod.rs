@@ -107,6 +107,7 @@ mod object_macro {
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     Table($api<crate::table::TableSpec>),
+                    SmartStream($api<crate::smartstream::SmartStreamSpec>),
                 }
 
                 impl Default for [<ObjectApi $api>] {
@@ -127,6 +128,8 @@ mod object_macro {
                             Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::Table(_) => crate::table::TableSpec::LABEL,
+                            Self::SmartStream(_) => crate::smartstream::SmartStreamSpec::LABEL,
+
                         }
                     }
                 }
@@ -146,6 +149,7 @@ mod object_macro {
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::Table(s) => s.write_size(version),
+                                Self::SmartStream(s) => s.write_size(version),
                             }
                     }
 
@@ -166,7 +170,8 @@ mod object_macro {
                             Self::Partition(s) => s.encode(dest, version)?,
                             Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
-                            Self::Table(s) => s.encode(dest, version)?
+                            Self::Table(s) => s.encode(dest, version)?,
+                            Self::SmartStream(s) => s.encode(dest, version)?,
                         }
 
                         Ok(())
@@ -249,6 +254,14 @@ mod object_macro {
                                 let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
                                 request.decode(src, version)?;
                                 *self = Self::ManagedConnector(request);
+                                Ok(())
+                            },
+
+                            crate::smartstream::SmartStreamSpec::LABEL => {
+                                tracing::trace!("detected smartstream");
+                                let mut request = $api::<crate::smartstream::SmartStreamSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::SmartStream(request);
                                 Ok(())
                             }
 
@@ -334,6 +347,7 @@ mod delete_macro {
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     Table($api<crate::table::TableSpec>),
+                    SmartStream($api<crate::smartstream::SmartStreamSpec>),
                 }
 
                 impl Default for [<ObjectApi $api>] {
@@ -352,6 +366,7 @@ mod delete_macro {
                             Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::Table(_) => crate::table::TableSpec::LABEL,
+                            Self::SmartStream(_) => crate::smartstream::SmartStreamSpec::LABEL,
                         }
                     }
                 }
@@ -369,6 +384,7 @@ mod delete_macro {
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::Table(s) => s.write_size(version),
+                                Self::SmartStream(s) => s.write_size(version),
                             }
                     }
 
@@ -387,7 +403,8 @@ mod delete_macro {
                             Self::SpuGroup(s) => s.encode(dest, version)?,
                             Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
-                            Self::Table(s) => s.encode(dest, version)?
+                            Self::Table(s) => s.encode(dest, version)?,
+                            Self::SmartStream(s) => s.encode(dest, version)?,
                         }
 
                         Ok(())
@@ -447,6 +464,14 @@ mod delete_macro {
                                 let mut request = $api::<crate::connector::ManagedConnectorSpec>::default();
                                 request.decode(src, version)?;
                                 *self = Self::ManagedConnector(request);
+                                Ok(())
+                            },
+
+                            crate::smartstream::SmartStreamSpec::LABEL => {
+                                tracing::trace!("detected smartstream");
+                                let mut request = $api::<crate::smartstream::SmartStreamSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::SmartStream(request);
                                 Ok(())
                             }
 

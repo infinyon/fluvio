@@ -45,6 +45,9 @@ pub async fn handle_create_request<AC: AuthContext>(
         ObjectCreateRequest::Table(create) => {
             super::table::handle_create_table_request(common, create, auth_context).await?
         }
+        ObjectCreateRequest::SmartStream(_create) => {
+            todo!()
+        }
     };
 
     Ok(ResponseMessage::from_header(&header, status))

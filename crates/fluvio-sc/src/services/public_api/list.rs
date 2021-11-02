@@ -35,17 +35,103 @@ pub async fn handle_list_request<AC: AuthContext>(
             super::partition::handle_fetch_request(req.name_filters, auth_ctx).await?,
         ),
         ObjectApiListRequest::ManagedConnector(req) => ObjectApiListResponse::ManagedConnector(
-            super::connector::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            fetch::handle_fetch_request(
+                req.name_filters,
+                auth_ctx,
+                auth_ctx.global_ctx.managed_connectors(),
+            )
+            .await?,
         ),
         ObjectApiListRequest::SmartModule(req) => ObjectApiListResponse::SmartModule(
-            super::smartmodule::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            fetch::handle_fetch_request(
+                req.name_filters,
+                auth_ctx,
+                auth_ctx.global_ctx.smart_modules(),
+            )
+            .await?,
         ),
         ObjectApiListRequest::Table(req) => ObjectApiListResponse::Table(
-            super::table::handle_fetch_request(req.name_filters, auth_ctx).await?,
+            fetch::handle_fetch_request(req.name_filters, auth_ctx, auth_ctx.global_ctx.tables())
+                .await?,
+        ),
+        ObjectApiListRequest::SmartStream(req) => ObjectApiListResponse::SmartStream(
+            fetch::handle_fetch_request(
+                req.name_filters,
+                auth_ctx,
+                auth_ctx.global_ctx.smartstreams(),
+            )
+            .await?,
         ),
     };
 
     debug!("response: {:#?}", response);
 
     Ok(ResponseMessage::from_header(&header, response))
+}
+
+mod fetch {
+
+    use std::io::{Error, ErrorKind};
+
+    use fluvio_controlplane_metadata::core::Spec;
+    use fluvio_controlplane_metadata::store::k8::K8MetaItem;
+    use fluvio_protocol::{Decoder, Encoder};
+    use fluvio_sc_schema::AdminSpec;
+    use fluvio_stream_dispatcher::store::StoreContext;
+    use tracing::{debug, trace, instrument};
+
+    use fluvio_sc_schema::objects::{ListResponse, NameFilter};
+    use fluvio_auth::{AuthContext, TypeAction};
+    use fluvio_controlplane_metadata::store::{KeyFilter, MetadataStoreObject};
+    use fluvio_controlplane_metadata::extended::SpecExt;
+
+    use crate::services::auth::AuthServiceContext;
+
+    #[instrument(skip(filters, auth_ctx))]
+    pub async fn handle_fetch_request<AC: AuthContext, S>(
+        filters: Vec<NameFilter>,
+        auth_ctx: &AuthServiceContext<AC>,
+        object_ctx: &StoreContext<S>,
+    ) -> Result<ListResponse<S>, Error>
+    where
+        S: AdminSpec + SpecExt,
+        <S as Spec>::Status: Encoder + Decoder,
+        <S as Spec>::IndexKey: AsRef<str>,
+        <S as AdminSpec>::ListType: From<MetadataStoreObject<S, K8MetaItem>>,
+    {
+        debug!(ty = %S::LABEL,"fetching");
+
+        if let Ok(authorized) = auth_ctx
+            .auth
+            .allow_type_action(S::OBJECT_TYPE, TypeAction::Read)
+            .await
+        {
+            if !authorized {
+                debug!(ty = %S::LABEL, "authorization failed");
+                // If permission denied, return empty list;
+                return Ok(ListResponse::new(vec![]));
+            }
+        } else {
+            return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        }
+
+        let objects: Vec<<S as AdminSpec>::ListType> = object_ctx
+            .store()
+            .read()
+            .await
+            .values()
+            .filter_map(|value| {
+                if filters.filter(value.key().as_ref()) {
+                    Some(value.inner().clone().into())
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        debug!(fetch_items = objects.len(),);
+        trace!("fetch {:#?}", objects);
+
+        Ok(ListResponse::new(objects))
+    }
 }
