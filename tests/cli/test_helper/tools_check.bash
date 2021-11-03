@@ -3,6 +3,7 @@
 main() {
     check_load_bats_libraries;
     check_fluvio_bin_path;
+    check_timeout_bin;
     check_fluvio_cluster;
 }
 
@@ -53,13 +54,25 @@ function check_load_bats_libraries() {
     # If not there, try to clone it into place
 
     if ! test -d "$BATS_TEST_DIRNAME/../test_helper/bats-support"; then
-        echo "# Installing bats-support in $BATS_TEST_DIRNAME/../test_helper"
-        git clone https://github.com/ztombol/bats-support "$BATS_TEST_DIRNAME/../test_helper/bats-support"
+        echo "# Installing bats-support in $BATS_TEST_DIRNAME/../test_helper" >&3
+        git clone https://github.com/bats-core/bats-support "$BATS_TEST_DIRNAME/../test_helper/bats-support"
     fi
 
     if ! test -d "$BATS_TEST_DIRNAME/../test_helper/bats-assert"; then
-        echo "# Installing bats-assert in $BATS_TEST_DIRNAME/../test_helper"
-        git clone https://github.com/ztombol/bats-assert "$BATS_TEST_DIRNAME/../test_helper/bats-assert"
+        echo "# Installing bats-assert in $BATS_TEST_DIRNAME/../test_helper" >&3
+        git clone https://github.com/bats-core/bats-assert "$BATS_TEST_DIRNAME/../test_helper/bats-assert"
+    fi
+}
+
+function check_timeout_bin() {
+    if ! which timeout; then
+        echo "# \`timeout\` not in PATH" >&3
+
+        if [[ $(uname) == "Darwin" ]]; then
+            echo "# run \`brew install coreutils\` to install" >&3
+        fi
+
+        false
     fi
 }
 
