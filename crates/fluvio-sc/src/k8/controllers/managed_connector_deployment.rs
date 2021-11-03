@@ -6,7 +6,6 @@ use k8_types::{
     LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
     core::pod::{
         ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
-        PodRestartPoilicy,
         VolumeSpec,
     },
 };
@@ -208,10 +207,10 @@ impl ManagedConnectorDeploymentController {
             "--".to_string(),
             format!("--fluvio-topic={}", mc_spec.topic),
         ];
+
         args.extend(parameters);
 
-
-        let (image, image_pull_policy) = match mc_spec.version.as_ref().map(|v| v.as_str()) {
+        let (image, image_pull_policy) = match mc_spec.connector_version.as_ref().map(|v| v.as_str()) {
             Some("dev") => {
                 (format!("infinyon/fluvio-connect-{}", mc_spec.type_), ImagePullPolicy::Never)
             }
@@ -248,7 +247,6 @@ impl ManagedConnectorDeploymentController {
                     ..Default::default()
                 }],
                 volumes: vec![config_map_volume_spec],
-                restart_policy: Some(PodRestartPoilicy::OnFailure),
                 //security_context: spu_k8_config.pod_security_context.clone(),
                 //node_selector: Some(spu_pod_config.node_selector.clone()),
                 ..Default::default()

@@ -95,7 +95,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             topic: config.topic,
             parameters: config.parameters,
             secrets: config.secrets,
-            version: config.connector_version,
+            connector_version: config.connector_version,
         }
     }
 }
