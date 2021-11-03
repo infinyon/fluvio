@@ -96,7 +96,7 @@ pub mod config;
 use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
-pub use producer::{TopicProducer, RecordKey};
+pub use producer::{TopicProducer, RecordKey, SmartStreamConfig};
 pub use consumer::{
     PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
 };
@@ -200,6 +200,8 @@ pub async fn consumer<S: Into<String>>(
 /// re-export metadata from sc-api
 pub mod metadata {
 
+    pub use fluvio_sc_schema::AdminSpec;
+
     pub mod topic {
         pub use fluvio_sc_schema::topic::*;
     }
@@ -211,6 +213,15 @@ pub mod metadata {
     pub mod smartmodule {
         pub use fluvio_sc_schema::smartmodule::*;
     }
+
+    pub mod smartstream {
+        pub use fluvio_sc_schema::smartstream::*;
+    }
+
+    pub mod customspu {
+        pub use fluvio_sc_schema::customspu::*;
+    }
+
     pub mod spu {
         pub use fluvio_sc_schema::spu::*;
     }

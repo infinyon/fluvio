@@ -13,7 +13,7 @@ use crate::services::auth::AuthServiceContext;
 pub async fn handle_fetch_request<AC: AuthContext>(
     _filters: Vec<String>,
     auth_ctx: &AuthServiceContext<AC>,
-) -> Result<ListResponse, Error> {
+) -> Result<ListResponse<PartitionSpec>, Error> {
     debug!("fetching custom spu list");
 
     if let Ok(authorized) = auth_ctx
@@ -23,7 +23,7 @@ pub async fn handle_fetch_request<AC: AuthContext>(
     {
         if !authorized {
             trace!("authorization failed");
-            return Ok(ListResponse::Partition(vec![]));
+            return Ok(ListResponse::new(vec![]));
         }
     } else {
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
@@ -42,5 +42,5 @@ pub async fn handle_fetch_request<AC: AuthContext>(
     debug!("flv fetch partitions resp: {} items", partitions.len());
     trace!("flv fetch partitions resp {:#?}", partitions);
 
-    Ok(ListResponse::Partition(partitions))
+    Ok(ListResponse::new(partitions))
 }

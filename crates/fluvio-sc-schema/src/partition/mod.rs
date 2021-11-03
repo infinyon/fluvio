@@ -2,46 +2,28 @@ pub use fluvio_controlplane_metadata::partition::*;
 
 mod convert {
 
-    use std::io::Error;
-    use std::io::ErrorKind;
-    use std::convert::TryInto;
-
-    use crate::objects::*;
+    use crate::objects::ListRequest;
+    use crate::objects::ListResponse;
+    use crate::objects::ObjectFrom;
+    use crate::objects::ObjectTryFrom;
+    use crate::{
+        AdminSpec, NameFilter,
+        objects::{Metadata, WatchRequest, WatchResponse},
+    };
     use super::*;
 
-    impl ListSpec for PartitionSpec {
-        type Filter = NameFilter;
-
-        fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
-            ListRequest::Partition(filters)
-        }
+    impl AdminSpec for PartitionSpec {
+        type ListFilter = NameFilter;
+        type WatchResponseType = Self;
+        type ListType = Metadata<Self>;
     }
 
-    impl TryInto<Vec<Metadata<PartitionSpec>>> for ListResponse {
-        type Error = Error;
+    ObjectFrom!(WatchRequest, Partition);
+    ObjectFrom!(WatchResponse, Partition);
 
-        fn try_into(self) -> Result<Vec<Metadata<PartitionSpec>>, Self::Error> {
-            match self {
-                ListResponse::Partition(s) => Ok(s),
-                _ => Err(Error::new(ErrorKind::Other, "not partition")),
-            }
-        }
-    }
+    ObjectFrom!(ListRequest, Partition);
+    ObjectFrom!(ListResponse, Partition);
 
-    impl From<MetadataUpdate<PartitionSpec>> for WatchResponse {
-        fn from(update: MetadataUpdate<PartitionSpec>) -> Self {
-            Self::Partition(update)
-        }
-    }
-
-    impl TryInto<MetadataUpdate<PartitionSpec>> for WatchResponse {
-        type Error = Error;
-
-        fn try_into(self) -> Result<MetadataUpdate<PartitionSpec>, Self::Error> {
-            match self {
-                WatchResponse::Partition(m) => Ok(m),
-                _ => Err(Error::new(ErrorKind::Other, "not  partition")),
-            }
-        }
-    }
+    ObjectTryFrom!(WatchResponse, Partition);
+    ObjectTryFrom!(ListResponse, Partition);
 }

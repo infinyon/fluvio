@@ -63,7 +63,7 @@ impl FluvioSink {
         Ok(())
     }
 
-    #[instrument(level = "trace",skip(resp_msg),fields(resp=?resp_msg))]
+    #[instrument(level = "trace", skip(resp_msg))]
     /// as server, send back response
     pub async fn send_response<P>(
         &mut self,

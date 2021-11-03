@@ -1005,7 +1005,7 @@ impl ClusterInstaller {
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
 
-            let spu = admin.list::<SpuSpec, _>(vec![]).await?;
+            let spu = admin.list::<SpuSpec, _>([]).await?;
 
             debug!(?spu);
 
@@ -1144,7 +1144,7 @@ impl ClusterInstaller {
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<(), K8InstallError> {
         let name = self.config.group_name.clone();
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SpuGroupSpec, _>(vec![]).await?;
+        let lists = admin.list::<SpuGroupSpec, _>([]).await?;
         if lists.is_empty() {
             self.pb.set_message(format!(
                 "Trying to create managed {} spus",

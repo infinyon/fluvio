@@ -2,61 +2,38 @@ pub use fluvio_controlplane_metadata::spg::*;
 
 mod convert {
 
-    use std::io::Error;
-    use std::io::ErrorKind;
-    use std::convert::TryInto;
+    use crate::{
+        AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
+        objects::{
+            CreateFrom, DeleteRequest, ListRequest, ListResponse, Metadata, ObjectFrom,
+            ObjectTryFrom, WatchRequest, WatchResponse,
+        },
+    };
+    use super::SpuGroupSpec;
 
-    use crate::objects::*;
-    use super::*;
-
-    impl From<SpuGroupSpec> for AllCreatableSpec {
-        fn from(spec: SpuGroupSpec) -> Self {
-            Self::SpuGroup(spec)
-        }
+    impl AdminSpec for SpuGroupSpec {
+        type ListFilter = NameFilter;
+        type ListType = Metadata<Self>;
+        type WatchResponseType = Self;
     }
 
-    impl DeleteSpec for SpuGroupSpec {
-        fn into_request<K>(key: K) -> DeleteRequest
-        where
-            K: Into<Self::DeleteKey>,
-        {
-            DeleteRequest::SpuGroup(key.into())
-        }
+    impl CreatableAdminSpec for SpuGroupSpec {
+        const CREATE_TYPE: u8 = 2;
     }
 
-    impl ListSpec for SpuGroupSpec {
-        type Filter = NameFilter;
-
-        fn into_list_request(filters: Vec<Self::Filter>) -> ListRequest {
-            ListRequest::SpuGroup(filters)
-        }
+    impl DeletableAdminSpec for SpuGroupSpec {
+        type DeleteKey = String;
     }
 
-    impl TryInto<Vec<Metadata<SpuGroupSpec>>> for ListResponse {
-        type Error = Error;
+    CreateFrom!(SpuGroupSpec, SpuGroup);
+    ObjectFrom!(WatchRequest, SpuGroup);
+    ObjectFrom!(WatchResponse, SpuGroup);
 
-        fn try_into(self) -> Result<Vec<Metadata<SpuGroupSpec>>, Self::Error> {
-            match self {
-                ListResponse::SpuGroup(s) => Ok(s),
-                _ => Err(Error::new(ErrorKind::Other, "not spg")),
-            }
-        }
-    }
+    ObjectFrom!(ListRequest, SpuGroup);
+    ObjectFrom!(ListResponse, SpuGroup);
 
-    impl From<MetadataUpdate<SpuGroupSpec>> for WatchResponse {
-        fn from(update: MetadataUpdate<SpuGroupSpec>) -> Self {
-            Self::SpuGroup(update)
-        }
-    }
+    ObjectTryFrom!(WatchResponse, SpuGroup);
+    ObjectTryFrom!(ListResponse, SpuGroup);
 
-    impl TryInto<MetadataUpdate<SpuGroupSpec>> for WatchResponse {
-        type Error = Error;
-
-        fn try_into(self) -> Result<MetadataUpdate<SpuGroupSpec>, Self::Error> {
-            match self {
-                WatchResponse::SpuGroup(m) => Ok(m),
-                _ => Err(Error::new(ErrorKind::Other, "not spg")),
-            }
-        }
-    }
+    ObjectFrom!(DeleteRequest, SpuGroup);
 }

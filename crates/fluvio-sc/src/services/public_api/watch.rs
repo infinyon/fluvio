@@ -1,13 +1,17 @@
 use std::sync::Arc;
-use std::fmt::Debug;
+use std::io::Error as IoError;
+use std::io::ErrorKind;
 
+use fluvio_sc_schema::AdminSpec;
 use tracing::{debug, trace, error, instrument};
 
 use fluvio_types::event::StickyEvent;
 use fluvio_socket::ExclusiveFlvSink;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::{RequestMessage, RequestHeader, ResponseMessage};
-use fluvio_sc_schema::objects::{WatchRequest, WatchResponse, Metadata, MetadataUpdate};
+use fluvio_sc_schema::objects::{
+    ObjectApiWatchRequest, WatchResponse, Metadata, MetadataUpdate, ObjectApiWatchResponse,
+};
 
 use fluvio_controlplane_metadata::core::Spec;
 use fluvio_controlplane_metadata::partition::PartitionSpec;
@@ -24,83 +28,92 @@ use fluvio_controlplane_metadata::spg::SpuGroupSpec;
 /// handle watch request by spawning watch controller for each store
 #[instrument(skip(request, auth_ctx, sink, end_event))]
 pub fn handle_watch_request<AC>(
-    request: RequestMessage<WatchRequest>,
+    request: RequestMessage<ObjectApiWatchRequest>,
     auth_ctx: &AuthServiceContext<AC>,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
-) {
+) -> Result<(), IoError> {
     debug!("handling watch request");
     let (header, req) = request.get_header_request();
 
     match req {
-        WatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
+        ObjectApiWatchRequest::Topic(_) => WatchController::<TopicSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.topics().clone(),
             header,
         ),
-        WatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
+        ObjectApiWatchRequest::Spu(_) => WatchController::<SpuSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spus().clone(),
             header,
         ),
-        WatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
+        ObjectApiWatchRequest::SpuGroup(_) => WatchController::<SpuGroupSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.spgs().clone(),
             header,
         ),
-        WatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
+        ObjectApiWatchRequest::Partition(_) => WatchController::<PartitionSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.partitions().clone(),
             header,
         ),
-        WatchRequest::ManagedConnector(_) => WatchController::<ManagedConnectorSpec>::update(
-            sink,
-            end_event,
-            auth_ctx.global_ctx.managed_connectors().clone(),
-            header,
-        ),
-        WatchRequest::SmartModule(_) => WatchController::<SmartModuleSpec>::update(
+        ObjectApiWatchRequest::ManagedConnector(_) => {
+            WatchController::<ManagedConnectorSpec>::update(
+                sink,
+                end_event,
+                auth_ctx.global_ctx.managed_connectors().clone(),
+                header,
+            )
+        }
+        ObjectApiWatchRequest::SmartModule(_) => WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.smart_modules().clone(),
             header,
         ),
-        WatchRequest::Table(_) => WatchController::<TableSpec>::update(
+        ObjectApiWatchRequest::Table(_) => WatchController::<TableSpec>::update(
             sink,
             end_event,
             auth_ctx.global_ctx.tables().clone(),
             header,
         ),
+        _ => {
+            debug!("Invalid Watch Req {:?}", req);
+            return Err(IoError::new(
+                ErrorKind::InvalidData,
+                "Not Valid Watch Request",
+            ));
+        }
     }
+
+    Ok(())
 }
 
-struct WatchController<S>
-where
-    S: Spec,
-{
+/// Watch controller for each object.  Note that return type may or not be the same as the object hence two separate spec
+struct WatchController<S: AdminSpec> {
     response_sink: ExclusiveFlvSink,
-    store: StoreContext<S>,
+    store: StoreContext<S::WatchResponseType>,
     header: RequestHeader,
     end_event: Arc<StickyEvent>,
 }
 
 impl<S> WatchController<S>
 where
-    S: Spec + Debug + 'static + Send + Sync + Encoder + Decoder,
-    S::IndexKey: ToString,
-    <S as Spec>::Status: Sync + Send + Encoder + Decoder,
-    <S as Spec>::IndexKey: Sync + Send,
-    MetadataUpdate<S>: Into<WatchResponse>,
+    S: AdminSpec + 'static,
+    S::WatchResponseType: Encoder + Decoder + Send + Sync,
+    <S::WatchResponseType as Spec>::Status: Encoder + Decoder + Send + Sync,
+    <S::WatchResponseType as Spec>::IndexKey: ToString + Send + Sync,
+    ObjectApiWatchResponse: From<WatchResponse<S>>,
 {
     /// start watch controller
     fn update(
         response_sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
-        store: StoreContext<S>,
+        store: StoreContext<S::WatchResponseType>,
         header: RequestHeader,
     ) {
         use fluvio_future::task::spawn;
@@ -154,7 +167,10 @@ where
     /// sync with store and send out changes to send response
     /// if can't send, then signal end and return false
     #[instrument(skip(self, listener))]
-    async fn sync_and_send_changes(&mut self, listener: &mut K8ChangeListener<S>) -> bool {
+    async fn sync_and_send_changes(
+        &mut self,
+        listener: &mut K8ChangeListener<S::WatchResponseType>,
+    ) -> bool {
         use fluvio_controlplane_metadata::message::*;
 
         if !listener.has_change() {
@@ -175,7 +191,7 @@ where
             MetadataUpdate::with_all(epoch, updates.into_iter().map(|u| u.into()).collect())
         } else {
             let (updates, deletes) = changes.parts();
-            let mut changes: Vec<Message<Metadata<S>>> = updates
+            let mut changes: Vec<Message<Metadata<S::WatchResponseType>>> = updates
                 .into_iter()
                 .map(|v| Message::update(v.into()))
                 .collect();
@@ -187,8 +203,9 @@ where
             MetadataUpdate::with_changes(epoch, changes)
         };
 
-        let resp_msg: ResponseMessage<WatchResponse> =
-            ResponseMessage::from_header(&self.header, updates.into());
+        let response: WatchResponse<S> = WatchResponse::new(updates);
+        let res: ObjectApiWatchResponse = response.into();
+        let resp_msg = ResponseMessage::from_header(&self.header, res);
 
         // try to send response, if it fails then we need to end
         if let Err(err) = self

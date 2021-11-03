@@ -40,6 +40,12 @@ pub enum ErrorCode {
     #[fluvio(tag = 56)]
     #[error("a storage error occurred")]
     StorageError,
+    #[fluvio(tag = 60)]
+    #[error("invalid create request")]
+    InvalidCreateRequest,
+    #[fluvio(tag = 61)]
+    #[error("invalid Delete request")]
+    InvalidDeleteRequest,
 
     // Spu errors
     #[fluvio(tag = 1000)]
@@ -127,6 +133,14 @@ pub enum ErrorCode {
     #[fluvio(tag = 7001)]
     #[error("the table was not found")]
     TableNotFound,
+
+    // SmartStream Object Errors
+    #[fluvio(tag = 8000)]
+    #[error("SmartStream object error")]
+    SmartStreamObjectError,
+    #[fluvio(tag = 8001)]
+    #[error("the smartstream was not found")]
+    SmartStreamNotFound,
 }
 
 impl Default for ErrorCode {
@@ -165,6 +179,8 @@ pub enum SmartStreamError {
     UndefinedSmartStreamModule(String),
     #[error("SmartModule {0} is not defined")]
     SmartModuleNotFound(String),
+    #[error("WASM module is not a valid '{0}' SmartStream due to {1}. Are you missing a #[smartstream({0})] attribute?")]
+    InvalidSmartStreamModule(String, String),
 }
 
 impl Default for SmartStreamError {

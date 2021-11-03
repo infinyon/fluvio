@@ -56,7 +56,7 @@ where
 }
 
 /// This is same as encoding in the ResponseMessage but first
-/// includes the lenght and can encode async file slice
+/// includes the length and can encode async file slice
 impl<P> FileWrite for ResponseMessage<P>
 where
     P: FileWrite + Default,
@@ -86,7 +86,7 @@ where
 }
 
 /// This is same as encoding in the RequestMessage but first
-/// includes the lenght and can encode async file slice
+/// includes the length and can encode async file slice
 impl<R> FileWrite for RequestMessage<R>
 where
     R: FileWrite + Default + Request,

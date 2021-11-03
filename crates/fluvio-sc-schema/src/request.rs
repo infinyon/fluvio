@@ -6,46 +6,56 @@
 
 use std::convert::{TryInto};
 use std::io::Error as IoError;
+use std::fmt::Debug;
 
-use tracing::debug;
+use tracing::{debug};
 
-use dataplane::bytes::Buf;
-use dataplane::api::{ApiMessage};
-use dataplane::api::RequestHeader;
-use dataplane::api::RequestMessage;
+use dataplane::bytes::{Buf};
+use dataplane::api::{ApiMessage, RequestHeader, RequestMessage};
 
 use dataplane::api::api_decode;
-use dataplane::core::Encoder;
+use dataplane::core::{Decoder};
 use dataplane::versions::ApiVersionsRequest;
 
-use super::objects::*;
-use super::AdminPublicApiKey;
+use crate::AdminPublicApiKey;
+use crate::objects::{
+    ObjectApiListRequest, ObjectApiCreateRequest, ObjectApiWatchRequest, ObjectApiDeleteRequest,
+};
 
-#[derive(Debug, Encoder)]
-pub enum AdminPublicRequest {
-    // Mixed
+/// Non generic AdminRequest, This is typically used Decoding
+#[derive(Debug)]
+pub enum AdminPublicDecodedRequest {
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-    CreateRequest(RequestMessage<CreateRequest>),
-    DeleteRequest(RequestMessage<DeleteRequest>),
-    ListRequest(RequestMessage<ListRequest>),
-    WatchRequest(RequestMessage<WatchRequest>),
+    CreateRequest(RequestMessage<ObjectApiCreateRequest>),
+    DeleteRequest(RequestMessage<ObjectApiDeleteRequest>),
+    ListRequest(RequestMessage<ObjectApiListRequest>),
+    WatchRequest(RequestMessage<ObjectApiWatchRequest>),
 }
 
-impl Default for AdminPublicRequest {
+impl Default for AdminPublicDecodedRequest {
     fn default() -> Self {
         Self::ApiVersionsRequest(RequestMessage::<ApiVersionsRequest>::default())
     }
 }
 
-impl ApiMessage for AdminPublicRequest {
+impl ApiMessage for AdminPublicDecodedRequest {
     type ApiKey = AdminPublicApiKey;
 
-    fn decode_with_header<T>(src: &mut T, header: RequestHeader) -> Result<Self, IoError>
+    fn decode_with_header<T>(_src: &mut T, _header: RequestHeader) -> Result<Self, IoError>
     where
         Self: Default + Sized,
         Self::ApiKey: Sized,
         T: Buf,
     {
+        panic!("not needed")
+    }
+
+    fn decode_from<T>(src: &mut T) -> Result<Self, IoError>
+    where
+        T: Buf,
+    {
+        let header = RequestHeader::decode_from(src, 0)?;
+        let version = header.api_version();
         let api_key = header.api_key().try_into()?;
         debug!(
             "decoding admin public request from: {} api: {:#?}",
@@ -54,11 +64,64 @@ impl ApiMessage for AdminPublicRequest {
         );
         match api_key {
             AdminPublicApiKey::ApiVersion => api_decode!(Self, ApiVersionsRequest, src, header),
+            AdminPublicApiKey::Create => Ok(Self::CreateRequest(RequestMessage::new(
+                header,
+                ObjectApiCreateRequest::decode_from(src, version)?,
+            ))),
+            AdminPublicApiKey::Delete => Ok(Self::DeleteRequest(RequestMessage::new(
+                header,
+                ObjectApiDeleteRequest::decode_from(src, version)?,
+            ))),
 
-            AdminPublicApiKey::Create => api_decode!(Self, CreateRequest, src, header),
-            AdminPublicApiKey::Delete => api_decode!(Self, DeleteRequest, src, header),
-            AdminPublicApiKey::List => api_decode!(Self, ListRequest, src, header),
-            AdminPublicApiKey::Watch => api_decode!(Self, WatchRequest, src, header),
+            AdminPublicApiKey::List => Ok(Self::ListRequest(RequestMessage::new(
+                header,
+                ObjectApiListRequest::decode_from(src, version)?,
+            ))),
+
+            AdminPublicApiKey::Watch => Ok(Self::WatchRequest(RequestMessage::new(
+                header,
+                ObjectApiWatchRequest::decode_from(src, version)?,
+            ))),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use std::io::Cursor;
+
+    use dataplane::api::RequestMessage;
+    use dataplane::core::{Encoder};
+    use dataplane::api::ApiMessage;
+
+    use crate::objects::{ListRequest, ObjectApiListRequest};
+    use crate::{AdminPublicDecodedRequest};
+    use crate::topic::TopicSpec;
+
+    fn create_req() -> ObjectApiListRequest {
+        let list_request: ListRequest<TopicSpec> = ListRequest::new(vec![]);
+        list_request.into()
+    }
+
+    #[test]
+    fn test_list_encode_decoding() {
+        use dataplane::api::Request;
+
+        let list_req = create_req();
+
+        let mut req_msg = RequestMessage::new_request(list_req);
+        req_msg
+            .get_mut_header()
+            .set_client_id("test")
+            .set_api_version(ObjectApiListRequest::API_KEY as i16);
+
+        let mut src = vec![];
+        req_msg.encode(&mut src, 0).expect("encoding");
+
+        let dec_req: AdminPublicDecodedRequest =
+            AdminPublicDecodedRequest::decode_from(&mut Cursor::new(&src)).expect("decode");
+
+        assert!(matches!(dec_req, AdminPublicDecodedRequest::ListRequest(_)));
     }
 }

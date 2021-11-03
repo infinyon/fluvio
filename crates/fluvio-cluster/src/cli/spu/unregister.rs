@@ -8,8 +8,8 @@ use std::io::ErrorKind;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio::metadata::spu::CustomSpuSpec;
-use fluvio::metadata::spu::CustomSpuKey;
+use fluvio::metadata::customspu::CustomSpuSpec;
+use fluvio::metadata::customspu::CustomSpuKey;
 use crate::cli::ClusterCliError;
 
 // -----------------------------------

@@ -1,18 +1,21 @@
 use std::convert::{TryFrom, TryInto};
 use std::fmt::Display;
 
+use dataplane::api::{Request};
 use fluvio_future::net::DomainConnector;
-use tracing::{debug, instrument};
-use dataplane::core::Encoder;
-use dataplane::core::Decoder;
-use fluvio_sc_schema::objects::{Metadata, AllCreatableSpec};
-use fluvio_sc_schema::AdminRequest;
+use tracing::{debug, trace, instrument};
+
+use fluvio_sc_schema::objects::{
+    CommonCreateRequest, DeleteRequest, ObjectApiCreateRequest, ObjectApiDeleteRequest,
+    ObjectApiListRequest, ObjectApiListResponse, ObjectApiWatchRequest,
+};
+use fluvio_sc_schema::{AdminSpec, DeletableAdminSpec, CreatableAdminSpec};
 use fluvio_socket::SocketError;
 use fluvio_socket::MultiplexerSocket;
 
 use crate::sockets::{ClientConfig, VersionedSerialSocket, SerialFrame};
 use crate::{FluvioError, FluvioConfig};
-use crate::metadata::objects::{ListResponse, ListSpec, DeleteSpec, CreateRequest};
+use crate::metadata::objects::{ListResponse, ListRequest};
 use crate::config::ConfigFile;
 use crate::sync::MetadataStores;
 
@@ -108,7 +111,6 @@ impl FluvioAdmin {
     /// ```
     #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
-        use fluvio_sc_schema::objects::WatchRequest;
         use fluvio_protocol::api::Request;
 
         let connector = DomainConnector::try_from(config.tls.clone())?;
@@ -117,7 +119,7 @@ impl FluvioAdmin {
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
-        if let Some(watch_version) = versions.lookup_version(WatchRequest::API_KEY) {
+        if let Some(watch_version) = versions.lookup_version(ObjectApiWatchRequest::API_KEY) {
             let socket = MultiplexerSocket::shared(socket);
             let metadata = MetadataStores::start(socket.clone(), watch_version).await?;
             let versioned_socket = VersionedSerialSocket::new(socket, config, versions);
@@ -134,7 +136,7 @@ impl FluvioAdmin {
     #[instrument(skip(self, request))]
     async fn send_receive<R>(&self, request: R) -> Result<R::Response, SocketError>
     where
-        R: AdminRequest + Send + Sync,
+        R: Request + Send + Sync,
     {
         self.socket.send_receive(request).await
     }
@@ -143,13 +145,14 @@ impl FluvioAdmin {
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
-        S: Into<AllCreatableSpec>,
+        S: CreatableAdminSpec + Sync + Send,
+        ObjectApiCreateRequest: From<(CommonCreateRequest, S)>,
     {
-        let create_request = CreateRequest {
-            name,
-            dry_run,
-            spec: spec.into(),
-        };
+        let common_request = CommonCreateRequest { name, dry_run };
+
+        let create_request: ObjectApiCreateRequest = (common_request, spec).into();
+
+        debug!("sending create request: {:#?}", create_request);
 
         self.send_receive(create_request).await?.as_result()?;
 
@@ -161,33 +164,40 @@ impl FluvioAdmin {
     #[instrument(skip(self, key))]
     pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
     where
-        S: DeleteSpec,
+        S: DeletableAdminSpec + Sync + Send,
         K: Into<S::DeleteKey>,
+        ObjectApiDeleteRequest: From<DeleteRequest<S>>,
     {
-        let delete_request = S::into_request(key);
+        let delete_request = DeleteRequest::new(key.into());
+        let delete_request: ObjectApiDeleteRequest = delete_request.into();
+
+        debug!("sending delete request: {:#?}", delete_request);
+
         self.send_receive(delete_request).await?.as_result()?;
         Ok(())
     }
 
     #[instrument(skip(self, filters))]
-    pub async fn list<S, F>(&self, filters: F) -> Result<Vec<Metadata<S>>, FluvioError>
+    pub async fn list<S, F>(&self, filters: F) -> Result<Vec<S::ListType>, FluvioError>
     where
-        S: ListSpec + Encoder + Decoder,
-        S::Status: Encoder + Decoder,
-        F: Into<Vec<S::Filter>>,
-        ListResponse: TryInto<Vec<Metadata<S>>>,
-        <ListResponse as TryInto<Vec<Metadata<S>>>>::Error: Display,
+        S: AdminSpec,
+        F: Into<Vec<S::ListFilter>>,
+        ObjectApiListRequest: From<ListRequest<S>>,
+        ListResponse<S>: TryFrom<ObjectApiListResponse>,
+        <ListResponse<S> as TryFrom<ObjectApiListResponse>>::Error: Display,
     {
-        use std::io::Error;
+        use std::io::Error as IoError;
         use std::io::ErrorKind;
 
-        let list_request = S::into_list_request(filters.into());
+        let list_request = ListRequest::new(filters.into());
 
+        let list_request: ObjectApiListRequest = list_request.into();
         let response = self.send_receive(list_request).await?;
-
+        trace!("list response: {:#?}", response);
         response
             .try_into()
-            .map_err(|err| Error::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
+            .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())
+            .map(|out: ListResponse<S>| out.inner())
     }
 }
 

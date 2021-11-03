@@ -4,188 +4,212 @@ use std::fmt::Debug;
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
+use fluvio_controlplane_metadata::smartstream::SmartStreamSpec;
+use fluvio_protocol::Version;
+use crate::topic::TopicSpec;
+use crate::customspu::CustomSpuSpec;
+use crate::smartmodule::SmartModuleSpec;
+use crate::table::TableSpec;
+use crate::spg::SpuGroupSpec;
+use crate::connector::ManagedConnectorSpec;
 
-use crate::Status;
-use crate::AdminPublicApiKey;
-use crate::AdminRequest;
-
-pub use create::AllCreatableSpec;
+use crate::{AdminPublicApiKey, CreatableAdminSpec, Status};
 
 #[derive(Encoder, Decoder, Default, Debug)]
-pub struct CreateRequest {
-    pub name: String,
-    pub dry_run: bool,
-    pub spec: AllCreatableSpec,
+pub struct CreateRequest<S: CreatableAdminSpec> {
+    pub request: S,
 }
 
-impl Request for CreateRequest {
+/// Every create request must have this parameters
+#[derive(Encoder, Decoder, Default, Debug)]
+pub struct CommonCreateRequest {
+    pub name: String,
+    pub dry_run: bool,
+}
+
+impl Request for ObjectApiCreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
-    const DEFAULT_API_VERSION: i16 = 1;
+    const DEFAULT_API_VERSION: i16 = 2;
     type Response = Status;
 }
 
-impl AdminRequest for CreateRequest {}
+#[derive(Debug, Default, Encoder, Decoder)]
+pub struct ObjectApiCreateRequest {
+    pub common: CommonCreateRequest,
+    pub request: ObjectCreateRequest,
+}
 
-#[allow(clippy::module_inception)]
-mod create {
+#[derive(Debug)]
+pub enum ObjectCreateRequest {
+    Topic(TopicSpec),
+    CustomSpu(CustomSpuSpec),
+    SmartModule(SmartModuleSpec),
+    ManagedConnector(ManagedConnectorSpec),
+    SpuGroup(SpuGroupSpec),
+    Table(TableSpec),
+    SmartStream(SmartStreamSpec),
+}
 
-    use std::io::Error;
-    use std::io::ErrorKind;
-
-    use tracing::trace;
-
-    use dataplane::core::Version;
-    use dataplane::bytes::{Buf, BufMut};
-    use fluvio_controlplane_metadata::topic::TopicSpec;
-    use fluvio_controlplane_metadata::spu::CustomSpuSpec;
-    use fluvio_controlplane_metadata::spg::SpuGroupSpec;
-    use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
-    use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
-    use fluvio_controlplane_metadata::table::TableSpec;
-    use super::*;
-
-    const TOPIC: u8 = 0;
-    const CUSTOM_SPU: u8 = 1;
-    const SPG: u8 = 2;
-    const MANAGED_CONNECTOR: u8 = 3;
-    const SMART_MODULE: u8 = 4;
-    const TABLE: u8 = 5;
-
-    #[derive(Debug)]
-    /// enum of spec that can be created
-    pub enum AllCreatableSpec {
-        Topic(TopicSpec),
-        CustomSpu(CustomSpuSpec),
-        SpuGroup(SpuGroupSpec),
-        ManagedConnector(ManagedConnectorSpec),
-        SmartModule(SmartModuleSpec),
-        Table(TableSpec),
+impl Default for ObjectCreateRequest {
+    fn default() -> Self {
+        Self::Topic(TopicSpec::default())
     }
+}
 
-    impl Default for AllCreatableSpec {
-        fn default() -> Self {
-            Self::Topic(TopicSpec::default())
-        }
-    }
-
-    impl Encoder for AllCreatableSpec {
-        fn write_size(&self, version: Version) -> usize {
-            let type_size = (0u8).write_size(version);
-
-            type_size
-                + match self {
-                    Self::Topic(s) => s.write_size(version),
-                    Self::CustomSpu(s) => s.write_size(version),
-                    Self::SpuGroup(s) => s.write_size(version),
-                    Self::ManagedConnector(s) => s.write_size(version),
-                    Self::SmartModule(s) => s.write_size(version),
-                    Self::Table(s) => s.write_size(version),
-                }
-        }
-
-        // encode match
-        fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
-        where
-            T: BufMut,
-        {
-            match self {
-                Self::Topic(s) => {
-                    let typ: u8 = TOPIC;
-                    typ.encode(dest, version)?;
-                    s.encode(dest, version)?;
-                }
-
-                Self::CustomSpu(s) => {
-                    let typ: u8 = CUSTOM_SPU;
-                    typ.encode(dest, version)?;
-                    s.encode(dest, version)?;
-                }
-
-                Self::SpuGroup(s) => {
-                    let typ: u8 = SPG;
-                    typ.encode(dest, version)?;
-                    s.encode(dest, version)?;
-                }
-
-                Self::ManagedConnector(s) => {
-                    let typ: u8 = MANAGED_CONNECTOR;
-                    typ.encode(dest, version)?;
-                    s.encode(dest, version)?;
-                }
-
-                Self::SmartModule(s) => {
-                    let typ: u8 = SMART_MODULE;
-                    typ.encode(dest, version)?;
-                    s.encode(dest, version)?;
-                }
-
-                Self::Table(s) => {
-                    let typ: u8 = TABLE;
-                    typ.encode(dest, version)?;
-                    s.encode(dest, version)?;
-                }
-            }
-
-            Ok(())
-        }
-    }
-
-    impl Decoder for AllCreatableSpec {
-        fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
-        where
-            T: Buf,
-        {
-            let mut typ: u8 = 0;
-            typ.decode(src, version)?;
-            trace!("decoded type: {}", typ);
-
-            match typ {
-                TOPIC => {
-                    let mut response = TopicSpec::default();
-                    response.decode(src, version)?;
-                    *self = Self::Topic(response);
-                    Ok(())
-                }
-
-                CUSTOM_SPU => {
-                    let mut response = CustomSpuSpec::default();
-                    response.decode(src, version)?;
-                    *self = Self::CustomSpu(response);
-                    Ok(())
-                }
-
-                SPG => {
-                    let mut response = SpuGroupSpec::default();
-                    response.decode(src, version)?;
-                    *self = Self::SpuGroup(response);
-                    Ok(())
-                }
-                MANAGED_CONNECTOR => {
-                    let mut response = ManagedConnectorSpec::default();
-                    response.decode(src, version)?;
-                    *self = Self::ManagedConnector(response);
-                    Ok(())
-                }
-                TABLE => {
-                    let mut response = TableSpec::default();
-                    response.decode(src, version)?;
-                    *self = Self::Table(response);
-                    Ok(())
-                }
-
-                SMART_MODULE => {
-                    let mut response = SmartModuleSpec::default();
-                    response.decode(src, version)?;
-                    *self = Self::SmartModule(response);
-                    Ok(())
-                }
-
-                // Unexpected type
-                _ => Err(Error::new(
-                    ErrorKind::InvalidData,
-                    format!("invalid spec type {}", typ),
-                )),
-            }
+impl ObjectCreateRequest {
+    fn type_value(&self) -> u8 {
+        match self {
+            Self::Topic(_) => TopicSpec::CREATE_TYPE,
+            Self::CustomSpu(_) => CustomSpuSpec::CREATE_TYPE,
+            Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
+            Self::ManagedConnector(_) => ManagedConnectorSpec::CREATE_TYPE,
+            Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
+            Self::Table(_) => TableSpec::CREATE_TYPE,
+            Self::SmartStream(_) => SmartStreamSpec::CREATE_TYPE,
         }
     }
 }
+
+impl Encoder for ObjectCreateRequest {
+    fn write_size(&self, version: dataplane::core::Version) -> usize {
+        let type_size = (0u8).write_size(version);
+
+        type_size
+            + match self {
+                Self::Topic(s) => s.write_size(version),
+                Self::CustomSpu(s) => s.write_size(version),
+                Self::SmartModule(s) => s.write_size(version),
+                Self::ManagedConnector(s) => s.write_size(version),
+                Self::SpuGroup(s) => s.write_size(version),
+                Self::Table(s) => s.write_size(version),
+                Self::SmartStream(s) => s.write_size(version),
+            }
+    }
+
+    fn encode<T>(
+        &self,
+        dest: &mut T,
+        version: dataplane::core::Version,
+    ) -> Result<(), std::io::Error>
+    where
+        T: dataplane::bytes::BufMut,
+    {
+        self.type_value().encode(dest, version)?;
+        match self {
+            Self::Topic(s) => s.encode(dest, version)?,
+            Self::CustomSpu(s) => s.encode(dest, version)?,
+            Self::ManagedConnector(s) => s.encode(dest, version)?,
+            Self::SmartModule(s) => s.encode(dest, version)?,
+            Self::SpuGroup(s) => s.encode(dest, version)?,
+            Self::Table(s) => s.encode(dest, version)?,
+            Self::SmartStream(s) => s.encode(dest, version)?,
+        }
+
+        Ok(())
+    }
+}
+
+// We implement decode signature even thought this will be never called.
+// RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
+// to provide decode implementation but shoudl be never called
+impl dataplane::core::Decoder for ObjectCreateRequest {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
+    where
+        T: dataplane::bytes::Buf,
+    {
+        let mut typ: u8 = 0;
+        typ.decode(src, version)?;
+        tracing::trace!("decoded type: {}", typ);
+
+        match typ {
+            TopicSpec::CREATE_TYPE => {
+                tracing::trace!("detected topic");
+                let mut request = TopicSpec::default();
+                request.decode(src, version)?;
+                *self = Self::Topic(request);
+                Ok(())
+            }
+
+            TableSpec::CREATE_TYPE => {
+                tracing::trace!("detected table");
+                let mut request = TableSpec::default();
+                request.decode(src, version)?;
+                *self = Self::Table(request);
+                Ok(())
+            }
+
+            CustomSpuSpec::CREATE_TYPE => {
+                tracing::trace!("detected custom spu");
+                let mut request = CustomSpuSpec::default();
+                request.decode(src, version)?;
+                *self = Self::CustomSpu(request);
+                Ok(())
+            }
+
+            SpuGroupSpec::CREATE_TYPE => {
+                tracing::trace!("detected custom spu");
+                let mut request = SpuGroupSpec::default();
+                request.decode(src, version)?;
+                *self = Self::SpuGroup(request);
+                Ok(())
+            }
+
+            SmartModuleSpec::CREATE_TYPE => {
+                tracing::trace!("detected smartmodule");
+                let mut request = SmartModuleSpec::default();
+                request.decode(src, version)?;
+                *self = Self::SmartModule(request);
+                Ok(())
+            }
+
+            ManagedConnectorSpec::CREATE_TYPE => {
+                tracing::trace!("detected connector");
+                let mut request = ManagedConnectorSpec::default();
+                request.decode(src, version)?;
+                *self = Self::ManagedConnector(request);
+                Ok(())
+            }
+
+            SmartStreamSpec::CREATE_TYPE => {
+                tracing::trace!("detected smartstream");
+                let mut request = SmartStreamSpec::default();
+                request.decode(src, version)?;
+                *self = Self::SmartStream(request);
+                Ok(())
+            }
+
+            // Unexpected type
+            _ => Err(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("invalid create type {:#?}", typ),
+            )),
+        }
+    }
+}
+
+/// Macro to convert create request
+/// impl From<(CommonCreateRequest TopicSpec)> for ObjectApiCreateRequest {
+/// fn from(req: (CommonCreateRequest TopicSpec)) -> Self {
+///       ObjectApiCreateRequest {
+///           common: req.0,
+///           request: req.1
+///       }
+/// }
+/// ObjectFrom!(WatchRequest, Topic);
+
+macro_rules! CreateFrom {
+    ($create:ty,$specTy:ident) => {
+        impl From<(crate::objects::CommonCreateRequest, $create)>
+            for crate::objects::ObjectApiCreateRequest
+        {
+            fn from(fr: (crate::objects::CommonCreateRequest, $create)) -> Self {
+                crate::objects::ObjectApiCreateRequest {
+                    common: fr.0,
+                    request: crate::objects::ObjectCreateRequest::$specTy(fr.1),
+                }
+            }
+        }
+    };
+}
+
+pub(crate) use CreateFrom;

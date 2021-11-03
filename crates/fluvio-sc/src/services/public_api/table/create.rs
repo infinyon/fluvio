@@ -9,8 +9,9 @@ use std::io::{Error, ErrorKind};
 use tracing::{debug, trace, instrument};
 
 use dataplane::ErrorCode;
-use fluvio_sc_schema::Status;
-use fluvio_controlplane_metadata::table::TableSpec;
+use fluvio_sc_schema::{Status};
+use fluvio_sc_schema::objects::{CommonCreateRequest};
+use fluvio_sc_schema::table::TableSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
 
@@ -18,14 +19,15 @@ use crate::core::Context;
 use crate::services::auth::AuthServiceContext;
 
 /// Handler for table request
-#[instrument(skip(name, spec, _dry_run, auth_ctx))]
+#[instrument(skip(create, auth_ctx))]
 pub async fn handle_create_table_request<AC: AuthContext>(
-    name: String,
+    create: CommonCreateRequest,
     spec: TableSpec,
-    _dry_run: bool,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    debug!("creating table: {}", name);
+    let name = create.name;
+
+    debug!(%name,"creating table");
 
     if let Ok(authorized) = auth_ctx
         .auth

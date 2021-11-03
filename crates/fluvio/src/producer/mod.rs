@@ -29,6 +29,79 @@ pub struct TopicProducer {
     topic: String,
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
+    pub(crate) smartstream_config: SmartStreamConfig,
+}
+cfg_if::cfg_if! {
+    if #[cfg(feature = "smartengine")] {
+        use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind, SmartStreamPayload};
+        use std::collections::BTreeMap;
+
+        #[derive(Default)]
+        pub struct SmartStreamConfig {
+            pub(crate) wasm_module: Option<SmartStreamPayload>,
+        }
+        impl SmartStreamConfig {
+            /// Adds a SmartStream filter to this TopicProducer
+            pub fn wasm_filter<T: Into<Vec<u8>>>(
+                mut self,
+                filter: T,
+                params: BTreeMap<String, String>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(filter.into()),
+                    kind: SmartStreamKind::Filter,
+                    params: params.into(),
+                });
+                self
+            }
+
+            /// Adds a SmartStream map to this TopicProducer
+            pub fn wasm_map<T: Into<Vec<u8>>>(
+                mut self,
+                map: T,
+                params: BTreeMap<String, String>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(map.into()),
+                    kind: SmartStreamKind::Map,
+                    params: params.into(),
+                });
+                self
+            }
+
+            /// Adds a SmartStream array_map to this TopicProducer
+            pub fn wasm_array_map<T: Into<Vec<u8>>>(
+                mut self,
+                map: T,
+                params: BTreeMap<String, String>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(map.into()),
+                    kind: SmartStreamKind::ArrayMap,
+                    params: params.into(),
+                });
+                self
+            }
+
+            /// Adds a SmartStream array_map to this TopicProducer
+            pub fn wasm_aggregate<T: Into<Vec<u8>>>(
+                mut self,
+                map: T,
+                params: BTreeMap<String, String>,
+                accumulator: Vec<u8>,
+            ) -> Self {
+                self.wasm_module = Some(SmartStreamPayload {
+                    wasm: SmartStreamWasm::Raw(map.into()),
+                    kind: SmartStreamKind::Aggregate { accumulator },
+                    params: params.into(),
+                });
+                self
+            }
+        }
+    } else {
+        #[derive(Default)]
+        pub struct SmartStreamConfig  {}
+    }
 }
 
 impl TopicProducer {
@@ -38,7 +111,11 @@ impl TopicProducer {
             topic,
             pool,
             partitioner,
+            smartstream_config: Default::default(),
         }
+    }
+    pub fn get_smartstream_mut(&mut self) -> &mut SmartStreamConfig {
+        &mut self.smartstream_config
     }
 
     /// Sends a key/value record to this producer's Topic.
@@ -88,10 +165,32 @@ impl TopicProducer {
         let partition_count = topic_spec.partitions();
         let partition_config = PartitionerConfig { partition_count };
 
-        let entries = records
-            .into_iter()
-            .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
-            .map(Record::from);
+        cfg_if::cfg_if! {
+            if #[cfg(feature = "smartengine")] {
+                let mut entries = records
+                    .into_iter()
+                    .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
+                    .map(Record::from)
+                    .collect::<Vec<Record>>();
+                use fluvio_smartengine::{SmartEngine};
+                use dataplane::smartstream::SmartStreamInput;
+                use std::convert::TryFrom;
+                if let Some(smart_payload) = &self.smartstream_config.wasm_module {
+
+
+                    let engine = SmartEngine::default();
+                    let mut smartstream = engine.create_module_from_payload(smart_payload.clone()).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+
+                    let output = smartstream.process(SmartStreamInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    entries = output.successes;
+                }
+            } else {
+                let entries = records
+                    .into_iter()
+                    .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
+                    .map(Record::from);
+                }
+        }
 
         // Calculate the partition for each entry
         // Use a block scope to ensure we drop the partitioner lock

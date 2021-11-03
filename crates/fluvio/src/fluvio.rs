@@ -1,6 +1,7 @@
 use std::convert::TryFrom;
 use std::sync::Arc;
 
+use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use tracing::{debug};
 use tokio::sync::OnceCell;
 
@@ -76,7 +77,6 @@ impl Fluvio {
         connector: DomainConnector,
         config: &FluvioConfig,
     ) -> Result<Self, FluvioError> {
-        use fluvio_sc_schema::objects::WatchRequest;
         use fluvio_protocol::api::Request;
 
         let config = ClientConfig::new(&config.endpoint, connector, config.use_spu_local_address);
@@ -86,7 +86,7 @@ impl Fluvio {
         let (socket, config, versions) = inner_client.split();
 
         // get version for watch
-        if let Some(watch_version) = versions.lookup_version(WatchRequest::API_KEY) {
+        if let Some(watch_version) = versions.lookup_version(ObjectApiWatchRequest::API_KEY) {
             debug!(platform = %versions.platform_version(),"checking platform version");
             check_platform_compatible(versions.platform_version())?;
 

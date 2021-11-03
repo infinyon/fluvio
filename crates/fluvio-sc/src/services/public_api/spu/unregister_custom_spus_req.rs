@@ -9,9 +9,9 @@ use std::io::{Error, ErrorKind};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
-use fluvio_sc_schema::spu::{CustomSpuKey};
+use fluvio_sc_schema::customspu::CustomSpuSpec;
+use fluvio_controlplane_metadata::spu::CustomSpuKey;
 use fluvio_auth::{AuthContext, InstanceAction};
-use fluvio_controlplane_metadata::spu::CustomSpuSpec;
 use fluvio_controlplane_metadata::spu::store::SpuLocalStorePolicy;
 use fluvio_controlplane_metadata::extended::SpecExt;
 

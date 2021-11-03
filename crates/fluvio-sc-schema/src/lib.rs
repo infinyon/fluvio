@@ -1,5 +1,6 @@
 pub mod topic;
 pub mod spu;
+pub mod customspu;
 pub mod spg;
 pub mod connector;
 pub mod smartmodule;
@@ -7,6 +8,8 @@ pub mod partition;
 pub mod versions;
 pub mod objects;
 pub mod table;
+pub mod smartstream;
+
 mod apis;
 mod request;
 mod response;
@@ -34,7 +37,29 @@ pub enum ApiError {
 }
 
 mod admin {
-    use dataplane::api::Request;
 
-    pub trait AdminRequest: Request {}
+    use std::fmt::Debug;
+
+    use dataplane::core::{Encoder, Decoder};
+
+    use super::core::{Spec};
+
+    /// filter by name
+    pub type NameFilter = String;
+
+    /// AdminSpec can perform list and watch
+    pub trait AdminSpec: Spec + Encoder + Decoder {
+        type ListFilter: Encoder + Decoder + Sized + Debug;
+        type ListType: Encoder + Decoder + Debug;
+        type WatchResponseType: Spec + Encoder + Decoder;
+    }
+
+    /// Not every Admin Object can be created directly
+    pub trait CreatableAdminSpec: Spec + Encoder + Decoder {
+        const CREATE_TYPE: u8;
+    }
+
+    pub trait DeletableAdminSpec: Spec + Encoder + Decoder {
+        type DeleteKey: Encoder + Decoder + Debug + Default;
+    }
 }

@@ -13,6 +13,7 @@ use crate::stores::spg::*;
 use crate::stores::connector::*;
 use crate::stores::smartmodule::*;
 use crate::stores::table::*;
+use crate::stores::smartstream::*;
 use crate::stores::*;
 
 pub type SharedContext = Arc<Context>;
@@ -28,6 +29,7 @@ pub struct Context {
     managed_connectors: StoreContext<ManagedConnectorSpec>,
     smart_modules: StoreContext<SmartModuleSpec>,
     tables: StoreContext<TableSpec>,
+    smart_streams: StoreContext<SmartStreamSpec>,
     health: SharedHealthCheck,
     config: ScConfig,
 }
@@ -51,6 +53,7 @@ impl Context {
             managed_connectors: StoreContext::new(),
             smart_modules: StoreContext::new(),
             tables: StoreContext::new(),
+            smart_streams: StoreContext::new(),
             health: HealthCheck::shared(),
             config,
         }
@@ -85,6 +88,10 @@ impl Context {
 
     pub fn tables(&self) -> &StoreContext<TableSpec> {
         &self.tables
+    }
+
+    pub fn smartstreams(&self) -> &StoreContext<SmartStreamSpec> {
+        &self.smart_streams
     }
 
     /// spu health channel
