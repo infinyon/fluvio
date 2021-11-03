@@ -247,7 +247,9 @@ impl StreamFetchHandler {
                                 "Error Instantiating SmartStreamArrayMap"
                             );
                             let error_code = ErrorCode::SmartStreamError(
-                                SmartStreamError::UndefinedSmartStreamModule("array_map".to_string()),
+                                SmartStreamError::UndefinedSmartStreamModule(
+                                    "array_map".to_string(),
+                                ),
                             );
                             send_back_error(&sink, &replica, &header, stream_id, error_code)
                                 .await?;

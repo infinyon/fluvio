@@ -1,4 +1,9 @@
-use std::{env::temp_dir, path::{Path, PathBuf}, sync::atomic::{AtomicU16, Ordering}, time::Duration};
+use std::{
+    env::temp_dir,
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicU16, Ordering},
+    time::Duration,
+};
 
 use fluvio_controlplane_metadata::partition::Replica;
 use flv_util::fixture::ensure_clean_dir;
@@ -32,9 +37,7 @@ use dataplane::{
     record::RecordSet,
     SmartStreamError,
 };
-use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, SmartStreamKind,
-};
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, SmartStreamKind};
 
 static NEXT_PORT: AtomicU16 = AtomicU16::new(12000);
 
@@ -53,7 +56,8 @@ async fn test_stream_fetch() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
     for version in 10..11 {
@@ -219,7 +223,8 @@ async fn test_stream_fetch_filter() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -365,7 +370,8 @@ async fn test_stream_fetch_filter_individual() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     let topic = "testfilter";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
@@ -457,7 +463,8 @@ async fn test_stream_filter_error_fetch() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -581,7 +588,8 @@ async fn test_stream_filter_max() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -711,7 +719,8 @@ async fn test_stream_fetch_map_error() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -809,7 +818,8 @@ async fn test_stream_aggregate_fetch_single_batch() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     let topic = "testaggregate";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
@@ -922,7 +932,8 @@ async fn test_stream_aggregate_fetch_multiple_batch() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     let topic = "testaggregatebatch";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
@@ -1361,7 +1372,8 @@ async fn test_stream_fetch_filter_with_params() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
     let topic = "testfilter_with_params";

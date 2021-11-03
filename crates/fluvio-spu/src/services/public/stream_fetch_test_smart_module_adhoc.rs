@@ -1,4 +1,10 @@
-use std::{env::temp_dir, path::{Path, PathBuf}, sync::atomic::{AtomicU16, Ordering}, time::Duration};use std::io::Read;
+use std::{
+    env::temp_dir,
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicU16, Ordering},
+    time::Duration,
+};
+use std::io::Read;
 
 use flate2::{Compression, bufread::GzEncoder};
 use fluvio_controlplane_metadata::partition::Replica;
@@ -15,7 +21,10 @@ use dataplane::{
 };
 use dataplane::fixture::{create_batch};
 use dataplane::smartstream::SmartStreamType;
-use fluvio_spu_schema::server::{stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm}, update_offset::{UpdateOffsetsRequest, OffsetUpdate}};
+use fluvio_spu_schema::server::{
+    stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm},
+    update_offset::{UpdateOffsetsRequest, OffsetUpdate},
+};
 use crate::core::GlobalContext;
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
@@ -31,18 +40,19 @@ use dataplane::{
     record::RecordSet,
     SmartStreamError,
 };
-use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, SmartStreamKind,
-};
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, SmartStreamKind};
 
 static NEXT_PORT: AtomicU16 = AtomicU16::new(12100);
 
 fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
     let path = filter_path.as_ref();
-    let raw_buffer = std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()));
+    let raw_buffer =
+        std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()));
     let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
     let mut buffer = Vec::with_capacity(raw_buffer.len());
-    encoder.read_to_end(&mut buffer).unwrap_or_else(|_| panic!("Unable to gzip file {}", path.display()));
+    encoder
+        .read_to_end(&mut buffer)
+        .unwrap_or_else(|_| panic!("Unable to gzip file {}", path.display()));
     buffer
 }
 
@@ -73,7 +83,8 @@ async fn test_stream_fetch_filter() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -219,7 +230,8 @@ async fn test_stream_fetch_filter_individual() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     let topic = "testfilter";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
@@ -311,7 +323,8 @@ async fn test_stream_filter_error_fetch() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -435,7 +448,8 @@ async fn test_stream_filter_max() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -565,7 +579,8 @@ async fn test_stream_fetch_map_error() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
 
@@ -663,7 +678,8 @@ async fn test_stream_aggregate_fetch_single_batch() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     let topic = "testaggregate";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
@@ -777,7 +793,8 @@ async fn test_stream_aggregate_fetch_multiple_batch() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     let topic = "testaggregatebatch";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
@@ -1218,7 +1235,8 @@ async fn test_stream_fetch_filter_with_params() {
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
-    let client_socket = MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
     let topic = "testfilter_with_params";
