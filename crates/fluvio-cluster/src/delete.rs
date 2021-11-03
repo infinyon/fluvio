@@ -232,6 +232,9 @@ impl ClusterUninstaller {
         let _ = self.remove_custom_objects("partitions", ns, None, true);
         let _ = self.remove_custom_objects("statefulset", ns, None, false);
         let _ = self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"), false);
+        let _ = self.remove_custom_objects("tables", ns, None, false);
+        let _ = self.remove_custom_objects("smartstreams", ns, None, false);
+        let _ = self.remove_custom_objects("smartmodules", ns, None, false);
 
         // delete secrets
         let _ = self.remove_secrets("fluvio-ca");
