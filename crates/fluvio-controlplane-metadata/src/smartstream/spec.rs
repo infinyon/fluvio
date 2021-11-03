@@ -11,6 +11,7 @@ use dataplane::core::{Encoder, Decoder};
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartStreamSpec {
     pub inputs: SmartStreamInputs,
+    pub modules: SmartStreamModules
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
@@ -45,6 +46,12 @@ pub struct SmartStreamRef {
     pub name: String,
 }
 
+impl SmartStreamRef {
+    pub fn new(name: String) -> Self {
+        SmartStreamRef { name }
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
@@ -52,8 +59,8 @@ pub struct SmartStreamRef {
     serde(rename_all = "camelCase")
 )]
 pub struct SmartStreamModules {
-    transform: Vec<SmartStreamModuleRef>,
-    outputs: Vec<SmartStreamModuleRef>,
+    pub transforms: Vec<SmartStreamModuleRef>,
+    pub outputs: Vec<SmartStreamModuleRef>,
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
@@ -64,6 +71,12 @@ pub struct SmartStreamModules {
 )]
 pub struct SmartStreamModuleRef {
     pub name: String,
+}
+
+impl SmartStreamModuleRef {
+    pub fn new(name: String) -> Self {
+        Self { name }
+    }
 }
 
 #[cfg(test)]
