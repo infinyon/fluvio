@@ -16,6 +16,7 @@ use crate::core::SharedContext;
 use crate::controllers::spus::SpuController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
+use crate::controllers::smartstreams::SmartStreamController;
 use crate::config::{ScConfig};
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
@@ -120,6 +121,8 @@ where
         "public",
         pub_server::start(ctx.clone(), auth_policy)
     );
+
+    SmartStreamController::start(ctx.clone());
 
     mod pub_server {
 
