@@ -1,5 +1,7 @@
-use fluvio_controlplane_metadata::smartstream::{SmartStreamInputs, SmartStreamModules};
+use tracing::debug;
 use structopt::StructOpt;
+
+use fluvio_controlplane_metadata::smartstream::{SmartStreamInputs, SmartStreamModules};
 
 use fluvio::Fluvio;
 use fluvio::metadata::smartstream::{
@@ -32,8 +34,15 @@ pub struct CreateSmartStreamOpt {
 }
 
 impl CreateSmartStreamOpt {
-    pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
-        todo!()
+    pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        let (name, spec): (String, SmartStreamSpec) = self.into();
+        debug!(%name,?spec,"creating smartstream");
+
+        let admin = fluvio.admin().await;
+        admin.create(name.clone(), false, spec).await?;
+        println!("smartstream \"{}\" created", name);
+
+        Ok(())
     }
 }
 

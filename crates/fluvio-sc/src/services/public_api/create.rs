@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 
+use dataplane::ErrorCode;
 use tracing::{debug, instrument};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
@@ -45,10 +46,87 @@ pub async fn handle_create_request<AC: AuthContext>(
         ObjectCreateRequest::Table(create) => {
             super::table::handle_create_table_request(common, create, auth_context).await?
         }
-        ObjectCreateRequest::SmartStream(_create) => {
-            todo!()
+        ObjectCreateRequest::SmartStream(create) => {
+            create::handle_create_request(
+                common,
+                create,
+                auth_context,
+                auth_context.global_ctx.smartstreams(),
+                |_| ErrorCode::SmartStreamObjectError,
+            )
+            .await?
         }
     };
 
     Ok(ResponseMessage::from_header(&header, status))
+}
+
+mod create {
+    use std::convert::{TryFrom, TryInto};
+    use std::fmt::Display;
+    use std::io::{Error, ErrorKind};
+
+    use fluvio_controlplane_metadata::core::Spec;
+    use fluvio_stream_dispatcher::store::StoreContext;
+    use tracing::{debug, trace, instrument};
+
+    use dataplane::ErrorCode;
+    use fluvio_sc_schema::{AdminSpec, Status};
+    use fluvio_sc_schema::objects::{CommonCreateRequest};
+    use fluvio_controlplane_metadata::extended::SpecExt;
+    use fluvio_auth::{AuthContext, TypeAction};
+
+    use crate::services::auth::AuthServiceContext;
+
+    #[instrument(skip(create, spec, auth_ctx, object_ctx, error_code))]
+    pub async fn handle_create_request<AC: AuthContext, S, F>(
+        create: CommonCreateRequest,
+        spec: S,
+        auth_ctx: &AuthServiceContext<AC>,
+        object_ctx: &StoreContext<S>,
+        error_code: F,
+    ) -> Result<Status, Error>
+    where
+        S: AdminSpec + SpecExt,
+        <S as Spec>::IndexKey: TryFrom<String> + Display,
+        F: FnOnce(Error) -> ErrorCode,
+    {
+        let name = create.name;
+
+        debug!(ty = %S::LABEL,"creating");
+
+        if let Ok(authorized) = auth_ctx
+            .auth
+            .allow_type_action(S::OBJECT_TYPE, TypeAction::Create)
+            .await
+        {
+            if !authorized {
+                trace!("authorization failed");
+                return Ok(Status::new(
+                    name.clone(),
+                    ErrorCode::PermissionDenied,
+                    Some(String::from("permission denied")),
+                ));
+            }
+        } else {
+            return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
+        }
+
+        Ok(
+            if let Err(err) = object_ctx
+                .create_spec(
+                    name.clone()
+                        .try_into()
+                        .map_err(|_err| Error::new(ErrorKind::InvalidData, "not convertible"))?,
+                    spec,
+                )
+                .await
+            {
+                let error = Some(err.to_string());
+                Status::new(name, error_code(err), error)
+            } else {
+                Status::new_ok(name.clone())
+            },
+        )
+    }
 }
