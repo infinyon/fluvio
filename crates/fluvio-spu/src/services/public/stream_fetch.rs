@@ -20,7 +20,7 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest, SmartModuleInvocationWasm, SmartStreamKind,
+    DefaultStreamFetchRequest, FileStreamFetchRequest, SmartModuleInvocationWasm,
     SmartStreamPayload, SmartStreamWasm, StreamFetchRequest, StreamFetchResponse
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
@@ -165,8 +165,8 @@ impl StreamFetchHandler {
         };
 
         let (smartstream, max_fetch_bytes) = if let Some(payload) = wasm_payload {
-            let wasm = match payload.wasm.get_raw() {
-                Ok(wasm) => wasm,
+            match payload.wasm.get_raw() {
+                Ok(wasm) => debug!(len = wasm.len(), "creating WASM module with bytes"),
                 Err(e) => {
                     let error = SmartStreamError::InvalidWasmModule(e.to_string());
                     let error_code = ErrorCode::SmartStreamError(error);
@@ -174,8 +174,8 @@ impl StreamFetchHandler {
                     return Ok(());
                 }
             };
-            debug!(len = wasm.len(), "creating WASM module with bytes");
-            let module = match sm_engine.create_module_from_payload(wasm) {
+            
+            let smartstream = match sm_engine.create_module_from_payload(payload.clone()) {
                 Ok(module) => module,
                 Err(err) => {
                     error!(

@@ -1163,12 +1163,12 @@ async fn test_stream_fetch_invalid_wasm_module() {
         .expect("should get response")
         .expect("response should be Ok");
 
-    assert!(
-        matches!(
-            response.partition.error_code,
-            ErrorCode::SmartStreamError(SmartStreamError::InvalidWasmModule(_))
-        ),
-        "expected a SmartStream Module error for invalid WASM module"
+    assert_eq!(
+        response.partition.error_code,
+        ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(
+            "Filter".to_string(),
+            "failed to parse WebAssembly module".to_string()
+        ))
     );
 
     server_end_event.notify();
@@ -1548,8 +1548,11 @@ async fn test_stream_fetch_invalid_smartstream() {
         .expect("response should be Ok");
 
     match response.partition.error_code {
-        ErrorCode::SmartStreamError(SmartStreamError::UndefinedSmartStreamModule(name)) => {
-            assert_eq!(name, "filter");
+        ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(
+            name,
+            _reason,
+        )) => {
+            assert_eq!(name, "Filter");
         }
         _ => panic!("expected an UndefinedSmartStreamModule error"),
     }
