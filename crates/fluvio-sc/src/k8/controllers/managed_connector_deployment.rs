@@ -208,21 +208,20 @@ impl ManagedConnectorDeploymentController {
 
         args.extend(parameters);
 
-        let (image, image_pull_policy) =
-            match mc_spec.connector_version.as_deref() {
-                Some("dev") => (
-                    format!("infinyon/fluvio-connect-{}", mc_spec.type_),
-                    ImagePullPolicy::Never,
-                ),
-                Some("latest") | None => (
-                    format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_),
-                    ImagePullPolicy::Always,
-                ),
-                Some(version) => (
-                    format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version),
-                    ImagePullPolicy::IfNotPresent,
-                ),
-            };
+        let (image, image_pull_policy) = match mc_spec.connector_version.as_deref() {
+            Some("dev") => (
+                format!("infinyon/fluvio-connect-{}", mc_spec.type_),
+                ImagePullPolicy::Never,
+            ),
+            Some("latest") | None => (
+                format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_),
+                ImagePullPolicy::Always,
+            ),
+            Some(version) => (
+                format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version),
+                ImagePullPolicy::IfNotPresent,
+            ),
+        };
         debug!(
             "Starting connector for image: {:?} with arguments {:?}",
             image, args
