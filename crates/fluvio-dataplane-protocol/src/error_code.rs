@@ -162,7 +162,7 @@ pub enum SmartStreamError {
     #[error("WASM Module error: {0}")]
     InvalidWasmModule(String),
     #[error("WASM module is not a valid '{0}' SmartStream. Are you missing a #[smartstream({0})] attribute?")]
-    InvalidSmartStreamModule(String),
+    UndefinedSmartStreamModule(String),
     #[error("SmartModule {0} is not defined")]
     SmartModuleNotFound(String),
 }

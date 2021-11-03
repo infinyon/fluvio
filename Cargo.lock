@@ -1917,6 +1917,7 @@ dependencies = [
  "chrono",
  "derive_builder",
  "event-listener",
+ "flate2",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
