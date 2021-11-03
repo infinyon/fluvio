@@ -25,30 +25,65 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["left"]
+              required: ["inputs"]
               properties:
-                left:
+                inputs:
                   type: object
                   properties:
-                    topic:
+                    left:
                       type: object
-                      required: ["name"]
                       properties:
-                        name:
-                          type: string
-                    smartstream:
+                        topic:
+                          type: object
+                          required: ["name"]
+                          properties:
+                            name:
+                              type: string
+                        smartstream:
+                          type: object
+                          required: ["name"]
+                          properties:
+                            name:
+                              type: string
+                      oneOf:
+                        - required: ["topic"]
+                        - required: ["smartstream"]
+                    right:
                       type: object
-                      required: ["name"]
                       properties:
-                        name:
-                          type: string
-                  oneOf:
-                    - required: ["topic"]
-                    - required: ["smartstream"]
+                        topic:
+                          type: object
+                          required: ["name"]
+                          properties:
+                            name:
+                              type: string
+                        smartstream:
+                          type: object
+                          required: ["name"]
+                          properties:
+                            name:
+                              type: string
+                modules:
+                  type: object
+                  properties:
+                    transforms:
+                      type: array
+                      items:
+                        type: object
+                        required: ["name"]
+                        properties:
+                          name:
+                            type: string
+                    outputs:
+                      type: array
+                      items:
+                        type: object
+                        required: ["name"]
+                        properties:
+                          name:
+                            type: string
 
-
-
-                    
+                
 
 
                 

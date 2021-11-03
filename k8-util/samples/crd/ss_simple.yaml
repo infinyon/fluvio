@@ -3,6 +3,21 @@ kind: SmartStream
 metadata:
   name: ss1
 spec:
-  left:
-    topic:
-      name: test
+  inputs:
+    left:
+      topic:
+        name: bus-mqtt
+ # right:
+ #   smartstream:
+ #     inline:
+ #       module: route-aggregate
+ #       topic:  route-data
+#   name: route-stream
+      
+  modules:
+    transforms:
+      - name: bus-prediction
+    outputs:
+      - name: bus-table
+
+ 

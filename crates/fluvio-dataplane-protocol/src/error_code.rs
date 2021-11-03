@@ -133,6 +133,14 @@ pub enum ErrorCode {
     #[fluvio(tag = 7001)]
     #[error("the table was not found")]
     TableNotFound,
+
+    // SmartStream Object Errors
+    #[fluvio(tag = 8000)]
+    #[error("SmartStream object error")]
+    SmartStreamObjectError,
+    #[fluvio(tag = 8001)]
+    #[error("the smartstream was not found")]
+    SmartStreamNotFound,
 }
 
 impl Default for ErrorCode {
