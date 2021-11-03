@@ -45,7 +45,7 @@ pub async fn handle_delete_request<AC: AuthContext>(
             super::table::handle_delete_table(req.key(), auth_ctx).await?
         }
         ObjectApiDeleteRequest::SmartStream(req) => {
-            delete::handle_delete_table(
+            delete_handler::process(
                 req.key(),
                 auth_ctx,
                 auth_ctx.global_ctx.smartstreams(),
@@ -61,7 +61,7 @@ pub async fn handle_delete_request<AC: AuthContext>(
     Ok(ResponseMessage::from_header(&header, status))
 }
 
-mod delete {
+mod delete_handler {
     use std::{
         convert::{TryFrom, TryInto},
         io::{Error, ErrorKind},
@@ -79,7 +79,7 @@ mod delete {
 
     /// Handler for object delete
     #[instrument(skip(auth_ctx, object_ctx, error_code, not_found_code))]
-    pub async fn handle_delete_table<AC: AuthContext, S, F, G>(
+    pub async fn process<AC: AuthContext, S, F, G>(
         name: String,
         auth_ctx: &AuthServiceContext<AC>,
         object_ctx: &StoreContext<S>,

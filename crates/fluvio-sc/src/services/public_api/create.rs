@@ -47,7 +47,7 @@ pub async fn handle_create_request<AC: AuthContext>(
             super::table::handle_create_table_request(common, create, auth_context).await?
         }
         ObjectCreateRequest::SmartStream(create) => {
-            create::handle_create_request(
+            create_handler::process(
                 common,
                 create,
                 auth_context,
@@ -61,7 +61,7 @@ pub async fn handle_create_request<AC: AuthContext>(
     Ok(ResponseMessage::from_header(&header, status))
 }
 
-mod create {
+mod create_handler {
     use std::convert::{TryFrom, TryInto};
     use std::fmt::Display;
     use std::io::{Error, ErrorKind};
@@ -79,7 +79,7 @@ mod create {
     use crate::services::auth::AuthServiceContext;
 
     #[instrument(skip(create, spec, auth_ctx, object_ctx, error_code))]
-    pub async fn handle_create_request<AC: AuthContext, S, F>(
+    pub async fn process<AC: AuthContext, S, F>(
         create: CommonCreateRequest,
         spec: S,
         auth_ctx: &AuthServiceContext<AC>,

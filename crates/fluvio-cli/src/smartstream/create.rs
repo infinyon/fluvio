@@ -46,17 +46,16 @@ impl CreateSmartStreamOpt {
     }
 }
 
-/// convert Create Option into
-impl Into<(String, SmartStreamSpec)> for CreateSmartStreamOpt {
-    fn into(self) -> (String, SmartStreamSpec) {
-        let left = if self.leftstream {
-            SmartStreamInput::SmartStream(SmartStreamRef::new(self.left))
+impl From<CreateSmartStreamOpt> for (String, SmartStreamSpec) {
+    fn from(opt: CreateSmartStreamOpt) -> Self {
+        let left = if opt.leftstream {
+            SmartStreamInput::SmartStream(SmartStreamRef::new(opt.left))
         } else {
-            SmartStreamInput::Topic(SmartStreamRef::new(self.left))
+            SmartStreamInput::Topic(SmartStreamRef::new(opt.left))
         };
 
-        let right_flag = self.rightstream;
-        let right = self.right.map(move |r| {
+        let right_flag = opt.rightstream;
+        let right = opt.right.map(move |r| {
             if right_flag {
                 SmartStreamInput::SmartStream(SmartStreamRef::new(r))
             } else {
@@ -65,12 +64,12 @@ impl Into<(String, SmartStreamSpec)> for CreateSmartStreamOpt {
         });
 
         (
-            self.name,
+            opt.name,
             SmartStreamSpec {
                 inputs: SmartStreamInputs { left, right },
 
                 modules: SmartStreamModules {
-                    transforms: self.transforms.modules(),
+                    transforms: opt.transforms.modules(),
                     outputs: vec![],
                 },
             },
@@ -92,7 +91,7 @@ fn parse_module(src: &str) -> Result<ModuleList, std::io::Error> {
     let modules: Vec<SmartStreamModuleRef> = src
         .split(',')
         .map(|s| s.trim().to_string())
-        .map(|s| SmartStreamModuleRef::new(s))
+        .map(SmartStreamModuleRef::new)
         .collect();
     Ok(ModuleList(modules))
 }
