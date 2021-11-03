@@ -14,7 +14,7 @@ setup_file() {
 # Create topic
 @test "Create a topic" {
     debug_msg "Topic name: $TOPIC_NAME"
-    run "$FLUVIO_BIN" topic create "$TOPIC_NAME" 
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME" 
     #debug_msg "command $BATS_RUN_COMMAND" # This doesn't do anything.
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
@@ -24,7 +24,7 @@ setup_file() {
 # Create topic - Negative test
 @test "Attempt to create a topic with same name" {
     debug_msg "Topic name: $TOPIC_NAME"
-    run "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_failure
@@ -34,7 +34,7 @@ setup_file() {
 # Describe topic
 @test "Describe a topic" {
     debug_msg "Topic name: $TOPIC_NAME"
-    run "$FLUVIO_BIN" topic describe "$TOPIC_NAME" 
+    run timeout 15s "$FLUVIO_BIN" topic describe "$TOPIC_NAME" 
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_success
@@ -43,7 +43,7 @@ setup_file() {
 # Delete topic
 @test "Delete a topic" {
     debug_msg "Topic name: $TOPIC_NAME"
-    run "$FLUVIO_BIN" topic delete "$TOPIC_NAME" 
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME" 
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_success
@@ -52,7 +52,7 @@ setup_file() {
 # Delete topic - Negative test 
 @test "Attempt to delete a topic that doesn't exist" {
     debug_msg "Topic name: $TOPIC_NAME"
-    run "$FLUVIO_BIN" topic delete "$TOPIC_NAME" 
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME" 
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_failure

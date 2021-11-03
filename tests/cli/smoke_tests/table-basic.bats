@@ -14,7 +14,7 @@ setup_file() {
 # Create table
 @test "Create table" {
     skip "Creating tables currently broken"
-    run "$FLUVIO_BIN" table create "$TABLE_NAME"
+    run timeout 15s "$FLUVIO_BIN" table create "$TABLE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_success
@@ -22,7 +22,7 @@ setup_file() {
 
 # Create table - Negative test
 @test "Attempt to create a table with same name" {
-    run "$FLUVIO_BIN" table create "$TABLE_NAME"
+    run timeout 15s "$FLUVIO_BIN" table create "$TABLE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_failure
@@ -30,20 +30,20 @@ setup_file() {
 
 # List table
 @test "List table" {
-    run "$FLUVIO_BIN" table list
+    run timeout 15s "$FLUVIO_BIN" table list
     assert_success
 }
 
 # Delete table
 @test "Delete table" {
     skip "Deleting tables currently broken"
-    run "$FLUVIO_BIN" table delete "$TABLE_NAME"
+    run timeout 15s "$FLUVIO_BIN" table delete "$TABLE_NAME"
     assert_success
 }
 
 # Delete table - Negative test
 @test "Attempt to delete a table that doesn't exist" {
-    run "$FLUVIO_BIN" table delete "$TABLE_NAME"
+    run timeout 15s "$FLUVIO_BIN" table delete "$TABLE_NAME"
     assert_failure
     assert_output --partial "TableNotFound"
 }
