@@ -179,7 +179,6 @@ impl ManagedConnectorDeploymentController {
         _namespace: &str,
         _name: &str,
     ) -> K8DeploymentSpec {
-
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
             config_map: Some(ConfigMapVolumeSource {
@@ -201,7 +200,6 @@ impl ManagedConnectorDeploymentController {
             .flat_map(|(key, value)| [format!("--{}={}", key.clone(), value.clone())])
             .collect::<Vec<_>>();
 
-
         // Prefixing the args with a "--" passed to the container is needed for an unclear reason.
         let mut args = vec![
             "--".to_string(),
@@ -210,17 +208,21 @@ impl ManagedConnectorDeploymentController {
 
         args.extend(parameters);
 
-        let (image, image_pull_policy) = match mc_spec.connector_version.as_ref().map(|v| v.as_str()) {
-            Some("dev") => {
-                (format!("infinyon/fluvio-connect-{}", mc_spec.type_), ImagePullPolicy::Never)
-            }
-            Some("latest") | None => {
-                (format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_), ImagePullPolicy::Always)
-            }
-            Some(version) => {
-                (format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version), ImagePullPolicy::IfNotPresent)
-            }
-        };
+        let (image, image_pull_policy) =
+            match mc_spec.connector_version.as_ref().map(|v| v.as_str()) {
+                Some("dev") => (
+                    format!("infinyon/fluvio-connect-{}", mc_spec.type_),
+                    ImagePullPolicy::Never,
+                ),
+                Some("latest") | None => (
+                    format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_),
+                    ImagePullPolicy::Always,
+                ),
+                Some(version) => (
+                    format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version),
+                    ImagePullPolicy::IfNotPresent,
+                ),
+            };
         debug!(
             "Starting connector for image: {:?} with arguments {:?}",
             image, args
