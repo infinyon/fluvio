@@ -1,9 +1,9 @@
 #!/usr/bin/env bats
 
-load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
 load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/setup_k8_cluster.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/random_string.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-support/load.bash
+load "$BATS_TEST_DIRNAME"/../test_helper/bats-assert/load.bash
 
 setup_file() {
     TABLE_NAME="$(random_string)"
@@ -14,36 +14,36 @@ setup_file() {
 # Create table
 @test "Create table" {
     skip "Creating tables currently broken"
-    run "$FLUVIO_BIN" table create "$TABLE_NAME"
+    run timeout 15s "$FLUVIO_BIN" table create "$TABLE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
-    [ "$status" -eq 0 ]
+    assert_success
 }
 
 # Create table - Negative test
 @test "Attempt to create a table with same name" {
-    run "$FLUVIO_BIN" table create "$TABLE_NAME"
+    run timeout 15s "$FLUVIO_BIN" table create "$TABLE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
-    [ "$status" -eq 1 ]
+    assert_failure
 }
 
 # List table
 @test "List table" {
-    run "$FLUVIO_BIN" table list
-    [ "$status" -eq 0 ]
+    run timeout 15s "$FLUVIO_BIN" table list
+    assert_success
 }
 
 # Delete table
 @test "Delete table" {
     skip "Deleting tables currently broken"
-    run "$FLUVIO_BIN" table delete "$TABLE_NAME"
-    [ "$status" -eq 0 ]
+    run timeout 15s "$FLUVIO_BIN" table delete "$TABLE_NAME"
+    assert_success
 }
 
 # Delete table - Negative test
 @test "Attempt to delete a table that doesn't exist" {
-    run "$FLUVIO_BIN" table delete "$TABLE_NAME"
-    [ "$status" -eq 1 ]
-    [[ "${lines[3]}" =~ "TableNotFound" ]]
+    run timeout 15s "$FLUVIO_BIN" table delete "$TABLE_NAME"
+    assert_failure
+    assert_output --partial "TableNotFound"
 }

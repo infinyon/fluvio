@@ -1,15 +1,18 @@
-# Developing Fluvio
+# Fluvio Developer Guide
+
+Table of contents:
+1. [Setting up Development Environment](#setting-up-development-environment)
+2. [Checking out source code](#checking-out-source-code)
+3. [Building from source code](#building-from-source-code)
+4. [Starting Fluvio cluster for development](#starting-fluvio-cluster-for-development)
+5. [Running tests](#running-tests)
+6. [Troubleshooting](#troubleshooting)
+
+---
 
 Thank you for joining Fluvio community. The goal of this document is to provide everything you need to get started with developing Fluvio.
 
-## Assumptions
-
-Familiarity with
-
-- [Rust](https://www.rust-lang.org)
-- [Kubernetes](https://kubernetes.io)
-
-This Developer's guide and examples should work with the following platforms:
+Examples should work with the following platforms:
 
 - MacOS X
 - Linux  
@@ -23,17 +26,38 @@ Please see [Kubernetes](https://kubernetes.io) for setting up a development clus
 
 Please read [doc](www.fluvio.io) for technical arch and operation guide.
 
-# Setting up Development Environment
+---
 
-## Set up Rust
+## Setting up Development Environment
 
+The following are the tools that are used by development and automated testing
+
+### Rust toolchain
+* rustup
+* cargo-fmt
+* cargo-clippy
+
+#### Set up Rust
 Please follow [setup](https://www.rust-lang.org/tools/install) instructions to install Rust and Cargo.
 
-## Install Helm
+### Buildtime dependencies
+* make
+* zig
+* lld (v11)
+* git
 
-Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install hel
+### Runtime dependencies
 
-## Setting up Kubernetes Cluster
+Kubernetes is required for running Fluvio.
+
+* For development, please use one of the following supported kubernetes distros
+    * [minikube](https://minikube.sigs.k8s.io/docs/start/)
+    * [kind](https://kind.sigs.k8s.io)
+    * [k3d](https://k3d.io)
+* kubectl
+* helm
+
+#### Setting up Kubernetes Cluster
 
 Fluvio supports the following Kubernetes cluster types for development:
 
@@ -41,77 +65,93 @@ Fluvio supports the following Kubernetes cluster types for development:
 * [kind](https://kind.sigs.k8s.io)
 * [k3d](https://k3d.io)
 
-For these cluster types, fluvio will build a docker image and automatically imports it.  For other cluster types, please file an issue.
+For these cluster types, fluvio will build a docker image and automatically imports it with `make build_k8_image`. 
+
+For other cluster types, please file an issue.
 
 Fluvio will run on any Kubernetes Cluster for non-development deployments.
 
-### Create default clusters
+#### Install Helm
 
-If you don't have an existing Kubernetes cluster, you can use following scripts to create a default cluster:
+Helm is used for installing Fluvio on Kubernetes.
 
-For minikube:
-```
-$ ./k8-util/cluster/reset-minikube.sh
-```
+Please follow [helm setup](https://helm.sh/docs/intro/quickstart/) to install helm
 
-For k3d: 
-```
-$ ./k8-util/cluster/reset-k3d.sh
-```
+### Testing dependencies 
+* curl
+* jq
+* bats
 
-For kind:
-```
-$ ./k8-util/cluster/reset-kind.sh
-```
+#### Install Bats-core
 
-## Checking out  Fluvio source code and performing smoke test
+Bats-core is used for our CLI-based testing
 
-Build Fluvio CLI from source code
+Please follow the [bats-core](https://bats-core.readthedocs.io/en/stable/installation.html) installation guide.
+
+## Checking out source code
+
+You can clone the source code with the following command:
 ```
 $ git clone https://github.com/infinyon/fluvio.git
-$ cd fluvio
 ```
 
-Assuming you have set up the Kubernetes cluster, you can build and execute the smoke test.  The smoke test will build a complete fluvio platform, create a test fluvio cluster and run a simple test with a replica of 2.
+## Building from source code
 
-### Running local smoke test
+You can build from the source code using `make`.
 
-Perform smoke test using local cluster mode:
+Make targets
+
+* `build-cli`: build only cli `fluvio`
+* `build-cli-minimal`: build cli without Kubernetes admin
+* `build-cluster`:  build platform component `fluvio-run` (SC and SPU)
+* `build_k8_image`: build the kubernetes image and load it into your kubernetes distro's image registry
+
+### Build Pre-requisites
+
+Zig and LLD(version 11) is required to build the image.
+
+For mac:
 
 ```
-make smoke-test-local
+brew install zig
+brew install llvm@11
+export FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld
 ```
 
-This results in message such as:
+For ubuntu LTS 20.04 or greater:
+
 ```
-Creating the topic: test
-topic "test" created
-found topic: test offset: 0
-starting fetch stream for: test base offset: 0, expected new records: 1000
-<<consume test done for: test >>>>
-consume message validated!, records: 1000
-deleting cluster
+sudo snap install zig --beta --classic
+sudo apt-get install -y lld-11
+export FLUVIO_BUILD_LLD=lld-11
 ```
 
-### Running Kubernetes smoke test
+### Problem installing lld-11
 
-Perform smoke test as Kubernetes objects:
+If you have problem installing `lld-11`, please see: https://apt.llvm.org.
+
+For ubuntu LTS 18.04:
+
 ```
-make smoke-test-k8
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+sudo apt-get install clang-11 lldb-11 lld-11
 ```
 
-### Make targets
+## Building the Fluvio docker image
 
-Fluvio 
+In order to deploy to Kubernetes, the Docker image version must be built and loaded into cluster.
 
-`build-cli`: build only cli
-`build-cli-minimal`: build cli without Kubernetes admin
-`build-cluster`:  build platform components such as SC and SPU
+Run following command to build the image and load into your kubernetes cluster's image registry
 
+```
+$ make build_k8_image
+```
 
-## Download a published version of Fluvio
+## Starting Fluvio cluster for development
 
-If, instead of building Fluvio, you would prefer to just download it and get to work,
+### Optional: Download a published version of Fluvio
+
+Instead of building Fluvio, you would prefer to just download it and get to work,
 you can use our one-line installation script. You can use it to install the latest
 release or prerelease, or to install a specific version:
 
@@ -122,7 +162,7 @@ $ curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=x.y.z bash   # In
 ```
 
 
-## Working with both Release and develop version of Flvuio
+### Working with both Release and develop version of Flvuio
 
 The next step is very important, as it will help you to prevent subtle development
 bugs. Fluvio is built in two separate pieces, `fluvio` (the CLI), and `fluvio-run`
@@ -149,27 +189,95 @@ on your own system. Then, the `flvd` command (short for "fluvio develop") will r
 both `fluvio-run` and `fluvio`, then execute `fluvio` and pass the arguments to it.
 
 
-## Setting Kubernetes up for running Fluvio in development
+### Kubernetes as a requirement
 
-Install Fluvio `sys` chart from source.
+Kubernetes is currently a requirement for running Fluvio. We use Kubernetes to manage Fluvio's metadata. Running in "local" mode still requires kubernetes, however, Fluvio's processes run locally instead of within Kubernetes pods.
+
+
+* Default mode: [Kubernetes-based Fluvio cluster](#kubernetes-based-fluvio-cluster)
+* "local" mode: [OS-process based Fluvio cluster](#os-process-based-fluvio-cluster)
+
+### Kubernetes-based Fluvio cluster
+
+If you don't have an existing Kubernetes cluster, you can use following scripts to prepare your Kubernetes cluster for running Fluvio:
+
+For minikube:
+```
+$ ./k8-util/cluster/reset-minikube.sh
+```
+
+For k3d: 
+```
+$ ./k8-util/cluster/reset-k3d.sh
+```
+
+For kind:
+```
+$ ./k8-util/cluster/reset-kind.sh
+```
+
+
+#### Setting Kubernetes up for running Fluvio in development
 
 ```
-$ flvd cluster start --sys --develop
+# This will build the Fluvio cli and then create a docker image
+$ make build-cli build-cluster build_k8_image
+
+# This will start a Fluvio cluster in Kubernetes using the cli and image from previous step
+$ flvd cluster start --develop
 ```
 
-# Running Fluvio with local cluster
+
+In this mode, we run Fluvio components as Kubernetes objects.
+
+#### Cleanup
+
+Make sure you uninstall previous clusters for local and k8:
+
+```
+$ flvd cluster delete --local
+$ flvd cluster delete
+```
+
+### Install Fluvio components as Kubernetes
+
+Run command below now to run install with image just built
+
+```
+$ flvd cluster start --develop
+```
+
+Topic creation, product and consumer can now be tested as with `local` cluster.
+
+You can remove fluvio cluster by
+
+```
+$ flvd cluster delete
+```
+
+Note that when you uninstall cluster, CLI will remove all related objects such as
+
+- Topics
+- Partitions
+- Tls Secrets
+- Storage
+
+### OS-process based Fluvio cluster
 
 In this mode, we run SC and SPU as the local process.
+
+**Note: Running Kubernetes is still required**
+
 
 We highly recommend using the `flvd cluster start --local --develop` command for most development.
 
 However, in the following cases, we run `sc` and `spu` individually, allowing individual testing.
 
-## Filtering Log
+### Filtering Log
 
 Please see [filering tracing log](https://tracing.rs/tracing_subscriber/filter/struct.envfilter).
 
-## Starting SC
+### Starting SC
 
 The Streaming Controller (SC) is the controller for a Fluvio cluster.
 You only start a single SC for a single Fluvio cluster.
@@ -180,7 +288,7 @@ To run the SC, you'll need to build and run the `fluvio-run` executable:
 $ RUST_LOG=fluvio=debug cargo run --bin fluvio-run -- sc
 ```
 
-## Starting SPU
+### Starting SPU
 
 After SC is started, you can start adding unmanaged (custom) SPUs.
 
@@ -231,88 +339,7 @@ $ flvd cluster spu register --id 5001 --public-server 0.0.0.0:9020 --private-ser
 $ cargo run --bin fluvio-run -- spu -i 5001 -p 0.0.0.0:9020 -v 0.0.0.0:9021
 ```
 
-
-# Deploying as Kubernetes 
-
-In this mode, we run Fluvio components as Kubernetes objects.
-
-## Pre-requisites
-
-Zig and LLD(version 11) is required to build the image.
-
-For mac:
-
-```
-brew install zig
-brew install llvm@11
-export FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld
-```
-
-For ubuntu LTS 20.04 or greater:
-
-```
-sudo snap install zig --beta --classic
-sudo apt-get install -y lld-11
-export FLUVIO_BUILD_LLD=lld-11
-```
-
-### Problem installing lld-11
-
-If you have problem installing `lld-11`, please see: https://apt.llvm.org.
-
-For ubuntu LTS 18.04:
-
-```
-wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
-sudo apt-get install clang-11 lldb-11 lld-11
-```
-
-
-## Building the image 
-
-In order to deploy to Kubernetes, the Docker image version must be built and loaded into cluster.  This is different for each cluster type.
-
-Run following command to build the image
-
-```
-$ make build_k8_image
-```
-
-## Cleanup
-
-Make sure you uninstall previous clusters for local and k8:
-
-```
-$ flvd cluster delete --local
-$ flvd cluster delete
-```
-
-## Install Fluvio components as Kubernetes
-
-Run command below now to run install with image just built
-
-```
-$ flvd cluster start --develop
-```
-
-Topic creation, product and consumer can now be tested as with `local` cluster.
-
-You can remove fluvio cluster by
-
-```
-$ flvd cluster delete
-```
-
-Note that when you uninstall cluster, CLI will remove all related objects such as
-
-- Topics
-- Partitions
-- Tls Secrets
-- Storage
-
-## Running SC in locally
-
-
+### Running SC in locally
 
 First install fluvio k8 cluster as normally.
 
@@ -327,23 +354,68 @@ Then, can run sc directly
 ```
 cargo run --bin fluvio-sc-k8
 ```
+## Running tests
+
+We have 3 types of tests:
+- Tests run w/ `cargo`
+    - This includes unit tests and doc tests
+- Tests run with `fluvio-test`
+    - These are integration tests executed with our `fluvio-test` test harness
+    - Build with `make build-test`
+- Tests run with `bats`
+    - These are CLI tests written and executed with `bats-core`
+    - Run with `make cli-smoke`
+
+### Running local smoke test
+
+Perform smoke test using local cluster mode:
+
+```
+make smoke-test-local
+```
+
+This results in message such as:
+```
+Creating the topic: test
+topic "test" created
+found topic: test offset: 0
+starting fetch stream for: test base offset: 0, expected new records: 1000
+<<consume test done for: test >>>>
+consume message validated!, records: 1000
+deleting cluster
+```
+
+### Running Kubernetes smoke test
+
+Perform smoke test as Kubernetes objects:
+```
+make smoke-test-k8
+```
+
+### Running CLI smoke test
+
+Perform CLI smoke test against your running cluster (Kubernetes or local)
+
+```
+make cli-smoke
+```
 
 ## Troubleshooting
 
 This guide helps users to solve issues they might face during the setup process. 
 
-###### Connection issues
+### Connection issues
 
 If you face connection issues while creating minikube image
 
-Re-build i.e.delete and restart minikube cluster
+Re-build i.e. delete and restart minikube cluster
 
 ```
 sh k8-util/minikube/reset-minikube.sh
 ```
 
 
-###### Fluvio sys chart issues
+### Fluvio sys chart issues
 
 If you face issues while installing sys chart
 
@@ -364,7 +436,7 @@ Rebuilding minikube cluster sometimes doesnt remove the storage class. Hence the
 kubectl delete storageclass fluvio-spu
 ```
 
-#### Deleting partition
+### Deleting partition
 
 In certain cases, partition may not be deleted correctly.  In this case, you can manually force delete by:
 ```
