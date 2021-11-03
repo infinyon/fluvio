@@ -21,7 +21,12 @@ function random_string() {
     DEFAULT_LEN=7
     STRING_LEN=${1:-$DEFAULT_LEN}
 
-    RANDOM_STRING=$(shuf -zer -n"$STRING_LEN" {a..z} {0..9} "-")
+    # Ensure we don't end up with a string that starts with '-'
+
+    STRING1=$(shuf -zer -n1 {a..z} {0..9})
+    STRING2=$(shuf -zer -n"$(($STRING_LEN-1))" {a..z} {0..9} "-")
+
+    RANDOM_STRING=$STRING1$STRING2
 
     if [[ -n $DEBUG ]]; then
         echo "# DEBUG: Random str (len: $STRING_LEN): $RANDOM_STRING" >&3
