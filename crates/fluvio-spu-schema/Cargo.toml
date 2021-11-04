@@ -25,3 +25,4 @@ static_assertions = "1.1.0"
 # Fluvio dependencies
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
 dataplane = { version = "0.8", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
+fluvio-types = { version = "0.2", path = "../fluvio-types" }

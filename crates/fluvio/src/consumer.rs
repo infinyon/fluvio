@@ -9,8 +9,11 @@ use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, DefaultStreamFetchResponse, SmartStreamPayload, SmartStreamWasm,
-    SmartStreamKind, WASM_MODULE_V2_API, GZIP_WASM_API,
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartStreamPayload,
+    SmartStreamWasm, WASM_MODULE_API, SMART_MODULE_API, WASM_MODULE_V2_API,
+};
+pub use fluvio_spu_schema::server::stream_fetch::{
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind,
 };
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
@@ -401,7 +404,6 @@ impl PartitionConsumer {
     {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
-        use fluvio_spu_schema::server::stream_fetch::WASM_MODULE_API;
         use fluvio_protocol::api::Request;
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
@@ -428,29 +430,32 @@ impl PartitionConsumer {
             .versions()
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
+        debug!(%stream_fetch_version, "stream_fetch_version");
 
-        if let Some(mut module) = config.wasm_module {
-            if stream_fetch_version < WASM_MODULE_API as i16 {
-                return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
-            }
-
-            if stream_fetch_version < WASM_MODULE_V2_API as i16 {
-                // SmartStream V1
-                debug!("Using WASM V1 API");
-                let wasm = module.wasm.get_raw()?;
-                stream_request.wasm_module = wasm.into_owned();
-            } else {
-                // SmartStream V2
-                debug!("Using WASM V2 API");
-                if stream_fetch_version < GZIP_WASM_API as i16 {
-                    module.wasm.to_raw()?;
+        if let Some(smart_module) = config.smart_module {
+            if stream_fetch_version < SMART_MODULE_API as i16 {
+                if let SmartModuleInvocationWasm::AdHoc(wasm) = smart_module.wasm {
+                    let legacy_module = SmartStreamPayload {
+                        wasm: SmartStreamWasm::Gzip(wasm),
+                        kind: smart_module.kind,
+                        params: smart_module.params,
+                    };
+                    legacy_set_wasm(stream_fetch_version, &mut stream_request, legacy_module)?;
                 } else {
-                    debug!("Using compressed WASM API");
-                    module.wasm.to_gzip()?;
+                    return Err(FluvioError::Other(
+                        "SPU does not support persistent WASM".to_owned(),
+                    ));
                 }
-                stream_request.wasm_payload = Some(module);
+            } else {
+                debug!("Using persistent WASM API");
+                stream_request.smart_module = Some(smart_module);
             }
         }
+
+        if let Some(module) = config.wasm_module {
+            legacy_set_wasm(stream_fetch_version, &mut stream_request, module)?;
+        }
+
         let mut stream = self
             .pool
             .create_stream_with_version(&replica, stream_request, stream_fetch_version)
@@ -537,6 +542,35 @@ impl PartitionConsumer {
 
         Ok(stream)
     }
+}
+
+fn legacy_set_wasm(
+    stream_fetch_version: i16,
+    stream_request: &mut DefaultStreamFetchRequest,
+    mut module: SmartStreamPayload,
+) -> Result<(), FluvioError> {
+    if stream_fetch_version < WASM_MODULE_API as i16 {
+        return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
+    }
+
+    if stream_fetch_version < WASM_MODULE_V2_API as i16 {
+        // SmartStream V1
+        debug!("Using WASM V1 API");
+        let wasm = module.wasm.get_raw()?;
+        stream_request.wasm_module = wasm.into_owned();
+    } else {
+        // SmartStream V2
+        debug!("Using WASM V2 API");
+        if stream_fetch_version < GZIP_WASM_API as i16 {
+            module.wasm.to_raw()?;
+        } else {
+            debug!("Using compressed WASM API");
+            module.wasm.to_gzip()?;
+        }
+        stream_request.wasm_payload = Some(module);
+    }
+
+    Ok(())
 }
 
 /// Wrap an inner record stream and only stream until a given number of records have been fetched.
@@ -681,6 +715,8 @@ pub struct ConsumerConfig {
     pub(crate) isolation: Isolation,
     #[builder(private, default, setter(into, strip_option))]
     pub(crate) wasm_module: Option<SmartStreamPayload>,
+    #[builder(default)]
+    pub(crate) smart_module: Option<SmartModuleInvocation>,
 }
 
 impl ConsumerConfig {
@@ -698,6 +734,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream filter to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_filter<T: Into<Vec<u8>>>(
         &mut self,
         filter: T,
@@ -712,6 +749,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream map to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_map<T: Into<Vec<u8>>>(
         &mut self,
         map: T,
@@ -726,6 +764,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream filter_map to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_filter_map<T: Into<Vec<u8>>>(
         &mut self,
         filter_map: T,
@@ -740,6 +779,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Adds a SmartStream array_map to this ConsumerConfig
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_array_map<T: Into<Vec<u8>>>(
         &mut self,
         array_map: T,
@@ -753,6 +793,7 @@ impl ConsumerConfigBuilder {
     }
 
     /// Set a WASM aggregator function and initial accumulator value
+    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
     pub fn wasm_aggregate<T: Into<Vec<u8>>, U: Into<Vec<u8>>>(
         &mut self,
         aggregate: T,

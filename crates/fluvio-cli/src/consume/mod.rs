@@ -5,17 +5,21 @@
 //!
 
 use std::{io::Error as IoError, path::PathBuf};
-use std::io::ErrorKind;
+use std::io::{ErrorKind, Read};
 use std::collections::{BTreeMap};
+use flate2::Compression;
+use flate2::bufread::GzEncoder;
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
+
 mod record_format;
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
+use fluvio::consumer::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind};
 
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
@@ -102,27 +106,27 @@ pub struct ConsumeOpt {
 
     /// Path to a SmartStream filter wasm file
     #[structopt(long, group("smartstream"))]
-    pub filter: Option<PathBuf>,
+    pub filter: Option<String>,
 
     /// Path to a SmartStream map wasm file
     #[structopt(long, group("smartstream"))]
-    pub map: Option<PathBuf>,
+    pub map: Option<String>,
 
     /// Path to a SmartStream filter_map wasm file
     #[structopt(long, group("smartstream"))]
-    pub filter_map: Option<PathBuf>,
+    pub filter_map: Option<String>,
 
     /// Path to a SmartStream array_map wasm file
     #[structopt(long, group("smartstream"))]
-    pub array_map: Option<PathBuf>,
+    pub array_map: Option<String>,
 
     /// Path to a WASM file for aggregation
     #[structopt(long, group("smartstream"))]
-    pub aggregate: Option<PathBuf>,
+    pub aggregate: Option<String>,
 
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
     #[structopt(long)]
-    pub initial: Option<PathBuf>,
+    pub initial: Option<String>,
 
     /// (Optional) Extra input parameters passed to the smartstream module.
     /// They should be passed using key=value format
@@ -187,40 +191,56 @@ impl ConsumeOpt {
             Some(params) => params.clone().into_iter().collect(),
         };
 
-        if let Some(filter_path) = &self.filter {
-            let buffer = std::fs::read(filter_path)?;
-            debug!(len = buffer.len(), "read filter bytes");
-            builder.wasm_filter(buffer, extra_params);
-        } else if let Some(map_path) = &self.map {
-            let buffer = std::fs::read(map_path)?;
-            debug!(len = buffer.len(), "read map bytes");
-            builder.wasm_map(buffer, extra_params);
-        } else if let Some(map_path) = &self.array_map {
-            let buffer = std::fs::read(map_path)?;
-            debug!(len = buffer.len(), "read array_map bytes");
-            builder.wasm_array_map(buffer, extra_params);
-        } else if let Some(filter_map_path) = &self.filter_map {
-            let buffer = std::fs::read(filter_map_path)?;
-            debug!(len = buffer.len(), "read filter-map bytes");
-            builder.wasm_filter_map(buffer, extra_params);
+        let smart_module = if let Some(name_or_path) = &self.filter {
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::Filter,
+                extra_params,
+            )?)
+        } else if let Some(name_or_path) = &self.map {
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::Map,
+                extra_params,
+            )?)
+        } else if let Some(name_or_path) = &self.array_map {
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::ArrayMap,
+                extra_params,
+            )?)
+        } else if let Some(name_or_path) = &self.filter_map {
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::FilterMap,
+                extra_params,
+            )?)
         } else {
             match (&self.aggregate, &self.initial) {
-                (Some(wasm_path), Some(acc_path)) => {
-                    let wasm = std::fs::read(wasm_path)?;
-                    let acc = std::fs::read(acc_path)?;
-                    builder.wasm_aggregate(wasm, acc, extra_params);
+                (Some(name_or_path), Some(acc_path)) => {
+                    let accumulator = std::fs::read(acc_path)?;
+                    Some(create_smart_module(
+                        name_or_path,
+                        SmartStreamKind::Aggregate { accumulator },
+                        extra_params,
+                    )?)
                 }
-                (Some(wasm_path), None) => {
-                    let wasm = std::fs::read(wasm_path)?;
-                    builder.wasm_aggregate(wasm, Vec::new(), extra_params);
-                }
+                (Some(name_or_path), None) => Some(create_smart_module(
+                    name_or_path,
+                    SmartStreamKind::Aggregate {
+                        accumulator: Vec::new(),
+                    },
+                    extra_params,
+                )?),
                 (None, Some(_)) => {
                     println!("In order to use --accumulator, you must also specify --aggregate");
                     return Ok(());
                 }
-                (None, None) => (),
+                (None, None) => None,
             }
-        }
+        };
+
+        builder.smart_module(smart_module);
 
         if self.disable_continuous {
             builder.disable_continuous(true);
@@ -419,6 +439,29 @@ impl ConsumeOpt {
 
         Ok(offset)
     }
+}
+
+fn create_smart_module(
+    name_or_path: &str,
+    kind: SmartStreamKind,
+    params: BTreeMap<String, String>,
+) -> Result<SmartModuleInvocation> {
+    let wasm = if PathBuf::from(name_or_path).exists() {
+        let raw_buffer = std::fs::read(name_or_path)?;
+        debug!(len = raw_buffer.len(), "read wasm bytes");
+        let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
+        let mut buffer = Vec::with_capacity(raw_buffer.len());
+        encoder.read_to_end(&mut buffer)?;
+        SmartModuleInvocationWasm::AdHoc(buffer)
+    } else {
+        SmartModuleInvocationWasm::Predefined(name_or_path.to_owned())
+    };
+
+    Ok(SmartModuleInvocation {
+        wasm,
+        kind,
+        params: params.into(),
+    })
 }
 
 // Uses clap::arg_enum to choose possible variables

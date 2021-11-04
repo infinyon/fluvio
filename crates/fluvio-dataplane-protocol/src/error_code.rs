@@ -173,6 +173,10 @@ impl ErrorCode {
 pub enum SmartStreamError {
     #[error("Runtime error")]
     Runtime(#[from] SmartStreamRuntimeError),
+    #[error("WASM Module error: {0}")]
+    InvalidWasmModule(String),
+    #[error("SmartModule {0} is not defined")]
+    UndefinedSmartModule(String),
     #[error("WASM module is not a valid '{0}' SmartStream due to {1}. Are you missing a #[smartstream({0})] attribute?")]
     InvalidSmartStreamModule(String, String),
 }

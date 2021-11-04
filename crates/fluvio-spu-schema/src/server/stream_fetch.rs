@@ -40,6 +40,9 @@ pub const GZIP_WASM_API: i16 = 14;
 // version for SmartStream array map
 pub const ARRAY_MAP_WASM_API: i16 = 15;
 
+// version for persistent SmartModule
+pub const SMART_MODULE_API: i16 = 16;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -56,6 +59,8 @@ where
     pub wasm_module: Vec<u8>,
     #[fluvio(min_version = 12)]
     pub wasm_payload: Option<SmartStreamPayload>,
+    #[fluvio(min_version = 16)]
+    pub smart_module: Option<SmartModuleInvocation>,
     pub data: PhantomData<R>,
 }
 
@@ -64,7 +69,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = GZIP_WASM_API;
+    const DEFAULT_API_VERSION: i16 = SMART_MODULE_API;
     type Response = StreamFetchResponse<R>;
 }
 
@@ -77,6 +82,31 @@ pub struct SmartStreamPayload {
     pub wasm: SmartStreamWasm,
     pub kind: SmartStreamKind,
     pub params: SmartStreamExtraParams,
+}
+
+/// The request payload when using a Consumer SmartModule.
+///
+/// This includes the WASM module name as well as the invocation being used.
+/// It also carries any data that is required for specific invocations of SmartModules.
+#[derive(Debug, Default, Clone, Encoder, Decoder)]
+pub struct SmartModuleInvocation {
+    pub wasm: SmartModuleInvocationWasm,
+    pub kind: SmartStreamKind,
+    pub params: SmartStreamExtraParams,
+}
+
+#[derive(Debug, Clone, Encoder, Decoder)]
+pub enum SmartModuleInvocationWasm {
+    /// Name of SmartModule
+    Predefined(String),
+    /// Compressed WASM module payload using Gzip
+    AdHoc(Vec<u8>),
+}
+
+impl Default for SmartModuleInvocationWasm {
+    fn default() -> Self {
+        Self::AdHoc(Vec::new())
+    }
 }
 
 /// Indicates the type of SmartStream as well as any special data required
