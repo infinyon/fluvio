@@ -2027,7 +2027,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "async-rwlock",
  "event-listener",
