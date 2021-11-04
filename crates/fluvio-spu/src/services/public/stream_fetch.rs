@@ -130,36 +130,40 @@ impl StreamFetchHandler {
         let max_bytes = msg.max_bytes as u32;
         let sm_engine = ctx.smartstream_owned();
 
-        let wasm_payload = if let Some(smart_module_invocation) = msg.smart_module {
+        let smart_module_wasm_payload = msg.smart_module.map(|smart_module_invocation| {
             match smart_module_invocation.wasm {
                 SmartModuleInvocationWasm::Predefined(name) => {
                     if let Some(smart_module) = ctx.smart_module_localstore().spec(&name) {
                         let wasm = SmartStreamWasm::Gzip(smart_module.wasm.payload);
-                        Some(SmartStreamPayload {
+                        Ok(SmartStreamPayload {
                             wasm,
                             kind: smart_module_invocation.kind,
                             params: smart_module_invocation.params,
                         })
                     } else {
                         let error = SmartStreamError::UndefinedSmartModule(name);
-                        let error_code = ErrorCode::SmartStreamError(error);
-                        send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
-                        return Ok(());
+                        Err(error)
                     }
                 }
                 SmartModuleInvocationWasm::AdHoc(bytes) => {
                     let wasm = SmartStreamWasm::Gzip(bytes);
-                    Some(SmartStreamPayload {
+                    Ok(SmartStreamPayload {
                         wasm,
                         kind: smart_module_invocation.kind,
                         params: smart_module_invocation.params,
                     })
                 }
             }
-        } else if let Some(wasm_payload) = msg.wasm_payload {
-            Some(wasm_payload)
-        } else {
-            None
+        });
+
+        let wasm_payload = match smart_module_wasm_payload {
+            Some(Ok(wasm_payload)) => Some(wasm_payload),
+            Some(Err(error)) => {
+                let error_code = ErrorCode::SmartStreamError(error);
+                send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                return Ok(());
+            }
+            None => msg.wasm_payload
         };
 
         let (smartstream, max_fetch_bytes) = if let Some(payload) = wasm_payload {
