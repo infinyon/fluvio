@@ -4,6 +4,7 @@
 use std::fmt;
 
 use dataplane::core::{Encoder, Decoder};
+
 // -----------------------------------
 // Data Structures
 // -----------------------------------
@@ -15,7 +16,7 @@ use dataplane::core::{Encoder, Decoder};
     serde(rename_all = "camelCase")
 )]
 pub struct SmartStreamStatus {
-    resolution: SmartStreamResolution,
+    pub resolution: SmartStreamResolution,
 }
 
 impl fmt::Display for SmartStreamStatus {
@@ -35,5 +36,41 @@ pub enum SmartStreamResolution {
 impl Default for SmartStreamResolution {
     fn default() -> Self {
         SmartStreamResolution::Init
+    }
+}
+
+mod states {
+
+    use fluvio_stream_model::core::MetadataItem;
+    use fluvio_stream_model::store::LocalStore;
+
+    use crate::smartstream::SmartStreamSpec;
+    use crate::smartmodule::SmartModuleSpec;
+
+    use super::*;
+
+    impl SmartStreamResolution {
+        /// for this resolution, compute next state based on smartmodules
+        pub fn next<C>(
+            &self,
+            spec: &SmartStreamSpec,
+            modules: &LocalStore<SmartModuleSpec, C>,
+        ) -> Self
+        where
+            C: MetadataItem,
+        {
+            match self {
+                Self::Init | Self::InvalidConfig(_) => validate_modules(modules),
+                Self::Provisioned => Self::Provisioned,
+            }
+        }
+    }
+
+    /// ensure all modules are provisioned
+    fn validate_modules<C>(modules: &LocalStore<SmartModuleSpec, C>) -> SmartStreamResolution
+    where
+        C: MetadataItem,
+    {
+        SmartStreamResolution::Provisioned
     }
 }

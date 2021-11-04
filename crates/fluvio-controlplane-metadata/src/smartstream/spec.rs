@@ -5,8 +5,7 @@
 
 use dataplane::core::{Encoder, Decoder};
 
-//use crate::smartmodule::SmartModuleInputKind;
-
+/// SmartStream is unstable feature
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartStreamSpec {
