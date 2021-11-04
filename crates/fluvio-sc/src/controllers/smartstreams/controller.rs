@@ -87,12 +87,14 @@ where
 
         for update in updates.into_iter() {
 
+            /* 
             let spec = update.spec();
             let id = spec.id();
             let name = spec.name();
             let namespace = spec.namespace();
 
             info!("smartstream {}/{}/{} updated", namespace, name, id);
+            */
         
 
         }
