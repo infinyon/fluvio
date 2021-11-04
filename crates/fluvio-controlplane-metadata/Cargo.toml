@@ -20,6 +20,7 @@ log = "0.4.8"
 tracing = "0.1.19"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"
+thiserror = "1.0.20"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.3.0" }

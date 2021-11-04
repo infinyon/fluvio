@@ -35,6 +35,16 @@ mod metadata {
 
     impl Status for SmartStreamStatus {}
 
+    #[derive(thiserror::Error, Debug)]
+    pub enum SmartStreamValidationError {
+        #[error("Topic not found: {0}")]
+        TopicNotFound(String),
+        #[error("SmartStream not found: {0}")]
+        SmartStreamNotFound(String),
+        #[error("SmartStream not found: {0}")]
+        SmartModuleNotFound(String),
+    }
+
     #[cfg(feature = "k8")]
     mod extended {
 
