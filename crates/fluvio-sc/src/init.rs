@@ -122,7 +122,7 @@ where
         pub_server::start(ctx.clone(), auth_policy)
     );
 
-    SmartStreamController::start(ctx.clone());
+    SmartStreamController::start(ctx.smartstreams().clone());
 
     mod pub_server {
 
