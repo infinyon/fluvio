@@ -7,8 +7,13 @@
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 
 use std::io::Stdout;
-use tui::Terminal;
-use tui::backend::CrosstermBackend;
+use tui::{
+    backend::{Backend, CrosstermBackend},
+    layout::{Constraint, Layout},
+    style::{Color, Modifier, Style},
+    widgets::{Block, Borders, Cell, Row, Table, TableState},
+    Frame, Terminal,
+};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -91,6 +96,7 @@ pub fn _format_table_record(_record: &[u8]) -> String {
 /// Print records in table format
 pub fn print_table_record(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    table_state: &mut TableState,
     record: &[u8],
 ) -> String {
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
@@ -130,7 +136,11 @@ pub fn print_table_record(
         })
         .collect();
 
-    //terminal.draw()
+    let header: Vec<&str> = keys_str.iter().map(|k| k.as_str()).collect();
+
+    terminal
+        .draw(|frame| ui(frame, table_state))
+        .expect("Could not render table frame");
 
     //let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
     //let entries: Row = Row::new(values_str.iter().map(|v| Cell::new(v)).collect());
@@ -163,4 +173,48 @@ pub fn print_table_record(
 fn is_binary(bytes: &[u8]) -> bool {
     use content_inspector::{inspect, ContentType};
     matches!(inspect(bytes), ContentType::BINARY)
+}
+
+fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_state: &mut TableState) {
+    let fake_data = vec![
+        vec!["Row11", "Row12", "Row13"],
+        vec!["Row21", "Row22", "Row23"],
+        vec!["Row31", "Row32", "Row33"],
+    ];
+
+    let rects = Layout::default()
+        .constraints([Constraint::Percentage(100)].as_ref())
+        .margin(5)
+        .split(f.size());
+
+    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
+    let normal_style = Style::default().bg(Color::Blue);
+    let header_cells = ["Header1", "Header2", "Header3"]
+        .iter()
+        .map(|h| Cell::from(*h).style(Style::default().fg(Color::Red)));
+    let header = Row::new(header_cells)
+        .style(normal_style)
+        .height(1)
+        .bottom_margin(1);
+    let rows = fake_data.iter().map(|item| {
+        let height = item
+            .iter()
+            .map(|content| content.chars().filter(|c| *c == '\n').count())
+            .max()
+            .unwrap_or(0)
+            + 1;
+        let cells = item.iter().map(|c| Cell::from(*c));
+        Row::new(cells).height(height as u16).bottom_margin(1)
+    });
+    let t = Table::new(rows)
+        .header(header)
+        .block(Block::default().borders(Borders::ALL).title("Table"))
+        .highlight_style(selected_style)
+        .highlight_symbol(">> ")
+        .widths(&[
+            Constraint::Percentage(50),
+            Constraint::Length(30),
+            Constraint::Max(10),
+        ]);
+    f.render_stateful_widget(t, rects[0], table_state);
 }

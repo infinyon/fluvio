@@ -301,11 +301,13 @@ impl ConsumeOpt {
         };
 
         // TODO: Support updating fullscreen table
+        let mut table_state = None;
 
         if let Some(ConsumeOutputType::table) = &self.output {
             enable_raw_mode()?;
             let mut stdout = io::stdout();
             execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+            table_state = Some(TableState::default());
         }
 
         let stdout = io::stdout();
@@ -323,7 +325,12 @@ impl ConsumeOpt {
                 Err(other) => return Err(other.into()),
             };
 
-            self.print_record(&mut terminal_stdout, templates.as_ref(), &record);
+            self.print_record(
+                &mut terminal_stdout,
+                table_state.as_mut(),
+                templates.as_ref(),
+                &record,
+            );
 
             if let Some(ConsumeOutputType::table) = &self.output {
                 // Exit handler
@@ -362,6 +369,7 @@ impl ConsumeOpt {
     pub fn print_record(
         &self,
         terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+        maybe_table_state: Option<&mut TableState>,
         templates: Option<&Handlebars>,
         record: &Record,
     ) {
@@ -408,7 +416,7 @@ impl ConsumeOpt {
                 _ => debug!("Skipping record that cannot be formatted"),
             }
         } else {
-            print_table_record(terminal, record.value());
+            print_table_record(terminal, maybe_table_state.unwrap(), record.value());
         }
     }
 
