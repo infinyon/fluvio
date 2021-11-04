@@ -5,7 +5,7 @@
 //!
 
 use std::{io::Error as IoError, path::PathBuf};
-use std::io::{ErrorKind, Read};
+use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
@@ -21,6 +21,15 @@ use fluvio_sc_schema::ApiError;
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use fluvio::consumer::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
+};
+
+use tui::Terminal;
+use tui::backend::{Backend, CrosstermBackend};
+use tui::widgets::TableState;
+use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
 use crate::{CliError, Result};
@@ -291,8 +300,18 @@ impl ConsumeOpt {
             }
         };
 
-        // This is used by table output, to print the table titles only once
-        let mut record_count = 0;
+        // TODO: Support updating fullscreen table
+
+        if let Some(ConsumeOutputType::table) = &self.output {
+            enable_raw_mode()?;
+            let mut stdout = io::stdout();
+            execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+        }
+
+        let stdout = io::stdout();
+        let mut terminal_stdout = self.create_terminal(stdout)?;
+
+        // If table output, create terminal obj / ui obj?
         while let Some(result) = stream.next().await {
             let result: std::result::Result<Record, _> = result;
             let record = match result {
@@ -304,16 +323,48 @@ impl ConsumeOpt {
                 Err(other) => return Err(other.into()),
             };
 
-            self.print_record(templates.as_ref(), &record, record_count);
-            record_count += 1;
+            self.print_record(&mut terminal_stdout, templates.as_ref(), &record);
+
+            if let Some(ConsumeOutputType::table) = &self.output {
+                // Exit handler
+                // Need to handle signals in another thread. Crossbeam doesn't support
+                if let Event::Key(key) = event::read()? {
+                    match key.code {
+                        KeyCode::Char('q') => break,
+                        _ => {}
+                    }
+                }
+            }
+        }
+
+        if let Some(ConsumeOutputType::table) = &self.output {
+            disable_raw_mode()?;
+            execute!(
+                terminal_stdout.backend_mut(),
+                LeaveAlternateScreen,
+                DisableMouseCapture
+            )?;
+            terminal_stdout.show_cursor()?;
         }
 
         debug!("fetch loop exited");
         Ok(())
     }
 
+    fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
+        let backend = CrosstermBackend::new(stdout);
+        let terminal = Terminal::new(backend)?;
+
+        Ok(terminal)
+    }
+
     /// Process fetch topic response based on output type
-    pub fn print_record(&self, templates: Option<&Handlebars>, record: &Record, count: i32) {
+    pub fn print_record(
+        &self,
+        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+        templates: Option<&Handlebars>,
+        record: &Record,
+    ) {
         let formatted_key = record
             .key()
             .map(|key| String::from_utf8_lossy(key).to_string())
@@ -331,9 +382,7 @@ impl ConsumeOpt {
                 Some(format_dynamic_record(record.value()))
             }
             (Some(ConsumeOutputType::raw), None) => Some(format_raw_record(record.value())),
-            (Some(ConsumeOutputType::table), None) => {
-                Some(print_table_record(record.value(), count))
-            }
+            (Some(ConsumeOutputType::table), None) => Some(String::new()),
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
                 let object = serde_json::json!({
@@ -358,6 +407,8 @@ impl ConsumeOpt {
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
             }
+        } else {
+            print_table_record(terminal, record.value());
         }
     }
 
@@ -498,4 +549,8 @@ impl ::std::default::Default for ConsumeOutputType {
     fn default() -> Self {
         ConsumeOutputType::dynamic
     }
+}
+
+struct TableView {
+    state: TableState,
 }
