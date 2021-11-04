@@ -430,9 +430,9 @@ impl PartitionConsumer {
             .versions()
             .lookup_version(DefaultStreamFetchRequest::API_KEY)
             .unwrap_or((WASM_MODULE_API - 1) as i16);
+        debug!(%stream_fetch_version, "stream_fetch_version");
 
         if let Some(smart_module) = config.smart_module {
-            println!("vers {:?}", stream_fetch_version);
             if stream_fetch_version < SMART_MODULE_API as i16 {
                 if let SmartModuleInvocationWasm::AdHoc(wasm) = smart_module.wasm {
                     let legacy_module = SmartStreamPayload {

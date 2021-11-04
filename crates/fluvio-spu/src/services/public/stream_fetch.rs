@@ -156,12 +156,10 @@ impl StreamFetchHandler {
                     })
                 }
             }
+        } else if let Some(wasm_payload) = msg.wasm_payload {
+            Some(wasm_payload)
         } else {
-            if let Some(wasm_payload) = msg.wasm_payload {
-                Some(wasm_payload)
-            } else {
-                None
-            }
+            None
         };
 
         let (smartstream, max_fetch_bytes) = if let Some(payload) = wasm_payload {
