@@ -130,31 +130,32 @@ impl StreamFetchHandler {
         let max_bytes = msg.max_bytes as u32;
         let sm_engine = ctx.smartstream_owned();
 
-        let smart_module_wasm_payload = msg.smart_module.map(|smart_module_invocation| {
-            match smart_module_invocation.wasm {
-                SmartModuleInvocationWasm::Predefined(name) => {
-                    if let Some(smart_module) = ctx.smart_module_localstore().spec(&name) {
-                        let wasm = SmartStreamWasm::Gzip(smart_module.wasm.payload);
+        let smart_module_wasm_payload =
+            msg.smart_module.map(
+                |smart_module_invocation| match smart_module_invocation.wasm {
+                    SmartModuleInvocationWasm::Predefined(name) => {
+                        if let Some(smart_module) = ctx.smart_module_localstore().spec(&name) {
+                            let wasm = SmartStreamWasm::Gzip(smart_module.wasm.payload);
+                            Ok(SmartStreamPayload {
+                                wasm,
+                                kind: smart_module_invocation.kind,
+                                params: smart_module_invocation.params,
+                            })
+                        } else {
+                            let error = SmartStreamError::UndefinedSmartModule(name);
+                            Err(error)
+                        }
+                    }
+                    SmartModuleInvocationWasm::AdHoc(bytes) => {
+                        let wasm = SmartStreamWasm::Gzip(bytes);
                         Ok(SmartStreamPayload {
                             wasm,
                             kind: smart_module_invocation.kind,
                             params: smart_module_invocation.params,
                         })
-                    } else {
-                        let error = SmartStreamError::UndefinedSmartModule(name);
-                        Err(error)
                     }
-                }
-                SmartModuleInvocationWasm::AdHoc(bytes) => {
-                    let wasm = SmartStreamWasm::Gzip(bytes);
-                    Ok(SmartStreamPayload {
-                        wasm,
-                        kind: smart_module_invocation.kind,
-                        params: smart_module_invocation.params,
-                    })
-                }
-            }
-        });
+                },
+            );
 
         let wasm_payload = match smart_module_wasm_payload {
             Some(Ok(wasm_payload)) => Some(wasm_payload),
@@ -163,7 +164,7 @@ impl StreamFetchHandler {
                 send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                 return Ok(());
             }
-            None => msg.wasm_payload
+            None => msg.wasm_payload,
         };
 
         let (smartstream, max_fetch_bytes) = if let Some(payload) = wasm_payload {
