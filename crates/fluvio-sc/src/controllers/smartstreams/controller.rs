@@ -1,6 +1,7 @@
 use std::time::Duration;
 
 use fluvio_controlplane_metadata::core::MetadataItem;
+use fluvio_controlplane_metadata::smartstream::SmartStreamResolution;
 use fluvio_controlplane_metadata::store::ChangeListener;
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use tokio::select;
@@ -86,19 +87,16 @@ where
         let (updates, _) = changes.parts();
 
         for update in updates.into_iter() {
-
-            /* 
-            let spec = update.spec();
-            let id = spec.id();
-            let name = spec.name();
-            let namespace = spec.namespace();
-
-            info!("smartstream {}/{}/{} updated", namespace, name, id);
-            */
-        
-
+            let status = update.status;
+            match status.resolution {
+                SmartStreamResolution::Init | SmartStreamResolution::InvalidConfig(_) => {
+                    // ignore
+                }
+                SmartStreamResolution::Provisioned => {
+                    // ignore
+                }
+            }
         }
-        
     }
 }
 
