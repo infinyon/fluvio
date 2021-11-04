@@ -8,11 +8,11 @@ mod stream_fetch;
 #[cfg(test)]
 mod stream_fetch_test;
 
-#[cfg(test)]
-mod stream_fetch_test_smart_module_adhoc;
+// #[cfg(test)]
+// mod stream_fetch_test_smart_module_adhoc;
 
-#[cfg(test)]
-mod stream_fetch_test_smart_module_predefined;
+// #[cfg(test)]
+// mod stream_fetch_test_smart_module_predefined;
 
 use std::sync::Arc;
 use async_trait::async_trait;

@@ -10,7 +10,7 @@ use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartStreamPayload,
-    SmartStreamWasm, WASM_MODULE_API, WASM_MODULE_PERSISTENT_API, WASM_MODULE_V2_API,
+    SmartStreamWasm, WASM_MODULE_API, SMART_MODULE_API, WASM_MODULE_V2_API,
 };
 pub use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind,
@@ -433,7 +433,7 @@ impl PartitionConsumer {
 
         if let Some(smart_module) = config.smart_module {
             println!("vers {:?}", stream_fetch_version);
-            if stream_fetch_version < WASM_MODULE_PERSISTENT_API as i16 {
+            if stream_fetch_version < SMART_MODULE_API as i16 {
                 if let SmartModuleInvocationWasm::AdHoc(wasm) = smart_module.wasm {
                     let legacy_module = SmartStreamPayload {
                         wasm: SmartStreamWasm::Gzip(wasm),

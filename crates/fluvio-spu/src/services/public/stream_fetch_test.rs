@@ -5,9 +5,14 @@ use std::{
     time::Duration,
 };
 
-use fluvio_controlplane_metadata::partition::Replica;
+use flate2::{Compression, bufread::GzEncoder};
+use fluvio_controlplane_metadata::{
+    partition::Replica,
+    smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat},
+};
+use fluvio_storage::{FileReplica, ReplicaStorage};
 use flv_util::fixture::ensure_clean_dir;
-use futures_util::StreamExt;
+use futures_util::{Future, StreamExt};
 
 use fluvio_future::timer::sleep;
 use fluvio_socket::{FluvioSocket, MultiplexerSocket};
@@ -19,7 +24,10 @@ use dataplane::{
 };
 use dataplane::fixture::{create_batch, TEST_RECORD};
 use dataplane::smartstream::SmartStreamType;
-use fluvio_spu_schema::server::update_offset::{UpdateOffsetsRequest, OffsetUpdate};
+use fluvio_spu_schema::server::{
+    stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm},
+    update_offset::{UpdateOffsetsRequest, OffsetUpdate},
+};
 use fluvio_spu_schema::server::stream_fetch::SmartStreamWasm;
 use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
 use crate::core::GlobalContext;
@@ -191,12 +199,42 @@ async fn test_stream_fetch() {
     debug!("terminated controller");
 }
 
+/// create records that can be filtered
+fn create_filter_records(records: u16) -> RecordSet {
+    BatchProducer::builder()
+        .records(records)
+        .record_generator(Arc::new(generate_record))
+        .build()
+        .expect("batch")
+        .records()
+}
+
+fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
+    let msg = match record_index {
+        0 => "b".repeat(100),
+        1 => "a".repeat(100),
+        _ => "z".repeat(100),
+    };
+
+    Record::new(RecordData::from(msg))
+}
+
 fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
     let path = filter_path.as_ref();
     std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()))
 }
 
-fn load_wasm_module(module_name: &str) -> Vec<u8> {
+fn zip(raw_buffer: Vec<u8>) -> Vec<u8> {
+    use std::io::Read;
+    let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
+    let mut buffer = Vec::with_capacity(raw_buffer.len());
+    encoder
+        .read_to_end(&mut buffer)
+        .unwrap_or_else(|_| panic!("Unable to gzip file"));
+    buffer
+}
+
+fn read_wasm_module(module_name: &str) -> Vec<u8> {
     let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
     let wasm_path = PathBuf::from(spu_dir)
         .parent()
@@ -208,15 +246,149 @@ fn load_wasm_module(module_name: &str) -> Vec<u8> {
     read_filter_from_path(wasm_path)
 }
 
+fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str) {
+    let wasm = zip(read_wasm_module(module_name));
+    ctx.smart_module_localstore().insert(SmartModule {
+        name: module_name.to_owned(),
+        wasm: SmartModuleWasm {
+            format: SmartModuleWasmFormat::Binary,
+            payload: wasm,
+        },
+        ..Default::default()
+    });
+}
+
+async fn legacy_test<Fut, TestFn>(
+    test_name: &str,
+    module_name: &str,
+    stream_kind: SmartStreamKind,
+    test_fn: TestFn,
+) where
+    Fut: Future<Output = ()>,
+    TestFn: FnOnce(
+        Arc<GlobalContext<FileReplica>>,
+        PathBuf,
+        Option<SmartStreamPayload>,
+        Option<SmartModuleInvocation>,
+    ) -> Fut,
+{
+    let test_path = temp_dir().join(test_name);
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    let wasm = read_wasm_module(module_name);
+    let wasm_payload = SmartStreamPayload {
+        wasm: SmartStreamWasm::Raw(wasm),
+        kind: stream_kind,
+        ..Default::default()
+    };
+
+    test_fn(ctx, test_path, Some(wasm_payload), None).await
+}
+
+async fn adhoc_test<Fut, TestFn>(
+    test_name: &str,
+    module_name: &str,
+    stream_kind: SmartStreamKind,
+    test_fn: TestFn,
+) where
+    Fut: Future<Output = ()>,
+    TestFn: FnOnce(
+        Arc<GlobalContext<FileReplica>>,
+        PathBuf,
+        Option<SmartStreamPayload>,
+        Option<SmartModuleInvocation>,
+    ) -> Fut,
+{
+    let test_path = temp_dir().join(test_name);
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    let wasm = zip(read_wasm_module(module_name));
+    let smart_module = SmartModuleInvocation {
+        wasm: SmartModuleInvocationWasm::AdHoc(wasm),
+        kind: stream_kind,
+        ..Default::default()
+    };
+
+    test_fn(ctx, test_path, None, Some(smart_module)).await
+}
+
+async fn predefined_test<Fut, TestFn>(
+    test_name: &str,
+    module_name: &str,
+    stream_kind: SmartStreamKind,
+    test_fn: TestFn,
+) where
+    Fut: Future<Output = ()>,
+    TestFn: FnOnce(
+        Arc<GlobalContext<FileReplica>>,
+        PathBuf,
+        Option<SmartStreamPayload>,
+        Option<SmartModuleInvocation>,
+    ) -> Fut,
+{
+    let test_path = temp_dir().join(test_name);
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    load_wasm_module(&ctx, module_name);
+    let smart_module = SmartModuleInvocation {
+        wasm: SmartModuleInvocationWasm::Predefined(module_name.to_owned()),
+        kind: stream_kind,
+        ..Default::default()
+    };
+
+    test_fn(ctx, test_path, None, Some(smart_module)).await
+}
+
+const FLUVIO_WASM_FILTER: &str = "fluvio_wasm_filter";
+
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_filter() {
-    let test_path = temp_dir().join("test_stream_fetch_filter");
+async fn test_stream_fetch_filter_legacy() {
+    legacy_test(
+        "test_stream_fetch_filter_legacy",
+        FLUVIO_WASM_FILTER,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_filter_adhoc",
+        FLUVIO_WASM_FILTER,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_predefined() {
+    predefined_test(
+        "test_stream_fetch_filter_predefined",
+        FLUVIO_WASM_FILTER,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_filter(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -237,13 +409,6 @@ async fn test_stream_fetch_filter() {
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    let wasm = load_wasm_module("fluvio_wasm_filter");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -251,7 +416,8 @@ async fn test_stream_fetch_filter() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -355,15 +521,50 @@ async fn test_stream_fetch_filter() {
     debug!("terminated controller");
 }
 
+const FLUVIO_WASM_FILTER_ODD: &str = "fluvio_wasm_filter_odd";
+
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_filter_individual() {
-    let test_path = temp_dir().join("test_stream_fetch_filter_individual");
+async fn test_stream_fetch_filter_individual_legacy() {
+    legacy_test(
+        "test_stream_fetch_filter_individual_legacy",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter_individual,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_individual_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_filter_individual_adhoc",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter_individual,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_individual_predefined() {
+    predefined_test(
+        "test_stream_fetch_filter_individual_predefined",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter_individual,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_filter_individual(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -381,13 +582,6 @@ async fn test_stream_fetch_filter_individual() {
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    let wasm = load_wasm_module("fluvio_wasm_filter_odd");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -395,7 +589,8 @@ async fn test_stream_fetch_filter_individual() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -449,14 +644,47 @@ async fn test_stream_fetch_filter_individual() {
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_filter_error_fetch() {
-    let test_path = temp_dir().join("test_stream_filter_error_fetch");
+async fn test_stream_filter_error_fetch_legacy() {
+    legacy_test(
+        "test_stream_filter_error_fetch_legacy",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartStreamKind::Filter,
+        test_stream_filter_error_fetch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_filter_error_fetch_adhoc() {
+    adhoc_test(
+        "test_stream_filter_error_fetch_adhoc",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartStreamKind::Filter,
+        test_stream_filter_error_fetch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_filter_error_fetch_predefined() {
+    predefined_test(
+        "test_stream_filter_error_fetch_predefined",
+        FLUVIO_WASM_FILTER_ODD,
+        SmartStreamKind::Filter,
+        test_stream_filter_error_fetch,
+    )
+    .await;
+}
+
+async fn test_stream_filter_error_fetch(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -477,13 +705,6 @@ async fn test_stream_filter_error_fetch() {
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    let wasm = load_wasm_module("fluvio_wasm_filter_odd");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -491,7 +712,8 @@ async fn test_stream_filter_error_fetch() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -552,36 +774,49 @@ async fn test_stream_filter_error_fetch() {
     debug!("terminated controller");
 }
 
-fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
-    let msg = match record_index {
-        0 => "b".repeat(100),
-        1 => "a".repeat(100),
-        _ => "z".repeat(100),
-    };
-
-    Record::new(RecordData::from(msg))
+#[fluvio_future::test(ignore)]
+async fn test_stream_filter_max_legacy() {
+    legacy_test(
+        "test_stream_filter_max_legacy",
+        FLUVIO_WASM_FILTER,
+        SmartStreamKind::Filter,
+        test_stream_filter_max,
+    )
+    .await;
 }
 
-/// create records that can be filtered
-fn create_filter_records(records: u16) -> RecordSet {
-    BatchProducer::builder()
-        .records(records)
-        .record_generator(Arc::new(generate_record))
-        .build()
-        .expect("batch")
-        .records()
+#[fluvio_future::test(ignore)]
+async fn test_stream_filter_max_adhoc() {
+    adhoc_test(
+        "test_stream_filter_max_adhoc",
+        FLUVIO_WASM_FILTER,
+        SmartStreamKind::Filter,
+        test_stream_filter_max,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_filter_max_predefined() {
+    predefined_test(
+        "test_stream_filter_max_predefined",
+        FLUVIO_WASM_FILTER,
+        SmartStreamKind::Filter,
+        test_stream_filter_max,
+    )
+    .await;
 }
 
 /// test filter with max bytes
-#[fluvio_future::test(ignore)]
-async fn test_stream_filter_max() {
-    let test_path = temp_dir().join("test_stream_filter_max");
+async fn test_stream_filter_max(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -618,13 +853,6 @@ async fn test_stream_filter_max() {
         .expect("write"); // 3000 bytes total
                           // now total of 300 filter records bytes (min), but last filter record is greater than max
 
-    let wasm = load_wasm_module("fluvio_wasm_filter");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -632,7 +860,8 @@ async fn test_stream_filter_max() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 250,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -704,15 +933,50 @@ async fn test_stream_filter_max() {
     server_end_event.notify();
 }
 
+const FLUVIO_WASM_MAP_DOUBLE: &str = "fluvio_wasm_map_double";
+
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_map_error() {
-    let test_path = temp_dir().join("test_stream_fetch_map_error");
+async fn test_stream_fetch_map_error_legacy() {
+    legacy_test(
+        "test_stream_fetch_map_error_legacy",
+        FLUVIO_WASM_MAP_DOUBLE,
+        SmartStreamKind::Map,
+        test_stream_fetch_map_error,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_map_error_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_map_error_legacy",
+        FLUVIO_WASM_MAP_DOUBLE,
+        SmartStreamKind::Map,
+        test_stream_fetch_map_error,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_map_error_predefined() {
+    predefined_test(
+        "test_stream_fetch_map_error_legacy",
+        FLUVIO_WASM_MAP_DOUBLE,
+        SmartStreamKind::Map,
+        test_stream_fetch_map_error,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_map_error(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -732,13 +996,6 @@ async fn test_stream_fetch_map_error() {
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    let wasm = load_wasm_module("fluvio_wasm_map_double");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Map,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -746,7 +1003,8 @@ async fn test_stream_fetch_map_error() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -804,15 +1062,57 @@ async fn test_stream_fetch_map_error() {
     debug!("terminated controller");
 }
 
+const FLUVIO_WASM_AGGREGATE: &str = "fluvio_wasm_aggregate";
+
 #[fluvio_future::test(ignore)]
-async fn test_stream_aggregate_fetch_single_batch() {
-    let test_path = temp_dir().join("aggregate_stream_fetch");
+async fn test_stream_aggregate_fetch_single_batch_legacy() {
+    legacy_test(
+        "test_stream_aggregate_fetch_single_batch_legacy",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_single_batch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_single_batch_adhoc() {
+    adhoc_test(
+        "test_stream_aggregate_fetch_single_batch_adhoc",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_single_batch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_single_batch_predefined() {
+    predefined_test(
+        "test_stream_aggregate_fetch_single_batch_predefined",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_single_batch,
+    )
+    .await;
+}
+
+async fn test_stream_aggregate_fetch_single_batch(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
+
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
@@ -829,16 +1129,6 @@ async fn test_stream_aggregate_fetch_single_batch() {
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    // Providing an accumulator causes SPU to run aggregator
-    let wasm = load_wasm_module("fluvio_wasm_aggregate");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Aggregate {
-            accumulator: Vec::from("A"),
-        },
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -846,7 +1136,8 @@ async fn test_stream_aggregate_fetch_single_batch() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -919,14 +1210,54 @@ async fn test_stream_aggregate_fetch_single_batch() {
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_aggregate_fetch_multiple_batch() {
-    let test_path = temp_dir().join("aggregate_stream_fetch");
+async fn test_stream_aggregate_fetch_multiple_batch_legacy() {
+    legacy_test(
+        "test_stream_aggregate_fetch_multiple_batch_legacy",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_multiple_batch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_multiple_batch_adhoc() {
+    adhoc_test(
+        "test_stream_aggregate_fetch_multiple_batch_adhoc",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_multiple_batch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_multiple_batch_predefined() {
+    predefined_test(
+        "test_stream_aggregate_fetch_multiple_batch_predefined",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_multiple_batch,
+    )
+    .await;
+}
+
+async fn test_stream_aggregate_fetch_multiple_batch(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
+
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
@@ -978,16 +1309,6 @@ async fn test_stream_aggregate_fetch_multiple_batch() {
         .await
         .expect("write");
 
-    // Providing an accumulator causes SPU to run aggregator
-    let wasm = load_wasm_module("fluvio_wasm_aggregate");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Aggregate {
-            accumulator: Vec::from("A"),
-        },
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -995,7 +1316,8 @@ async fn test_stream_aggregate_fetch_multiple_batch() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -1047,14 +1369,25 @@ async fn test_stream_aggregate_fetch_multiple_batch() {
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_and_new_request() {
-    let test_path = temp_dir().join("test_stream_fetch_filter_new_request");
+async fn test_stream_fetch_and_new_request_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_and_new_request_adhoc",
+        FLUVIO_WASM_FILTER,
+        SmartStreamKind::Filter,
+        test_stream_fetch_and_new_request,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_and_new_request(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1065,20 +1398,13 @@ async fn test_stream_fetch_and_new_request() {
         MultiplexerSocket::shared(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
-    let topic = "testfilter";
+    let topic = "test_stream_fetch_and_new_request";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
-
-    let wasm = load_wasm_module("fluvio_wasm_filter");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -1087,7 +1413,8 @@ async fn test_stream_fetch_and_new_request() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -1108,14 +1435,75 @@ async fn test_stream_fetch_and_new_request() {
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_wasm_module() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module");
+async fn test_stream_fetch_invalid_wasm_module_legacy() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module_legacy");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    let wasm = Vec::from("Hello, world, I'm not a valid WASM module!");
+    let wasm_payload = SmartStreamPayload {
+        wasm: SmartStreamWasm::Raw(wasm),
+        kind: SmartStreamKind::Filter,
+        ..Default::default()
+    };
+
+    test_stream_fetch_invalid_wasm_module(ctx, test_path, Some(wasm_payload), None).await
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_invalid_wasm_module_adhoc() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module_adhoc");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    let wasm = zip(Vec::from("Hello, world, I'm not a valid WASM module!"));
+    let smart_module = SmartModuleInvocation {
+        wasm: SmartModuleInvocationWasm::AdHoc(wasm),
+        kind: SmartStreamKind::Filter,
+        ..Default::default()
+    };
+
+    test_stream_fetch_invalid_wasm_module(ctx, test_path, None, Some(smart_module)).await
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_invalid_wasm_module_predefined() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_wasm_module_predefined");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+
+    let wasm = zip(Vec::from("Hello, world, I'm not a valid WASM module!"));
+    ctx.smart_module_localstore().insert(SmartModule {
+        name: "invalid_wasm".to_owned(),
+        wasm: SmartModuleWasm {
+            format: SmartModuleWasmFormat::Binary,
+            payload: wasm,
+        },
+        ..Default::default()
+    });
+
+    let smart_module = SmartModuleInvocation {
+        wasm: SmartModuleInvocationWasm::Predefined("invalid_wasm".to_owned()),
+        kind: SmartStreamKind::Filter,
+        ..Default::default()
+    };
+
+    test_stream_fetch_invalid_wasm_module(ctx, test_path, None, Some(smart_module)).await
+}
+
+async fn test_stream_fetch_invalid_wasm_module(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1134,13 +1522,6 @@ async fn test_stream_fetch_invalid_wasm_module() {
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    let wasm = Vec::from("Hello, world, I'm not a valid WASM module!");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -1148,7 +1529,8 @@ async fn test_stream_fetch_invalid_wasm_module() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -1175,15 +1557,50 @@ async fn test_stream_fetch_invalid_wasm_module() {
     debug!("terminated controller");
 }
 
+const FLUVIO_WASM_ARRAY_MAP_ARRAY: &str = "fluvio_wasm_array_map_array";
+
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_array_map() {
-    let test_path = temp_dir().join("test_stream_fetch_array_map_json_array");
+async fn test_stream_fetch_array_map_legacy() {
+    legacy_test(
+        "test_stream_fetch_array_map_legacy",
+        FLUVIO_WASM_ARRAY_MAP_ARRAY,
+        SmartStreamKind::ArrayMap,
+        test_stream_fetch_array_map,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_array_map_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_array_map_adhoc",
+        FLUVIO_WASM_ARRAY_MAP_ARRAY,
+        SmartStreamKind::ArrayMap,
+        test_stream_fetch_array_map,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_array_map_predefined() {
+    predefined_test(
+        "test_stream_fetch_array_map_predefined",
+        FLUVIO_WASM_ARRAY_MAP_ARRAY,
+        SmartStreamKind::ArrayMap,
+        test_stream_fetch_array_map,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_array_map(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1218,13 +1635,6 @@ async fn test_stream_fetch_array_map() {
         .await
         .expect("write");
 
-    let wasm = load_wasm_module("fluvio_wasm_array_map_array");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::ArrayMap,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -1232,7 +1642,8 @@ async fn test_stream_fetch_array_map() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -1262,15 +1673,50 @@ async fn test_stream_fetch_array_map() {
     debug!("terminated controller");
 }
 
+const FLUVIO_WASM_FILTER_MAP: &str = "fluvio_wasm_filter_map";
+
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_filter_map() {
-    let test_path = temp_dir().join("test_stream_fetch_filter_map");
+async fn test_stream_fetch_filter_map_legacy() {
+    legacy_test(
+        "test_stream_fetch_filter_map_legacy",
+        FLUVIO_WASM_FILTER_MAP,
+        SmartStreamKind::FilterMap,
+        test_stream_fetch_filter_map,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_map_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_filter_map_adhoc",
+        FLUVIO_WASM_FILTER_MAP,
+        SmartStreamKind::FilterMap,
+        test_stream_fetch_filter_map,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_map_predefined() {
+    predefined_test(
+        "test_stream_fetch_filter_map_predefined",
+        FLUVIO_WASM_FILTER_MAP,
+        SmartStreamKind::FilterMap,
+        test_stream_fetch_filter_map,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_filter_map(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1308,13 +1754,6 @@ async fn test_stream_fetch_filter_map() {
         .await
         .expect("write");
 
-    let wasm = load_wasm_module("fluvio_wasm_filter_map");
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::FilterMap,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -1322,7 +1761,8 @@ async fn test_stream_fetch_filter_map() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -1356,16 +1796,51 @@ async fn test_stream_fetch_filter_map() {
     debug!("terminated controller");
 }
 
+const FLUVIO_WASM_FILTER_WITH_PARAMETERS: &str = "fluvio_wasm_filter_with_parameters";
+
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_filter_with_params() {
+async fn test_stream_fetch_filter_with_params_legacy() {
+    legacy_test(
+        "test_stream_fetch_filter_with_params_legacy",
+        FLUVIO_WASM_FILTER_WITH_PARAMETERS,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter_with_params,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_with_params_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_filter_with_params_adhoc",
+        FLUVIO_WASM_FILTER_WITH_PARAMETERS,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter_with_params,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_filter_with_params_predefined() {
+    predefined_test(
+        "test_stream_fetch_filter_with_params_predefined",
+        FLUVIO_WASM_FILTER_WITH_PARAMETERS,
+        SmartStreamKind::Filter,
+        test_stream_fetch_filter_with_params,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_filter_with_params(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     use std::collections::BTreeMap;
-    let test_path = temp_dir().join("test_stream_fetch_filter");
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1388,13 +1863,15 @@ async fn test_stream_fetch_filter_with_params() {
     let mut params = BTreeMap::new();
     params.insert("key".to_string(), "b".to_string());
 
-    let wasm = load_wasm_module("fluvio_wasm_filter_with_parameters");
+    let wasm_payload_with_params = wasm_payload.clone().map(|mut w| {
+        w.params = params.clone().into();
+        w
+    });
 
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm.clone()),
-        kind: SmartStreamKind::Filter,
-        params: params.into(),
-    };
+    let smart_module_with_params = smart_module.clone().map(|mut w| {
+        w.params = params.into();
+        w
+    });
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -1403,7 +1880,8 @@ async fn test_stream_fetch_filter_with_params() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload: wasm_payload_with_params,
+        smart_module: smart_module_with_params,
         ..Default::default()
     };
 
@@ -1443,13 +1921,6 @@ async fn test_stream_fetch_filter_with_params() {
         assert_eq!(partition.records.batches.len(), 1);
     }
 
-    // Using default params
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -1457,7 +1928,8 @@ async fn test_stream_fetch_filter_with_params() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -1492,14 +1964,75 @@ async fn test_stream_fetch_filter_with_params() {
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_smartstream() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream");
+async fn test_stream_fetch_invalid_smartstream_legacy() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream_legacy");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    let wasm = include_bytes!("test_data/filter_missing_attribute.wasm").to_vec();
+    let wasm_payload = SmartStreamPayload {
+        wasm: SmartStreamWasm::Raw(wasm),
+        kind: SmartStreamKind::Filter,
+        ..Default::default()
+    };
+
+    test_stream_fetch_invalid_smartstream(ctx, test_path, Some(wasm_payload), None).await
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_invalid_smartstream_adhoc() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream_adhoc");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+    let wasm = zip(include_bytes!("test_data/filter_missing_attribute.wasm").to_vec());
+    let smart_module = SmartModuleInvocation {
+        wasm: SmartModuleInvocationWasm::AdHoc(wasm),
+        kind: SmartStreamKind::Filter,
+        ..Default::default()
+    };
+
+    test_stream_fetch_invalid_smartstream(ctx, test_path, None, Some(smart_module)).await
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_invalid_smartstream_predefined() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream_predefined");
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path.clone();
+
+    let ctx = GlobalContext::new_shared_context(spu_config);
+
+    let wasm = zip(include_bytes!("test_data/filter_missing_attribute.wasm").to_vec());
+    ctx.smart_module_localstore().insert(SmartModule {
+        name: "invalid_wasm".to_owned(),
+        wasm: SmartModuleWasm {
+            format: SmartModuleWasmFormat::Binary,
+            payload: wasm,
+        },
+        ..Default::default()
+    });
+
+    let smart_module = SmartModuleInvocation {
+        wasm: SmartModuleInvocationWasm::Predefined("invalid_wasm".to_owned()),
+        kind: SmartStreamKind::Filter,
+        ..Default::default()
+    };
+
+    test_stream_fetch_invalid_smartstream(ctx, test_path, None, Some(smart_module)).await
+}
+
+async fn test_stream_fetch_invalid_smartstream(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
     ensure_clean_dir(&test_path);
 
     let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
-    let mut spu_config = SpuConfig::default();
-    spu_config.log.base_dir = test_path;
-    let ctx = GlobalContext::new_shared_context(spu_config);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1518,13 +2051,6 @@ async fn test_stream_fetch_invalid_smartstream() {
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    let wasm = include_bytes!("test_data/filter_missing_attribute.wasm").to_vec();
-    let wasm_payload = SmartStreamPayload {
-        wasm: SmartStreamWasm::Raw(wasm),
-        kind: SmartStreamKind::Filter,
-        ..Default::default()
-    };
-
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
         partition: 0,
@@ -1532,7 +2058,8 @@ async fn test_stream_fetch_invalid_smartstream() {
         isolation: Isolation::ReadUncommitted,
         max_bytes: 10000,
         wasm_module: Vec::new(),
-        wasm_payload: Some(wasm_payload),
+        wasm_payload,
+        smart_module,
         ..Default::default()
     };
 
@@ -1548,10 +2075,7 @@ async fn test_stream_fetch_invalid_smartstream() {
         .expect("response should be Ok");
 
     match response.partition.error_code {
-        ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(
-            name,
-            _reason,
-        )) => {
+        ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(name, _reason)) => {
             assert_eq!(name, "Filter");
         }
         _ => panic!("expected an UndefinedSmartStreamModule error"),

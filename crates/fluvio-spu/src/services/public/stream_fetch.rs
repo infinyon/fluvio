@@ -21,7 +21,7 @@ use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, SmartModuleInvocationWasm,
-    SmartStreamPayload, SmartStreamWasm, StreamFetchRequest, StreamFetchResponse
+    SmartStreamPayload, SmartStreamWasm, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
@@ -141,7 +141,7 @@ impl StreamFetchHandler {
                             params: smart_module_invocation.params,
                         })
                     } else {
-                        let error = SmartStreamError::SmartModuleNotFound(name);
+                        let error = SmartStreamError::UndefinedSmartModule(name);
                         let error_code = ErrorCode::SmartStreamError(error);
                         send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                         return Ok(());
@@ -174,7 +174,7 @@ impl StreamFetchHandler {
                     return Ok(());
                 }
             };
-            
+
             let smartstream = match sm_engine.create_module_from_payload(payload.clone()) {
                 Ok(module) => module,
                 Err(err) => {

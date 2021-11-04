@@ -41,7 +41,7 @@ pub const GZIP_WASM_API: i16 = 14;
 pub const ARRAY_MAP_WASM_API: i16 = 15;
 
 // version for persistent SmartModule
-pub const WASM_MODULE_PERSISTENT_API: i16 = 16;
+pub const SMART_MODULE_API: i16 = 16;
 
 /// Fetch records continuously
 /// Output will be send back as stream
@@ -69,7 +69,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = WASM_MODULE_PERSISTENT_API;
+    const DEFAULT_API_VERSION: i16 = SMART_MODULE_API;
     type Response = StreamFetchResponse<R>;
 }
 
