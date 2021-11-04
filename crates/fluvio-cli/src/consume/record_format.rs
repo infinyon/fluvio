@@ -6,6 +6,15 @@
 
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 
+use std::io::Stdout;
+use tui::Terminal;
+use tui::backend::CrosstermBackend;
+use crossterm::{
+    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+
 // -----------------------------------
 //  JSON
 // -----------------------------------
@@ -73,14 +82,32 @@ pub fn format_raw_record(record: &[u8]) -> String {
 //  Table
 // -----------------------------------
 
-/// Print records in table format
-pub fn print_table_record(record: &[u8], count: i32) -> String {
-    use prettytable::{Row, cell, Cell, Slice};
-    use prettytable::format::{self, FormatBuilder};
+// I don't know if I need this yet. This could be a place to structure values in view.
+pub fn _format_table_record(_record: &[u8]) -> String {
+    unimplemented!();
+}
 
+// This will take a full screen buffer
+/// Print records in table format
+pub fn print_table_record(
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    record: &[u8],
+) -> String {
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
-        Err(_e) => panic!("Value not json"),
+        Err(_e) => {
+            // restore terminal
+            disable_raw_mode().expect("Disabling raw mode failed");
+            execute!(
+                terminal.backend_mut(),
+                LeaveAlternateScreen,
+                DisableMouseCapture
+            )
+            .expect("Failed to leave alternate screen");
+            terminal.show_cursor().expect("Show terminal cursor failed");
+
+            panic!("Value not json")
+        }
     };
 
     let obj = maybe_json.as_object().unwrap();
@@ -103,28 +130,30 @@ pub fn print_table_record(record: &[u8], count: i32) -> String {
         })
         .collect();
 
-    let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
-    let entries: Row = Row::new(values_str.iter().map(|v| Cell::new(v)).collect());
+    //terminal.draw()
 
-    // Print the table
-    let t_print = vec![header, entries];
+    //let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
+    //let entries: Row = Row::new(values_str.iter().map(|v| Cell::new(v)).collect());
 
-    let mut table = prettytable::Table::init(t_print);
+    //// Print the table
+    //let t_print = vec![header, entries];
 
-    let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
-    let table_format = base_format;
-    table.set_format(table_format.build());
+    //let mut table = prettytable::Table::init(t_print);
 
-    // FIXME: Live display of table data easily misaligns column widths
-    // if there is a length diff between the header and the data
-    // The rows after the first (count == 0) don't line up with the header
-    // prettytable might not support the live display use-case we want
-    if count == 0 {
-        table.printstd();
-    } else {
-        let slice = table.slice(1..);
-        slice.printstd();
-    }
+    //let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
+    //let table_format = base_format;
+    //table.set_format(table_format.build());
+
+    //// FIXME: Live display of table data easily misaligns column widths
+    //// if there is a length diff between the header and the data
+    //// The rows after the first (count == 0) don't line up with the header
+    //// prettytable might not support the live display use-case we want
+    //if count == 0 {
+    //    table.printstd();
+    //} else {
+    //    let slice = table.slice(1..);
+    //    slice.printstd();
+    //}
     format!("")
 }
 // -----------------------------------
