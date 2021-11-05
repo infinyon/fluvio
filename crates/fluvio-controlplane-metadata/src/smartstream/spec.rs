@@ -8,6 +8,7 @@ use std::marker::PhantomData;
 use dataplane::core::{Encoder, Decoder};
 use fluvio_stream_model::core::Spec;
 use fluvio_stream_model::{core::MetadataItem, store::LocalStore};
+use tracing::trace;
 
 use crate::smartmodule::{SmartModuleSpec};
 use crate::topic::TopicSpec;
@@ -34,7 +35,9 @@ impl SmartStreamSpec {
         C: MetadataItem,
     {
         self.inputs.validate(objects).await?;
+        trace!("inputs validated");
         self.modules.validate(&objects.modules).await?;
+        trace!("modules validated");
         Ok(())
     }
 }
@@ -90,6 +93,7 @@ impl SmartStreamInput {
         match self {
             SmartStreamInput::Topic(ref topic_ref) => {
                 if !topic_ref.validate(&objects.topics).await {
+                    trace!(topic = %topic_ref.name,"topic not found");
                     return Err(SmartStreamValidationError::TopicNotFound(
                         topic_ref.name.clone(),
                     ));

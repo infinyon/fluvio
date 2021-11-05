@@ -62,11 +62,31 @@ mod states {
             C: MetadataItem,
         {
             match self {
-                Self::Init | Self::InvalidConfig(_) => {
+                Self::Init => {
                     trace!("init or invalid, performing validation");
                     match spec.validate(&objects).await {
                         Ok(()) => Some(Self::Provisioned),
                         Err(e) => Some(Self::InvalidConfig(e.to_string())),
+                    }
+                }
+                Self::InvalidConfig(old_error) => {
+                    if force {
+                        trace!("revalidating");
+                        match spec.validate(&objects).await {
+                            Ok(()) => Some(Self::Provisioned),
+                            Err(e) => {
+                                let new_error = e.to_string();
+                                if old_error != &new_error {
+                                    Some(Self::InvalidConfig(e.to_string()))
+                                } else {
+                                    trace!("same error as before");
+                                    None
+                                }
+                            }
+                        }
+                    } else {
+                        trace!("ignoring");
+                        None
                     }
                 }
                 Self::Provisioned => {
@@ -77,6 +97,7 @@ mod states {
                             Err(e) => Some(Self::InvalidConfig(e.to_string())),
                         }
                     } else {
+                        trace!("ignoring");
                         None
                     }
                 }
