@@ -30,3 +30,13 @@ mod smart_module_msg {
     pub type SmartModuleMsg = Message<SmartModule>;
     pub type SmartModuleMsgs = Messages<SmartModule>;
 }
+
+mod smart_stream_msg {
+
+    use crate::smartstream::SmartStreamSpec;
+
+    use super::{Message, Messages};
+
+    pub type SmartStreamMsg = Message<SmartStreamSpec>;
+    pub type SmartStreamMsgs = Messages<SmartStreamSpec>;
+}
