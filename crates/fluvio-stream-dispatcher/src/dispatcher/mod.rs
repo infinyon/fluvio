@@ -11,7 +11,7 @@ pub mod memory {
     use fluvio_future::task::spawn;
     use fluvio_stream_model::{
         core::Spec,
-        store::{MetadataStoreObject, actions::LSUpdate, memory::MemoryMeta},
+        store::{actions::LSUpdate, memory::MemoryMeta},
     };
     use tracing::{debug, error, trace};
 
@@ -47,25 +47,29 @@ pub mod memory {
 
                 match msg {
                     Ok(action) => {
-                        debug!("store: received ws action: {:#?}", action);
                         match action {
-                            WSAction::UpdateStatus((key, status)) => {
+                            WSAction::UpdateStatus((key, new_status)) => {
                                 // get existing object
+                                debug!("update status: {:#?}", new_status);
                                 if let Some(old) = self.ctx.store().value(&key).await {
-                                    let _ = self
+                                    debug!("old status: {:#?}", old.status);
+                                    let mut new_value = old.inner_owned().next_rev();
+                                    new_value.status = new_status;
+                                    if let Some(_status) = self
                                         .ctx
                                         .store()
-                                        .apply_changes(vec![LSUpdate::Mod(
-                                            MetadataStoreObject::new(
-                                                old.key_owned(),
-                                                old.spec.clone(),
-                                                status,
-                                            ),
-                                        )])
-                                        .await;
+                                        .apply_changes(vec![LSUpdate::Mod(new_value)])
+                                        .await
+                                    {
+                                        debug!("changed");
+                                    } else {
+                                        debug!("no change");
+                                    }
                                 }
                             }
-                            _ => {}
+                            _ => {
+                                debug!("not yet implemented");
+                            }
                         }
                     }
                     Err(err) => {

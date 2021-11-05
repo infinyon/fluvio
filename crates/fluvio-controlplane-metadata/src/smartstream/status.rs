@@ -41,7 +41,7 @@ impl Default for SmartStreamResolution {
 
 mod states {
 
-    use tracing::trace;
+    use tracing::{instrument, trace};
 
     use fluvio_stream_model::core::MetadataItem;
 
@@ -51,6 +51,7 @@ mod states {
 
     impl SmartStreamResolution {
         /// for this resolution, compute next state based on smartmodules
+        #[instrument(skip(spec, objects))]
         pub async fn next<'a, C>(
             &'a self,
             spec: &SmartStreamSpec,

@@ -1,5 +1,7 @@
 use std::fmt::Debug;
 
+use tracing::trace;
+
 use crate::core::{Spec, MetadataContext, MetadataItem, MetadataRevExtension};
 use crate::store::{LocalStore};
 
@@ -155,6 +157,7 @@ where
     /// compute difference, in our case we take account of version as well
     fn diff(&self, new_value: &Self) -> ChangeFlag {
         if self.is_newer(new_value) {
+            trace!("not newer");
             ChangeFlag::no_change()
         } else {
             ChangeFlag {

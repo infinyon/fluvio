@@ -319,6 +319,7 @@ where
         for change in changes.into_iter() {
             match change {
                 LSUpdate::Mod(new_kv_value) => {
+                    debug!("new_kv_value");
                     let key = new_kv_value.key_owned();
                     if let Some(diff) = write_guard.update(key, new_kv_value) {
                         if diff.spec {
@@ -330,7 +331,9 @@ where
                         if diff.meta {
                             update_meta += 1;
                         }
+                        debug!(update_spec, update_status, update_meta);
                     } else {
+                        debug!("new");
                         // there was no existing, so this is new
                         add += 1;
                     }

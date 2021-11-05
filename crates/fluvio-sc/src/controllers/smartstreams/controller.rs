@@ -89,11 +89,11 @@ where
                 },
                 _ = module_listener.listen() => {
                     debug!("detected module changes");
-                    self.sync_modules(&mut module_listener).await;
+                    self.sync_module_changes(&mut module_listener).await;
                 },
                 _ = topics_listener.listen() => {
                     debug!("detected topic changes");
-                    self.sync_topics(&mut topics_listener).await;
+                    self.sync_topic_changes(&mut topics_listener).await;
                 },
             }
         }
@@ -116,13 +116,14 @@ where
 
         for smartstream in smartstreams.into_iter() {
             let mut status = smartstream.status;
+            trace!("updated {:#?}", status);
             let key = smartstream.key;
             if let Some(next_resolution) = status
                 .resolution
                 .next(&smartstream.spec, &inputs, force)
                 .await
             {
-                trace!(?next_resolution,%key,"updated status");
+                debug!(?next_resolution,%key,"updated status");
                 status.resolution = next_resolution;
                 actions.push(WSAction::UpdateStatus::<SmartStreamSpec, C>((key, status)));
             }
@@ -136,7 +137,7 @@ where
     }
 
     /// update smartstream changes
-    #[instrument(skip(self, listener))]
+    #[instrument(skip(self))]
     async fn sync_smartstreams_changes(&self, listener: &mut ChangeListener<SmartStreamSpec, C>) {
         if !listener.has_change() {
             debug!("no change");
@@ -155,7 +156,7 @@ where
         self.sync_smartstreams(updates, false).await;
     }
 
-    async fn sync_modules(&self, listener: &mut ChangeListener<SmartModuleSpec, C>) {
+    async fn sync_module_changes(&self, listener: &mut ChangeListener<SmartModuleSpec, C>) {
         if !listener.has_change() {
             debug!("no change");
             return;
@@ -174,7 +175,7 @@ where
             .await;
     }
 
-    async fn sync_topics(&self, listener: &mut ChangeListener<TopicSpec, C>) {
+    async fn sync_topic_changes(&self, listener: &mut ChangeListener<TopicSpec, C>) {
         if !listener.has_change() {
             debug!("no change");
             return;
@@ -250,11 +251,14 @@ mod test {
             .await;
 
         // wait until controller sync
-        sleep(Duration::from_millis(100)).await;
+        sleep(Duration::from_millis(10)).await;
 
         let sm1 = smartstreams.store().value("sm1").await.expect("sm1");
-        //  assert!(matches!(sm1.status.resolution, SmartStreamResolution::InvalidConfig(_)));
-        assert!(matches!(sm1.status.resolution, SmartStreamResolution::Init));
+        assert!(matches!(
+            sm1.status.resolution,
+            SmartStreamResolution::InvalidConfig(_)
+        ));
+        // assert!(matches!(sm1.status.resolution, SmartStreamResolution::Init));
 
         debug!("finished test");
     }
