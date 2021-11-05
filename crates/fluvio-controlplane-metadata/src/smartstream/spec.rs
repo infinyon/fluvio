@@ -3,6 +3,7 @@
 //!
 //!
 
+use std::fmt::Display;
 use std::marker::PhantomData;
 
 use dataplane::core::{Encoder, Decoder};
@@ -34,10 +35,10 @@ impl SmartStreamSpec {
     where
         C: MetadataItem,
     {
+        trace!("validating inputs");
         self.inputs.validate(objects).await?;
-        trace!("inputs validated");
-        self.modules.validate(&objects.modules).await?;
-        trace!("modules validated");
+        trace!("validating output");
+        self.modules.validate(objects.modules).await?;
         Ok(())
     }
 }
@@ -50,6 +51,13 @@ pub struct SmartStreamInputs {
 }
 
 impl SmartStreamInputs {
+    pub fn right_display(&self) -> String {
+        match self.right {
+            Some(ref right) => right.to_string(),
+            None => "".to_string(),
+        }
+    }
+
     // validat configuration
     pub async fn validate<'a, C>(
         &'a self,
@@ -81,6 +89,15 @@ impl Default for SmartStreamInput {
     }
 }
 
+impl Display for SmartStreamInput {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SmartStreamInput::Topic(ref topic) => write!(f, "Topic({})", topic),
+            SmartStreamInput::SmartStream(ref stream) => write!(f, "SmartStream({})", stream),
+        }
+    }
+}
+
 impl SmartStreamInput {
     // validat configuration
     pub async fn validate<'a, C>(
@@ -92,7 +109,7 @@ impl SmartStreamInput {
     {
         match self {
             SmartStreamInput::Topic(ref topic_ref) => {
-                if !topic_ref.validate(&objects.topics).await {
+                if !topic_ref.validate(objects.topics).await {
                     trace!(topic = %topic_ref.name,"topic not found");
                     return Err(SmartStreamValidationError::TopicNotFound(
                         topic_ref.name.clone(),
@@ -100,7 +117,7 @@ impl SmartStreamInput {
                 }
             }
             SmartStreamInput::SmartStream(ref smart_stream_ref) => {
-                if !smart_stream_ref.validate(&objects.smartstreams).await {
+                if !smart_stream_ref.validate(objects.smartstreams).await {
                     return Err(SmartStreamValidationError::SmartStreamNotFound(
                         smart_stream_ref.name.clone(),
                     ));
@@ -125,6 +142,16 @@ where
     pub name: S::IndexKey,
     #[cfg_attr(feature = "use_serde", serde(skip))]
     data: PhantomData<S>,
+}
+
+impl<S> Display for SmartStreamRef<S>
+where
+    S: Spec + Default + Encoder + Decoder,
+    S::IndexKey: Default + Encoder + Decoder + Display,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
 }
 
 impl<S> SmartStreamRef<S>
@@ -174,9 +201,16 @@ pub struct SmartStreamModules {
     pub outputs: Vec<SmartStreamRef<SmartModuleSpec>>,
 }
 
+impl Display for SmartStreamModules {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let modules: String = self.transforms.iter().map(|t| t.to_string()).collect();
+        write!(f, "{}", modules)
+    }
+}
+
 impl SmartStreamModules {
     async fn validate<'a, C>(
-        &self,
+        &'a self,
         modules: &'a LocalStore<SmartModuleSpec, C>,
     ) -> Result<(), SmartStreamValidationError>
     where

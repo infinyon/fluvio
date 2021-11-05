@@ -35,6 +35,7 @@ mod metadata {
 
     impl Status for SmartStreamStatus {}
 
+    #[allow(clippy::enum_variant_names)]
     #[derive(thiserror::Error, Debug)]
     pub enum SmartStreamValidationError {
         #[error("Topic not found: {0}")]

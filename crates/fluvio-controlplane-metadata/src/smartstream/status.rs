@@ -64,17 +64,18 @@ mod states {
             match self {
                 Self::Init => {
                     trace!("init or invalid, performing validation");
-                    match spec.validate(&objects).await {
+                    match spec.validate(objects).await {
                         Ok(()) => Some(Self::Provisioned),
                         Err(e) => Some(Self::InvalidConfig(e.to_string())),
                     }
                 }
                 Self::InvalidConfig(old_error) => {
                     if force {
-                        trace!("revalidating");
-                        match spec.validate(&objects).await {
+                        trace!("revalidating invalid");
+                        match spec.validate(objects).await {
                             Ok(()) => Some(Self::Provisioned),
                             Err(e) => {
+                                trace!("invalid: {:#?}", e);
                                 let new_error = e.to_string();
                                 if old_error != &new_error {
                                     Some(Self::InvalidConfig(e.to_string()))
@@ -91,8 +92,8 @@ mod states {
                 }
                 Self::Provisioned => {
                     if force {
-                        trace!("revalidating");
-                        match spec.validate(&objects).await {
+                        trace!("revalidating provisoned");
+                        match spec.validate(objects).await {
                             Ok(()) => None, // it is already validated
                             Err(e) => Some(Self::InvalidConfig(e.to_string())),
                         }

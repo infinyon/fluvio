@@ -110,7 +110,7 @@ where
         debug!("wait for initial sync for smartstreams");
         let smartstreams = ss_listener.wait_for_initial_sync().await;
 
-        debug!("performing initial full sync");
+        debug!("performing initial full validation");
         self.validating_smartstream(smartstreams, true).await;
 
         loop {
@@ -151,6 +151,18 @@ where
             topics: self.topics.store(),
             modules: self.modules.store(),
         };
+
+        /*
+        because of issue with tracing with async, enable only if you want to debug
+        let topic_len = inputs.topics.count().await;
+        let module_len = inputs.modules.count().await;
+        let smartstream_len = inputs.smartstreams.count().await;
+
+        debug!( topic_len,
+            module_len,
+            smartstream_len,
+        "validation inputs");
+        */
 
         let mut actions = vec![];
 
