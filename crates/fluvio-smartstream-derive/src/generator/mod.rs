@@ -6,6 +6,7 @@ mod map;
 mod array_map;
 mod filter_map;
 mod aggregate;
+mod join;
 
 pub mod opt;
 
@@ -24,5 +25,6 @@ pub fn generate_smartstream(config: &SmartStreamConfig, func: &SmartStreamFn) ->
         SmartStreamKind::ArrayMap => {
             self::array_map::generate_array_map_smartstream(func, config.has_params)
         }
+        SmartStreamKind::Join => self::join::generate_join_smartstream(func, config.has_params),
     }
 }
