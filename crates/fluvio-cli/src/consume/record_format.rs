@@ -5,6 +5,7 @@
 //!
 
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
+use super::TableView;
 
 use std::io::Stdout;
 use tui::{
@@ -96,7 +97,7 @@ pub fn _format_table_record(_record: &[u8]) -> String {
 /// Print records in table format
 pub fn print_table_record(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    table_state: &mut TableState,
+    table_view: &mut TableView,
     record: &[u8],
 ) -> String {
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
@@ -136,10 +137,17 @@ pub fn print_table_record(
         })
         .collect();
 
-    let header: Vec<&str> = keys_str.iter().map(|k| k.as_str()).collect();
+    //let header: Vec<&str> = keys_str.clone().iter().map(AsRef::as_ref).collect();
+    let header = keys_str.clone();
+    table_view
+        .set_header(header)
+        .expect("Unable to set table headers");
+    table_view
+        .update_row(values_str)
+        .expect("Unable to update table row");
 
     terminal
-        .draw(|frame| ui(frame, table_state))
+        .draw(|frame| ui(frame, table_view))
         .expect("Could not render table frame");
 
     //let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
@@ -175,46 +183,47 @@ fn is_binary(bytes: &[u8]) -> bool {
     matches!(inspect(bytes), ContentType::BINARY)
 }
 
-fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_state: &mut TableState) {
-    let fake_data = vec![
-        vec!["Row11", "Row12", "Row13"],
-        vec!["Row21", "Row22", "Row23"],
-        vec!["Row31", "Row32", "Row33"],
-    ];
-
+fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_view: &mut TableView) {
     let rects = Layout::default()
         .constraints([Constraint::Percentage(100)].as_ref())
         .margin(5)
         .split(f.size());
 
+    // Calculate the widths based on # of columns
+    let equal_column_width = (100 / table_view.num_columns()) as u16;
+
+    let mut column_constraints: Vec<Constraint> = Vec::new();
+
+    // Define the widths of the columns
+    for _ in 0..table_view.num_columns() {
+        column_constraints.push(Constraint::Percentage(equal_column_width));
+    }
+
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let normal_style = Style::default().bg(Color::Blue);
-    let header_cells = ["Header1", "Header2", "Header3"]
+    let header_cells = table_view
+        .headers
         .iter()
-        .map(|h| Cell::from(*h).style(Style::default().fg(Color::Red)));
+        .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Red)));
     let header = Row::new(header_cells)
         .style(normal_style)
         .height(1)
         .bottom_margin(1);
-    let rows = fake_data.iter().map(|item| {
+    let rows = table_view.data.iter().map(|item| {
         let height = item
             .iter()
             .map(|content| content.chars().filter(|c| *c == '\n').count())
             .max()
             .unwrap_or(0)
             + 1;
-        let cells = item.iter().map(|c| Cell::from(*c));
+        let cells = item.iter().map(|c| Cell::from(c.as_str()));
         Row::new(cells).height(height as u16).bottom_margin(1)
     });
     let t = Table::new(rows)
         .header(header)
         .block(Block::default().borders(Borders::ALL).title("Table"))
-        .highlight_style(selected_style)
-        .highlight_symbol(">> ")
-        .widths(&[
-            Constraint::Percentage(50),
-            Constraint::Length(30),
-            Constraint::Max(10),
-        ]);
-    f.render_stateful_widget(t, rects[0], table_state);
+        //.highlight_style(selected_style)
+        //.highlight_symbol(">> ")
+        .widths(&column_constraints);
+    f.render_stateful_widget(t, rects[0], &mut table_view.state);
 }

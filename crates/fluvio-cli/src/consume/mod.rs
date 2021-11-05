@@ -301,13 +301,16 @@ impl ConsumeOpt {
         };
 
         // TODO: Support updating fullscreen table
-        let mut table_state = None;
+        let mut maybe_table_view = None;
 
         if let Some(ConsumeOutputType::table) = &self.output {
             enable_raw_mode()?;
             let mut stdout = io::stdout();
             execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
-            table_state = Some(TableState::default());
+
+            let mut view = TableView::default();
+
+            maybe_table_view = Some(view);
         }
 
         let stdout = io::stdout();
@@ -327,7 +330,7 @@ impl ConsumeOpt {
 
             self.print_record(
                 &mut terminal_stdout,
-                table_state.as_mut(),
+                maybe_table_view.as_mut(),
                 templates.as_ref(),
                 &record,
             );
@@ -369,7 +372,7 @@ impl ConsumeOpt {
     pub fn print_record(
         &self,
         terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-        maybe_table_state: Option<&mut TableState>,
+        table_view: Option<&mut TableView>,
         templates: Option<&Handlebars>,
         record: &Record,
     ) {
@@ -416,7 +419,11 @@ impl ConsumeOpt {
                 _ => debug!("Skipping record that cannot be formatted"),
             }
         } else {
-            print_table_record(terminal, maybe_table_state.unwrap(), record.value());
+            print_table_record(
+                terminal,
+                table_view.expect("TableView not passed in for table output"),
+                record.value(),
+            );
         }
     }
 
@@ -559,6 +566,42 @@ impl ::std::default::Default for ConsumeOutputType {
     }
 }
 
-struct TableView {
-    state: TableState,
+#[derive(Debug, Default)]
+pub struct TableView {
+    pub state: TableState,
+    pub headers: Vec<String>,
+    pub data: Vec<Vec<String>>,
+}
+
+impl TableView {
+    pub fn set_header(&mut self, headers: Vec<String>) -> Result<()> {
+        self.headers = headers;
+
+        Ok(())
+    }
+
+    // For now, this will look for the left-most column and if found, update that row
+    // Appends row if not found
+    pub fn update_row(&mut self, row: Vec<String>) -> Result<()> {
+        let mut found = None;
+
+        for (index, r) in self.data.iter().enumerate() {
+            if r[0] == row[0] {
+                found = Some(index);
+                break;
+            }
+        }
+
+        if let Some(row_index) = found {
+            self.data[row_index] = row;
+        } else {
+            self.data.push(row);
+        }
+
+        Ok(())
+    }
+
+    pub fn num_columns(&self) -> usize {
+        self.headers.len()
+    }
 }
