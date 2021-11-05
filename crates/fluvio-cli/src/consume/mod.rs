@@ -125,6 +125,10 @@ pub struct ConsumeOpt {
     #[structopt(long, group("smartmodule"))]
     pub array_map: Option<String>,
 
+    /// Path to a SmartStream join wasm filee
+    #[structopt(long, group("smartstream"))]
+    pub join: Option<String>,
+
     /// Path to a WASM file for aggregation
     #[structopt(long, group("smartmodule"))]
     pub aggregate: Option<String>,
@@ -228,6 +232,12 @@ impl ConsumeOpt {
             Some(create_smart_module(
                 name_or_path,
                 SmartStreamKind::FilterMap,
+                extra_params,
+            )?)
+        } else if let Some(name_or_path) = &self.join {
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::Join,
                 extra_params,
             )?)
         } else {

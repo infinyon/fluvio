@@ -12,6 +12,8 @@ use crate::smartstream::map::SmartStreamMap;
 use crate::filter_map::SmartStreamFilterMap;
 use crate::smartstream::array_map::SmartStreamArrayMap;
 use crate::smartstream::aggregate::SmartStreamAggregate;
+use crate::smartstream::join::SmartStreamJoin;
+
 use dataplane::core::{Encoder, Decoder};
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError};
 use crate::smartstream::file_batch::FileBatchIterator;
@@ -24,6 +26,7 @@ pub mod map;
 pub mod array_map;
 pub mod filter_map;
 pub mod aggregate;
+pub mod join;
 pub mod file_batch;
 
 pub type WasmSlice = (i32, i32);
@@ -79,6 +82,7 @@ impl SmartEngine {
             SmartStreamKind::ArrayMap => {
                 Box::new(smart_module.create_array_map(smart_payload.params)?)
             }
+            SmartStreamKind::Join => Box::new(smart_module.create_join(smart_payload.params)?),
             SmartStreamKind::Aggregate { accumulator } => {
                 Box::new(smart_module.create_aggregate(smart_payload.params, accumulator.clone())?)
             }
@@ -117,6 +121,11 @@ impl SmartStreamModule {
     fn create_array_map(&self, params: SmartStreamExtraParams) -> Result<SmartStreamArrayMap> {
         let map = SmartStreamArrayMap::new(&self.engine, self, params)?;
         Ok(map)
+    }
+
+    fn create_join(&self, params: SmartStreamExtraParams) -> Result<SmartStreamJoin> {
+        let join = SmartStreamJoin::new(&self.engine, self, params)?;
+        Ok(join)
     }
 
     fn create_aggregate(
