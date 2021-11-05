@@ -198,8 +198,11 @@ impl SmartStreamModules {
 #[cfg(test)]
 mod test {
 
-    use super::SmartStreamInputs;
+    use fluvio_stream_model::store::{MetadataStoreObject, memory::MemoryMeta};
 
+    use super::*;
+
+    /*
     #[test]
     fn test_smartstream_spec_deserialiation() {
         let _spec: SmartStreamInputs = serde_json::from_str(
@@ -214,5 +217,48 @@ mod test {
             "#,
         )
         .expect("spec");
+    }
+    */
+
+    #[fluvio_future::test]
+    async fn validate_smartstream() {
+        let smartstreams: LocalStore<SmartStreamSpec, MemoryMeta> = LocalStore::default();
+        let topics: LocalStore<TopicSpec, MemoryMeta> = LocalStore::default();
+        let modules: LocalStore<SmartModuleSpec, MemoryMeta> = LocalStore::default();
+
+        let smartstream = SmartStreamSpec {
+            inputs: SmartStreamInputs {
+                left: SmartStreamInput::Topic(SmartStreamRef::new("test".into())),
+                right: None,
+            },
+            modules: SmartStreamModules {
+                transforms: vec![],
+                outputs: vec![],
+            },
+        };
+
+        assert!(smartstream
+            .validate(&SmartStreamValidationInput {
+                topics: &topics,
+                smartstreams: &smartstreams,
+                modules: &modules,
+            })
+            .await
+            .is_err());
+
+        let topics2: LocalStore<TopicSpec, MemoryMeta> =
+            LocalStore::bulk_new(vec![MetadataStoreObject::with_spec(
+                "test",
+                TopicSpec::default(),
+            )]);
+
+        assert!(smartstream
+            .validate(&SmartStreamValidationInput {
+                topics: &topics2,
+                smartstreams: &smartstreams,
+                modules: &modules,
+            })
+            .await
+            .is_ok());
     }
 }

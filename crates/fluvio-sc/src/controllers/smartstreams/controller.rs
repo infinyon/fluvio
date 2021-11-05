@@ -1,9 +1,12 @@
 use std::time::Duration;
 
 use fluvio_controlplane_metadata::core::MetadataItem;
-use fluvio_controlplane_metadata::smartstream::SmartStreamResolution;
-use fluvio_controlplane_metadata::store::ChangeListener;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+use fluvio_controlplane_metadata::smartstream::{SmartStreamResolution, SmartStreamValidationInput};
+use fluvio_controlplane_metadata::store::{ChangeListener, MetadataStoreObject};
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
+use fluvio_controlplane_metadata::topic::TopicSpec;
+use fluvio_stream_dispatcher::actions::WSAction;
 use tokio::select;
 use tracing::{debug, error, info, trace};
 use tracing::instrument;
@@ -19,6 +22,8 @@ where
     C: MetadataItem + Send + Sync,
 {
     smartstreams: StoreContext<SmartStreamSpec, C>,
+    topics: StoreContext<TopicSpec, C>,
+    modules: StoreContext<SmartModuleSpec, C>,
     cycles: u64, // number of cycles
 }
 
@@ -26,9 +31,15 @@ impl<C> SmartStreamController<C>
 where
     C: MetadataItem + Send + Sync + 'static,
 {
-    pub fn start(smartstreams: StoreContext<SmartStreamSpec, C>) {
+    pub fn start(
+        smartstreams: StoreContext<SmartStreamSpec, C>,
+        topics: StoreContext<TopicSpec, C>,
+        modules: StoreContext<SmartModuleSpec, C>,
+    ) {
         let controller = Self {
             smartstreams,
+            topics,
+            modules,
             cycles: 0,
         };
 
@@ -52,50 +63,57 @@ where
     async fn inner_loop(&mut self) -> Result<(), ()> {
         debug!("starting inner loop");
 
-        let mut listener = self.smartstreams.change_listener();
+        let mut topics_listener = self.topics.change_listener();
+        debug!("wait for initial sync for topics");
+        let _ = topics_listener.wait_for_initial_sync().await;
 
-        debug!("wait for initial sync");
-        let _ = listener.wait_for_initial_sync().await;
+        let mut module_listener = self.modules.change_listener();
+        debug!("wait for initial sync for modules");
+        let _ = module_listener.wait_for_initial_sync().await;
+
+        let mut ss_listener = self.smartstreams.change_listener();
+        debug!("wait for initial sync for smartstreams");
+        let smartstreams = ss_listener.wait_for_initial_sync().await;
+
+        self.full_sync_smartstream(smartstreams).await;
 
         loop {
-            self.sync_smartstream(&mut listener).await;
-
             select! {
 
-                _ = listener.listen() => {
+                _ = ss_listener.listen() => {
                     debug!("detected smartstream changes");
+
 
                 }
             }
         }
     }
 
-    #[instrument(skip(self, listener))]
-    async fn sync_smartstream(&mut self, listener: &mut ChangeListener<SmartStreamSpec, C>) {
-        if !listener.has_change() {
-            trace!("no spu changes");
-            return;
-        }
+    /// update smartstream state assuming other objects are already synced
+    #[instrument(skip(self))]
+    async fn full_sync_smartstream(
+        &mut self,
+        smartstreams: Vec<MetadataStoreObject<SmartStreamSpec, C>>,
+    ) {
+        let inputs = SmartStreamValidationInput {
+            smartstreams: self.smartstreams.store(),
+            topics: self.topics.store(),
+            modules: self.modules.store(),
+        };
 
-        let changes = listener.sync_changes().await;
-        if changes.is_empty() {
-            trace!("no smartstream changes");
-            return;
-        }
-
-        debug!("detected smartstream changes");
-        let (updates, _) = changes.parts();
-
-        for update in updates.into_iter() {
-            let status = update.status;
-            match status.resolution {
-                SmartStreamResolution::Init | SmartStreamResolution::InvalidConfig(_) => {
-                    // ignore
-                }
-                SmartStreamResolution::Provisioned => {
-                    // ignore
-                }
+        let mut actions = vec![];
+        for smartstream in smartstreams.into_iter() {
+            let mut status = smartstream.status;
+            let key = smartstream.key;
+            if let Some(next_resolution) = status.resolution.next(&smartstream.spec, &inputs).await
+            {
+                status.resolution = next_resolution;
+                actions.push(WSAction::UpdateStatus::<SmartStreamSpec, C>((key, status)));
             }
+        }
+
+        for action in actions.into_iter() {
+            self.smartstreams.send_action(action).await;
         }
     }
 }
@@ -123,8 +141,11 @@ mod test {
     #[fluvio_future::test(ignore)]
     async fn test_smart_stream_controller() {
         let smartstreams: StoreContext<SmartStreamSpec, MemoryMeta> = StoreContext::new();
+        let topics: StoreContext<TopicSpec, MemoryMeta> = StoreContext::new();
+        let modules: StoreContext<SmartModuleSpec, MemoryMeta> = StoreContext::new();
 
-        let _controller = SmartStreamController::start(smartstreams.clone());
+        let _controller =
+            SmartStreamController::start(smartstreams.clone(), topics.clone(), modules.clone());
 
         // do initial sync
         smartstreams.store().sync_all(vec![]).await;

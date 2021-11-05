@@ -44,24 +44,27 @@ mod states {
     use fluvio_stream_model::core::MetadataItem;
     use fluvio_stream_model::store::LocalStore;
 
-    use crate::smartstream::SmartStreamSpec;
+    use crate::smartstream::{SmartStreamSpec, SmartStreamValidationInput};
     use crate::smartmodule::SmartModuleSpec;
 
     use super::*;
 
     impl SmartStreamResolution {
         /// for this resolution, compute next state based on smartmodules
-        pub fn next<C>(
-            &self,
+        pub async fn next<'a, C>(
+            &'a self,
             spec: &SmartStreamSpec,
-            modules: &LocalStore<SmartModuleSpec, C>,
-        ) -> Self
+            objects: &SmartStreamValidationInput<'a, C>,
+        ) -> Option<Self>
         where
             C: MetadataItem,
         {
             match self {
-                Self::Init | Self::InvalidConfig(_) => validate_modules(modules),
-                Self::Provisioned => Self::Provisioned,
+                Self::Init | Self::InvalidConfig(_) => match spec.validate(&objects).await {
+                    Ok(()) => Some(Self::Provisioned),
+                    Err(e) => Some(Self::InvalidConfig(e.to_string())),
+                },
+                Self::Provisioned => None,
             }
         }
     }
