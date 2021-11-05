@@ -8,7 +8,7 @@ use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_stream_dispatcher::actions::WSAction;
 use tokio::select;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, trace};
 use tracing::instrument;
 
 use fluvio_future::task::spawn;
@@ -75,9 +75,12 @@ where
         debug!("wait for initial sync for smartstreams");
         let smartstreams = ss_listener.wait_for_initial_sync().await;
 
-        self.sync_smartstreams(smartstreams,false).await;
+        debug!("performing initial full sync");
+        self.sync_smartstreams(smartstreams, false).await;
 
         loop {
+            debug!("waiting for changes");
+
             select! {
 
                 _ = ss_listener.listen() => {
@@ -97,11 +100,11 @@ where
     }
 
     /// update smartstream state assuming other objects are already synced
-    #[instrument(skip(self))]
+    #[instrument(skip(self,smartstreams),fields(len = smartstreams.len()))]
     async fn sync_smartstreams(
         &self,
         smartstreams: Vec<MetadataStoreObject<SmartStreamSpec, C>>,
-        force: bool
+        force: bool,
     ) {
         let inputs = SmartStreamValidationInput {
             smartstreams: self.smartstreams.store(),
@@ -110,15 +113,22 @@ where
         };
 
         let mut actions = vec![];
+
         for smartstream in smartstreams.into_iter() {
             let mut status = smartstream.status;
             let key = smartstream.key;
-            if let Some(next_resolution) = status.resolution.next(&smartstream.spec, &inputs,force).await
+            if let Some(next_resolution) = status
+                .resolution
+                .next(&smartstream.spec, &inputs, force)
+                .await
             {
+                trace!(?next_resolution,%key,"updated status");
                 status.resolution = next_resolution;
                 actions.push(WSAction::UpdateStatus::<SmartStreamSpec, C>((key, status)));
             }
         }
+
+        debug!(updates = actions.len(), "update actions");
 
         for action in actions.into_iter() {
             self.smartstreams.send_action(action).await;
@@ -127,8 +137,7 @@ where
 
     /// update smartstream changes
     #[instrument(skip(self, listener))]
-    async fn sync_smartstreams_changes(&self, listener: &mut ChangeListener<SmartStreamSpec,C>) {
-
+    async fn sync_smartstreams_changes(&self, listener: &mut ChangeListener<SmartStreamSpec, C>) {
         if !listener.has_change() {
             debug!("no change");
             return;
@@ -143,7 +152,7 @@ where
 
         let (updates, _) = changes.parts();
 
-        self.sync_smartstreams(updates,false).await;
+        self.sync_smartstreams(updates, false).await;
     }
 
     async fn sync_modules(&self, listener: &mut ChangeListener<SmartModuleSpec, C>) {
@@ -160,11 +169,10 @@ where
         }
 
         // for now, we do full check regardless of partial changes.
-        
-        self.sync_smartstreams(self.smartstreams.store().clone_values().await, true).await;
 
+        self.sync_smartstreams(self.smartstreams.store().clone_values().await, true)
+            .await;
     }
-
 
     async fn sync_topics(&self, listener: &mut ChangeListener<TopicSpec, C>) {
         if !listener.has_change() {
@@ -180,33 +188,27 @@ where
         }
 
         // for now, we do full check regardless of partial changes.
-        
-        self.sync_smartstreams(self.smartstreams.store().clone_values().await, true).await;
 
+        self.sync_smartstreams(self.smartstreams.store().clone_values().await, true)
+            .await;
     }
-
-
 }
 
 #[cfg(test)]
 mod test {
 
+    use fluvio_stream_dispatcher::dispatcher::memory::MemoryDispatcher;
     use fluvio_stream_model::store::memory::MemoryMeta;
-
-    use crate::controllers::smartstreams;
 
     use super::*;
 
     use fluvio_controlplane_metadata::{
-        smartstream::{SmartStreamInput, SmartStreamInputs, SmartStreamRef},
+        smartstream::{SmartStreamInput, SmartStreamInputs, SmartStreamRef, SmartStreamResolution},
         store::{
             MetadataStoreObject,
-            actions::{LSChange, LSUpdate},
+            actions::{LSUpdate},
         },
     };
-
-    type MemSmartStreams = MetadataStoreObject<SmartStreamSpec, MemoryMeta>;
-    type MemSmartStream = MetadataStoreObject<SmartStreamSpec, MemoryMeta>;
 
     #[fluvio_future::test(ignore)]
     async fn test_smart_stream_controller() {
@@ -214,14 +216,21 @@ mod test {
         let topics: StoreContext<TopicSpec, MemoryMeta> = StoreContext::new();
         let modules: StoreContext<SmartModuleSpec, MemoryMeta> = StoreContext::new();
 
+        MemoryDispatcher::start(smartstreams.clone());
+
         let _controller =
             SmartStreamController::start(smartstreams.clone(), topics.clone(), modules.clone());
 
+        // wait for controller to catch up
+        sleep(Duration::from_millis(10)).await;
+
         // do initial sync
         smartstreams.store().sync_all(vec![]).await;
+        topics.store().sync_all(vec![]).await;
+        modules.store().sync_all(vec![]).await;
 
-        // wait and apply
-        sleep(Duration::from_secs(1)).await;
+        // wait for controller to catch up
+        sleep(Duration::from_millis(10)).await;
 
         // add new smartstream
         let sm1 = SmartStreamSpec {
@@ -231,6 +240,8 @@ mod test {
             },
             ..Default::default()
         };
+
+        debug!("applying smartstream update");
         smartstreams
             .store()
             .apply_changes(vec![LSUpdate::Mod(MetadataStoreObject::with_spec(
@@ -238,7 +249,13 @@ mod test {
             ))])
             .await;
 
-        //  smartstreams.store().
-        sleep(Duration::from_secs(10)).await;
+        // wait until controller sync
+        sleep(Duration::from_millis(100)).await;
+
+        let sm1 = smartstreams.store().value("sm1").await.expect("sm1");
+        //  assert!(matches!(sm1.status.resolution, SmartStreamResolution::InvalidConfig(_)));
+        assert!(matches!(sm1.status.resolution, SmartStreamResolution::Init));
+
+        debug!("finished test");
     }
 }

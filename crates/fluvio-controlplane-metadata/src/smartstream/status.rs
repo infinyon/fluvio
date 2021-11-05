@@ -41,13 +41,11 @@ impl Default for SmartStreamResolution {
 
 mod states {
 
-    
     use tracing::trace;
 
     use fluvio_stream_model::core::MetadataItem;
-    
+
     use crate::smartstream::{SmartStreamSpec, SmartStreamValidationInput};
-    use crate::smartmodule::SmartModuleSpec;
 
     use super::*;
 
@@ -57,7 +55,7 @@ mod states {
             &'a self,
             spec: &SmartStreamSpec,
             objects: &SmartStreamValidationInput<'a, C>,
-            force: bool
+            force: bool,
         ) -> Option<Self>
         where
             C: MetadataItem,
@@ -69,20 +67,19 @@ mod states {
                         Ok(()) => Some(Self::Provisioned),
                         Err(e) => Some(Self::InvalidConfig(e.to_string())),
                     }
-                },
+                }
                 Self::Provisioned => {
                     if force {
                         trace!("revalidating");
                         match spec.validate(&objects).await {
                             Ok(()) => None, // it is already validated
-                            Err(e) => Some(Self::InvalidConfig(e.to_string()))
+                            Err(e) => Some(Self::InvalidConfig(e.to_string())),
                         }
                     } else {
                         None
                     }
-                },
+                }
             }
         }
     }
-
 }
