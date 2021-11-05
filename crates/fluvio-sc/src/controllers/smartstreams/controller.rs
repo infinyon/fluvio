@@ -2,13 +2,13 @@ use std::time::Duration;
 
 use fluvio_controlplane_metadata::core::MetadataItem;
 use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
-use fluvio_controlplane_metadata::smartstream::{SmartStreamResolution, SmartStreamValidationInput};
+use fluvio_controlplane_metadata::smartstream::{SmartStreamValidationInput};
 use fluvio_controlplane_metadata::store::{ChangeListener, MetadataStoreObject};
 use fluvio_controlplane_metadata::store::k8::K8MetaItem;
 use fluvio_controlplane_metadata::topic::TopicSpec;
 use fluvio_stream_dispatcher::actions::WSAction;
 use tokio::select;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, info};
 use tracing::instrument;
 
 use fluvio_future::task::spawn;
@@ -75,25 +75,33 @@ where
         debug!("wait for initial sync for smartstreams");
         let smartstreams = ss_listener.wait_for_initial_sync().await;
 
-        self.full_sync_smartstream(smartstreams).await;
+        self.sync_smartstreams(smartstreams,false).await;
 
         loop {
             select! {
 
                 _ = ss_listener.listen() => {
                     debug!("detected smartstream changes");
-
-
-                }
+                    self.sync_smartstreams_changes(&mut ss_listener).await;
+                },
+                _ = module_listener.listen() => {
+                    debug!("detected module changes");
+                    self.sync_modules(&mut module_listener).await;
+                },
+                _ = topics_listener.listen() => {
+                    debug!("detected topic changes");
+                    self.sync_topics(&mut topics_listener).await;
+                },
             }
         }
     }
 
     /// update smartstream state assuming other objects are already synced
     #[instrument(skip(self))]
-    async fn full_sync_smartstream(
-        &mut self,
+    async fn sync_smartstreams(
+        &self,
         smartstreams: Vec<MetadataStoreObject<SmartStreamSpec, C>>,
+        force: bool
     ) {
         let inputs = SmartStreamValidationInput {
             smartstreams: self.smartstreams.store(),
@@ -105,7 +113,7 @@ where
         for smartstream in smartstreams.into_iter() {
             let mut status = smartstream.status;
             let key = smartstream.key;
-            if let Some(next_resolution) = status.resolution.next(&smartstream.spec, &inputs).await
+            if let Some(next_resolution) = status.resolution.next(&smartstream.spec, &inputs,force).await
             {
                 status.resolution = next_resolution;
                 actions.push(WSAction::UpdateStatus::<SmartStreamSpec, C>((key, status)));
@@ -116,6 +124,68 @@ where
             self.smartstreams.send_action(action).await;
         }
     }
+
+    /// update smartstream changes
+    #[instrument(skip(self, listener))]
+    async fn sync_smartstreams_changes(&self, listener: &mut ChangeListener<SmartStreamSpec,C>) {
+
+        if !listener.has_change() {
+            debug!("no change");
+            return;
+        }
+
+        let changes = listener.sync_changes().await;
+
+        if changes.is_empty() {
+            debug!("no smartstream changes");
+            return;
+        }
+
+        let (updates, _) = changes.parts();
+
+        self.sync_smartstreams(updates,false).await;
+    }
+
+    async fn sync_modules(&self, listener: &mut ChangeListener<SmartModuleSpec, C>) {
+        if !listener.has_change() {
+            debug!("no change");
+            return;
+        }
+
+        let changes = listener.sync_changes().await;
+
+        if changes.is_empty() {
+            debug!("no modules changes");
+            return;
+        }
+
+        // for now, we do full check regardless of partial changes.
+        
+        self.sync_smartstreams(self.smartstreams.store().clone_values().await, true).await;
+
+    }
+
+
+    async fn sync_topics(&self, listener: &mut ChangeListener<TopicSpec, C>) {
+        if !listener.has_change() {
+            debug!("no change");
+            return;
+        }
+
+        let changes = listener.sync_changes().await;
+
+        if changes.is_empty() {
+            debug!("no topic changes");
+            return;
+        }
+
+        // for now, we do full check regardless of partial changes.
+        
+        self.sync_smartstreams(self.smartstreams.store().clone_values().await, true).await;
+
+    }
+
+
 }
 
 #[cfg(test)]

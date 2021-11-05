@@ -41,9 +41,11 @@ impl Default for SmartStreamResolution {
 
 mod states {
 
-    use fluvio_stream_model::core::MetadataItem;
-    use fluvio_stream_model::store::LocalStore;
+    
+    use tracing::trace;
 
+    use fluvio_stream_model::core::MetadataItem;
+    
     use crate::smartstream::{SmartStreamSpec, SmartStreamValidationInput};
     use crate::smartmodule::SmartModuleSpec;
 
@@ -55,25 +57,32 @@ mod states {
             &'a self,
             spec: &SmartStreamSpec,
             objects: &SmartStreamValidationInput<'a, C>,
+            force: bool
         ) -> Option<Self>
         where
             C: MetadataItem,
         {
             match self {
-                Self::Init | Self::InvalidConfig(_) => match spec.validate(&objects).await {
-                    Ok(()) => Some(Self::Provisioned),
-                    Err(e) => Some(Self::InvalidConfig(e.to_string())),
+                Self::Init | Self::InvalidConfig(_) => {
+                    trace!("init or invalid, performing validation");
+                    match spec.validate(&objects).await {
+                        Ok(()) => Some(Self::Provisioned),
+                        Err(e) => Some(Self::InvalidConfig(e.to_string())),
+                    }
                 },
-                Self::Provisioned => None,
+                Self::Provisioned => {
+                    if force {
+                        trace!("revalidating");
+                        match spec.validate(&objects).await {
+                            Ok(()) => None, // it is already validated
+                            Err(e) => Some(Self::InvalidConfig(e.to_string()))
+                        }
+                    } else {
+                        None
+                    }
+                },
             }
         }
     }
 
-    /// ensure all modules are provisioned
-    fn validate_modules<C>(modules: &LocalStore<SmartModuleSpec, C>) -> SmartStreamResolution
-    where
-        C: MetadataItem,
-    {
-        SmartStreamResolution::Provisioned
-    }
 }
