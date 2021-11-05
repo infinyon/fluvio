@@ -32,6 +32,7 @@ pub mod extended {
         ManagedConnector,
         SmartModule,
         Table,
+        SmartStream,
     }
 
     pub trait SpecExt: Spec {

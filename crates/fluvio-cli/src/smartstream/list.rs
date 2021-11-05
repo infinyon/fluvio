@@ -77,7 +77,7 @@ mod output {
     impl TableOutputHandler for ListSmartStream {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS"]
+            row!["NAME", "STATUS", "LEFT", "RIGHT", "TRANSFORMS"]
         }
 
         /// return errors in string format
@@ -90,10 +90,13 @@ mod output {
             self.0
                 .iter()
                 .map(|r| {
-                    let _spec = &r.spec;
+                    let spec = &r.spec;
                     Row::new(vec![
                         Cell::new_align(&r.name, Alignment::RIGHT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
+                        Cell::new_align(&spec.inputs.left.to_string(), Alignment::RIGHT),
+                        Cell::new_align(&spec.inputs.right_display(), Alignment::RIGHT),
+                        Cell::new_align(&spec.modules.to_string(), Alignment::LEFT),
                     ])
                 })
                 .collect()

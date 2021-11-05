@@ -17,7 +17,7 @@ where
     Delete(S::IndexKey),
 }
 
-/// changes that happen in the store
+/// changes that happened in the store
 #[derive(Debug, PartialEq, Clone)]
 pub enum LSChange<S, C>
 where

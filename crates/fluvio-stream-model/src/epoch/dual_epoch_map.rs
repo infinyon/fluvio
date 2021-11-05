@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use std::borrow::Borrow;
 
 use once_cell::sync::Lazy;
+use tracing::trace;
 
 use super::EpochCounter;
 use super::Epoch;
@@ -235,9 +236,12 @@ where
         let mut new_value = DualEpochCounter::new(new_value);
         let current_epoch = self.epoch.epoch();
 
+        trace!(current_epoch, "updating");
+
         // check each spec and status
         if let Some(existing_value) = self.values.get_mut(&key) {
             let diff = existing_value.diff(new_value.inner());
+            trace!("existing diff: {:#?}", diff);
             if !diff.has_no_changes() {
                 new_value.copy_epoch(existing_value);
                 if diff.spec {

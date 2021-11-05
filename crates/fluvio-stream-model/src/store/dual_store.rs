@@ -5,6 +5,7 @@ use std::borrow::Borrow;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use tracing::trace;
 use tracing::{debug, error};
 use async_rwlock::RwLock;
 use async_rwlock::RwLockReadGuard;
@@ -330,7 +331,9 @@ where
                         if diff.meta {
                             update_meta += 1;
                         }
+                        trace!(update_spec, update_status, update_meta);
                     } else {
+                        trace!("new");
                         // there was no existing, so this is new
                         add += 1;
                     }
