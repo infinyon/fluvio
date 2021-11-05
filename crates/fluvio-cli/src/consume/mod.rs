@@ -343,17 +343,6 @@ impl ConsumeOpt {
                             &record,
                         );
 
-                        if let Some(ConsumeOutputType::table) = &self.output {
-                            // Exit handler
-                            // Need to handle signals in another thread. Crossbeam doesn't support
-                            if let Event::Key(key) = event::read()? {
-                                match key.code {
-                                    KeyCode::Char('q') => break,
-                                    _ => {}
-                                }
-                            }
-                        }
-
                     },
                     None => break,
                 },
