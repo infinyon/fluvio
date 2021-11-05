@@ -1049,6 +1049,7 @@ checksum = "c85525306c4291d1b73ce93c8acf9c339f9b213aef6c1d85c3830cbf1c16325c"
 dependencies = [
  "bitflags",
  "crossterm_winapi 0.9.0",
+ "futures-core",
  "libc",
  "mio",
  "parking_lot 0.11.2",
@@ -1585,6 +1586,7 @@ dependencies = [
  "fluvio-sc-schema",
  "fluvio-socket",
  "fluvio-types",
+ "futures",
  "handlebars",
  "hex",
  "home",
