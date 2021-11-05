@@ -1,26 +1,27 @@
-#![allow(clippy::assign_op_pattern)]
-
 //!
 //! # Smart Module Messages
 //!
 //! Smart Modules are sent from SC to all SPUs.
 //!
-use std::fmt;
+use std::fmt::{self, Display};
+use std::fmt::Debug;
 
 use dataplane::core::{Encoder, Decoder};
 
-use crate::smartmodule::SmartModule;
-
 use super::Message;
 
-pub type SmartModuleMsg = Message<SmartModule>;
-
 #[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
-pub struct SmartModuleMsgs {
-    pub messages: Vec<SmartModuleMsg>,
+pub struct Messages<S>
+where
+    S: Encoder + Decoder + Debug,
+{
+    pub messages: Vec<Message<S>>,
 }
 
-impl fmt::Display for SmartModuleMsgs {
+impl<S> fmt::Display for Messages<S>
+where
+    S: Encoder + Decoder + Debug + Display,
+{
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[")?;
         for sm in &self.messages {
@@ -30,12 +31,15 @@ impl fmt::Display for SmartModuleMsgs {
     }
 }
 
-impl SmartModuleMsgs {
-    pub fn new(sm_msgs: Vec<SmartModuleMsg>) -> Self {
-        SmartModuleMsgs { messages: sm_msgs }
+impl<S> Messages<S>
+where
+    S: Encoder + Decoder + Debug,
+{
+    pub fn new(messages: Vec<Message<S>>) -> Self {
+        Self { messages }
     }
 
-    pub fn push(&mut self, msg: SmartModuleMsg) {
+    pub fn push(&mut self, msg: Message<S>) {
         self.messages.push(msg);
     }
 }
