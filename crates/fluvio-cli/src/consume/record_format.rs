@@ -98,6 +98,8 @@ pub fn _format_table_record(_record: &[u8]) -> String {
 pub fn print_table_record(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     table_view: &mut TableView,
+    // primary_key: Option<String>,
+    // column_order: Option<Vec<String>,
     record: &[u8],
 ) -> String {
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {

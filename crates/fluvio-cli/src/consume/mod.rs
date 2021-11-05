@@ -13,6 +13,8 @@ use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
+use futures::{select, FutureExt};
+use std::time::Duration;
 
 mod record_format;
 
@@ -27,7 +29,7 @@ use tui::Terminal;
 use tui::backend::{Backend, CrosstermBackend};
 use tui::widgets::TableState;
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::{self, poll, DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -271,7 +273,7 @@ impl ConsumeOpt {
         }
 
         let consume_config = builder.build()?;
-        self.consume_records_stream(consumer, offset, consume_config)
+        self.consume_records_stream_ui(consumer, offset, consume_config)
             .await?;
 
         if !self.disable_continuous {
@@ -282,7 +284,7 @@ impl ConsumeOpt {
     }
 
     /// Consume records as a stream, waiting for new records to arrive
-    async fn consume_records_stream(
+    async fn consume_records_stream_ui(
         &self,
         consumer: MultiplePartitionConsumer,
         offset: Offset,
@@ -316,36 +318,99 @@ impl ConsumeOpt {
         let stdout = io::stdout();
         let mut terminal_stdout = self.create_terminal(stdout)?;
 
-        // If table output, create terminal obj / ui obj?
-        while let Some(result) = stream.next().await {
-            let result: std::result::Result<Record, _> = result;
-            let record = match result {
-                Ok(record) => record,
-                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
-                    eprintln!("{}", code.to_sentence());
-                    continue;
-                }
-                Err(other) => return Err(other.into()),
-            };
+        // select
 
-            self.print_record(
-                &mut terminal_stdout,
-                maybe_table_view.as_mut(),
-                templates.as_ref(),
-                &record,
-            );
+        let mut reader = EventStream::new();
 
-            if let Some(ConsumeOutputType::table) = &self.output {
-                // Exit handler
-                // Need to handle signals in another thread. Crossbeam doesn't support
-                if let Event::Key(key) = event::read()? {
-                    match key.code {
-                        KeyCode::Char('q') => break,
-                        _ => {}
+        loop {
+            select! {
+                stream_next = stream.next().fuse() => match stream_next {
+                    Some(result) => {
+                        let result: std::result::Result<Record, _> = result;
+                        let record = match result {
+                            Ok(record) => record,
+                            Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                                eprintln!("{}", code.to_sentence());
+                                continue;
+                            }
+                            Err(other) => return Err(other.into()),
+                        };
+
+                        self.print_record(
+                            &mut terminal_stdout,
+                            maybe_table_view.as_mut(),
+                            templates.as_ref(),
+                            &record,
+                        );
+
+                        if let Some(ConsumeOutputType::table) = &self.output {
+                            // Exit handler
+                            // Need to handle signals in another thread. Crossbeam doesn't support
+                            if let Event::Key(key) = event::read()? {
+                                match key.code {
+                                    KeyCode::Char('q') => break,
+                                    _ => {}
+                                }
+                            }
+                        }
+
+                    },
+                    None => break,
+                },
+                maybe_event = reader.next().fuse() => {
+                                    match maybe_event {
+                    Some(Ok(event)) => {
+                        //println!("Event::{:?}\r", event);
+
+                        //if event == Event::Key(KeyCode::Char('c').into()) {
+                        //    println!("Cursor position: {:?}\r", position());
+                        //}
+
+                        if event == Event::Key(KeyCode::Esc.into()) {
+                            break;
+                        }
+
+                        if event == Event::Key(KeyCode::Char('q').into()) {
+                            break;
+                        }
                     }
+                    Some(Err(e)) => println!("Error: {:?}\r", e),
+                    None => break,
                 }
+                },
             }
         }
+
+        //// If table output, create terminal obj / ui obj?
+        //while let Some(result) = stream.next().await {
+        //    let result: std::result::Result<Record, _> = result;
+        //    let record = match result {
+        //        Ok(record) => record,
+        //        Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+        //            eprintln!("{}", code.to_sentence());
+        //            continue;
+        //        }
+        //        Err(other) => return Err(other.into()),
+        //    };
+
+        //    self.print_record(
+        //        &mut terminal_stdout,
+        //        maybe_table_view.as_mut(),
+        //        templates.as_ref(),
+        //        &record,
+        //    );
+
+        //    if let Some(ConsumeOutputType::table) = &self.output {
+        //        // Exit handler
+        //        // Need to handle signals in another thread. Crossbeam doesn't support
+        //        if let Event::Key(key) = event::read()? {
+        //            match key.code {
+        //                KeyCode::Char('q') => break,
+        //                _ => {}
+        //            }
+        //        }
+        //    }
+        //}
 
         if let Some(ConsumeOutputType::table) = &self.output {
             disable_raw_mode()?;
@@ -582,6 +647,8 @@ impl TableView {
 
     // For now, this will look for the left-most column and if found, update that row
     // Appends row if not found
+    // Issue: When we read in json data, it is sorted by key in alphanumeric order, so left-most will always be the alphabetical 1st
+    // This might cause issues w/r/t updates, since we treat 1st column as primary
     pub fn update_row(&mut self, row: Vec<String>) -> Result<()> {
         let mut found = None;
 
