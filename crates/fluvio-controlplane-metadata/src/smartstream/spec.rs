@@ -123,6 +123,7 @@ where
     S::IndexKey: Default + Encoder + Decoder,
 {
     pub name: S::IndexKey,
+    #[cfg_attr(feature = "use_serde", serde(skip))]
     data: PhantomData<S>,
 }
 

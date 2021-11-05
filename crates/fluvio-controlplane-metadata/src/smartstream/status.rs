@@ -21,7 +21,7 @@ pub struct SmartStreamStatus {
 
 impl fmt::Display for SmartStreamStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SmartStreamStatus")
+        write!(f, "{:#?}", self.resolution)
     }
 }
 
