@@ -9,11 +9,11 @@ use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SmartStreamPayload,
-    SmartStreamWasm, WASM_MODULE_API, SMART_MODULE_API, WASM_MODULE_V2_API,
+    DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
+    SmartStreamPayload, SmartStreamWasm, WASM_MODULE_API, WASM_MODULE_V2_API,
 };
 pub use fluvio_spu_schema::server::stream_fetch::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
 };
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
@@ -717,6 +717,8 @@ pub struct ConsumerConfig {
     pub(crate) wasm_module: Option<SmartStreamPayload>,
     #[builder(default)]
     pub(crate) smart_module: Option<SmartModuleInvocation>,
+    #[builder(default)]
+    pub(crate) smartstream: Option<SmartStreamInvocation>,
 }
 
 impl ConsumerConfig {
