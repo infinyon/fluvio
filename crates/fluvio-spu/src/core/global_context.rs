@@ -11,6 +11,7 @@ use tracing::{debug, error, instrument};
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
 use fluvio_storage::{ReplicaStorage};
+use fluvio::Fluvio;
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
@@ -59,8 +60,8 @@ impl<S> GlobalContext<S>
 where
     S: ReplicaStorage,
 {
-    pub fn new_shared_context(spu_config: SpuConfig) -> Arc<Self> {
-        Arc::new(GlobalContext::new(spu_config))
+    pub fn new_shared_context(spu_config: SpuConfig, fluvio: Fluvio) -> Arc<Self> {
+        Arc::new(GlobalContext::new(spu_config, fluvio))
     }
 
     pub fn new(spu_config: SpuConfig) -> Self {
