@@ -114,7 +114,7 @@ impl TableModel {
                     self.data = Vec::new();
                     self.state.select(None);
                     TableEvent::InputHandled(user_input)
-                },
+                }
                 KeyCode::Up => {
                     self.previous();
                     TableEvent::InputHandled(user_input)
@@ -206,11 +206,10 @@ impl TableModel {
         });
         let t = Table::new(rows)
             .header(header)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .title(format!("Items: {} ('q' or ESC to exit)", self.data.len())),
-            )
+            .block(Block::default().borders(Borders::ALL).title(format!(
+                "('c' to clear table | 'q' or ESC to exit) | Items: {}",
+                self.data.len()
+            )))
             .highlight_style(selected_style)
             .highlight_symbol(selected_symbol.as_str())
             .widths(&column_constraints);
