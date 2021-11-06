@@ -5,6 +5,7 @@
 * Add `#[smartstream(filter_map)]` for filtering and transforming at the same time. ([#1826](https://github.com/infinyon/fluvio/issues/1826))
 * Add table display output option to consumer for json objects ([#1642](https://github.com/infinyon/fluvio/issues/1642))
 * Streamlined Admin API ([#1803](https://github.com/infinyon/fluvio/issues/1803))
+* Update `fluvio consume <topic> --output=table` to render row updates over full terminal screen ([#1846](https://github.com/infinyon/fluvio/issues/1846))
 
 ## Platform Version 0.9.12 - 2021-10-27
 * Add examples for ArrayMap. ([#1804](https://github.com/infinyon/fluvio/issues/1804))
