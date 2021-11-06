@@ -141,6 +141,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 8001)]
     #[error("the smartstream was not found")]
     SmartStreamNotFound,
+    #[fluvio(tag = 8002)]
+    #[error("the smartstream join data cannot be fetched")]
+    SmartStreamJoinFetchError,
 }
 
 impl Default for ErrorCode {
