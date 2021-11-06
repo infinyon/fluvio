@@ -2,14 +2,17 @@
 //! # Global Context
 //!
 //! Global Context maintains states need to be shared across in the SPU
+use std::ops::Deref;
 use std::sync::Arc;
 use std::fmt::Debug;
 
+use fluvio::FluvioConfig;
 use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
 use fluvio_storage::{ReplicaStorage};
+use fluvio::Fluvio;
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
@@ -46,6 +49,7 @@ pub struct GlobalContext<S> {
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
+    client: FluvioClient,
 }
 
 // -----------------------------------
@@ -56,11 +60,11 @@ impl<S> GlobalContext<S>
 where
     S: ReplicaStorage,
 {
-    pub fn new_shared_context(spu_config: SpuConfig) -> Arc<Self> {
-        Arc::new(GlobalContext::new(spu_config))
+    pub fn new_shared_context(spu_config: SpuConfig, fluvio: Fluvio) -> Arc<Self> {
+        Arc::new(GlobalContext::new(spu_config, fluvio))
     }
 
-    pub fn new(spu_config: SpuConfig) -> Self {
+    pub fn new(spu_config: SpuConfig, fluvio: Fluvio) -> Self {
         GlobalContext {
             spu_localstore: SpuLocalStore::new_shared(),
             replica_localstore: ReplicaStore::new_shared(),
@@ -73,6 +77,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
+            client: FluvioClient(fluvio)
         }
     }
 
@@ -148,6 +153,26 @@ where
 
     pub fn smartstream_owned(&self) -> SmartEngine {
         self.sm_engine.clone()
+    }
+
+    pub fn client(&self) -> &Fluvio {
+        &self.client
+    }
+}
+
+struct FluvioClient(Fluvio);
+
+impl Deref for FluvioClient {
+    type Target = Fluvio;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl Debug for FluvioClient {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FluvioClient")
     }
 }
 

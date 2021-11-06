@@ -130,6 +130,8 @@ impl StreamFetchHandler {
         let max_bytes = msg.max_bytes as u32;
         let sm_engine = ctx.smartstream_owned();
 
+        let stream = super::spu_stream_fetch::fetch(&ctx.client(), "example_topic");
+
         let smart_module_wasm_payload =
             msg.smart_module.map(
                 |smart_module_invocation| match smart_module_invocation.wasm {
