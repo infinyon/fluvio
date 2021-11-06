@@ -135,7 +135,8 @@ impl StreamFetchHandler {
         let sm_engine = ctx.smartstream_owned();
 
         if &msg.topic == "example-topic" {
-            let mut join_stream = match join_fetch_other(&ctx.client(), "example-join-topic").await {
+            let mut join_stream = match join_fetch_other(ctx.client(), "example-join-topic").await
+            {
                 Ok(join_stream) => join_stream,
                 Err(err) => {
                     error!("error fetching join data {}", err);
@@ -146,10 +147,12 @@ impl StreamFetchHandler {
             };
 
             let join_value = join_stream.next().await.unwrap().unwrap();
-    
-            println!("join_value {:?}", String::from_utf8_lossy(join_value.value()));
-        }
 
+            println!(
+                "join_value {:?}",
+                String::from_utf8_lossy(join_value.value())
+            );
+        }
 
         let smart_module_wasm_payload =
             msg.smart_module.map(
@@ -576,14 +579,21 @@ async fn send_back_error(
     Ok(())
 }
 
-async fn join_fetch_other(client: &Fluvio, topic: &str) -> Result<impl Stream<Item = Result<fluvio::consumer::Record, FluvioError>>, FluvioError> {
+async fn join_fetch_other(
+    client: &Fluvio,
+    topic: &str,
+) -> Result<impl Stream<Item = Result<fluvio::consumer::Record, FluvioError>>, FluvioError> {
     use fluvio::PartitionSelectionStrategy;
-    let join_consumer = client.consumer(PartitionSelectionStrategy::All(topic.to_owned())).await?;
-    
+    let join_consumer = client
+        .consumer(PartitionSelectionStrategy::All(topic.to_owned()))
+        .await?;
+
     let join_config_builder = fluvio::ConsumerConfig::builder();
     let join_config = join_config_builder.build()?;
 
-    let join_stream = join_consumer.stream_with_config(fluvio::Offset::beginning(), join_config).await?;
+    let join_stream = join_consumer
+        .stream_with_config(fluvio::Offset::beginning(), join_config)
+        .await?;
 
     Ok(join_stream)
 }

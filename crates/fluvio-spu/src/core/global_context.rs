@@ -76,7 +76,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
-            client: FluvioClient(fluvio)
+            client: FluvioClient(fluvio),
         }
     }
 
