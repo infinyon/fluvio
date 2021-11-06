@@ -9,7 +9,7 @@ use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use fluvio_controlplane::{InternalSpuApi, UpdateSmartModuleRequest};
+use fluvio_controlplane::{InternalSpuApi, UpdateSmartModuleRequest, UpdateSmartStreamRequest};
 use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;
 use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
@@ -29,6 +29,7 @@ struct DispatcherCounter {
     pub spu_changes: u64,     // spu changes received from sc
     pub reconnect: u64,       // number of reconnect to sc
     pub smart_module: u64,    // number of sm updates from sc
+    pub smartstream: u64,     // number of smartstream updates from sc
 }
 
 /// Controller for handling connection to SC
@@ -158,6 +159,15 @@ impl ScDispatcher<FileReplica> {
                                 break;
                             }
                         },
+
+                        Some(Ok(InternalSpuRequest::UpdateSmartStreamRequest(request))) => {
+                            self.counter.smartstream += 1;
+                            if let Err(err) = self.handle_update_smartstream_request(request).await {
+                                error!("error handling update SmartStream request: {}", err);
+                                break;
+                            }
+                        },
+
                         Some(_) => {
                             debug!("no more sc msg content, end");
                             break;
@@ -354,4 +364,28 @@ impl ScDispatcher<FileReplica> {
 
         Ok(())
     }
+
+    ///
+    /// Handle SmartStream update sent by SC
+    ///
+    #[instrument(skip(self, req_msg), name = "update_smartstream_request")]
+    async fn handle_update_smartstream_request(
+        &mut self,
+        req_msg: RequestMessage<UpdateSmartStreamRequest>,
+    ) -> Result<(), IoError> {
+        let (_, request) = req_msg.get_header_request();
+
+        debug!( message = ?request,"starting SmartStream update");
+
+        let _actions = self
+            .ctx
+            .smartstream_store()
+            .apply_changes(request.changes);
+
+        trace!("finished SmartModule update");
+
+        Ok(())
+    }
+
+
 }
