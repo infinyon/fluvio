@@ -105,30 +105,33 @@ pub struct ConsumeOpt {
     pub output: Option<ConsumeOutputType>,
 
     /// Path to a SmartStream filter wasm file
-    #[structopt(long, group("smartstream"))]
+    pub smartstream: Option<String>,
+
+    /// Path to a SmartStream filter wasm file
+    #[structopt(long, group("smartmodule"))]
     pub filter: Option<String>,
 
     /// Path to a SmartStream map wasm file
-    #[structopt(long, group("smartstream"))]
+    #[structopt(long, group("smartmodule"))]
     pub map: Option<String>,
 
     /// Path to a SmartStream filter_map wasm file
-    #[structopt(long, group("smartstream"))]
+    #[structopt(long, group("smartmodule"))]
     pub filter_map: Option<String>,
 
     /// Path to a SmartStream array_map wasm file
-    #[structopt(long, group("smartstream"))]
+    #[structopt(long, group("smartmodule"))]
     pub array_map: Option<String>,
 
     /// Path to a WASM file for aggregation
-    #[structopt(long, group("smartstream"))]
+    #[structopt(long, group("smartmodule"))]
     pub aggregate: Option<String>,
 
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
     #[structopt(long)]
     pub initial: Option<String>,
 
-    /// (Optional) Extra input parameters passed to the smartstream module.
+    /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
     /// Eg. fluvio consume topic-name --filter filter.wasm -E foo=bar -E key=value -E one=1
     #[structopt(short = "e", long= "extra-params", parse(try_from_str = parse_key_val), number_of_values = 1)]
