@@ -10,52 +10,15 @@
 //! internal metadata cache. Receiver translates UPDATE operations into an ADD/DEL
 //! operation the comparing message with internal metadata.
 //!
-use std::fmt;
 
-use dataplane::core::{Encoder, Decoder};
 use fluvio_types::SpuId;
 
 use crate::partition::*;
 
-use super::MsgType;
-use super::Message;
+use super::{MsgType, Message, Messages};
 
 pub type ReplicaMsg = Message<Replica>;
-
-// -----------------------------------
-// Data Structures
-// -----------------------------------
-
-#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
-pub struct ReplicaMsgs {
-    pub messages: Vec<ReplicaMsg>,
-}
-
-impl fmt::Display for ReplicaMsgs {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "[")?;
-        for replica in &self.messages {
-            write!(f, "{},", replica)?;
-        }
-        write!(f, "]")
-    }
-}
-
-// -----------------------------------
-// ReplicaMsgs
-// -----------------------------------
-
-impl ReplicaMsgs {
-    pub fn new(replica_msgs: Vec<ReplicaMsg>) -> Self {
-        ReplicaMsgs {
-            messages: replica_msgs,
-        }
-    }
-
-    pub fn push(&mut self, msg: ReplicaMsg) {
-        self.messages.push(msg);
-    }
-}
+pub type ReplicaMsgs = Messages<Replica>;
 
 // -----------------------------------
 // ReplicaMsg

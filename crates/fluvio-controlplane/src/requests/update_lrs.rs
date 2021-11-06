@@ -16,16 +16,24 @@ use crate::InternalScKey;
 #[derive(Decoder, Encoder, Debug, Default, Clone)]
 pub struct UpdateLrsRequest {
     replicas: Vec<LrsRequest>,
+    stat: SpuStat,
 }
 
 impl UpdateLrsRequest {
     pub fn new(replicas: Vec<LrsRequest>) -> Self {
-        Self { replicas }
+        Self {
+            replicas,
+            stat: SpuStat::default(),
+        }
     }
 
     /// make into vec of requests
     pub fn into_requests(self) -> Vec<LrsRequest> {
         self.replicas
+    }
+
+    pub fn stat(self) -> SpuStat {
+        self.stat
     }
 }
 
@@ -38,6 +46,12 @@ impl fmt::Display for UpdateLrsRequest {
 impl Request for UpdateLrsRequest {
     const API_KEY: u16 = InternalScKey::UpdateLrs as u16;
     type Response = UpdateLrsResponse;
+}
+
+#[derive(Decoder, Encoder, Debug, Default, Clone)]
+pub struct SpuStat {
+    smart_modules_count: u32,
+    smart_streams_count: u32,
 }
 
 #[derive(Decoder, Encoder, Default, Debug)]
