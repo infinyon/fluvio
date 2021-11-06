@@ -99,7 +99,7 @@ pub fn _format_table_record(_record: &[u8]) -> String {
 /// If you do not provide any column ordering, it will be alphabetized by the top-level keys
 pub fn print_table_record(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    table_view: &mut TableModel,
+    table_model: &mut TableModel,
     // primary_key: Option<String>,
     // column_order: Option<Vec<String>,
     record: &[u8],
@@ -140,15 +140,15 @@ pub fn print_table_record(
         .collect();
 
     let header = keys_str.clone();
-    table_view
+    table_model
         .update_header(header)
         .expect("Unable to set table headers");
-    table_view
+    table_model
         .update_row(values_str)
         .expect("Unable to update table row");
 
     terminal
-        .draw(|frame| ui(frame, table_view))
+        .draw(|frame| ui(frame, table_model))
         .expect("Could not render table frame");
 
     format!("")
@@ -162,25 +162,27 @@ fn is_binary(bytes: &[u8]) -> bool {
     matches!(inspect(bytes), ContentType::BINARY)
 }
 
-fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_view: &mut TableModel) {
+fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_model: &mut TableModel) {
     let rects = Layout::default()
         .constraints([Constraint::Percentage(100)].as_ref())
         .margin(5)
         .split(f.size());
 
     // Calculate the widths based on # of columns
-    let equal_column_width = (100 / table_view.num_columns()) as u16;
+    let equal_column_width = (100 / table_model.num_columns()) as u16;
 
     let mut column_constraints: Vec<Constraint> = Vec::new();
 
     // Define the widths of the columns
-    for _ in 0..table_view.num_columns() {
+    for _ in 0..table_model.num_columns() {
         column_constraints.push(Constraint::Percentage(equal_column_width));
     }
 
+    let selected_symbol = format!("{} >> ", table_model.current_selected());
+
     let selected_style = Style::default().add_modifier(Modifier::REVERSED);
     let normal_style = Style::default().bg(Color::Blue);
-    let header_cells = table_view
+    let header_cells = table_model
         .headers
         .iter()
         .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Red)));
@@ -188,7 +190,7 @@ fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_view: &mut TableModel) {
         .style(normal_style)
         .height(1)
         .bottom_margin(1);
-    let rows = table_view.data.iter().map(|item| {
+    let rows = table_model.data.iter().map(|item| {
         let height = item
             .iter()
             .map(|content| content.chars().filter(|c| *c == '\n').count())
@@ -200,9 +202,12 @@ fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_view: &mut TableModel) {
     });
     let t = Table::new(rows)
         .header(header)
-        .block(Block::default().borders(Borders::ALL).title("Table"))
+        .block(Block::default().borders(Borders::ALL).title(format!(
+            "Items: {} ('q' or ESC to exit)",
+            table_model.data.len()
+        )))
         .highlight_style(selected_style)
-        .highlight_symbol(">> ")
+        .highlight_symbol(selected_symbol.as_str())
         .widths(&column_constraints);
-    f.render_stateful_widget(t, rects[0], &mut table_view.state);
+    f.render_stateful_widget(t, rects[0], &mut table_model.state);
 }

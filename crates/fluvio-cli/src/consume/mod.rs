@@ -28,7 +28,7 @@ use tui::Terminal;
 use tui::backend::CrosstermBackend;
 use tui::widgets::TableState;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, MouseEventKind},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -352,6 +352,14 @@ impl ConsumeOpt {
                                     KeyCode::Char('q')  => break,
                                     KeyCode::Down => view.next(),
                                     KeyCode::Up => view.previous(),
+                                    KeyCode::Home => view.first(),
+                                    KeyCode::End => view.last(),
+                                    _ => {}
+                                }
+                            } else if let Event::Mouse(event) = event {
+                                match event.kind {
+                                    MouseEventKind::ScrollDown => view.next(),
+                                    MouseEventKind::ScrollUp => view.previous(),
                                     _ => {}
                                 }
                             }
@@ -641,6 +649,13 @@ impl TableModel {
         self.headers.len()
     }
 
+    pub fn current_selected(&self) -> usize {
+        match self.state.selected() {
+            Some(i) => i,
+            None => 0,
+        }
+    }
+
     pub fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
@@ -667,5 +682,13 @@ impl TableModel {
             None => 0,
         };
         self.state.select(Some(i));
+    }
+
+    pub fn first(&mut self) {
+        self.state.select(Some(0));
+    }
+
+    pub fn last(&mut self) {
+        self.state.select(Some(self.data.len() - 1));
     }
 }
