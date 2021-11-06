@@ -3,12 +3,12 @@
 use dataplane::derive::Decoder;
 use dataplane::derive::Encoder;
 use dataplane::api::Request;
-use fluvio_controlplane_metadata::smartstream::SmartStreamSpec;
+use fluvio_controlplane_metadata::message::SmartStreamControlData;
 use crate::InternalSpuApi;
 
 use super::ControlPlaneRequest;
 
-pub type UpdateSmartStreamRequest = ControlPlaneRequest<SmartStreamSpec>;
+pub type UpdateSmartStreamRequest = ControlPlaneRequest<SmartStreamControlData>;
 
 impl Request for UpdateSmartStreamRequest {
     const API_KEY: u16 = InternalSpuApi::UpdateSmartStream as u16;

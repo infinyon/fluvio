@@ -25,6 +25,13 @@ impl fmt::Display for SmartStreamStatus {
     }
 }
 
+impl SmartStreamStatus {
+    // whether this is valid (deployable)
+    pub fn is_deployable(&self) -> bool {
+        matches!(self.resolution, SmartStreamResolution::Provisioned)
+    }
+}
+
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum SmartStreamResolution {
