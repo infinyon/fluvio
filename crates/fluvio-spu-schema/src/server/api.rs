@@ -23,6 +23,7 @@ use super::fetch_offset::FetchOffsetsRequest;
 use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
 
+#[allow(clippy::large_enum_variant)]
 /// Request to Spu Server
 #[derive(Debug, Encoder)]
 pub enum SpuServerRequest {

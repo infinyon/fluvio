@@ -196,14 +196,13 @@ impl ConsumeOpt {
             Some(params) => params.clone().into_iter().collect(),
         };
 
-        let smartstream = if let Some(smartstream_name) = &self.smartstream {
-            Some(SmartStreamInvocation {
+        let smartstream = self
+            .smartstream
+            .as_ref()
+            .map(|smartstream_name| SmartStreamInvocation {
                 stream: smartstream_name.clone(),
                 params: extra_params.clone().into(),
-            })
-        } else {
-            None
-        };
+            });
 
         builder.smartstream(smartstream);
 
