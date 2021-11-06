@@ -110,6 +110,11 @@ impl TableModel {
         if let Event::Key(key) = user_input {
             match key.code {
                 KeyCode::Char('q') | KeyCode::Esc => TableEvent::Terminate,
+                KeyCode::Char('c') => {
+                    self.data = Vec::new();
+                    self.state.select(None);
+                    TableEvent::InputHandled(user_input)
+                },
                 KeyCode::Up => {
                     self.previous();
                     TableEvent::InputHandled(user_input)
