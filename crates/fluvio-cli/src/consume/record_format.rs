@@ -5,20 +5,20 @@
 //!
 
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
-use super::TableView;
+use super::TableModel;
 
 use std::io::Stdout;
 use tui::{
-    backend::{Backend, CrosstermBackend},
+    backend::CrosstermBackend,
     layout::{Constraint, Layout},
     style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Cell, Row, Table, TableState},
+    widgets::{Block, Borders, Cell, Row, Table},
     Frame, Terminal,
 };
 use crossterm::{
-    event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
+    event::DisableMouseCapture,
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{disable_raw_mode, LeaveAlternateScreen},
 };
 
 // -----------------------------------
@@ -95,9 +95,11 @@ pub fn _format_table_record(_record: &[u8]) -> String {
 
 // This will take a full screen buffer
 /// Print records in table format
+///
+/// If you do not provide any column ordering, it will be alphabetized by the top-level keys
 pub fn print_table_record(
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    table_view: &mut TableView,
+    table_view: &mut TableModel,
     // primary_key: Option<String>,
     // column_order: Option<Vec<String>,
     record: &[u8],
@@ -121,8 +123,6 @@ pub fn print_table_record(
 
     let obj = maybe_json.as_object().unwrap();
 
-    // This is the case where we don't provide any table info. We want to print a table w/ all top-level keys as headers
-    // Think about how we might only select specific keys
     let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
 
     // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
@@ -139,10 +139,9 @@ pub fn print_table_record(
         })
         .collect();
 
-    //let header: Vec<&str> = keys_str.clone().iter().map(AsRef::as_ref).collect();
     let header = keys_str.clone();
     table_view
-        .set_header(header)
+        .update_header(header)
         .expect("Unable to set table headers");
     table_view
         .update_row(values_str)
@@ -152,28 +151,6 @@ pub fn print_table_record(
         .draw(|frame| ui(frame, table_view))
         .expect("Could not render table frame");
 
-    //let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
-    //let entries: Row = Row::new(values_str.iter().map(|v| Cell::new(v)).collect());
-
-    //// Print the table
-    //let t_print = vec![header, entries];
-
-    //let mut table = prettytable::Table::init(t_print);
-
-    //let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
-    //let table_format = base_format;
-    //table.set_format(table_format.build());
-
-    //// FIXME: Live display of table data easily misaligns column widths
-    //// if there is a length diff between the header and the data
-    //// The rows after the first (count == 0) don't line up with the header
-    //// prettytable might not support the live display use-case we want
-    //if count == 0 {
-    //    table.printstd();
-    //} else {
-    //    let slice = table.slice(1..);
-    //    slice.printstd();
-    //}
     format!("")
 }
 // -----------------------------------
@@ -185,7 +162,7 @@ fn is_binary(bytes: &[u8]) -> bool {
     matches!(inspect(bytes), ContentType::BINARY)
 }
 
-fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_view: &mut TableView) {
+fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_view: &mut TableModel) {
     let rects = Layout::default()
         .constraints([Constraint::Percentage(100)].as_ref())
         .margin(5)
@@ -224,8 +201,8 @@ fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_view: &mut TableView) {
     let t = Table::new(rows)
         .header(header)
         .block(Block::default().borders(Borders::ALL).title("Table"))
-        //.highlight_style(selected_style)
-        //.highlight_symbol(">> ")
+        .highlight_style(selected_style)
+        .highlight_symbol(">> ")
         .widths(&column_constraints);
     f.render_stateful_widget(t, rects[0], &mut table_view.state);
 }

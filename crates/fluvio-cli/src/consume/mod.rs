@@ -14,7 +14,6 @@ use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
 use futures::{select, FutureExt};
-use std::time::Duration;
 
 mod record_format;
 
@@ -26,10 +25,10 @@ use fluvio::consumer::{
 };
 
 use tui::Terminal;
-use tui::backend::{Backend, CrosstermBackend};
+use tui::backend::CrosstermBackend;
 use tui::widgets::TableState;
 use crossterm::{
-    event::{self, poll, DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode},
+    event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -302,25 +301,22 @@ impl ConsumeOpt {
             }
         };
 
-        // TODO: Support updating fullscreen table
-        let mut maybe_table_view = None;
+        let mut maybe_table_model = None;
 
         if let Some(ConsumeOutputType::table) = &self.output {
             enable_raw_mode()?;
             let mut stdout = io::stdout();
             execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
-            let mut view = TableView::default();
+            let model = TableModel::default();
 
-            maybe_table_view = Some(view);
+            maybe_table_model = Some(model);
         }
 
         let stdout = io::stdout();
         let mut terminal_stdout = self.create_terminal(stdout)?;
 
-        // select
-
-        let mut reader = EventStream::new();
+        let mut keyboard_reader = EventStream::new();
 
         loop {
             select! {
@@ -338,7 +334,7 @@ impl ConsumeOpt {
 
                         self.print_record(
                             &mut terminal_stdout,
-                            maybe_table_view.as_mut(),
+                            maybe_table_model.as_mut(),
                             templates.as_ref(),
                             &record,
                         );
@@ -346,22 +342,21 @@ impl ConsumeOpt {
                     },
                     None => break,
                 },
-                maybe_event = reader.next().fuse() => {
+                maybe_event = keyboard_reader.next().fuse() => {
                                     match maybe_event {
                     Some(Ok(event)) => {
-                        //println!("Event::{:?}\r", event);
+                        if let Some(view) = maybe_table_model.as_mut() {
 
-                        //if event == Event::Key(KeyCode::Char('c').into()) {
-                        //    println!("Cursor position: {:?}\r", position());
-                        //}
-
-                        if event == Event::Key(KeyCode::Esc.into()) {
-                            break;
+                            if let Event::Key(key) = event {
+                                match key.code {
+                                    KeyCode::Char('q')  => break,
+                                    KeyCode::Down => view.next(),
+                                    KeyCode::Up => view.previous(),
+                                    _ => {}
+                                }
+                            }
                         }
 
-                        if event == Event::Key(KeyCode::Char('q').into()) {
-                            break;
-                        }
                     }
                     Some(Err(e)) => println!("Error: {:?}\r", e),
                     None => break,
@@ -369,37 +364,6 @@ impl ConsumeOpt {
                 },
             }
         }
-
-        //// If table output, create terminal obj / ui obj?
-        //while let Some(result) = stream.next().await {
-        //    let result: std::result::Result<Record, _> = result;
-        //    let record = match result {
-        //        Ok(record) => record,
-        //        Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
-        //            eprintln!("{}", code.to_sentence());
-        //            continue;
-        //        }
-        //        Err(other) => return Err(other.into()),
-        //    };
-
-        //    self.print_record(
-        //        &mut terminal_stdout,
-        //        maybe_table_view.as_mut(),
-        //        templates.as_ref(),
-        //        &record,
-        //    );
-
-        //    if let Some(ConsumeOutputType::table) = &self.output {
-        //        // Exit handler
-        //        // Need to handle signals in another thread. Crossbeam doesn't support
-        //        if let Event::Key(key) = event::read()? {
-        //            match key.code {
-        //                KeyCode::Char('q') => break,
-        //                _ => {}
-        //            }
-        //        }
-        //    }
-        //}
 
         if let Some(ConsumeOutputType::table) = &self.output {
             disable_raw_mode()?;
@@ -426,7 +390,7 @@ impl ConsumeOpt {
     pub fn print_record(
         &self,
         terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-        table_view: Option<&mut TableView>,
+        table_model: Option<&mut TableModel>,
         templates: Option<&Handlebars>,
         record: &Record,
     ) {
@@ -475,7 +439,7 @@ impl ConsumeOpt {
         } else {
             print_table_record(
                 terminal,
-                table_view.expect("TableView not passed in for table output"),
+                table_model.expect("TableModel not passed in for table output"),
                 record.value(),
             );
         }
@@ -620,19 +584,32 @@ impl ::std::default::Default for ConsumeOutputType {
     }
 }
 
+///
 #[derive(Debug, Default)]
-pub struct TableView {
+pub struct TableModel {
     pub state: TableState,
     pub headers: Vec<String>,
     pub data: Vec<Vec<String>>,
+    // primary key: set of keys to select when deciding to update table view: Default on 1st header key
+    // column display ordering rules: alphabetical, manual: Default alphabetical
+    // toggle for update-row vs append-row
+    // display-cache time?
 }
 
-impl TableView {
-    pub fn set_header(&mut self, headers: Vec<String>) -> Result<()> {
+impl TableModel {
+    // I think this should accept headers that don't exist in the data. Print empty columns
+    pub fn update_header(&mut self, headers: Vec<String>) -> Result<()> {
         self.headers = headers;
 
         Ok(())
     }
+
+    // TODO: When we support manual column ordering
+    // I think this should accept headers that don't exist in the data. Just ignore the keys that don't exist. Don't error
+    //pub fn update_ordering(&mut self, headers: Vec<String>) -> Result<()> {}
+
+    // We should support a pure append-only workflow if we know that's what we want
+    //pub fn insert_row(&mut self, row: Vec<String>) -> Result<()> { }
 
     // For now, this will look for the left-most column and if found, update that row
     // Appends row if not found
@@ -657,7 +634,38 @@ impl TableView {
         Ok(())
     }
 
+    //TODO
+    //pub fn delete_row(&mut self, row_index: usize) -> Result<()> {}
+
     pub fn num_columns(&self) -> usize {
         self.headers.len()
+    }
+
+    pub fn next(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.data.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
+    }
+
+    pub fn previous(&mut self) {
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.data.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
     }
 }
