@@ -4,6 +4,7 @@ mod fetch_handler;
 mod offset_request;
 mod offset_update;
 mod stream_fetch;
+mod spu_stream_fetch;
 
 #[cfg(test)]
 mod stream_fetch_test;
