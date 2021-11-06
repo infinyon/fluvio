@@ -377,15 +377,10 @@ impl ScDispatcher<FileReplica> {
 
         debug!( message = ?request,"starting SmartStream update");
 
-        let _actions = self
-            .ctx
-            .smartstream_store()
-            .apply_changes(request.changes);
+        let _actions = self.ctx.smartstream_store().apply_changes(request.changes);
 
         trace!("finished SmartModule update");
 
         Ok(())
     }
-
-
 }

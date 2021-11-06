@@ -305,7 +305,7 @@ async fn send_spu_spec_changes(
     Ok(())
 }
 
-#[instrument(skip(sink))]
+#[instrument(level = "trace", skip(sink))]
 async fn send_replica_spec_changes(
     listener: &mut K8ChangeListener<PartitionSpec>,
     sink: &mut FluvioSink,
@@ -314,7 +314,7 @@ async fn send_replica_spec_changes(
     use crate::stores::ChangeFlag;
 
     if !listener.has_change() {
-        debug!("changes is empty, skipping");
+        trace!("changes is empty, skipping");
         return Ok(());
     }
 
@@ -328,7 +328,7 @@ async fn send_replica_spec_changes(
         })
         .await;
     if changes.is_empty() {
-        debug!("spec changes is empty, skipping");
+        trace!("spec changes is empty, skipping");
         return Ok(());
     }
 
@@ -376,7 +376,7 @@ async fn send_replica_spec_changes(
     Ok(())
 }
 
-#[instrument(skip(sink))]
+#[instrument(level = "trace", skip(sink))]
 async fn send_smart_module_changes(
     listener: &mut K8ChangeListener<SmartModuleSpec>,
     sink: &mut FluvioSink,
@@ -385,7 +385,7 @@ async fn send_smart_module_changes(
     use crate::stores::ChangeFlag;
 
     if !listener.has_change() {
-        debug!("changes is empty, skipping");
+        trace!("changes is empty, skipping");
         return Ok(());
     }
 
@@ -397,7 +397,7 @@ async fn send_smart_module_changes(
         })
         .await;
     if changes.is_empty() {
-        debug!("spec changes is empty, skipping");
+        trace!("spec changes is empty, skipping");
         return Ok(());
     }
 
@@ -430,7 +430,7 @@ async fn send_smart_module_changes(
     Ok(())
 }
 
-#[instrument(skip(sink))]
+#[instrument(level = "trace", skip(sink))]
 async fn send_smartstream_changes(
     listener: &mut K8ChangeListener<SmartStreamSpec>,
     sink: &mut FluvioSink,
@@ -441,7 +441,7 @@ async fn send_smartstream_changes(
     use crate::stores::ChangeFlag;
 
     if !listener.has_change() {
-        debug!("changes is empty, skipping");
+        trace!("changes is empty, skipping");
         return Ok(());
     }
 
@@ -453,7 +453,7 @@ async fn send_smartstream_changes(
         })
         .await;
     if changes.is_empty() {
-        debug!("spec changes is empty, skipping");
+        trace!("spec changes is empty, skipping");
         return Ok(());
     }
 
@@ -477,7 +477,7 @@ async fn send_smartstream_changes(
         UpdateSmartStreamRequest::with_changes(epoch, changes)
     };
 
-    trace!(?request, "sending ss to spu");
+    debug!(?request, "sending ss to spu");
 
     let mut message = RequestMessage::new_request(request);
     message.get_mut_header().set_client_id("sc");
