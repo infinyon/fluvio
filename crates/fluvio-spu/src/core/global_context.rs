@@ -6,7 +6,6 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::fmt::Debug;
 
-use fluvio::FluvioConfig;
 use tracing::{debug, error, instrument};
 
 use fluvio_controlplane_metadata::partition::Replica;

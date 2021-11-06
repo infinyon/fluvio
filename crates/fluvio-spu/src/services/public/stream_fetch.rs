@@ -3,6 +3,10 @@ use std::time::Instant;
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
+use fluvio::Fluvio;
+use fluvio::FluvioError;
+use futures_util::Stream;
+use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
 
@@ -130,7 +134,22 @@ impl StreamFetchHandler {
         let max_bytes = msg.max_bytes as u32;
         let sm_engine = ctx.smartstream_owned();
 
-        let stream = super::spu_stream_fetch::fetch(&ctx.client(), "example_topic");
+        if &msg.topic == "example-topic" {
+            let mut join_stream = match join_fetch_other(&ctx.client(), "example-join-topic").await {
+                Ok(join_stream) => join_stream,
+                Err(err) => {
+                    error!("error fetching join data {}", err);
+                    let error_code = ErrorCode::SmartStreamJoinFetchError;
+                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                    return Ok(());
+                }
+            };
+
+            let join_value = join_stream.next().await.unwrap().unwrap();
+    
+            println!("join_value {:?}", String::from_utf8_lossy(join_value.value()));
+        }
+
 
         let smart_module_wasm_payload =
             msg.smart_module.map(
@@ -555,6 +574,18 @@ async fn send_back_error(
     }
 
     Ok(())
+}
+
+async fn join_fetch_other(client: &Fluvio, topic: &str) -> Result<impl Stream<Item = Result<fluvio::consumer::Record, FluvioError>>, FluvioError> {
+    use fluvio::PartitionSelectionStrategy;
+    let join_consumer = client.consumer(PartitionSelectionStrategy::All(topic.to_owned())).await?;
+    
+    let join_config_builder = fluvio::ConsumerConfig::builder();
+    let join_config = join_config_builder.build()?;
+
+    let join_stream = join_consumer.stream_with_config(fluvio::Offset::beginning(), join_config).await?;
+
+    Ok(join_stream)
 }
 
 pub mod publishers {

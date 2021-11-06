@@ -40,7 +40,8 @@ pub fn main_loop(opt: SpuOpt) {
 
     run_block_on(async move {
 
-        let fluvio_config = FluvioConfig::new(spu_config.sc_endpoint());
+        let mut fluvio_config = FluvioConfig::new(spu_config.sc_public_endpoint());
+        fluvio_config.use_spu_local_address = true;
         let fluvio = Fluvio::connect_with_config(&fluvio_config).await.expect("unable to connect to SC");
 
         let (_ctx, internal_server, public_server) =
