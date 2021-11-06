@@ -19,7 +19,9 @@ mod record_format;
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
-use fluvio::consumer::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind};
+use fluvio::consumer::{
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
+};
 
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
@@ -193,6 +195,17 @@ impl ConsumeOpt {
             None => BTreeMap::default(),
             Some(params) => params.clone().into_iter().collect(),
         };
+
+        let smartstream = if let Some(smartstream_name) = &self.smartstream {
+            Some(SmartStreamInvocation {
+                stream: smartstream_name.clone(),
+                params: extra_params.clone().into(),
+            })
+        } else {
+            None
+        };
+
+        builder.smartstream(smartstream);
 
         let smart_module = if let Some(name_or_path) = &self.filter {
             Some(create_smart_module(

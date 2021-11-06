@@ -9,6 +9,7 @@ cfg_if::cfg_if! {
         mod replication;
         mod control_plane;
         mod storage;
+       // mod smartengine;
         pub use start::main_loop;
     }
 }

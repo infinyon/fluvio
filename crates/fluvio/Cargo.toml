@@ -54,12 +54,12 @@ dirs = "4.0.0"
 fluvio-smartengine = { path = "../fluvio-smartengine/", optional = true}
 
 [target.'cfg(unix)'.dependencies]
-fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema", features = ["file"] }
+fluvio-spu-schema = { version = "0.8.6", path = "../fluvio-spu-schema", features = ["file"] }
 [target.'cfg(windows)'.dependencies]
-fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema" }
+fluvio-spu-schema = { version = "0.8.6", path = "../fluvio-spu-schema" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-fluvio-spu-schema = { version = "0.8.0", path = "../fluvio-spu-schema" }
+fluvio-spu-schema = { version = "0.8.6", path = "../fluvio-spu-schema" }
 
 [dev-dependencies]
 async-std = { version = "1.6.4", default-features = false }

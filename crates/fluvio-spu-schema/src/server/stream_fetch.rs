@@ -61,6 +61,8 @@ where
     pub wasm_payload: Option<SmartStreamPayload>,
     #[fluvio(min_version = 16)]
     pub smart_module: Option<SmartModuleInvocation>,
+    #[fluvio(min_version = 16)]
+    pub smartstream: Option<SmartStreamInvocation>,
     pub data: PhantomData<R>,
 }
 
@@ -204,6 +206,13 @@ impl Debug for SmartStreamWasm {
                 .finish(),
         }
     }
+}
+
+///
+#[derive(Debug, Default, Clone, Encoder, Decoder)]
+pub struct SmartStreamInvocation {
+    pub stream: String,
+    pub params: SmartStreamExtraParams,
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
