@@ -16,6 +16,8 @@ use fluvio_future::io::StreamExt;
 use futures::{select, FutureExt};
 
 mod record_format;
+mod table_display;
+use table_display::{TableModel, TableEvent};
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
@@ -26,9 +28,8 @@ use fluvio::consumer::{
 
 use tui::Terminal;
 use tui::backend::CrosstermBackend;
-use tui::widgets::TableState;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, Event, EventStream, KeyCode, MouseEventKind},
+    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -37,7 +38,7 @@ use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
-    format_json, print_table_record,
+    format_json, format_table_record,
 };
 use handlebars::Handlebars;
 
@@ -316,7 +317,7 @@ impl ConsumeOpt {
         let stdout = io::stdout();
         let mut terminal_stdout = self.create_terminal(stdout)?;
 
-        let mut keyboard_reader = EventStream::new();
+        let mut user_input_reader = EventStream::new();
 
         loop {
             select! {
@@ -342,33 +343,20 @@ impl ConsumeOpt {
                     },
                     None => break,
                 },
-                maybe_event = keyboard_reader.next().fuse() => {
-                                    match maybe_event {
-                    Some(Ok(event)) => {
-                        if let Some(view) = maybe_table_model.as_mut() {
-
-                            if let Event::Key(key) = event {
-                                match key.code {
-                                    KeyCode::Char('q')  => break,
-                                    KeyCode::Down => view.next(),
-                                    KeyCode::Up => view.previous(),
-                                    KeyCode::Home => view.first(),
-                                    KeyCode::End => view.last(),
-                                    _ => {}
-                                }
-                            } else if let Event::Mouse(event) = event {
-                                match event.kind {
-                                    MouseEventKind::ScrollDown => view.next(),
-                                    MouseEventKind::ScrollUp => view.previous(),
-                                    _ => {}
+                // This branch is used when let Some(ConsumeOutputType::table) = &self.output
+                maybe_event = user_input_reader.next().fuse() => {
+                    match maybe_event {
+                        Some(Ok(event)) => {
+                            if let Some(model) = maybe_table_model.as_mut() {
+                                match model.event_handler(event) {
+                                    TableEvent::Terminate => break,
+                                    _ => continue
                                 }
                             }
                         }
-
+                        Some(Err(e)) => println!("Error: {:?}\r", e),
+                        None => break,
                     }
-                    Some(Err(e)) => println!("Error: {:?}\r", e),
-                    None => break,
-                }
                 },
             }
         }
@@ -398,7 +386,7 @@ impl ConsumeOpt {
     pub fn print_record(
         &self,
         terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-        table_model: Option<&mut TableModel>,
+        mut table_model: Option<&mut TableModel>,
         templates: Option<&Handlebars>,
         record: &Record,
     ) {
@@ -419,7 +407,13 @@ impl ConsumeOpt {
                 Some(format_dynamic_record(record.value()))
             }
             (Some(ConsumeOutputType::raw), None) => Some(format_raw_record(record.value())),
-            (Some(ConsumeOutputType::table), None) => Some(String::new()),
+            (Some(ConsumeOutputType::table), None) => {
+                if let Some(ref mut table) = table_model {
+                    Some(format_table_record(record.value(), terminal, table))
+                } else {
+                    unreachable!()
+                }
+            }
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
                 let object = serde_json::json!({
@@ -444,12 +438,8 @@ impl ConsumeOpt {
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
             }
-        } else {
-            print_table_record(
-                terminal,
-                table_model.expect("TableModel not passed in for table output"),
-                record.value(),
-            );
+        } else if let Some(ref mut table) = table_model {
+            table.render(terminal);
         }
     }
 
@@ -589,106 +579,5 @@ arg_enum! {
 impl ::std::default::Default for ConsumeOutputType {
     fn default() -> Self {
         ConsumeOutputType::dynamic
-    }
-}
-
-///
-#[derive(Debug, Default)]
-pub struct TableModel {
-    pub state: TableState,
-    pub headers: Vec<String>,
-    pub data: Vec<Vec<String>>,
-    // primary key: set of keys to select when deciding to update table view: Default on 1st header key
-    // column display ordering rules: alphabetical, manual: Default alphabetical
-    // toggle for update-row vs append-row
-    // display-cache time?
-}
-
-impl TableModel {
-    // I think this should accept headers that don't exist in the data. Print empty columns
-    pub fn update_header(&mut self, headers: Vec<String>) -> Result<()> {
-        self.headers = headers;
-
-        Ok(())
-    }
-
-    // TODO: When we support manual column ordering
-    // I think this should accept headers that don't exist in the data. Just ignore the keys that don't exist. Don't error
-    //pub fn update_ordering(&mut self, headers: Vec<String>) -> Result<()> {}
-
-    // We should support a pure append-only workflow if we know that's what we want
-    //pub fn insert_row(&mut self, row: Vec<String>) -> Result<()> { }
-
-    // For now, this will look for the left-most column and if found, update that row
-    // Appends row if not found
-    // Issue: When we read in json data, it is sorted by key in alphanumeric order, so left-most will always be the alphabetical 1st
-    // This might cause issues w/r/t updates, since we treat 1st column as primary
-    pub fn update_row(&mut self, row: Vec<String>) -> Result<()> {
-        let mut found = None;
-
-        for (index, r) in self.data.iter().enumerate() {
-            if r[0] == row[0] {
-                found = Some(index);
-                break;
-            }
-        }
-
-        if let Some(row_index) = found {
-            self.data[row_index] = row;
-        } else {
-            self.data.push(row);
-        }
-
-        Ok(())
-    }
-
-    //TODO
-    //pub fn delete_row(&mut self, row_index: usize) -> Result<()> {}
-
-    pub fn num_columns(&self) -> usize {
-        self.headers.len()
-    }
-
-    pub fn current_selected(&self) -> usize {
-        match self.state.selected() {
-            Some(i) => i,
-            None => 0,
-        }
-    }
-
-    pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.data.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.data.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn first(&mut self) {
-        self.state.select(Some(0));
-    }
-
-    pub fn last(&mut self) {
-        self.state.select(Some(self.data.len() - 1));
     }
 }

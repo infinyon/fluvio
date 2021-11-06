@@ -8,13 +8,7 @@ use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use super::TableModel;
 
 use std::io::Stdout;
-use tui::{
-    backend::CrosstermBackend,
-    layout::{Constraint, Layout},
-    style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Cell, Row, Table},
-    Frame, Terminal,
-};
+use tui::{backend::CrosstermBackend, Terminal};
 use crossterm::{
     event::DisableMouseCapture,
     execute,
@@ -89,20 +83,10 @@ pub fn format_raw_record(record: &[u8]) -> String {
 // -----------------------------------
 
 // I don't know if I need this yet. This could be a place to structure values in view.
-pub fn _format_table_record(_record: &[u8]) -> String {
-    unimplemented!();
-}
-
-// This will take a full screen buffer
-/// Print records in table format
-///
-/// If you do not provide any column ordering, it will be alphabetized by the top-level keys
-pub fn print_table_record(
+pub fn format_table_record(
+    record: &[u8],
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
     table_model: &mut TableModel,
-    // primary_key: Option<String>,
-    // column_order: Option<Vec<String>,
-    record: &[u8],
 ) -> String {
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
@@ -122,7 +106,6 @@ pub fn print_table_record(
     };
 
     let obj = maybe_json.as_object().unwrap();
-
     let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
 
     // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
@@ -139,7 +122,7 @@ pub fn print_table_record(
         })
         .collect();
 
-    let header = keys_str.clone();
+    let header = keys_str;
     table_model
         .update_header(header)
         .expect("Unable to set table headers");
@@ -147,12 +130,9 @@ pub fn print_table_record(
         .update_row(values_str)
         .expect("Unable to update table row");
 
-    terminal
-        .draw(|frame| ui(frame, table_model))
-        .expect("Could not render table frame");
-
-    format!("")
+    String::new()
 }
+
 // -----------------------------------
 //  Utilities
 // -----------------------------------
@@ -160,54 +140,4 @@ pub fn print_table_record(
 fn is_binary(bytes: &[u8]) -> bool {
     use content_inspector::{inspect, ContentType};
     matches!(inspect(bytes), ContentType::BINARY)
-}
-
-fn ui(f: &mut Frame<CrosstermBackend<Stdout>>, table_model: &mut TableModel) {
-    let rects = Layout::default()
-        .constraints([Constraint::Percentage(100)].as_ref())
-        .margin(5)
-        .split(f.size());
-
-    // Calculate the widths based on # of columns
-    let equal_column_width = (100 / table_model.num_columns()) as u16;
-
-    let mut column_constraints: Vec<Constraint> = Vec::new();
-
-    // Define the widths of the columns
-    for _ in 0..table_model.num_columns() {
-        column_constraints.push(Constraint::Percentage(equal_column_width));
-    }
-
-    let selected_symbol = format!("{} >> ", table_model.current_selected());
-
-    let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-    let normal_style = Style::default().bg(Color::Blue);
-    let header_cells = table_model
-        .headers
-        .iter()
-        .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Red)));
-    let header = Row::new(header_cells)
-        .style(normal_style)
-        .height(1)
-        .bottom_margin(1);
-    let rows = table_model.data.iter().map(|item| {
-        let height = item
-            .iter()
-            .map(|content| content.chars().filter(|c| *c == '\n').count())
-            .max()
-            .unwrap_or(0)
-            + 1;
-        let cells = item.iter().map(|c| Cell::from(c.as_str()));
-        Row::new(cells).height(height as u16).bottom_margin(1)
-    });
-    let t = Table::new(rows)
-        .header(header)
-        .block(Block::default().borders(Borders::ALL).title(format!(
-            "Items: {} ('q' or ESC to exit)",
-            table_model.data.len()
-        )))
-        .highlight_style(selected_style)
-        .highlight_symbol(selected_symbol.as_str())
-        .widths(&column_constraints);
-    f.render_stateful_widget(t, rects[0], &mut table_model.state);
 }
