@@ -66,8 +66,9 @@ pub struct PartitionConsumer<P = SpuPool> {
     pool: Arc<P>,
 }
 
-impl <P> PartitionConsumer<P> 
-where P: SpuDirectory
+impl<P> PartitionConsumer<P>
+where
+    P: SpuDirectory,
 {
     pub(crate) fn new(topic: String, partition: i32, pool: Arc<P>) -> Self {
         Self {
@@ -846,8 +847,7 @@ pub struct MultiplePartitionConsumer {
     pool: Arc<SpuPool>,
 }
 
-impl MultiplePartitionConsumer
- {
+impl MultiplePartitionConsumer {
     pub(crate) fn new(strategy: PartitionSelectionStrategy, pool: Arc<SpuPool>) -> Self {
         Self { strategy, pool }
     }

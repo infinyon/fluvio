@@ -13,7 +13,6 @@ use crate::metadata::partition::PartitionSpec;
 use super::controller::{MetadataSyncController, SimpleEvent};
 use super::StoreContext;
 
-
 #[derive(Clone)]
 /// global cached stores necessary for consumer and producers
 pub struct MetadataStores {
