@@ -181,9 +181,9 @@ impl TableModel {
         // column_order: Option<Vec<String>,
         //record: &[u8],
     ) {
-        terminal
-            .draw(|frame| self.table_ui(frame))
-            .expect("Could not render table frame");
+        if terminal.draw(|frame| self.table_ui(frame)).is_err() {
+            println!("Could not render table frame")
+        }
     }
 
     /// Render the frame for the table
