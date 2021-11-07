@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
+use dataplane::record::Record;
 use dataplane::smartstream::SmartStreamExtraParams;
 use tracing::{debug, trace};
 use anyhow::{Error, Result};
@@ -82,7 +83,7 @@ impl SmartEngine {
             SmartStreamKind::ArrayMap => {
                 Box::new(smart_module.create_array_map(smart_payload.params)?)
             }
-            SmartStreamKind::Join => Box::new(smart_module.create_join(smart_payload.params)?),
+            SmartStreamKind::Join(_) => Box::new(smart_module.create_join(smart_payload.params)?),
             SmartStreamKind::Aggregate { accumulator } => {
                 Box::new(smart_module.create_aggregate(smart_payload.params, accumulator.clone())?)
             }
@@ -210,6 +211,7 @@ impl dyn SmartStream + '_ {
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
+        join_last_record: Option<&Record>,
     ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
         let mut smartstream_batch = Batch::<MemoryRecords>::default();
         smartstream_batch.base_offset = -1; // indicate this is unitialized
@@ -241,9 +243,14 @@ impl dyn SmartStream + '_ {
             );
 
             let now = Instant::now();
+
+            let mut join_record = vec![];
+            join_last_record.encode(&mut join_record, 0)?;
+
             let input = SmartStreamInput {
                 base_offset: file_batch.batch.base_offset,
                 record_data: file_batch.records.clone(),
+                join_record,
                 params: self.params().clone(),
             };
             let output = self.process(input)?;

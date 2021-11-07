@@ -5,6 +5,7 @@ use std::io::Error as IoError;
 
 use fluvio::Fluvio;
 use fluvio::FluvioError;
+use fluvio_spu_schema::server::stream_fetch::SmartStreamKind;
 use futures_util::Stream;
 use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
@@ -134,9 +135,10 @@ impl StreamFetchHandler {
         let max_bytes = msg.max_bytes as u32;
         let sm_engine = ctx.smartstream_owned();
 
-        if &msg.topic == "example-topic" {
-            let mut join_stream = match join_fetch_other(ctx.client(), "example-join-topic").await
-            {
+        let maybe_join = if let Some(SmartStreamKind::Join(topic_name)) =
+            msg.smart_module.as_ref().map(|wasm| &wasm.kind)
+        {
+            let join_stream = match join_fetch_other(ctx.client(), topic_name).await {
                 Ok(join_stream) => join_stream,
                 Err(err) => {
                     error!("error fetching join data {}", err);
@@ -145,14 +147,10 @@ impl StreamFetchHandler {
                     return Ok(());
                 }
             };
-
-            let join_value = join_stream.next().await.unwrap().unwrap();
-
-            println!(
-                "join_value {:?}",
-                String::from_utf8_lossy(join_value.value())
-            );
-        }
+            Some(join_stream)
+        } else {
+            None
+        };
 
         let smart_module_wasm_payload =
             msg.smart_module.map(
@@ -249,16 +247,23 @@ impl StreamFetchHandler {
             max_fetch_bytes,
         };
 
-        handler.process(starting_offset, smartstream).await
+        handler
+            .process(starting_offset, smartstream, maybe_join)
+            .await
     }
 
     async fn process(
         mut self,
         starting_offset: Offset,
         mut smartstream: Option<Box<dyn SmartStream>>,
+        maybe_join: Option<
+            impl Stream<Item = Result<fluvio::consumer::Record, FluvioError>> + std::marker::Send,
+        >,
     ) -> Result<(), SocketError> {
+        let mut join_record = None;
+        let mut maybe_join = maybe_join.map(|mj| mj.boxed());
         let (mut last_partition_offset, consumer_wait) = self
-            .send_back_records(starting_offset, smartstream.as_mut())
+            .send_back_records(starting_offset, smartstream.as_mut(), join_record.as_ref())
             .await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
@@ -280,6 +285,12 @@ impl StreamFetchHandler {
                 _ = self.end_event.listen() => {
                     debug!("end event has been received, terminating");
                     break;
+                },
+
+
+                record = async {  maybe_join.as_mut().expect("Unexpected crash").next().await }, if maybe_join.is_some() =>  {
+                    join_record = record.unwrap().ok();
+                    debug!("Updated right stream");
                 },
 
                 // Received offset update from consumer, i.e. consumer acknowledged to this offset
@@ -306,7 +317,7 @@ impl StreamFetchHandler {
                         last_partition_offset,
                         "Consumer offset updated and is behind, need to send records",
                     );
-                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartstream.as_mut()).await?;
+                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartstream.as_mut(), join_record.as_ref()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -347,7 +358,7 @@ impl StreamFetchHandler {
 
                     // We need to send the consumer all records since the last consumer offset
                     debug!(partition_offset_update, last_consumer_offset, "reading offset event");
-                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartstream.as_mut()).await?;
+                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartstream.as_mut(), join_record.as_ref()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -361,6 +372,7 @@ impl StreamFetchHandler {
                         debug!(?last_known_consumer_offset, "Finished handling partition_offset_update, not waiting for consumer");
                     }
                 },
+
             }
         }
 
@@ -377,13 +389,14 @@ impl StreamFetchHandler {
     /// return (next offset, consumer wait)
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
-        skip(self, smartstream),
+        skip(self, smartstream, join_last_record),
         fields(stream_id = self.stream_id)
     )]
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
         smartstream: Option<&mut Box<dyn SmartStream>>,
+        join_last_record: Option<&fluvio::consumer::Record>,
     ) -> Result<(Offset, bool), SocketError> {
         let now = Instant::now();
         let mut file_partition_response = FilePartitionResponse {
@@ -430,7 +443,11 @@ impl StreamFetchHandler {
         let output = match smartstream {
             Some(smartstream) => {
                 let (batch, smartstream_error) = smartstream
-                    .process_batch(&mut file_batch_iterator, self.max_bytes as usize)
+                    .process_batch(
+                        &mut file_batch_iterator,
+                        self.max_bytes as usize,
+                        join_last_record.map(|s| s.inner()),
+                    )
                     .map_err(|err| {
                         IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
                     })?;

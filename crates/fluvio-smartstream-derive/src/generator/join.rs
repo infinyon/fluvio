@@ -22,11 +22,11 @@ pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> Toke
 
     let function_call = if has_params {
         quote!(
-            super:: #user_fn(&record, &record, &params)
+            super:: #user_fn(&record, &join_last_record, &params)
         )
     } else {
         quote!(
-            super:: #user_fn(&record, &record)
+            super:: #user_fn(&record, &join_last_record)
         )
     };
 
@@ -58,6 +58,12 @@ pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> Toke
                 let records_input = smartstream_input.record_data;
                 let mut records: Vec<Record> = vec![];
                 if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 0) {
+                    return SmartStreamInternalError::DecodingRecords as i32;
+                };
+
+                let join_last_record_input = smartstream_input.join_record;
+                let mut join_last_record: Option<Record> = None;
+                if let Err(_err) = Decoder::decode(&mut join_last_record, &mut std::io::Cursor::new(join_last_record_input), 0) {
                     return SmartStreamInternalError::DecodingRecords as i32;
                 };
 

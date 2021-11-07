@@ -127,7 +127,7 @@ pub enum SmartStreamKind {
     #[fluvio(min_version = ARRAY_MAP_WASM_API)]
     FilterMap,
     #[fluvio(min_version = JOIN_WASM_API)]
-    Join,
+    Join(String),
 }
 
 impl Default for SmartStreamKind {

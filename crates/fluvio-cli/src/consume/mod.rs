@@ -133,8 +133,11 @@ pub struct ConsumeOpt {
     #[structopt(long, group("smartmodule"))]
     pub aggregate: Option<String>,
 
-    /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
     #[structopt(long)]
+    pub join_topic: Option<String>,
+
+    /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
+    #[structopt(long, requires("aggregate"))]
     pub initial: Option<String>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
@@ -237,7 +240,12 @@ impl ConsumeOpt {
         } else if let Some(name_or_path) = &self.join {
             Some(create_smart_module(
                 name_or_path,
-                SmartStreamKind::Join,
+                SmartStreamKind::Join(
+                    self.join_topic
+                        .as_ref()
+                        .expect("Join topic field is required when using join")
+                        .to_owned(),
+                ),
                 extra_params,
             )?)
         } else {
