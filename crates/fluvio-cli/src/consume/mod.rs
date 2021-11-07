@@ -17,7 +17,7 @@ use futures::{select, FutureExt};
 
 mod record_format;
 mod table_format;
-use table_format::TableModel;
+use table_format::{TableEvent, TableModel};
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
@@ -28,13 +28,12 @@ use fluvio::consumer::{
 
 use tui::Terminal;
 use tui::backend::CrosstermBackend;
-use crossterm::event::EventStream;
 use crossterm::tty::IsTty;
-//use crossterm::{
-//    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
-//    execute,
-//    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-//};
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
 
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
@@ -304,10 +303,18 @@ impl ConsumeOpt {
             }
         };
 
+        let mut maybe_table_model = None;
         let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
-            let stdout = io::stdout();
+            if io::stdout().is_tty() {
+                enable_raw_mode()?;
+                let mut stdout = io::stdout();
+                execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
-            if stdout.is_tty() {
+                let model = TableModel::default();
+
+                maybe_table_model = Some(model);
+
+                let stdout = io::stdout();
                 Some(self.create_terminal(stdout)?)
             } else {
                 None
@@ -344,19 +351,20 @@ impl ConsumeOpt {
                                 &record,
                                 &mut header_print,
                                 &mut maybe_terminal_stdout,
+                                &mut maybe_table_model,
                             );
                         },
                         None => break,
                     },
                     maybe_event = user_input_reader.next().fuse() => {
                         match maybe_event {
-                            Some(Ok(_event)) => {
-                                //if let Some(model) = maybe_table_model.as_mut() {
-                                //    match model.event_handler(event) {
-                                //        TableEvent::Terminate => break,
-                                //        _ => continue
-                                //    }
-                                //}
+                            Some(Ok(event)) => {
+                                if let Some(model) = maybe_table_model.as_mut() {
+                                    match model.event_handler(event) {
+                                        TableEvent::Terminate => break,
+                                        _ => continue
+                                    }
+                                }
                             }
                             Some(Err(e)) => println!("Error: {:?}\r", e),
                             None => break,
@@ -384,11 +392,24 @@ impl ConsumeOpt {
                                 &record,
                                 &mut header_print,
                                 &mut maybe_terminal_stdout,
+                                &mut maybe_table_model,
                             );
                         },
                         None => break,
                     },
                 }
+            }
+        }
+
+        if let Some(ConsumeOutputType::full_table) = &self.output {
+            if let Some(mut terminal_stdout) = maybe_terminal_stdout {
+                disable_raw_mode()?;
+                execute!(
+                    terminal_stdout.backend_mut(),
+                    LeaveAlternateScreen,
+                    DisableMouseCapture
+                )?;
+                terminal_stdout.show_cursor()?;
             }
         }
 
@@ -410,6 +431,7 @@ impl ConsumeOpt {
         record: &Record,
         header_print: &mut bool,
         terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
+        table_model: &mut Option<TableModel>,
     ) {
         let formatted_key = record
             .key()
@@ -475,7 +497,10 @@ impl ConsumeOpt {
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
             }
-        } else {
+        } else if let Some(term) = terminal {
+            if let Some(table) = table_model {
+                table.render(term);
+            }
         }
     }
 
