@@ -5,8 +5,7 @@
 //!
 
 use std::{io::Error as IoError, path::PathBuf};
-//use std::io::{self, ErrorKind, Read, Stdout};
-use std::io::{ErrorKind, Read};
+use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
@@ -26,8 +25,8 @@ use fluvio::consumer::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
 };
 
-//use tui::Terminal;
-//use tui::backend::CrosstermBackend;
+use tui::Terminal;
+use tui::backend::CrosstermBackend;
 //use crossterm::{
 //    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
 //    execute,
@@ -307,8 +306,12 @@ impl ConsumeOpt {
             }
         };
 
-        //let stdout = io::stdout();
-        //let mut terminal_stdout = self.create_terminal(stdout)?;
+        let mut _maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
+            let stdout = io::stdout();
+            Some(self.create_terminal(stdout)?)
+        } else {
+            None
+        };
 
         // This is used by table output, to manage printing the table titles only one time
         let mut header_print = true;
@@ -335,12 +338,12 @@ impl ConsumeOpt {
         Ok(())
     }
 
-    //fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
-    //    let backend = CrosstermBackend::new(stdout);
-    //    let terminal = Terminal::new(backend)?;
+    fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
+        let backend = CrosstermBackend::new(stdout);
+        let terminal = Terminal::new(backend)?;
 
-    //    Ok(terminal)
-    //}
+        Ok(terminal)
+    }
 
     /// Process fetch topic response based on output type
     pub fn print_record(
