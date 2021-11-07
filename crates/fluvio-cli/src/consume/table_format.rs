@@ -138,39 +138,47 @@ impl TableModel {
     }
 
     pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.data.len() - 1 {
-                    0
-                } else {
-                    i + 1
+        if !self.data.is_empty() {
+            let i = match self.state.selected() {
+                Some(i) => {
+                    if i >= self.data.len() - 1 {
+                        0
+                    } else {
+                        i + 1
+                    }
                 }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+                None => 0,
+            };
+            self.state.select(Some(i));
+        }
     }
 
     pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.data.len() - 1
-                } else {
-                    i - 1
+        if !self.data.is_empty() {
+            let i = match self.state.selected() {
+                Some(i) => {
+                    if i == 0 {
+                        self.data.len() - 1
+                    } else {
+                        i - 1
+                    }
                 }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
+                None => 0,
+            };
+            self.state.select(Some(i));
+        }
     }
 
     pub fn first(&mut self) {
-        self.state.select(Some(0));
+        if !self.data.is_empty() {
+            self.state.select(Some(0));
+        }
     }
 
     pub fn last(&mut self) {
-        self.state.select(Some(self.data.len() - 1));
+        if !self.data.is_empty() {
+            self.state.select(Some(self.data.len() - 1));
+        }
     }
 
     pub fn event_handler(&mut self, user_input: Event) -> TableEvent {
@@ -240,7 +248,13 @@ impl TableModel {
             .split(f.size());
 
         // Calculate the widths based on # of columns
-        let equal_column_width = (100 / self.num_columns()) as u16;
+        let equal_column_width = if self.num_columns() > 1 {
+            (100 / self.num_columns()) as u16
+        } else {
+            // If you're here, there isn't any headers set. Likely no data too.
+            // This is just going to prevent immediate panic from division by zero
+            100
+        };
 
         let mut column_constraints: Vec<Constraint> = Vec::new();
 

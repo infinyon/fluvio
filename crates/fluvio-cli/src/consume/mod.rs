@@ -373,31 +373,24 @@ impl ConsumeOpt {
                 }
             }
         } else {
-            loop {
-                select! {
-                    stream_next = stream.next().fuse() => match stream_next {
-                        Some(result) => {
-                            let result: std::result::Result<Record, _> = result;
-                            let record = match result {
-                                Ok(record) => record,
-                                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
-                                    eprintln!("{}", code.to_sentence());
-                                    continue;
-                                }
-                                Err(other) => return Err(other.into()),
-                            };
+            while let Some(result) = stream.next().await {
+                let result: std::result::Result<Record, _> = result;
+                let record = match result {
+                    Ok(record) => record,
+                    Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                        eprintln!("{}", code.to_sentence());
+                        continue;
+                    }
+                    Err(other) => return Err(other.into()),
+                };
 
-                            self.print_record(
-                                templates.as_ref(),
-                                &record,
-                                &mut header_print,
-                                &mut maybe_terminal_stdout,
-                                &mut maybe_table_model,
-                            );
-                        },
-                        None => break,
-                    },
-                }
+                self.print_record(
+                    templates.as_ref(),
+                    &record,
+                    &mut header_print,
+                    &mut None,
+                    &mut None,
+                );
             }
         }
 
