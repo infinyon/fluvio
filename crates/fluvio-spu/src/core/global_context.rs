@@ -2,7 +2,7 @@
 //! # Global Context
 //!
 //! Global Context maintains states need to be shared across in the SPU
-use std::ops::Deref;
+
 use std::sync::Arc;
 use std::fmt::Debug;
 
@@ -11,7 +11,7 @@ use tracing::{debug, error, instrument};
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
 use fluvio_storage::{ReplicaStorage};
-use fluvio::Fluvio;
+
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
@@ -23,6 +23,7 @@ use crate::services::public::StreamPublishers;
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
 use fluvio_smartengine::SmartEngine;
 
+use super::leader_client::LeaderConnections;
 use super::smart_module::SmartModuleLocalStore;
 use super::smartstream::SmartStreamStore;
 use super::spus::SharedSpuLocalStore;
@@ -48,7 +49,7 @@ pub struct GlobalContext<S> {
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
-    client: FluvioClient,
+    leaders: LeaderConnections
 }
 
 // -----------------------------------
@@ -59,11 +60,11 @@ impl<S> GlobalContext<S>
 where
     S: ReplicaStorage,
 {
-    pub fn new_shared_context(spu_config: SpuConfig, fluvio: Fluvio) -> Arc<Self> {
-        Arc::new(GlobalContext::new(spu_config, fluvio))
+    pub fn new_shared_context(spu_config: SpuConfig) -> Arc<Self> {
+        Arc::new(GlobalContext::new(spu_config))
     }
 
-    pub fn new(spu_config: SpuConfig, fluvio: Fluvio) -> Self {
+    pub fn new(spu_config: SpuConfig) -> Self {
         GlobalContext {
             spu_localstore: SpuLocalStore::new_shared(),
             replica_localstore: ReplicaStore::new_shared(),
@@ -76,7 +77,8 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
-            client: FluvioClient(fluvio),
+            leaders: LeaderConnections::new()
+
         }
     }
 
@@ -154,26 +156,13 @@ where
         self.sm_engine.clone()
     }
 
-    pub fn client(&self) -> &Fluvio {
-        &self.client
+    pub fn leaders(&self) -> &LeaderConnections {
+        &self.leaders
     }
+
+
 }
 
-struct FluvioClient(Fluvio);
-
-impl Deref for FluvioClient {
-    type Target = Fluvio;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl Debug for FluvioClient {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "FluvioClient")
-    }
-}
 
 mod file_replica {
 

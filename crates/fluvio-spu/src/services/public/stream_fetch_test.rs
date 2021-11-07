@@ -2084,3 +2084,15 @@ async fn test_stream_fetch_invalid_smartstream(
     server_end_event.notify();
     debug!("terminated controller");
 }
+
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_join_predefined() {
+    predefined_test(
+        "test_stream_fetch_filter_map_predefined",
+        FLUVIO_WASM_FILTER_MAP,
+        SmartStreamKind::FilterMap,
+        test_stream_fetch_filter_map,
+    )
+    .await;
+}

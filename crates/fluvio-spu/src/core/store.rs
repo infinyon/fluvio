@@ -228,7 +228,6 @@ where
         actions
     }
 
-    #[allow(unused)]
     pub fn spec(&self, key: &S::Key) -> Option<S> {
         self.0.read().get(key).cloned()
     }

@@ -39,14 +39,10 @@ pub fn main_loop(opt: SpuOpt) {
     info!(uptime = sys.uptime(), "Uptime in secs");
 
     run_block_on(async move {
-        let mut fluvio_config = FluvioConfig::new(spu_config.sc_public_endpoint());
-        fluvio_config.use_spu_local_address = true;
-        let fluvio = Fluvio::connect_with_config(&fluvio_config)
-            .await
-            .expect("unable to connect to SC");
+        
 
         let (_ctx, internal_server, public_server) =
-            create_services(spu_config.clone(), true, true, fluvio);
+            create_services(spu_config.clone(), true, true);
 
         let _public_shutdown = internal_server.unwrap().run();
         let _private_shutdown = public_server.unwrap().run();
@@ -69,13 +65,12 @@ pub fn create_services(
     local_spu: SpuConfig,
     internal: bool,
     public: bool,
-    fluvio: Fluvio,
 ) -> (
     DefaultSharedGlobalContext,
     Option<InternalApiServer>,
     Option<SpuPublicServer>,
 ) {
-    let ctx = FileReplicaContext::new_shared_context(local_spu, fluvio);
+    let ctx = FileReplicaContext::new_shared_context(local_spu);
 
     let public_ep_addr = ctx.config().public_socket_addr().to_owned();
     let private_ep_addr = ctx.config().private_socket_addr().to_owned();
