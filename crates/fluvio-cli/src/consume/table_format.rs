@@ -90,7 +90,7 @@ pub struct TableModel {
 
 impl TableModel {
     // I think this should accept headers that don't exist in the data. Print empty columns
-    pub fn update_header(&mut self, headers: Vec<String>) -> Result<()> {
+    pub fn _update_header(&mut self, headers: Vec<String>) -> Result<()> {
         self.headers = headers;
 
         Ok(())
@@ -107,7 +107,7 @@ impl TableModel {
     // Appends row if not found
     // Issue: When we read in json data, it is sorted by key in alphanumeric order, so left-most will always be the alphabetical 1st
     // This might cause issues w/r/t updates, since we treat 1st column as primary
-    pub fn update_row(&mut self, row: Vec<String>) -> Result<()> {
+    pub fn _update_row(&mut self, row: Vec<String>) -> Result<()> {
         let mut found = None;
 
         for (index, r) in self.data.iter().enumerate() {

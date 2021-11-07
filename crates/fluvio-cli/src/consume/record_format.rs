@@ -5,15 +5,15 @@
 //!
 
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
-use super::TableModel;
-
-use std::io::Stdout;
-use tui::{backend::CrosstermBackend, Terminal};
-use crossterm::{
-    event::DisableMouseCapture,
-    execute,
-    terminal::{disable_raw_mode, LeaveAlternateScreen},
-};
+//use super::TableModel;
+//
+//use std::io::Stdout;
+//use tui::{backend::CrosstermBackend, Terminal};
+//use crossterm::{
+//    event::DisableMouseCapture,
+//    execute,
+//    terminal::{disable_raw_mode, LeaveAlternateScreen},
+//};
 
 // -----------------------------------
 //  JSON
@@ -140,55 +140,55 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
     format!("{}", String::from_utf8_lossy(&out))
 }
 
-pub fn format_fancy_table_record(
-    record: &[u8],
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    table_model: &mut TableModel,
-) -> String {
-    let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
-        Ok(value) => value,
-        Err(_e) => {
-            // restore terminal
-            disable_raw_mode().expect("Disabling raw mode failed");
-            execute!(
-                terminal.backend_mut(),
-                LeaveAlternateScreen,
-                DisableMouseCapture
-            )
-            .expect("Failed to leave alternate screen");
-            terminal.show_cursor().expect("Show terminal cursor failed");
-
-            panic!("Value not json")
-        }
-    };
-
-    let obj = maybe_json.as_object().unwrap();
-    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
-
-    // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
-    let values_str: Vec<String> = obj
-        .values()
-        .map(|v| {
-            if v.is_string() {
-                v.as_str()
-                    .expect("Value not representable as str")
-                    .to_string()
-            } else {
-                v.to_string()
-            }
-        })
-        .collect();
-
-    let header = keys_str;
-    table_model
-        .update_header(header)
-        .expect("Unable to set table headers");
-    table_model
-        .update_row(values_str)
-        .expect("Unable to update table row");
-
-    String::new()
-}
+//pub fn format_fancy_table_record(
+//    record: &[u8],
+//    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+//    table_model: &mut TableModel,
+//) -> String {
+//    let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
+//        Ok(value) => value,
+//        Err(_e) => {
+//            // restore terminal
+//            disable_raw_mode().expect("Disabling raw mode failed");
+//            execute!(
+//                terminal.backend_mut(),
+//                LeaveAlternateScreen,
+//                DisableMouseCapture
+//            )
+//            .expect("Failed to leave alternate screen");
+//            terminal.show_cursor().expect("Show terminal cursor failed");
+//
+//            panic!("Value not json")
+//        }
+//    };
+//
+//    let obj = maybe_json.as_object().unwrap();
+//    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
+//
+//    // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
+//    let values_str: Vec<String> = obj
+//        .values()
+//        .map(|v| {
+//            if v.is_string() {
+//                v.as_str()
+//                    .expect("Value not representable as str")
+//                    .to_string()
+//            } else {
+//                v.to_string()
+//            }
+//        })
+//        .collect();
+//
+//    let header = keys_str;
+//    table_model
+//        .update_header(header)
+//        .expect("Unable to set table headers");
+//    table_model
+//        .update_row(values_str)
+//        .expect("Unable to update table row");
+//
+//    String::new()
+//}
 
 // -----------------------------------
 //  Utilities

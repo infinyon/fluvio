@@ -5,7 +5,8 @@
 //!
 
 use std::{io::Error as IoError, path::PathBuf};
-use std::io::{self, ErrorKind, Read, Stdout};
+//use std::io::{self, ErrorKind, Read, Stdout};
+use std::io::{ErrorKind, Read};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
@@ -16,7 +17,7 @@ use fluvio_future::io::StreamExt;
 
 mod record_format;
 mod table_format;
-use table_format::TableModel;
+//use table_format::TableModel;
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
@@ -25,8 +26,8 @@ use fluvio::consumer::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
 };
 
-use tui::Terminal;
-use tui::backend::CrosstermBackend;
+//use tui::Terminal;
+//use tui::backend::CrosstermBackend;
 //use crossterm::{
 //    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
 //    execute,
@@ -36,8 +37,13 @@ use tui::backend::CrosstermBackend;
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
-    format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
-    format_json, format_basic_table_record, format_fancy_table_record,
+    format_text_record,
+    format_binary_record,
+    format_dynamic_record,
+    format_raw_record,
+    format_json,
+    format_basic_table_record,
+    //format_json, format_basic_table_record, format_fancy_table_record,
 };
 use handlebars::Handlebars;
 
@@ -301,8 +307,8 @@ impl ConsumeOpt {
             }
         };
 
-        let stdout = io::stdout();
-        let mut terminal_stdout = self.create_terminal(stdout)?;
+        //let stdout = io::stdout();
+        //let mut terminal_stdout = self.create_terminal(stdout)?;
 
         // This is used by table output, to manage printing the table titles only one time
         let mut header_print = true;
@@ -318,7 +324,7 @@ impl ConsumeOpt {
             };
 
             self.print_record(
-                &mut terminal_stdout,
+                //&mut terminal_stdout,
                 templates.as_ref(),
                 &record,
                 &mut header_print,
@@ -329,17 +335,17 @@ impl ConsumeOpt {
         Ok(())
     }
 
-    fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
-        let backend = CrosstermBackend::new(stdout);
-        let terminal = Terminal::new(backend)?;
+    //fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
+    //    let backend = CrosstermBackend::new(stdout);
+    //    let terminal = Terminal::new(backend)?;
 
-        Ok(terminal)
-    }
+    //    Ok(terminal)
+    //}
 
     /// Process fetch topic response based on output type
     pub fn print_record(
         &self,
-        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+        //terminal: &mut Terminal<CrosstermBackend<Stdout>>,
         templates: Option<&Handlebars>,
         record: &Record,
         header_print: &mut bool,
@@ -371,12 +377,13 @@ impl ConsumeOpt {
                 Some(value)
             }
             (Some(ConsumeOutputType::full_table), None) => {
-                let mut table_model = TableModel::default();
-                Some(format_fancy_table_record(
-                    record.value(),
-                    terminal,
-                    &mut table_model,
-                ))
+                Some(String::new())
+                //let mut table_model = TableModel::default();
+                //Some(format_fancy_table_record(
+                //    record.value(),
+                //    terminal,
+                //    &mut table_model,
+                //))
             }
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
