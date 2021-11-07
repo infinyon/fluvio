@@ -173,7 +173,7 @@ impl Fluvio {
         &self,
         topic: S,
         partition: i32,
-    ) -> Result<PartitionConsumer, FluvioError> {
+    ) -> Result<PartitionConsumer<SpuPool>, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating consumer");
         Ok(PartitionConsumer::new(

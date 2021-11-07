@@ -3,6 +3,7 @@ use std::collections::HashMap;
 
 use tracing::{debug, trace, instrument};
 use async_lock::Mutex;
+use async_trait::async_trait;
 
 use dataplane::ReplicaKey;
 use dataplane::api::Request;
@@ -16,6 +17,30 @@ use crate::sockets::VersionedSerialSocket;
 use crate::sockets::Versions;
 
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
+
+/// used for connectiong to spu
+#[async_trait]
+pub trait SpuDirectory {
+    /// Create request/response socket to SPU for a replica
+    ///
+    /// All sockets to same SPU use a single TCP connection.
+    /// First this looks up SPU address in SPU metadata and try to see if there is an existing TCP connection.
+    /// If not, it will create a new connection and creates socket to it
+    async fn create_serial_socket(
+        &self,
+        replica: &ReplicaKey,
+    ) -> Result<VersionedSerialSocket, FluvioError>;
+
+    /// create stream to leader replica
+    async fn create_stream_with_version<R: Request>(
+        &self,
+        replica: &ReplicaKey,
+        request: R,
+        version: i16,
+    ) -> Result<AsyncResponse<R>, FluvioError>
+    where
+        R: Send + Sync;
+}
 
 struct SpuSocket {
     config: Arc<ClientConfig>,
@@ -103,31 +128,6 @@ impl SpuPool {
         })
     }
 
-    /// Create request/response socket to SPU for a replica
-    ///
-    /// All sockets to same SPU use a single TCP connection.
-    /// First this looks up SPU address in SPU metadata and try to see if there is an existing TCP connection.
-    /// If not, it will create a new connection and creates socket to it
-    #[instrument(skip(self, replica))]
-    pub async fn create_serial_socket(
-        &self,
-        replica: &ReplicaKey,
-    ) -> Result<VersionedSerialSocket, FluvioError> {
-        let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
-        let partition = if let Some(partition) = partition_search {
-            partition
-        } else {
-            return Err(FluvioError::PartitionNotFound(
-                replica.topic.to_string(),
-                replica.partition,
-            ));
-        };
-
-        let leader_id = partition.spec.leader;
-        let socket = self.create_serial_socket_from_leader(leader_id).await?;
-        Ok(socket)
-    }
-
     #[instrument(skip(self))]
     pub async fn create_serial_socket_from_leader(
         &self,
@@ -151,14 +151,58 @@ impl SpuPool {
         Ok(serial_socket)
     }
 
-    /// create stream to leader replica
+    pub async fn topic_exists<S: Into<String>>(&self, topic: S) -> Result<bool, FluvioError> {
+        let replica = ReplicaKey::new(topic, 0);
+        Ok(self
+            .metadata
+            .partitions()
+            .lookup_by_key(&replica)
+            .await?
+            .is_some())
+    }
+
+    pub fn shutdown(&mut self) {
+        self.metadata.shutdown();
+    }
+}
+
+#[async_trait]
+impl SpuDirectory for SpuPool {
+    /// Create request/response socket to SPU for a replica
+    ///
+    /// All sockets to same SPU use a single TCP connection.
+    /// First this looks up SPU address in SPU metadata and try to see if there is an existing TCP connection.
+    /// If not, it will create a new connection and creates socket to it
+    #[instrument(skip(self, replica))]
+    async fn create_serial_socket(
+        &self,
+        replica: &ReplicaKey,
+    ) -> Result<VersionedSerialSocket, FluvioError> {
+        let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
+        let partition = if let Some(partition) = partition_search {
+            partition
+        } else {
+            return Err(FluvioError::PartitionNotFound(
+                replica.topic.to_string(),
+                replica.partition,
+            ));
+        };
+
+        let leader_id = partition.spec.leader;
+        let socket = self.create_serial_socket_from_leader(leader_id).await?;
+        Ok(socket)
+    }
+
     #[instrument(skip(self, replica, request, version))]
-    pub async fn create_stream_with_version<R: Request>(
+    async fn create_stream_with_version<R: Request>(
         &self,
         replica: &ReplicaKey,
         request: R,
         version: i16,
-    ) -> Result<AsyncResponse<R>, FluvioError> {
+    ) -> Result<AsyncResponse<R>, FluvioError>
+    where
+        R: Send + Sync,
+    {
         let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
 
         let partition = if let Some(partition) = partition_search {
@@ -188,19 +232,5 @@ impl SpuPool {
         client_lock.insert(leader_id, spu_socket);
 
         Ok(stream)
-    }
-
-    pub async fn topic_exists<S: Into<String>>(&self, topic: S) -> Result<bool, FluvioError> {
-        let replica = ReplicaKey::new(topic, 0);
-        Ok(self
-            .metadata
-            .partitions()
-            .lookup_by_key(&replica)
-            .await?
-            .is_some())
-    }
-
-    pub fn shutdown(&mut self) {
-        self.metadata.shutdown();
     }
 }

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use tracing::{debug, instrument};
 
+use fluvio_sc_schema::objects::ObjectApiWatchRequest;
 use fluvio_socket::SharedMultiplexerSocket;
 use fluvio_socket::SocketError;
 
@@ -12,6 +12,7 @@ use crate::metadata::partition::PartitionSpec;
 
 use super::controller::{MetadataSyncController, SimpleEvent};
 use super::StoreContext;
+
 
 #[derive(Clone)]
 /// global cached stores necessary for consumer and producers
