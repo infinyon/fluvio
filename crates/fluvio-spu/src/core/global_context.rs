@@ -12,7 +12,6 @@ use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
 use fluvio_storage::{ReplicaStorage};
 
-
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
 use crate::replication::follower::SharedFollowersState;
@@ -49,7 +48,7 @@ pub struct GlobalContext<S> {
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
-    leaders: LeaderConnections
+    leaders: LeaderConnections,
 }
 
 // -----------------------------------
@@ -77,8 +76,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
-            leaders: LeaderConnections::new()
-
+            leaders: LeaderConnections::new(),
         }
     }
 
@@ -159,10 +157,7 @@ where
     pub fn leaders(&self) -> &LeaderConnections {
         &self.leaders
     }
-
-
 }
-
 
 mod file_replica {
 

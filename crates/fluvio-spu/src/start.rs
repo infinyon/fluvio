@@ -39,8 +39,6 @@ pub fn main_loop(opt: SpuOpt) {
     info!(uptime = sys.uptime(), "Uptime in secs");
 
     run_block_on(async move {
-        
-
         let (_ctx, internal_server, public_server) =
             create_services(spu_config.clone(), true, true);
 

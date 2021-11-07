@@ -11,7 +11,6 @@
 use std::env;
 use std::path::PathBuf;
 
-use fluvio_controlplane_metadata::spu::SpuSpec;
 // defaults values
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::defaults::SPU_PRIVATE_PORT;
@@ -151,7 +150,6 @@ impl SpuConfig {
     pub fn storage(&self) -> &Log {
         &self.log
     }
-
 }
 
 impl From<&SpuConfig> for ConfigOption {

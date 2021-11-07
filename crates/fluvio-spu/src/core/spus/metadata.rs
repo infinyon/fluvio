@@ -7,7 +7,6 @@ use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_types::SpuId;
 
 use crate::core::DefaultSharedGlobalContext;
-use crate::core::GlobalContext;
 use crate::core::Spec;
 use crate::core::LocalStore;
 
@@ -48,14 +47,9 @@ impl SpuLocalStore {
     }
 
     /// get spu even if this is local spu
-    fn get_spu(&self,spu: SpuId, ctx: &DefaultSharedGlobalContext) -> Option<SpuSpec> {
-        
-        self.spec(&spu)      
-  
+    fn get_spu(&self, spu: SpuId, ctx: &DefaultSharedGlobalContext) -> Option<SpuSpec> {
+        self.spec(&spu)
     }
-
-
-
 }
 
 // -----------------------------------

@@ -2085,7 +2085,6 @@ async fn test_stream_fetch_invalid_smartstream(
     debug!("terminated controller");
 }
 
-
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_join_predefined() {
     predefined_test(

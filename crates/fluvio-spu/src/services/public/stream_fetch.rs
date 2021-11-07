@@ -137,7 +137,8 @@ impl StreamFetchHandler {
 
         let maybe_join =
             if let Some(SmartStreamKind::Join) = msg.smart_module.as_ref().map(|wasm| &wasm.kind) {
-                let join_stream = match join_fetch_other(ctx.client(), "example-join-topic").await {
+                let client = ctx.leaders().get_connection().await;
+                let join_stream = match join_fetch_other(&client, "example-join-topic").await {
                     Ok(join_stream) => join_stream,
                     Err(err) => {
                         error!("error fetching join data {}", err);
