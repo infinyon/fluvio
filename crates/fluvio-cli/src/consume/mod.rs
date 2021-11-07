@@ -28,6 +28,7 @@ use fluvio::consumer::{
 
 use tui::Terminal;
 use tui::backend::CrosstermBackend;
+use crossterm::event::EventStream;
 //use crossterm::{
 //    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
 //    execute,
@@ -311,6 +312,7 @@ impl ConsumeOpt {
 
         // This is used by table output, to manage printing the table titles only one time
         let mut header_print = true;
+        let mut user_input_reader = EventStream::new();
 
         loop {
             select! {
@@ -334,7 +336,21 @@ impl ConsumeOpt {
                         );
                     },
                     None => break,
-                }
+                },
+                maybe_event = user_input_reader.next().fuse() => {
+                    match maybe_event {
+                        Some(Ok(_event)) => {
+                            //if let Some(model) = maybe_table_model.as_mut() {
+                            //    match model.event_handler(event) {
+                            //        TableEvent::Terminate => break,
+                            //        _ => continue
+                            //    }
+                            //}
+                        }
+                        Some(Err(e)) => println!("Error: {:?}\r", e),
+                        None => break,
+                    }
+                },
             }
         }
 
