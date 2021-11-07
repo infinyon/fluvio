@@ -13,6 +13,7 @@ use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
+use futures::{select, FutureExt};
 
 mod record_format;
 mod table_format;
@@ -310,23 +311,31 @@ impl ConsumeOpt {
 
         // This is used by table output, to manage printing the table titles only one time
         let mut header_print = true;
-        while let Some(result) = stream.next().await {
-            let result: std::result::Result<Record, _> = result;
-            let record = match result {
-                Ok(record) => record,
-                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
-                    eprintln!("{}", code.to_sentence());
-                    continue;
-                }
-                Err(other) => return Err(other.into()),
-            };
 
-            self.print_record(
-                templates.as_ref(),
-                &record,
-                &mut header_print,
-                &mut maybe_terminal_stdout,
-            );
+        loop {
+            select! {
+                stream_next = stream.next().fuse() => match stream_next {
+                    Some(result) => {
+                        let result: std::result::Result<Record, _> = result;
+                        let record = match result {
+                            Ok(record) => record,
+                            Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                                eprintln!("{}", code.to_sentence());
+                                continue;
+                            }
+                            Err(other) => return Err(other.into()),
+                        };
+
+                        self.print_record(
+                            templates.as_ref(),
+                            &record,
+                            &mut header_print,
+                            &mut maybe_terminal_stdout,
+                        );
+                    },
+                    None => break,
+                }
+            }
         }
 
         debug!("fetch loop exited");
@@ -368,6 +377,7 @@ impl ConsumeOpt {
             (Some(ConsumeOutputType::table), None) => {
                 let value = format_basic_table_record(record.value(), *header_print);
 
+                // Only print the header once
                 if header_print == &true {
                     *header_print = false;
                 }
