@@ -29,7 +29,7 @@ use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
 use crate::offset::{Offset, fetch_offsets};
-use crate::spu::SpuPool;
+use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
 
 /// An interface for consuming events from a particular partition
@@ -60,14 +60,17 @@ use derive_builder::Builder;
 /// [`Offset`]: struct.Offset.html
 /// [`partition_consumer`]: struct.Fluvio.html#method.partition_consumer
 /// [`Fluvio`]: struct.Fluvio.html
-pub struct PartitionConsumer {
+pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
     partition: i32,
-    pool: Arc<SpuPool>,
+    pool: Arc<P>,
 }
 
-impl PartitionConsumer {
-    pub(crate) fn new(topic: String, partition: i32, pool: Arc<SpuPool>) -> Self {
+impl<P> PartitionConsumer<P>
+where
+    P: SpuDirectory,
+{
+    pub(crate) fn new(topic: String, partition: i32, pool: Arc<P>) -> Self {
         Self {
             topic,
             partition,
