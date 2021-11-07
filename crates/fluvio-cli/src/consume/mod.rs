@@ -16,7 +16,7 @@ use fluvio_future::io::StreamExt;
 
 mod record_format;
 mod table_format;
-//use table_format::TableModel;
+use table_format::TableModel;
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
@@ -36,13 +36,8 @@ use tui::backend::CrosstermBackend;
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
-    format_text_record,
-    format_binary_record,
-    format_dynamic_record,
-    format_raw_record,
-    format_json,
-    format_basic_table_record,
-    //format_json, format_basic_table_record, format_fancy_table_record,
+    format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
+    format_json, format_basic_table_record, format_fancy_table_record,
 };
 use handlebars::Handlebars;
 
@@ -306,7 +301,7 @@ impl ConsumeOpt {
             }
         };
 
-        let mut _maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
+        let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
             let stdout = io::stdout();
             Some(self.create_terminal(stdout)?)
         } else {
@@ -327,10 +322,10 @@ impl ConsumeOpt {
             };
 
             self.print_record(
-                //&mut terminal_stdout,
                 templates.as_ref(),
                 &record,
                 &mut header_print,
+                &mut maybe_terminal_stdout,
             );
         }
 
@@ -348,10 +343,10 @@ impl ConsumeOpt {
     /// Process fetch topic response based on output type
     pub fn print_record(
         &self,
-        //terminal: &mut Terminal<CrosstermBackend<Stdout>>,
         templates: Option<&Handlebars>,
         record: &Record,
         header_print: &mut bool,
+        terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
     ) {
         let formatted_key = record
             .key()
@@ -380,13 +375,17 @@ impl ConsumeOpt {
                 Some(value)
             }
             (Some(ConsumeOutputType::full_table), None) => {
-                Some(String::new())
-                //let mut table_model = TableModel::default();
-                //Some(format_fancy_table_record(
-                //    record.value(),
-                //    terminal,
-                //    &mut table_model,
-                //))
+                let mut table_model = TableModel::default();
+
+                if let Some(term) = terminal {
+                    Some(format_fancy_table_record(
+                        record.value(),
+                        term,
+                        &mut table_model,
+                    ))
+                } else {
+                    unreachable!()
+                }
             }
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
