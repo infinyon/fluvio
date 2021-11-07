@@ -334,6 +334,7 @@ impl ConsumeOpt {
             (Some(ConsumeOutputType::table), None) => {
                 Some(print_table_record(record.value(), count))
             }
+            (Some(ConsumeOutputType::full_table), None) => Some(String::new()),
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
                 let object = serde_json::json!({
@@ -490,6 +491,7 @@ arg_enum! {
         json,
         raw,
         table,
+        full_table,
     }
 }
 
