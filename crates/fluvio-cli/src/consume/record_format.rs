@@ -85,13 +85,16 @@ pub fn format_raw_record(record: &[u8]) -> String {
 /// Structure json data into table row
 /// Print table header if `print_header` is true
 /// Rows may not stay aligned with table header
-pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
+pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<String> {
     use prettytable::{Row, cell, Cell, Slice};
     use prettytable::format::{self, FormatBuilder};
 
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
-        Err(_e) => panic!("Value not json"),
+        Err(e) => {
+            println!("error parsing record as json: {}", e);
+            return None;
+        }
     };
 
     let obj = maybe_json.as_object().unwrap();
@@ -127,14 +130,18 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
     table.set_format(table_format.build());
 
     let mut out = Vec::new();
-    if print_header {
-        table.print(&mut out).expect("Unable to print table");
+    let res = if print_header {
+        table.print(&mut out)
     } else {
         let slice = table.slice(1..);
-        slice.print(&mut out).expect("Unable to print row");
-    }
+        slice.print(&mut out)
+    };
 
-    format!("{}", String::from_utf8_lossy(&out))
+    if res.is_ok() {
+        Some(String::from_utf8_lossy(&out).trim_end().to_string())
+    } else {
+        None
+    }
 }
 
 // -----------------------------------
@@ -144,25 +151,12 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
 /// Updates the TableModel used to render the TUI table during `TableModel::render()`
 /// Attempts to update relevant rows, but appends to table if the primary key doesn't exist
 /// Returned String is not intended to be used
-pub fn format_fancy_table_record(
-    record: &[u8],
-    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
-    table_model: &mut TableModel,
-) -> String {
+pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) -> Option<String> {
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
-        Err(_e) => {
-            // restore terminal
-            disable_raw_mode().expect("Disabling raw mode failed");
-            execute!(
-                terminal.backend_mut(),
-                LeaveAlternateScreen,
-                DisableMouseCapture
-            )
-            .expect("Failed to leave alternate screen");
-            terminal.show_cursor().expect("Show terminal cursor failed");
-
-            panic!("Value not json")
+        Err(e) => {
+            println!("error parsing record as json: {}", e);
+            return None;
         }
     };
 
@@ -184,14 +178,15 @@ pub fn format_fancy_table_record(
         .collect();
 
     let header = keys_str;
-    table_model
-        .update_header(header)
-        .expect("Unable to set table headers");
-    table_model
-        .update_row(values_str)
-        .expect("Unable to update table row");
+    if table_model.update_header(header).is_err() {
+        println!("Unable to set table headers")
+    }
 
-    String::new()
+    if table_model.update_row(values_str).is_err() {
+        println!("Unable to update table row");
+    }
+
+    None
 }
 
 // -----------------------------------

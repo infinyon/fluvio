@@ -454,15 +454,11 @@ impl ConsumeOpt {
                     *header_print = false;
                 }
 
-                Some(value)
+                value
             }
             (Some(ConsumeOutputType::full_table), None) => {
-                if let Some(term) = terminal {
-                    if let Some(ref mut table) = table_model {
-                        Some(format_fancy_table_record(record.value(), term, table))
-                    } else {
-                        unreachable!()
-                    }
+                if let Some(ref mut table) = table_model {
+                    format_fancy_table_record(record.value(), table)
                 } else {
                     unreachable!()
                 }
