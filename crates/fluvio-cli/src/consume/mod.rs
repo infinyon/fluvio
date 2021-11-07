@@ -29,6 +29,7 @@ use fluvio::consumer::{
 use tui::Terminal;
 use tui::backend::CrosstermBackend;
 use crossterm::event::EventStream;
+use crossterm::tty::IsTty;
 //use crossterm::{
 //    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
 //    execute,
@@ -305,52 +306,89 @@ impl ConsumeOpt {
 
         let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
             let stdout = io::stdout();
-            Some(self.create_terminal(stdout)?)
+
+            if stdout.is_tty() {
+                Some(self.create_terminal(stdout)?)
+            } else {
+                None
+            }
         } else {
             None
         };
 
         // This is used by table output, to manage printing the table titles only one time
         let mut header_print = true;
-        let mut user_input_reader = EventStream::new();
 
-        loop {
-            select! {
-                stream_next = stream.next().fuse() => match stream_next {
-                    Some(result) => {
-                        let result: std::result::Result<Record, _> = result;
-                        let record = match result {
-                            Ok(record) => record,
-                            Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
-                                eprintln!("{}", code.to_sentence());
-                                continue;
-                            }
-                            Err(other) => return Err(other.into()),
-                        };
+        // TODO: Clean this code duplication. This is all to help CI pass...
 
-                        self.print_record(
-                            templates.as_ref(),
-                            &record,
-                            &mut header_print,
-                            &mut maybe_terminal_stdout,
-                        );
-                    },
-                    None => break,
-                },
-                maybe_event = user_input_reader.next().fuse() => {
-                    match maybe_event {
-                        Some(Ok(_event)) => {
-                            //if let Some(model) = maybe_table_model.as_mut() {
-                            //    match model.event_handler(event) {
-                            //        TableEvent::Terminate => break,
-                            //        _ => continue
-                            //    }
-                            //}
-                        }
-                        Some(Err(e)) => println!("Error: {:?}\r", e),
+        if io::stdout().is_tty() {
+            // This needs to know if it is a tty before opening this
+            let mut user_input_reader = EventStream::new();
+
+            loop {
+                select! {
+                    stream_next = stream.next().fuse() => match stream_next {
+                        Some(result) => {
+                            let result: std::result::Result<Record, _> = result;
+                            let record = match result {
+                                Ok(record) => record,
+                                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                                    eprintln!("{}", code.to_sentence());
+                                    continue;
+                                }
+                                Err(other) => return Err(other.into()),
+                            };
+
+                            self.print_record(
+                                templates.as_ref(),
+                                &record,
+                                &mut header_print,
+                                &mut maybe_terminal_stdout,
+                            );
+                        },
                         None => break,
-                    }
-                },
+                    },
+                    maybe_event = user_input_reader.next().fuse() => {
+                        match maybe_event {
+                            Some(Ok(_event)) => {
+                                //if let Some(model) = maybe_table_model.as_mut() {
+                                //    match model.event_handler(event) {
+                                //        TableEvent::Terminate => break,
+                                //        _ => continue
+                                //    }
+                                //}
+                            }
+                            Some(Err(e)) => println!("Error: {:?}\r", e),
+                            None => break,
+                        }
+                    },
+                }
+            }
+        } else {
+            loop {
+                select! {
+                    stream_next = stream.next().fuse() => match stream_next {
+                        Some(result) => {
+                            let result: std::result::Result<Record, _> = result;
+                            let record = match result {
+                                Ok(record) => record,
+                                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                                    eprintln!("{}", code.to_sentence());
+                                    continue;
+                                }
+                                Err(other) => return Err(other.into()),
+                            };
+
+                            self.print_record(
+                                templates.as_ref(),
+                                &record,
+                                &mut header_print,
+                                &mut maybe_terminal_stdout,
+                            );
+                        },
+                        None => break,
+                    },
+                }
             }
         }
 
