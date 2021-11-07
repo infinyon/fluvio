@@ -136,7 +136,7 @@ impl StreamFetchHandler {
         let sm_engine = ctx.smartstream_owned();
 
         let maybe_join =
-            if let Some(SmartStreamKind::Join) = msg.wasm_payload.as_ref().map(|wasm| &wasm.kind) {
+            if let Some(SmartStreamKind::Join) = msg.smart_module.as_ref().map(|wasm| &wasm.kind) {
                 let join_stream = match join_fetch_other(ctx.client(), "example-join-topic").await {
                     Ok(join_stream) => join_stream,
                     Err(err) => {
@@ -287,11 +287,10 @@ impl StreamFetchHandler {
                 },
 
 
-                record = maybe_join.as_mut().unwrap().next() =>  {
+                record = async {  maybe_join.as_mut().expect("Unexpected crash").next().await }, if maybe_join.is_some() =>  {
                     join_record = record.unwrap().ok();
                     debug!("Updated right stream");
                 },
-
 
                 // Received offset update from consumer, i.e. consumer acknowledged to this offset
                 consumer_offset_update = self.consumer_offset_listener.listen() => {
@@ -443,7 +442,11 @@ impl StreamFetchHandler {
         let output = match smartstream {
             Some(smartstream) => {
                 let (batch, smartstream_error) = smartstream
-                    .process_batch(&mut file_batch_iterator, self.max_bytes as usize)
+                    .process_batch(
+                        &mut file_batch_iterator,
+                        self.max_bytes as usize,
+                        join_last_record.map(|s| s.inner()),
+                    )
                     .map_err(|err| {
                         IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
                     })?;

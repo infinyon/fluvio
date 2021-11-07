@@ -995,6 +995,11 @@ impl Record {
     pub fn into_inner(self) -> DefaultRecord {
         self.record
     }
+
+    /// Returns a ref to the inner representation of the Record
+    pub fn inner(&self) -> &DefaultRecord {
+        &self.record
+    }
 }
 
 impl AsRef<[u8]> for Record {
