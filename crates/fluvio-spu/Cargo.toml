@@ -44,6 +44,7 @@ once_cell = "1.5"
 sysinfo = "0.20.3"
 
 # Fluvio dependencies
+fluvio = { version = "0.10.0", path = "../fluvio" }
 fluvio-types = { version = "0.2.3", features = ["events"], path = "../fluvio-types" }
 fluvio-storage = { path = "../fluvio-storage" }
 fluvio-controlplane = { version = "0.0.0", path = "../fluvio-controlplane" }

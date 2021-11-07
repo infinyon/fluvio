@@ -1932,6 +1932,7 @@ dependencies = [
  "derive_builder",
  "event-listener",
  "flate2",
+ "fluvio",
  "fluvio-controlplane",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",

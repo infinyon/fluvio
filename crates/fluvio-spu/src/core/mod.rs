@@ -1,5 +1,6 @@
 mod global_context;
 mod store;
+mod leader_client;
 
 pub mod spus;
 pub mod replica;
