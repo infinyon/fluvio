@@ -19,7 +19,8 @@ use crate::sockets::Versions;
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
 /// used for connectiong to spu
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 pub trait SpuDirectory {
     /// Create request/response socket to SPU for a replica
     ///
@@ -39,7 +40,7 @@ pub trait SpuDirectory {
         version: i16,
     ) -> Result<AsyncResponse<R>, FluvioError>
     where
-        R: Send + Sync;
+        R: Sync + Send;
 }
 
 struct SpuSocket {
@@ -166,7 +167,8 @@ impl SpuPool {
     }
 }
 
-#[async_trait]
+#[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
+#[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 impl SpuDirectory for SpuPool {
     /// Create request/response socket to SPU for a replica
     ///
@@ -201,7 +203,7 @@ impl SpuDirectory for SpuPool {
         version: i16,
     ) -> Result<AsyncResponse<R>, FluvioError>
     where
-        R: Send + Sync,
+        R: Sync + Send,
     {
         let partition_search = self.metadata.partitions().lookup_by_key(replica).await?;
 

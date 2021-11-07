@@ -67,6 +67,5 @@ async-std = { version = "1.6.4", default-features = false }
 fluvio-future = { version = "0.3.0", features = ["fixture"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
-async-trait = "0.1.50"
 wasm-bindgen-test = "0.3.24"
 fluvio_ws_stream_wasm = "0.7.0"
