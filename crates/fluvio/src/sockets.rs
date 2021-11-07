@@ -1,6 +1,6 @@
 use std::default::Default;
 use std::fmt;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
 use tracing::{debug, instrument};
@@ -77,6 +77,16 @@ pub struct ClientConfig {
     client_id: String,
     connector: DomainConnector,
     pub(crate) use_spu_local_address: bool,
+}
+
+impl Debug for ClientConfig {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "ClientConfig {{ addr: {}, client_id: {} }}",
+            self.addr, self.client_id
+        )
+    }
 }
 
 impl fmt::Display for ClientConfig {

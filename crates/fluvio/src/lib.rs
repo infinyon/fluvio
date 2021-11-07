@@ -89,7 +89,7 @@ pub mod consumer;
 mod producer;
 mod offset;
 mod sync;
-mod spu;
+pub mod spu;
 
 pub mod config;
 

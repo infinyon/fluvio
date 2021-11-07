@@ -43,14 +43,16 @@ pub trait SpuDirectory {
         R: Sync + Send;
 }
 
-struct SpuSocket {
+/// Stream Socket to SPU
+#[derive(Debug)]
+pub struct SpuSocket {
     config: Arc<ClientConfig>,
     socket: SharedMultiplexerSocket,
     versions: Versions,
 }
 
 impl SpuSocket {
-    async fn create_serial_socket(&mut self) -> VersionedSerialSocket {
+    pub async fn create_serial_socket(&mut self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
             self.socket.clone(),
             self.config.clone(),
@@ -58,7 +60,7 @@ impl SpuSocket {
         )
     }
 
-    fn is_stale(&self) -> bool {
+    pub fn is_stale(&self) -> bool {
         self.socket.is_stale()
     }
 
