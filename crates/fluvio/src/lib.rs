@@ -101,7 +101,6 @@ pub use consumer::{
     PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
 };
 pub use offset::Offset;
-pub use spu::SpuDirectory;
 
 pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
@@ -189,10 +188,10 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
 #[instrument(skip(topic, partition))]
-pub async fn consumer<S>(topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError>
-where
-    S: Into<String>,
-{
+pub async fn consumer<S: Into<String>>(
+    topic: S,
+    partition: i32,
+) -> Result<PartitionConsumer, FluvioError> {
     let fluvio = Fluvio::connect().await?;
     let consumer = fluvio.partition_consumer(topic, partition).await?;
     Ok(consumer)
