@@ -73,8 +73,8 @@ pub fn format_raw_record(record: &[u8]) -> String {
 //  Table
 // -----------------------------------
 
-/// Print records in table format
-pub fn print_table_record(record: &[u8], count: i32) -> String {
+/// Structure json data in table format
+pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
     use prettytable::{Row, cell, Cell, Slice};
     use prettytable::format::{self, FormatBuilder};
 
@@ -119,13 +119,16 @@ pub fn print_table_record(record: &[u8], count: i32) -> String {
     // if there is a length diff between the header and the data
     // The rows after the first (count == 0) don't line up with the header
     // prettytable might not support the live display use-case we want
-    if count == 0 {
-        table.printstd();
+
+    let mut out = Vec::new();
+    if print_header {
+        table.print(&mut out).expect("Unable to print table");
     } else {
         let slice = table.slice(1..);
-        slice.printstd();
+        slice.print(&mut out).expect("Unable to print row");
     }
-    format!("")
+
+    format!("{}", String::from_utf8_lossy(&out))
 }
 // -----------------------------------
 //  Utilities

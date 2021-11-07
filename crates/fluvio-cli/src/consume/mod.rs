@@ -15,6 +15,7 @@ use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
 
 mod record_format;
+mod table_format;
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
@@ -27,7 +28,7 @@ use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
-    format_json, print_table_record,
+    format_json, format_basic_table_record,
 };
 use handlebars::Handlebars;
 
@@ -291,8 +292,8 @@ impl ConsumeOpt {
             }
         };
 
-        // This is used by table output, to print the table titles only once
-        let mut record_count = 0;
+        // This is used by table output, to manage printing the table titles only one time
+        let mut header_print = true;
         while let Some(result) = stream.next().await {
             let result: std::result::Result<Record, _> = result;
             let record = match result {
@@ -304,8 +305,7 @@ impl ConsumeOpt {
                 Err(other) => return Err(other.into()),
             };
 
-            self.print_record(templates.as_ref(), &record, record_count);
-            record_count += 1;
+            self.print_record(templates.as_ref(), &record, &mut header_print);
         }
 
         debug!("fetch loop exited");
@@ -313,7 +313,12 @@ impl ConsumeOpt {
     }
 
     /// Process fetch topic response based on output type
-    pub fn print_record(&self, templates: Option<&Handlebars>, record: &Record, count: i32) {
+    pub fn print_record(
+        &self,
+        templates: Option<&Handlebars>,
+        record: &Record,
+        header_print: &mut bool,
+    ) {
         let formatted_key = record
             .key()
             .map(|key| String::from_utf8_lossy(key).to_string())
@@ -332,7 +337,13 @@ impl ConsumeOpt {
             }
             (Some(ConsumeOutputType::raw), None) => Some(format_raw_record(record.value())),
             (Some(ConsumeOutputType::table), None) => {
-                Some(print_table_record(record.value(), count))
+                let value = format_basic_table_record(record.value(), *header_print);
+
+                if header_print == &true {
+                    *header_print = false;
+                }
+
+                Some(value)
             }
             (Some(ConsumeOutputType::full_table), None) => Some(String::new()),
             (_, Some(templates)) => {
@@ -348,18 +359,18 @@ impl ConsumeOpt {
         };
 
         // If the consume type is table, we don't want to accidentally print a newline
-        if self.output != Some(ConsumeOutputType::table) {
-            match formatted_value {
-                Some(value) if self.key_value => {
-                    println!("[{}] {}", formatted_key, value);
-                }
-                Some(value) => {
-                    println!("{}", value);
-                }
-                // (Some(_), None) only if JSON cannot be printed, so skip.
-                _ => debug!("Skipping record that cannot be formatted"),
+        //if self.output != Some(ConsumeOutputType::table) {
+        match formatted_value {
+            Some(value) if self.key_value => {
+                println!("[{}] {}", formatted_key, value);
             }
+            Some(value) => {
+                println!("{}", value);
+            }
+            // (Some(_), None) only if JSON cannot be printed, so skip.
+            _ => debug!("Skipping record that cannot be formatted"),
         }
+        //}
     }
 
     fn print_status(&self) {
