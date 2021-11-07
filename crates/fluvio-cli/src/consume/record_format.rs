@@ -100,9 +100,12 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
         .values()
         .map(|v| {
             if v.is_string() {
-                v.as_str()
-                    .expect("Value not representable as str")
-                    .to_string()
+                if let Some(s) = v.as_str() {
+                    s.to_string()
+                } else {
+                    println!("error: Value in json not representable as str");
+                    String::new()
+                }
             } else {
                 v.to_string()
             }
@@ -160,9 +163,12 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
         .values()
         .map(|v| {
             if v.is_string() {
-                v.as_str()
-                    .expect("Value not representable as str")
-                    .to_string()
+                if let Some(s) = v.as_str() {
+                    s.to_string()
+                } else {
+                    println!("error: Value in json not representable as str");
+                    String::new()
+                }
             } else {
                 v.to_string()
             }
