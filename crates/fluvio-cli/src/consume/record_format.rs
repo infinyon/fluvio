@@ -7,14 +7,6 @@
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use super::TableModel;
 
-use std::io::Stdout;
-use tui::{backend::CrosstermBackend, Terminal};
-use crossterm::{
-    event::DisableMouseCapture,
-    execute,
-    terminal::{disable_raw_mode, LeaveAlternateScreen},
-};
-
 // -----------------------------------
 //  JSON
 // -----------------------------------
