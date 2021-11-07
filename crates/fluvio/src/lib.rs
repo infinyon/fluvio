@@ -93,7 +93,6 @@ mod spu;
 
 pub mod config;
 
-use spu::{SpuPool};
 use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
@@ -190,10 +189,7 @@ pub async fn producer<S: Into<String>>(topic: S) -> Result<TopicProducer, Fluvio
 ///
 /// [`Fluvio`]: ./struct.Fluvio.html
 #[instrument(skip(topic, partition))]
-pub async fn consumer<S>(
-    topic: S,
-    partition: i32,
-) -> Result<PartitionConsumer<SpuPool>, FluvioError>
+pub async fn consumer<S>(topic: S, partition: i32) -> Result<PartitionConsumer, FluvioError>
 where
     S: Into<String>,
 {
