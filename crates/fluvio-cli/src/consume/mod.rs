@@ -17,7 +17,7 @@ use futures::{select, FutureExt};
 
 mod record_format;
 mod table_format;
-use table_format::{TableEvent, TableModel};
+use table_format::{TableEventResponse, TableModel};
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
@@ -303,6 +303,7 @@ impl ConsumeOpt {
             }
         };
 
+        // TableModel and Terminal for full_table rendering
         let mut maybe_table_model = None;
         let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
             if io::stdout().is_tty() {
@@ -311,7 +312,6 @@ impl ConsumeOpt {
                 execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
                 let model = TableModel::default();
-
                 maybe_table_model = Some(model);
 
                 let stdout = io::stdout();
@@ -326,8 +326,10 @@ impl ConsumeOpt {
         // This is used by table output, to manage printing the table titles only one time
         let mut header_print = true;
 
-        // TODO: Clean this code duplication. This is all to help CI pass...
-
+        // Below is code duplication that was needed to help CI pass
+        // Without TTY, we panic when attempting to read from EventStream
+        // In CI, we do not have a TTY, so we need this check to avoid reading EventStream
+        // EventStream is only used by Tui+Crossterm to interact with table
         if io::stdout().is_tty() {
             // This needs to know if it is a tty before opening this
             let mut user_input_reader = EventStream::new();
@@ -361,7 +363,7 @@ impl ConsumeOpt {
                             Some(Ok(event)) => {
                                 if let Some(model) = maybe_table_model.as_mut() {
                                     match model.event_handler(event) {
-                                        TableEvent::Terminate => break,
+                                        TableEventResponse::Terminate => break,
                                         _ => continue
                                     }
                                 }
@@ -373,6 +375,7 @@ impl ConsumeOpt {
                 }
             }
         } else {
+            // We do not support `--output=table` when we don't have a TTY (i.e., CI environment)
             while let Some(result) = stream.next().await {
                 let result: std::result::Result<Record, _> = result;
                 let record = match result {

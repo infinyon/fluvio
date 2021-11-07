@@ -6,6 +6,7 @@
 * Add table display output option to consumer for json objects ([#1642](https://github.com/infinyon/fluvio/issues/1642))
 * Streamlined Admin API ([#1803](https://github.com/infinyon/fluvio/issues/1803))
 * Add SpuDirectory trait to Fluvio Client ([#1863](https://github.com/infinyon/fluvio/issues/1863))
+* Add `fluvio consume <topic> --output=full_table` to render row updates over fullscreen terminal screen ([#1846](https://github.com/infinyon/fluvio/issues/1846))
 
 ## Platform Version 0.9.12 - 2021-10-27
 * Add examples for ArrayMap. ([#1804](https://github.com/infinyon/fluvio/issues/1804))

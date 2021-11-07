@@ -1,68 +1,5 @@
 // -----------------------------------
-//  Basic Table
-// -----------------------------------
-
-///// Print records in text-based table format
-//pub fn print_table_record(record: &[u8], count: i32) -> String {
-//    use prettytable::{Row, cell, Cell, Slice};
-//    use prettytable::format::{self, FormatBuilder};
-//
-//    let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
-//        Ok(value) => value,
-//        Err(_e) => panic!("Value not json"),
-//    };
-//
-//    let obj = maybe_json.as_object().unwrap();
-//
-//    // This is the case where we don't provide any table info. We want to print a table w/ all top-level keys as headers
-//    // Think about how we might only select specific keys
-//    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
-//
-//    // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
-//    let values_str: Vec<String> = obj
-//        .values()
-//        .map(|v| {
-//            if v.is_string() {
-//                v.as_str()
-//                    .expect("Value not representable as str")
-//                    .to_string()
-//            } else {
-//                v.to_string()
-//            }
-//        })
-//        .collect();
-//
-//    let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
-//    let entries: Row = Row::new(values_str.iter().map(|v| Cell::new(v)).collect());
-//
-//    // Print the table
-//    let t_print = vec![header, entries];
-//
-//    let mut table = prettytable::Table::init(t_print);
-//
-//    let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
-//    let table_format = base_format;
-//    table.set_format(table_format.build());
-//
-//    // FIXME: Live display of table data easily misaligns column widths
-//    // if there is a length diff between the header and the data
-//    // The rows after the first (count == 0) don't line up with the header
-//    // prettytable might not support the live display use-case we want
-//    if count == 0 {
-//        table.printstd();
-//    } else {
-//        let slice = table.slice(1..);
-//        slice.printstd();
-//    }
-//    format!("")
-//}
-
-// -----------------------------------
-//  Fancy Table
-// -----------------------------------
-
-// -----------------------------------
-//  Utilities
+//  Full Table
 // -----------------------------------
 
 use crate::Result;
@@ -129,14 +66,17 @@ impl TableModel {
     //TODO
     //pub fn delete_row(&mut self, row_index: usize) -> Result<()> {}
 
+    /// Return number of rows in cache
     pub fn num_columns(&self) -> usize {
         self.headers.len()
     }
 
+    /// Return the row selected
     pub fn current_selected(&self) -> usize {
         self.state.selected().unwrap_or(0)
     }
 
+    /// Select next row from current selection. Wrap to top
     pub fn next(&mut self) {
         if !self.data.is_empty() {
             let i = match self.state.selected() {
@@ -153,6 +93,7 @@ impl TableModel {
         }
     }
 
+    /// Select previous row from current selection. Wrap to bottom.
     pub fn previous(&mut self) {
         if !self.data.is_empty() {
             let i = match self.state.selected() {
@@ -169,59 +110,63 @@ impl TableModel {
         }
     }
 
+    /// Select first row in data
     pub fn first(&mut self) {
         if !self.data.is_empty() {
             self.state.select(Some(0));
         }
     }
 
+    /// Select last row in data
     pub fn last(&mut self) {
         if !self.data.is_empty() {
             self.state.select(Some(self.data.len() - 1));
         }
     }
 
-    pub fn event_handler(&mut self, user_input: Event) -> TableEvent {
+    /// Takes in `user_input` and handles the side-effect, (except for exiting table)
+    /// Returns the appropriate `TableEventResponse`
+    pub fn event_handler(&mut self, user_input: Event) -> TableEventResponse {
         if let Event::Key(key) = user_input {
             match key.code {
-                KeyCode::Char('q') | KeyCode::Esc => TableEvent::Terminate,
+                KeyCode::Char('q') | KeyCode::Esc => TableEventResponse::Terminate,
                 KeyCode::Char('c') => {
                     self.data = Vec::new();
                     self.state.select(None);
-                    TableEvent::InputHandled(user_input)
+                    TableEventResponse::InputHandled(user_input)
                 }
                 KeyCode::Up => {
                     self.previous();
-                    TableEvent::InputHandled(user_input)
+                    TableEventResponse::InputHandled(user_input)
                 }
                 KeyCode::Down => {
                     self.next();
-                    TableEvent::InputHandled(user_input)
+                    TableEventResponse::InputHandled(user_input)
                 }
                 KeyCode::Home => {
                     self.first();
-                    TableEvent::InputHandled(user_input)
+                    TableEventResponse::InputHandled(user_input)
                 }
                 KeyCode::End => {
                     self.last();
-                    TableEvent::InputHandled(user_input)
+                    TableEventResponse::InputHandled(user_input)
                 }
-                _ => TableEvent::InputIgnored(user_input),
+                _ => TableEventResponse::InputIgnored(user_input),
             }
         } else if let Event::Mouse(event) = user_input {
             match event.kind {
                 MouseEventKind::ScrollDown => {
                     self.next();
-                    TableEvent::InputHandled(user_input)
+                    TableEventResponse::InputHandled(user_input)
                 }
                 MouseEventKind::ScrollUp => {
                     self.previous();
-                    TableEvent::InputHandled(user_input)
+                    TableEventResponse::InputHandled(user_input)
                 }
-                _ => TableEvent::InputIgnored(user_input),
+                _ => TableEventResponse::InputIgnored(user_input),
             }
         } else {
-            TableEvent::InputIgnored(user_input)
+            TableEventResponse::InputIgnored(user_input)
         }
     }
 
@@ -241,6 +186,8 @@ impl TableModel {
             .expect("Could not render table frame");
     }
 
+    /// Render the frame for the table
+    /// Re-calculates the table frame so it can be drawn on screen
     pub fn table_ui(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>) {
         let rects = Layout::default()
             .constraints([Constraint::Percentage(100)].as_ref())
@@ -298,8 +245,9 @@ impl TableModel {
     }
 }
 
+/// Return response from user input on TUI table
 #[derive(Debug)]
-pub enum TableEvent {
+pub enum TableEventResponse {
     InputHandled(Event),
     InputIgnored(Event),
     Terminate,

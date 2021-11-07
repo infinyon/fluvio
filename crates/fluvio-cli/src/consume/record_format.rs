@@ -79,10 +79,12 @@ pub fn format_raw_record(record: &[u8]) -> String {
 }
 
 // -----------------------------------
-//  Table
+//  Table (basic table)
 // -----------------------------------
 
-/// Structure json data in table format
+/// Structure json data into table row
+/// Print table header if `print_header` is true
+/// Rows may not stay aligned with table header
 pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
     use prettytable::{Row, cell, Cell, Slice};
     use prettytable::format::{self, FormatBuilder};
@@ -124,11 +126,6 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
     let table_format = base_format;
     table.set_format(table_format.build());
 
-    // FIXME: Live display of table data easily misaligns column widths
-    // if there is a length diff between the header and the data
-    // The rows after the first (count == 0) don't line up with the header
-    // prettytable might not support the live display use-case we want
-
     let mut out = Vec::new();
     if print_header {
         table.print(&mut out).expect("Unable to print table");
@@ -140,6 +137,13 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> String {
     format!("{}", String::from_utf8_lossy(&out))
 }
 
+// -----------------------------------
+//  Full Table (fullscreen interactive table)
+// -----------------------------------
+
+/// Updates the TableModel used to render the TUI table during `TableModel::render()`
+/// Attempts to update relevant rows, but appends to table if the primary key doesn't exist
+/// Returned String is not intended to be used
 pub fn format_fancy_table_record(
     record: &[u8],
     terminal: &mut Terminal<CrosstermBackend<Stdout>>,
