@@ -82,7 +82,7 @@
 )]
 
 mod error;
-mod sockets;
+pub mod sockets;
 mod admin;
 mod fluvio;
 pub mod consumer;

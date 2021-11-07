@@ -1,8 +1,10 @@
 use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
 use async_lock::Mutex;
+use async_trait::async_trait;
 
 use fluvio::spu::{SpuDirectory, SpuSocket};
+use fluvio::sockets::VersionedSerialSocket;
 use fluvio_types::SpuId;
 
 /// maintain connections to all leaders
@@ -19,7 +21,6 @@ impl LeaderConnections {
     }
 }
 
-/*
 #[async_trait]
 impl SpuDirectory for LeaderConnections {
     async fn create_serial_socket(
@@ -36,8 +37,8 @@ impl SpuDirectory for LeaderConnections {
         version: i16,
     ) -> Result<fluvio_socket::AsyncResponse<R>, fluvio::FluvioError>
     where
-        R: Sync + Send {
+        R: Sync + Send,
+    {
         todo!()
     }
 }
-*/
