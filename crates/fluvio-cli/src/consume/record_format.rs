@@ -89,7 +89,12 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
         }
     };
 
-    let obj = maybe_json.as_object().unwrap();
+    let obj = if let Some(obj) = maybe_json.as_object() {
+        obj
+    } else {
+        println!("error: Unable to parse json as object map");
+        return None;
+    };
 
     // This is the case where we don't provide any table info. We want to print a table w/ all top-level keys as headers
     // Think about how we might only select specific keys
@@ -155,7 +160,13 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
         }
     };
 
-    let obj = maybe_json.as_object().unwrap();
+    let obj = if let Some(obj) = maybe_json.as_object() {
+        obj
+    } else {
+        println!("error: Unable to parse json as object map");
+        return None;
+    };
+
     let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
 
     // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
