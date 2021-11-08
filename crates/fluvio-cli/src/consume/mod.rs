@@ -5,7 +5,7 @@
 //!
 
 use std::{io::Error as IoError, path::PathBuf};
-use std::io::{self, ErrorKind, Read};
+use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
@@ -26,16 +26,14 @@ use fluvio::consumer::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
 };
 
-use tui::{Terminal, backend::TermionBackend};
-
-use termion::{
-    async_stdin,
-    input::{MouseTerminal, TermRead},
-    raw::{IntoRawMode, RawTerminal},
-    screen::AlternateScreen,
+use tui::Terminal;
+use tui::backend::CrosstermBackend;
+use crossterm::tty::IsTty;
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-
-type TuiBackend = TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<std::io::Stdout>>>>;
 
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
@@ -308,17 +306,16 @@ impl ConsumeOpt {
         // TableModel and Terminal for full_table rendering
         let mut maybe_table_model = None;
         let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
-            if termion::is_tty(&io::stdout()) {
-                //let stdout = io::stdout();
-                //enable_raw_mode()?;
-                //let mut stdout = io::stdout();
-                //execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+            if io::stdout().is_tty() {
+                enable_raw_mode()?;
+                let mut stdout = io::stdout();
+                execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
                 let model = TableModel::default();
                 maybe_table_model = Some(model);
 
-                //let stdout = io::stdout();
-                Some(self.create_terminal()?)
+                let stdout = io::stdout();
+                Some(self.create_terminal(stdout)?)
             } else {
                 None
             }
@@ -333,10 +330,9 @@ impl ConsumeOpt {
         // Without TTY, we panic when attempting to read from EventStream
         // In CI, we do not have a TTY, so we need this check to avoid reading EventStream
         // EventStream is only used by Tui+Crossterm to interact with table
-        if termion::is_tty(&io::stdout()) {
+        if io::stdout().is_tty() {
             // This needs to know if it is a tty before opening this
-            //let mut user_input_reader = EventStream::new();
-            let mut user_input_reader = async_stdin().events();
+            let mut user_input_reader = EventStream::new();
 
             loop {
                 select! {
@@ -362,17 +358,8 @@ impl ConsumeOpt {
                         },
                         None => break,
                     },
-                    maybe_event = async{user_input_reader.next()}.fuse() => {
+                    maybe_event = user_input_reader.next().fuse() => {
                         match maybe_event {
-                            //Some(Ok(event)) => {
-                            //    match event {
-                            //        Event::Key(Key::Char('q')) => {
-                            //            println!("flkdjflks");
-                            //            break
-                            //        },
-                            //        _ => {}
-                            //    }
-                            //},
                             Some(Ok(event)) => {
                                 if let Some(model) = maybe_table_model.as_mut() {
                                     match model.event_handler(event) {
@@ -382,7 +369,7 @@ impl ConsumeOpt {
                                 }
                             }
                             Some(Err(e)) => println!("Error: {:?}\r", e),
-                            None => {},
+                            None => break,
                         }
                     },
                 }
@@ -410,27 +397,24 @@ impl ConsumeOpt {
             }
         }
 
-        //if let Some(ConsumeOutputType::full_table) = &self.output {
-        //    if let Some(mut terminal_stdout) = maybe_terminal_stdout {
-        //        //disable_raw_mode()?;
-        //        //execute!(
-        //        //    terminal_stdout.backend_mut(),
-        //        //    LeaveAlternateScreen,
-        //        //    DisableMouseCapture
-        //        //)?;
-        //        //terminal_stdout.show_cursor()?;
-        //    }
-        //}
+        if let Some(ConsumeOutputType::full_table) = &self.output {
+            if let Some(mut terminal_stdout) = maybe_terminal_stdout {
+                disable_raw_mode()?;
+                execute!(
+                    terminal_stdout.backend_mut(),
+                    LeaveAlternateScreen,
+                    DisableMouseCapture
+                )?;
+                terminal_stdout.show_cursor()?;
+            }
+        }
 
         debug!("fetch loop exited");
         Ok(())
     }
 
-    fn create_terminal(&self) -> Result<Terminal<TuiBackend>> {
-        let stdout = io::stdout().into_raw_mode()?;
-        let stdout = MouseTerminal::from(stdout);
-        let stdout = AlternateScreen::from(stdout);
-        let backend = TermionBackend::new(stdout);
+    fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
+        let backend = CrosstermBackend::new(stdout);
         let terminal = Terminal::new(backend)?;
 
         Ok(terminal)
@@ -442,7 +426,7 @@ impl ConsumeOpt {
         templates: Option<&Handlebars>,
         record: &Record,
         header_print: &mut bool,
-        terminal: &mut Option<Terminal<TuiBackend>>,
+        terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
         table_model: &mut Option<TableModel>,
     ) {
         let formatted_key = record

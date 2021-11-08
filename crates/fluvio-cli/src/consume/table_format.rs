@@ -4,20 +4,15 @@
 
 use crate::Result;
 use tui::widgets::TableState;
+use std::io::Stdout;
 use tui::{
-    backend::TermionBackend,
+    backend::CrosstermBackend,
     layout::{Constraint, Layout},
     style::{Color, Modifier, Style},
     widgets::{Block, Borders, Cell, Row, Table},
     Frame, Terminal,
 };
-
-use termion::{
-    event::{Event, Key, MouseButton, MouseEvent},
-    input::MouseTerminal,
-    raw::RawTerminal,
-    screen::AlternateScreen,
-};
+use crossterm::event::{Event, KeyCode, MouseEventKind};
 
 #[derive(Debug, Default, Clone)]
 pub struct TableModel {
@@ -133,38 +128,38 @@ impl TableModel {
     /// Returns the appropriate `TableEventResponse`
     pub fn event_handler(&mut self, user_input: Event) -> TableEventResponse {
         if let Event::Key(key) = user_input {
-            match key {
-                Key::Char('q') | Key::Esc => TableEventResponse::Terminate,
-                Key::Char('c') => {
+            match key.code {
+                KeyCode::Char('q') | KeyCode::Esc => TableEventResponse::Terminate,
+                KeyCode::Char('c') => {
                     self.data = Vec::new();
                     self.state.select(None);
                     TableEventResponse::InputHandled(user_input)
                 }
-                Key::Up => {
+                KeyCode::Up => {
                     self.previous();
                     TableEventResponse::InputHandled(user_input)
                 }
-                Key::Down => {
+                KeyCode::Down => {
                     self.next();
                     TableEventResponse::InputHandled(user_input)
                 }
-                Key::Home => {
+                KeyCode::Home => {
                     self.first();
                     TableEventResponse::InputHandled(user_input)
                 }
-                Key::End => {
+                KeyCode::End => {
                     self.last();
                     TableEventResponse::InputHandled(user_input)
                 }
                 _ => TableEventResponse::InputIgnored(user_input),
             }
-        } else if let Event::Mouse(MouseEvent::Press(event, _, _)) = user_input {
-            match event {
-                MouseButton::WheelDown => {
+        } else if let Event::Mouse(event) = user_input {
+            match event.kind {
+                MouseEventKind::ScrollDown => {
                     self.next();
                     TableEventResponse::InputHandled(user_input)
                 }
-                MouseButton::WheelUp => {
+                MouseEventKind::ScrollUp => {
                     self.previous();
                     TableEventResponse::InputHandled(user_input)
                 }
@@ -181,9 +176,7 @@ impl TableModel {
     /// If you do not provide any column ordering, it will be alphabetized by the top-level keys
     pub fn render(
         &mut self,
-        terminal: &mut Terminal<
-            TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<std::io::Stdout>>>>,
-        >,
+        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
         // primary_key: Option<String>,
         // column_order: Option<Vec<String>,
         //record: &[u8],
@@ -195,10 +188,7 @@ impl TableModel {
 
     /// Render the frame for the table
     /// Re-calculates the table frame so it can be drawn on screen
-    pub fn table_ui(
-        &mut self,
-        f: &mut Frame<TermionBackend<AlternateScreen<MouseTerminal<RawTerminal<std::io::Stdout>>>>>,
-    ) {
+    pub fn table_ui(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>) {
         let rects = Layout::default()
             .constraints([Constraint::Percentage(100)].as_ref())
             .margin(5)

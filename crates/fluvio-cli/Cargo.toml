@@ -63,9 +63,8 @@ colored = "2"
 handlebars = "4"
 content_inspector = { version = "0.2.4", optional = true }
 flate2 = "1.0.22"
-#crossterm = { version = "0.22.1", features = ['event-stream']}
-termion = "1.5"
-tui = { version = "0.16.0", default-features = false, features = ['termion'] }
+crossterm = { version = "0.22.1", features = ['event-stream']}
+tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
 futures = "0.3"
 
 # Fluvio dependencies
