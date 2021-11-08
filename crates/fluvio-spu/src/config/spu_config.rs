@@ -14,7 +14,6 @@ use std::path::PathBuf;
 // defaults values
 use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use fluvio_types::defaults::SPU_PRIVATE_PORT;
-use fluvio_types::defaults::SC_PUBLIC_PORT;
 use fluvio_types::defaults::SC_PRIVATE_PORT;
 use fluvio_types::defaults::SPU_LOG_BASE_DIR;
 use fluvio_types::defaults::SPU_LOG_SIZE;
@@ -125,12 +124,6 @@ impl SpuConfig {
 
     pub fn sc_endpoint(&self) -> &str {
         &self.sc_endpoint
-    }
-
-    pub fn sc_public_endpoint(&self) -> String {
-        self.sc_endpoint
-            .replace("internal", "public")
-            .replace(&SC_PRIVATE_PORT.to_string(), &SC_PUBLIC_PORT.to_string())
     }
 
     pub fn public_socket_addr(&self) -> &str {

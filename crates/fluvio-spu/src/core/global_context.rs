@@ -11,7 +11,6 @@ use tracing::{debug, error, instrument};
 use fluvio_controlplane_metadata::partition::Replica;
 use fluvio_types::SpuId;
 use fluvio_storage::{ReplicaStorage};
-use fluvio::Fluvio;
 
 use crate::config::SpuConfig;
 use crate::replication::follower::FollowersState;
@@ -49,7 +48,7 @@ pub struct GlobalContext<S> {
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
-    leaders: LeaderConnections,
+    leaders: Arc<LeaderConnections>,
 }
 
 // -----------------------------------
@@ -60,8 +59,8 @@ impl<S> GlobalContext<S>
 where
     S: ReplicaStorage,
 {
-    pub fn new_shared_context(spu_config: SpuConfig, fluvio: Fluvio) -> Arc<Self> {
-        Arc::new(GlobalContext::new(spu_config, fluvio))
+    pub fn new_shared_context(spu_config: SpuConfig) -> Arc<Self> {
+        Arc::new(GlobalContext::new(spu_config))
     }
 
     pub fn new(spu_config: SpuConfig) -> Self {
@@ -80,7 +79,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
-            leaders: LeaderConnections::new(spus, replicas),
+            leaders: LeaderConnections::shared(spus, replicas),
         }
     }
 
@@ -159,8 +158,8 @@ where
     }
 
     #[allow(unused)]
-    pub fn leaders(&self) -> &LeaderConnections {
-        &self.leaders
+    pub fn leaders(&self) -> Arc<LeaderConnections> {
+        self.leaders.clone()
     }
 }
 

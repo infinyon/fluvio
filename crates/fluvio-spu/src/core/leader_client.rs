@@ -29,6 +29,9 @@ impl LeaderConnections {
             ..Default::default()
         }
     }
+    pub fn shared(spus: SharedSpuLocalStore, replicas: SharedReplicaLocalStore) -> Arc<Self> {
+        Arc::new(LeaderConnections::new(spus, replicas))
+    }
 
     /// create a connection to leader, it can't find it, return
     #[instrument(skip(self))]

@@ -137,7 +137,7 @@ pub struct ConsumeOpt {
     pub join_topic: Option<String>,
 
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
-    #[structopt(long, requires("aggregate"))]
+    #[structopt(long)]
     pub initial: Option<String>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
