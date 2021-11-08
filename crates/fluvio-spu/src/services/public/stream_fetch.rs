@@ -264,14 +264,12 @@ impl StreamFetchHandler {
         let mut maybe_join = maybe_join.map(|mj| mj.boxed());
         let mut join_record = if let Some(join_stream) = maybe_join.as_mut() {
             // we wait for at least one record
-            let record = join_stream.next().await.transpose().map_err(|err| {
+            join_stream.next().await.transpose().map_err(|err| {
                 IoError::new(
                     ErrorKind::Other,
                     format!("failed to get record from join stream {}", err),
                 )
-            })?;
-            assert!(record.is_some());
-            record
+            })?
         } else {
             None
         };

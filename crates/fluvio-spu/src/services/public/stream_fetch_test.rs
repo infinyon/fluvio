@@ -2091,36 +2091,51 @@ async fn test_stream_fetch_join(
     wasm_payload: Option<SmartStreamPayload>,
     smart_module: Option<SmartModuleInvocation>,
 ) {
+    ///        0  1  2  3  4  
+    ///  ----------------------
+    /// left   11 22 33 44 55
+    /// right        9              
+    /// joined       20 31 42 53 64
+    use fluvio::metadata::spu::SpuSpec;
     ensure_clean_dir(&test_path);
+    let port = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
     // wait for stream controller async to start
     sleep(Duration::from_millis(100)).await;
 
+    let spu_localstore = ctx.spu_localstore();
+    let spu_spec = SpuSpec::new_public_addr(5001, port, "127.0.0.1".into());
+    spu_localstore.insert(spu_spec);
+
     let client_socket =
         MultiplexerSocket::shared(FluvioSocket::connect(&addr).await.expect("connect"));
 
-    let topic_left = "test_join_left";
-    let test = Replica::new((topic_left.to_owned(), 0), 5001, vec![5001]);
-    let test_id_left = test.id.clone();
-    let replica_left = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
-        .await
-        .expect("replica");
+    let topic_left = "test-join-left";
+    let test_left = Replica::new((topic_left.to_owned(), 0), 5001, vec![5001]);
+    let test_id_left = test_left.id.clone();
+    let replica_left =
+        LeaderReplicaState::create(test_left.clone(), ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
     ctx.leaders_state()
         .insert(test_id_left, replica_left.clone());
 
+    ctx.replica_localstore().insert(test_left);
     let topic_right = JOIN_RIGHT_TOPIC;
-    let test = Replica::new((topic_right.to_owned(), 0), 5001, vec![5001]);
-    let test_id_right = test.id.clone();
-    let replica_right = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
-        .await
-        .expect("replica");
+    let test_right = Replica::new((topic_right.to_owned(), 0), 5001, vec![5001]);
+    let test_id_right = test_right.id.clone();
+    let replica_right =
+        LeaderReplicaState::create(test_right.clone(), ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
 
     ctx.leaders_state()
         .insert(test_id_right, replica_right.clone());
+    ctx.replica_localstore().insert(test_right);
 
     // Input: the following records:
     //
@@ -2136,7 +2151,7 @@ async fn test_stream_fetch_join(
         .expect("batch")
         .records();
 
-    // Input: the following records:
+    // Input: the following records to the right topic:
     //
     // 9
     let mut records_right = BatchProducer::builder()
@@ -2202,11 +2217,11 @@ async fn test_stream_fetch_join(
 }
 
 const FLUVIO_WASM_JOIN: &str = "fluvio_wasm_join";
-const JOIN_RIGHT_TOPIC: &str = "test_join_right";
+const JOIN_RIGHT_TOPIC: &str = "test-join-right";
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_join_legacy() {
-    legacy_test(
+async fn test_stream_fetch_join_adhoc() {
+    adhoc_test(
         "test_stream_fetch_join_legacy",
         FLUVIO_WASM_JOIN,
         SmartStreamKind::Join(JOIN_RIGHT_TOPIC.into()),
