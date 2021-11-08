@@ -82,14 +82,14 @@
 )]
 
 mod error;
-mod sockets;
+pub mod sockets;
 mod admin;
 mod fluvio;
 pub mod consumer;
 mod producer;
 mod offset;
 mod sync;
-mod spu;
+pub mod spu;
 
 pub mod config;
 

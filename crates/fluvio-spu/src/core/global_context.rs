@@ -2,6 +2,7 @@
 //! # Global Context
 //!
 //! Global Context maintains states need to be shared across in the SPU
+
 use std::sync::Arc;
 use std::fmt::Debug;
 
@@ -21,6 +22,7 @@ use crate::services::public::StreamPublishers;
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
 use fluvio_smartengine::SmartEngine;
 
+use super::leader_client::LeaderConnections;
 use super::smart_module::SmartModuleLocalStore;
 use super::smartstream::SmartStreamStore;
 use super::spus::SharedSpuLocalStore;
@@ -46,6 +48,7 @@ pub struct GlobalContext<S> {
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
+    leaders: LeaderConnections,
 }
 
 // -----------------------------------
@@ -61,9 +64,12 @@ where
     }
 
     pub fn new(spu_config: SpuConfig) -> Self {
+        let spus = SpuLocalStore::new_shared();
+        let replicas = ReplicaStore::new_shared();
+
         GlobalContext {
-            spu_localstore: SpuLocalStore::new_shared(),
-            replica_localstore: ReplicaStore::new_shared(),
+            spu_localstore: spus.clone(),
+            replica_localstore: replicas.clone(),
             smart_module_localstore: SmartModuleLocalStore::new_shared(),
             smartstream_localstore: SmartStreamStore::new_shared(),
             config: Arc::new(spu_config),
@@ -73,6 +79,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
+            leaders: LeaderConnections::new(spus, replicas),
         }
     }
 
@@ -148,6 +155,11 @@ where
 
     pub fn smartstream_owned(&self) -> SmartEngine {
         self.sm_engine.clone()
+    }
+
+    #[allow(unused)]
+    pub fn leaders(&self) -> &LeaderConnections {
+        &self.leaders
     }
 }
 

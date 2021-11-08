@@ -1,6 +1,6 @@
 use std::default::Default;
 use std::fmt;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
 use tracing::{debug, instrument};
@@ -79,6 +79,16 @@ pub struct ClientConfig {
     pub(crate) use_spu_local_address: bool,
 }
 
+impl Debug for ClientConfig {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "ClientConfig {{ addr: {}, client_id: {} }}",
+            self.addr, self.client_id
+        )
+    }
+}
+
 impl fmt::Display for ClientConfig {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "addr {}", self.addr)
@@ -128,7 +138,7 @@ impl ClientConfig {
     }
 
     #[instrument(skip(self))]
-    pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
+    pub async fn connect(self) -> Result<VersionedSocket, FluvioError> {
         debug!(add = %self.addr, "Connection to");
         let socket =
             FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
