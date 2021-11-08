@@ -66,9 +66,30 @@ impl LeaderConnections {
 impl SpuDirectory for LeaderConnections {
     async fn create_serial_socket(
         &self,
-        _replica: &dataplane::ReplicaKey,
+        replica: &dataplane::ReplicaKey,
     ) -> Result<VersionedSerialSocket, fluvio::FluvioError> {
-        panic!("no need")
+        if let Some(replica_spec) = self.replicas.spec(replica) {
+            let leader_id = replica_spec.leader;
+
+            // check if already have existing connection to same SPU
+            let mut client_lock = self.leaders.lock().await;
+
+            if let Some(spu_socket) = client_lock.get_mut(&leader_id) {
+                if !spu_socket.is_stale() {
+                    return Ok(spu_socket.create_serial_socket().await);
+                } else {
+                    client_lock.remove(&leader_id);
+                }
+            }
+
+            let mut spu_socket = self.connect_to_leader(leader_id).await?;
+            let serial_socket = spu_socket.create_serial_socket().await;
+            client_lock.insert(leader_id, spu_socket);
+
+            Ok(serial_socket)
+        } else {
+            Err(FluvioError::TopicNotFound(replica.to_string()))
+        }
     }
 
     async fn create_stream_with_version<R: dataplane::api::Request>(

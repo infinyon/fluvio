@@ -157,6 +157,7 @@ where
         self.sm_engine.clone()
     }
 
+    #[allow(unused)]
     pub fn leaders(&self) -> &LeaderConnections {
         &self.leaders
     }
