@@ -1,7 +1,7 @@
 use tracing::debug;
 use structopt::StructOpt;
 
-use fluvio_controlplane_metadata::smartstream::{SmartStreamInputs, SmartStreamModules};
+use fluvio_controlplane_metadata::smartstream::{SmartStreamInputs, SmartStreamSteps};
 
 use fluvio::Fluvio;
 use fluvio::metadata::smartstream::{
@@ -68,7 +68,7 @@ impl From<CreateSmartStreamOpt> for (String, SmartStreamSpec) {
             SmartStreamSpec {
                 inputs: SmartStreamInputs { left, right },
 
-                modules: SmartStreamModules {
+                modules: SmartStreamSteps {
                     transforms: opt.transforms.modules(),
                     outputs: vec![],
                 },
