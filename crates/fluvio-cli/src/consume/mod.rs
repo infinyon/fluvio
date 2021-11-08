@@ -5,7 +5,7 @@
 //!
 
 use std::{io::Error as IoError, path::PathBuf};
-use std::io::{ErrorKind, Read};
+use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
@@ -13,8 +13,11 @@ use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
+use futures::{select, FutureExt};
 
 mod record_format;
+mod table_format;
+use table_format::{TableEventResponse, TableModel};
 
 use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio_sc_schema::ApiError;
@@ -23,11 +26,20 @@ use fluvio::consumer::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
 };
 
+use tui::Terminal;
+use tui::backend::CrosstermBackend;
+use crossterm::tty::IsTty;
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+};
+
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
-    format_json, print_table_record,
+    format_json, format_basic_table_record, format_fancy_table_record,
 };
 use handlebars::Handlebars;
 
@@ -309,29 +321,132 @@ impl ConsumeOpt {
             }
         };
 
-        // This is used by table output, to print the table titles only once
-        let mut record_count = 0;
-        while let Some(result) = stream.next().await {
-            let result: std::result::Result<Record, _> = result;
-            let record = match result {
-                Ok(record) => record,
-                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
-                    eprintln!("{}", code.to_sentence());
-                    continue;
-                }
-                Err(other) => return Err(other.into()),
-            };
+        // TableModel and Terminal for full_table rendering
+        let mut maybe_table_model = None;
+        let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
+            if io::stdout().is_tty() {
+                enable_raw_mode()?;
+                let mut stdout = io::stdout();
+                execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
-            self.print_record(templates.as_ref(), &record, record_count);
-            record_count += 1;
+                let model = TableModel::default();
+                maybe_table_model = Some(model);
+
+                let stdout = io::stdout();
+                Some(self.create_terminal(stdout)?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        // This is used by table output, to manage printing the table titles only one time
+        let mut header_print = true;
+
+        // Below is code duplication that was needed to help CI pass
+        // Without TTY, we panic when attempting to read from EventStream
+        // In CI, we do not have a TTY, so we need this check to avoid reading EventStream
+        // EventStream is only used by Tui+Crossterm to interact with table
+        if io::stdout().is_tty() {
+            // This needs to know if it is a tty before opening this
+            let mut user_input_reader = EventStream::new();
+
+            loop {
+                select! {
+                    stream_next = stream.next().fuse() => match stream_next {
+                        Some(result) => {
+                            let result: std::result::Result<Record, _> = result;
+                            let record = match result {
+                                Ok(record) => record,
+                                Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                                    eprintln!("{}", code.to_sentence());
+                                    continue;
+                                }
+                                Err(other) => return Err(other.into()),
+                            };
+
+                            self.print_record(
+                                templates.as_ref(),
+                                &record,
+                                &mut header_print,
+                                &mut maybe_terminal_stdout,
+                                &mut maybe_table_model,
+                            );
+                        },
+                        None => break,
+                    },
+                    maybe_event = user_input_reader.next().fuse() => {
+                        match maybe_event {
+                            Some(Ok(event)) => {
+                                if let Some(model) = maybe_table_model.as_mut() {
+                                    match model.event_handler(event) {
+                                        TableEventResponse::Terminate => break,
+                                        _ => continue
+                                    }
+                                }
+                            }
+                            Some(Err(e)) => println!("Error: {:?}\r", e),
+                            None => break,
+                        }
+                    },
+                }
+            }
+        } else {
+            // We do not support `--output=table` when we don't have a TTY (i.e., CI environment)
+            while let Some(result) = stream.next().await {
+                let result: std::result::Result<Record, _> = result;
+                let record = match result {
+                    Ok(record) => record,
+                    Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
+                        eprintln!("{}", code.to_sentence());
+                        continue;
+                    }
+                    Err(other) => return Err(other.into()),
+                };
+
+                self.print_record(
+                    templates.as_ref(),
+                    &record,
+                    &mut header_print,
+                    &mut None,
+                    &mut None,
+                );
+            }
+        }
+
+        if let Some(ConsumeOutputType::full_table) = &self.output {
+            if let Some(mut terminal_stdout) = maybe_terminal_stdout {
+                disable_raw_mode()?;
+                execute!(
+                    terminal_stdout.backend_mut(),
+                    LeaveAlternateScreen,
+                    DisableMouseCapture
+                )?;
+                terminal_stdout.show_cursor()?;
+            }
         }
 
         debug!("fetch loop exited");
         Ok(())
     }
 
+    fn create_terminal(&self, stdout: Stdout) -> Result<Terminal<CrosstermBackend<Stdout>>> {
+        let backend = CrosstermBackend::new(stdout);
+        let terminal = Terminal::new(backend)?;
+
+        Ok(terminal)
+    }
+
     /// Process fetch topic response based on output type
-    pub fn print_record(&self, templates: Option<&Handlebars>, record: &Record, count: i32) {
+    pub fn print_record(
+        &self,
+        templates: Option<&Handlebars>,
+        record: &Record,
+        header_print: &mut bool,
+        terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
+        table_model: &mut Option<TableModel>,
+    ) {
         let formatted_key = record
             .key()
             .map(|key| String::from_utf8_lossy(key).to_string())
@@ -350,7 +465,21 @@ impl ConsumeOpt {
             }
             (Some(ConsumeOutputType::raw), None) => Some(format_raw_record(record.value())),
             (Some(ConsumeOutputType::table), None) => {
-                Some(print_table_record(record.value(), count))
+                let value = format_basic_table_record(record.value(), *header_print);
+
+                // Only print the header once
+                if header_print == &true {
+                    *header_print = false;
+                }
+
+                value
+            }
+            (Some(ConsumeOutputType::full_table), None) => {
+                if let Some(ref mut table) = table_model {
+                    format_fancy_table_record(record.value(), table)
+                } else {
+                    unreachable!()
+                }
             }
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
@@ -365,7 +494,7 @@ impl ConsumeOpt {
         };
 
         // If the consume type is table, we don't want to accidentally print a newline
-        if self.output != Some(ConsumeOutputType::table) {
+        if self.output != Some(ConsumeOutputType::full_table) {
             match formatted_value {
                 Some(value) if self.key_value => {
                     println!("[{}] {}", formatted_key, value);
@@ -375,6 +504,10 @@ impl ConsumeOpt {
                 }
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
+            }
+        } else if let Some(term) = terminal {
+            if let Some(table) = table_model {
+                table.render(term);
             }
         }
     }
@@ -508,6 +641,7 @@ arg_enum! {
         json,
         raw,
         table,
+        full_table,
     }
 }
 

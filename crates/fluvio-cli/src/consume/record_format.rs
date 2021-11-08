@@ -5,6 +5,7 @@
 //!
 
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
+use super::TableModel;
 
 // -----------------------------------
 //  JSON
@@ -70,20 +71,30 @@ pub fn format_raw_record(record: &[u8]) -> String {
 }
 
 // -----------------------------------
-//  Table
+//  Table (basic table)
 // -----------------------------------
 
-/// Print records in table format
-pub fn print_table_record(record: &[u8], count: i32) -> String {
+/// Structure json data into table row
+/// Print table header if `print_header` is true
+/// Rows may not stay aligned with table header
+pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<String> {
     use prettytable::{Row, cell, Cell, Slice};
     use prettytable::format::{self, FormatBuilder};
 
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
-        Err(_e) => panic!("Value not json"),
+        Err(e) => {
+            println!("error parsing record as json: {}", e);
+            return None;
+        }
     };
 
-    let obj = maybe_json.as_object().unwrap();
+    let obj = if let Some(obj) = maybe_json.as_object() {
+        obj
+    } else {
+        println!("error: Unable to parse json as object map");
+        return None;
+    };
 
     // This is the case where we don't provide any table info. We want to print a table w/ all top-level keys as headers
     // Think about how we might only select specific keys
@@ -94,9 +105,12 @@ pub fn print_table_record(record: &[u8], count: i32) -> String {
         .values()
         .map(|v| {
             if v.is_string() {
-                v.as_str()
-                    .expect("Value not representable as str")
-                    .to_string()
+                if let Some(s) = v.as_str() {
+                    s.to_string()
+                } else {
+                    println!("error: Value in json not representable as str");
+                    String::new()
+                }
             } else {
                 v.to_string()
             }
@@ -115,18 +129,75 @@ pub fn print_table_record(record: &[u8], count: i32) -> String {
     let table_format = base_format;
     table.set_format(table_format.build());
 
-    // FIXME: Live display of table data easily misaligns column widths
-    // if there is a length diff between the header and the data
-    // The rows after the first (count == 0) don't line up with the header
-    // prettytable might not support the live display use-case we want
-    if count == 0 {
-        table.printstd();
+    let mut out = Vec::new();
+    let res = if print_header {
+        table.print(&mut out)
     } else {
         let slice = table.slice(1..);
-        slice.printstd();
+        slice.print(&mut out)
+    };
+
+    if res.is_ok() {
+        Some(String::from_utf8_lossy(&out).trim_end().to_string())
+    } else {
+        None
     }
-    format!("")
 }
+
+// -----------------------------------
+//  Full Table (fullscreen interactive table)
+// -----------------------------------
+
+/// Updates the TableModel used to render the TUI table during `TableModel::render()`
+/// Attempts to update relevant rows, but appends to table if the primary key doesn't exist
+/// Returned String is not intended to be used
+pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) -> Option<String> {
+    let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
+        Ok(value) => value,
+        Err(e) => {
+            println!("error parsing record as json: {}", e);
+            return None;
+        }
+    };
+
+    let obj = if let Some(obj) = maybe_json.as_object() {
+        obj
+    } else {
+        println!("error: Unable to parse json as object map");
+        return None;
+    };
+
+    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
+
+    // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
+    let values_str: Vec<String> = obj
+        .values()
+        .map(|v| {
+            if v.is_string() {
+                if let Some(s) = v.as_str() {
+                    s.to_string()
+                } else {
+                    println!("error: Value in json not representable as str");
+                    String::new()
+                }
+            } else {
+                v.to_string()
+            }
+        })
+        .collect();
+
+    let header = keys_str;
+    if table_model.update_header(header).is_err() {
+        println!("Unable to set table headers")
+    }
+
+    if table_model.update_row(values_str).is_err() {
+        println!("Unable to update table row");
+    }
+
+    None
+}
+
 // -----------------------------------
 //  Utilities
 // -----------------------------------
