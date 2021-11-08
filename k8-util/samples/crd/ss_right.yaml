@@ -6,6 +6,7 @@ spec:
   input:
     topic:
       name: right
+      partition: all
   steps:
     - map:
         module: double
