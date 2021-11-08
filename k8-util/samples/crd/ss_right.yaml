@@ -1,0 +1,11 @@
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartStream
+metadata:
+  name: rdouble
+spec:
+  input:
+    topic:
+      name: right
+  steps:
+    - map:
+        name: double
