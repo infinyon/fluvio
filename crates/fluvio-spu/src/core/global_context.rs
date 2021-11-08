@@ -64,9 +64,13 @@ where
     }
 
     pub fn new(spu_config: SpuConfig) -> Self {
+
+        let spus = SpuLocalStore::new_shared();
+        let replicas = ReplicaStore::new_shared();
+
         GlobalContext {
-            spu_localstore: SpuLocalStore::new_shared(),
-            replica_localstore: ReplicaStore::new_shared(),
+            spu_localstore: spus.clone(),
+            replica_localstore: replicas.clone(),
             smart_module_localstore: SmartModuleLocalStore::new_shared(),
             smartstream_localstore: SmartStreamStore::new_shared(),
             config: Arc::new(spu_config),
@@ -76,7 +80,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
-            leaders: LeaderConnections::new(),
+            leaders: LeaderConnections::new(spus,replicas),
         }
     }
 

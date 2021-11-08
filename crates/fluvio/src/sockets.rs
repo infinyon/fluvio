@@ -138,7 +138,7 @@ impl ClientConfig {
     }
 
     #[instrument(skip(self))]
-    pub(crate) async fn connect(self) -> Result<VersionedSocket, FluvioError> {
+    pub async fn connect(self) -> Result<VersionedSocket, FluvioError> {
         debug!(add = %self.addr, "Connection to");
         let socket =
             FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
