@@ -43,6 +43,9 @@ pub const ARRAY_MAP_WASM_API: i16 = 15;
 // version for persistent SmartModule
 pub const SMART_MODULE_API: i16 = 16;
 
+// version for persistent SmartModule
+pub const JOIN_WASM_API: i16 = 17;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -123,6 +126,8 @@ pub enum SmartStreamKind {
     ArrayMap,
     #[fluvio(min_version = ARRAY_MAP_WASM_API)]
     FilterMap,
+    #[fluvio(min_version = JOIN_WASM_API)]
+    Join(String),
 }
 
 impl Default for SmartStreamKind {

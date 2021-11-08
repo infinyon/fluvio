@@ -48,7 +48,7 @@ pub struct GlobalContext<S> {
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
-    leaders: LeaderConnections,
+    leaders: Arc<LeaderConnections>,
 }
 
 // -----------------------------------
@@ -79,7 +79,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
-            leaders: LeaderConnections::new(spus, replicas),
+            leaders: LeaderConnections::shared(spus, replicas),
         }
     }
 
@@ -158,8 +158,8 @@ where
     }
 
     #[allow(unused)]
-    pub fn leaders(&self) -> &LeaderConnections {
-        &self.leaders
+    pub fn leaders(&self) -> Arc<LeaderConnections> {
+        self.leaders.clone()
     }
 }
 

@@ -34,6 +34,7 @@ mod encoding {
         pub base_offset: Offset,
         /// The records for the SmartStream to process
         pub record_data: Vec<u8>,
+        pub join_record: Vec<u8>,
         pub params: SmartStreamExtraParams,
     }
     impl std::convert::TryFrom<Vec<Record>> for SmartStreamInput {
@@ -89,6 +90,8 @@ mod encoding {
         EncodingOutput = -33,
         #[error("failed to parse Smartstream extra params")]
         ParsingExtraParams = -44,
+        #[error("undefined right record in Join smartstream")]
+        UndefinedRightRecord = -55,
     }
 
     impl Default for SmartStreamInternalError {
@@ -167,6 +170,7 @@ mod encoding {
         Map,
         ArrayMap,
         FilterMap,
+        Join,
         Aggregate,
     }
 

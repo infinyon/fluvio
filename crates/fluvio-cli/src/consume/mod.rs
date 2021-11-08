@@ -125,9 +125,16 @@ pub struct ConsumeOpt {
     #[structopt(long, group("smartmodule"))]
     pub array_map: Option<String>,
 
+    /// Path to a SmartStream join wasm filee
+    #[structopt(long, group("smartstream"))]
+    pub join: Option<String>,
+
     /// Path to a WASM file for aggregation
     #[structopt(long, group("smartmodule"))]
     pub aggregate: Option<String>,
+
+    #[structopt(long)]
+    pub join_topic: Option<String>,
 
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
     #[structopt(long)]
@@ -228,6 +235,17 @@ impl ConsumeOpt {
             Some(create_smart_module(
                 name_or_path,
                 SmartStreamKind::FilterMap,
+                extra_params,
+            )?)
+        } else if let Some(name_or_path) = &self.join {
+            Some(create_smart_module(
+                name_or_path,
+                SmartStreamKind::Join(
+                    self.join_topic
+                        .as_ref()
+                        .expect("Join topic field is required when using join")
+                        .to_owned(),
+                ),
                 extra_params,
             )?)
         } else {
