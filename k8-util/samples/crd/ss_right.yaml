@@ -8,4 +8,4 @@ spec:
       name: right
   steps:
     - map:
-        name: double
+        module: double

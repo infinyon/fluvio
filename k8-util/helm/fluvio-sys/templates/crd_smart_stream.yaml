@@ -25,9 +25,9 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["inputs"]
+              required: ["input"]
               properties:
-                inputs:
+                input:
                   type: object
                   properties:
                     topic:
@@ -55,44 +55,45 @@ spec:
                       - required: ["filterMap"]
                       - required: ["aggregate"]
                       - required: ["groupBy"]
+                      - required: ["join"]
                     properties:
                       filter:
                         type: object
-                        required: ["name"]
+                        required: ["module"]
                         properties:
-                          name: 
+                          module: 
                             type: string
                           id: 
                             type: string
                       map:
                         type: object
-                        required: ["name"]
+                        required: ["module"]
                         properties:
-                          name:
+                          module:
                             type: string
                           id:
                             type: string
                       filterMap:
                         type: object
-                        required: ["name"]
+                        required: ["module"]
                         properties:
-                          name:
+                          module:
                             type: string
                           id:
                             type: string
                       aggregate:
                         type: object
-                        required: ["name"]
+                        required: ["module"]
                         properties:
-                          name:
+                          module:
                             type: string
                           id:
                             type: string
                       join:
                         type: object
-                        required: ["name"]
+                        required: ["module","right"]
                         properties:
-                          name:
+                          module:
                             type: string
                           id:
                             type: string
