@@ -202,7 +202,8 @@ pub struct SmartStreamSteps {
 
 impl Display for SmartStreamSteps {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} steps", self.steps.len())
+        let modules: String = self.steps.iter().map(|t| t.to_string()).collect();
+        write!(f, "{}", modules)
     }
 }
 
@@ -243,6 +244,17 @@ impl Default for SmartStreamStep {
     }
 }
 
+impl Display for SmartStreamStep {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SmartStreamStep::Filter(module) => write!(f, "Filter({})", module),
+            SmartStreamStep::Map(module) => write!(f, "Map({})", module),
+            SmartStreamStep::FilterMap(module) => write!(f, "FilterMap({})", module),
+            SmartStreamStep::Aggregate(module) => write!(f, "Aggregate({})", module),
+        }
+    }
+}
+
 impl SmartStreamStep {
     pub fn module(&self) -> &SmartStreamModuleRef {
         match self {
@@ -261,6 +273,22 @@ impl SmartStreamStep {
 pub struct SmartStreamModule {
     pub module: SmartStreamModuleRef,
     pub id: Option<String>,
+}
+
+impl Display for SmartStreamModule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.module)
+    }
+}
+
+/// Generic SmartStream Module
+#[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
+pub struct SmartStreamJoinModule {
+    pub module: SmartStreamModuleRef,
+    pub id: Option<String>,
+    pub right: SmartStreamInput,
 }
 
 #[cfg(test)]
