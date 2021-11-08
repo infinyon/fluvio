@@ -45,7 +45,29 @@ impl SmartStreamCreateConfig {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let config: Self = serde_yaml::from_str(&contents)?;
+        let config: Self = serde_yaml::from_str(&contents).map_err(|e| {
+            CliError::Other(format!("failed to parse smartstream config: {:#?}", e))
+        })?;
         Ok(config)
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use super::*;
+
+    #[test]
+    fn test_config_right() {
+        let config =
+            SmartStreamCreateConfig::from_file("test-data/smartstream/right.yaml").expect("parse");
+        assert_eq!(config.name, "rdouble");
+    }
+
+    #[test]
+    fn test_config_left() {
+        let config =
+            SmartStreamCreateConfig::from_file("test-data/smartstream/left.yaml").expect("parse");
+        assert_eq!(config.name, "ss1");
     }
 }
