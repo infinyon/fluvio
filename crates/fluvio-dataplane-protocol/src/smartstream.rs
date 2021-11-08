@@ -90,6 +90,8 @@ mod encoding {
         EncodingOutput = -33,
         #[error("failed to parse Smartstream extra params")]
         ParsingExtraParams = -44,
+        #[error("undefined right record in Join smartstream")]
+        UndefinedRightRecord = -55
     }
 
     impl Default for SmartStreamInternalError {

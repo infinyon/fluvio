@@ -66,6 +66,10 @@ pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> Toke
                 if let Err(_err) = Decoder::decode(&mut join_last_record, &mut std::io::Cursor::new(join_last_record_input), 0) {
                     return SmartStreamInternalError::DecodingRecords as i32;
                 };
+                let join_last_record = match join_last_record {
+                    Some(record) => record,
+                    None => return SmartStreamInternalError::UndefinedRightRecord as i32,
+                };
 
                 #params_parsing
 

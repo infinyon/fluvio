@@ -260,8 +260,19 @@ impl StreamFetchHandler {
             impl Stream<Item = Result<fluvio::consumer::Record, FluvioError>> + std::marker::Send,
         >,
     ) -> Result<(), SocketError> {
-        let mut join_record = None;
         let mut maybe_join = maybe_join.map(|mj| mj.boxed());
+        let mut join_record = if let Some(join_stream) = maybe_join.as_mut() {
+            // we wait for at least one record
+            join_stream.next().await.transpose().map_err(|err| {
+                IoError::new(
+                    ErrorKind::Other,
+                    format!("failed to get record from join stream {}", err),
+                )
+            })?
+        } else {
+            None
+        };
+
         let (mut last_partition_offset, consumer_wait) = self
             .send_back_records(starting_offset, smartstream.as_mut(), join_record.as_ref())
             .await?;
