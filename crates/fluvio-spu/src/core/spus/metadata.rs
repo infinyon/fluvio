@@ -6,7 +6,6 @@
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use fluvio_types::SpuId;
 
-
 use crate::core::Spec;
 use crate::core::LocalStore;
 
