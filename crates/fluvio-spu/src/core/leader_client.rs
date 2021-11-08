@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Debug, sync::Arc};
 use async_lock::Mutex;
 use async_trait::async_trait;
 
-use fluvio::FluvioError;
+use fluvio::{FluvioError, PartitionConsumer};
 use fluvio::spu::{SpuDirectory, SpuSocket};
 use fluvio::sockets::{ClientConfig, VersionedSerialSocket};
 use fluvio_socket::MultiplexerSocket;
@@ -46,6 +46,19 @@ impl LeaderConnections {
         } else {
             Err(FluvioError::SPUNotFound(leader))
         }
+    }
+
+    /// create consumer connection to a leader
+    #[instrument(skip(self))]
+    pub async fn partition_consumer<S>(
+        self: Arc<Self>,
+        topic: S,
+        partition: i32,
+    ) -> PartitionConsumer<LeaderConnections>
+    where
+        S: Into<String> + Debug,
+    {
+        PartitionConsumer::new(topic.into(), partition, self.clone())
     }
 }
 

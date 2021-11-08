@@ -64,7 +64,6 @@ where
     }
 
     pub fn new(spu_config: SpuConfig) -> Self {
-
         let spus = SpuLocalStore::new_shared();
         let replicas = ReplicaStore::new_shared();
 
@@ -80,7 +79,7 @@ where
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
-            leaders: LeaderConnections::new(spus,replicas),
+            leaders: LeaderConnections::new(spus, replicas),
         }
     }
 

@@ -52,15 +52,18 @@ pub struct SpuSocket {
 }
 
 impl SpuSocket {
-
-    pub fn new(config: Arc<ClientConfig>, socket: SharedMultiplexerSocket, versions: Versions) -> Self {
+    pub fn new(
+        config: Arc<ClientConfig>,
+        socket: SharedMultiplexerSocket,
+        versions: Versions,
+    ) -> Self {
         Self {
             config,
             socket,
             versions,
         }
     }
-    
+
     pub async fn create_serial_socket(&mut self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
             self.socket.clone(),
@@ -118,7 +121,7 @@ impl SpuPool {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
         debug!("connecting to spu: {}", spu.spec);
-        
+
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
 
         let spu_addr = match spu.spec.public_endpoint_local {

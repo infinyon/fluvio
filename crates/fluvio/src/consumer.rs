@@ -70,7 +70,7 @@ impl<P> PartitionConsumer<P>
 where
     P: SpuDirectory,
 {
-    pub(crate) fn new(topic: String, partition: i32, pool: Arc<P>) -> Self {
+    pub fn new(topic: String, partition: i32, pool: Arc<P>) -> Self {
         Self {
             topic,
             partition,
