@@ -15,7 +15,8 @@ use crate::core::DefaultSharedGlobalContext;
 
 pub struct SmartStreamContext {
     pub smartstream: Box<dyn SmartStream>,
-    pub right_consumer_stream: Option<BoxStream<'static,Result<fluvio::consumer::Record, FluvioError>>>,
+    pub right_consumer_stream:
+        Option<BoxStream<'static, Result<fluvio::consumer::Record, FluvioError>>>,
 }
 
 impl SmartStreamContext {
@@ -127,5 +128,4 @@ impl SmartStreamContext {
                 ))
             })
     }
-
 }

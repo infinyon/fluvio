@@ -21,8 +21,7 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest,
-     StreamFetchRequest, StreamFetchResponse,
+    DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
@@ -129,7 +128,6 @@ impl StreamFetchHandler {
         consumer_offset_listener: OffsetChangeListener,
         msg: StreamFetchRequest<FileRecordSet>,
     ) -> Result<(), SocketError> {
-
         let smart_stream_ctx = match SmartStreamContext::extract(
             msg.wasm_payload,
             msg.smart_module,
@@ -187,9 +185,11 @@ impl StreamFetchHandler {
         starting_offset: Offset,
         smart_stream_ctx: Option<SmartStreamContext>,
     ) -> Result<(), SocketError> {
-       
         let (mut smartstream, mut right_consumer_stream) = if let Some(ctx) = smart_stream_ctx {
-            let SmartStreamContext { smartstream: st, right_consumer_stream } = ctx;
+            let SmartStreamContext {
+                smartstream: st,
+                right_consumer_stream,
+            } = ctx;
             (Some(st), right_consumer_stream)
         } else {
             (None, None)
