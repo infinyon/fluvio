@@ -37,3 +37,9 @@ pub mod memory {
         std::mem::drop(data);
     }
 }
+
+pub mod api_versions {
+    pub use fluvio_spu_schema::server::stream_fetch::{
+        AGGREGATOR_API, SMART_MODULE_API, ARRAY_MAP_WASM_API, WASM_MODULE_V2_API,
+    };
+}

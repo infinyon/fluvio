@@ -179,24 +179,24 @@ impl SmartStreamContext {
         })
     }
 
-    pub fn write_input<E: Encoder>(&mut self, input: &E) -> Result<WasmSlice> {
+    pub fn write_input<E: Encoder>(&mut self, input: &E, version: i16) -> Result<WasmSlice> {
         self.records_cb.clear();
         let mut input_data = Vec::new();
-        input.encode(&mut input_data, 0)?;
+        input.encode(&mut input_data, version)?;
         let array_ptr =
             self::memory::copy_memory_to_instance(&mut self.store, &self.instance, &input_data)?;
         let length = input_data.len();
         Ok((array_ptr as i32, length as i32))
     }
 
-    pub fn read_output<D: Decoder + Default>(&mut self) -> Result<D> {
+    pub fn read_output<D: Decoder + Default>(&mut self, version: i16) -> Result<D> {
         let bytes = self
             .records_cb
             .get()
             .and_then(|m| m.copy_memory_from(&mut self.store).ok())
             .unwrap_or_default();
         let mut output = D::default();
-        output.decode(&mut std::io::Cursor::new(bytes), 0)?;
+        output.decode(&mut std::io::Cursor::new(bytes), version)?;
         Ok(output)
     }
 }
