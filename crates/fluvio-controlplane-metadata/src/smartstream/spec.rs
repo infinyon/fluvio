@@ -21,7 +21,7 @@ use super::metadata::SmartStreamValidationError;
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartStreamSpec {
     pub input: SmartStreamInput,
-    #[serde(flatten)]
+    #[cfg_attr(feature = "use_serde", serde(flatten))]
     pub steps: SmartStreamSteps,
 }
 
