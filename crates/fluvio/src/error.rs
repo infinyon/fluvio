@@ -18,7 +18,7 @@ pub enum FluvioError {
     PartitionNotFound(String, i32),
     #[error("Spu not found: {0}")]
     SPUNotFound(i32),
-    #[error("Fluvio socket error")]
+    #[error("Fluvio socket error: {0}")]
     Socket(#[from] SocketError),
     #[error("Fluvio controlplane error: {0}")]
     AdminApi(#[from] ApiError),

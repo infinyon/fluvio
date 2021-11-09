@@ -2084,3 +2084,148 @@ async fn test_stream_fetch_invalid_smartstream(
     server_end_event.notify();
     debug!("terminated controller");
 }
+
+async fn test_stream_fetch_join(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
+    ///        0  1  2  3  4  
+    ///  ----------------------
+    /// left   11 22 33 44 55
+    /// right        9              
+    /// joined       20 31 42 53 64
+    use fluvio::metadata::spu::SpuSpec;
+    ensure_clean_dir(&test_path);
+    let port = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
+
+    let addr = format!("127.0.0.1:{}", port);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let spu_localstore = ctx.spu_localstore();
+    let spu_spec = SpuSpec::new_public_addr(5001, port, "127.0.0.1".into());
+    spu_localstore.insert(spu_spec);
+
+    let client_socket =
+        MultiplexerSocket::shared(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    let topic_left = "test-join-left";
+    let test_left = Replica::new((topic_left.to_owned(), 0), 5001, vec![5001]);
+    let test_id_left = test_left.id.clone();
+    let replica_left =
+        LeaderReplicaState::create(test_left.clone(), ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+    ctx.leaders_state()
+        .insert(test_id_left, replica_left.clone());
+
+    ctx.replica_localstore().insert(test_left);
+    let topic_right = JOIN_RIGHT_TOPIC;
+    let test_right = Replica::new((topic_right.to_owned(), 0), 5001, vec![5001]);
+    let test_id_right = test_right.id.clone();
+    let replica_right =
+        LeaderReplicaState::create(test_right.clone(), ctx.config(), ctx.status_update_owned())
+            .await
+            .expect("replica");
+
+    ctx.leaders_state()
+        .insert(test_id_right, replica_right.clone());
+    ctx.replica_localstore().insert(test_right);
+
+    // Input: the following records:
+    //
+    // 11
+    // 22
+    // 33
+    // 44
+    // 55
+    let mut records_left = BatchProducer::builder()
+        .records(5u16)
+        .record_generator(Arc::new(|i, _| Record::new(((i + 1) * 11).to_string())))
+        .build()
+        .expect("batch")
+        .records();
+
+    // Input: the following records to the right topic:
+    //
+    // 9
+    let mut records_right = BatchProducer::builder()
+        .records(1u16)
+        .record_generator(Arc::new(|_, _| Record::new((9).to_string())))
+        .build()
+        .expect("batch")
+        .records();
+
+    replica_left
+        .write_record_set(&mut records_left, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    replica_right
+        .write_record_set(&mut records_right, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    let stream_request = DefaultStreamFetchRequest {
+        topic: topic_left.to_owned(),
+        partition: 0,
+        fetch_offset: 0,
+        isolation: Isolation::ReadUncommitted,
+        max_bytes: 10000,
+        wasm_module: Vec::new(),
+        wasm_payload,
+        smart_module,
+        ..Default::default()
+    };
+
+    let mut stream = client_socket
+        .create_stream(RequestMessage::new_request(stream_request), 11)
+        .await
+        .expect("create stream");
+
+    let response = stream
+        .next()
+        .await
+        .expect("should get response")
+        .expect("response should be Ok");
+
+    assert_eq!(response.partition.records.batches.len(), 1);
+    let batch = &response.partition.records.batches[0];
+    assert_eq!(batch.records().len(), 5);
+
+    // Output:
+    //     + 9
+    // 11 -> 20
+    // 22 -> 31
+    // 33 -> 42
+    // 44 -> 53
+    // 55 -> 64
+    let records = batch.records();
+    assert_eq!(records[0].value, RecordData::from(20.to_string()));
+    assert_eq!(records[1].value, RecordData::from(31.to_string()));
+    assert_eq!(records[2].value, RecordData::from(42.to_string()));
+    assert_eq!(records[3].value, RecordData::from(53.to_string()));
+    assert_eq!(records[4].value, RecordData::from(64.to_string()));
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+const FLUVIO_WASM_JOIN: &str = "fluvio_wasm_join";
+const JOIN_RIGHT_TOPIC: &str = "test-join-right";
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_join_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_join_legacy",
+        FLUVIO_WASM_JOIN,
+        SmartStreamKind::Join(JOIN_RIGHT_TOPIC.into()),
+        test_stream_fetch_join,
+    )
+    .await;
+}
