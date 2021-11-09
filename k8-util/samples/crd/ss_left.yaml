@@ -1,0 +1,14 @@
+apiVersion: fluvio.infinyon.com/v1
+kind: SmartStream
+metadata:
+  name: ss1
+spec:
+  input:
+    topic:
+      name: left      
+  steps:
+    - join:
+        module: join2
+        right:
+          smartstream:
+            name: rdoublee
