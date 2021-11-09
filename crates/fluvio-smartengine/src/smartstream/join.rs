@@ -1,8 +1,10 @@
 use std::convert::TryFrom;
+
 use anyhow::Result;
-use fluvio_spu_schema::server::stream_fetch::SMART_MODULE_API;
+use tracing::instrument;
 use wasmtime::TypedFunc;
 
+use fluvio_spu_schema::server::stream_fetch::SMART_MODULE_API;
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamInternalError};
 use crate::smartstream::{
     SmartEngine, SmartStreamModule, SmartStreamContext, SmartStream, SmartStreamExtraParams,
@@ -32,6 +34,8 @@ impl SmartStreamJoin {
 }
 
 impl SmartStream for SmartStreamJoin {
+
+    #[instrument(skip(self, input))]
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
         let slice = self.base.write_input(&input, SMART_MODULE_API)?;
         let map_output = self.join_fn.call(&mut self.base.store, slice)?;

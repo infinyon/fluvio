@@ -249,10 +249,14 @@ impl dyn SmartStream + '_ {
 
             let mut join_record = vec![];
             if let Some(right_join_stream) = right_join.as_mut() {
+                debug!("waiting for next join record");
                 match right_join_stream.next().await {
                     Some(Ok(record)) => {
-                        debug!("received join record");
+                
+                        debug!(offset = record.offset,value_len = record.record.value().len(),"received record from join");
+                       // debug!("record value: {}",record.record.value().as_str().unwrap_or(""));
                         record.into_inner().encode(&mut join_record, 0)?;
+                        debug!(join_record_len = join_record.len(),"join record encoded");
                     }
                     Some(Err(e)) => return Err(e.into()),
                     None => {
