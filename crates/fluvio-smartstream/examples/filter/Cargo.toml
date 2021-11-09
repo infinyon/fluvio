@@ -3,9 +3,10 @@ name = "fluvio-wasm-filter"
 version = "0.1.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 edition = "2018"
+publish = false
 
 [lib]
 crate-type = ['cdylib']
 
 [dependencies]
-fluvio-smartstream = { path = "../../" }
+fluvio-smartstream = { path = "../../", version = "0.4.0" }
