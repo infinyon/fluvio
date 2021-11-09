@@ -3,7 +3,7 @@ use std::time::Instant;
 use std::fmt::{self, Debug};
 
 use dataplane::{ErrorCode};
-use dataplane::record::Record;
+use dataplane::record::{ConsumerRecord};
 use dataplane::smartstream::SmartStreamExtraParams;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
@@ -216,7 +216,7 @@ impl dyn SmartStream + '_ {
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-        right_join: &mut Option<BoxStream<'static, Result<Record, ErrorCode>>>,
+        right_join: &mut Option<BoxStream<'static, Result<ConsumerRecord, ErrorCode>>>,
     ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
         let mut smartstream_batch = Batch::<MemoryRecords>::default();
         smartstream_batch.base_offset = -1; // indicate this is unitialized
@@ -254,7 +254,7 @@ impl dyn SmartStream + '_ {
                 match right_join_stream.next().await {
                     Some(Ok(record)) => {
                         debug!("received join record");
-                        record.encode(&mut join_record, 0)?;
+                        record.into_inner().encode(&mut join_record, 0)?;
                     }
                     Some(Err(e)) => return Err(e.into()),
                     None => {

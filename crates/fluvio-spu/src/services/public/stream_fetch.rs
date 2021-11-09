@@ -25,6 +25,7 @@ use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
+<<<<<<< HEAD
 use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartstream::SmartStreamRuntimeError;
@@ -32,6 +33,16 @@ use dataplane::smartstream::SmartStreamRuntimeError;
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
+use crate::smartengine::SmartStreamContext;
+=======
+use publishers::INIT_OFFSET;
+use fluvio_smartengine::file_batch::FileBatchIterator;
+use dataplane::batch::Batch;
+use dataplane::smartstream::SmartStreamRuntimeError;
+>>>>>>> move Consumer record to dataplane
+
+use crate::core::DefaultSharedGlobalContext;
+use crate::replication::leader::SharedFileLeaderState;
 use crate::smartengine::SmartStreamContext;
 
 /// Fetch records as stream
@@ -233,12 +244,8 @@ impl StreamFetchHandler {
                     break;
                 },
 
-<<<<<<< HEAD
 
 
-=======
-                /*
->>>>>>> move join stream to stream engine
                 record = async {  right_consumer_stream.as_mut().expect("Unexpected crash").next().await }, if right_consumer_stream.is_some() =>  {
                     join_record = record.unwrap().ok();
                     debug!("Updated right stream");
