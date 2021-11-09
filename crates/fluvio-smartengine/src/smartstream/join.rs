@@ -34,7 +34,6 @@ impl SmartStreamJoin {
 }
 
 impl SmartStream for SmartStreamJoin {
-
     #[instrument(skip(self, input))]
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
         let slice = self.base.write_input(&input, SMART_MODULE_API)?;

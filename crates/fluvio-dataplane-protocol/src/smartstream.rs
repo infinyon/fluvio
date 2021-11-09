@@ -52,7 +52,13 @@ mod encoding {
 
     impl Display for SmartStreamInput {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "SmartStreamInput {{ base_offset: {:?}, record_data: {:?}, join_data: {:#?} }}", self.base_offset, self.record_data.len(), self.join_record.len())
+            write!(
+                f,
+                "SmartStreamInput {{ base_offset: {:?}, record_data: {:?}, join_data: {:#?} }}",
+                self.base_offset,
+                self.record_data.len(),
+                self.join_record.len()
+            )
         }
     }
 
