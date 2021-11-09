@@ -51,7 +51,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut smartstream_input = SmartStreamAggregateInput::default();
                 // 13 is version for aggregate
-                if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), 13) {
+                if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), fluvio_smartstream::api_versions::AGGREGATOR_API) {
                     return SmartStreamInternalError::DecodingBaseInput as i32;
                 }
 
@@ -61,7 +61,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
 
                 let records_input = smartstream_input.base.record_data;
                 let mut records: Vec<Record> = vec![];
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 13) {
+                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), fluvio_smartstream::api_versions::AGGREGATOR_API) {
                     return SmartStreamInternalError::DecodingRecords as i32;
                 };
 
@@ -96,7 +96,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
 
                 // ENCODING
                 let mut out = vec![];
-                if let Err(_) = Encoder::encode(&mut output, &mut out, 13) {
+                if let Err(_) = Encoder::encode(&mut output, &mut out, fluvio_smartstream::api_versions::AGGREGATOR_API) {
                     return SmartStreamInternalError::EncodingOutput as i32;
                 }
 

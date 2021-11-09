@@ -43,9 +43,6 @@ pub const ARRAY_MAP_WASM_API: i16 = 15;
 // version for persistent SmartModule
 pub const SMART_MODULE_API: i16 = 16;
 
-// version for persistent SmartModule
-pub const JOIN_WASM_API: i16 = 17;
-
 /// Fetch records continuously
 /// Output will be send back as stream
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -75,7 +72,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = JOIN_WASM_API;
+    const DEFAULT_API_VERSION: i16 = SMART_MODULE_API;
     type Response = StreamFetchResponse<R>;
 }
 
@@ -127,7 +124,7 @@ pub enum SmartStreamKind {
     ArrayMap,
     #[fluvio(min_version = ARRAY_MAP_WASM_API)]
     FilterMap,
-    #[fluvio(min_version = JOIN_WASM_API)]
+    #[fluvio(min_version = SMART_MODULE_API)]
     Join(String),
 }
 

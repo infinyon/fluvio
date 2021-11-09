@@ -51,13 +51,13 @@ pub fn generate_array_map_smartstream(func: &SmartStreamFn, has_params: bool) ->
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut smartstream_input = SmartStreamInput::default();
-                if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), 15) {
+                if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), fluvio_smartstream::api_versions::ARRAY_MAP_WASM_API) {
                     return SmartStreamInternalError::DecodingBaseInput as i32;
                 }
 
                 let records_input = smartstream_input.record_data;
                 let mut records: Vec<Record> = vec![];
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 15) {
+                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), fluvio_smartstream::api_versions::ARRAY_MAP_WASM_API) {
                     return SmartStreamInternalError::DecodingRecords as i32;
                 };
 
@@ -95,7 +95,7 @@ pub fn generate_array_map_smartstream(func: &SmartStreamFn, has_params: bool) ->
 
                 // ENCODING
                 let mut out = vec![];
-                if let Err(_) = Encoder::encode(&mut output, &mut out, 15) {
+                if let Err(_) = Encoder::encode(&mut output, &mut out, fluvio_smartstream::api_versions::ARRAY_MAP_WASM_API) {
                     return SmartStreamInternalError::EncodingOutput as i32;
                 }
 

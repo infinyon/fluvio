@@ -34,7 +34,7 @@ mod encoding {
         pub base_offset: Offset,
         /// The records for the SmartStream to process
         pub record_data: Vec<u8>,
-        #[fluvio(min_version = 17)]
+        #[fluvio(min_version = 16)]
         pub join_record: Vec<u8>,
         pub params: SmartStreamExtraParams,
     }

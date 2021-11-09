@@ -1,6 +1,6 @@
 use std::convert::TryFrom;
 use anyhow::Result;
-use fluvio_spu_schema::server::stream_fetch::JOIN_WASM_API;
+use fluvio_spu_schema::server::stream_fetch::SMART_MODULE_API;
 use wasmtime::TypedFunc;
 
 use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamInternalError};
@@ -33,7 +33,7 @@ impl SmartStreamJoin {
 
 impl SmartStream for SmartStreamJoin {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
-        let slice = self.base.write_input(&input, JOIN_WASM_API)?;
+        let slice = self.base.write_input(&input, SMART_MODULE_API)?;
         let map_output = self.join_fn.call(&mut self.base.store, slice)?;
 
         if map_output < 0 {
@@ -42,7 +42,7 @@ impl SmartStream for SmartStreamJoin {
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamOutput = self.base.read_output(JOIN_WASM_API)?;
+        let output: SmartStreamOutput = self.base.read_output(SMART_MODULE_API)?;
         Ok(output)
     }
 
