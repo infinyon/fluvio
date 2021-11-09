@@ -58,6 +58,7 @@ where
     pub fetch_offset: i64,
     pub max_bytes: i32,
     pub isolation: Isolation,
+    /// no longer used, but keep to avoid breaking compatibility, this will not be honored
     #[fluvio(min_version = 11)]
     pub wasm_module: Vec<u8>,
     #[fluvio(min_version = 12)]

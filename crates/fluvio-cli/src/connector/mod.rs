@@ -78,11 +78,11 @@ pub struct ConnectorConfig {
 }
 
 impl ConnectorConfig {
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfig, CliError> {
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let connector_config: ConnectorConfig = serde_yaml::from_str(&contents)?;
+        let connector_config: Self = serde_yaml::from_str(&contents)?;
         Ok(connector_config)
     }
 }

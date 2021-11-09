@@ -1,0 +1,10 @@
+name: ss1
+input:
+  topic:
+    name: left      
+steps:
+  - join:
+      module: join2
+      right:
+        smartstream:
+          name: rdoublee

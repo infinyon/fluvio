@@ -3,9 +3,6 @@ use std::time::Instant;
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use fluvio::FluvioError;
-use fluvio_spu_schema::server::stream_fetch::SmartStreamKind;
-use futures_util::Stream;
 use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
@@ -24,13 +21,13 @@ use dataplane::{
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest, SmartModuleInvocationWasm,
-    SmartStreamPayload, SmartStreamWasm, StreamFetchRequest, StreamFetchResponse,
+    DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
+use crate::smartengine::SmartStreamContext;
 use publishers::INIT_OFFSET;
 use fluvio_smartengine::SmartStream;
 use fluvio_smartengine::file_batch::FileBatchIterator;
@@ -131,95 +128,27 @@ impl StreamFetchHandler {
         consumer_offset_listener: OffsetChangeListener,
         msg: StreamFetchRequest<FileRecordSet>,
     ) -> Result<(), SocketError> {
-        let max_bytes = msg.max_bytes as u32;
-        let sm_engine = ctx.smartstream_owned();
-
-        let maybe_join = if let Some(SmartStreamKind::Join(topic_name)) =
-            msg.smart_module.as_ref().map(|wasm| &wasm.kind)
+        let smart_stream_ctx = match SmartStreamContext::extract(
+            msg.wasm_payload,
+            msg.smart_module,
+            msg.smartstream,
+            &ctx,
+        )
+        .await
         {
-            let consumer = ctx.leaders().partition_consumer(topic_name, 0).await;
-
-            let join_stream = match consumer.stream(fluvio::Offset::beginning()).await {
-                Ok(stream) => stream,
-                Err(err) => {
-                    error!("error fetching join data {}", err);
-                    let error_code = ErrorCode::SmartStreamJoinFetchError;
-                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
-                    return Ok(());
-                }
-            };
-            Some(join_stream)
-        } else {
-            None
-        };
-
-        let smart_module_wasm_payload =
-            msg.smart_module.map(
-                |smart_module_invocation| match smart_module_invocation.wasm {
-                    SmartModuleInvocationWasm::Predefined(name) => {
-                        if let Some(smart_module) = ctx.smart_module_localstore().spec(&name) {
-                            let wasm = SmartStreamWasm::Gzip(smart_module.wasm.payload);
-                            Ok(SmartStreamPayload {
-                                wasm,
-                                kind: smart_module_invocation.kind,
-                                params: smart_module_invocation.params,
-                            })
-                        } else {
-                            let error = SmartStreamError::UndefinedSmartModule(name);
-                            Err(error)
-                        }
-                    }
-                    SmartModuleInvocationWasm::AdHoc(bytes) => {
-                        let wasm = SmartStreamWasm::Gzip(bytes);
-                        Ok(SmartStreamPayload {
-                            wasm,
-                            kind: smart_module_invocation.kind,
-                            params: smart_module_invocation.params,
-                        })
-                    }
-                },
-            );
-
-        let wasm_payload = match smart_module_wasm_payload {
-            Some(Ok(wasm_payload)) => Some(wasm_payload),
-            Some(Err(error)) => {
-                let error_code = ErrorCode::SmartStreamError(error);
+            Ok(ctx) => ctx,
+            Err(error_code) => {
                 send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                 return Ok(());
             }
-            None => msg.wasm_payload,
         };
 
-        let (smartstream, max_fetch_bytes) = if let Some(payload) = wasm_payload {
-            match payload.wasm.get_raw() {
-                Ok(wasm) => debug!(len = wasm.len(), "creating WASM module with bytes"),
-                Err(e) => {
-                    let error = SmartStreamError::InvalidWasmModule(e.to_string());
-                    let error_code = ErrorCode::SmartStreamError(error);
-                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
-                    return Ok(());
-                }
-            };
-
-            let smartstream = match sm_engine.create_module_from_payload(payload.clone()) {
-                Ok(module) => module,
-                Err(err) => {
-                    error!(
-                        error = err.to_string().as_str(),
-                        "Error Instantiating SmartStream"
-                    );
-                    let error_code =
-                        ErrorCode::SmartStreamError(SmartStreamError::InvalidSmartStreamModule(
-                            format!("{:?}", payload.kind),
-                            err.to_string(),
-                        ));
-                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
-                    return Ok(());
-                }
-            };
-            (Some(smartstream), u32::MAX)
+        let max_bytes = msg.max_bytes as u32;
+        // compute max fetch bytes depends on smart stream
+        let max_fetch_bytes = if smart_stream_ctx.is_some() {
+            u32::MAX
         } else {
-            (None, max_bytes)
+            max_bytes
         };
 
         let starting_offset = msg.fetch_offset;
@@ -248,21 +177,24 @@ impl StreamFetchHandler {
             max_fetch_bytes,
         };
 
-        handler
-            .process(starting_offset, smartstream, maybe_join)
-            .await
+        handler.process(starting_offset, smart_stream_ctx).await
     }
 
     async fn process(
         mut self,
         starting_offset: Offset,
-        mut smartstream: Option<Box<dyn SmartStream>>,
-        maybe_join: Option<
-            impl Stream<Item = Result<fluvio::consumer::Record, FluvioError>> + std::marker::Send,
-        >,
+        smart_stream_ctx: Option<SmartStreamContext>,
     ) -> Result<(), SocketError> {
-        let mut maybe_join = maybe_join.map(|mj| mj.boxed());
-        let mut join_record = if let Some(join_stream) = maybe_join.as_mut() {
+        let (mut smartstream, mut right_consumer_stream) = if let Some(ctx) = smart_stream_ctx {
+            let SmartStreamContext {
+                smartstream: st,
+                right_consumer_stream,
+            } = ctx;
+            (Some(st), right_consumer_stream)
+        } else {
+            (None, None)
+        };
+        let mut join_record = if let Some(join_stream) = right_consumer_stream.as_mut() {
             // we wait for at least one record
             join_stream.next().await.transpose().map_err(|err| {
                 IoError::new(
@@ -300,7 +232,7 @@ impl StreamFetchHandler {
                 },
 
 
-                record = async {  maybe_join.as_mut().expect("Unexpected crash").next().await }, if maybe_join.is_some() =>  {
+                record = async {  right_consumer_stream.as_mut().expect("Unexpected crash").next().await }, if right_consumer_stream.is_some() =>  {
                     join_record = record.unwrap().ok();
                     debug!("Updated right stream");
                 },

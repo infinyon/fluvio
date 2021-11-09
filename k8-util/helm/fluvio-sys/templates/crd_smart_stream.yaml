@@ -25,65 +25,101 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["inputs"]
+              required: ["input"]
               properties:
-                inputs:
+                input:
                   type: object
                   properties:
-                    left:
+                    topic:
                       type: object
+                      required: ["name"]
                       properties:
-                        topic:
-                          type: object
-                          required: ["name"]
-                          properties:
-                            name:
-                              type: string
-                        smartstream:
-                          type: object
-                          required: ["name"]
-                          properties:
-                            name:
-                              type: string
-                      oneOf:
-                        - required: ["topic"]
-                        - required: ["smartstream"]
-                    right:
+                        name:
+                          type: string
+                    smartstream:
                       type: object
+                      required: ["name"]
                       properties:
-                        topic:
-                          type: object
-                          required: ["name"]
-                          properties:
-                            name:
-                              type: string
-                        smartstream:
-                          type: object
-                          required: ["name"]
-                          properties:
-                            name:
-                              type: string
-                modules:
-                  type: object
-                  properties:
-                    transforms:
-                      type: array
-                      items:
+                        name:
+                          type: string
+                  oneOf:
+                    - required: ["topic"]
+                    - required: ["smartstream"]
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    oneOf:
+                      - required: ["filter"]
+                      - required: ["map"]
+                      - required: ["filterMap"]
+                      - required: ["aggregate"]
+                      - required: ["groupBy"]
+                      - required: ["join"]
+                    properties:
+                      filter:
                         type: object
-                        required: ["name"]
+                        required: ["module"]
                         properties:
-                          name:
+                          module: 
                             type: string
-                    outputs:
-                      type: array
-                      items:
+                          id: 
+                            type: string
+                      map:
                         type: object
-                        required: ["name"]
+                        required: ["module"]
                         properties:
-                          name:
+                          module:
                             type: string
+                          id:
+                            type: string
+                      filterMap:
+                        type: object
+                        required: ["module"]
+                        properties:
+                          module:
+                            type: string
+                          id:
+                            type: string
+                      aggregate:
+                        type: object
+                        required: ["module"]
+                        properties:
+                          module:
+                            type: string
+                          id:
+                            type: string
+                      join:
+                        type: object
+                        required: ["module","right"]
+                        properties:
+                          module:
+                            type: string
+                          id:
+                            type: string
+                          right:
+                            type: object
+                            properties:
+                              topic:
+                                type: object
+                                required: ["name"]
+                                properties:
+                                  name:
+                                    type: string
+                              smartstream:
+                                type: object
+                                required: ["name"]
+                                properties:
+                                  name:
+                                    type: string
+                            oneOf:
+                              - required: ["topic"]
+                              - required: ["smartstream"]
+                          
+                      
+                      
 
-                
+
 
 
                 

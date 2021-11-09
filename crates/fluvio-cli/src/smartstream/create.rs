@@ -1,42 +1,28 @@
-use tracing::debug;
+use std::fs::File;
+use std::io::Read;
+use std::path::PathBuf;
+
+use serde::Deserialize;
 use structopt::StructOpt;
 
-use fluvio_controlplane_metadata::smartstream::{SmartStreamInputs, SmartStreamModules};
-
 use fluvio::Fluvio;
-use fluvio::metadata::smartstream::{
-    SmartStreamSpec, SmartStreamModuleRef, SmartStreamInput, SmartStreamRef,
-};
+use fluvio::metadata::smartstream::{SmartStreamSpec};
 
 use crate::Result;
+use crate::error::CliError;
 
 /// Create a new SmartModule with a given name
 #[derive(Debug, StructOpt)]
 pub struct CreateSmartStreamOpt {
-    name: String,
-
-    #[structopt(long)]
-    left: String,
-
-    #[structopt(long, required_if("left", "false"))]
-    leftstream: bool,
-
-    #[structopt(long)]
-    right: Option<String>,
-
-    #[structopt(long, required_if("right", "false"))]
-    rightstream: bool,
-
-    /// list of transforms to apply to the stream, this is order list of modules
-    /// ex:  foo,bar,baz
-    #[structopt(short = "t", long= "transforms",parse(try_from_str = parse_module))]
-    transforms: ModuleList,
+    /// The name for the new Managed Connector
+    #[structopt(short = "c", long = "config", value_name = "config")]
+    pub config: PathBuf,
 }
 
 impl CreateSmartStreamOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        let (name, spec): (String, SmartStreamSpec) = self.into();
-        debug!(%name,?spec,"creating smartstream");
+        let config = SmartStreamCreateConfig::from_file(&self.config)?;
+        let SmartStreamCreateConfig { name, spec } = config;
 
         let admin = fluvio.admin().await;
         admin.create(name.clone(), false, spec).await?;
@@ -46,54 +32,24 @@ impl CreateSmartStreamOpt {
     }
 }
 
-impl From<CreateSmartStreamOpt> for (String, SmartStreamSpec) {
-    fn from(opt: CreateSmartStreamOpt) -> Self {
-        let left = if opt.leftstream {
-            SmartStreamInput::SmartStream(SmartStreamRef::new(opt.left))
-        } else {
-            SmartStreamInput::Topic(SmartStreamRef::new(opt.left))
-        };
-
-        let right_flag = opt.rightstream;
-        let right = opt.right.map(move |r| {
-            if right_flag {
-                SmartStreamInput::SmartStream(SmartStreamRef::new(r))
-            } else {
-                SmartStreamInput::Topic(SmartStreamRef::new(r))
-            }
-        });
-
-        (
-            opt.name,
-            SmartStreamSpec {
-                inputs: SmartStreamInputs { left, right },
-
-                modules: SmartStreamModules {
-                    transforms: opt.transforms.modules(),
-                    outputs: vec![],
-                },
-            },
-        )
-    }
+/// Used only for creation
+#[derive(Debug, Deserialize, Clone)]
+pub struct SmartStreamCreateConfig {
+    name: String,
+    #[serde(flatten)]
+    spec: SmartStreamSpec,
 }
 
-#[derive(Debug, PartialEq)]
-struct ModuleList(Vec<SmartStreamModuleRef>);
-
-impl ModuleList {
-    fn modules(self) -> Vec<SmartStreamModuleRef> {
-        self.0
+impl SmartStreamCreateConfig {
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
+        let mut file = File::open(path.into())?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let config: Self = serde_yaml::from_str(&contents).map_err(|e| {
+            CliError::Other(format!("failed to parse smartstream config: {:#?}", e))
+        })?;
+        Ok(config)
     }
-}
-
-/// parse stream module
-fn parse_module(src: &str) -> Result<ModuleList, std::io::Error> {
-    let modules: Vec<SmartStreamModuleRef> = src
-        .split(',')
-        .map(|s| s.trim().to_string())
-        .map(SmartStreamModuleRef::new)
-        .collect();
-    Ok(ModuleList(modules))
 }
 
 #[cfg(test)]
@@ -102,14 +58,16 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_module_parse() {
-        assert_eq!(
-            parse_module("foo,bar,baz").expect("parse"),
-            ModuleList(vec![
-                SmartStreamModuleRef::new("foo".to_string()),
-                SmartStreamModuleRef::new("bar".to_string()),
-                SmartStreamModuleRef::new("baz".to_string()),
-            ])
-        );
+    fn test_config_right() {
+        let config =
+            SmartStreamCreateConfig::from_file("test-data/smartstream/right.yaml").expect("parse");
+        assert_eq!(config.name, "rdouble");
+    }
+
+    #[test]
+    fn test_config_left() {
+        let config =
+            SmartStreamCreateConfig::from_file("test-data/smartstream/left.yaml").expect("parse");
+        assert_eq!(config.name, "ss1");
     }
 }

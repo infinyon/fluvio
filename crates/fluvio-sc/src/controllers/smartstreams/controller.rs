@@ -256,7 +256,7 @@ mod test {
     use super::*;
 
     use fluvio_controlplane_metadata::{
-        smartstream::{SmartStreamInput, SmartStreamInputs, SmartStreamRef, SmartStreamResolution},
+        smartstream::{SmartStreamInputRef, SmartStreamRef, SmartStreamResolution},
         store::{
             MetadataStoreObject,
             actions::{LSUpdate},
@@ -289,10 +289,7 @@ mod test {
 
         // add new smartstream
         let sm1 = SmartStreamSpec {
-            inputs: SmartStreamInputs {
-                left: SmartStreamInput::Topic(SmartStreamRef::new("topic1".to_string())),
-                ..Default::default()
-            },
+            input: SmartStreamInputRef::Topic(SmartStreamRef::new("topic1".to_string())),
             ..Default::default()
         };
 
