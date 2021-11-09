@@ -36,6 +36,7 @@ impl SmartStreamJoin {
 impl SmartStream for SmartStreamJoin {
     #[instrument(skip(self, input), name = "Join")]
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
+        debug!("join processing");
         let slice = self.base.write_input(&input, SMART_MODULE_API)?;
         debug!(len = slice.1, "WASM SLICE");
         let map_output = self.join_fn.call(&mut self.base.store, slice)?;
