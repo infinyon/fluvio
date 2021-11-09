@@ -1,6 +1,7 @@
 pub use encoding::{
     SmartStreamRuntimeError, SmartStreamInternalError, SmartStreamType, SmartStreamInput,
-    SmartStreamAggregateInput, SmartStreamOutput, SmartStreamExtraParams, SmartStreamAggregateOutput
+    SmartStreamAggregateInput, SmartStreamOutput, SmartStreamExtraParams,
+    SmartStreamAggregateOutput,
 };
 
 mod encoding {
@@ -72,7 +73,7 @@ mod encoding {
         /// The base output required by all SmartStreams
         pub base: SmartStreamOutput,
 
-        pub accumulator: Vec<u8>
+        pub accumulator: Vec<u8>,
     }
 
     /// Indicates an internal error from within a SmartStream.
