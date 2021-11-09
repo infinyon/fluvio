@@ -72,7 +72,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = SMART_MODULE_API;
+    const DEFAULT_API_VERSION: i16 = JOIN_WASM_API;
     type Response = StreamFetchResponse<R>;
 }
 
