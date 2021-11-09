@@ -23,15 +23,14 @@ use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
+use publishers::INIT_OFFSET;
+use fluvio_smartengine::file_batch::FileBatchIterator;
+use dataplane::batch::Batch;
+use dataplane::smartstream::SmartStreamRuntimeError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use crate::smartengine::SmartStreamContext;
-use publishers::INIT_OFFSET;
-use fluvio_smartengine::SmartStream;
-use fluvio_smartengine::file_batch::FileBatchIterator;
-use dataplane::batch::Batch;
-use dataplane::smartstream::SmartStreamRuntimeError;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {

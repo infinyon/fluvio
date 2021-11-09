@@ -23,7 +23,6 @@ use dataplane::fetch::FetchPartition;
 use dataplane::fetch::FetchableTopic;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
-use dataplane::record::Record as DefaultRecord;
 use dataplane::batch::Batch;
 use fluvio_types::event::offsets::OffsetPublisher;
 
@@ -31,6 +30,8 @@ use crate::FluvioError;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
 use derive_builder::Builder;
+
+pub use dataplane::record::ConsumerRecord as Record;
 
 /// An interface for consuming events from a particular partition
 ///
@@ -958,54 +959,6 @@ impl MultiplePartitionConsumer {
         let streams = streams_result.into_iter().collect::<Result<Vec<_>, _>>()?;
 
         Ok(select_all(streams))
-    }
-}
-
-/// The individual record for a given stream.
-pub struct Record {
-    /// The offset of this Record into its partition
-    offset: i64,
-    /// The partition where this Record is stored
-    partition: i32,
-    /// The Record contents
-    record: DefaultRecord,
-}
-
-impl Record {
-    /// The offset from the initial offset for a given stream.
-    pub fn offset(&self) -> i64 {
-        self.offset
-    }
-
-    /// The partition where this Record is stored.
-    pub fn partition(&self) -> i32 {
-        self.partition
-    }
-
-    /// Returns the contents of this Record's key, if it exists
-    pub fn key(&self) -> Option<&[u8]> {
-        self.record.key().map(|it| it.as_ref())
-    }
-
-    /// Returns the contents of this Record's value
-    pub fn value(&self) -> &[u8] {
-        self.record.value().as_ref()
-    }
-
-    /// Returns the inner representation of the Record
-    pub fn into_inner(self) -> DefaultRecord {
-        self.record
-    }
-
-    /// Returns a ref to the inner representation of the Record
-    pub fn inner(&self) -> &DefaultRecord {
-        &self.record
-    }
-}
-
-impl AsRef<[u8]> for Record {
-    fn as_ref(&self) -> &[u8] {
-        self.value()
     }
 }
 
