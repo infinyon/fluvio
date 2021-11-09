@@ -37,7 +37,7 @@ use crate::services::public::create_public_server;
 
 use std::sync::Arc;
 
-use tracing::{debug, info};
+use tracing::{debug};
 
 use dataplane::{
     ErrorCode,
