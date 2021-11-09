@@ -258,7 +258,7 @@ where
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -308,7 +308,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
         let stream = self.stream_batches_with_config(offset, config).await?;
         let partition = self.partition;
         let flattened =
@@ -362,7 +362,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Batch, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>, FluvioError> {
         let stream = self.request_stream(offset, config).await?;
         let flattened = stream.flat_map(|batch_result: Result<DefaultStreamFetchResponse, _>| {
             let response = match batch_result {
@@ -379,12 +379,7 @@ where
                 let code = response.partition.error_code;
                 match code {
                     ErrorCode::None => None,
-                    ErrorCode::SmartStreamError(error) => {
-                        Some(Err(FluvioError::SmartStream(error)))
-                    }
-                    _ => Some(Err(FluvioError::AdminApi(
-                        fluvio_sc_schema::ApiError::Code(code, None),
-                    ))),
+                    _ => Some(Err(code)),
                 }
             };
 
@@ -403,7 +398,7 @@ where
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>>, FluvioError>
+    ) -> Result<impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>, FluvioError>
     {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
@@ -526,7 +521,10 @@ where
                         }
                         response
                     })
-                    .map_err(|e| e.into())
+                    .map_err(|e| {
+                        error!(?e, "error in stream");
+                        ErrorCode::Other(e.to_string())
+                    })
                 });
                 Either::Left(
                     iter(vec![Ok(response)])
@@ -592,7 +590,7 @@ struct TakeRecords<S> {
 
 impl<S> TakeRecords<S>
 where
-    S: Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>> + std::marker::Unpin,
+    S: Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>> + std::marker::Unpin,
 {
     pub fn new(stream: S, until: i64) -> Self {
         Self {
@@ -604,7 +602,7 @@ where
 
 impl<S> Stream for TakeRecords<S>
 where
-    S: Stream<Item = Result<DefaultStreamFetchResponse, FluvioError>> + std::marker::Unpin,
+    S: Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>> + std::marker::Unpin,
 {
     type Item = S::Item;
 
@@ -892,7 +890,7 @@ impl MultiplePartitionConsumer {
     pub async fn stream(
         &self,
         offset: Offset,
-    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
         let config = ConsumerConfig::builder().build()?;
         let stream = self.stream_with_config(offset, config).await?;
 
@@ -942,7 +940,7 @@ impl MultiplePartitionConsumer {
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<Record, FluvioError>>, FluvioError> {
+    ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
         let consumers = self
             .strategy
             .selection(self.pool.clone())

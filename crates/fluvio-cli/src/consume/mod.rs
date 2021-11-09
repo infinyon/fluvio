@@ -19,8 +19,7 @@ mod record_format;
 mod table_format;
 use table_format::{TableEventResponse, TableModel};
 
-use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
-use fluvio_sc_schema::ApiError;
+use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use fluvio::consumer::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
@@ -359,10 +358,12 @@ impl ConsumeOpt {
                             let result: std::result::Result<Record, _> = result;
                             let record = match result {
                                 Ok(record) => record,
+                                /*
                                 Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
                                     eprintln!("{}", code.to_sentence());
                                     continue;
                                 }
+                                */
                                 Err(other) => return Err(other.into()),
                             };
 
@@ -398,10 +399,12 @@ impl ConsumeOpt {
                 let result: std::result::Result<Record, _> = result;
                 let record = match result {
                     Ok(record) => record,
+                    /*
                     Err(FluvioError::AdminApi(ApiError::Code(code, _))) => {
                         eprintln!("{}", code.to_sentence());
                         continue;
                     }
+                    */
                     Err(other) => return Err(other.into()),
                 };
 

@@ -1928,6 +1928,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-spu-schema",
  "fluvio-storage",
+ "futures-util",
  "nix",
  "tracing",
  "wasmtime",

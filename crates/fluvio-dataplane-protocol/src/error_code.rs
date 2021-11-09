@@ -25,6 +25,10 @@ pub enum ErrorCode {
     #[error("ErrorCode indicated success. If you see this it is likely a bug.")]
     None,
 
+    #[fluvio(tag = 2)]
+    #[error("Other error: {0}")]
+    Other(String),
+
     #[fluvio(tag = 1)]
     #[error("Offset out of range")]
     OffsetOutOfRange,
@@ -182,6 +186,8 @@ pub enum SmartStreamError {
     UndefinedSmartModule(String),
     #[error("WASM module is not a valid '{0}' SmartStream due to {1}. Are you missing a #[smartstream({0})] attribute?")]
     InvalidSmartStreamModule(String, String),
+    #[error("JoinStream terminated: {0}")]
+    JoinStreamTerminated(String),
 }
 
 impl Default for SmartStreamError {

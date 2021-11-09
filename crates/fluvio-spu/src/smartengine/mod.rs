@@ -1,11 +1,11 @@
+use anyhow::Error;
 use tracing::{debug, error};
 
-use dataplane::{ErrorCode, SmartStreamError};
+use dataplane::{ErrorCode, SmartStreamError, batch::Batch, smartstream::SmartStreamRuntimeError};
 use fluvio::{
-    FluvioError,
     consumer::{SmartModuleInvocation, SmartStreamInvocation, SmartStreamKind},
 };
-use fluvio_smartengine::SmartStream;
+use fluvio_smartengine::{SmartStream, file_batch::FileBatchIterator};
 use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocationWasm, SmartStreamPayload, SmartStreamWasm,
 };
@@ -16,7 +16,7 @@ use crate::core::DefaultSharedGlobalContext;
 pub struct SmartStreamContext {
     pub smartstream: Box<dyn SmartStream>,
     pub right_consumer_stream:
-        Option<BoxStream<'static, Result<fluvio::consumer::Record, FluvioError>>>,
+        Option<BoxStream<'static, Result<fluvio::consumer::Record, ErrorCode>>>,
 }
 
 impl SmartStreamContext {
@@ -127,5 +127,15 @@ impl SmartStreamContext {
                     err.to_string(),
                 ))
             })
+    }
+
+    pub async fn process_batch(
+        &mut self,
+        iter: &mut FileBatchIterator,
+        max_bytes: usize,
+    ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
+        self.smartstream
+            .process_batch(iter, max_bytes, &mut self.right_consumer_stream)
+            .await
     }
 }

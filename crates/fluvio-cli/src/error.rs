@@ -71,6 +71,8 @@ pub enum CliError {
     Other(String),
     #[error("Unexpected Infallible error")]
     Infallible(#[from] Infallible),
+    #[error("Dataplane error: {0}")]
+    DataPlaneError(#[from] ErrorCode),
 }
 
 #[derive(thiserror::Error, Debug)]

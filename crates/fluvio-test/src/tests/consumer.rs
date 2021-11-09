@@ -1,11 +1,12 @@
 use std::any::Any;
+use dataplane::ErrorCode;
 use fluvio::consumer::Record;
 use structopt::StructOpt;
 use futures_lite::stream::StreamExt;
 use std::pin::Pin;
 use std::time::{Duration, SystemTime};
 
-use fluvio::{ConsumerConfig, FluvioError, MultiplePartitionConsumer, PartitionConsumer};
+use fluvio::{ConsumerConfig, MultiplePartitionConsumer, PartitionConsumer};
 use fluvio::Offset;
 use crate::tests::TestRecord;
 
@@ -103,7 +104,7 @@ async fn consume_work<S: ?Sized>(
     test_case: ConsumerTestCase,
 ) where
     //S: Stream<Item = Result<Record, FluvioError>> + std::marker::Unpin,
-    S: Stream<Item = Result<Record, FluvioError>>,
+    S: Stream<Item = Result<Record, ErrorCode>>,
 {
     let mut records_recvd = 0;
 
@@ -204,7 +205,7 @@ async fn get_single_stream(
     consumer: PartitionConsumer,
     offset: Offset,
     test_case: ConsumerTestCase,
-) -> Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> {
+) -> Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> {
     let config = build_consumer_config(test_case);
 
     Box::pin(
@@ -219,7 +220,7 @@ async fn get_multi_stream(
     consumer: MultiplePartitionConsumer,
     offset: Offset,
     test_case: ConsumerTestCase,
-) -> Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> {
+) -> Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> {
     let config = build_consumer_config(test_case);
 
     Box::pin(
@@ -277,7 +278,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 let consumer = test_driver
                     .get_all_partitions_consumer(&test_case.environment.topic_name())
                     .await;
-                let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
+                let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
                     get_multi_stream(consumer, offset, test_case.clone()).await;
 
                 consume_work(Box::pin(stream), n.into(), test_case).await
@@ -285,7 +286,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 let consumer = test_driver
                     .get_consumer(&test_case.environment.topic_name(), partition)
                     .await;
-                let stream: Pin<Box<dyn Stream<Item = Result<Record, FluvioError>>>> =
+                let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
                     get_single_stream(consumer, offset, test_case.clone()).await;
 
                 consume_work(stream, n.into(), test_case).await
