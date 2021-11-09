@@ -51,20 +51,20 @@ pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> Toke
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut smartstream_input = SmartStreamInput::default();
-                if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), 0) {
+                if let Err(_err) = Decoder::decode(&mut smartstream_input, &mut std::io::Cursor::new(input_data), 17) {
                     return SmartStreamInternalError::DecodingBaseInput as i32;
                 }
 
                 let records_input = smartstream_input.record_data;
                 let mut records: Vec<Record> = vec![];
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 0) {
+                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), 17) {
                     return SmartStreamInternalError::DecodingRecords as i32;
                 };
 
                 let join_last_record_input = smartstream_input.join_record;
                 let mut join_last_record: Option<Record> = None;
-                if let Err(_err) = Decoder::decode(&mut join_last_record, &mut std::io::Cursor::new(join_last_record_input), 0) {
-                    return SmartStreamInternalError::DecodingRecords as i32;
+                if let Err(_err) = Decoder::decode(&mut join_last_record, &mut std::io::Cursor::new(join_last_record_input), 17) {
+                    return SmartStreamInternalError::UndefinedRightRecord as i32;
                 };
                 let join_last_record = match join_last_record {
                     Some(record) => record,
@@ -102,7 +102,7 @@ pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> Toke
 
                 // ENCODING
                 let mut out = vec![];
-                if let Err(_) = Encoder::encode(&mut output, &mut out, 0) {
+                if let Err(_) = Encoder::encode(&mut output, &mut out, 17) {
                     return SmartStreamInternalError::EncodingOutput as i32;
                 }
 

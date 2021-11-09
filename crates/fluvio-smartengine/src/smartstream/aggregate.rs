@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 
+use fluvio_spu_schema::server::stream_fetch::AGGREGATOR_API;
 use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::TypedFunc;
@@ -47,7 +48,7 @@ impl SmartStream for SmartStreamAggregate {
             base,
             accumulator: self.accumulator.clone(),
         };
-        let slice = self.base.write_input(&input)?;
+        let slice = self.base.write_input(&input, AGGREGATOR_API)?;
         let aggregate_output = self.aggregate_fn.call(&mut self.base.store, slice)?;
 
         debug!(aggregate_output);
@@ -57,7 +58,7 @@ impl SmartStream for SmartStreamAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamOutput = self.base.read_output()?;
+        let output: SmartStreamOutput = self.base.read_output(AGGREGATOR_API)?;
         Ok(output)
     }
     fn params(&self) -> SmartStreamExtraParams {

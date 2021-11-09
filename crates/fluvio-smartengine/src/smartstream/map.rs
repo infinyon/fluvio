@@ -30,7 +30,7 @@ impl SmartStreamMap {
 
 impl SmartStream for SmartStreamMap {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
-        let slice = self.base.write_input(&input)?;
+        let slice = self.base.write_input(&input, 0)?;
         let map_output = self.map_fn.call(&mut self.base.store, slice)?;
 
         if map_output < 0 {
@@ -39,7 +39,7 @@ impl SmartStream for SmartStreamMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamOutput = self.base.read_output()?;
+        let output: SmartStreamOutput = self.base.read_output(0)?;
         Ok(output)
     }
 

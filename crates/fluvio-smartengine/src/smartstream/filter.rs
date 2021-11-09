@@ -32,7 +32,7 @@ impl SmartStreamFilter {
 
 impl SmartStream for SmartStreamFilter {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
-        let slice = self.base.write_input(&input)?;
+        let slice = self.base.write_input(&input, 0)?;
         let filter_output = self.filter_fn.call(&mut self.base.store, slice)?;
 
         if filter_output < 0 {
@@ -41,7 +41,7 @@ impl SmartStream for SmartStreamFilter {
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamOutput = self.base.read_output()?;
+        let output: SmartStreamOutput = self.base.read_output(0)?;
         Ok(output)
     }
 
