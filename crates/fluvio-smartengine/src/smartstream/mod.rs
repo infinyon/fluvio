@@ -259,8 +259,9 @@ impl dyn SmartStream + '_ {
                             value_len = record.record.value().len(),
                             "received record from join"
                         );
+
                         // debug!("record value: {}",record.record.value().as_str().unwrap_or(""));
-                        record.into_inner().encode(&mut join_record, 0)?;
+                        Some(record.into_inner()).encode(&mut join_record, 0)?;
                         debug!(join_record_len = join_record.len(), "join record encoded");
                     }
                     Some(Err(e)) => return Err(e.into()),
