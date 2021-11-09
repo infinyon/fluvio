@@ -1,6 +1,6 @@
 pub use encoding::{
     SmartStreamRuntimeError, SmartStreamInternalError, SmartStreamType, SmartStreamInput,
-    SmartStreamAggregateInput, SmartStreamOutput, SmartStreamExtraParams,
+    SmartStreamAggregateInput, SmartStreamOutput, SmartStreamExtraParams, SmartStreamAggregateOutput
 };
 
 mod encoding {
@@ -64,6 +64,15 @@ mod encoding {
         pub successes: Vec<Record>,
         /// Any runtime error if one was encountered
         pub error: Option<SmartStreamRuntimeError>,
+    }
+
+    /// A type used to return processed records and/or an error from an Aggregate SmartStream
+    #[derive(Debug, Default, Encoder, Decoder)]
+    pub struct SmartStreamAggregateOutput {
+        /// The base output required by all SmartStreams
+        pub base: SmartStreamOutput,
+
+        pub accumulator: Vec<u8>
     }
 
     /// Indicates an internal error from within a SmartStream.

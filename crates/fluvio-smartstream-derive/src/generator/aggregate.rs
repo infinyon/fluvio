@@ -39,7 +39,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
             pub unsafe fn aggregate(ptr: &mut u8, len: usize) -> i32 {
                 use fluvio_smartstream::dataplane::smartstream::{
                     SmartStreamAggregateInput, SmartStreamInternalError,
-                    SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,
+                    SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,SmartStreamAggregateOutput
                 };
                 use fluvio_smartstream::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartstream::dataplane::record::{Record, RecordData};
@@ -65,9 +65,12 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
                 };
 
                 // PROCESSING
-                let mut output = SmartStreamOutput {
-                    successes: Vec::with_capacity(records.len()),
-                    error: None,
+                let mut output = SmartStreamAggregateOutput {
+                    base: SmartStreamOutput {
+                        successes: Vec::with_capacity(records.len()),
+                        error: None,
+                    },
+                    accumulator: Vec::new()
                 };
 
                 for mut record in records.into_iter() {
@@ -77,8 +80,9 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
                     match result {
                         Ok(value) => {
                             accumulator = Vec::from(value.as_ref());
+                            output.accumulator = accumulator.clone();
                             record.value = RecordData::from(accumulator.clone());
-                            output.successes.push(record);
+                            output.base.successes.push(record);
                         }
                         Err(err) => {
                             let error = SmartStreamRuntimeError::new(
@@ -87,11 +91,13 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
                                 SmartStreamType::Aggregate,
                                 err,
                             );
-                            output.error = Some(error);
+                            output.base.error = Some(error);
                             break;
                         }
                     }
                 }
+
+                let output_len = output.base.successes.len() as i32;
 
                 // ENCODING
                 let mut out = vec![];
@@ -103,7 +109,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
                 let ptr = out.as_mut_ptr();
                 std::mem::forget(out);
                 copy_records(ptr as i32, out_len as i32);
-                output.successes.len() as i32
+                output_len
             }
         }
     }

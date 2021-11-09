@@ -7,7 +7,7 @@ use wasmtime::TypedFunc;
 use crate::smartstream::{SmartEngine, SmartStreamModule, SmartStreamContext, SmartStream};
 use dataplane::smartstream::{
     SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput, SmartStreamInternalError,
-    SmartStreamExtraParams,
+    SmartStreamExtraParams, SmartStreamAggregateOutput
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
@@ -48,6 +48,7 @@ impl SmartStream for SmartStreamAggregate {
             accumulator: self.accumulator.clone(),
         };
         let slice = self.base.write_input(&input)?;
+        println!("-----------aggregate_fn call");
         let aggregate_output = self.aggregate_fn.call(&mut self.base.store, slice)?;
 
         debug!(aggregate_output);
@@ -57,8 +58,11 @@ impl SmartStream for SmartStreamAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamOutput = self.base.read_output()?;
-        Ok(output)
+        let output: SmartStreamAggregateOutput = self.base.read_output()?;
+
+        self.accumulator = output.accumulator;
+
+        Ok(output.base)
     }
     fn params(&self) -> SmartStreamExtraParams {
         self.base.params.clone()
