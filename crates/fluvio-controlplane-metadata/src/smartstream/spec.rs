@@ -20,7 +20,7 @@ use super::metadata::SmartStreamValidationError;
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartStreamSpec {
-    pub input: SmartStreamInput,
+    pub input: SmartStreamInputRef,
     #[cfg_attr(feature = "use_serde", serde(flatten))]
     pub steps: SmartStreamSteps,
 }
@@ -44,29 +44,29 @@ impl SmartStreamSpec {
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartStreamInput {
+pub enum SmartStreamInputRef {
     #[cfg_attr(feature = "use_serde", serde(rename = "topic"))]
     Topic(SmartStreamRef<TopicSpec>),
     #[cfg_attr(feature = "use_serde", serde(rename = "smartstream"))]
     SmartStream(SmartStreamRef<SmartStreamSpec>),
 }
 
-impl Default for SmartStreamInput {
+impl Default for SmartStreamInputRef {
     fn default() -> Self {
-        SmartStreamInput::Topic(SmartStreamRef::default())
+        SmartStreamInputRef::Topic(SmartStreamRef::default())
     }
 }
 
-impl Display for SmartStreamInput {
+impl Display for SmartStreamInputRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SmartStreamInput::Topic(ref topic) => write!(f, "Topic({})", topic),
-            SmartStreamInput::SmartStream(ref stream) => write!(f, "SmartStream({})", stream),
+            SmartStreamInputRef::Topic(ref topic) => write!(f, "Topic({})", topic),
+            SmartStreamInputRef::SmartStream(ref stream) => write!(f, "SmartStream({})", stream),
         }
     }
 }
 
-impl SmartStreamInput {
+impl SmartStreamInputRef {
     // validat configuration
     pub async fn validate<'a, C>(
         &'a self,
@@ -76,7 +76,7 @@ impl SmartStreamInput {
         C: MetadataItem,
     {
         match self {
-            SmartStreamInput::Topic(ref topic_ref) => {
+            SmartStreamInputRef::Topic(ref topic_ref) => {
                 if !topic_ref.validate(objects.topics).await {
                     trace!(topic = %topic_ref.name,"topic not found");
                     return Err(SmartStreamValidationError::TopicNotFound(
@@ -84,7 +84,7 @@ impl SmartStreamInput {
                     ));
                 }
             }
-            SmartStreamInput::SmartStream(ref smart_stream_ref) => {
+            SmartStreamInputRef::SmartStream(ref smart_stream_ref) => {
                 if !smart_stream_ref.validate(objects.smartstreams).await {
                     return Err(SmartStreamValidationError::SmartStreamNotFound(
                         smart_stream_ref.name.clone(),
@@ -263,7 +263,7 @@ impl Display for SmartStreamModule {
 pub struct SmartStreamJoinModule {
     pub module: String,
     pub id: Option<String>,
-    pub right: SmartStreamInput,
+    pub right: SmartStreamInputRef,
 }
 
 impl Display for SmartStreamJoinModule {
@@ -286,7 +286,7 @@ mod test {
         let modules: LocalStore<SmartModuleSpec, MemoryMeta> = LocalStore::default();
 
         let smartstream = SmartStreamSpec {
-            input: SmartStreamInput::Topic(SmartStreamRef::new("test".into())),
+            input: SmartStreamInputRef::Topic(SmartStreamRef::new("test".into())),
             steps: SmartStreamSteps {
                 ..Default::default()
             },
@@ -323,7 +323,7 @@ mod test {
         let modules: LocalStore<SmartModuleSpec, MemoryMeta> = LocalStore::default();
 
         let smartstream = SmartStreamSpec {
-            input: SmartStreamInput::Topic(SmartStreamRef::new("test".into())),
+            input: SmartStreamInputRef::Topic(SmartStreamRef::new("test".into())),
             steps: SmartStreamSteps {
                 steps: vec![SmartStreamStep::Filter(SmartStreamModule {
                     module: "module1".into(),
