@@ -1,3 +1,4 @@
+use anyhow::Error;
 use tracing::{debug, error};
 
 use dataplane::{ErrorCode, SmartStreamError};
@@ -124,5 +125,15 @@ impl SmartStreamContext {
                     err.to_string(),
                 ))
             })
+    }
+
+    pub async fn process_batch(
+        &mut self,
+        iter: &mut FileBatchIterator,
+        max_bytes: usize,
+    ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
+        self.smartstream
+            .process_batch(iter, max_bytes, &mut self.right_consumer_stream)
+            .await
     }
 }

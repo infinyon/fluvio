@@ -2,6 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
+use dataplane::{ErrorCode};
 use dataplane::record::Record;
 use dataplane::smartstream::SmartStreamExtraParams;
 use tracing::{debug, instrument, trace};
@@ -202,6 +203,8 @@ impl SmartStreamContext {
     }
 }
 
+use futures_util::{StreamExt, stream::BoxStream};
+
 pub trait SmartStream: Send {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput>;
     fn params(&self) -> SmartStreamExtraParams;
@@ -213,7 +216,7 @@ impl dyn SmartStream + '_ {
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-        join_last_record: Option<&Record>,
+        right_join: &mut Option<BoxStream<'static, Result<Record, ErrorCode>>>,
     ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
         let mut smartstream_batch = Batch::<MemoryRecords>::default();
         smartstream_batch.base_offset = -1; // indicate this is unitialized
@@ -247,7 +250,18 @@ impl dyn SmartStream + '_ {
             let now = Instant::now();
 
             let mut join_record = vec![];
-            join_last_record.encode(&mut join_record, 0)?;
+            if let Some(right_join_stream) = right_join.as_mut() {
+                match right_join_stream.next().await {
+                    Some(Ok(record)) => {
+                        debug!("received join record");
+                        record.encode(&mut join_record, 0)?;
+                    }
+                    Some(Err(e)) => return Err(e.into()),
+                    None => {
+                        debug!("no more join records");
+                    }
+                }
+            }
 
             let input = SmartStreamInput {
                 base_offset: file_batch.batch.base_offset,
