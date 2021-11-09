@@ -20,6 +20,7 @@ crate-type = ['lib']
 eyre = { version = "0.6", default-features = false }
 fluvio-dataplane-protocol = { version = "0.8.0", path = "../fluvio-dataplane-protocol", default-features = false }
 fluvio-smartstream-derive = { version = "0.3", path = "../fluvio-smartstream-derive", optional = true }
+fluvio-spu-schema = { version = "0.8", path = "../fluvio-spu-schema" }
 
 [dev-dependencies]
 trybuild = { git = "https://github.com/sehz/trybuild", branch = "check_option" }

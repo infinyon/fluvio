@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use anyhow::Result;
+use fluvio_spu_schema::server::stream_fetch::ARRAY_MAP_WASM_API;
 use wasmtime::TypedFunc;
 
 use dataplane::smartstream::{
@@ -35,7 +36,7 @@ impl SmartStreamArrayMap {
 
 impl SmartStream for SmartStreamArrayMap {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput> {
-        let slice = self.base.write_input(&input)?;
+        let slice = self.base.write_input(&input, ARRAY_MAP_WASM_API)?;
         let map_output = self.array_map_fn.call(&mut self.base.store, slice)?;
 
         if map_output < 0 {
@@ -44,7 +45,7 @@ impl SmartStream for SmartStreamArrayMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamOutput = self.base.read_output()?;
+        let output: SmartStreamOutput = self.base.read_output(ARRAY_MAP_WASM_API)?;
         Ok(output)
     }
 
