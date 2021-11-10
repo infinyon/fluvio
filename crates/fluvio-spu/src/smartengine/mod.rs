@@ -2,7 +2,10 @@ use fluvio_controlplane_metadata::smartstream::{SmartStreamInputRef, SmartStream
 use tracing::{debug, error};
 
 use dataplane::{ErrorCode, SmartStreamError};
-use fluvio::consumer::{SmartModuleInvocation, SmartStreamInvocation, SmartStreamKind};
+use fluvio::{
+    ConsumerConfig,
+    consumer::{SmartModuleInvocation, SmartStreamInvocation, SmartStreamKind},
+};
 use fluvio_smartengine::{SmartStream};
 use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocationWasm, SmartStreamPayload, SmartStreamWasm,
@@ -78,7 +81,11 @@ impl SmartStreamContext {
                         .boxed(),
                 )
             }
-            SmartStreamKind::JoinStream(ref smartstream_name) => {
+            SmartStreamKind::JoinStream {
+                topic: ref _topic,
+                smartstream: ref smartstream_name,
+            } => {
+                // first ensure smartstream exists
                 if let Some(smartstream) = ctx.smartstream_store().spec(smartstream_name) {
                     // find input which has topic
                     match smartstream.spec.input {
@@ -87,10 +94,21 @@ impl SmartStreamContext {
                                 .leaders()
                                 .partition_consumer(topic.name.to_owned(), 0)
                                 .await;
+                            // need to build stream arg
+                            let mut builder = ConsumerConfig::builder();
 
+                            builder.smartstream(Some(SmartStreamInvocation {
+                                stream: smartstream_name.to_owned(),
+                                params: invocation.params.clone(),
+                            }));
+
+                            let consume_config = builder.build().map_err(|err| {
+                                error!("error building consumer config {}", err);
+                                ErrorCode::Other(format!("error building consumer config {}", err))
+                            })?;
                             Some(
                                 consumer
-                                    .stream(fluvio::Offset::beginning())
+                                    .stream_with_config(fluvio::Offset::beginning(), consume_config)
                                     .await
                                     .map_err(|err| {
                                         error!("error fetching join data {}", err);
@@ -231,10 +249,41 @@ async fn extract_smartstream_context(
                             params,
                         },
                         SmartStreamInputRef::SmartStream(ref smart_stream) => {
-                            SmartModuleInvocation {
-                                wasm: SmartModuleInvocationWasm::Predefined(module.module),
-                                kind: SmartStreamKind::JoinStream(smart_stream.name.to_owned()),
-                                params,
+                            let join_target_name = smart_stream.name.to_owned();
+                            // ensure smartstream exists
+                            if let Some(ctx) = ctx.smartstream_store().spec(&join_target_name) {
+                                let target_input = ctx.spec.input;
+                                // check target input, we can only do 1 level recursive definition now.
+                                match target_input {
+                                    SmartStreamInputRef::Topic(topic_target) => {
+                                        SmartModuleInvocation {
+                                            wasm: SmartModuleInvocationWasm::Predefined(
+                                                module.module,
+                                            ),
+                                            kind: SmartStreamKind::JoinStream {
+                                                topic: topic_target.name,
+                                                smartstream: join_target_name.to_owned(),
+                                            },
+                                            params,
+                                        }
+                                    }
+
+                                    SmartStreamInputRef::SmartStream(ref child_child_target) => {
+                                        return Err(ErrorCode::SmartStreamError(
+                                            SmartStreamError::InvalidSmartStream(format!(
+                                                "can't do recursive smartstream yet: {}->{}",
+                                                join_target_name, child_child_target.name
+                                            )),
+                                        ));
+                                    }
+                                }
+                            } else {
+                                return Err(ErrorCode::SmartStreamError(
+                                    SmartStreamError::UndefinedSmartStream(format!(
+                                        "join smartstream target: {}",
+                                        join_target_name
+                                    )),
+                                ));
                             }
                         }
                     },

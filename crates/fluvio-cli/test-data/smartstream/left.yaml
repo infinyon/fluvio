@@ -4,7 +4,7 @@ input:
     name: left      
 steps:
   - join:
-      module: join2
+      module: join
       right:
         smartstream:
           name: rdoublee

@@ -87,9 +87,10 @@ impl SmartEngine {
                 Box::new(smart_module.create_array_map(smart_payload.params)?)
             }
             SmartStreamKind::Join(_) => Box::new(smart_module.create_join(smart_payload.params)?),
-            SmartStreamKind::JoinStream(_) => {
-                Box::new(smart_module.create_join_stream(smart_payload.params)?)
-            }
+            SmartStreamKind::JoinStream {
+                topic: _,
+                smartstream: _,
+            } => Box::new(smart_module.create_join_stream(smart_payload.params)?),
             SmartStreamKind::Aggregate { accumulator } => {
                 Box::new(smart_module.create_aggregate(smart_payload.params, accumulator.clone())?)
             }
