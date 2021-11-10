@@ -1274,6 +1274,11 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
+    // Aggregate 6 records in 2 batches
+    // First batch:
+    // 0
+    // 1
+    // 2
     let mut records = BatchProducer::builder()
         .records(3u16)
         .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
@@ -1287,6 +1292,10 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         .await
         .expect("write");
 
+    // Second batch:
+    // 3
+    // 4
+    // 5
     let mut records2 = BatchProducer::builder()
         .records(3u16)
         .record_generator(Arc::new(|i, _| Record::new((i + 3).to_string())))
