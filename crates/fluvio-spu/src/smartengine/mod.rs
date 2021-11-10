@@ -31,7 +31,9 @@ impl JoinStreamValue {
             Some(Err(e)) => Err(e),
             None => {
                 debug!("right terminated");
-                Err(ErrorCode::JoinStreamTerminated)
+                Err(ErrorCode::SmartStreamError(
+                    SmartStreamError::JoinStreamTerminated("terminated".to_string()),
+                ))
             }
         }
     }
