@@ -126,6 +126,7 @@ pub enum SmartStreamKind {
     FilterMap,
     #[fluvio(min_version = SMART_MODULE_API)]
     Join(String),
+    JoinStream(String),
 }
 
 impl Default for SmartStreamKind {

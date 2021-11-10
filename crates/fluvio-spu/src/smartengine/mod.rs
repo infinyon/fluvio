@@ -1,4 +1,4 @@
-use fluvio_controlplane_metadata::smartstream::SmartStreamStep;
+use fluvio_controlplane_metadata::smartstream::{SmartStreamInputRef, SmartStreamStep};
 use tracing::{debug, error};
 
 use dataplane::{ErrorCode, SmartStreamError};
@@ -77,6 +77,45 @@ impl SmartStreamContext {
                         })?
                         .boxed(),
                 )
+            }
+            SmartStreamKind::JoinStream(ref smartstream_name) => {
+                if let Some(smartstream) = ctx.smartstream_store().spec(smartstream_name) {
+                    // find input which has topic
+                    match smartstream.spec.input {
+                        SmartStreamInputRef::Topic(topic) => {
+                            let consumer = ctx
+                                .leaders()
+                                .partition_consumer(topic.name.to_owned(), 0)
+                                .await;
+
+                            Some(
+                                consumer
+                                    .stream(fluvio::Offset::beginning())
+                                    .await
+                                    .map_err(|err| {
+                                        error!("error fetching join data {}", err);
+                                        ErrorCode::SmartStreamJoinFetchError
+                                    })?
+                                    .boxed(),
+                            )
+                        }
+                        SmartStreamInputRef::SmartStream(child_smart) => {
+                            return Err(ErrorCode::SmartStreamError(
+                                SmartStreamError::InvalidSmartStream(format!(
+                                    "can't do recursive smartstream yet: {}->{}",
+                                    smartstream_name, child_smart.name
+                                )),
+                            ));
+                        }
+                    }
+                } else {
+                    return Err(ErrorCode::SmartStreamError(
+                        SmartStreamError::UndefinedSmartStream(format!(
+                            "SmartStream {} not foundin join stream",
+                            smartstream_name
+                        )),
+                    ));
+                }
             }
             _ => None,
         };
@@ -185,10 +224,19 @@ async fn extract_smartstream_context(
                         kind: SmartStreamKind::Filter,
                         params,
                     },
-                    SmartStreamStep::Join(module) => SmartModuleInvocation {
-                        wasm: SmartModuleInvocationWasm::Predefined(module.module),
-                        kind: SmartStreamKind::Join(module.right.object_id()),
-                        params,
+                    SmartStreamStep::Join(module) => match module.right {
+                        SmartStreamInputRef::Topic(ref topic) => SmartModuleInvocation {
+                            wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                            kind: SmartStreamKind::Join(topic.name.to_owned()),
+                            params,
+                        },
+                        SmartStreamInputRef::SmartStream(ref smart_stream) => {
+                            SmartModuleInvocation {
+                                wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                                kind: SmartStreamKind::JoinStream(smart_stream.name.to_owned()),
+                                params,
+                            }
+                        }
                     },
                 };
 
