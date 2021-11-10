@@ -189,10 +189,6 @@ impl StreamFetchHandler {
         starting_offset: Offset,
         mut smart_stream_ctx: Option<SmartStreamContext>,
     ) -> Result<(), SocketError> {
-        let (mut last_partition_offset, consumer_wait) = self
-            .send_back_records(starting_offset, &mut smart_stream_ctx)
-            .await?;
-
         // perform any initialization
         if let Some(ctx) = &mut smart_stream_ctx {
             ctx.update().await.map_err(|err| {
@@ -202,6 +198,10 @@ impl StreamFetchHandler {
                 ))
             })?;
         }
+
+        let (mut last_partition_offset, consumer_wait) = self
+            .send_back_records(starting_offset, &mut smart_stream_ctx)
+            .await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
         let mut counter: i32 = 0;
