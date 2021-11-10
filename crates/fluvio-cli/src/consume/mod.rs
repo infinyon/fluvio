@@ -118,6 +118,7 @@ pub struct ConsumeOpt {
     pub output: Option<ConsumeOutputType>,
 
     /// Path to a SmartStream filter wasm file
+    #[structopt(long)]
     pub smartstream: Option<String>,
 
     /// Path to a SmartStream filter wasm file
@@ -291,6 +292,7 @@ impl ConsumeOpt {
         }
 
         let consume_config = builder.build()?;
+        debug!("consume config: {:#?}", consume_config);
         self.consume_records_stream(consumer, offset, consume_config)
             .await?;
 

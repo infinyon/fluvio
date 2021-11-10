@@ -29,10 +29,13 @@ pub mod filter_map;
 pub mod aggregate;
 pub mod join;
 pub mod file_batch;
+pub mod join_stream;
 
 pub type WasmSlice = (i32, i32);
 #[cfg(feature = "smartmodule")]
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
+
+use self::join_stream::SmartStreamJoinStream;
 
 #[derive(Default, Clone)]
 pub struct SmartEngine(pub(crate) Engine);
@@ -84,6 +87,9 @@ impl SmartEngine {
                 Box::new(smart_module.create_array_map(smart_payload.params)?)
             }
             SmartStreamKind::Join(_) => Box::new(smart_module.create_join(smart_payload.params)?),
+            SmartStreamKind::JoinStream(_) => {
+                Box::new(smart_module.create_join_stream(smart_payload.params)?)
+            }
             SmartStreamKind::Aggregate { accumulator } => {
                 Box::new(smart_module.create_aggregate(smart_payload.params, accumulator.clone())?)
             }
@@ -126,6 +132,11 @@ impl SmartStreamModule {
 
     fn create_join(&self, params: SmartStreamExtraParams) -> Result<SmartStreamJoin> {
         let join = SmartStreamJoin::new(&self.engine, self, params)?;
+        Ok(join)
+    }
+
+    fn create_join_stream(&self, params: SmartStreamExtraParams) -> Result<SmartStreamJoinStream> {
+        let join = SmartStreamJoinStream::new(&self.engine, self, params)?;
         Ok(join)
     }
 

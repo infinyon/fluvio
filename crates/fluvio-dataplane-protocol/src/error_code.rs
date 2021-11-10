@@ -188,6 +188,10 @@ pub enum SmartStreamError {
     InvalidSmartStreamModule(String, String),
     #[error("JoinStream terminated: {0}")]
     JoinStreamTerminated(String),
+    #[error("SmartStream {0} is not validated")]
+    InvalidSmartStream(String),
+    #[error("SmartStream {0} is not defined")]
+    UndefinedSmartStream(String),
 }
 
 impl Default for SmartStreamError {

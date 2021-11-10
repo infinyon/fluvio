@@ -1,3 +1,4 @@
+use fluvio_controlplane_metadata::smartstream::{SmartStreamInputRef, SmartStreamStep};
 use tracing::{debug, error};
 
 use dataplane::{ErrorCode, SmartStreamError};
@@ -22,10 +23,23 @@ impl SmartStreamContext {
     pub async fn extract(
         wasm_payload: Option<SmartStreamPayload>,
         smart_module: Option<SmartModuleInvocation>,
-        _smart_stream: Option<SmartStreamInvocation>,
+        smart_stream: Option<SmartStreamInvocation>,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Option<Self>, ErrorCode> {
-        match smart_module {
+        let derived_sm_modules = if let Some(ss_inv) = smart_stream {
+            Some(extract_smartstream_context(ss_inv, ctx).await?)
+        } else {
+            None
+        };
+
+        // if module is come from smart stream, then we can use it
+        let module = if let Some(derive) = derived_sm_modules {
+            Some(derive)
+        } else {
+            smart_module
+        };
+
+        match module {
             Some(smart_module_invocation) => Ok(Some(
                 Self::extract_smartmodule_context(smart_module_invocation, ctx).await?,
             )),
@@ -63,6 +77,45 @@ impl SmartStreamContext {
                         })?
                         .boxed(),
                 )
+            }
+            SmartStreamKind::JoinStream(ref smartstream_name) => {
+                if let Some(smartstream) = ctx.smartstream_store().spec(smartstream_name) {
+                    // find input which has topic
+                    match smartstream.spec.input {
+                        SmartStreamInputRef::Topic(topic) => {
+                            let consumer = ctx
+                                .leaders()
+                                .partition_consumer(topic.name.to_owned(), 0)
+                                .await;
+
+                            Some(
+                                consumer
+                                    .stream(fluvio::Offset::beginning())
+                                    .await
+                                    .map_err(|err| {
+                                        error!("error fetching join data {}", err);
+                                        ErrorCode::SmartStreamJoinFetchError
+                                    })?
+                                    .boxed(),
+                            )
+                        }
+                        SmartStreamInputRef::SmartStream(child_smart) => {
+                            return Err(ErrorCode::SmartStreamError(
+                                SmartStreamError::InvalidSmartStream(format!(
+                                    "can't do recursive smartstream yet: {}->{}",
+                                    smartstream_name, child_smart.name
+                                )),
+                            ));
+                        }
+                    }
+                } else {
+                    return Err(ErrorCode::SmartStreamError(
+                        SmartStreamError::UndefinedSmartStream(format!(
+                            "SmartStream {} not foundin join stream",
+                            smartstream_name
+                        )),
+                    ));
+                }
             }
             _ => None,
         };
@@ -124,5 +177,80 @@ impl SmartStreamContext {
                     err.to_string(),
                 ))
             })
+    }
+}
+
+async fn extract_smartstream_context(
+    invocation: SmartStreamInvocation,
+    ctx: &DefaultSharedGlobalContext,
+) -> Result<SmartModuleInvocation, ErrorCode> {
+    let name = invocation.stream;
+    debug!(%name,"extracting smartstream");
+    let params = invocation.params;
+    let ss_list = ctx.smartstream_store().all_keys();
+    debug!("smartstreams: {:#?}", ss_list);
+    if let Some(smart_module) = ctx.smartstream_store().spec(&name) {
+        let spec = smart_module.spec;
+        if smart_module.valid {
+            let mut steps = spec.steps.steps;
+            if steps.is_empty() {
+                debug!(name = %name,"no steps in smartstream");
+                Err(ErrorCode::SmartStreamError(
+                    SmartStreamError::InvalidSmartStream(name),
+                ))
+            } else {
+                // for now, only perform a single step
+                let step = steps.pop().expect("first one");
+                let sm = match step {
+                    SmartStreamStep::Aggregate(module) => SmartModuleInvocation {
+                        wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                        kind: SmartStreamKind::Aggregate {
+                            accumulator: vec![],
+                        },
+                        params,
+                    },
+                    SmartStreamStep::Map(module) => SmartModuleInvocation {
+                        wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                        kind: SmartStreamKind::Map,
+                        params,
+                    },
+                    SmartStreamStep::FilterMap(module) => SmartModuleInvocation {
+                        wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                        kind: SmartStreamKind::FilterMap,
+                        params,
+                    },
+                    SmartStreamStep::Filter(module) => SmartModuleInvocation {
+                        wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                        kind: SmartStreamKind::Filter,
+                        params,
+                    },
+                    SmartStreamStep::Join(module) => match module.right {
+                        SmartStreamInputRef::Topic(ref topic) => SmartModuleInvocation {
+                            wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                            kind: SmartStreamKind::Join(topic.name.to_owned()),
+                            params,
+                        },
+                        SmartStreamInputRef::SmartStream(ref smart_stream) => {
+                            SmartModuleInvocation {
+                                wasm: SmartModuleInvocationWasm::Predefined(module.module),
+                                kind: SmartStreamKind::JoinStream(smart_stream.name.to_owned()),
+                                params,
+                            }
+                        }
+                    },
+                };
+
+                Ok(sm)
+            }
+        } else {
+            debug!(%name,"invalid smart module");
+            Err(ErrorCode::SmartStreamError(
+                SmartStreamError::InvalidSmartStream(name),
+            ))
+        }
+    } else {
+        Err(ErrorCode::SmartStreamError(
+            SmartStreamError::UndefinedSmartStream(name),
+        ))
     }
 }
