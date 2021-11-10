@@ -4,7 +4,7 @@ pub use encoding::{
 };
 
 mod encoding {
-    use std::fmt;
+    use std::fmt::{self, Display};
     use crate::Offset;
     use crate::record::{Record, RecordData};
     use fluvio_protocol::{Encoder, Decoder};
@@ -47,6 +47,18 @@ mod encoding {
                 record_data,
                 ..Default::default()
             })
+        }
+    }
+
+    impl Display for SmartStreamInput {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(
+                f,
+                "SmartStreamInput {{ base_offset: {:?}, record_data: {:?}, join_data: {:#?} }}",
+                self.base_offset,
+                self.record_data.len(),
+                self.join_record.len()
+            )
         }
     }
 

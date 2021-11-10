@@ -4,7 +4,7 @@ use std::fmt::{self, Debug};
 
 use dataplane::record::Record;
 use dataplane::smartstream::SmartStreamExtraParams;
-use tracing::{debug, trace};
+use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
 
@@ -183,6 +183,7 @@ impl SmartStreamContext {
         self.records_cb.clear();
         let mut input_data = Vec::new();
         input.encode(&mut input_data, version)?;
+        debug!(len = input_data.len(), "input data");
         let array_ptr =
             self::memory::copy_memory_to_instance(&mut self.store, &self.instance, &input_data)?;
         let length = input_data.len();
@@ -207,6 +208,7 @@ pub trait SmartStream: Send {
 }
 
 impl dyn SmartStream + '_ {
+    #[instrument(skip(self, iter, max_bytes, join_last_record))]
     pub fn process_batch(
         &mut self,
         iter: &mut FileBatchIterator,

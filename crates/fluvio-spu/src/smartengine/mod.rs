@@ -1,11 +1,8 @@
 use tracing::{debug, error};
 
 use dataplane::{ErrorCode, SmartStreamError};
-use fluvio::{
-    FluvioError,
-    consumer::{SmartModuleInvocation, SmartStreamInvocation, SmartStreamKind},
-};
-use fluvio_smartengine::SmartStream;
+use fluvio::consumer::{SmartModuleInvocation, SmartStreamInvocation, SmartStreamKind};
+use fluvio_smartengine::{SmartStream};
 use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocationWasm, SmartStreamPayload, SmartStreamWasm,
 };
@@ -16,7 +13,7 @@ use crate::core::DefaultSharedGlobalContext;
 pub struct SmartStreamContext {
     pub smartstream: Box<dyn SmartStream>,
     pub right_consumer_stream:
-        Option<BoxStream<'static, Result<fluvio::consumer::Record, FluvioError>>>,
+        Option<BoxStream<'static, Result<fluvio::consumer::Record, ErrorCode>>>,
 }
 
 impl SmartStreamContext {

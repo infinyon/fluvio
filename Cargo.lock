@@ -1928,6 +1928,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-spu-schema",
  "fluvio-storage",
+ "futures-util",
  "nix",
  "tracing",
  "wasmtime",
@@ -1935,7 +1936,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",

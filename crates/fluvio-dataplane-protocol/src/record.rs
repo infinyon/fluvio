@@ -487,6 +487,58 @@ where
     }
 }
 
+use Record as DefaultRecord;
+
+/// Record that can be used by Consumer which needs access to metadata
+pub struct ConsumerRecord<B = DefaultRecord> {
+    /// The offset of this Record into its partition
+    pub offset: i64,
+    /// The partition where this Record is stored
+    pub partition: i32,
+    /// The Record contents
+    pub record: B,
+}
+
+impl<B> ConsumerRecord<B> {
+    /// The offset from the initial offset for a given stream.
+    pub fn offset(&self) -> i64 {
+        self.offset
+    }
+
+    /// The partition where this Record is stored.
+    pub fn partition(&self) -> i32 {
+        self.partition
+    }
+
+    /// Returns the inner representation of the Record
+    pub fn into_inner(self) -> B {
+        self.record
+    }
+
+    /// Returns a ref to the inner representation of the Record
+    pub fn inner(&self) -> &B {
+        &self.record
+    }
+}
+
+impl ConsumerRecord<DefaultRecord> {
+    /// Returns the contents of this Record's key, if it exists
+    pub fn key(&self) -> Option<&[u8]> {
+        self.record.key().map(|it| it.as_ref())
+    }
+
+    /// Returns the contents of this Record's value
+    pub fn value(&self) -> &[u8] {
+        self.record.value().as_ref()
+    }
+}
+
+impl AsRef<[u8]> for ConsumerRecord<DefaultRecord> {
+    fn as_ref(&self) -> &[u8] {
+        self.value()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

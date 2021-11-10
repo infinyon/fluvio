@@ -3,6 +3,7 @@ use std::time::Instant;
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
+use fluvio_smartengine::SmartStream;
 use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
@@ -24,15 +25,14 @@ use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
-
-use crate::core::DefaultSharedGlobalContext;
-use crate::replication::leader::SharedFileLeaderState;
-use crate::smartengine::SmartStreamContext;
-use publishers::INIT_OFFSET;
-use fluvio_smartengine::SmartStream;
 use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartstream::SmartStreamRuntimeError;
+
+use crate::core::DefaultSharedGlobalContext;
+use crate::replication::leader::SharedFileLeaderState;
+use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
+use crate::smartengine::SmartStreamContext;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -232,10 +232,13 @@ impl StreamFetchHandler {
                 },
 
 
+
                 record = async {  right_consumer_stream.as_mut().expect("Unexpected crash").next().await }, if right_consumer_stream.is_some() =>  {
                     join_record = record.unwrap().ok();
                     debug!("Updated right stream");
                 },
+
+
 
                 // Received offset update from consumer, i.e. consumer acknowledged to this offset
                 consumer_offset_update = self.consumer_offset_listener.listen() => {
@@ -552,7 +555,7 @@ pub mod publishers {
     use async_lock::Mutex;
     use tracing::debug;
 
-    use super::OffsetPublisher;
+    use super::{OffsetPublisher};
 
     pub const INIT_OFFSET: i64 = -1;
 

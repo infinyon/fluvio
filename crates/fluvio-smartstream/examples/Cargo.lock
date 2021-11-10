@@ -166,7 +166,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartstream"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
@@ -249,7 +249,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-wasm-array-map-object"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fluvio-smartstream",
  "serde_json",
@@ -257,7 +257,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-wasm-array-map-reddit"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fluvio-smartstream",
  "serde",
@@ -282,7 +282,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-wasm-filter-map"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "fluvio-smartstream",
 ]
