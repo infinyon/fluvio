@@ -177,6 +177,7 @@ impl SmartStreamContext {
 
     pub async fn update(&mut self) -> Result<(), ErrorCode> {
         if let Some(consumer) = self.right_consumer.as_mut() {
+            debug!("updating consumer right");
             consumer.update().await
         } else {
             Ok(())
