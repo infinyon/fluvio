@@ -2091,11 +2091,11 @@ async fn test_stream_fetch_join(
     wasm_payload: Option<SmartStreamPayload>,
     smart_module: Option<SmartModuleInvocation>,
 ) {
-    ///        0  1  2  3  4  
+    ///        0  1  2  3  4  5  6
     ///  ----------------------
-    /// left   11 22 33 44 55
-    /// right        9              
-    /// joined       20 31 42 53 64
+    /// left   11  22   33 44        55  66
+    /// right        9           22   
+    /// joined       20 31 42 53     77  88
     use fluvio::metadata::spu::SpuSpec;
     ensure_clean_dir(&test_path);
     let port = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
@@ -2124,7 +2124,7 @@ async fn test_stream_fetch_join(
     ctx.leaders_state()
         .insert(test_id_left, replica_left.clone());
 
-    ctx.replica_localstore().insert(test_left);
+    ctx.replica_localstore().insert(test_left.clone());
     let topic_right = JOIN_RIGHT_TOPIC;
     let test_right = Replica::new((topic_right.to_owned(), 0), 5001, vec![5001]);
     let test_id_right = test_right.id.clone();
@@ -2132,20 +2132,16 @@ async fn test_stream_fetch_join(
         LeaderReplicaState::create(test_right.clone(), ctx.config(), ctx.status_update_owned())
             .await
             .expect("replica");
-
+    ctx.replica_localstore().insert(test_right);
     ctx.leaders_state()
         .insert(test_id_right, replica_right.clone());
-    ctx.replica_localstore().insert(test_right);
 
     // Input: the following records:
     //
     // 11
     // 22
-    // 33
-    // 44
-    // 55
     let mut records_left = BatchProducer::builder()
-        .records(5u16)
+        .records(2u16)
         .record_generator(Arc::new(|i, _| Record::new(((i + 1) * 11).to_string())))
         .build()
         .expect("batch")
@@ -2193,24 +2189,115 @@ async fn test_stream_fetch_join(
         .await
         .expect("should get response")
         .expect("response should be Ok");
+    let stream_id = response.stream_id;
 
     assert_eq!(response.partition.records.batches.len(), 1);
     let batch = &response.partition.records.batches[0];
-    assert_eq!(batch.records().len(), 5);
+    assert_eq!(batch.records().len(), 2);
 
     // Output:
     //     + 9
     // 11 -> 20
     // 22 -> 31
-    // 33 -> 42
-    // 44 -> 53
-    // 55 -> 64
     let records = batch.records();
     assert_eq!(records[0].value, RecordData::from(20.to_string()));
     assert_eq!(records[1].value, RecordData::from(31.to_string()));
-    assert_eq!(records[2].value, RecordData::from(42.to_string()));
-    assert_eq!(records[3].value, RecordData::from(53.to_string()));
-    assert_eq!(records[4].value, RecordData::from(64.to_string()));
+
+    // Input: the following records:
+    //
+    // 33
+    // 44
+    let mut records_left = BatchProducer::builder()
+        .records(2u16)
+        .record_generator(Arc::new(|i, _| Record::new(((i + 3) * 11).to_string())))
+        .build()
+        .expect("batch")
+        .records();
+    replica_left
+        .write_record_set(&mut records_left, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    // send back that consume has processed all current bacthes
+    client_socket
+        .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
+            offsets: vec![OffsetUpdate {
+                offset: 2,
+                session_id: stream_id,
+            }],
+        }))
+        .await
+        .expect("send offset");
+
+    let response = stream.next().await.expect("2nd").expect("response");
+
+    assert_eq!(response.partition.records.batches.len(), 1);
+    let batch = &response.partition.records.batches[0];
+    assert_eq!(batch.records().len(), 2);
+
+    // Output:
+    //     + 9
+    // 33 -> 42
+    // 44 -> 53
+    let records = batch.records();
+    assert_eq!(records[0].value, RecordData::from(42.to_string()));
+    assert_eq!(records[1].value, RecordData::from(53.to_string()));
+
+    // Input: the following records to the right topic:
+    //
+    // 22
+    let mut records_right = BatchProducer::builder()
+        .records(1u16)
+        .record_generator(Arc::new(|_, _| Record::new((22).to_string())))
+        .build()
+        .expect("batch")
+        .records();
+
+    replica_right
+        .write_record_set(&mut records_right, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    // send back that consume has processed all current bacthes
+    client_socket
+        .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
+            offsets: vec![OffsetUpdate {
+                offset: 4,
+                session_id: stream_id,
+            }],
+        }))
+        .await
+        .expect("send offset");
+
+    // Input: the following records:
+    //
+    // 33
+    // 44
+
+    let mut records_left = BatchProducer::builder()
+        .records(2u16)
+        .record_generator(Arc::new(|i, _| Record::new(((i + 5) * 11).to_string())))
+        .build()
+        .expect("batch")
+        .records();
+    replica_left
+        .write_record_set(&mut records_left, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    let response = stream.next().await.expect("2nd").expect("response");
+
+    assert_eq!(response.partition.records.batches.len(), 1);
+    let batch = &response.partition.records.batches[0];
+    assert_eq!(batch.records().len(), 2);
+
+    // Output:
+    //     + 22
+    // 55 -> 77
+    // 66 -> 88
+    let records = batch.records();
+    assert_eq!(records[0].value, RecordData::from(77.to_string()));
+    assert_eq!(records[1].value, RecordData::from(88.to_string()));
 
     server_end_event.notify();
     debug!("terminated controller");
