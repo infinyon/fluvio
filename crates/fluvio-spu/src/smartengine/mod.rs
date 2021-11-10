@@ -148,6 +148,8 @@ async fn extract_smartstream_context(
     let name = invocation.stream;
     debug!(%name,"extracting smartstream");
     let params = invocation.params;
+    let ss_list = ctx.smartstream_store().all_keys();
+    debug!("smartstreams: {:#?}", ss_list);
     if let Some(smart_module) = ctx.smartstream_store().spec(&name) {
         let spec = smart_module.spec;
         if smart_module.valid {

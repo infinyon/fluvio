@@ -134,7 +134,6 @@ impl ScDispatcher<FileReplica> {
             select! {
 
                 _ = status_timer.next() =>  {
-                    debug!("status timer expired, sending status to sc");
                     self.send_status_back_to_sc(&mut sink).await?;
                 },
 
@@ -198,7 +197,7 @@ impl ScDispatcher<FileReplica> {
         if requests.is_empty() {
             trace!("sending empty status");
         } else {
-            debug!(requests = ?requests, "sending status back to sc");
+            trace!(requests = ?requests, "sending status back to sc");
         }
         let message = RequestMessage::new_request(UpdateLrsRequest::new(requests));
 
@@ -355,12 +354,27 @@ impl ScDispatcher<FileReplica> {
 
         debug!( message = ?request,"starting SmartModule update");
 
-        let _actions = self
-            .ctx
-            .smart_module_localstore()
-            .apply_changes(request.changes);
+        let actions = if !request.all.is_empty() {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.all.len(),
+                "received smartmodule sync all"
+            );
+            trace!("received spu all items: {:#?}", request.all);
+            self.ctx.smart_module_localstore().sync_all(request.all)
+        } else {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.changes.len(),
+                "received smartmoudle changes"
+            );
+            trace!("received spu change items: {:#?}", request.changes);
+            self.ctx
+                .smart_module_localstore()
+                .apply_changes(request.changes)
+        };
 
-        trace!("finished SmartModule update");
+        debug!(actions = actions.count(), "finished SmartModule update");
 
         Ok(())
     }
@@ -377,9 +391,25 @@ impl ScDispatcher<FileReplica> {
 
         debug!( message = ?request,"starting SmartStream update");
 
-        let _actions = self.ctx.smartstream_store().apply_changes(request.changes);
+        let actions = if !request.all.is_empty() {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.all.len(),
+                "received smartstream all"
+            );
+            trace!("received smartstream all items: {:#?}", request.all);
+            self.ctx.smartstream_store().sync_all(request.all)
+        } else {
+            debug!(
+                epoch = request.epoch,
+                item_count = request.changes.len(),
+                "received smartstream changes"
+            );
+            trace!("received smartstream change items: {:#?}", request.changes);
+            self.ctx.smartstream_store().apply_changes(request.changes)
+        };
 
-        trace!("finished SmartModule update");
+        debug!(actions = actions.count(), "finished SmartStream update");
 
         Ok(())
     }

@@ -33,6 +33,16 @@ pub enum SpecChange<S> {
     Delete(S),
 }
 
+impl<S> Display for SpecChange<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SpecChange::Add(_s) => write!(f, "Add"),
+            SpecChange::Mod(_new, _old) => write!(f, "Mod"),
+            SpecChange::Delete(_s) => write!(f, "Delete"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct LocalStore<S>(SimpleConcurrentBTreeMap<S::Key, S>)
 where
