@@ -108,6 +108,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 4000)]
     #[error("a SmartStream error occurred")]
     SmartStreamError(#[from] SmartStreamError),
+    #[fluvio(tag = 4001)]
+    #[error("a JoinStream has terminated")]
+    JoinStreamTerminated,
 
     // Managed Connector Errors
     #[fluvio(tag = 5000)]

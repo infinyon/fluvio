@@ -2,8 +2,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Instant;
 use std::fmt::{self, Debug};
 
-use dataplane::{ErrorCode};
-use dataplane::record::{ConsumerRecord};
+use dataplane::record::Record;
 use dataplane::smartstream::SmartStreamExtraParams;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
@@ -203,20 +202,18 @@ impl SmartStreamContext {
     }
 }
 
-use futures_util::{StreamExt, stream::BoxStream};
-
 pub trait SmartStream: Send {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput>;
     fn params(&self) -> SmartStreamExtraParams;
 }
 
 impl dyn SmartStream + '_ {
-    #[instrument(skip(self, iter, max_bytes, right_join))]
-    pub async fn process_batch(
+    #[instrument(skip(self, iter, max_bytes, join_last_record))]
+    pub fn process_batch(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
-        right_join: &mut Option<BoxStream<'static, Result<ConsumerRecord, ErrorCode>>>,
+        join_last_record: Option<&Record>,
     ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
         let mut smartstream_batch = Batch::<MemoryRecords>::default();
         smartstream_batch.base_offset = -1; // indicate this is unitialized
@@ -250,26 +247,7 @@ impl dyn SmartStream + '_ {
             let now = Instant::now();
 
             let mut join_record = vec![];
-            if let Some(right_join_stream) = right_join.as_mut() {
-                debug!("waiting for next join record");
-                match right_join_stream.next().await {
-                    Some(Ok(record)) => {
-                        debug!(
-                            offset = record.offset,
-                            value_len = record.record.value().len(),
-                            "received record from join"
-                        );
-
-                        // debug!("record value: {}",record.record.value().as_str().unwrap_or(""));
-                        Some(record.into_inner()).encode(&mut join_record, 0)?;
-                        debug!(join_record_len = join_record.len(), "join record encoded");
-                    }
-                    Some(Err(e)) => return Err(e.into()),
-                    None => {
-                        debug!("no more join records");
-                    }
-                }
-            }
+            join_last_record.encode(&mut join_record, 0)?;
 
             let input = SmartStreamInput {
                 base_offset: file_batch.batch.base_offset,
