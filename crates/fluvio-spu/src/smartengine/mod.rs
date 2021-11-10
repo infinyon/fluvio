@@ -146,6 +146,7 @@ async fn extract_smartstream_context(
     ctx: &DefaultSharedGlobalContext,
 ) -> Result<SmartModuleInvocation, ErrorCode> {
     let name = invocation.stream;
+    debug!(%name,"extracting smartstream");
     let params = invocation.params;
     if let Some(smart_module) = ctx.smartstream_store().spec(&name) {
         let spec = smart_module.spec;

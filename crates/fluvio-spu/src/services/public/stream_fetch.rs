@@ -34,7 +34,6 @@ use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::SmartStreamContext;
 
-
 /// Fetch records as stream
 pub struct StreamFetchHandler {
     ctx: DefaultSharedGlobalContext,
@@ -129,6 +128,8 @@ impl StreamFetchHandler {
         consumer_offset_listener: OffsetChangeListener,
         msg: StreamFetchRequest<FileRecordSet>,
     ) -> Result<(), SocketError> {
+        debug!("request: {:#?}", msg);
+
         let smart_stream_ctx = match SmartStreamContext::extract(
             msg.wasm_payload,
             msg.smart_module,
@@ -235,8 +236,22 @@ impl StreamFetchHandler {
 
 
                 record = async {  right_consumer_stream.as_mut().expect("Unexpected crash").next().await }, if right_consumer_stream.is_some() =>  {
-                    join_record = record.unwrap().ok();
                     debug!("Updated right stream");
+                    match record {
+                        Some(rec) => {
+                            join_record = Some(rec.map_err(|err| {
+                                IoError::new(
+                                    ErrorKind::Other,
+                                    format!("failed to get record from join stream {}", err),
+                                )
+                            })?);
+                        },
+                        None => {
+                            debug!("join stream has been closed, terminating");
+                            break;
+                        }
+                    }
+
                 },
 
 
