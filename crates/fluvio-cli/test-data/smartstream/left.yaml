@@ -1,4 +1,4 @@
-name: ss1
+name: sjoin
 input:
   topic:
     name: left      
@@ -7,4 +7,4 @@ steps:
       module: join
       right:
         smartstream:
-          name: rdoublee
+          name: rdouble
