@@ -19,7 +19,7 @@ spec:
         {{- toYaml .Values.scPod.nodeSelector | nindent 8 }}
       containers:
         - name: fluvio-sc
-          image: {{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.AppVersion }}
+          image: "{{ .Values.image.registry }}/fluvio:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           resources:
             {{- toYaml .Values.scPod.resources | nindent 12 }}

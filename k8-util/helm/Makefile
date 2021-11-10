@@ -3,6 +3,7 @@ VERSION := $(shell cat $(MAKE_DIR)/../../VERSION)
 APP_VERSION = $(VERSION)
 GIT_VERSION=$(shell git log -1 --pretty=format:"%H")
 REGISTRY=infinyon
+SHELL := bash
 CLOUD=minikube
 SC_LOG=info
 IMAGE_POLICY=IfNotPresent
@@ -23,8 +24,8 @@ dry-run-aws:
 	helm install --debug --dry-run goodly-guppy ./fluvio --set cloud=aws
 
 update_version:
-	yq w -i fluvio-core/Chart.yaml version $(VERSION)
-	yq w -i fluvio-core/values.yaml fluvioVersion $(VERSION)
+	yq w -i $(CHART_SRC)/Chart.yaml version $(VERSION)
+	yq w -i $(CHART_SRC)/values.yaml fluvioVersion $(VERSION)
 
 check_version:
 	if [[ $(CORE_VERSION) == $(SYS_VERSION) && $(CORE_VERSION) == $(VERSION)-latest ]]; \
