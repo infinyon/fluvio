@@ -30,7 +30,7 @@ use tui::Terminal;
 use tui::backend::CrosstermBackend;
 use crossterm::tty::IsTty;
 use crossterm::{
-    event::{DisableMouseCapture, EnableMouseCapture, EventStream},
+    event::EventStream,
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
@@ -327,7 +327,7 @@ impl ConsumeOpt {
             if io::stdout().is_tty() {
                 enable_raw_mode()?;
                 let mut stdout = io::stdout();
-                execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+                execute!(stdout, EnterAlternateScreen)?;
 
                 let model = TableModel::default();
                 maybe_table_model = Some(model);
@@ -418,11 +418,7 @@ impl ConsumeOpt {
         if let Some(ConsumeOutputType::full_table) = &self.output {
             if let Some(mut terminal_stdout) = maybe_terminal_stdout {
                 disable_raw_mode()?;
-                execute!(
-                    terminal_stdout.backend_mut(),
-                    LeaveAlternateScreen,
-                    DisableMouseCapture
-                )?;
+                execute!(terminal_stdout.backend_mut(), LeaveAlternateScreen,)?;
                 terminal_stdout.show_cursor()?;
             }
         }

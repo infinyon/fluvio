@@ -191,7 +191,7 @@ impl TableModel {
     pub fn table_ui(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>) {
         let rects = Layout::default()
             .constraints([Constraint::Percentage(100)].as_ref())
-            .margin(5)
+            .margin(0)
             .split(f.size());
 
         // Calculate the widths based on # of columns
