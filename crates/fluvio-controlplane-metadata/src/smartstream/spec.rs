@@ -67,6 +67,13 @@ impl Display for SmartStreamInputRef {
 }
 
 impl SmartStreamInputRef {
+    pub fn object_id(&self) -> String {
+        match self {
+            SmartStreamInputRef::Topic(ref topic) => format!("{}", topic.name),
+            SmartStreamInputRef::SmartStream(ref stream) => format!("SmartStream::{}", stream.name),
+        }
+    }
+
     // validat configuration
     pub async fn validate<'a, C>(
         &'a self,
