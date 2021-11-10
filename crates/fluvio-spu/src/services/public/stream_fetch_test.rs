@@ -50,7 +50,7 @@ use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, SmartSt
 static NEXT_PORT: AtomicU16 = AtomicU16::new(12000);
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch() {
+async fn test_stream_fetch_basic() {
     let test_path = temp_dir().join("test_stream_fetch");
     ensure_clean_dir(&test_path);
 
