@@ -124,6 +124,52 @@ impl TableModel {
         }
     }
 
+    // Skip up 5 rows, no wrap
+    pub fn page_up(&mut self) {
+        if !self.data.is_empty() {
+            if self.data.len() > 5 {
+                let i = match self.state.selected() {
+                    Some(i) => {
+                        let up_five: isize = (i as isize) - 5;
+
+                        if up_five >= 0 {
+                            up_five as usize
+                        } else {
+                            0
+                        }
+                    }
+                    None => 0,
+                };
+                self.state.select(Some(i));
+            } else {
+                self.state.select(Some(0));
+            }
+        }
+    }
+
+    // Skip down 5 rows, no wrap
+    pub fn page_down(&mut self) {
+        if !self.data.is_empty() {
+            if self.data.len() > 5 {
+                let i = match self.state.selected() {
+                    Some(i) => {
+                        let down_five = i + 5;
+
+                        if down_five <= self.data.len() {
+                            down_five
+                        } else {
+                            self.data.len() - 1
+                        }
+                    }
+                    None => 0,
+                };
+                self.state.select(Some(i));
+            } else {
+                self.state.select(Some(self.data.len() - 1));
+            }
+        }
+    }
+
     /// Takes in `user_input` and handles the side-effect, (except for exiting table)
     /// Returns the appropriate `TableEventResponse`
     pub fn event_handler(&mut self, user_input: Event) -> TableEventResponse {
@@ -149,6 +195,14 @@ impl TableModel {
                 }
                 KeyCode::End => {
                     self.last();
+                    TableEventResponse::InputHandled(user_input)
+                }
+                KeyCode::PageUp => {
+                    self.page_up();
+                    TableEventResponse::InputHandled(user_input)
+                }
+                KeyCode::PageDown => {
+                    self.page_down();
                     TableEventResponse::InputHandled(user_input)
                 }
                 _ => TableEventResponse::InputIgnored(user_input),
@@ -191,7 +245,7 @@ impl TableModel {
     pub fn table_ui(&mut self, f: &mut Frame<CrosstermBackend<Stdout>>) {
         let rects = Layout::default()
             .constraints([Constraint::Percentage(100)].as_ref())
-            .margin(5)
+            .margin(0)
             .split(f.size());
 
         // Calculate the widths based on # of columns
