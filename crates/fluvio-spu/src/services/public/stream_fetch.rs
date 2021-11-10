@@ -34,9 +34,6 @@ use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::SmartStreamContext;
 
-use crate::core::DefaultSharedGlobalContext;
-use crate::replication::leader::SharedFileLeaderState;
-use crate::smartengine::SmartStreamContext;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -244,10 +241,6 @@ impl StreamFetchHandler {
 
 
 
-<<<<<<< HEAD
-
-=======
->>>>>>> revert
                 // Received offset update from consumer, i.e. consumer acknowledged to this offset
                 consumer_offset_update = self.consumer_offset_listener.listen() => {
                     if consumer_offset_update == INIT_OFFSET {
