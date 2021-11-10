@@ -3,6 +3,8 @@ use std::time::Instant;
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
+use fluvio_smartengine::SmartStream;
+use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
 
@@ -23,13 +25,13 @@ use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
-use publishers::INIT_OFFSET;
 use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartstream::SmartStreamRuntimeError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
+use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::SmartStreamContext;
 
 /// Fetch records as stream
@@ -181,20 +183,31 @@ impl StreamFetchHandler {
     async fn process(
         mut self,
         starting_offset: Offset,
-        mut smart_stream_ctx: Option<SmartStreamContext>,
+        smart_stream_ctx: Option<SmartStreamContext>,
     ) -> Result<(), SocketError> {
-        // perform any initialization
-        if let Some(ctx) = &mut smart_stream_ctx {
-            ctx.update().await.map_err(|err| {
-                SocketError::Io(IoError::new(
+        let (mut smartstream, mut right_consumer_stream) = if let Some(ctx) = smart_stream_ctx {
+            let SmartStreamContext {
+                smartstream: st,
+                right_consumer_stream,
+            } = ctx;
+            (Some(st), right_consumer_stream)
+        } else {
+            (None, None)
+        };
+        let mut join_record = if let Some(join_stream) = right_consumer_stream.as_mut() {
+            // we wait for at least one record
+            join_stream.next().await.transpose().map_err(|err| {
+                IoError::new(
                     ErrorKind::Other,
-                    format!("error updatin smartstream ctx {}", err),
-                ))
-            })?;
-        }
+                    format!("failed to get record from join stream {}", err),
+                )
+            })?
+        } else {
+            None
+        };
 
         let (mut last_partition_offset, consumer_wait) = self
-            .send_back_records(starting_offset, &mut smart_stream_ctx)
+            .send_back_records(starting_offset, smartstream.as_mut(), join_record.as_ref())
             .await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
@@ -219,15 +232,12 @@ impl StreamFetchHandler {
                 },
 
 
-                update = smart_stream_ctx.as_mut().expect("Unexpected crash").update(), if smart_stream_ctx.is_some() =>  {
 
-                    if let Err(err) = update {
-                        error!("error in smart stream update: {:#?}", err);
-                        return Err(SocketError::Io(
-                            IoError::new(ErrorKind::Other, format!("error updatin smartstream ctx {}", err))
-                        ));
-                    }
+                record = async {  right_consumer_stream.as_mut().expect("Unexpected crash").next().await }, if right_consumer_stream.is_some() =>  {
+                    join_record = record.unwrap().ok();
+                    debug!("Updated right stream");
                 },
+
 
 
                 // Received offset update from consumer, i.e. consumer acknowledged to this offset
@@ -254,7 +264,7 @@ impl StreamFetchHandler {
                         last_partition_offset,
                         "Consumer offset updated and is behind, need to send records",
                     );
-                    let (offset, wait) = self.send_back_records(consumer_offset_update, &mut smart_stream_ctx).await?;
+                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartstream.as_mut(), join_record.as_ref()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -295,7 +305,7 @@ impl StreamFetchHandler {
 
                     // We need to send the consumer all records since the last consumer offset
                     debug!(partition_offset_update, last_consumer_offset, "reading offset event");
-                    let (offset, wait) = self.send_back_records(last_consumer_offset, &mut smart_stream_ctx).await?;
+                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartstream.as_mut(), join_record.as_ref()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -326,13 +336,14 @@ impl StreamFetchHandler {
     /// return (next offset, consumer wait)
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
-        skip(self, smart_stream_ctx),
+        skip(self, smartstream, join_last_record),
         fields(stream_id = self.stream_id)
     )]
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
-        smart_stream_ctx: &mut Option<SmartStreamContext>,
+        smartstream: Option<&mut Box<dyn SmartStream>>,
+        join_last_record: Option<&fluvio::consumer::Record>,
     ) -> Result<(Offset, bool), SocketError> {
         let now = Instant::now();
         let mut file_partition_response = FilePartitionResponse {
@@ -376,10 +387,14 @@ impl StreamFetchHandler {
 
         // If a smartstream module is provided, we need to read records from file to memory
         // In-memory records are then processed by smartstream and returned to consumer
-        let output = match smart_stream_ctx {
+        let output = match smartstream {
             Some(smartstream) => {
                 let (batch, smartstream_error) = smartstream
-                    .process_batch(&mut file_batch_iterator, self.max_bytes as usize)
+                    .process_batch(
+                        &mut file_batch_iterator,
+                        self.max_bytes as usize,
+                        join_last_record.map(|s| s.inner()),
+                    )
                     .map_err(|err| {
                         IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
                     })?;
@@ -540,7 +555,7 @@ pub mod publishers {
     use async_lock::Mutex;
     use tracing::debug;
 
-    use super::OffsetPublisher;
+    use super::{OffsetPublisher};
 
     pub const INIT_OFFSET: i64 = -1;
 
