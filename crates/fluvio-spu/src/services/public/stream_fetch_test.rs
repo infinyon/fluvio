@@ -1274,17 +1274,14 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         .expect("replica");
     ctx.leaders_state().insert(test_id, replica.clone());
 
-    // Aggregate 5 records
-    // These records look like:
-    //
+    // Aggregate 6 records in 2 batches
+    // First batch:
+    // 0
     // 1
     // 2
-    // 3
-    // 4
-    // 5
     let mut records = BatchProducer::builder()
-        .records(1u16)
-        .record_generator(Arc::new(|_, _| Record::new("0")))
+        .records(3u16)
+        .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
         .build()
         .expect("batch")
         .records();
@@ -1295,9 +1292,13 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         .await
         .expect("write");
 
+    // Second batch:
+    // 3
+    // 4
+    // 5
     let mut records2 = BatchProducer::builder()
-        .records(1u16)
-        .record_generator(Arc::new(|_, _| Record::new("1")))
+        .records(3u16)
+        .record_generator(Arc::new(|i, _| Record::new((i + 3).to_string())))
         .build()
         .expect("batch")
         .records();
@@ -1336,21 +1337,23 @@ async fn test_stream_aggregate_fetch_multiple_batch(
 
         let partition = &response.partition;
         assert_eq!(partition.error_code, ErrorCode::None);
-        assert_eq!(partition.high_watermark, 2);
-        assert_eq!(partition.next_offset_for_fetch(), Some(2)); // shoule be same as HW
+        assert_eq!(partition.high_watermark, 6);
+        assert_eq!(partition.next_offset_for_fetch(), Some(6)); // shoule be same as HW
 
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 0);
-        assert_eq!(batch.records().len(), 2);
+        assert_eq!(batch.records().len(), 6);
 
         let records = batch.records();
+        debug!("final records {:#?}", records);
 
         assert_eq!("A0", records[0].value().as_str().expect("string"));
-        assert_eq!("A1", records[1].value().as_str().expect("string"));
-        //   assert_eq!("A2", records[2].value().as_str().expect("string"));
-        //   assert_eq!("A3", records[3].value().as_str().expect("string"));
-        //   assert_eq!("A4", records[4].value().as_str().expect("string"));
+        assert_eq!("A01", records[1].value().as_str().expect("string"));
+        assert_eq!("A012", records[2].value().as_str().expect("string"));
+        assert_eq!("A0123", records[3].value().as_str().expect("string"));
+        assert_eq!("A01234", records[4].value().as_str().expect("string"));
+        assert_eq!("A012345", records[5].value().as_str().expect("string"));
     }
 
     // consumer can send back to same offset to read back again
