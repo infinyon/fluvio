@@ -25,7 +25,6 @@ use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
 use fluvio_types::event::offsets::OffsetChangeListener;
-<<<<<<< HEAD
 use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartstream::SmartStreamRuntimeError;
@@ -34,12 +33,6 @@ use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::SmartStreamContext;
-=======
-use publishers::INIT_OFFSET;
-use fluvio_smartengine::file_batch::FileBatchIterator;
-use dataplane::batch::Batch;
-use dataplane::smartstream::SmartStreamRuntimeError;
->>>>>>> move Consumer record to dataplane
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
@@ -196,32 +189,19 @@ impl StreamFetchHandler {
         starting_offset: Offset,
         mut smart_stream_ctx: Option<SmartStreamContext>,
     ) -> Result<(), SocketError> {
-        /*
-        let (mut smartstream, mut right_consumer_stream) = if let Some(ctx) = smart_stream_ctx {
-            let SmartStreamContext {
-                smartstream: st,
-                right_consumer_stream,
-            } = ctx;
-            (Some(st), right_consumer_stream)
-        } else {
-            (None, None)
-        };
-        let mut join_record = if let Some(join_stream) = right_consumer_stream.as_mut() {
-            // we wait for at least one record
-            join_stream.next().await.transpose().map_err(|err| {
-                IoError::new(
-                    ErrorKind::Other,
-                    format!("failed to get record from join stream {}", err),
-                )
-            })?
-        } else {
-            None
-        };
-        */
-
         let (mut last_partition_offset, consumer_wait) = self
             .send_back_records(starting_offset, &mut smart_stream_ctx)
             .await?;
+
+        // perform any initialization
+        if let Some(ctx) = &mut smart_stream_ctx {
+            ctx.update().await.map_err(|err| {
+                SocketError::Io(IoError::new(
+                    ErrorKind::Other,
+                    format!("error updatin smartstream ctx {}", err),
+                ))
+            })?;
+        }
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
         let mut counter: i32 = 0;
@@ -250,7 +230,7 @@ impl StreamFetchHandler {
                     join_record = record.unwrap().ok();
                     debug!("Updated right stream");
                 },
-                */
+
 
 
 
@@ -404,7 +384,6 @@ impl StreamFetchHandler {
             Some(smartstream) => {
                 let (batch, smartstream_error) = smartstream
                     .process_batch(&mut file_batch_iterator, self.max_bytes as usize)
-                    .await
                     .map_err(|err| {
                         IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
                     })?;

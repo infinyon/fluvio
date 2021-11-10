@@ -11,10 +11,39 @@ use futures_util::{StreamExt, stream::BoxStream};
 
 use crate::core::DefaultSharedGlobalContext;
 
+pub struct JoinStreamValue {
+    stream: BoxStream<'static, Result<ConsumerRecord, ErrorCode>>,
+    last_value: Option<ConsumerRecord>,
+}
+
+impl JoinStreamValue {
+    async fn update(&mut self) -> Result<(), ErrorCode> {
+        match self.stream.next().await {
+            Some(Ok(record)) => {
+                debug!(
+                    offset = record.offset,
+                    value_len = record.record.value().len(),
+                    "received initial record from right join"
+                );
+                self.last_value = Some(record);
+                Ok(())
+            }
+            Some(Err(e)) => Err(e),
+            None => {
+                debug!("right terminated");
+                Err(ErrorCode::JoinStreamTerminated)
+            }
+        }
+    }
+
+    fn last_value(&self) -> Option<&Record> {
+        self.last_value.as_ref().map(|r| r.inner())
+    }
+}
+
 pub struct SmartStreamContext {
     pub smartstream: Box<dyn SmartStream>,
-    pub right_consumer_stream:
-        Option<BoxStream<'static, Result<fluvio::consumer::Record, ErrorCode>>>,
+    pub right_consumer: Option<JoinStreamValue>,
 }
 
 impl SmartStreamContext {
@@ -34,7 +63,7 @@ impl SmartStreamContext {
                 if let Some(payload) = wasm_payload {
                     Ok(Some(Self {
                         smartstream: Self::payload_to_smartstream(payload, ctx)?,
-                        right_consumer_stream: None,
+                        right_consumer: None,
                     }))
                 } else {
                     Ok(None)
@@ -49,13 +78,13 @@ impl SmartStreamContext {
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Self, ErrorCode> {
         // check for right consumer stream exists, this only happens for join type
-        let right_consumer_stream = match invocation.kind {
+        let right_consumer = match invocation.kind {
             // for join, create consumer stream
             SmartStreamKind::Join(ref topic) => {
                 let consumer = ctx.leaders().partition_consumer(topic.to_owned(), 0).await;
 
-                Some(
-                    consumer
+                Some(JoinStreamValue {
+                    stream: consumer
                         .stream(fluvio::Offset::beginning())
                         .await
                         .map_err(|err| {
@@ -63,7 +92,8 @@ impl SmartStreamContext {
                             ErrorCode::SmartStreamJoinFetchError
                         })?
                         .boxed(),
-                )
+                    last_value: None,
+                })
             }
             _ => None,
         };
@@ -96,7 +126,7 @@ impl SmartStreamContext {
 
         Ok(Self {
             smartstream: Self::payload_to_smartstream(payload, ctx)?,
-            right_consumer_stream,
+            right_consumer,
         })
     }
 
@@ -127,13 +157,27 @@ impl SmartStreamContext {
             })
     }
 
-    pub async fn process_batch(
+    pub fn process_batch(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
     ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
-        self.smartstream
-            .process_batch(iter, max_bytes, &mut self.right_consumer_stream)
-            .await
+        self.smartstream.process_batch(
+            iter,
+            max_bytes,
+            if let Some(consumer) = &self.right_consumer {
+                consumer.last_value()
+            } else {
+                None
+            },
+        )
+    }
+
+    pub async fn update(&mut self) -> Result<(), ErrorCode> {
+        if let Some(consumer) = self.right_consumer.as_mut() {
+            consumer.update().await
+        } else {
+            Ok(())
+        }
     }
 }
