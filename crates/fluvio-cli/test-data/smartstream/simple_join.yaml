@@ -6,5 +6,5 @@ steps:
   - join:
       module: join
       right:
-        smartstream:
-          name: rdoublee
+        topic:
+          name: right
