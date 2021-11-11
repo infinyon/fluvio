@@ -271,11 +271,11 @@ impl TableModel {
         let header_cells = self
             .headers
             .iter()
-            .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Red)));
+            .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
         let header = Row::new(header_cells)
             .style(normal_style)
             .height(1)
-            .bottom_margin(1);
+            .bottom_margin(0);
         let rows = self.data.iter().map(|item| {
             let height = item
                 .iter()
@@ -284,7 +284,7 @@ impl TableModel {
                 .unwrap_or(0)
                 + 1;
             let cells = item.iter().map(|c| Cell::from(c.as_str()));
-            Row::new(cells).height(height as u16).bottom_margin(1)
+            Row::new(cells).height(height as u16).bottom_margin(0)
         });
         let t = Table::new(rows)
             .header(header)
