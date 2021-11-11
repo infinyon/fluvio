@@ -4,6 +4,7 @@ use std::fmt::{self, Debug};
 
 use dataplane::record::Record;
 use dataplane::smartstream::SmartStreamExtraParams;
+use futures_util::Future;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
@@ -220,13 +221,18 @@ pub trait SmartStream: Send {
 }
 
 impl dyn SmartStream + '_ {
-    #[instrument(skip(self, iter, max_bytes, join_last_record))]
-    pub fn process_batch(
+    #[instrument(skip(self, iter, max_bytes, join_last_record, on_batch))]
+    pub async fn process_batch<Fut, OnBatchFn>(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
-    ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
+        on_batch: OnBatchFn,
+    ) -> Result<(i64, bool), Error>
+    where
+        Fut: Future<Output = Result<(i64, bool), Error>>,
+        OnBatchFn: FnOnce(Batch, Option<SmartStreamRuntimeError>) -> Fut,
+    {
         let mut smartstream_batch = Batch::<MemoryRecords>::default();
         smartstream_batch.base_offset = -1; // indicate this is unitialized
         smartstream_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
@@ -236,14 +242,14 @@ impl dyn SmartStream + '_ {
         loop {
             let file_batch = match iter.next() {
                 // we process entire batches.  entire batches are process as group
-                // if we can't fit current batch into max bytes then it is discarded
-                Some(batch_result) => batch_result?,
+                Some(Ok(batch_result)) => batch_result,
+                Some(Err(err)) => return Err(Error::new(err)),
                 None => {
                     debug!(
                         total_records = smartstream_batch.records().len(),
                         "No more batches, SmartStream end"
                     );
-                    return Ok((smartstream_batch, None));
+                    return on_batch(smartstream_batch, None).await
                 }
             };
 
@@ -300,10 +306,11 @@ impl dyn SmartStream + '_ {
                         total_bytes = total_bytes + record_bytes,
                         max_bytes, "Total SmartStream bytes reached"
                     );
-                    return Ok((smartstream_batch, maybe_error));
+                    return on_batch(smartstream_batch, maybe_error).await;
+                    // return Ok((smartstream_batch, maybe_error));
+                } else {
+                    total_bytes += record_bytes;
                 }
-
-                total_bytes += record_bytes;
 
                 debug!(
                     smartstream_records = records.len(),
@@ -323,7 +330,7 @@ impl dyn SmartStream + '_ {
 
             // If we had a processing error, return current batch and error
             if maybe_error.is_some() {
-                return Ok((smartstream_batch, maybe_error));
+                return on_batch(smartstream_batch, maybe_error).await;
             }
         }
     }

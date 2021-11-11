@@ -4,6 +4,7 @@ use std::io::ErrorKind;
 use std::io::Error as IoError;
 
 use fluvio_smartengine::SmartStream;
+use futures_util::FutureExt;
 use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
@@ -405,23 +406,28 @@ impl StreamFetchHandler {
         // In-memory records are then processed by smartstream and returned to consumer
         let output = match smartstream {
             Some(smartstream) => {
-                let (batch, smartstream_error) = smartstream
+                smartstream
                     .process_batch(
                         &mut file_batch_iterator,
                         self.max_bytes as usize,
                         join_last_record.map(|s| s.inner()),
-                    )
+                        | batch, smartstream_error| {
+                            self.send_processed_response(
+                                file_partition_response.clone(),
+                                next_offset,
+                                batch,
+                                smartstream_error,
+                            ).map(|result| {
+                                result
+                                .map_err(|err| {
+                                    anyhow::Error::new(err)
+                                })
+                            })
+                        }
+                    ).await
                     .map_err(|err| {
                         IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
-                    })?;
-
-                self.send_processed_response(
-                    file_partition_response,
-                    next_offset,
-                    batch,
-                    smartstream_error,
-                )
-                .await?
+                    })?
             }
             None => {
                 // If no smartstream is provided, respond using raw file records
