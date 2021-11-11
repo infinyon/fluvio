@@ -1,16 +1,18 @@
 use std::{
     env::temp_dir,
-    path::{Path, PathBuf},
+    path::{PathBuf},
     sync::atomic::{AtomicU16, Ordering},
     time::Duration,
 };
+use std::sync::Arc;
 
-use flate2::{Compression, bufread::GzEncoder};
+use tracing::{debug};
+
 use fluvio_controlplane_metadata::{
     partition::Replica,
     smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat},
 };
-use fluvio_storage::{FileReplica, ReplicaStorage};
+use fluvio_storage::{FileReplica};
 use flv_util::fixture::ensure_clean_dir;
 use futures_util::{Future, StreamExt};
 
@@ -28,17 +30,6 @@ use fluvio_spu_schema::server::{
     stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm},
     update_offset::{UpdateOffsetsRequest, OffsetUpdate},
 };
-use fluvio_spu_schema::server::stream_fetch::SmartStreamWasm;
-use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
-use crate::core::GlobalContext;
-use crate::config::SpuConfig;
-use crate::replication::leader::LeaderReplicaState;
-use crate::services::public::create_public_server;
-
-use std::sync::Arc;
-
-use tracing::{debug};
-
 use dataplane::{
     ErrorCode,
     api::{RequestMessage},
@@ -46,6 +37,15 @@ use dataplane::{
     SmartStreamError,
 };
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, SmartStreamKind};
+use fluvio_spu_schema::server::stream_fetch::SmartStreamWasm;
+use fluvio_spu_schema::server::stream_fetch::SmartStreamPayload;
+
+use crate::core::GlobalContext;
+use crate::config::SpuConfig;
+use crate::replication::leader::LeaderReplicaState;
+use crate::services::public::create_public_server;
+
+use super::util::*;
 
 static NEXT_PORT: AtomicU16 = AtomicU16::new(12000);
 
@@ -197,65 +197,6 @@ async fn test_stream_fetch_basic() {
 
     server_end_event.notify();
     debug!("terminated controller");
-}
-
-/// create records that can be filtered
-fn create_filter_records(records: u16) -> RecordSet {
-    BatchProducer::builder()
-        .records(records)
-        .record_generator(Arc::new(generate_record))
-        .build()
-        .expect("batch")
-        .records()
-}
-
-fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
-    let msg = match record_index {
-        0 => "b".repeat(100),
-        1 => "a".repeat(100),
-        _ => "z".repeat(100),
-    };
-
-    Record::new(RecordData::from(msg))
-}
-
-fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
-    let path = filter_path.as_ref();
-    std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()))
-}
-
-fn zip(raw_buffer: Vec<u8>) -> Vec<u8> {
-    use std::io::Read;
-    let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
-    let mut buffer = Vec::with_capacity(raw_buffer.len());
-    encoder
-        .read_to_end(&mut buffer)
-        .unwrap_or_else(|_| panic!("Unable to gzip file"));
-    buffer
-}
-
-fn read_wasm_module(module_name: &str) -> Vec<u8> {
-    let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
-    let wasm_path = PathBuf::from(spu_dir)
-        .parent()
-        .expect("parent")
-        .join(format!(
-            "fluvio-smartstream/examples/target/wasm32-unknown-unknown/release/{}.wasm",
-            module_name
-        ));
-    read_filter_from_path(wasm_path)
-}
-
-fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str) {
-    let wasm = zip(read_wasm_module(module_name));
-    ctx.smart_module_localstore().insert(SmartModule {
-        name: module_name.to_owned(),
-        wasm: SmartModuleWasm {
-            format: SmartModuleWasmFormat::Binary,
-            payload: wasm,
-        },
-        ..Default::default()
-    });
 }
 
 async fn legacy_test<Fut, TestFn>(
