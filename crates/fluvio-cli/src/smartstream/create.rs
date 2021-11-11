@@ -68,6 +68,6 @@ mod test {
     fn test_config_left() {
         let config =
             SmartStreamCreateConfig::from_file("test-data/smartstream/left.yaml").expect("parse");
-        assert_eq!(config.name, "ss1");
+        assert_eq!(config.name, "sjoin");
     }
 }
