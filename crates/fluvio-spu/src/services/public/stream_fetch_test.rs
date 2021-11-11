@@ -2261,6 +2261,9 @@ async fn test_stream_fetch_join(
         .await
         .expect("write");
 
+    // Sleep before sending records to left topic, so right record is updated
+    sleep(Duration::from_millis(100)).await;
+
     // send back that consume has processed all current bacthes
     client_socket
         .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
@@ -2274,9 +2277,8 @@ async fn test_stream_fetch_join(
 
     // Input: the following records:
     //
-    // 33
-    // 44
-
+    // 55
+    // 66
     let mut records_left = BatchProducer::builder()
         .records(2u16)
         .record_generator(Arc::new(|i, _| Record::new(((i + 5) * 11).to_string())))
