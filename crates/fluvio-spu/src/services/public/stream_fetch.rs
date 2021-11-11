@@ -405,30 +405,25 @@ impl StreamFetchHandler {
         // If a smartstream module is provided, we need to read records from file to memory
         // In-memory records are then processed by smartstream and returned to consumer
         let output = match smartstream {
-            Some(smartstream) => {
-                smartstream
-                    .process_batch(
-                        &mut file_batch_iterator,
-                        self.max_bytes as usize,
-                        join_last_record.map(|s| s.inner()),
-                        | batch, smartstream_error| {
-                            self.send_processed_response(
-                                file_partition_response.clone(),
-                                next_offset,
-                                batch,
-                                smartstream_error,
-                            ).map(|result| {
-                                result
-                                .map_err(|err| {
-                                    anyhow::Error::new(err)
-                                })
-                            })
-                        }
-                    ).await
-                    .map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
-                    })?
-            }
+            Some(smartstream) => smartstream
+                .process_batch(
+                    &mut file_batch_iterator,
+                    self.max_bytes as usize,
+                    join_last_record.map(|s| s.inner()),
+                    |batch, smartstream_error| {
+                        self.send_processed_response(
+                            file_partition_response.clone(),
+                            next_offset,
+                            batch,
+                            smartstream_error,
+                        )
+                        .map(|result| result.map_err(|err| anyhow::Error::new(err)))
+                    },
+                )
+                .await
+                .map_err(|err| {
+                    IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
+                })?,
             None => {
                 // If no smartstream is provided, respond using raw file records
                 debug!("No SmartStream, sending back entire log");
