@@ -87,6 +87,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "F", long, conflicts_with_all = &["output", "key_value"])]
     pub format: Option<String>,
 
+    /// Consume records using the formatting rules defined by Table name
+    #[structopt(long, conflicts_with_all = &["output", "key_value", "format"])]
+    pub table_format: Option<String>,
+
     /// Consume records starting X from the beginning of the log (default: 0)
     #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
     pub from_beginning: Option<Option<u32>>,
@@ -330,6 +334,9 @@ impl ConsumeOpt {
                 let mut stdout = io::stdout();
                 execute!(stdout, EnterAlternateScreen)?;
 
+
+                // Look at tables for a spec that might belong to the topic
+
                 let model = TableModel::default();
                 maybe_table_model = Some(model);
 
@@ -396,7 +403,7 @@ impl ConsumeOpt {
                 }
             }
         } else {
-            // We do not support `--output=table` when we don't have a TTY (i.e., CI environment)
+            // We do not support `--output=full_table` when we don't have a TTY (i.e., CI environment)
             while let Some(result) = stream.next().await {
                 let result: std::result::Result<Record, _> = result;
                 let record = match result {

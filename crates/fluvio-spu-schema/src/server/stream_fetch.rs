@@ -66,6 +66,8 @@ where
     pub smartmodule: Option<SmartModuleInvocation>,
     #[fluvio(min_version = 16)]
     pub smartstream: Option<SmartStreamInvocation>,
+    #[fluvio(min_version = 16)]
+    pub table_format: Option<SmartStreamInvocation>,
     pub data: PhantomData<R>,
 }
 
@@ -225,6 +227,25 @@ pub struct SmartStreamInvocation {
     pub stream: String,
     pub params: SmartModuleExtraParams,
 }
+
+
+pub enum TableInputKind {
+    Json
+}
+
+pub enum TableOutputKind {
+    Json
+}
+
+/// The request payload when a Consumer is using Table output with formatting details
+/// 
+/// - Specify selection keys for standard input formats ()
+/// - Standard transformations to apply to values
+#[derive(Debug, Default, Clone, Encoder, Decoder)]
+pub struct TableFormatInvocation {
+}
+
+
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct StreamFetchResponse<R>
