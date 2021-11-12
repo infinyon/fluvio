@@ -241,7 +241,6 @@ impl dyn SmartStream + '_ {
         let mut total_records = 0;
 
         loop {
-            // panic!("smartstreams");
             let file_batch = match iter.next() {
                 // we process entire batches.  entire batches are process as group
                 Some(Ok(batch_result)) => batch_result,

@@ -695,7 +695,7 @@ mod file {
     use crate::store::FileWrite;
     use crate::store::StoreValue;
 
-    #[derive(Default, Debug, Clone)]
+    #[derive(Default, Debug)]
     pub struct FileRecordSet(AsyncFileSlice);
 
     impl fmt::Display for FileRecordSet {
