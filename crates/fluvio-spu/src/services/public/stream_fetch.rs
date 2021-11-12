@@ -412,12 +412,14 @@ impl StreamFetchHandler {
                     join_last_record.map(|s| s.inner()),
                     |batch, smartstream_error| {
                         self.send_processed_response(
-                            file_partition_response.clone(),
+                            file_partition_response.error_code.clone(),
+                            file_partition_response.high_watermark,
+                            file_partition_response.log_start_offset,
                             next_offset,
                             batch,
                             smartstream_error,
                         )
-                        .map(|result| result.map_err(|err| anyhow::Error::new(err)))
+                        .map(|result| result.map_err(anyhow::Error::new))
                     },
                 )
                 .await
@@ -456,10 +458,12 @@ impl StreamFetchHandler {
         Ok(output)
     }
 
-    #[instrument(skip(self, file_partition_response, batch, smartstream_error))]
+    #[instrument(skip(self, batch, smartstream_error))]
     async fn send_processed_response(
         &self,
-        file_partition_response: FilePartitionResponse,
+        file_partition_response_error_code: ErrorCode,
+        file_partition_response_high_watermark: i64,
+        file_partition_response_log_start_offset: i64,
         mut next_offset: Offset,
         batch: Batch,
         smartstream_error: Option<SmartStreamRuntimeError>,
@@ -468,7 +472,7 @@ impl StreamFetchHandler {
 
         let error_code = match smartstream_error {
             Some(error) => ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)),
-            None => file_partition_response.error_code,
+            None => file_partition_response_error_code,
         };
         trace!(?error_code, "Smartstream error code output:");
 
@@ -497,8 +501,8 @@ impl StreamFetchHandler {
         let partition_response = DefaultPartitionResponse {
             partition_index: self.replica.partition,
             error_code,
-            high_watermark: file_partition_response.high_watermark,
-            log_start_offset: file_partition_response.log_start_offset,
+            high_watermark: file_partition_response_high_watermark,
+            log_start_offset: file_partition_response_log_start_offset,
             records,
             next_filter_offset: next_offset,
             // we mark last offset in the response that we should sync up

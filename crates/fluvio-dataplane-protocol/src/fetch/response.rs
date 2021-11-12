@@ -62,7 +62,7 @@ where
     pub data: PhantomData<R>,
 }
 
-#[derive(Encoder, Decoder, FluvioDefault, Debug, Clone)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct FetchablePartitionResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
@@ -104,7 +104,7 @@ impl FetchablePartitionResponse<RecordSet> {
     }
 }
 
-#[derive(Encoder, Decoder, FluvioDefault, Debug, Clone)]
+#[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct AbortedTransaction {
     pub producer_id: i64,
     pub first_offset: i64,
