@@ -237,30 +237,31 @@ impl dyn SmartStream + '_ {
         smartstream_batch.base_offset = -1; // indicate this is unitialized
         smartstream_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
 
-        let mut total_bytes = 0;
+        let mut batch_bytes = 0;
+        let mut total_records = 0;
 
         loop {
+            // panic!("smartstreams");
             let file_batch = match iter.next() {
                 // we process entire batches.  entire batches are process as group
                 Some(Ok(batch_result)) => batch_result,
                 Some(Err(err)) => return Err(Error::new(err)),
                 None => {
-                    debug!(
-                        total_records = smartstream_batch.records().len(),
-                        "No more batches, SmartStream end"
-                    );
-                    return on_batch(smartstream_batch, None).await;
+                    debug!(total_records, "No more batches, SmartStream end");
+                    return on_batch(smartstream_batch, None)
+                        .await
+                        .map(|(records, wait)| (total_records + records, wait));
                 }
             };
 
-            // debug!(
-            //     current_batch_offset = file_batch.batch.base_offset,
-            //     current_batch_offset_delta = file_batch.offset_delta(),
-            //     smartstream_offset_delta = smartstream_batch.get_header().last_offset_delta,
-            //     smartstream_base_offset = smartstream_batch.base_offset,
-            //     smartstream_records = smartstream_batch.records().len(),
-            //     "Starting SmartStream processing"
-            // );
+            debug!(
+                current_batch_offset = file_batch.batch.base_offset,
+                current_batch_offset_delta = file_batch.offset_delta(),
+                smartstream_offset_delta = smartstream_batch.get_header().last_offset_delta,
+                smartstream_base_offset = smartstream_batch.base_offset,
+                smartstream_records = smartstream_batch.records().len(),
+                "Starting SmartStream processing"
+            );
 
             let now = Instant::now();
 
@@ -276,15 +277,10 @@ impl dyn SmartStream + '_ {
             let output = self.process(input)?;
             debug!(smartstream_execution_time = %now.elapsed().as_millis());
 
-            let maybe_error = output.error;
+            let mut maybe_error = output.error;
             let mut records = output.successes;
 
             trace!("smartstream processed records: {:#?}", records);
-
-            // If we had a processing error, return current batch and error
-            if maybe_error.is_some() {
-                return on_batch(smartstream_batch, maybe_error).await;
-            }
 
             // there are smartstreamed records!!
             if records.is_empty() {
@@ -306,23 +302,25 @@ impl dyn SmartStream + '_ {
                 let record_bytes = records.write_size(0);
 
                 // if smartstream bytes exceed max bytes then we send this batch
-                if total_bytes + record_bytes > max_bytes {
+                if batch_bytes + record_bytes > max_bytes {
                     debug!(
-                        total_bytes = total_bytes + record_bytes,
+                        batch_bytes = batch_bytes + record_bytes,
                         max_bytes, "Max SmartStream bytes reached, sending records"
                     );
-                    on_batch(smartstream_batch, maybe_error).await?;
+                    let (records, _wait) = on_batch(smartstream_batch, maybe_error.take()).await?;
+                    total_records += records;
                     smartstream_batch = Batch::<MemoryRecords>::default();
                     smartstream_batch.base_offset = -1; // indicate this is unitialized
                     smartstream_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
-                    total_bytes = 0;
+                    batch_bytes = 0;
+                    continue;
                 } else {
-                    total_bytes += record_bytes;
+                    batch_bytes += record_bytes;
                 }
 
                 debug!(
                     smartstream_records = records.len(),
-                    total_bytes, "finished smartstreaming"
+                    batch_bytes, "finished smartstreaming batch"
                 );
                 smartstream_batch.mut_records().append(&mut records);
             }
@@ -334,6 +332,11 @@ impl dyn SmartStream + '_ {
                     "adding to offset delta"
                 );
                 smartstream_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
+            }
+
+            // If we had a processing error, return current batch and error
+            if maybe_error.is_some() {
+                return on_batch(smartstream_batch, maybe_error).await;
             }
         }
     }
