@@ -1,6 +1,9 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use fluvio_protocol::Encoder;
+use tracing::debug;
 use tracing::instrument;
+use once_cell::sync::Lazy;
 
 mod partitioning;
 
@@ -270,7 +273,10 @@ fn assemble_requests(
                 partition_index: partition,
                 ..Default::default()
             };
-            partition_request.records.batches.push(Batch::from(records));
+
+            let mut batches = create_batches(records);
+
+            partition_request.records.batches.append(&mut batches);
             topic_request.partitions.push(partition_request);
         }
 
@@ -281,6 +287,43 @@ fn assemble_requests(
     }
 
     requests
+}
+
+static MAX_BATCH_SIZE: Lazy<usize> = Lazy::new(|| {
+    use std::env;
+    let var_value = env::var("FLV_CLIENT_MAX_BATCH_SIZE").unwrap_or_default();
+    let max_bytes: usize = var_value.parse().unwrap_or(1000000);
+    max_bytes
+});
+
+fn create_batches(records: Vec<Record>) -> Vec<Batch> {
+    if records.write_size(0) < *MAX_BATCH_SIZE || records.len() == 1 {
+        let batch = Batch::from(records);
+        vec![batch]
+    } else {
+        debug!("Splitting batch into multiple batches");
+        let mut batches = Vec::new();
+        let mut current_batch = Batch::new();
+        for record in records {
+            if current_batch.write_size(0) + record.write_size(0) > *MAX_BATCH_SIZE {
+                debug!(
+                    len = current_batch.write_size(0),
+                    "Created batch with length"
+                );
+
+                batches.push(current_batch);
+                current_batch = Batch::new();
+            }
+            current_batch.add_record(record);
+        }
+        debug!(
+            len = current_batch.write_size(0),
+            "Created batch with length"
+        );
+
+        batches.push(current_batch);
+        batches
+    }
 }
 
 #[cfg(test)]
