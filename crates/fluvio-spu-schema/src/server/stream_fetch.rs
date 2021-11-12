@@ -229,13 +229,20 @@ pub struct SmartStreamInvocation {
 }
 
 
-pub enum TableInputKind {
+#[derive(Debug, Clone, Encoder, Decoder)]
+pub enum TableDataInputKind {
     Json
 }
 
-pub enum TableOutputKind {
+#[derive(Debug, Clone, Encoder, Decoder)]
+pub enum TableDataOutputKind {
     Json
 }
+
+// Worry about this later
+//pub enum DataFormat {
+//    DateTime,
+//}
 
 /// The request payload when a Consumer is using Table output with formatting details
 /// 
@@ -243,6 +250,9 @@ pub enum TableOutputKind {
 /// - Standard transformations to apply to values
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct TableFormatInvocation {
+    pub input_kind: TableDataInputKind,
+    pub output_kind: TableDataOutputKind,
+    pub key_order: Vec<String>,
 }
 
 
