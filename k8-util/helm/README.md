@@ -1,0 +1,47 @@
+# Overview
+
+Fluvio's Helm charts to are compiled into fluvio cluster installer.
+
+
+## Sys Chart
+
+This chart contains CRD definitions. Since CRD is scope to a cluster, only one sys chart should be deployed to a Kubernetes cluster.
+
+## App Chart
+
+This chart contains definitions for Kubernetes objects such as Deployments, Services, Pods, etc.   Since it is name scoped, it can be deployed to multiple namespaces for multi-tenant configuration.
+
+## Versioning
+
+Each chart contains its chart version.  The chart version should be changed if and only if chart contents are changed.
+The packaged chart uses the app version, the fluvio cluster version.
+
+
+# Using Fluvio cluster installer
+
+Fluvio cluster installer are build into CLI.  At the top of the repo:
+```
+$ make build-cli
+```
+
+Then to install sys chart:
+```
+$ fluvio cluster start --sys
+installing sys chart
+```
+
+List helm charts:
+```
+$ helm list
+```
+
+To uninstall sys chart:
+```
+fluvio cluster delete --sys
+```
+
+To uninstall sys chart:
+```
+$ helm uninstall fluvio-sys
+```
+
