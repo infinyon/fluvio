@@ -1,11 +1,10 @@
 # Overview
 
-Fluvio's Helm charts to are compiled into fluvio cluster installer.
-
+By default, Fluvio's leverage compiled-in charts for Kubernetes deployment.  
 
 ## Sys Chart
 
-This chart contains CRD definitions. Since CRD is scope to a cluster, only one sys chart should be deployed to a Kubernetes cluster.
+This chart contains CRD definitions. Since CRD is scope to a cluster, only one sys chart can be deployed to a Kubernetes cluster.
 
 ## App Chart
 
