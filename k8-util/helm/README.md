@@ -1,6 +1,6 @@
 # Overview
 
-By default, Fluvio's leverage compiled-in charts for Kubernetes deployment.  
+By default, Fluvio's leverage compiled-in charts for Kubernetes deployment.   At build time, charts are compiled as an inline resource into Cluster installer.  There is no need to locate and load charts from outside.
 
 ## Sys Chart
 
