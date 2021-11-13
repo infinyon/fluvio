@@ -289,15 +289,15 @@ fn assemble_requests(
     requests
 }
 
-static MAX_BATCH_SIZE: Lazy<usize> = Lazy::new(|| {
+static MAX_BATCH_SIZE_BYTES: Lazy<usize> = Lazy::new(|| {
     use std::env;
-    let var_value = env::var("FLV_CLIENT_MAX_BATCH_SIZE").unwrap_or_default();
+    let var_value = env::var("FLV_CLIENT_MAX_BATCH_SIZE_BYTES").unwrap_or_default();
     let max_bytes: usize = var_value.parse().unwrap_or(1000000);
     max_bytes
 });
 
 fn create_batches(records: Vec<Record>) -> Vec<Batch> {
-    if records.write_size(0) < *MAX_BATCH_SIZE || records.len() == 1 {
+    if records.write_size(0) < *MAX_BATCH_SIZE_BYTES || records.len() == 1 {
         let batch = Batch::from(records);
         vec![batch]
     } else {
@@ -305,7 +305,7 @@ fn create_batches(records: Vec<Record>) -> Vec<Batch> {
         let mut batches = Vec::new();
         let mut current_batch = Batch::new();
         for record in records {
-            if current_batch.write_size(0) + record.write_size(0) > *MAX_BATCH_SIZE {
+            if current_batch.write_size(0) + record.write_size(0) > *MAX_BATCH_SIZE_BYTES {
                 debug!(
                     len = current_batch.write_size(0),
                     "Created batch with length"
@@ -521,5 +521,21 @@ mod tests {
             let record_1_1 = batch.records().get(1).unwrap();
             assert_eq!(record_1_1.value.as_ref(), b"H");
         }
+    }
+
+    #[test]
+    fn test_create_batches() {
+        let num_records = *MAX_BATCH_SIZE_BYTES / 1000;
+
+        let records = (0..num_records)
+            .map(|_i| Record::new("a".repeat(9000)))
+            .collect::<Vec<Record>>();
+
+        let batches = create_batches(records);
+
+        assert_eq!(batches.len(), 10);
+        assert!(batches
+            .iter()
+            .all(|batch| batch.write_size(0) < *MAX_BATCH_SIZE_BYTES));
     }
 }
