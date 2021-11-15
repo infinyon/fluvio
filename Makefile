@@ -51,14 +51,14 @@ build-cli: install_rustup_target
 
 build-cli-minimal: install_rustup_target
 	# https://github.com/infinyon/fluvio/issues/1255
-	cargo build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer --manifest-path ./crates/fluvio-cli/Cargo.toml
+	cargo build --bin fluvio $(RELEASE_FLAG) $(VERBOSE_FLAG) --no-default-features --features consumer --manifest-path ./crates/fluvio-cli/Cargo.toml
 
 
 build-cluster: install_rustup_target
-	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo build --bin fluvio-run $(RELEASE_FLAG)  $(VERBOSE_FLAG)
 
 build-test:	install_rustup_target 
-	cargo build --bin fluvio-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo build --bin fluvio-test $(RELEASE_FLAG) $(VERBOSE_FLAG)
 
 install_rustup_target:
 	./build-scripts/install_target.sh
@@ -305,7 +305,7 @@ endif
 
 # Build docker image for Fluvio.
 ifndef TARGET
-fluvio_image: TARGET=x86_64-unknown-linux-musl
+fluvio_image: TARGET= aarch64-unknown-linux-musl
 endif
 fluvio_image: fluvio_run_bin
 	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"

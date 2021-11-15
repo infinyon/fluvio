@@ -22,6 +22,8 @@ scPod:
     limits:
       memory: 512Mi
   nodeSelector: {}
+  publicPort: 9003
+  nodePort: 31003
 spuPod:
   resources:
     requests:
