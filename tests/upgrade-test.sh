@@ -83,6 +83,12 @@ function validate_cluster_stable() {
     # $STABLE_FLUVIO topic create ${STABLE_TOPIC}-delete 
     ci_check;
 
+    # Validate consume on topic before produce
+    # https://github.com/infinyon/fluvio/issues/1819
+    echo "Validate consume on \"${STABLE_TOPIC}\" before producing"
+    $STABLE_FLUVIO consume -B -d ${STABLE_TOPIC} 2>/dev/null
+
+    echo "Producing test data to ${STABLE_TOPIC}"
     cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}
     # cat data1.txt.tmp | $STABLE_FLUVIO produce ${STABLE_TOPIC}-delete
     ci_check;
@@ -152,9 +158,15 @@ function validate_upgrade_cluster_to_prerelease() {
     echo "Create test topic: ${PRERELEASE_TOPIC}"
     $FLUVIO_BIN_ABS_PATH topic create ${PRERELEASE_TOPIC}
 
+    # Validate consume on topic before produce
+    # https://github.com/infinyon/fluvio/issues/1819
+    echo "Validate consume on \"${PRERELEASE_TOPIC}\" before producing"
+    $FLUVIO_BIN_ABS_PATH consume -B -d ${PRERELEASE_TOPIC} 2>/dev/null
+
     #kubectl get pods
     #kubectl get spu
 
+    echo "Producing test data to ${PRERELEASE_TOPIC}"
     cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${PRERELEASE_TOPIC}
 
 
@@ -170,9 +182,14 @@ function validate_upgrade_cluster_to_prerelease() {
         exit 1
     fi
 
-    # Exercise older topics
-    cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${STABLE_TOPIC}
+    # Validate consume on topic before produce
+    # https://github.com/infinyon/fluvio/issues/1819
+    echo "Validate consume on \"${STABLE_TOPIC}\" before producing"
+    $FLUVIO_BIN_ABS_PATH consume -B -d ${STABLE_TOPIC} 2>/dev/null
 
+    # Exercise older topics
+    echo "Producing test data to ${STABLE_TOPIC}"
+    cat data2.txt.tmp | $FLUVIO_BIN_ABS_PATH produce ${STABLE_TOPIC}
 
     echo "Validate v${STABLE} test data w/ ${TARGET_VERSION} CLI matches expected data AFTER upgrading cluster + CLI to v${TARGET_VERSION}"
     $FLUVIO_BIN_ABS_PATH consume -B -d ${STABLE_TOPIC} | tee output.txt.tmp
