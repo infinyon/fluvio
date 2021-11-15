@@ -8,9 +8,10 @@ pub struct TupleStruct(String, i32);
 
 #[test]
 fn test_encode_tuple_struct() -> Result<(), Error> {
-    let mut v1 = TupleStruct::default();
-    v1.0 = format!("Struct without named fields");
-    v1.1 = 42;
+    let v1 = TupleStruct {
+        0: "Struct without named fields".to_string(),
+        1: 42,
+    };
     let mut src = vec![];
     v1.encode(&mut src, 0)?;
 
