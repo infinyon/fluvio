@@ -18,7 +18,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
         DeriveItem::Struct(kf_struct, _attrs) => {
             // TODO: struct level attrs is not used.
             let field_tokens =
-                generate_struct_fields(&kf_struct.props(), &kf_struct.struct_ident());
+                generate_struct_fields(&kf_struct.props(), kf_struct.struct_ident());
             let ident = &kf_struct.struct_ident();
             let (impl_generics, ty_generics, where_clause) = kf_struct.generics().split_for_impl();
             quote! {

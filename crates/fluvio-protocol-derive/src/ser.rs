@@ -59,15 +59,14 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
 }
 
 fn parse_struct_props_encoding(props: &FluvioStructProps, struct_ident: &Ident) -> TokenStream {
-    let recurse = match props {
+    match props {
         FluvioStructProps::Named(named_props) => {
             parse_struct_named_props_encoding(named_props, struct_ident)
         }
         FluvioStructProps::Unnamed(unnamed_props) => {
             parse_struct_unnamed_props_encoding(unnamed_props, struct_ident)
         }
-    };
-    recurse
+    }
 }
 
 fn parse_struct_named_props_encoding(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
@@ -133,15 +132,14 @@ fn parse_struct_unnamed_props_encoding(props: &[UnnamedProp], struct_ident: &Ide
 }
 
 fn parse_struct_props_size(props: &FluvioStructProps, struct_ident: &Ident) -> TokenStream {
-    let recurse = match props {
+    match props {
         FluvioStructProps::Named(named_props) => {
             parse_struct_named_props_size(named_props, struct_ident)
         }
         FluvioStructProps::Unnamed(unnamed_props) => {
             parse_struct_unnamed_props_size(unnamed_props, struct_ident)
         }
-    };
-    recurse
+    }
 }
 
 fn parse_struct_named_props_size(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
