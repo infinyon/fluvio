@@ -14,11 +14,42 @@ use tui::{
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
 
+use std::collections::BTreeMap;
+
+pub enum TableCell {
+    Header(StdCell),
+    Cell(StdCell)
+}
+
+pub struct TableRowData<'a> {
+    cells: BTreeMap<&'a str, TableCell>,
+    fg_color: String,
+    bg_color: String,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct HeaderCell {
+    is_primary: bool,
+    key_path: String,
+    value: String,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct StdCell {
+    key_path: String,
+    value: String
+}
+
+// Need to add some cell type
+// Make the struct fields private
 #[derive(Debug, Default, Clone)]
 pub struct TableModel {
-    pub state: TableState,
-    pub headers: Vec<String>,
-    pub data: Vec<Vec<String>>,
+    state: TableState,
+    columns: Vec<String>, // List of json key paths. Should be initialized either at Self::new() or at first row entered
+
+
+    // Maybe data should be some kind of map structure, so we can enforce headers as column order easier
+    data: Vec<Vec<String>>,
     // primary key: set of keys to select when deciding to update table view: Default on 1st header key
     // column display ordering rules: alphabetical, manual: Default alphabetical
     // toggle for update-row vs append-row
@@ -26,9 +57,24 @@ pub struct TableModel {
 }
 
 impl TableModel {
+
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    //pub fn with_tableformat(&mut self, tableformat: TableFormatSpec)
+    pub fn with_tableformat(&mut self, ) {
+        unimplemented!()
+
+        // 
+
+    }
+
+
+
     // I think this should accept headers that don't exist in the data. Print empty columns
-    pub fn update_header(&mut self, headers: Vec<String>) -> Result<()> {
-        self.headers = headers;
+    pub fn update_header(&mut self, columns: Vec<String>) -> Result<()> {
+        self.columns = columns;
 
         Ok(())
     }
@@ -68,7 +114,7 @@ impl TableModel {
 
     /// Return number of rows in cache
     pub fn num_columns(&self) -> usize {
-        self.headers.len()
+        self.columns.len()
     }
 
     /// Return the row selected
@@ -259,6 +305,7 @@ impl TableModel {
 
         let mut column_constraints: Vec<Constraint> = Vec::new();
 
+        // Todo
         // Define the widths of the columns
         for _ in 0..self.num_columns() {
             column_constraints.push(Constraint::Percentage(equal_column_width));
@@ -268,14 +315,18 @@ impl TableModel {
 
         let selected_style = Style::default().add_modifier(Modifier::REVERSED);
         let normal_style = Style::default().bg(Color::Blue);
+
+        // I should have a fn that builds this for me, so I can keep track of styles and use for rows
         let header_cells = self
-            .headers
+            .columns
             .iter()
             .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
         let header = Row::new(header_cells)
             .style(normal_style)
             .height(1)
             .bottom_margin(0);
+
+        // render rows
         let rows = self.data.iter().map(|item| {
             let height = item
                 .iter()
@@ -286,6 +337,9 @@ impl TableModel {
             let cells = item.iter().map(|c| Cell::from(c.as_str()));
             Row::new(cells).height(height as u16).bottom_margin(0)
         });
+
+
+
         let t = Table::new(rows)
             .header(header)
             .block(Block::default().borders(Borders::ALL).title(format!(
@@ -295,6 +349,8 @@ impl TableModel {
             .highlight_style(selected_style)
             .highlight_symbol(selected_symbol.as_str())
             .widths(&column_constraints);
+
+        // draw
         f.render_stateful_widget(t, rects[0], &mut self.state);
     }
 }

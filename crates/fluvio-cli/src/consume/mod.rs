@@ -326,8 +326,12 @@ impl ConsumeOpt {
             }
         };
 
+
+        // If there was a tableformat specified, go fetch it
+        // let mut maybe_tableformat = ...
+
         // TableModel and Terminal for full_table rendering
-        let mut maybe_table_model = None;
+        let mut maybe_table_model = None; // Add a create table model fn. This will need to support the TableFormat crd
         let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
             if io::stdout().is_tty() {
                 enable_raw_mode()?;
