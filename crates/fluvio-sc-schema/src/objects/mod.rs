@@ -467,6 +467,14 @@ mod delete_macro {
                                 Ok(())
                             },
 
+                            crate::smartmodule::SmartModuleSpec::LABEL => {
+                                tracing::trace!("detected smartmodule");
+                                let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::SmartModule(request);
+                                Ok(())
+                            },
+
                             crate::smartstream::SmartStreamSpec::LABEL => {
                                 tracing::trace!("detected smartstream");
                                 let mut request = $api::<crate::smartstream::SmartStreamSpec>::default();
