@@ -499,6 +499,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
         k8: [k3d,minikube]
     steps:
@@ -507,17 +508,17 @@ jobs:
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-x86_64-unknown-linux-musl
+          name: fluvio-${{ matrix.rust-target }}
           path: .
       - name: Download artifact - fluvio-test
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-test-x86_64-unknown-linux-musl
+          name: fluvio-test-${{ matrix.rust-target }}
           path: .
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
           path: /tmp
 
       - name: Print artifacts and mark executable
@@ -527,8 +528,8 @@ jobs:
       - name: Load Fluvio Docker Image for K3d
         run: |
           ls -la /tmp
-          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
-          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
+          docker image load --input /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} infinyon/fluvio:${{ github.sha }}
           docker image ls -a
       #- name: Load Docker image for Minikube
       #    eval $(minikube -p minikube docker-env)
