@@ -11,8 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
 #  push:
 #    branches: [master]
   workflow_dispatch:
@@ -28,78 +28,34 @@ env:
 jobs:
 
   # Run all checks and unit test. This always run on debug mode
-  check:
-    name: Check tier2 platform (${{ matrix.rust_target }}) (${{ matrix.check }})
-    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
+  build_primary_binaries:
+    name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest]
+        rust-target:
+          - aarch64-apple-darwin
         rust: [stable]
-        rust_target: [x86_64-apple-darwin]
-        check: [clippy, test, unstable]
-
+        binary: [fluvio, fluvio-run, fluvio-test]
+        os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.rust_target }}
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Install Rust ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-      - uses: goto-bus-stop/setup-zig@v1
-        with:
-          version: 0.8.0
-      - uses: Swatinem/rust-cache@v1
-      - name: Clippy
-        if: ${{ matrix.check == 'clippy' }}
-        run: make check-clippy
-
-      - name: Test
-        if: ${{ matrix.check == 'test' }}
-        run: |
-          make run-all-doc-test
-          make run-all-unit-test
-
-      - name: Unstable test
-        if: ${{ matrix.check == 'unstable' }}
-        run: |
-          make run-integration-test
-
-  # build binaries. use release for staging
-  # this requires check and test
-  build_platform_binaries:
-    name: Build Tier2 binaries for Platform Target (${{ matrix.rust_target }}) on ${{ matrix.os }}
-    if: ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/staging') }}
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest]
-        rust: [stable]
-        rust_target: [x86_64-apple-darwin]
-
-    env:
-      RUST_BACKTRACE: full
-      RUSTV: ${{ matrix.rust }}
-      TARGET: ${{ matrix.rust_target }}
-      RUST_BIN_DIR: target/${{ matrix.rust_target }}/debug
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
     steps:
       - uses: actions/checkout@v2
 
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
-      #- name: Set RELEASE mode
-      #  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-      #  run: |
-      #    echo "RELEASE=true" | tee -a $GITHUB_ENV
-      #    echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
-      #    echo "RUST_BIN_DIR=target/${{ matrix.rust_target }}/release" | tee -a $GITHUB_ENV
+      - name: Set RELEASE mode
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        shell: bash
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
 
       - name: Print env
         run: |
@@ -110,89 +66,119 @@ jobs:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
-      - uses: goto-bus-stop/setup-zig@v1
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
 
-      - name: Rustfmt
-        run: make check-fmt
-
-      - name: Build CLI
+      - name: Build fluvio
+        if: ${{ matrix.binary == 'fluvio' }}
         run: make build-cli
 
-      - name: Build minimal cli
-        run: make build-cli-minimal
-
-      - name: Build Cluster CLI
+      - name: Build fluvio-run
+        if: ${{ matrix.binary == 'fluvio-run' }}
         run: make build-cluster
 
-      - name: Build Test CLI
+      - name: Build fluvio-test
+        if: ${{ matrix.binary == 'fluvio-test' }}
         run: make build-test
 
       # Upload artifacts
-      - name: Upload artifact - fluvio
+      - name: Upload artifact - ${{ matrix.binary }}
         uses: actions/upload-artifact@v2
         with:
-          name: fluvio-tier2-${{ matrix.rust_target }}
-          path: ${{ env.RUST_BIN_DIR }}/fluvio
-      - name: Upload artifact - fluvio-run
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-tier2-run-${{ matrix.rust_target }}
-          path: ${{ env.RUST_BIN_DIR }}/fluvio-run
-      - name: Upload atrifact - fluvio-test
-        uses: actions/upload-artifact@v2
-        with:
-          name: fluvio-tier2-test-${{ matrix.rust_target }}
-          path: ${{ env.RUST_BIN_DIR }}/fluvio-test
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
 
   local_cluster_test:
-    name: Local Tier 2cluster test
+    name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
     runs-on: ${{ matrix.os }}
-    if: ${{ false }}
-    needs: build_platform_binaries
+    needs:
+      - build_primary_binaries
+      - config
     strategy:
+      fail-fast: false
       matrix:
-        os: [macos-latest]
-        rust: [stable]
-    env:
-      FLV_SOCKET_WAIT: 600
+        os: [macos-11]
+        run: [r1]
+        test: [smoke,election,multiple-partition,reconnection]
+     #   run: ${{ fromJson(needs.config.outputs.runs )}}
+
     steps:
       - uses: actions/checkout@v2
-      - name: Install ${{ matrix.rust }}
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          profile: minimal
-          override: true
-      - name: Set up Minikube
-        env:
-          OSTYPE: darwin
-          MINIKUBE_VERSION: 1.21.0
-        run: ./actions/action-install-minikube.sh
-      - name: Test minikube
-        run: |
-          minikube profile list
-          minikube status
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-x86_64-unknown-linux-musl
+          name: fluvio-aarch64-apple-darwin
           path: .
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-aarch64-apple-darwin
+          path: ~/.fluvio/extensions
+      - run: chmod +x ~/.fluvio/extensions/fluvio-run
       - name: Download artifact - fluvio-test
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-test-x86_64-unknown-linux-musl
+          name: fluvio-test-aarch64-apple-darwin
           path: .
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio ./fluvio-test && ./fluvio -h && ./fluvio-test -h
+        run: chmod +x ./fluvio ./fluvio-test && ./fluvio version
+      - name: Set up Docker for Mac
+        uses: docker-practice/actions-setup-docker@master
+      - name: Install and start Kind
+        run: |
+          brew install kind
+          kind create cluster --config k8-util/cluster/kind.yaml 
       - name: Run smoke-test
+        if: ${{ matrix.test == 'smoke' }}
+        timeout-minutes: 2
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start smoke-test-tls-root
+          date
+          kubectl get partitions
+          kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
+          echo "smoke test done"
+      #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
+      - name: Run election-test
+        if: ${{ matrix.test == 'election' }}
         timeout-minutes: 3
         run: |
-          make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-tls-root
-      - name: Upload SC log
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
+          echo "election test done"
+      - name: Run multiple-partition-test
+        if: ${{ matrix.test == 'multiple-partition' }}
+        timeout-minutes: 3
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
+          echo "multiple partition test done"
+      - name: Run reconnection-test
+        if: ${{ matrix.test == 'reconnection' }}
+        timeout-minutes: 3
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnection-test
+          echo "reconnection test done"
+
+      - name: Save logs
+        if: failure()
+        run: |
+          date
+          uname -a
+          kubectl get spu
+          kubectl get statefulset
+          kubectl get topics
+          kubectl get partitions
+          ps -ef | grep fluvio
+
+      - name: Upload Logs
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: failure()
         with:
-          name: fluvio-sc-logs
-          path: /tmp/flv_sc.log
+          name: local-${{ matrix.run }}-logs
+          path: /tmp/*.log
