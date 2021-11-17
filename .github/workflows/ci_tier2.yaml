@@ -26,7 +26,7 @@ env:
   VERBOSE: ${{ github.events.input.verbose }}
 
 jobs:
-  
+
   config:
     name: Set up Config
     runs-on: ubuntu-latest
@@ -50,7 +50,7 @@ jobs:
           - aarch64-apple-darwin
         rust: [stable]
         binary: [fluvio, fluvio-run, fluvio-test]
-        os: [ubuntu-latest]
+        os: [macos-11]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -114,6 +114,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-11]
+        rust-target: [aarch64-apple-darwin]
         run: [r1]
         test: [smoke,election,multiple-partition,reconnection]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
@@ -123,18 +124,18 @@ jobs:
       - name: Download artifact - fluvio
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-aarch64-apple-darwin
+          name: fluvio-${{ matrix.rust-target }}
           path: .
       - name: Download artifact - fluvio-run
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-run-aarch64-apple-darwin
+          name: fluvio-run-${{ matrix.rust-target }}
           path: ~/.fluvio/extensions
       - run: chmod +x ~/.fluvio/extensions/fluvio-run
       - name: Download artifact - fluvio-test
         uses: actions/download-artifact@v2
         with:
-          name: fluvio-test-aarch64-apple-darwin
+          name: fluvio-test-${{ matrix.rust-target }}
           path: .
       - name: Print artifacts and mark executable
         run: chmod +x ./fluvio ./fluvio-test && ./fluvio version
