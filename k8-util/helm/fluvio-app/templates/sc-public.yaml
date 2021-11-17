@@ -12,9 +12,13 @@ spec:
     externalTrafficPolicy: .Values.service.externalTrafficPolicy
 {{ end }}
 {{ if .Values.service.externalName }}
-    externalName: .Values.service.externalName
+    externalName: {{ .Values.service.externalName }}
 {{ end }}
   ports:
   - protocol: TCP
-    port: 9003
-    targetPort: 9003
+    port: {{ .Values.scPod.publicPort }}
+    targetPort: {{ .Values.scPod.publicPort }}
+{{ if eq .Values.service.type "NodePort" }}
+    nodePort: {{ .Values.scPod.nodePort }}
+{{ end }}
+    

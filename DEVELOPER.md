@@ -115,7 +115,7 @@ For mac:
 ```
 brew install zig
 brew install llvm@11
-export FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld
+export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm\@11/11.1.0_3/bin/lld
 ```
 
 For ubuntu LTS 20.04 or greater:

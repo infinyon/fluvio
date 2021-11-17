@@ -3,6 +3,7 @@ VERSION := $(shell cat $(MAKE_DIR)/../../VERSION)
 APP_VERSION = $(VERSION)
 
 # remove packaged charts
+# must clean if any of the contents changed due to limitation of "build.rs"
 clean:
 	rm -rf pkg_sys;
 	rm -rf pkg_app;
@@ -20,3 +21,4 @@ pkg_app:	fluvio-app/*.* ../../VERSION
 	cd pkg_app;mv fluvio-app-* fluvio-chart-app.tgz
 
 package:	pkg_sys pkg_app
+	echo "Packaged charts are in pkg_sys and pkg_app"
