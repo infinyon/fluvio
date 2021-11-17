@@ -14,31 +14,31 @@ use tui::{
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
 
-use std::collections::BTreeMap;
+//use std::collections::BTreeMap;
 
-pub enum TableCell {
-    Header(StdCell),
-    Cell(StdCell)
-}
-
-pub struct TableRowData<'a> {
-    cells: BTreeMap<&'a str, TableCell>,
-    fg_color: String,
-    bg_color: String,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct HeaderCell {
-    is_primary: bool,
-    key_path: String,
-    value: String,
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct StdCell {
-    key_path: String,
-    value: String
-}
+//pub enum TableCell {
+//    Header(StdCell),
+//    Cell(StdCell)
+//}
+//
+//pub struct TableRowData<'a> {
+//    cells: BTreeMap<&'a str, TableCell>,
+//    fg_color: String,
+//    bg_color: String,
+//}
+//
+//#[derive(Debug, Default, Clone)]
+//pub struct HeaderCell {
+//    is_primary: bool,
+//    key_path: String,
+//    value: String,
+//}
+//
+//#[derive(Debug, Default, Clone)]
+//pub struct StdCell {
+//    key_path: String,
+//    value: String
+//}
 
 // Need to add some cell type
 // Make the struct fields private
@@ -46,7 +46,6 @@ pub struct StdCell {
 pub struct TableModel {
     state: TableState,
     columns: Vec<String>, // List of json key paths. Should be initialized either at Self::new() or at first row entered
-
 
     // Maybe data should be some kind of map structure, so we can enforce headers as column order easier
     data: Vec<Vec<String>>,
@@ -57,20 +56,17 @@ pub struct TableModel {
 }
 
 impl TableModel {
+    //pub fn new() -> Self {
+    //    Self::default()
+    //}
 
-    pub fn new() -> Self {
-        Self::default()
-    }
+    ////pub fn with_tableformat(&mut self, tableformat: TableFormatSpec)
+    //pub fn with_tableformat(&mut self, ) {
+    //    unimplemented!()
 
-    //pub fn with_tableformat(&mut self, tableformat: TableFormatSpec)
-    pub fn with_tableformat(&mut self, ) {
-        unimplemented!()
+    //    //
 
-        // 
-
-    }
-
-
+    //}
 
     // I think this should accept headers that don't exist in the data. Print empty columns
     pub fn update_header(&mut self, columns: Vec<String>) -> Result<()> {
@@ -317,10 +313,13 @@ impl TableModel {
         let normal_style = Style::default().bg(Color::Blue);
 
         // I should have a fn that builds this for me, so I can keep track of styles and use for rows
-        let header_cells = self
-            .columns
-            .iter()
-            .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+        let header_cells = self.columns.iter().map(|h| {
+            Cell::from(h.as_str()).style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )
+        });
         let header = Row::new(header_cells)
             .style(normal_style)
             .height(1)
@@ -337,8 +336,6 @@ impl TableModel {
             let cells = item.iter().map(|c| Cell::from(c.as_str()));
             Row::new(cells).height(height as u16).bottom_margin(0)
         });
-
-
 
         let t = Table::new(rows)
             .header(header)

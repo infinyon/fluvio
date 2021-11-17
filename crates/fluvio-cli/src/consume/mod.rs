@@ -326,7 +326,6 @@ impl ConsumeOpt {
             }
         };
 
-
         // If there was a tableformat specified, go fetch it
         // let mut maybe_tableformat = ...
 
@@ -337,7 +336,6 @@ impl ConsumeOpt {
                 enable_raw_mode()?;
                 let mut stdout = io::stdout();
                 execute!(stdout, EnterAlternateScreen)?;
-
 
                 // Look at tables for a spec that might belong to the topic
 

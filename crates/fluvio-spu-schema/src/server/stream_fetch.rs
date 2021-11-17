@@ -228,16 +228,15 @@ pub struct SmartStreamInvocation {
     pub params: SmartModuleExtraParams,
 }
 
-
-#[derive(Debug, Clone, Encoder, Decoder)]
-pub enum TableDataInputKind {
-    Json
-}
-
-#[derive(Debug, Clone, Encoder, Decoder)]
-pub enum TableDataOutputKind {
-    Json
-}
+//#[derive(Debug, Clone, Encoder, Decoder)]
+//pub enum TableDataInputKind {
+//    Json
+//}
+//
+//#[derive(Debug, Clone, Encoder, Decoder)]
+//pub enum TableDataOutputKind {
+//    Json
+//}
 
 // Worry about this later
 //pub enum DataFormat {
@@ -245,17 +244,15 @@ pub enum TableDataOutputKind {
 //}
 
 /// The request payload when a Consumer is using Table output with formatting details
-/// 
+///
 /// - Specify selection keys for standard input formats ()
 /// - Standard transformations to apply to values
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct TableFormatInvocation {
-    pub input_kind: TableDataInputKind,
-    pub output_kind: TableDataOutputKind,
-    pub key_order: Vec<String>,
+    //    pub input_kind: TableDataInputKind,
+//    pub output_kind: TableDataOutputKind,
+//    pub key_order: Vec<String>,
 }
-
-
 
 #[derive(Encoder, Decoder, Default, Debug)]
 pub struct StreamFetchResponse<R>

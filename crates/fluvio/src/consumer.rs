@@ -15,7 +15,7 @@ use fluvio_spu_schema::server::stream_fetch::{
 pub use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartStreamInvocation,
 };
-use fluvio_spu_schema::server::stream_fetch::TableFormatInvocation;
+//use fluvio_spu_schema::server::stream_fetch::TableFormatInvocation;
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
@@ -724,7 +724,6 @@ pub struct ConsumerConfig {
     pub(crate) smartstream: Option<SmartStreamInvocation>,
     #[builder(default)]
     pub(crate) table_format: Option<SmartStreamInvocation>,
-
 }
 
 impl ConsumerConfig {
