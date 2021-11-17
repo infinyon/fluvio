@@ -269,7 +269,7 @@ install-outdated:
 	cargo install cargo-outdated
 
 crate-outdated: install-outdated
-	cargo outdated --root-deps-only --exit-code 1
+	cargo outdated --root-deps-only --exit-code 1 --workspace
 
 build_smartstreams:
 	make -C crates/fluvio-smartstream/examples build

@@ -30,6 +30,6 @@ fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", 
 structopt = "0.3.5"
 fork = "0.1"
 nix = "0.23"
-inventory = "0.1"
+inventory = "0.2"
 tracing = "0.1"
 crossbeam-channel = "0.5"
