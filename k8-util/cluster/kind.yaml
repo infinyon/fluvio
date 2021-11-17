@@ -1,15 +1,18 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
-- role: control-plane
-  # port forward 80 on the host to 80 on this node
-  extraPortMappings:
-  - containerPort: 31003  #sc
-    hostPort: 31003
-    protocol: TCP
-  - containerPort: 31004  #spu 1
-    hostPort: 31004
-    protocol: TCP
-  - containerPort: 31005  #spu 3
-    hostPort: 31005
-    protocol: TCP
+  - role: control-plane
+    # port forward 80 on the host to 80 on this node
+    extraPortMappings:
+      - containerPort: 31003 #sc
+        hostPort: 31003
+        protocol: TCP
+      - containerPort: 31004 #spu 1
+        hostPort: 31004
+        protocol: TCP
+      - containerPort: 31005 #spu 2
+        hostPort: 31005
+        protocol: TCP
+      - containerPort: 31006 #spu 3
+        hostPort: 31006
+        protocol: TCP

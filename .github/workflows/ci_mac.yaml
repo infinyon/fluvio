@@ -177,7 +177,7 @@ jobs:
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
           echo "election test done"
       - name: Run multiple-partition-test
-        if: ${{ matrix.test == 'multiple-partition' }}
+        if: ${{ false }}
         timeout-minutes: 3
         run: |
           date
