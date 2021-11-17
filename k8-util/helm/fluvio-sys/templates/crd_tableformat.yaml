@@ -25,13 +25,13 @@ spec:
               x-kubernetes-preserve-unknown-fields: true
             spec:
               type: object
-              required: ["name", "input_format"]
+              required: ["name"]
               properties:
                 name:
                   type: string
                   minimum: 1
                   maximum: 100
-                input_format:
+                inputFormat:
                   type: string
                   enum:
                     - JSON
@@ -42,7 +42,7 @@ spec:
                   items:
                     type: object
                     properties:
-                      header_label:
+                      headerLabel:
                         type: string
                       width:
                         type: integer 
@@ -58,13 +58,13 @@ spec:
                         type: string
                       display:
                         type: boolean 
-                      primary_key:
+                      primaryKey:
                         type: boolean 
-                      header_bg_color:
+                      headerBgColor:
                         type: string
                         enum:
                           - BLUE
-                      header_text_color:
+                      headerTextColor:
                         type: string
                         enum:
                           - YELLOW

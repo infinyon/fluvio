@@ -137,6 +137,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 7001)]
     #[error("the tableformat was not found")]
     TableFormatNotFound,
+    #[fluvio(tag = 7002)]
+    #[error("the tableformat already exists")]
+    TableFormatAlreadyExists,
 
     // SmartStream Object Errors
     #[fluvio(tag = 8000)]
