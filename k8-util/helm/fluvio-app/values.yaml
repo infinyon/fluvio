@@ -32,7 +32,7 @@ spuPod:
       memory: 1Gi
   nodeSelector: {}
   storageClass: null
-
+  baseNodePort: 31004
 
 rbac:
   create: true

@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::fmt;
 
+use fluvio_types::defaults::SPU_PUBLIC_PORT;
 use tracing::{debug, info};
 use serde::{Deserialize};
 
@@ -8,7 +9,7 @@ use k8_client::{ClientError};
 
 use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
 use k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
-use k8_types::core::service::ServiceSpec;
+use k8_types::core::service::{ServicePort, ServiceSpec, TargetPort};
 use fluvio_controlplane_metadata::core::MetadataContext;
 
 use crate::dispatcher::core::{Spec, Status};
@@ -23,6 +24,7 @@ pub struct PodConfig {
     pub node_selector: HashMap<String, String>,
     pub resources: Option<ResourceRequirements>,
     pub storage_class: Option<String>,
+    pub base_node_port: Option<u16>
 }
 
 #[derive(Debug, PartialEq, Default, Clone)]
@@ -93,21 +95,36 @@ impl ScK8Config {
     */
 
     /// apply service config to service
-    pub fn apply_service(&self, service: &mut ServiceSpec) {
+    pub fn apply_service(&self,replica: u16, k8_service: &mut ServiceSpec) {
+
+        let mut public_port = ServicePort {
+            port: SPU_PUBLIC_PORT,
+            ..Default::default()
+        };
+        public_port.target_port = Some(TargetPort::Number(public_port.port));
+
+
+
         if let Some(service_template) = &self.service {
             if let Some(ty) = &service_template.r#type {
-                service.r#type = Some(ty.clone());
+                k8_service.r#type = Some(ty.clone());
+                if let Some(node_port) = self.spu_pod_config.base_node_port {
+                    public_port.node_port = Some(node_port + replica);
+                }
+                
             }
             if let Some(local_traffic) = &service_template.external_traffic_policy {
-                service.external_traffic_policy = Some(local_traffic.clone());
+                k8_service.external_traffic_policy = Some(local_traffic.clone());
             }
             if let Some(external_name) = &service_template.external_name {
-                service.external_name = Some(external_name.clone());
+                k8_service.external_name = Some(external_name.clone());
             }
-            if let Some(lb_ip) = &service.load_balancer_ip {
-                service.load_balancer_ip = Some(lb_ip.clone());
+            if let Some(lb_ip) = &k8_service.load_balancer_ip {
+                k8_service.load_balancer_ip = Some(lb_ip.clone());
             }
         }
+
+        k8_service.ports = vec![public_port];
     }
 }
 
