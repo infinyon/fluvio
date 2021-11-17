@@ -1935,18 +1935,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "fluvio-smartstream"
+name = "fluvio-smartmodule"
 version = "0.4.0"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
- "fluvio-smartstream-derive",
+ "fluvio-smartmodule-derive",
  "fluvio-spu-schema",
  "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
 ]
 
 [[package]]
-name = "fluvio-smartstream-derive"
+name = "fluvio-smartmodule-derive"
 version = "0.3.1"
 dependencies = [
  "proc-macro2",

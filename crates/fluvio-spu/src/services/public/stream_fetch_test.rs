@@ -240,7 +240,7 @@ fn read_wasm_module(module_name: &str) -> Vec<u8> {
         .parent()
         .expect("parent")
         .join(format!(
-            "fluvio-smartstream/examples/target/wasm32-unknown-unknown/release/{}.wasm",
+            "fluvio-smartmodule/examples/target/wasm32-unknown-unknown/release/{}.wasm",
             module_name
         ));
     read_filter_from_path(wasm_path)

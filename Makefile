@@ -263,11 +263,11 @@ check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
 build_smartstreams:
-	make -C crates/fluvio-smartstream/examples build
+	make -C crates/fluvio-smartmodule/examples build
 
 run-all-unit-test: install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
-	cargo test -p fluvio-smartstream $(RELEASE_FLAG) $(TARGET_FLAG)
+	cargo test -p fluvio-smartmodule $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C crates/fluvio-protocol
 
