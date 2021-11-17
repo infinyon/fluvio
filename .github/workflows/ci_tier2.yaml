@@ -47,7 +47,7 @@ jobs:
     strategy:
       matrix:
         rust-target:
-          - aarch64-apple-darwin
+          - x86_64-apple-darwin
         rust: [stable]
         binary: [fluvio, fluvio-run, fluvio-test]
         os: [macos-11]
@@ -114,7 +114,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [macos-11]
-        rust-target: [aarch64-apple-darwin]
+        rust-target: [x86_64-apple-darwin]
         run: [r1]
         test: [smoke,election,multiple-partition,reconnection]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
