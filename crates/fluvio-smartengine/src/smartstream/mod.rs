@@ -246,7 +246,7 @@ impl dyn SmartStream + '_ {
                 Some(Ok(batch_result)) => batch_result,
                 Some(Err(err)) => return Err(Error::new(err)),
                 None => {
-                    debug!(total_records, "No more batches, SmartStream end");
+                    debug!(total_records, smartstream_batch.batch_len, "No more batches, SmartStream end");
                     return on_batch(smartstream_batch, None)
                         .await
                         .map(|(records, wait)| (total_records + records, wait));
@@ -303,19 +303,33 @@ impl dyn SmartStream + '_ {
                 // if smartstream bytes exceed max bytes then we send this batch
                 if batch_bytes + record_bytes > max_bytes {
                     debug!(
-                        batch_bytes = batch_bytes + record_bytes,
+                        batch_bytes,
+                        record_bytes,
                         max_bytes, "Max SmartStream bytes reached, sending records"
                     );
+
+                    let last_offset= smartstream_batch.get_last_offset();
+                    let last_offset_delta= smartstream_batch.get_last_offset_delta();
+                    debug!(
+                        ?smartstream_batch,
+                        "old batch"
+                    );
+
                     let (records, _wait) = on_batch(smartstream_batch, maybe_error.take()).await?;
                     total_records += records;
+
                     smartstream_batch = Batch::<MemoryRecords>::default();
-                    smartstream_batch.base_offset = -1; // indicate this is unitialized
-                    smartstream_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
+                    smartstream_batch.base_offset = last_offset + 1;
+                    smartstream_batch.set_offset_delta(last_offset_delta as i32 + 1);
+
+                    debug!(
+                        ?smartstream_batch,
+                        "new batch"
+                    );
                     batch_bytes = 0;
-                    continue;
-                } else {
-                    batch_bytes += record_bytes;
                 }
+                
+                batch_bytes += record_bytes;
 
                 debug!(
                     smartstream_records = records.len(),

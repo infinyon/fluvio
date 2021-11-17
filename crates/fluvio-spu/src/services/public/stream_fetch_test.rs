@@ -1210,6 +1210,151 @@ async fn test_stream_aggregate_fetch_single_batch(
 }
 
 #[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_single_batch_large_legacy() {
+    legacy_test(
+        "test_stream_aggregate_fetch_single_batch_legacy",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_single_batch,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_single_batch_large_adhoc() {
+    adhoc_test(
+        "test_stream_aggregate_fetch_single_batch_adhoc",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_single_batch_large,
+    )
+    .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_aggregate_fetch_single_batch_large_predefined() {
+    predefined_test(
+        "test_stream_aggregate_fetch_single_batch_predefined",
+        FLUVIO_WASM_AGGREGATE,
+        SmartStreamKind::Aggregate {
+            accumulator: Vec::from("A"),
+        },
+        test_stream_aggregate_fetch_single_batch_large,
+    )
+    .await;
+}
+
+async fn test_stream_aggregate_fetch_single_batch_large(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<SmartStreamPayload>,
+    smart_module: Option<SmartModuleInvocation>,
+) {
+    ensure_clean_dir(&test_path);
+
+    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    let topic = "testaggregate";
+    let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state().insert(test_id, replica.clone());
+
+    let stream_request = DefaultStreamFetchRequest {
+        topic: topic.to_owned(),
+        partition: 0,
+        fetch_offset: 0,
+        isolation: Isolation::ReadUncommitted,
+        max_bytes: 48,
+        wasm_module: Vec::new(),
+        wasm_payload,
+        smart_module,
+        ..Default::default()
+    };
+
+    // Aggregate 5 records
+    // These records look like:
+    //
+    // 1
+    // 2
+    // 3
+    // 4
+    // 5
+    let mut records = BatchProducer::builder()
+        .records(5u16)
+        .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
+        .build()
+        .expect("batch")
+        .records();
+    debug!("records: {:#?}", records);
+
+    let mut stream = client_socket
+        .create_stream(RequestMessage::new_request(stream_request), 11)
+        .await
+        .expect("create stream");
+
+    replica
+        .write_record_set(&mut records, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    debug!("first aggregate fetch");
+    let response = stream.next().await.expect("first").expect("response");
+    let stream_id = response.stream_id;
+
+    {
+        debug!("received first message");
+        assert_eq!(response.topic, topic);
+
+        let partition = &response.partition;
+        assert_eq!(partition.error_code, ErrorCode::None);
+        assert_eq!(partition.high_watermark, 5);
+        assert_eq!(partition.next_offset_for_fetch(), Some(5)); // shoule be same as HW
+
+        assert_eq!(partition.records.batches.len(), 1);
+        let batch = &partition.records.batches[0];
+        assert_eq!(batch.base_offset, 0);
+        assert_eq!(batch.records().len(), 5);
+
+        let records = batch.records();
+
+        assert_eq!("A0", records[0].value().as_str().expect("string"));
+        assert_eq!("A01", records[1].value().as_str().expect("string"));
+        assert_eq!("A012", records[2].value().as_str().expect("string"));
+        assert_eq!("A0123", records[3].value().as_str().expect("string"));
+        assert_eq!("A01234", records[4].value().as_str().expect("string"));
+    }
+
+    // consumer can send back to same offset to read back again
+    debug!("send back offset ack to SPU");
+    client_socket
+        .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
+            offsets: vec![OffsetUpdate {
+                offset: 20,
+                session_id: stream_id,
+            }],
+        }))
+        .await
+        .expect("send offset");
+
+    server_end_event.notify();
+}
+
+#[fluvio_future::test(ignore)]
 async fn test_stream_aggregate_fetch_multiple_batch_legacy() {
     legacy_test(
         "test_stream_aggregate_fetch_multiple_batch_legacy",
