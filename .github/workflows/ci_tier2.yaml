@@ -306,7 +306,7 @@ jobs:
           FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8-tls-root
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8-tls
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: |
