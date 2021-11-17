@@ -171,7 +171,7 @@ impl SpuServiceController {
                 let spu_name = format!("{}-{}", spg_obj.key(), i);
                 debug!(%spu_name,"generating spu with name");
 
-                self.spply_spu_load_service(i,&spg_obj, &spu_name, &config)
+                self.spply_spu_load_service(i, &spg_obj, &spu_name, &config)
                     .await?;
             }
         }
@@ -179,7 +179,7 @@ impl SpuServiceController {
         Ok(())
     }
 
-    #[instrument(skip(self,spg_obj,spu_k8_config))]
+    #[instrument(skip(self, spg_obj, spu_k8_config))]
     async fn spply_spu_load_service(
         &self,
         replica: u16,
@@ -198,7 +198,7 @@ impl SpuServiceController {
             ..Default::default()
         };
 
-        spu_k8_config.apply_service(replica,&mut k8_service_spec);
+        spu_k8_config.apply_service(replica, &mut k8_service_spec);
 
         let svc_name = SpuServiceSpec::service_name(spu_name);
 

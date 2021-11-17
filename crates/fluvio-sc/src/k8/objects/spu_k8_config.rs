@@ -24,7 +24,7 @@ pub struct PodConfig {
     pub node_selector: HashMap<String, String>,
     pub resources: Option<ResourceRequirements>,
     pub storage_class: Option<String>,
-    pub base_node_port: Option<u16>
+    pub base_node_port: Option<u16>,
 }
 
 #[derive(Debug, PartialEq, Default, Clone)]
@@ -95,15 +95,12 @@ impl ScK8Config {
     */
 
     /// apply service config to service
-    pub fn apply_service(&self,replica: u16, k8_service: &mut ServiceSpec) {
-
+    pub fn apply_service(&self, replica: u16, k8_service: &mut ServiceSpec) {
         let mut public_port = ServicePort {
             port: SPU_PUBLIC_PORT,
             ..Default::default()
         };
         public_port.target_port = Some(TargetPort::Number(public_port.port));
-
-
 
         if let Some(service_template) = &self.service {
             if let Some(ty) = &service_template.r#type {
@@ -111,7 +108,6 @@ impl ScK8Config {
                 if let Some(node_port) = self.spu_pod_config.base_node_port {
                     public_port.node_port = Some(node_port + replica);
                 }
-                
             }
             if let Some(local_traffic) = &service_template.external_traffic_policy {
                 k8_service.external_traffic_policy = Some(local_traffic.clone());
