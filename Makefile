@@ -266,7 +266,7 @@ crate-version:
 	./release-scripts/test-crate-version.sh
 
 install-outdated:
-	cargo install cargo-outdated --toolchain $(RUSTV)
+	cargo install cargo-outdated
 
 crate-outdated: install-outdated
 	cargo outdated --root-deps-only --exit-code 1
