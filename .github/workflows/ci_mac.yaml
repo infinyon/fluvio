@@ -1,7 +1,7 @@
-# CI for Tier2 platforms
-# This should not block CI or Release
+# CI for Mac
+# Not part of staging yet.
 
-name: CI_Platform_Tier2
+name: CI_Mac
 
 permissions:
   contents: read
@@ -169,7 +169,6 @@ jobs:
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
           echo "smoke test done"
-      #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
       - name: Run election-test
         if: ${{ matrix.test == 'election' }}
         timeout-minutes: 3
@@ -307,7 +306,6 @@ jobs:
         run: |
             date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8-tls
-        # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: |
           ./fluvio version
