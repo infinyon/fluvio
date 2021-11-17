@@ -256,6 +256,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-apple-darwin]
+        k8-target: [x86_64-unknown-linux-musl]
         run: [r1]
         k8: [kind]
     steps:
@@ -274,7 +275,7 @@ jobs:
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
-          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          name: infinyon-fluvio-${{ matrix.k8-target }}.tar
           path: /tmp
 
       - name: Print artifacts and mark executable
@@ -286,8 +287,8 @@ jobs:
       - name: Load Fluvio Docker Image for K3d
         run: |
           ls -la /tmp
-          docker image load --input /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
-          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} infinyon/fluvio:${{ github.sha }}
+          docker image load --input /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.k8-target }} infinyon/fluvio:${{ github.sha }}
           docker image ls -a
 
       - name: Install Kind
