@@ -26,6 +26,19 @@ env:
   VERBOSE: ${{ github.events.input.verbose }}
 
 jobs:
+  
+  config:
+    name: Set up Config
+    runs-on: ubuntu-latest
+    env:
+      ENABLE_CHECK: true
+      TEST_RUNS: "[r1]"   # default runs
+    outputs:
+      check: ${{ steps.check.outputs.check }}
+      runs: ${{ steps.runs.outputs.runs }}
+    steps:
+      - id: check
+        run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
 
   # Run all checks and unit test. This always run on debug mode
   build_primary_binaries:
