@@ -262,6 +262,15 @@ check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
+crate-version:
+	./release-scripts/test-crate-version.sh
+
+install-outdated:
+	cargo install cargo-outdated --toolchain $(RUSTV)
+
+crate-outdated: install-outdated
+	cargo outdated --root-deps-only --exit-code 1
+
 build_smartstreams:
 	make -C crates/fluvio-smartstream/examples build
 

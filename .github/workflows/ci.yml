@@ -224,7 +224,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, integration, crate_version]
+        check: [fmt, clippy, doc, test, integration, crate_version, crate_outdated]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -260,7 +260,10 @@ jobs:
       - name: Crate version check
         if: ${{ matrix.check == 'crate_version' }}
         run: |
-          ./release-scripts/test-crate-version.sh
+          make crate-version
+        if: ${{ matrix.check == 'crate_outdated' }}
+        run: |
+          make crate-outdated
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
