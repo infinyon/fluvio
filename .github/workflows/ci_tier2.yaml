@@ -51,6 +51,20 @@ jobs:
         rust: [stable]
         binary: [fluvio, fluvio-run, fluvio-test]
         os: [macos-11]
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio-run
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio-test
+
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -196,6 +210,42 @@ jobs:
         with:
           name: local-${{ matrix.run }}-logs
           path: /tmp/*.log
+
+ # same as in ci.yaml except no aa64
+  build_image:
+    name: Build Fluvio Docker image
+    needs: build_primary_binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target:
+          - x86_64-unknown-linux-musl
+        rust: [stable]
+    steps:
+      # Needed for k8-util/docker/build.sh
+      - uses: actions/checkout@v2
+
+      # Download artifacts
+      - name: Download fluvio-run
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: .
+
+      - name: Print fluvio-run path
+        run: pwd && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h || true
+
+      # Build and upload docker image
+      - name: Build Docker image
+        run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
     name: Kubernetes cluster test run (${{ matrix.run }}) k8 (${{ matrix.k8 }})
