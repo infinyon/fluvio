@@ -4,24 +4,24 @@ use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::Status;
 use fluvio_auth::{AuthContext, InstanceAction};
-use fluvio_controlplane_metadata::table::TableSpec;
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 use fluvio_controlplane_metadata::extended::SpecExt;
 
 use crate::services::auth::AuthServiceContext;
 
-/// Handler for delete table request
+/// Handler for delete tableformat request
 #[instrument(skip(name, auth_ctx))]
-pub async fn handle_delete_table<AC: AuthContext>(
+pub async fn handle_delete_tableformat<AC: AuthContext>(
     name: String,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
-    debug!("delete tables: {}", name);
+    debug!("delete tableformats: {}", name);
 
     if let Ok(authorized) = auth_ctx
         .auth
-        .allow_instance_action(TableSpec::OBJECT_TYPE, InstanceAction::Delete, &name)
+        .allow_instance_action(TableFormatSpec::OBJECT_TYPE, InstanceAction::Delete, &name)
         .await
     {
         if !authorized {
@@ -38,22 +38,35 @@ pub async fn handle_delete_table<AC: AuthContext>(
 
     let status = if auth_ctx
         .global_ctx
-        .tables()
+        .tableformats()
         .store()
         .value(&name)
         .await
         .is_some()
     {
-        if let Err(err) = auth_ctx.global_ctx.tables().delete(name.clone()).await {
-            Status::new(name.clone(), ErrorCode::TableError, Some(err.to_string()))
+        if let Err(err) = auth_ctx
+            .global_ctx
+            .tableformats()
+            .delete(name.clone())
+            .await
+        {
+            Status::new(
+                name.clone(),
+                ErrorCode::TableFormatError,
+                Some(err.to_string()),
+            )
         } else {
             Status::new_ok(name)
         }
     } else {
-        Status::new(name, ErrorCode::TableNotFound, Some("not found".to_owned()))
+        Status::new(
+            name,
+            ErrorCode::TableFormatNotFound,
+            Some("not found".to_owned()),
+        )
     };
 
-    trace!("flv delete table resp {:#?}", status);
+    trace!("flv delete tableformat resp {:#?}", status);
 
     Ok(status)
 }

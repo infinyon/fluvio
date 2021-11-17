@@ -10,43 +10,43 @@ use dataplane::core::{Encoder, Decoder};
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct TableStatus {
+pub struct TableFormatStatus {
     /// Status resolution
-    pub resolution: TableStatusResolution,
+    pub resolution: TableFormatStatusResolution,
 
     /// Reason for Status resolution (if applies)
     pub reason: Option<String>,
 }
 
-impl fmt::Display for TableStatus {
+impl fmt::Display for TableFormatStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:#?}", self.resolution)
     }
 }
 
-impl TableStatus {
+impl TableFormatStatus {
     pub fn invalid(reason: String) -> Self {
         Self {
-            resolution: TableStatusResolution::Invalid,
+            resolution: TableFormatStatusResolution::Invalid,
             reason: Some(reason),
         }
     }
 
     pub fn reserved() -> Self {
         Self {
-            resolution: TableStatusResolution::Running,
+            resolution: TableFormatStatusResolution::Running,
             ..Default::default()
         }
     }
 
     pub fn is_already_valid(&self) -> bool {
-        self.resolution == TableStatusResolution::Running
+        self.resolution == TableFormatStatusResolution::Running
     }
 }
 
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[derive(Encoder, Decoder, Debug, Clone, PartialEq)]
-pub enum TableStatusResolution {
+pub enum TableFormatStatusResolution {
     Init,
     Invalid,
     Running,
@@ -54,13 +54,13 @@ pub enum TableStatusResolution {
     Failed,
 }
 
-impl Default for TableStatusResolution {
+impl Default for TableFormatStatusResolution {
     fn default() -> Self {
         Self::Init
     }
 }
 
-impl fmt::Display for TableStatusResolution {
+impl fmt::Display for TableFormatStatusResolution {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Init => write!(f, "Init"),

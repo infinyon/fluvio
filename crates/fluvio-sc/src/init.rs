@@ -35,7 +35,7 @@ where
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
     use crate::stores::connector::ManagedConnectorSpec;
-    use crate::stores::table::TableSpec;
+    use crate::stores::tableformat::TableFormatSpec;
     use crate::stores::smartmodule::SmartModuleSpec;
     use crate::stores::smartstream::SmartStreamSpec;
 
@@ -89,10 +89,10 @@ where
         ctx.managed_connectors().clone(),
     );
 
-    K8ClusterStateDispatcher::<TableSpec, C>::start(
+    K8ClusterStateDispatcher::<TableFormatSpec, C>::start(
         namespace.clone(),
         metadata_client.clone(),
-        ctx.tables().clone(),
+        ctx.tableformats().clone(),
     );
 
     K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(

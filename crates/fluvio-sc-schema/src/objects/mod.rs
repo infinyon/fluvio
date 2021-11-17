@@ -106,7 +106,7 @@ mod object_macro {
                     Partition($api<crate::partition::PartitionSpec>),
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
-                    Table($api<crate::table::TableSpec>),
+                    TableFormat($api<crate::tableformat::TableFormatSpec>),
                     SmartStream($api<crate::smartstream::SmartStreamSpec>),
                 }
 
@@ -127,7 +127,7 @@ mod object_macro {
                             Self::Partition(_) => crate::partition::PartitionSpec::LABEL,
                             Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
-                            Self::Table(_) => crate::table::TableSpec::LABEL,
+                            Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
                             Self::SmartStream(_) => crate::smartstream::SmartStreamSpec::LABEL,
 
                         }
@@ -148,7 +148,7 @@ mod object_macro {
                                 Self::SmartModule(s) => s.write_size(version),
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
-                                Self::Table(s) => s.write_size(version),
+                                Self::TableFormat(s) => s.write_size(version),
                                 Self::SmartStream(s) => s.write_size(version),
                             }
                     }
@@ -170,7 +170,7 @@ mod object_macro {
                             Self::Partition(s) => s.encode(dest, version)?,
                             Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
-                            Self::Table(s) => s.encode(dest, version)?,
+                            Self::TableFormat(s) => s.encode(dest, version)?,
                             Self::SmartStream(s) => s.encode(dest, version)?,
                         }
 
@@ -209,11 +209,11 @@ mod object_macro {
                                 return Ok(())
                             }
 
-                            crate::table::TableSpec::LABEL => {
-                                tracing::trace!("detected table");
-                                let mut request = $api::<crate::table::TableSpec>::default();
+                            crate::tableformat::TableFormatSpec::LABEL => {
+                                tracing::trace!("detected tableformat");
+                                let mut request = $api::<crate::tableformat::TableFormatSpec>::default();
                                 request.decode(src, version)?;
-                                *self = Self::Table(request);
+                                *self = Self::TableFormat(request);
                                 return Ok(())
                             }
 
@@ -346,7 +346,7 @@ mod delete_macro {
                     SmartModule($api<crate::smartmodule::SmartModuleSpec>),
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
-                    Table($api<crate::table::TableSpec>),
+                    TableFormat($api<crate::tableformat::TableFormatSpec>),
                     SmartStream($api<crate::smartstream::SmartStreamSpec>),
                 }
 
@@ -365,7 +365,7 @@ mod delete_macro {
                             Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
                             Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
-                            Self::Table(_) => crate::table::TableSpec::LABEL,
+                            Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
                             Self::SmartStream(_) => crate::smartstream::SmartStreamSpec::LABEL,
                         }
                     }
@@ -383,7 +383,7 @@ mod delete_macro {
                                 Self::SmartModule(s) => s.write_size(version),
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
-                                Self::Table(s) => s.write_size(version),
+                                Self::TableFormat(s) => s.write_size(version),
                                 Self::SmartStream(s) => s.write_size(version),
                             }
                     }
@@ -403,7 +403,7 @@ mod delete_macro {
                             Self::SpuGroup(s) => s.encode(dest, version)?,
                             Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
-                            Self::Table(s) => s.encode(dest, version)?,
+                            Self::TableFormat(s) => s.encode(dest, version)?,
                             Self::SmartStream(s) => s.encode(dest, version)?,
                         }
 
@@ -434,11 +434,11 @@ mod delete_macro {
                                 return Ok(())
                             }
 
-                            crate::table::TableSpec::LABEL => {
-                                tracing::trace!("detected table");
-                                let mut request = $api::<crate::table::TableSpec>::default();
+                            crate::tableformat::TableFormatSpec::LABEL => {
+                                tracing::trace!("detected tableformat");
+                                let mut request = $api::<crate::tableformat::TableFormatSpec>::default();
                                 request.decode(src, version)?;
-                                *self = Self::Table(request);
+                                *self = Self::TableFormat(request);
                                 return Ok(())
                             }
 
