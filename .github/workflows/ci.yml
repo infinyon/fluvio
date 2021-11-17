@@ -261,6 +261,7 @@ jobs:
         if: ${{ matrix.check == 'crate_version' }}
         run: |
           make crate-version
+      - name: Crate outdated check
         if: ${{ matrix.check == 'crate_outdated' }}
         run: |
           make crate-outdated
