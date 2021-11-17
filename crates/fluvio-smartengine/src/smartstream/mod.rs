@@ -214,7 +214,7 @@ impl SmartStreamContext {
     }
 }
 
-pub trait SmartStream: Send {
+pub trait SmartStream: Send + Sync {
     fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput>;
     fn params(&self) -> SmartStreamExtraParams;
 }
