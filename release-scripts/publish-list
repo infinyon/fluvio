@@ -2,7 +2,6 @@
 # Used by publish crate and crate version check scripts
 
 PUBLISH_CRATES=(
-    fluvio-smartmodule-derive
     fluvio-types
     fluvio-protocol-derive
     fluvio-protocol
