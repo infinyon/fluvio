@@ -9,7 +9,7 @@ use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
-use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use fluvio_controlplane_metadata::tableformat::{TableFormatSpec, TableColumn};
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -188,7 +188,23 @@ impl ConsumeOpt {
                 for t in tableformats {
                     if t.name.as_str() == tableformat_name {
                         println!("debug: Found tableformat: {:?}", t.spec);
-                        found = Some(t.spec);
+                        //found = Some(t.spec);
+
+                        let tableformat_test = TableFormatSpec {
+                            name: "hardcoded_test".to_string(),
+                            columns: Some(vec!(TableColumn {
+                                key_path: "key2".to_string(),
+                                ..Default::default()
+                            }, TableColumn {
+                                key_path: "key1".to_string(),
+                                //primary_key: true,
+                                ..Default::default()
+                            },)
+                            ),
+                            ..Default::default()
+                        };
+                        println!("debug: Using test tableformat: {:?}", tableformat_test);
+                        found = Some(tableformat_test);
                         break;
                     }
                 }

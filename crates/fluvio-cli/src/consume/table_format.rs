@@ -104,6 +104,8 @@ impl TableModel {
             .get_primary_keys()
             .unwrap_or_else(|| vec![self.columns[0].key_path.clone()]);
 
+        //println!("Primary key: {:?}", primary_keys);
+
         // Enumerate through the rows
         // If we find a row that match the primary keys for new_data
         // then replace that row with new_data
