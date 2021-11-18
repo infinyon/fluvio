@@ -151,6 +151,7 @@ mod root {
         )]
         Metadata(MetadataOpt),
 
+        /// Create and work with Managed Connectors
         #[structopt(name = "connector")]
         ManagedConnector(ManagedConnectorCmd),
 
