@@ -171,7 +171,7 @@ impl SpuServiceController {
                 let spu_name = format!("{}-{}", spg_obj.key(), i);
                 debug!(%spu_name,"generating spu with name");
 
-                self.apply_spu_load_balancers(&spg_obj, &spu_name, &config)
+                self.spply_spu_load_service(i, &spg_obj, &spu_name, &config)
                     .await?;
             }
         }
@@ -179,20 +179,15 @@ impl SpuServiceController {
         Ok(())
     }
 
-    async fn apply_spu_load_balancers(
+    #[instrument(skip(self, spg_obj, spu_k8_config))]
+    async fn spply_spu_load_service(
         &self,
+        replica: u16,
         spg_obj: &SpuGroupObj,
         spu_name: &str,
         spu_k8_config: &ScK8Config,
     ) -> Result<(), ClientError> {
-        use fluvio_types::defaults::{SPU_PUBLIC_PORT};
-        use k8_types::core::service::{ServicePort, ServiceSpec as K8ServiceSpec, TargetPort};
-
-        let mut public_port = ServicePort {
-            port: SPU_PUBLIC_PORT,
-            ..Default::default()
-        };
-        public_port.target_port = Some(TargetPort::Number(public_port.port));
+        use k8_types::core::service::{ServiceSpec as K8ServiceSpec};
 
         let mut selector = HashMap::new();
         let pod_name = format!("fluvio-spg-{}", spu_name);
@@ -200,11 +195,10 @@ impl SpuServiceController {
 
         let mut k8_service_spec = K8ServiceSpec {
             selector: Some(selector),
-            ports: vec![public_port.clone()],
             ..Default::default()
         };
 
-        spu_k8_config.apply_service(&mut k8_service_spec);
+        spu_k8_config.apply_service(replica, &mut k8_service_spec);
 
         let svc_name = SpuServiceSpec::service_name(spu_name);
 

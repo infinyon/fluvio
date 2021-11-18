@@ -96,7 +96,8 @@ pub mod config;
 use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
-pub use producer::{TopicProducer, RecordKey, SmartStreamConfig};
+pub use producer::{TopicProducer, RecordKey};
+
 pub use consumer::{
     PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
 };

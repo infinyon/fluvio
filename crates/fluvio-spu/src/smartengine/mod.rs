@@ -118,7 +118,10 @@ impl SmartStreamContext {
                             )
                         }
                         SmartStreamInputRef::SmartStream(child_smart) => {
-                            return Err(ErrorCode::SmartStreamRecursion(smartstream_name.to_owned(), child_smart.name));
+                            return Err(ErrorCode::SmartStreamRecursion(
+                                smartstream_name.to_owned(),
+                                child_smart.name,
+                            ));
                         }
                     }
                 } else {
@@ -162,9 +165,13 @@ impl SmartStreamContext {
         payload: SmartModulePayload,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Box<dyn SmartModuleInstance>, ErrorCode> {
-        let raw = payload.wasm.get_raw().map_err(|err| {
-            ErrorCode::SmartModuleInvalid { error: err.to_string(), name: None }
-        })?;
+        let raw = payload
+            .wasm
+            .get_raw()
+            .map_err(|err| ErrorCode::SmartModuleInvalid {
+                error: err.to_string(),
+                name: None,
+            })?;
 
         debug!(len = raw.len(), "wasm WASM module with bytes");
 
@@ -178,7 +185,10 @@ impl SmartStreamContext {
                     error = err.to_string().as_str(),
                     "Error Instantiating SmartStream"
                 );
-                ErrorCode::SmartModuleInvalidExports { kind: format!("{:?}", kind), error: err.to_string() }
+                ErrorCode::SmartModuleInvalidExports {
+                    kind: format!("{:?}", kind),
+                    error: err.to_string(),
+                }
             })
     }
 }
@@ -252,7 +262,10 @@ async fn extract_smartstream_context(
                                     }
 
                                     SmartStreamInputRef::SmartStream(child_child_target) => {
-                                        return Err(ErrorCode::SmartStreamRecursion(join_target_name, child_child_target.name));
+                                        return Err(ErrorCode::SmartStreamRecursion(
+                                            join_target_name,
+                                            child_child_target.name,
+                                        ));
                                     }
                                 }
                             } else {

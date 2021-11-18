@@ -28,7 +28,7 @@ struct DispatcherCounter {
     pub replica_changes: u64, // replica changes received from sc
     pub spu_changes: u64,     // spu changes received from sc
     pub reconnect: u64,       // number of reconnect to sc
-    pub smartmodule: u64,    // number of sm updates from sc
+    pub smartmodule: u64,     // number of sm updates from sc
     pub smartstream: u64,     // number of smartstream updates from sc
 }
 

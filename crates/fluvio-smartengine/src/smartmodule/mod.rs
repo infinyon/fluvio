@@ -214,7 +214,7 @@ impl SmartModuleContext {
     }
 }
 
-pub trait SmartModuleInstance: Send {
+pub trait SmartModuleInstance: Send + Sync {
     fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput>;
     fn params(&self) -> SmartModuleExtraParams;
 }
