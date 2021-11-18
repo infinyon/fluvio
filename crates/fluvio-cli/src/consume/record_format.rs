@@ -4,8 +4,10 @@
 //! Connects to server and fetches logs
 //!
 
+use fluvio_controlplane_metadata::tableformat::TableFormatColumnConfig;
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use super::TableModel;
+use std::collections::BTreeMap;
 
 // -----------------------------------
 //  JSON
@@ -160,20 +162,11 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
         }
     };
 
-    let obj = if let Some(obj) = maybe_json.as_object() {
-        obj
-    } else {
-        println!("error: Unable to parse json as object map");
-        return None;
-    };
-
-    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
-
-    // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
-    let values_str: Vec<String> = obj
-        .values()
-        .map(|v| {
-            if v.is_string() {
+    if let Some(obj) = maybe_json.as_object() {
+        let mut new_data: BTreeMap<String, String> = BTreeMap::new();
+        for (k, v) in obj {
+            let key = k.to_string();
+            let value = if v.is_string() {
                 if let Some(s) = v.as_str() {
                     s.to_string()
                 } else {
@@ -182,18 +175,37 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
                 }
             } else {
                 v.to_string()
+            };
+
+            new_data.insert(key, value);
+        }
+
+        // This only needs to be run once, and changed only if the columns have not yet been defined
+        if table_model.columns().is_empty() {
+            //println!("Columns empty");
+            // Build a list of TableColumn
+            let mut columns = vec![];
+
+            for k in new_data.keys() {
+                columns.push(TableFormatColumnConfig::new(k.to_string()))
             }
-        })
-        .collect();
 
-    let header = keys_str;
-    if table_model.update_header(header).is_err() {
-        println!("Unable to set table headers")
-    }
+            if table_model.update_columns(columns).is_err() {
+                println!("Unable to set table headers")
+            }
 
-    if table_model.update_row(values_str).is_err() {
-        println!("Unable to update table row");
-    }
+            //println!("Columns after update: {:?}", table_model.columns());
+        } else {
+            //println!("debugcolumnsnotempty");
+        }
+
+        if table_model.update_row(new_data).is_err() {
+            println!("Unable to update table row");
+        }
+    } else {
+        println!("error: Unable to parse json as object map");
+        return None;
+    };
 
     None
 }

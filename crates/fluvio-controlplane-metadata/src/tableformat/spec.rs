@@ -3,46 +3,6 @@
 use dataplane::core::{Encoder, Decoder};
 //use std::collections::BTreeMap;
 
-
-// This is what I put in spu schema. Should it go here instead?
-
-//#[derive(Debug, Clone, Encoder, Decoder)]
-//pub enum TableDataKind {
-//    Json,
-//    Yaml,
-//    Toml,
-//}
-//
-//impl Default for TableDataKind {
-//    fn default() -> Self {
-//        Self::Json
-//    }
-//}
-//
-//// Worry about this later
-////pub enum DataFormat {
-////    DateTime,
-////}
-//
-//#[derive(Debug, Default, Clone, Encoder, Decoder)]
-//pub struct TableColumn {
-//    key_path: String,
-//    primary_key: bool,
-//    display: bool,
-//    header_label: Option<String>,
-//    alignment: Option<String>,
-//    header_fg_color: Option<String>,
-//    header_bg_color: Option<String>,
-//    //width: Option<String>,
-//    //format: Option<String>,
-//}
-
-
-
-
-
-
-
 #[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
@@ -51,14 +11,38 @@ use dataplane::core::{Encoder, Decoder};
 )]
 pub struct TableFormatSpec {
     pub name: String,
-    pub input_format: Option<InputFormat>,
+    pub input_format: Option<DataFormat>,
     pub columns: Option<Vec<TableFormatColumnConfig>>,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub smartmodule: Option<String>,
 }
 
+impl TableFormatSpec {
+    pub fn get_primary_keys(&self) -> Vec<String> {
+        if let Some(columns) = &self.columns {
+            let mut primary_keys = Vec::new();
+
+            for c in columns {
+                if let Some(is_primary_key) = c.primary_key {
+                    if is_primary_key {
+                        primary_keys.push(c.key_path.clone());
+                    }
+                }
+            }
+
+            primary_keys
+        } else {
+            Vec::new()
+        }
+    }
+}
+
 #[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "UPPERCASE")
+)]
 pub enum DataFormat {
     JSON,
     //YAML,
@@ -103,6 +87,45 @@ pub enum TableFormatAlignment {
 impl Default for TableFormatAlignment {
     fn default() -> Self {
         Self::Center
+    }
+}
+
+impl TableFormatColumnConfig {
+    pub fn new(key_path: String) -> Self {
+        Self {
+            key_path,
+            ..Default::default()
+        }
+    }
+
+    pub fn with_primary_key(mut self, is_primary_key: Option<bool>) -> Self {
+        self.primary_key = is_primary_key;
+        self
+    }
+
+    pub fn with_display(mut self, do_display_column: Option<bool>) -> Self {
+        self.display = do_display_column;
+        self
+    }
+
+    pub fn with_header_label(mut self, header_label: Option<String>) -> Self {
+        self.header_label = header_label;
+        self
+    }
+
+    pub fn with_alignment(mut self, alignment: Option<TableFormatAlignment>) -> Self {
+        self.alignment = alignment;
+        self
+    }
+
+    pub fn with_header_text_color(mut self, header_text_color: Option<Color>) -> Self {
+        self.header_text_color = header_text_color;
+        self
+    }
+
+    pub fn with_header_bg_color(mut self, header_bg_color: Option<Color>) -> Self {
+        self.header_bg_color = header_bg_color;
+        self
     }
 }
 

@@ -721,8 +721,6 @@ pub struct ConsumerConfig {
     pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
     pub(crate) smartstream: Option<SmartStreamInvocation>,
-    #[builder(default)]
-    pub(crate) table_format: Option<TableFormatInvocation>,
 }
 
 impl ConsumerConfig {

@@ -7,7 +7,7 @@ use std::fs::File;
 use std::io::Read;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::tableformat::{InputFormat, TableFormatSpec, TableFormatColumnConfig};
+use fluvio_controlplane_metadata::tableformat::{DataFormat, TableFormatSpec, TableFormatColumnConfig};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 mod create;
@@ -63,7 +63,7 @@ impl TableFormatCmd {
 #[derive(Debug, Deserialize, Clone)]
 pub struct TableFormatConfig {
     pub name: String,
-    pub input_format: Option<InputFormat>,
+    pub input_format: Option<DataFormat>,
     pub columns: Option<Vec<TableFormatColumnConfig>>,
     pub smartmodule: Option<String>,
 }
