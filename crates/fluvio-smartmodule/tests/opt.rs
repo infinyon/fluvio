@@ -1,5 +1,5 @@
 use fluvio_smartmodule::SmartOpt;
-use fluvio_smartmodule::dataplane::smartstream::SmartStreamExtraParams;
+use fluvio_smartmodule::dataplane::smartmodule::SmartModuleExtraParams;
 use std::collections::BTreeMap;
 use std::convert::TryInto;
 
@@ -21,7 +21,7 @@ fn smart_opt() {
     b.insert("b".to_owned(), "true".to_owned());
     b.insert("f".to_owned(), "2.7".to_owned());
 
-    let params: SmartStreamExtraParams = b.into();
+    let params: SmartModuleExtraParams = b.into();
 
     let t: TestStruct = params.try_into().expect("Unable to covert");
 

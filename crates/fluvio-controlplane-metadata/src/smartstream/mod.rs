@@ -42,7 +42,7 @@ mod metadata {
         TopicNotFound(String),
         #[error("SmartStream not found: {0}")]
         SmartStreamNotFound(String),
-        #[error("SmartStream not found: {0}")]
+        #[error("SmartModule not found: {0}")]
         SmartModuleNotFound(String),
     }
 

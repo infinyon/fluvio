@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
 use syn::{AttributeArgs, DeriveInput, ItemFn, parse_macro_input};
-use crate::ast::{SmartStreamConfig, SmartStreamFn, SmartStreamKind};
+use crate::ast::{SmartStreamConfig, SmartStreamFn, SmartModuleKind};
 mod ast;
 mod generator;
 

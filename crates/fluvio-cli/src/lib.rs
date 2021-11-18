@@ -275,8 +275,8 @@ mod root {
                 Self::Partition(partition) => {
                     partition.process(out, &fluvio).await?;
                 }
-                Self::SmartModule(smart_module) => {
-                    smart_module.process(out, &fluvio).await?;
+                Self::SmartModule(smartmodule) => {
+                    smartmodule.process(out, &fluvio).await?;
                 }
             }
 

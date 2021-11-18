@@ -39,7 +39,7 @@ pub fn generate_array_map_smartstream(func: &SmartStreamFn, has_params: bool) ->
             pub unsafe fn array_map(ptr: *mut u8, len: usize) -> i32 {
                 use fluvio_smartmodule::dataplane::smartstream::{
                     SmartStreamInput, SmartStreamInternalError,
-                    SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,
+                    SmartModuleRuntimeError, SmartStreamType, SmartStreamOutput,
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData, RecordKey};
@@ -81,7 +81,7 @@ pub fn generate_array_map_smartstream(func: &SmartStreamFn, has_params: bool) ->
                             }
                         }
                         Err(err) => {
-                            let error = SmartStreamRuntimeError::new(
+                            let error = SmartModuleRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
                                 SmartStreamType::ArrayMap,

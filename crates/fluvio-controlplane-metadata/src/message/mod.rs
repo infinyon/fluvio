@@ -7,10 +7,10 @@ pub use self::msg_type::Message;
 pub use messages::*;
 
 pub use self::replica_msg::{ReplicaMsgs, ReplicaMsg};
-pub use self::smart_module_msg::{SmartModuleMsgs, SmartModuleMsg};
+pub use self::smartmodule_msg::{SmartModuleMsgs, SmartModuleMsg};
 
 pub use spu_msg::*;
-pub use smart_module_msg::*;
+pub use smartmodule_msg::*;
 pub use smart_stream_msg::*;
 
 mod spu_msg {
@@ -22,7 +22,7 @@ mod spu_msg {
     pub type SpuMsg = Message<SpuSpec>;
 }
 
-mod smart_module_msg {
+mod smartmodule_msg {
 
     use crate::smartmodule::SmartModule;
 

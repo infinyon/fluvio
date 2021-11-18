@@ -50,7 +50,7 @@ impl Request for UpdateLrsRequest {
 
 #[derive(Decoder, Encoder, Debug, Default, Clone)]
 pub struct SpuStat {
-    smart_modules_count: u32,
+    smartmodules_count: u32,
     smart_streams_count: u32,
 }
 

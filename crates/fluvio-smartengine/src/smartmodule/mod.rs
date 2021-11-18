@@ -3,23 +3,23 @@ use std::time::Instant;
 use std::fmt::{self, Debug};
 
 use dataplane::record::Record;
-use dataplane::smartstream::SmartStreamExtraParams;
+use dataplane::smartmodule::SmartModuleExtraParams;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
 use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
 
-use crate::smartstream::filter::SmartStreamFilter;
-use crate::smartstream::map::SmartStreamMap;
-use crate::filter_map::SmartStreamFilterMap;
-use crate::smartstream::array_map::SmartStreamArrayMap;
-use crate::smartstream::aggregate::SmartStreamAggregate;
-use crate::smartstream::join::SmartStreamJoin;
+use crate::smartmodule::filter::SmartModuleFilter;
+use crate::smartmodule::map::SmartModuleMap;
+use crate::filter_map::SmartModuleFilterMap;
+use crate::smartmodule::array_map::SmartModuleArrayMap;
+use crate::smartmodule::aggregate::SmartModuleAggregate;
+use crate::smartmodule::join::SmartModuleJoin;
 
 use dataplane::core::{Encoder, Decoder};
-use dataplane::smartstream::{SmartStreamInput, SmartStreamOutput, SmartStreamRuntimeError};
-use crate::smartstream::file_batch::FileBatchIterator;
+use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError};
+use crate::smartmodule::file_batch::FileBatchIterator;
 use dataplane::batch::{Batch, MemoryRecords};
-use fluvio_spu_schema::server::stream_fetch::{SmartStreamKind, SmartStreamPayload};
+use fluvio_spu_schema::server::stream_fetch::{SmartModuleKind, SmartModulePayload};
 
 mod memory;
 pub mod filter;
@@ -35,7 +35,7 @@ pub type WasmSlice = (i32, i32);
 #[cfg(feature = "smartmodule")]
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
 
-use self::join_stream::SmartStreamJoinStream;
+use self::join_stream::SmartModuleJoinStream;
 
 #[derive(Default, Clone)]
 pub struct SmartEngine(pub(crate) Engine);
@@ -45,7 +45,7 @@ impl SmartEngine {
     pub fn create_module_from_smartmodule_spec(
         self,
         spec: &SmartModuleSpec,
-    ) -> Result<SmartStreamModule> {
+    ) -> Result<SmartModuleModule> {
         use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmFormat};
         use flate2::bufread::GzDecoder;
         use std::io::Read;
@@ -59,40 +59,40 @@ impl SmartEngine {
             SmartModuleWasmFormat::Binary => Module::from_binary(&self.0, &buffer)?,
             SmartModuleWasmFormat::Text => return Err(Error::msg("Format not supported")),
         };
-        Ok(SmartStreamModule {
+        Ok(SmartModuleModule {
             module,
             engine: self,
         })
     }
 
-    pub fn create_module_from_binary(self, bytes: &[u8]) -> Result<SmartStreamModule> {
+    pub fn create_module_from_binary(self, bytes: &[u8]) -> Result<SmartModuleModule> {
         let module = Module::from_binary(&self.0, bytes)?;
-        Ok(SmartStreamModule {
+        Ok(SmartModuleModule {
             module,
             engine: self,
         })
     }
     pub fn create_module_from_payload(
         self,
-        smart_payload: SmartStreamPayload,
-    ) -> Result<Box<dyn SmartStream>> {
-        let smart_module = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
-        let smart_stream: Box<dyn SmartStream> = match &smart_payload.kind {
-            SmartStreamKind::Filter => Box::new(smart_module.create_filter(smart_payload.params)?),
-            SmartStreamKind::FilterMap => {
-                Box::new(smart_module.create_filter_map(smart_payload.params)?)
+        smart_payload: SmartModulePayload,
+    ) -> Result<Box<dyn SmartModuleInstance>> {
+        let smartmodule = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
+        let smart_stream: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
+            SmartModuleKind::Filter => Box::new(smartmodule.create_filter(smart_payload.params)?),
+            SmartModuleKind::FilterMap => {
+                Box::new(smartmodule.create_filter_map(smart_payload.params)?)
             }
-            SmartStreamKind::Map => Box::new(smart_module.create_map(smart_payload.params)?),
-            SmartStreamKind::ArrayMap => {
-                Box::new(smart_module.create_array_map(smart_payload.params)?)
+            SmartModuleKind::Map => Box::new(smartmodule.create_map(smart_payload.params)?),
+            SmartModuleKind::ArrayMap => {
+                Box::new(smartmodule.create_array_map(smart_payload.params)?)
             }
-            SmartStreamKind::Join(_) => Box::new(smart_module.create_join(smart_payload.params)?),
-            SmartStreamKind::JoinStream {
+            SmartModuleKind::Join(_) => Box::new(smartmodule.create_join(smart_payload.params)?),
+            SmartModuleKind::JoinStream {
                 topic: _,
                 smartstream: _,
-            } => Box::new(smart_module.create_join_stream(smart_payload.params)?),
-            SmartStreamKind::Aggregate { accumulator } => {
-                Box::new(smart_module.create_aggregate(smart_payload.params, accumulator.clone())?)
+            } => Box::new(smartmodule.create_join_stream(smart_payload.params)?),
+            SmartModuleKind::Aggregate { accumulator } => {
+                Box::new(smartmodule.create_aggregate(smart_payload.params, accumulator.clone())?)
             }
         };
         Ok(smart_stream)
@@ -101,68 +101,68 @@ impl SmartEngine {
 
 impl Debug for SmartEngine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "SmartStreamEngine")
+        write!(f, "SmartModuleEngine")
     }
 }
 
-pub struct SmartStreamModule {
+pub struct SmartModuleModule {
     pub(crate) module: Module,
     pub(crate) engine: SmartEngine,
 }
 
-impl SmartStreamModule {
-    fn create_filter(&self, params: SmartStreamExtraParams) -> Result<SmartStreamFilter> {
-        let filter = SmartStreamFilter::new(&self.engine, self, params)?;
+impl SmartModuleModule {
+    fn create_filter(&self, params: SmartModuleExtraParams) -> Result<SmartModuleFilter> {
+        let filter = SmartModuleFilter::new(&self.engine, self, params)?;
         Ok(filter)
     }
 
-    fn create_map(&self, params: SmartStreamExtraParams) -> Result<SmartStreamMap> {
-        let map = SmartStreamMap::new(&self.engine, self, params)?;
+    fn create_map(&self, params: SmartModuleExtraParams) -> Result<SmartModuleMap> {
+        let map = SmartModuleMap::new(&self.engine, self, params)?;
         Ok(map)
     }
 
-    fn create_filter_map(&self, params: SmartStreamExtraParams) -> Result<SmartStreamFilterMap> {
-        let filter_map = SmartStreamFilterMap::new(&self.engine, self, params)?;
+    fn create_filter_map(&self, params: SmartModuleExtraParams) -> Result<SmartModuleFilterMap> {
+        let filter_map = SmartModuleFilterMap::new(&self.engine, self, params)?;
         Ok(filter_map)
     }
 
-    fn create_array_map(&self, params: SmartStreamExtraParams) -> Result<SmartStreamArrayMap> {
-        let map = SmartStreamArrayMap::new(&self.engine, self, params)?;
+    fn create_array_map(&self, params: SmartModuleExtraParams) -> Result<SmartModuleArrayMap> {
+        let map = SmartModuleArrayMap::new(&self.engine, self, params)?;
         Ok(map)
     }
 
-    fn create_join(&self, params: SmartStreamExtraParams) -> Result<SmartStreamJoin> {
-        let join = SmartStreamJoin::new(&self.engine, self, params)?;
+    fn create_join(&self, params: SmartModuleExtraParams) -> Result<SmartModuleJoin> {
+        let join = SmartModuleJoin::new(&self.engine, self, params)?;
         Ok(join)
     }
 
-    fn create_join_stream(&self, params: SmartStreamExtraParams) -> Result<SmartStreamJoinStream> {
-        let join = SmartStreamJoinStream::new(&self.engine, self, params)?;
+    fn create_join_stream(&self, params: SmartModuleExtraParams) -> Result<SmartModuleJoinStream> {
+        let join = SmartModuleJoinStream::new(&self.engine, self, params)?;
         Ok(join)
     }
 
     fn create_aggregate(
         &self,
-        params: SmartStreamExtraParams,
+        params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
-    ) -> Result<SmartStreamAggregate> {
-        let aggregate = SmartStreamAggregate::new(&self.engine, self, params, accumulator)?;
+    ) -> Result<SmartModuleAggregate> {
+        let aggregate = SmartModuleAggregate::new(&self.engine, self, params, accumulator)?;
         Ok(aggregate)
     }
 }
 
-pub struct SmartStreamContext {
+pub struct SmartModuleContext {
     store: Store<()>,
     instance: Instance,
     records_cb: Arc<RecordsCallBack>,
-    params: SmartStreamExtraParams,
+    params: SmartModuleExtraParams,
 }
 
-impl SmartStreamContext {
+impl SmartModuleContext {
     pub fn new(
         engine: &SmartEngine,
-        module: &SmartStreamModule,
-        params: SmartStreamExtraParams,
+        module: &SmartModuleModule,
+        params: SmartModuleExtraParams,
     ) -> Result<Self> {
         let mut store = Store::new(&engine.0, ());
         let cb = Arc::new(RecordsCallBack::new());
@@ -214,19 +214,19 @@ impl SmartStreamContext {
     }
 }
 
-pub trait SmartStream: Send {
-    fn process(&mut self, input: SmartStreamInput) -> Result<SmartStreamOutput>;
-    fn params(&self) -> SmartStreamExtraParams;
+pub trait SmartModuleInstance: Send {
+    fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput>;
+    fn params(&self) -> SmartModuleExtraParams;
 }
 
-impl dyn SmartStream + '_ {
+impl dyn SmartModuleInstance + '_ {
     #[instrument(skip(self, iter, max_bytes, join_last_record))]
     pub fn process_batch(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
-    ) -> Result<(Batch, Option<SmartStreamRuntimeError>), Error> {
+    ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
         let mut smartstream_batch = Batch::<MemoryRecords>::default();
         smartstream_batch.base_offset = -1; // indicate this is unitialized
         smartstream_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
@@ -241,7 +241,7 @@ impl dyn SmartStream + '_ {
                 None => {
                     debug!(
                         total_records = smartstream_batch.records().len(),
-                        "No more batches, SmartStream end"
+                        "No more batches, SmartModuleInstance end"
                     );
                     return Ok((smartstream_batch, None));
                 }
@@ -253,7 +253,7 @@ impl dyn SmartStream + '_ {
                 smartstream_offset_delta = smartstream_batch.get_header().last_offset_delta,
                 smartstream_base_offset = smartstream_batch.base_offset,
                 smartstream_records = smartstream_batch.records().len(),
-                "Starting SmartStream processing"
+                "Starting SmartModuleInstance processing"
             );
 
             let now = Instant::now();
@@ -261,7 +261,7 @@ impl dyn SmartStream + '_ {
             let mut join_record = vec![];
             join_last_record.encode(&mut join_record, 0)?;
 
-            let input = SmartStreamInput {
+            let input = SmartModuleInput {
                 base_offset: file_batch.batch.base_offset,
                 record_data: file_batch.records.clone(),
                 join_record,
@@ -298,7 +298,7 @@ impl dyn SmartStream + '_ {
                 if total_bytes + record_bytes > max_bytes {
                     debug!(
                         total_bytes = total_bytes + record_bytes,
-                        max_bytes, "Total SmartStream bytes reached"
+                        max_bytes, "Total SmartModuleInstance bytes reached"
                     );
                     return Ok((smartstream_batch, maybe_error));
                 }

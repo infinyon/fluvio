@@ -4,7 +4,7 @@ mod leader_client;
 
 pub mod spus;
 pub mod replica;
-pub mod smart_module;
+pub mod smartmodule;
 pub mod smartstream;
 
 pub use self::global_context::{GlobalContext, ReplicaChange};

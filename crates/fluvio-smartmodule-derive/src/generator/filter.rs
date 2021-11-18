@@ -38,7 +38,7 @@ pub fn generate_filter_smartstream(func: &SmartStreamFn, has_params: bool) -> To
             pub unsafe fn filter(ptr: *mut u8, len: usize) -> i32 {
                 use fluvio_smartmodule::dataplane::smartstream::{
                     SmartStreamInput, SmartStreamInternalError,
-                    SmartStreamRuntimeError, SmartStreamType, SmartStreamOutput,
+                    SmartModuleRuntimeError, SmartStreamType, SmartStreamOutput,
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
@@ -78,7 +78,7 @@ pub fn generate_filter_smartstream(func: &SmartStreamFn, has_params: bool) -> To
                             }
                         }
                         Err(err) => {
-                            let error = SmartStreamRuntimeError::new(
+                            let error = SmartModuleRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
                                 SmartStreamType::Filter,

@@ -1,7 +1,7 @@
 pub use encoding::{
-    SmartStreamRuntimeError, SmartStreamInternalError, SmartStreamType, SmartStreamInput,
-    SmartStreamAggregateInput, SmartStreamOutput, SmartStreamExtraParams,
-    SmartStreamAggregateOutput,
+    SmartModuleRuntimeError, SmartModuleInternalError, SmartModuleType, SmartModuleInput,
+    SmartModuleAggregateInput, SmartModuleOutput, SmartModuleExtraParams,
+    SmartModuleAggregateOutput,
 };
 
 mod encoding {
@@ -12,50 +12,50 @@ mod encoding {
     use std::collections::BTreeMap;
 
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
-    pub struct SmartStreamExtraParams {
+    pub struct SmartModuleExtraParams {
         inner: BTreeMap<String, String>,
     }
 
-    impl From<BTreeMap<String, String>> for SmartStreamExtraParams {
-        fn from(inner: BTreeMap<String, String>) -> SmartStreamExtraParams {
-            SmartStreamExtraParams { inner }
+    impl From<BTreeMap<String, String>> for SmartModuleExtraParams {
+        fn from(inner: BTreeMap<String, String>) -> SmartModuleExtraParams {
+            SmartModuleExtraParams { inner }
         }
     }
 
-    impl SmartStreamExtraParams {
+    impl SmartModuleExtraParams {
         pub fn get(&self, key: &str) -> Option<&String> {
             self.inner.get(key)
         }
     }
 
-    /// Common data that gets passed as input to every SmartStream WASM module
+    /// Common data that gets passed as input to every SmartModule WASM module
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
-    pub struct SmartStreamInput {
+    pub struct SmartModuleInput {
         /// The base offset of this batch of records
         pub base_offset: Offset,
-        /// The records for the SmartStream to process
+        /// The records for the SmartModule to process
         pub record_data: Vec<u8>,
         #[fluvio(min_version = 16)]
         pub join_record: Vec<u8>,
-        pub params: SmartStreamExtraParams,
+        pub params: SmartModuleExtraParams,
     }
-    impl std::convert::TryFrom<Vec<Record>> for SmartStreamInput {
+    impl std::convert::TryFrom<Vec<Record>> for SmartModuleInput {
         type Error = std::io::Error;
         fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
             let mut record_data = Vec::new();
             let _ = records.encode(&mut record_data, 0)?;
-            Ok(SmartStreamInput {
+            Ok(SmartModuleInput {
                 record_data,
                 ..Default::default()
             })
         }
     }
 
-    impl Display for SmartStreamInput {
+    impl Display for SmartModuleInput {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
             write!(
                 f,
-                "SmartStreamInput {{ base_offset: {:?}, record_data: {:?}, join_data: {:#?} }}",
+                "SmartModuleInput {{ base_offset: {:?}, record_data: {:?}, join_data: {:#?} }}",
                 self.base_offset,
                 self.record_data.len(),
                 self.join_record.len()
@@ -63,33 +63,33 @@ mod encoding {
         }
     }
 
-    /// A type to pass input to an Aggregate SmartStream WASM module
+    /// A type to pass input to an Aggregate SmartModule WASM module
     #[derive(Debug, Default, Clone, Encoder, Decoder)]
-    pub struct SmartStreamAggregateInput {
-        /// The base input required by all SmartStreams
-        pub base: SmartStreamInput,
+    pub struct SmartModuleAggregateInput {
+        /// The base input required by all SmartModules
+        pub base: SmartModuleInput,
         /// The current value of the Aggregate's accumulator
         pub accumulator: Vec<u8>,
     }
-    /// A type used to return processed records and/or an error from a SmartStream
+    /// A type used to return processed records and/or an error from a SmartModule
     #[derive(Debug, Default, Encoder, Decoder)]
-    pub struct SmartStreamOutput {
+    pub struct SmartModuleOutput {
         /// The successfully processed output Records
         pub successes: Vec<Record>,
         /// Any runtime error if one was encountered
-        pub error: Option<SmartStreamRuntimeError>,
+        pub error: Option<SmartModuleRuntimeError>,
     }
 
-    /// A type used to return processed records and/or an error from an Aggregate SmartStream
+    /// A type used to return processed records and/or an error from an Aggregate SmartModule
     #[derive(Debug, Default, Encoder, Decoder)]
-    pub struct SmartStreamAggregateOutput {
-        /// The base output required by all SmartStreams
-        pub base: SmartStreamOutput,
+    pub struct SmartModuleAggregateOutput {
+        /// The base output required by all SmartModules
+        pub base: SmartModuleOutput,
 
         pub accumulator: Vec<u8>,
     }
 
-    /// Indicates an internal error from within a SmartStream.
+    /// Indicates an internal error from within a SmartModule.
     //
     // The presence of one of these errors most likely indicates a logic bug.
     // This error type is `#[repr(i32)]` because these errors are returned
@@ -102,7 +102,7 @@ mod encoding {
     #[repr(i32)]
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
     #[fluvio(encode_discriminant)]
-    pub enum SmartStreamInternalError {
+    pub enum SmartModuleInternalError {
         #[error("encountered unknown error during Smartstream processing")]
         UnknownError = -1,
         #[error("failed to decode Smartstream base input")]
@@ -117,32 +117,32 @@ mod encoding {
         UndefinedRightRecord = -55,
     }
 
-    impl Default for SmartStreamInternalError {
+    impl Default for SmartModuleInternalError {
         fn default() -> Self {
             Self::UnknownError
         }
     }
 
-    /// A type used to capture and serialize errors from within a SmartStream
+    /// A type used to capture and serialize errors from within a SmartModule
     #[derive(thiserror::Error, Debug, Default, Clone, PartialEq, Encoder, Decoder)]
-    pub struct SmartStreamRuntimeError {
+    pub struct SmartModuleRuntimeError {
         /// Error hint: meant for users, not for code
         pub hint: String,
         /// The offset of the Record that had a runtime error
         pub offset: Offset,
-        /// The type of SmartStream that had a runtime error
-        pub kind: SmartStreamType,
+        /// The type of SmartModule that had a runtime error
+        pub kind: SmartModuleType,
         /// The Record key that caused this error
         pub record_key: Option<RecordData>,
         /// The Record value that caused this error
         pub record_value: RecordData,
     }
 
-    impl SmartStreamRuntimeError {
+    impl SmartModuleRuntimeError {
         pub fn new(
             record: &Record,
             base_offset: Offset,
-            kind: SmartStreamType,
+            kind: SmartModuleType,
             error: eyre::Error,
         ) -> Self {
             let hint = format!("{:?}", error);
@@ -159,7 +159,7 @@ mod encoding {
         }
     }
 
-    impl fmt::Display for SmartStreamRuntimeError {
+    impl fmt::Display for SmartModuleRuntimeError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             let key = self
                 .record_key
@@ -170,7 +170,7 @@ mod encoding {
             write!(
                 f,
                 "{}\n\n\
-                SmartStream Info: \n    \
+                SmartModule Info: \n    \
                 Type: {}\n    \
                 Offset: {}\n    \
                 Key: {}\n    \
@@ -188,7 +188,7 @@ mod encoding {
     }
 
     #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
-    pub enum SmartStreamType {
+    pub enum SmartModuleType {
         Filter,
         Map,
         ArrayMap,
@@ -197,13 +197,13 @@ mod encoding {
         Aggregate,
     }
 
-    impl Default for SmartStreamType {
+    impl Default for SmartModuleType {
         fn default() -> Self {
             Self::Filter
         }
     }
 
-    impl fmt::Display for SmartStreamType {
+    impl fmt::Display for SmartModuleType {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             // Use Debug for Display to print variant name
             fmt::Debug::fmt(self, f)

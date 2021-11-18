@@ -31,9 +31,9 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let smart_modules: Vec<Metadata<SmartModuleSpec>> = auth_ctx
+    let smartmodules: Vec<Metadata<SmartModuleSpec>> = auth_ctx
         .global_ctx
-        .smart_modules()
+        .smartmodules()
         .store()
         .read()
         .await
@@ -48,10 +48,10 @@ pub async fn handle_fetch_request<AC: AuthContext>(
         .collect();
 
     debug!(
-        "flv fetch smart_modules resp: {} items",
-        smart_modules.len()
+        "flv fetch smartmodules resp: {} items",
+        smartmodules.len()
     );
-    trace!("flv fetch smart_modules resp {:#?}", smart_modules);
+    trace!("flv fetch smartmodules resp {:#?}", smartmodules);
 
-    Ok(ListResponse::new(smart_modules))
+    Ok(ListResponse::new(smartmodules))
 }

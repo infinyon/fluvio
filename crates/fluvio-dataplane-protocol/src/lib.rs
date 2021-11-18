@@ -9,7 +9,7 @@ pub mod record;
 pub mod fetch;
 pub mod produce;
 pub mod versions;
-pub mod smartstream;
+pub mod smartmodule;
 
 #[cfg(feature = "fixture")]
 pub mod fixture;

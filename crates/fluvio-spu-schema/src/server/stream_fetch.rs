@@ -14,7 +14,7 @@ use dataplane::api::Request;
 use dataplane::fetch::FetchablePartitionResponse;
 use dataplane::record::RecordSet;
 use dataplane::Isolation;
-use dataplane::smartstream::SmartStreamExtraParams;
+use dataplane::smartmodule::SmartModuleExtraParams;
 
 use flate2::{
     Compression,
@@ -37,7 +37,7 @@ pub const AGGREGATOR_API: i16 = 13;
 // version for gzipped WASM payloads
 pub const GZIP_WASM_API: i16 = 14;
 
-// version for SmartStream array map
+// version for SmartModule array map
 pub const ARRAY_MAP_WASM_API: i16 = 15;
 
 // version for persistent SmartModule
@@ -56,12 +56,14 @@ where
     pub max_bytes: i32,
     pub isolation: Isolation,
     /// no longer used, but keep to avoid breaking compatibility, this will not be honored
+    #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     #[fluvio(min_version = 11)]
     pub wasm_module: Vec<u8>,
+    #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     #[fluvio(min_version = 12)]
-    pub wasm_payload: Option<SmartStreamPayload>,
+    pub wasm_payload: Option<SmartModulePayload>,
     #[fluvio(min_version = 16)]
-    pub smart_module: Option<SmartModuleInvocation>,
+    pub smartmodule: Option<SmartModuleInvocation>,
     #[fluvio(min_version = 16)]
     pub smartstream: Option<SmartStreamInvocation>,
     pub data: PhantomData<R>,
@@ -76,15 +78,15 @@ where
     type Response = StreamFetchResponse<R>;
 }
 
-/// The request payload when using a Consumer SmartStream.
+/// The request payload when using a Consumer SmartModule.
 ///
-/// This includes the WASM content as well as the type of SmartStream being used.
-/// It also carries any data that is required for specific types of SmartStreams.
+/// This includes the WASM content as well as the type of SmartModule being used.
+/// It also carries any data that is required for specific types of SmartModules.
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
-pub struct SmartStreamPayload {
-    pub wasm: SmartStreamWasm,
-    pub kind: SmartStreamKind,
-    pub params: SmartStreamExtraParams,
+pub struct SmartModulePayload {
+    pub wasm: SmartModuleWasm,
+    pub kind: SmartModuleKind,
+    pub params: SmartModuleExtraParams,
 }
 
 /// The request payload when using a Consumer SmartModule.
@@ -94,8 +96,8 @@ pub struct SmartStreamPayload {
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartModuleInvocation {
     pub wasm: SmartModuleInvocationWasm,
-    pub kind: SmartStreamKind,
-    pub params: SmartStreamExtraParams,
+    pub kind: SmartModuleKind,
+    pub params: SmartModuleExtraParams,
 }
 
 #[derive(Debug, Clone, Encoder, Decoder)]
@@ -112,9 +114,9 @@ impl Default for SmartModuleInvocationWasm {
     }
 }
 
-/// Indicates the type of SmartStream as well as any special data required
+/// Indicates the type of SmartModule as well as any special data required
 #[derive(Debug, Clone, Encoder, Decoder)]
-pub enum SmartStreamKind {
+pub enum SmartModuleKind {
     Filter,
     Map,
     Aggregate {
@@ -133,7 +135,7 @@ pub enum SmartStreamKind {
     },
 }
 
-impl Default for SmartStreamKind {
+impl Default for SmartModuleKind {
     fn default() -> Self {
         Self::Filter
     }
@@ -146,7 +148,7 @@ impl Default for SmartStreamKind {
 ///
 // TODO ... or, it may be named and selected from the WASM store.
 #[derive(Clone, Encoder, Decoder)]
-pub enum SmartStreamWasm {
+pub enum SmartModuleWasm {
     Raw(Vec<u8>),
     /// compressed WASM module payload using Gzip
     #[fluvio(min_version = 14)]
@@ -169,7 +171,7 @@ fn unzip(compressed: &[u8]) -> io::Result<Vec<u8>> {
     Ok(buffer)
 }
 
-impl SmartStreamWasm {
+impl SmartModuleWasm {
     /// returns the gzip-compressed WASM module bytes
     pub fn to_gzip(&mut self) -> io::Result<()> {
         if let Self::Raw(raw) = self {
@@ -195,13 +197,13 @@ impl SmartStreamWasm {
     }
 }
 
-impl Default for SmartStreamWasm {
+impl Default for SmartModuleWasm {
     fn default() -> Self {
         Self::Raw(Vec::new())
     }
 }
 
-impl Debug for SmartStreamWasm {
+impl Debug for SmartModuleWasm {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Raw(bytes) => f
@@ -220,7 +222,7 @@ impl Debug for SmartStreamWasm {
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
 pub struct SmartStreamInvocation {
     pub stream: String,
-    pub params: SmartStreamExtraParams,
+    pub params: SmartModuleExtraParams,
 }
 
 #[derive(Encoder, Decoder, Default, Debug)]
@@ -275,28 +277,28 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_encode_smartstreamkind() {
+    fn test_encode_SmartModuleKind() {
         let mut dest = Vec::new();
-        let value: SmartStreamKind = SmartStreamKind::Filter;
+        let value: SmartModuleKind = SmartModuleKind::Filter;
         value.encode(&mut dest, 0).expect("should encode");
         assert_eq!(dest.len(), 1);
         assert_eq!(dest[0], 0x00);
     }
 
     #[test]
-    fn test_decode_smartstreamkind() {
+    fn test_decode_SmartModuleKind() {
         let bytes = vec![0x01];
-        let mut value: SmartStreamKind = Default::default();
+        let mut value: SmartModuleKind = Default::default();
         value
             .decode(&mut std::io::Cursor::new(bytes), 0)
             .expect("should decode");
-        assert!(matches!(value, SmartStreamKind::Map));
+        assert!(matches!(value, SmartModuleKind::Map));
     }
 
     #[test]
-    fn test_encode_smartstreamwasm() {
+    fn test_encode_SmartModuleWasm() {
         let mut dest = Vec::new();
-        let value: SmartStreamWasm = SmartStreamWasm::Raw(vec![0xde, 0xad, 0xbe, 0xef]);
+        let value: SmartModuleWasm = SmartModuleWasm::Raw(vec![0xde, 0xad, 0xbe, 0xef]);
         value.encode(&mut dest, 0).expect("should encode");
         println!("{:02x?}", &dest);
         assert_eq!(dest.len(), 9);
@@ -312,16 +314,16 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_smartstreamwasm() {
+    fn test_decode_SmartModuleWasm() {
         let bytes = vec![0x00, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef];
-        let mut value: SmartStreamWasm = Default::default();
+        let mut value: SmartModuleWasm = Default::default();
         value
             .decode(&mut std::io::Cursor::new(bytes), 0)
             .expect("should decode");
         let inner = match value {
-            SmartStreamWasm::Raw(inner) => inner,
+            SmartModuleWasm::Raw(inner) => inner,
             #[allow(unreachable_patterns)]
-            _ => panic!("should decode to SmartStreamWasm::Raw"),
+            _ => panic!("should decode to SmartModuleWasm::Raw"),
         };
         assert_eq!(inner.len(), 4);
         assert_eq!(inner[0], 0xde);
@@ -336,9 +338,9 @@ mod tests {
         let value = DefaultStreamFetchRequest {
             topic: "one".to_string(),
             partition: 3,
-            wasm_payload: Some(SmartStreamPayload {
-                kind: SmartStreamKind::Filter,
-                wasm: SmartStreamWasm::Raw(vec![0xde, 0xad, 0xbe, 0xef]),
+            wasm_payload: Some(SmartModulePayload {
+                kind: SmartModuleKind::Filter,
+                wasm: SmartModuleWasm::Raw(vec![0xde, 0xad, 0xbe, 0xef]),
                 ..Default::default()
             }),
             ..Default::default()
@@ -368,25 +370,25 @@ mod tests {
             _ => panic!("should have smartstreeam payload"),
         };
         let wasm = match smartstream.wasm {
-            SmartStreamWasm::Raw(wasm) => wasm,
+            SmartModuleWasm::Raw(wasm) => wasm,
             #[allow(unreachable_patterns)]
-            _ => panic!("should be SmartStreamWasm::Raw"),
+            _ => panic!("should be SmartModuleWasm::Raw"),
         };
         assert_eq!(wasm, vec![0xde, 0xad, 0xbe, 0xef]);
-        assert!(matches!(smartstream.kind, SmartStreamKind::Filter));
+        assert!(matches!(smartstream.kind, SmartModuleKind::Filter));
     }
 
     #[test]
     fn test_zip_unzip_works() {
         const ORIG_LEN: usize = 1024;
-        let orig = SmartStreamWasm::Raw(vec![0x01; ORIG_LEN]);
+        let orig = SmartModuleWasm::Raw(vec![0x01; ORIG_LEN]);
         let mut compressed = orig.clone();
         compressed.to_gzip().unwrap();
-        assert!(matches!(&compressed, &SmartStreamWasm::Gzip(ref x) if x.len() < ORIG_LEN));
+        assert!(matches!(&compressed, &SmartModuleWasm::Gzip(ref x) if x.len() < ORIG_LEN));
         let mut uncompressed = compressed.clone();
         uncompressed.to_raw().unwrap();
         assert!(
-            matches!((&uncompressed, &orig), (&SmartStreamWasm::Raw(ref x), &SmartStreamWasm::Raw(ref y)) if x == y )
+            matches!((&uncompressed, &orig), (&SmartModuleWasm::Raw(ref x), &SmartModuleWasm::Raw(ref y)) if x == y )
         );
         assert_eq!(orig.get_raw().unwrap(), compressed.get_raw().unwrap());
     }

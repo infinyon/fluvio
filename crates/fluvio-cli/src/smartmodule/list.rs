@@ -17,7 +17,7 @@ impl ListSmartModuleOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
         let lists = admin.list::<SmartModuleSpec, _>(vec![]).await?;
-        output::smart_modules_response_to_output(out, lists, self.output.format)
+        output::smartmodules_response_to_output(out, lists, self.output.format)
     }
 }
 mod output {
@@ -52,16 +52,16 @@ mod output {
     // -----------------------------------
 
     /// Format Smart Modules based on output type
-    pub fn smart_modules_response_to_output<O: Terminal>(
+    pub fn smartmodules_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
-        list_smart_modules: Vec<Metadata<SmartModuleSpec>>,
+        list_smartmodules: Vec<Metadata<SmartModuleSpec>>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
-        debug!("smart modules: {:#?}", list_smart_modules);
+        debug!("smart modules: {:#?}", list_smartmodules);
 
-        if !list_smart_modules.is_empty() {
-            let smart_modules = ListSmartModules(list_smart_modules);
-            out.render_list(&smart_modules, output_type)?;
+        if !list_smartmodules.is_empty() {
+            let smartmodules = ListSmartModules(list_smartmodules);
+            out.render_list(&smartmodules, output_type)?;
             Ok(())
         } else {
             t_println!(out, "no smart modules");

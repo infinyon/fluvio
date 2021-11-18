@@ -1,2 +1,2 @@
-mod smartstream;
-pub use smartstream::*;
+mod smartmodule;
+pub use smartmodule::*;

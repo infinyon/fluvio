@@ -7,7 +7,7 @@ use proc_macro2::Ident;
 /// This is constructed from the AttributeArgs of the derive macro.
 #[derive(Debug)]
 pub struct SmartStreamConfig {
-    pub kind: SmartStreamKind,
+    pub kind: SmartModuleKind,
     pub has_params: bool,
 }
 
@@ -34,14 +34,14 @@ fn has_params(args: &AttributeArgs) -> bool {
 impl SmartStreamConfig {
     #[allow(clippy::ptr_arg)]
     pub fn from_ast(args: &AttributeArgs) -> SynResult<Self> {
-        let kind = SmartStreamKind::from_ast(args)?;
+        let kind = SmartModuleKind::from_ast(args)?;
         let has_params = has_params(args);
         Ok(Self { kind, has_params })
     }
 }
 
 #[derive(Debug)]
-pub enum SmartStreamKind {
+pub enum SmartModuleKind {
     Aggregate,
     Filter,
     Map,
@@ -50,7 +50,7 @@ pub enum SmartStreamKind {
     Join,
 }
 
-impl SmartStreamKind {
+impl SmartModuleKind {
     #[allow(clippy::ptr_arg)]
     fn from_ast(args: &AttributeArgs) -> SynResult<Self> {
         let ss_type =

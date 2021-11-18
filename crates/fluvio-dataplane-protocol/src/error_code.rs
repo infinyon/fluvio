@@ -6,7 +6,7 @@
 
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 use fluvio_protocol::{Encoder, Decoder};
-use crate::smartstream::SmartStreamRuntimeError;
+use crate::smartmodule::SmartModuleRuntimeError;
 
 // -----------------------------------
 // Error Definition & Implementation
@@ -104,10 +104,11 @@ pub enum ErrorCode {
     #[error("the fetch session was not found")]
     FetchSessionNotFoud,
 
-    // SmartStream errors
+    // Legacy SmartModule errors
+    #[deprecated(since = "0.9.13")]
     #[fluvio(tag = 4000)]
-    #[error("a SmartStream error occurred")]
-    SmartStreamError(#[from] SmartStreamError),
+    #[error("a legacy SmartModule error occurred")]
+    LegacySmartModuleError(#[from] LegacySmartModuleError),
 
     // Managed Connector Errors
     #[fluvio(tag = 5000)]
@@ -122,13 +123,22 @@ pub enum ErrorCode {
     #[error("an error occurred while managing a connector")]
     ManagedConnectorAlreadyExists,
 
-    // Smart Module Errors
+    // SmartModule Errors
     #[fluvio(tag = 6000)]
-    #[error("an error occurred while managing a smart module")]
+    #[error("an error occurred while managing a SmartModule")]
     SmartModuleError,
     #[fluvio(tag = 6001)]
-    #[error("the smart module was not found")]
-    SmartModuleNotFound,
+    #[error("SmartModule {name} was not found")]
+    SmartModuleNotFound { name: String },
+    #[fluvio(tag = 6002)]
+    #[error("SmartModule is invalid")]
+    SmartModuleInvalid { error: String, name: Option<String> },
+    #[fluvio(tag = 6003)]
+    #[error("SmartModule is not a valid '{kind}' SmartModule due to {error}. Are you missing a #[smartmodule({kind})] attribute?")]
+    SmartModuleInvalidExports { error: String, kind: String },
+    #[fluvio(tag = 6004)]
+    #[error("SmartModule runtime error {0}")]
+    SmartModuleRuntimeError(SmartModuleRuntimeError),
 
     // Table Errors
     #[fluvio(tag = 7000)]
@@ -144,10 +154,15 @@ pub enum ErrorCode {
     SmartStreamObjectError,
     #[fluvio(tag = 8001)]
     #[error("the smartstream was not found")]
-    SmartStreamNotFound,
+    SmartStreamNotFound(String),
     #[fluvio(tag = 8002)]
     #[error("the smartstream join data cannot be fetched")]
     SmartStreamJoinFetchError,
+    #[fluvio(tag = 8003)]
+    #[error("the smartstream {0} is invalid")]
+    SmartStreamInvalid(String),
+    #[error("can't do recursive smartstream yet: {0}->{1}")]
+    SmartStreamRecursion(String, String),
 }
 
 impl Default for ErrorCode {
@@ -173,28 +188,18 @@ impl ErrorCode {
     }
 }
 
-/// A type representing the possible errors that may occur during SmartStream execution.
-// This is also where we can update our error representation in the future
-// TODO: Add variant for reporting panics
+/// Deprecated. A type representing the possible errors that may occur during SmartStream execution.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
-pub enum SmartStreamError {
+pub enum LegacySmartModuleError {
     #[error("Runtime error")]
-    Runtime(#[from] SmartStreamRuntimeError),
+    Runtime(#[from] SmartModuleRuntimeError),
     #[error("WASM Module error: {0}")]
     InvalidWasmModule(String),
-    #[error("SmartModule {0} is not defined")]
-    UndefinedSmartModule(String),
-    #[error("WASM module is not a valid '{0}' SmartStream due to {1}. Are you missing a #[smartstream({0})] attribute?")]
-    InvalidSmartStreamModule(String, String),
-    #[error("JoinStream terminated: {0}")]
-    JoinStreamTerminated(String),
-    #[error("SmartStream {0} is not validated")]
-    InvalidSmartStream(String),
-    #[error("SmartStream {0} is not defined")]
-    UndefinedSmartStream(String),
+    #[error("WASM module is not a valid '{0}' SmartStream. Are you missing a #[smartstream({0})] attribute?")]
+    InvalidSmartStreamModule(String),
 }
 
-impl Default for SmartStreamError {
+impl Default for LegacySmartModuleError {
     fn default() -> Self {
         Self::Runtime(Default::default())
     }

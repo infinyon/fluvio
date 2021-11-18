@@ -5,29 +5,29 @@ use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::TypedFunc;
 
-use crate::smartstream::{SmartEngine, SmartStreamModule, SmartStreamContext, SmartStream};
-use dataplane::smartstream::{
-    SmartStreamAggregateInput, SmartStreamInput, SmartStreamOutput, SmartStreamInternalError,
-    SmartStreamExtraParams, SmartStreamAggregateOutput,
+use crate::smartmodule::{SmartEngine, SmartModuleModule, SmartModuleContext, SmartModuleInstance};
+use dataplane::smartmodule::{
+    SmartModuleAggregateInput, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
+    SmartModuleExtraParams, SmartModuleAggregateOutput,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
 type AggregateFn = TypedFunc<(i32, i32), i32>;
 
-pub struct SmartStreamAggregate {
-    base: SmartStreamContext,
+pub struct SmartModuleAggregate {
+    base: SmartModuleContext,
     aggregate_fn: AggregateFn,
     accumulator: Vec<u8>,
 }
 
-impl SmartStreamAggregate {
+impl SmartModuleAggregate {
     pub fn new(
         engine: &SmartEngine,
-        module: &SmartStreamModule,
-        params: SmartStreamExtraParams,
+        module: &SmartModuleModule,
+        params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
     ) -> Result<Self> {
-        let mut base = SmartStreamContext::new(engine, module, params)?;
+        let mut base = SmartModuleContext::new(engine, module, params)?;
         let aggregate_fn: AggregateFn = base
             .instance
             .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)?;
@@ -40,11 +40,11 @@ impl SmartStreamAggregate {
     }
 }
 
-impl SmartStream for SmartStreamAggregate {
+impl SmartModuleInstance for SmartModuleAggregate {
     #[instrument(skip(self,base),fields(offset = base.base_offset))]
-    fn process(&mut self, base: SmartStreamInput) -> Result<SmartStreamOutput> {
+    fn process(&mut self, base: SmartModuleInput) -> Result<SmartModuleOutput> {
         debug!("start aggregration");
-        let input = SmartStreamAggregateInput {
+        let input = SmartModuleAggregateInput {
             base,
             accumulator: self.accumulator.clone(),
         };
@@ -53,16 +53,16 @@ impl SmartStream for SmartStreamAggregate {
 
         debug!(aggregate_output);
         if aggregate_output < 0 {
-            let internal_error = SmartStreamInternalError::try_from(aggregate_output)
-                .unwrap_or(SmartStreamInternalError::UnknownError);
+            let internal_error = SmartModuleInternalError::try_from(aggregate_output)
+                .unwrap_or(SmartModuleInternalError::UnknownError);
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamAggregateOutput = self.base.read_output(AGGREGATOR_API)?;
+        let output: SmartModuleAggregateOutput = self.base.read_output(AGGREGATOR_API)?;
         self.accumulator = output.accumulator;
         Ok(output.base)
     }
-    fn params(&self) -> SmartStreamExtraParams {
+    fn params(&self) -> SmartModuleExtraParams {
         self.base.params.clone()
     }
 }

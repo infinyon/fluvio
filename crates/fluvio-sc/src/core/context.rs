@@ -27,7 +27,7 @@ pub struct Context {
     topics: StoreContext<TopicSpec>,
     spgs: StoreContext<SpuGroupSpec>,
     managed_connectors: StoreContext<ManagedConnectorSpec>,
-    smart_modules: StoreContext<SmartModuleSpec>,
+    smartmodules: StoreContext<SmartModuleSpec>,
     tables: StoreContext<TableSpec>,
     smart_streams: StoreContext<SmartStreamSpec>,
     health: SharedHealthCheck,
@@ -51,7 +51,7 @@ impl Context {
             topics: StoreContext::new(),
             spgs: StoreContext::new(),
             managed_connectors: StoreContext::new(),
-            smart_modules: StoreContext::new(),
+            smartmodules: StoreContext::new(),
             tables: StoreContext::new(),
             smart_streams: StoreContext::new(),
             health: HealthCheck::shared(),
@@ -82,8 +82,8 @@ impl Context {
         &self.managed_connectors
     }
 
-    pub fn smart_modules(&self) -> &StoreContext<SmartModuleSpec> {
-        &self.smart_modules
+    pub fn smartmodules(&self) -> &StoreContext<SmartModuleSpec> {
+        &self.smartmodules
     }
 
     pub fn tables(&self) -> &StoreContext<TableSpec> {

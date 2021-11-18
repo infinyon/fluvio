@@ -40,7 +40,7 @@ pub async fn handle_create_request<AC: AuthContext>(
                 .await?
         }
         ObjectCreateRequest::SmartModule(create) => {
-            super::smartmodule::handle_create_smart_module_request(common, create, auth_context)
+            super::smartmodule::handle_create_smartmodule_request(common, create, auth_context)
                 .await?
         }
         ObjectCreateRequest::Table(create) => {

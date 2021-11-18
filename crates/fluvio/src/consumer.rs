@@ -10,10 +10,10 @@ use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
-    SmartStreamPayload, SmartStreamWasm, WASM_MODULE_API, WASM_MODULE_V2_API,
+    SmartModulePayload, SmartModuleWasm, WASM_MODULE_API, WASM_MODULE_V2_API,
 };
 pub use fluvio_spu_schema::server::stream_fetch::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartStreamInvocation,
 };
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
@@ -433,13 +433,13 @@ where
 
         stream_request.smartstream = config.smartstream;
 
-        if let Some(smart_module) = config.smart_module {
+        if let Some(smartmodule) = config.smartmodule {
             if stream_fetch_version < SMART_MODULE_API as i16 {
-                if let SmartModuleInvocationWasm::AdHoc(wasm) = smart_module.wasm {
-                    let legacy_module = SmartStreamPayload {
-                        wasm: SmartStreamWasm::Gzip(wasm),
-                        kind: smart_module.kind,
-                        params: smart_module.params,
+                if let SmartModuleInvocationWasm::AdHoc(wasm) = smartmodule.wasm {
+                    let legacy_module = SmartModulePayload {
+                        wasm: SmartModuleWasm::Gzip(wasm),
+                        kind: smartmodule.kind,
+                        params: smartmodule.params,
                     };
                     legacy_set_wasm(stream_fetch_version, &mut stream_request, legacy_module)?;
                 } else {
@@ -449,7 +449,7 @@ where
                 }
             } else {
                 debug!("Using persistent WASM API");
-                stream_request.smart_module = Some(smart_module);
+                stream_request.smartmodule = Some(smartmodule);
             }
         }
 
@@ -551,19 +551,17 @@ where
 fn legacy_set_wasm(
     stream_fetch_version: i16,
     stream_request: &mut DefaultStreamFetchRequest,
-    mut module: SmartStreamPayload,
+    mut module: SmartModulePayload,
 ) -> Result<(), FluvioError> {
     if stream_fetch_version < WASM_MODULE_API as i16 {
         return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
     }
 
     if stream_fetch_version < WASM_MODULE_V2_API as i16 {
-        // SmartStream V1
         debug!("Using WASM V1 API");
         let wasm = module.wasm.get_raw()?;
         stream_request.wasm_module = wasm.into_owned();
     } else {
-        // SmartStream V2
         debug!("Using WASM V2 API");
         if stream_fetch_version < GZIP_WASM_API as i16 {
             module.wasm.to_raw()?;
@@ -718,9 +716,9 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) isolation: Isolation,
     #[builder(private, default, setter(into, strip_option))]
-    pub(crate) wasm_module: Option<SmartStreamPayload>,
+    pub(crate) wasm_module: Option<SmartModulePayload>,
     #[builder(default)]
-    pub(crate) smart_module: Option<SmartModuleInvocation>,
+    pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
     pub(crate) smartstream: Option<SmartStreamInvocation>,
 }
@@ -739,76 +737,76 @@ impl ConsumerConfigBuilder {
         Ok(config)
     }
 
-    /// Adds a SmartStream filter to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
+    /// Adds a SmartModule filter to this ConsumerConfig
+    #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     pub fn wasm_filter<T: Into<Vec<u8>>>(
         &mut self,
         filter: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(filter.into()),
-            kind: SmartStreamKind::Filter,
+        self.wasm_module(SmartModulePayload {
+            wasm: SmartModuleWasm::Raw(filter.into()),
+            kind: SmartModuleKind::Filter,
             params: params.into(),
         });
         self
     }
 
-    /// Adds a SmartStream map to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
+    /// Adds a SmartModule map to this ConsumerConfig
+    #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     pub fn wasm_map<T: Into<Vec<u8>>>(
         &mut self,
         map: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(map.into()),
-            kind: SmartStreamKind::Map,
+        self.wasm_module(SmartModulePayload {
+            wasm: SmartModuleWasm::Raw(map.into()),
+            kind: SmartModuleKind::Map,
             params: params.into(),
         });
         self
     }
 
-    /// Adds a SmartStream filter_map to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
+    /// Adds a SmartModule filter_map to this ConsumerConfig
+    #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     pub fn wasm_filter_map<T: Into<Vec<u8>>>(
         &mut self,
         filter_map: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(filter_map.into()),
-            kind: SmartStreamKind::FilterMap,
+        self.wasm_module(SmartModulePayload {
+            wasm: SmartModuleWasm::Raw(filter_map.into()),
+            kind: SmartModuleKind::FilterMap,
             params: params.into(),
         });
         self
     }
 
-    /// Adds a SmartStream array_map to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
+    /// Adds a SmartModule array_map to this ConsumerConfig
+    #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     pub fn wasm_array_map<T: Into<Vec<u8>>>(
         &mut self,
         array_map: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(array_map.into()),
-            kind: SmartStreamKind::ArrayMap,
+        self.wasm_module(SmartModulePayload {
+            wasm: SmartModuleWasm::Raw(array_map.into()),
+            kind: SmartModuleKind::ArrayMap,
             params: params.into(),
         })
     }
 
     /// Set a WASM aggregator function and initial accumulator value
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
+    #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     pub fn wasm_aggregate<T: Into<Vec<u8>>, U: Into<Vec<u8>>>(
         &mut self,
         aggregate: T,
         accumulator: U,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(aggregate.into()),
-            kind: SmartStreamKind::Aggregate {
+        self.wasm_module(SmartModulePayload {
+            wasm: SmartModuleWasm::Raw(aggregate.into()),
+            kind: SmartModuleKind::Aggregate {
                 accumulator: accumulator.into(),
             },
             params: params.into(),

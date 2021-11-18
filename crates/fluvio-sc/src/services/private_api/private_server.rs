@@ -112,7 +112,7 @@ async fn dispatch_loop(
 ) -> Result<(), SocketError> {
     let mut spu_spec_listener = context.spus().change_listener();
     let mut partition_spec_listener = context.partitions().change_listener();
-    let mut sm_spec_listener = context.smart_modules().change_listener();
+    let mut sm_spec_listener = context.smartmodules().change_listener();
     let mut ss_spec_listener = context.smartstreams().change_listener();
 
     // send initial changes
@@ -125,7 +125,7 @@ async fn dispatch_loop(
 
         send_spu_spec_changes(&mut spu_spec_listener, &mut sink, spu_id).await?;
         send_replica_spec_changes(&mut partition_spec_listener, &mut sink, spu_id).await?;
-        send_smart_module_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
+        send_smartmodule_changes(&mut sm_spec_listener, &mut sink, spu_id).await?;
         send_smartstream_changes(&mut ss_spec_listener, &mut sink, spu_id).await?;
 
         trace!(spu_id, "waiting for SPU channel");
@@ -377,7 +377,7 @@ async fn send_replica_spec_changes(
 }
 
 #[instrument(level = "trace", skip(sink))]
-async fn send_smart_module_changes(
+async fn send_smartmodule_changes(
     listener: &mut K8ChangeListener<SmartModuleSpec>,
     sink: &mut FluvioSink,
     spu_id: SpuId,

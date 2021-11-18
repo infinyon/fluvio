@@ -3,7 +3,7 @@ use std::time::Instant;
 use std::io::ErrorKind;
 use std::io::Error as IoError;
 
-use fluvio_smartengine::SmartStream;
+use fluvio_smartengine::SmartModuleInstance;
 use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
@@ -17,7 +17,6 @@ use dataplane::{
     api::{RequestMessage, RequestHeader},
     fetch::FetchablePartitionResponse,
     record::RecordSet,
-    SmartStreamError,
 };
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
@@ -27,7 +26,7 @@ use fluvio_spu_schema::server::stream_fetch::{
 use fluvio_types::event::offsets::OffsetChangeListener;
 use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
-use dataplane::smartstream::SmartStreamRuntimeError;
+use dataplane::smartmodule::SmartModuleRuntimeError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
@@ -132,7 +131,7 @@ impl StreamFetchHandler {
 
         let smart_stream_ctx = match SmartStreamContext::extract(
             msg.wasm_payload,
-            msg.smart_module,
+            msg.smartmodule,
             msg.smartstream,
             &ctx,
         )
@@ -358,7 +357,7 @@ impl StreamFetchHandler {
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
-        smartstream: Option<&mut Box<dyn SmartStream>>,
+        smartstream: Option<&mut Box<dyn SmartModuleInstance>>,
         join_last_record: Option<&fluvio::consumer::Record>,
     ) -> Result<(Offset, bool), SocketError> {
         let now = Instant::now();
@@ -461,12 +460,12 @@ impl StreamFetchHandler {
         file_partition_response: FilePartitionResponse,
         mut next_offset: Offset,
         batch: Batch,
-        smartstream_error: Option<SmartStreamRuntimeError>,
+        smartstream_error: Option<SmartModuleRuntimeError>,
     ) -> Result<(Offset, bool), SocketError> {
         type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
 
         let error_code = match smartstream_error {
-            Some(error) => ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)),
+            Some(error) => ErrorCode::SmartModuleRuntimeError(error),
             None => file_partition_response.error_code,
         };
         trace!(?error_code, "Smartstream error code output:");

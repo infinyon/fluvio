@@ -1,7 +1,7 @@
 use structopt::StructOpt;
 use crate::Result;
 
-/// Print details about a given SmartModule
+/// Print details about a given SmartStream
 #[derive(Debug, StructOpt)]
 pub struct DescribeSmartStreamOpt {
     name: String,
