@@ -24,7 +24,6 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" tableformat create "$TABLEFORMAT_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
-    assert_failure
     assert_output --partial "TableFormatAlreadyExists"
 }
 
@@ -43,6 +42,5 @@ setup_file() {
 # Delete tableformat - Negative test
 @test "Attempt to delete a tableformat that doesn't exist" {
     run timeout 15s "$FLUVIO_BIN" tableformat delete "$TABLEFORMAT_NAME"
-    assert_failure
     assert_output --partial "TableFormatNotFound"
 }
