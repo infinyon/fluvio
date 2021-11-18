@@ -40,7 +40,7 @@ pub struct TableFormatColumnConfig {
     pub header_label: Option<String>,
     pub width: Option<String>,
     pub alignment: Option<TableFormatAlignment>,
-    pub key_path: Option<String>,
+    pub key_path: String,
     pub format: Option<String>,
     pub display: Option<bool>,
     pub primary_key: Option<bool>,
