@@ -37,7 +37,7 @@ spec:
                     - JSON
                     - YAML
                     - TOML
-                column:
+                columns:
                   type: array
                   items:
                     type: object
@@ -52,7 +52,7 @@ spec:
                           - LEFT
                           - CENTER
                           - RIGHT
-                      path:
+                      keyPath:
                         type: string
                       format:
                         type: string
