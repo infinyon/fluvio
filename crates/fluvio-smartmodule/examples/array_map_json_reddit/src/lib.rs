@@ -1,6 +1,6 @@
 //! An ArrayMap for breaking apart a paginated Reddit API response into individual posts.
 //!
-//! The SmartStreams ArrayMap function allows you map a single input Record into
+//! The SmartModules ArrayMap function allows you map a single input Record into
 //! zero or many output records. This example showcases taking a stream of Reddit API
 //! responses and converting it into a stream of the individual posts.
 

@@ -1,9 +1,9 @@
-//! A SmartStream example showing how to filter records based on a JSON value
+//! A SmartModule example showing how to filter records based on a JSON value
 //!
 //! In this example, we use `serde` to deserialize our Records in a JSON
 //! format in order to examine the fields of our data. We can imagine the
 //! data in our topic as being application logs from some server or other
-//! program, and that we want our SmartStream to keep only those log
+//! program, and that we want our SmartModule to keep only those log
 //! messages that are tagged as "info", "warn", or "error".
 //!
 //! To get more concrete, let's say we have a Topic called "application-logs":
@@ -14,7 +14,7 @@
 //!
 //! And that the data in this topic is JSON-formatted log messages, with
 //! a "level" field and a "message" field. If we consume these records with
-//! no SmartStreams enabled, we might see records like the following:
+//! no SmartModules enabled, we might see records like the following:
 //!
 //! ```text
 //! $ fluvio consume application-logs -B
@@ -32,7 +32,7 @@
 //! ```
 //!
 //! All of the debug messages in this stream are causing a lot of noise.
-//! We can use this SmartStream to filter out any records that do not
+//! We can use this SmartModule to filter out any records that do not
 //! have a log level of "info", "warn", or "error".
 //!
 //! ```text

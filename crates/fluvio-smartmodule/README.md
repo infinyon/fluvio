@@ -1,19 +1,19 @@
-# Fluvio SmartStreams
+# Fluvio SmartModules
 
-This crate provides types and macros for creating custom SmartStreams,
+This crate provides types and macros for creating custom SmartModules,
 which are WebAssembly modules that may be used to modify the behavior
-of Fluvio streams to consumers. The currently supported SmartStream
+of Fluvio streams to consumers. The currently supported SmartModule
 types are `filter`s, which may describe records to keep in or discard
 from a stream.
 
-## Writing SmartStreams
+## Writing SmartModules
 
 > See the `examples` directory for full examples.
 
-All SmartStreams require adding `crate-type = ['cdylib']` to the Cargo.toml.
-For a quick setup using `cargo-generate`, see [the SmartStream template].
+All SmartModules require adding `crate-type = ['cdylib']` to the Cargo.toml.
+For a quick setup using `cargo-generate`, see [the SmartModule template].
 
-[the SmartStream template]: https://github.com/infinyon/fluvio-smartmodule-template
+[the SmartModule template]: https://github.com/infinyon/fluvio-smartmodule-template
 
 ```toml
 [package]
@@ -31,11 +31,11 @@ fluvio-smartmodule = "0.2.0"
 
 ### Filtering
 
-For filtering, write your smartstream using `#[smartmodule(filter)]` on your
-top-level function. Consider this the "main" function of your SmartStream.
+For filtering, write your smartmodule using `#[smartmodule(filter)]` on your
+top-level function. Consider this the "main" function of your SmartModule.
 
 ```text
-use fluvio_smartmodule::{smartstream, Record, Result};
+use fluvio_smartmodule::{smartmodule, Record, Result};
 
 #[smartmodule(filter)]
 pub fn filter(record: &Record) -> Result<bool> {
@@ -51,7 +51,7 @@ This filter will keep only records whose contents contain the letter `a`.
 Mapping functions use `#[smartmodule(map)]`, and are also a top-level entrypoint.
 
 ```text
-use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
 
 #[smartmodule(map)]
 pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
@@ -65,7 +65,7 @@ pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
 }
 ```
 
-This SmartStream will read each input Record as an integer (`i32`), then multiply it by 2.
+This SmartModule will read each input Record as an integer (`i32`), then multiply it by 2.
 
 ### Aggregate
 
@@ -78,7 +78,7 @@ the next record value. The resulting stream of values is the output accumulator
 from each step.
 
 ```text
-use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
 #[smartmodule(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
@@ -89,7 +89,7 @@ pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData
 }
 ```
 
-This SmartStream reads each record as a string and appends it to the accumulator string.
+This SmartModule reads each record as a string and appends it to the accumulator string.
 
 ### ArrayMap
 
@@ -99,7 +99,7 @@ and turn them into independent records. Below is an example where we take JSON a
 convert them into a stream of the inner JSON objects.
 
 ```ignore
-use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
 #[smartmodule(array_map)]
 pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {

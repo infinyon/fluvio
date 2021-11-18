@@ -1,4 +1,4 @@
-//! This example demonstrates how to do elegant error handling with SmartStreams.
+//! This example demonstrates how to do elegant error handling with SmartModules.
 //!
 //! The `fluvio_smartmodule::Result<T>` type allows you to bubble-up any
 //! error that implements `std::error::Error` using the try (`?`) operator.
@@ -12,7 +12,7 @@
 //! Error:
 //!    0: Consumer Error
 //!    1: Fluvio client error
-//!    2: User SmartStream failed with the following error: Oops something went wrong
+//!    2: User SmartModule failed with the following error: Oops something went wrong
 //!
 //!       Caused by:
 //!          0: Failed to parse int

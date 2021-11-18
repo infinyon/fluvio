@@ -1,4 +1,4 @@
-use fluvio_smartmodule::{smartstream, SmartOpt, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, SmartOpt, Result, Record, RecordData};
 
 #[derive(Default, SmartOpt)]
 pub struct AggOpt;

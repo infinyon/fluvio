@@ -1,4 +1,4 @@
-//! This SmartStream takes JSON objects as inputs and returns key/value entries as output.
+//! This SmartModule takes JSON objects as inputs and returns key/value entries as output.
 //!
 //! JSON objects are made up of key/value entries, where the keys must be unique strings.
 //! Consider the following JSON object:
@@ -21,11 +21,11 @@
 //! ...
 //! ```
 //!
-//! With this SmartStream, we use `#[smartmodule(array_map)]` to convert a stream
+//! With this SmartModule, we use `#[smartmodule(array_map)]` to convert a stream
 //! of JSON objects into a stream of all of the _children_ of those objects, using
 //! the JSON object keys as the output record keys.
 //!
-//! To test this SmartStream, set up a test Topic:
+//! To test this SmartModule, set up a test Topic:
 //!
 //! ```text
 //! $ fluvio topic create array-map-object
@@ -40,7 +40,7 @@
 //! > ^C
 //! ```
 //!
-//! Then, make sure you have compiled the SmartStream examples, and run the consumer:
+//! Then, make sure you have compiled the SmartModule examples, and run the consumer:
 //!
 //! ```text
 //! $ cd crates/fluvio-smartmodule/examples

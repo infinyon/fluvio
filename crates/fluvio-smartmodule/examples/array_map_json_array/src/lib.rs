@@ -1,13 +1,13 @@
-//! This SmartStream takes JSON arrays as inputs and returns the values in those arrays as output.
+//! This SmartModule takes JSON arrays as inputs and returns the values in those arrays as output.
 //!
 //! Sometimes we want to take a composite value like a JSON array and break it down into
 //! it's component pieces, i.e. the values inside the array. We can do this using a
-//! SmartStream Flatmap.
+//! SmartModule Flatmap.
 //!
 //! In this example, we'll take a stream of JSON arrays as input, and we'll return a stream
 //! of all the child _values_ that were in those arrays as output.
 //!
-//! To test this SmartStream, set up a test Topic:
+//! To test this SmartModule, set up a test Topic:
 //!
 //! ```text
 //! $ fluvio topic create array-map-array
@@ -22,7 +22,7 @@
 //! > ^C
 //! ```
 //!
-//! Then, make sure you have compiled the SmartStream examples, and run the consumer:
+//! Then, make sure you have compiled the SmartModule examples, and run the consumer:
 //!
 //! ```text
 //! $ cd crates/fluvio-smartmodule/examples

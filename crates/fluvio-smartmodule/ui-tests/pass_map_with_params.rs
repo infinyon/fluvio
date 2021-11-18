@@ -1,4 +1,4 @@
-use fluvio_smartmodule::{smartstream, SmartOpt, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, SmartOpt, Record, RecordData, Result};
 
 #[derive(Default, SmartOpt)]
 pub struct MapOpt;

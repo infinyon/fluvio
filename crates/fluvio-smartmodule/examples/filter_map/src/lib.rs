@@ -1,4 +1,4 @@
-//! This SmartStream filters out all odd numbers, and divides all even numbers by 2.
+//! This SmartModule filters out all odd numbers, and divides all even numbers by 2.
 
 use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
 

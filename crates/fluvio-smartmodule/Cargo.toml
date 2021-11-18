@@ -7,7 +7,7 @@ authors = ["Fluvio Contributors <team@fluvio.io>"]
 categories = ["wasm", "database", "encoding"]
 keywords = ["streaming", "stream", "wasm", "fluvio"]
 repository = "https://github.com/infinyon/fluvio"
-description = "Fluvio SmartStream WASM library"
+description = "Fluvio SmartModule WASM library"
 
 [features]
 default = ["derive"]
