@@ -43,8 +43,9 @@ pub async fn handle_create_request<AC: AuthContext>(
             super::smartmodule::handle_create_smart_module_request(common, create, auth_context)
                 .await?
         }
-        ObjectCreateRequest::Table(create) => {
-            super::table::handle_create_table_request(common, create, auth_context).await?
+        ObjectCreateRequest::TableFormat(create) => {
+            super::tableformat::handle_create_tableformat_request(common, create, auth_context)
+                .await?
         }
         ObjectCreateRequest::SmartStream(create) => {
             create_handler::process(

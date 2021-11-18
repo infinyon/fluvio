@@ -50,9 +50,13 @@ pub async fn handle_list_request<AC: AuthContext>(
             )
             .await?,
         ),
-        ObjectApiListRequest::Table(req) => ObjectApiListResponse::Table(
-            fetch::handle_fetch_request(req.name_filters, auth_ctx, auth_ctx.global_ctx.tables())
-                .await?,
+        ObjectApiListRequest::TableFormat(req) => ObjectApiListResponse::TableFormat(
+            fetch::handle_fetch_request(
+                req.name_filters,
+                auth_ctx,
+                auth_ctx.global_ctx.tableformats(),
+            )
+            .await?,
         ),
         ObjectApiListRequest::SmartStream(req) => ObjectApiListResponse::SmartStream(
             fetch::handle_fetch_request(

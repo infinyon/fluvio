@@ -8,7 +8,7 @@ use structopt::StructOpt;
 //use std::io::Read;
 
 use fluvio::Fluvio;
-//use fluvio_controlplane_metadata::table::TableSpec;
+//use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -16,36 +16,36 @@ mod create;
 mod delete;
 mod list;
 
-use create::CreateTableOpt;
-use delete::DeleteTableOpt;
-use list::ListTablesOpt;
+use create::CreateTableFormatOpt;
+use delete::DeleteTableFormatOpt;
+use list::ListTableFormatsOpt;
 use crate::CliError;
 
 #[derive(Debug, StructOpt)]
-pub enum TableCmd {
-    /// Create a new Table display
+pub enum TableFormatCmd {
+    /// Create a new TableFormat display
     #[structopt(
         name = "create",
         template = COMMAND_TEMPLATE,
     )]
-    Create(CreateTableOpt),
+    Create(CreateTableFormatOpt),
 
-    /// Delete a Table display
+    /// Delete a TableFormat display
     #[structopt(
         name = "delete",
         template = COMMAND_TEMPLATE,
     )]
-    Delete(DeleteTableOpt),
+    Delete(DeleteTableFormatOpt),
 
-    /// List all Table display
+    /// List all TableFormat display
     #[structopt(
         name = "list",
         template = COMMAND_TEMPLATE,
     )]
-    List(ListTablesOpt),
+    List(ListTableFormatsOpt),
 }
 
-impl TableCmd {
+impl TableFormatCmd {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
         match self {
             Self::Create(create) => {
@@ -86,9 +86,9 @@ impl TableCmd {
 //    }
 //}
 //
-//impl From<ConnectorConfig> for TableSpec {
-//    fn from(config: ConnectorConfig) -> TableSpec {
-//        TableSpec {
+//impl From<ConnectorConfig> for TableFormatSpec {
+//    fn from(config: ConnectorConfig) -> TableFormatSpec {
+//        TableFormatSpec {
 //            name: config.name,
 //            type_: config.type_,
 //            topic: config.topic,
@@ -100,7 +100,7 @@ impl TableCmd {
 
 //#[test]
 //fn config_test() {
-//    let _: TableSpec = ConnectorConfig::from_file("test-data/test-config.yaml")
+//    let _: TableFormatSpec = ConnectorConfig::from_file("test-data/test-config.yaml")
 //        .expect("Failed to load test config")
 //        .into();
 //}

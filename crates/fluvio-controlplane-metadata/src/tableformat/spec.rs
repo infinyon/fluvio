@@ -9,10 +9,10 @@ use dataplane::core::{Encoder, Decoder};
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct TableSpec {
+pub struct TableFormatSpec {
     pub name: String,
     pub input_format: InputFormat,
-    //pub column: TableColumnConfig,
+    //pub column: TableFormatColumnConfig,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub smartmodule: Option<String>,
 }
@@ -30,7 +30,7 @@ impl Default for InputFormat {
         Self::JSON
     }
 }
-//pub struct TableColumnConfig {
+//pub struct TableFormatColumnConfig {
 //    pub label: String,
 //    pub width: String,
 //    pub alignment: String, // Can I enum this?

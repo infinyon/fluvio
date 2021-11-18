@@ -1,12 +1,12 @@
 //!
-//! # Delete Table spec
+//! # Delete TableFormat spec
 //!
-//! CLI tree to generate Delete Table spec
+//! CLI tree to generate Delete TableFormat spec
 //!
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::table::TableSpec;
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
 use crate::CliError;
 
@@ -15,15 +15,15 @@ use crate::CliError;
 // -----------------------------------
 
 #[derive(Debug, StructOpt)]
-pub struct DeleteTableOpt {
+pub struct DeleteTableFormatOpt {
     /// The name of the connector to delete
     name: String,
 }
 
-impl DeleteTableOpt {
+impl DeleteTableFormatOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
-        admin.delete::<TableSpec, _>(&self.name).await?;
+        admin.delete::<TableFormatSpec, _>(&self.name).await?;
         Ok(())
     }
 }

@@ -15,26 +15,26 @@ mod convert {
     use crate::extended::{ObjectType, SpecExt};
     use super::*;
 
-    impl Spec for TableSpec {
-        const LABEL: &'static str = "Table";
+    impl Spec for TableFormatSpec {
+        const LABEL: &'static str = "TableFormat";
 
-        type Status = TableStatus;
+        type Status = TableFormatStatus;
 
         type Owner = Self;
         type IndexKey = String;
     }
 
-    impl SpecExt for TableSpec {
-        const OBJECT_TYPE: ObjectType = ObjectType::Table;
+    impl SpecExt for TableFormatSpec {
+        const OBJECT_TYPE: ObjectType = ObjectType::TableFormat;
     }
 
-    impl Removable for TableSpec {
+    impl Removable for TableFormatSpec {
         type DeleteKey = String;
     }
 
-    impl Creatable for TableSpec {}
+    impl Creatable for TableFormatSpec {}
 
-    impl Status for TableStatus {}
+    impl Status for TableFormatStatus {}
 
     #[cfg(feature = "k8")]
     mod extended {
@@ -46,9 +46,9 @@ mod convert {
         use crate::k8_types::K8Obj;
         use crate::store::k8::default_convert_from_k8;
 
-        use super::TableSpec;
+        use super::TableFormatSpec;
 
-        impl K8ExtendedSpec for TableSpec {
+        impl K8ExtendedSpec for TableFormatSpec {
             type K8Spec = Self;
             type K8Status = Self::Status;
 
