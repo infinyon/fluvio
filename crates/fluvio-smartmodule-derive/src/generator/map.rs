@@ -39,7 +39,7 @@ pub fn generate_map_smartstream(func: &SmartStreamFn, has_params: bool) -> Token
             pub unsafe fn map(ptr: *mut u8, len: usize) -> i32 {
                 use fluvio_smartmodule::dataplane::smartstream::{
                     SmartStreamInput, SmartStreamInternalError,
-                    SmartModuleRuntimeError, SmartStreamType, SmartStreamOutput,
+                    SmartModuleRuntimeError, SmartModuleKind, SmartStreamOutput,
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
@@ -81,7 +81,7 @@ pub fn generate_map_smartstream(func: &SmartStreamFn, has_params: bool) -> Token
                             let error = SmartModuleRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
-                                SmartStreamType::Map,
+                                SmartModuleKind::Map,
                                 err,
                             );
                             output.error = Some(error);

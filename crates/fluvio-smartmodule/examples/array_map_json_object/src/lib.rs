@@ -21,7 +21,7 @@
 //! ...
 //! ```
 //!
-//! With this SmartStream, we use `#[smartstream(array_map)]` to convert a stream
+//! With this SmartStream, we use `#[smartmodule(array_map)]` to convert a stream
 //! of JSON objects into a stream of all of the _children_ of those objects, using
 //! the JSON object keys as the output record keys.
 //!
@@ -54,7 +54,7 @@
 use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
 use serde_json::{Map, Value};
 
-#[smartstream(array_map)]
+#[smartmodule(array_map)]
 pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Deserialize a JSON object (Map) with any kind of values inside
     let object: Map<String, Value> = serde_json::from_slice(record.value.as_ref())?;

@@ -5,7 +5,7 @@ pub struct ArrayOpt {
     key: String,
 }
 
-#[smartstream(array_map, params)]
+#[smartmodule(array_map, params)]
 pub fn my_array_map(
     _record: &Record,
     _opt: &ArrayOpt,

@@ -13,7 +13,7 @@ impl Default for FilterOpt{
     }
 }
 
-#[smartstream(filter, params)]
+#[smartmodule(filter, params)]
 pub fn filter(record: &Record, opt: &FilterOpt) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     Ok(string.contains(&opt.key))

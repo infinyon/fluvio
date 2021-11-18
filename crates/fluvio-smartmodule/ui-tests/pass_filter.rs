@@ -1,6 +1,6 @@
 use fluvio_smartmodule::{smartstream, Record, Result};
 
-#[smartstream(filter)]
+#[smartmodule(filter)]
 pub fn my_filter(_record: &Record) -> Result<bool> {
     unimplemented!()
 }

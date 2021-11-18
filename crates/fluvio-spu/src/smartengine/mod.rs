@@ -1,14 +1,14 @@
 use fluvio_controlplane_metadata::smartstream::{SmartStreamInputRef, SmartStreamStep};
 use tracing::{debug, error};
 
-use dataplane::{ErrorCode, smartmodule::SmartModuleRuntimeError};
+use dataplane::ErrorCode;
 use fluvio::{
     ConsumerConfig,
     consumer::{SmartModuleInvocation, SmartStreamInvocation, SmartModuleKind},
 };
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_spu_schema::server::stream_fetch::{
-    SmartModuleInvocationWasm, SmartModulePayload, SmartModuleWasm,
+    SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
 };
 use futures_util::{StreamExt, stream::BoxStream};
 
@@ -24,7 +24,7 @@ impl SmartStreamContext {
     /// find wasm payload, they can be loaded from payload or from smart module
     /// smart module has precedent over payload
     pub async fn extract(
-        wasm_payload: Option<SmartModulePayload>,
+        wasm_payload: Option<LegacySmartModulePayload>,
         smartmodule: Option<SmartModuleInvocation>,
         smart_stream: Option<SmartStreamInvocation>,
         ctx: &DefaultSharedGlobalContext,
@@ -135,8 +135,8 @@ impl SmartStreamContext {
         let payload = match invocation.wasm {
             SmartModuleInvocationWasm::Predefined(name) => {
                 if let Some(smartmodule) = ctx.smartmodule_localstore().spec(&name) {
-                    let wasm = SmartModuleWasm::Gzip(smartmodule.wasm.payload);
-                    SmartModulePayload {
+                    let wasm = SmartModuleWasmCompressed::Gzip(smartmodule.wasm.payload);
+                    LegacySmartModulePayload {
                         wasm,
                         kind: invocation.kind,
                         params: invocation.params,
@@ -146,8 +146,8 @@ impl SmartStreamContext {
                 }
             }
             SmartModuleInvocationWasm::AdHoc(bytes) => {
-                let wasm = SmartModuleWasm::Gzip(bytes);
-                SmartModulePayload {
+                let wasm = SmartModuleWasmCompressed::Gzip(bytes);
+                LegacySmartModulePayload {
                     wasm,
                     kind: invocation.kind,
                     params: invocation.params,
@@ -162,7 +162,7 @@ impl SmartStreamContext {
     }
 
     fn payload_to_smartmodule(
-        payload: SmartModulePayload,
+        payload: LegacySmartModulePayload,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Box<dyn SmartModuleInstance>, ErrorCode> {
         let raw = payload

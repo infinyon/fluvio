@@ -39,7 +39,7 @@ pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> Toke
             pub unsafe fn join(ptr: *mut u8, len: usize) -> i32 {
                 use fluvio_smartmodule::dataplane::smartstream::{
                     SmartStreamInput, SmartStreamInternalError,
-                    SmartModuleRuntimeError, SmartStreamType, SmartStreamOutput,
+                    SmartModuleRuntimeError, SmartModuleKind, SmartStreamOutput,
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
@@ -91,7 +91,7 @@ pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> Toke
                             let error = SmartModuleRuntimeError::new(
                                 &record,
                                 smartstream_input.base_offset,
-                                SmartStreamType::Join,
+                                SmartModuleKind::Join,
                                 err,
                             );
                             output.error = Some(error);

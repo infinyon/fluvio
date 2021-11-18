@@ -3,7 +3,7 @@
 //! The `fluvio_smartmodule::Result<T>` type allows you to bubble-up any
 //! error that implements `std::error::Error` using the try (`?`) operator.
 //!
-//! When an error is returned from our `#[smartstream(filter)]` function,
+//! When an error is returned from our `#[smartmodule(filter)]` function,
 //! it is rendered as an error stack, meaning that all inner errors are
 //! printed out in a nice chain. In this example, sending a record that
 //! is not an integer results in the following error in the consumer:
@@ -36,7 +36,7 @@ pub enum FirstErrorWrapper {
     ParseIntError(#[from] std::num::ParseIntError),
 }
 
-#[smartstream(filter)]
+#[smartmodule(filter)]
 pub fn filter(record: &Record) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     let int = string

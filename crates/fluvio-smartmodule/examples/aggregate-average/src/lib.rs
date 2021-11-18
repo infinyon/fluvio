@@ -21,7 +21,7 @@ impl IncrementalAverage {
     }
 }
 
-#[smartstream(aggregate)]
+#[smartmodule(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     // Parse the average from JSON
     let mut average: IncrementalAverage =

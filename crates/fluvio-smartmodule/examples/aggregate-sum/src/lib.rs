@@ -1,6 +1,6 @@
 use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
 
-#[smartstream(aggregate)]
+#[smartmodule(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     // Parse the accumulator and current record as strings
     let accumulator_string = std::str::from_utf8(accumulator.as_ref())?;

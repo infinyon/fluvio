@@ -10,7 +10,7 @@ use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
-    SmartModulePayload, SmartModuleWasm, WASM_MODULE_API, WASM_MODULE_V2_API,
+    LegacySmartModulePayload, SmartModuleWasmCompressed, WASM_MODULE_API, WASM_MODULE_V2_API,
 };
 pub use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartStreamInvocation,
@@ -436,8 +436,8 @@ where
         if let Some(smartmodule) = config.smartmodule {
             if stream_fetch_version < SMART_MODULE_API as i16 {
                 if let SmartModuleInvocationWasm::AdHoc(wasm) = smartmodule.wasm {
-                    let legacy_module = SmartModulePayload {
-                        wasm: SmartModuleWasm::Gzip(wasm),
+                    let legacy_module = LegacySmartModulePayload {
+                        wasm: SmartModuleWasmCompressed::Gzip(wasm),
                         kind: smartmodule.kind,
                         params: smartmodule.params,
                     };
@@ -551,7 +551,7 @@ where
 fn legacy_set_wasm(
     stream_fetch_version: i16,
     stream_request: &mut DefaultStreamFetchRequest,
-    mut module: SmartModulePayload,
+    mut module: LegacySmartModulePayload,
 ) -> Result<(), FluvioError> {
     if stream_fetch_version < WASM_MODULE_API as i16 {
         return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
@@ -716,7 +716,7 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) isolation: Isolation,
     #[builder(private, default, setter(into, strip_option))]
-    pub(crate) wasm_module: Option<SmartModulePayload>,
+    pub(crate) wasm_module: Option<LegacySmartModulePayload>,
     #[builder(default)]
     pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
@@ -744,8 +744,8 @@ impl ConsumerConfigBuilder {
         filter: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartModulePayload {
-            wasm: SmartModuleWasm::Raw(filter.into()),
+        self.wasm_module(LegacySmartModulePayload {
+            wasm: SmartModuleWasmCompressed::Raw(filter.into()),
             kind: SmartModuleKind::Filter,
             params: params.into(),
         });
@@ -759,8 +759,8 @@ impl ConsumerConfigBuilder {
         map: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartModulePayload {
-            wasm: SmartModuleWasm::Raw(map.into()),
+        self.wasm_module(LegacySmartModulePayload {
+            wasm: SmartModuleWasmCompressed::Raw(map.into()),
             kind: SmartModuleKind::Map,
             params: params.into(),
         });
@@ -774,8 +774,8 @@ impl ConsumerConfigBuilder {
         filter_map: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartModulePayload {
-            wasm: SmartModuleWasm::Raw(filter_map.into()),
+        self.wasm_module(LegacySmartModulePayload {
+            wasm: SmartModuleWasmCompressed::Raw(filter_map.into()),
             kind: SmartModuleKind::FilterMap,
             params: params.into(),
         });
@@ -789,8 +789,8 @@ impl ConsumerConfigBuilder {
         array_map: T,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartModulePayload {
-            wasm: SmartModuleWasm::Raw(array_map.into()),
+        self.wasm_module(LegacySmartModulePayload {
+            wasm: SmartModuleWasmCompressed::Raw(array_map.into()),
             kind: SmartModuleKind::ArrayMap,
             params: params.into(),
         })
@@ -804,8 +804,8 @@ impl ConsumerConfigBuilder {
         accumulator: U,
         params: BTreeMap<String, String>,
     ) -> &mut Self {
-        self.wasm_module(SmartModulePayload {
-            wasm: SmartModuleWasm::Raw(aggregate.into()),
+        self.wasm_module(LegacySmartModulePayload {
+            wasm: SmartModuleWasmCompressed::Raw(aggregate.into()),
             kind: SmartModuleKind::Aggregate {
                 accumulator: accumulator.into(),
             },

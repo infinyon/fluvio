@@ -41,12 +41,12 @@ pub struct TopicProducer {
 }
 cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
-        use fluvio_spu_schema::server::stream_fetch::{SmartModuleWasm, SmartModuleKind, SmartModulePayload};
+        use fluvio_spu_schema::server::stream_fetch::{SmartModuleWasmCompressed, SmartModuleKind, LegacySmartModulePayload};
         use std::collections::BTreeMap;
         use fluvio_smartengine::SmartEngine;
 
         impl TopicProducer {
-            fn init_engine(&mut self, smart_payload: SmartModulePayload) -> Result<(), FluvioError> {
+            fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
                 let engine = SmartEngine::default();
                 let  smartstream = engine.create_module_from_payload(
                     smart_payload).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
@@ -59,7 +59,7 @@ cfg_if::cfg_if! {
                 filter: T,
                 params: BTreeMap<String, String>,
             ) -> Self {
-                self.smart_payload = Some(SmartModulePayload {
+                self.smart_payload = Some(LegacySmartModulePayload {
                     wasm: SmartModuleWasm::Raw(filter.into()),
                     kind: SmartModuleKind::Filter,
                     params: params.into(),
@@ -74,7 +74,7 @@ cfg_if::cfg_if! {
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Self {
-                self.smart_payload = Some(SmartModulePayload {
+                self.smart_payload = Some(LegacySmartModulePayload {
                     wasm: SmartModuleWasm::Raw(map.into()),
                     kind: SmartModuleKind::Map,
                     params: params.into(),
@@ -89,7 +89,7 @@ cfg_if::cfg_if! {
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Self {
-                self.smart_payload = Some(SmartModulePayload {
+                self.smart_payload = Some(LegacySmartModulePayload {
                     wasm: SmartModuleWasm::Raw(map.into()),
                     kind: SmartModuleKind::ArrayMap,
                     params: params.into(),
@@ -106,7 +106,7 @@ cfg_if::cfg_if! {
                 params: BTreeMap<String, String>,
                 accumulator: Vec<u8>,
             ) -> Self {
-                self.smart_payload = Some(SmartModulePayload {
+                self.smart_payload = Some(LegacySmartModulePayload {
                     wasm: SmartModuleWasm::Raw(map.into()),
                     kind: SmartModuleKind::Aggregate { accumulator },
                     params: params.into(),

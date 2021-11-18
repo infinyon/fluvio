@@ -31,13 +31,13 @@ fluvio-smartmodule = "0.2.0"
 
 ### Filtering
 
-For filtering, write your smartstream using `#[smartstream(filter)]` on your
+For filtering, write your smartstream using `#[smartmodule(filter)]` on your
 top-level function. Consider this the "main" function of your SmartStream.
 
 ```text
 use fluvio_smartmodule::{smartstream, Record, Result};
 
-#[smartstream(filter)]
+#[smartmodule(filter)]
 pub fn filter(record: &Record) -> Result<bool> {
     let string = std::str::from_utf8(record.value.as_ref())?;
     Ok(string.contains('a'))
@@ -48,12 +48,12 @@ This filter will keep only records whose contents contain the letter `a`.
 
 ### Mapping
 
-Mapping functions use `#[smartstream(map)]`, and are also a top-level entrypoint.
+Mapping functions use `#[smartmodule(map)]`, and are also a top-level entrypoint.
 
 ```text
 use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
 
-#[smartstream(map)]
+#[smartmodule(map)]
 pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
     let key = record.key.clone();
 
@@ -80,7 +80,7 @@ from each step.
 ```text
 use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
 
-#[smartstream(aggregate)]
+#[smartmodule(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     let mut acc = String::from_utf8(accumulator.as_ref().to_vec())?;
     let next = std::str::from_utf8(current.value.as_ref())?;
@@ -101,7 +101,7 @@ convert them into a stream of the inner JSON objects.
 ```ignore
 use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
 
-#[smartstream(array_map)]
+#[smartmodule(array_map)]
 pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {
     // Read the input record as a JSON array
     let array = serde_json::from_slice::<Vec<serde_json::Value>>(record.value.as_ref())?;

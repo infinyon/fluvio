@@ -195,7 +195,7 @@ pub enum LegacySmartModuleError {
     Runtime(#[from] SmartModuleRuntimeError),
     #[error("WASM Module error: {0}")]
     InvalidWasmModule(String),
-    #[error("WASM module is not a valid '{0}' SmartStream. Are you missing a #[smartstream({0})] attribute?")]
+    #[error("WASM module is not a valid '{0}' SmartStream. Are you missing a #[smartmodule({0})] attribute?")]
     InvalidSmartStreamModule(String),
 }
 

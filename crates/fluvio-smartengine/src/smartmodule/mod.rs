@@ -19,7 +19,7 @@ use dataplane::core::{Encoder, Decoder};
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError};
 use crate::smartmodule::file_batch::FileBatchIterator;
 use dataplane::batch::{Batch, MemoryRecords};
-use fluvio_spu_schema::server::stream_fetch::{SmartModuleKind, SmartModulePayload};
+use fluvio_spu_schema::server::stream_fetch::{SmartModuleKind, LegacySmartModulePayload};
 
 mod memory;
 pub mod filter;
@@ -74,7 +74,7 @@ impl SmartEngine {
     }
     pub fn create_module_from_payload(
         self,
-        smart_payload: SmartModulePayload,
+        smart_payload: LegacySmartModulePayload,
     ) -> Result<Box<dyn SmartModuleInstance>> {
         let smartmodule = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
         let smart_stream: Box<dyn SmartModuleInstance> = match &smart_payload.kind {

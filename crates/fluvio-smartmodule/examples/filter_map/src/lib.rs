@@ -2,7 +2,7 @@
 
 use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
 
-#[smartstream(filter_map)]
+#[smartmodule(filter_map)]
 pub fn filter_map(record: &Record) -> Result<Option<(Option<RecordData>, RecordData)>> {
     let key = record.key.clone();
     let string = String::from_utf8_lossy(record.value.as_ref()).to_string();

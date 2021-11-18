@@ -23,13 +23,13 @@ use dataplane::{
     record::{RecordData, Record},
 };
 use dataplane::fixture::{create_batch, TEST_RECORD};
-use dataplane::smartmodule::SmartStreamType;
 use fluvio_spu_schema::server::{
-    stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm},
+    stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind},
     update_offset::{UpdateOffsetsRequest, OffsetUpdate},
 };
-use fluvio_spu_schema::server::stream_fetch::SmartModuleWasm;
-use fluvio_spu_schema::server::stream_fetch::SmartModulePayload;
+use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
+use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
+use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
 use crate::core::GlobalContext;
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
@@ -43,9 +43,7 @@ use dataplane::{
     ErrorCode,
     api::{RequestMessage},
     record::RecordSet,
-    SmartModuleInitError,
 };
-use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest, SmartModuleKind};
 
 static NEXT_PORT: AtomicU16 = AtomicU16::new(12000);
 
@@ -268,7 +266,7 @@ async fn legacy_test<Fut, TestFn>(
     TestFn: FnOnce(
         Arc<GlobalContext<FileReplica>>,
         PathBuf,
-        Option<SmartModulePayload>,
+        Option<LegacySmartModulePayload>,
         Option<SmartModuleInvocation>,
     ) -> Fut,
 {
@@ -278,8 +276,8 @@ async fn legacy_test<Fut, TestFn>(
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     let wasm = read_wasm_module(module_name);
-    let wasm_payload = SmartModulePayload {
-        wasm: SmartModuleWasm::Raw(wasm),
+    let wasm_payload = LegacySmartModulePayload {
+        wasm: SmartModuleWasmCompressed::Raw(wasm),
         kind: stream_kind,
         ..Default::default()
     };
@@ -297,7 +295,7 @@ async fn adhoc_test<Fut, TestFn>(
     TestFn: FnOnce(
         Arc<GlobalContext<FileReplica>>,
         PathBuf,
-        Option<SmartModulePayload>,
+        Option<LegacySmartModulePayload>,
         Option<SmartModuleInvocation>,
     ) -> Fut,
 {
@@ -326,7 +324,7 @@ async fn predefined_test<Fut, TestFn>(
     TestFn: FnOnce(
         Arc<GlobalContext<FileReplica>>,
         PathBuf,
-        Option<SmartModulePayload>,
+        Option<LegacySmartModulePayload>,
         Option<SmartModuleInvocation>,
     ) -> Fut,
 {
@@ -383,7 +381,7 @@ async fn test_stream_fetch_filter_predefined() {
 async fn test_stream_fetch_filter(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -559,7 +557,7 @@ async fn test_stream_fetch_filter_individual_predefined() {
 async fn test_stream_fetch_filter_individual(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -679,7 +677,7 @@ async fn test_stream_filter_error_fetch_predefined() {
 async fn test_stream_filter_error_fetch(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -757,13 +755,13 @@ async fn test_stream_filter_error_fetch(
     assert_eq!(records[4].value.as_ref(), "8".as_bytes());
 
     match &response.partition.error_code {
-        ErrorCode::SmartModuleInitError(SmartModuleInitError::Runtime(error)) => {
+        ErrorCode::SmartModuleRuntimeError(error) => {
             assert_eq!(error.offset, 10);
             assert!(error.record_key.is_none());
             assert_eq!(error.record_value.as_ref(), "ten".as_bytes());
-            assert_eq!(error.kind, SmartStreamType::Filter);
+            assert_eq!(error.kind, dataplane::smartmodule::SmartModuleKind::Filter);
             let rendered = format!("{}", error);
-            assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartStream Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
+            assert_eq!(rendered, "Oops something went wrong\n\nCaused by:\n   0: Failed to parse int\n   1: invalid digit found in string\n\nSmartModule Info: \n    Type: Filter\n    Offset: 10\n    Key: NULL\n    Value: ten");
         }
         _ => panic!("should have gotten error code"),
     }
@@ -811,7 +809,7 @@ async fn test_stream_filter_max_predefined() {
 async fn test_stream_filter_max(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -971,7 +969,7 @@ async fn test_stream_fetch_map_error_predefined() {
 async fn test_stream_fetch_map_error(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -1048,9 +1046,9 @@ async fn test_stream_fetch_map_error(
     assert_eq!(records[8].value.as_ref(), "16".as_bytes());
 
     match &response.partition.error_code {
-        ErrorCode::SmartModuleInitError(SmartModuleInitError::Runtime(error)) => {
+        ErrorCode::SmartModuleRuntimeError(error) => {
             assert_eq!(error.offset, 9);
-            assert_eq!(error.kind, SmartStreamType::Map);
+            assert_eq!(error.kind, dataplane::smartmodule::SmartModuleKind::Map);
             assert_eq!(error.record_value.as_ref(), "nine".as_bytes());
         }
         _ => panic!("should get runtime error"),
@@ -1106,7 +1104,7 @@ async fn test_stream_aggregate_fetch_single_batch_predefined() {
 async fn test_stream_aggregate_fetch_single_batch(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -1251,7 +1249,7 @@ async fn test_stream_aggregate_fetch_multiple_batch_predefined() {
 async fn test_stream_aggregate_fetch_multiple_batch(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -1385,7 +1383,7 @@ async fn test_stream_fetch_and_new_request_adhoc() {
 async fn test_stream_fetch_and_new_request(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -1445,8 +1443,8 @@ async fn test_stream_fetch_invalid_wasm_module_legacy() {
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     let wasm = Vec::from("Hello, world, I'm not a valid WASM module!");
-    let wasm_payload = SmartModulePayload {
-        wasm: SmartModuleWasm::Raw(wasm),
+    let wasm_payload = LegacySmartModulePayload {
+        wasm: SmartModuleWasmCompressed::Raw(wasm),
         kind: SmartModuleKind::Filter,
         ..Default::default()
     };
@@ -1501,7 +1499,7 @@ async fn test_stream_fetch_invalid_wasm_module_predefined() {
 async fn test_stream_fetch_invalid_wasm_module(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -1550,10 +1548,10 @@ async fn test_stream_fetch_invalid_wasm_module(
 
     assert_eq!(
         response.partition.error_code,
-        ErrorCode::SmartModuleInitError(SmartModuleInitError::InvalidSmartModuleExports(
-            "Filter".to_string(),
-            "failed to parse WebAssembly module".to_string()
-        ))
+        ErrorCode::SmartModuleInvalidExports {
+            kind: "Filter".to_owned(),
+            error: "failed to parse WebAssembly module".to_owned()
+        }
     );
 
     server_end_event.notify();
@@ -1598,7 +1596,7 @@ async fn test_stream_fetch_array_map_predefined() {
 async fn test_stream_fetch_array_map(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -1714,7 +1712,7 @@ async fn test_stream_fetch_filter_map_predefined() {
 async fn test_stream_fetch_filter_map(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -1837,7 +1835,7 @@ async fn test_stream_fetch_filter_with_params_predefined() {
 async fn test_stream_fetch_filter_with_params(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     use std::collections::BTreeMap;
@@ -1974,8 +1972,8 @@ async fn test_stream_fetch_invalid_smartstream_legacy() {
 
     let ctx = GlobalContext::new_shared_context(spu_config);
     let wasm = include_bytes!("test_data/filter_missing_attribute.wasm").to_vec();
-    let wasm_payload = SmartModulePayload {
-        wasm: SmartModuleWasm::Raw(wasm),
+    let wasm_payload = LegacySmartModulePayload {
+        wasm: SmartModuleWasmCompressed::Raw(wasm),
         kind: SmartModuleKind::Filter,
         ..Default::default()
     };
@@ -2030,7 +2028,7 @@ async fn test_stream_fetch_invalid_smartstream_predefined() {
 async fn test_stream_fetch_invalid_smartstream(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
@@ -2078,11 +2076,8 @@ async fn test_stream_fetch_invalid_smartstream(
         .expect("response should be Ok");
 
     match response.partition.error_code {
-        ErrorCode::SmartModuleInitError(SmartModuleInitError::InvalidSmartModuleExports(
-            name,
-            _reason,
-        )) => {
-            assert_eq!(name, "Filter");
+        ErrorCode::SmartModuleInvalidExports { error: _, kind } => {
+            assert_eq!(kind, "Filter");
         }
         _ => panic!("expected an InvalidSmartModule error"),
     }
@@ -2094,7 +2089,7 @@ async fn test_stream_fetch_invalid_smartstream(
 async fn test_stream_fetch_join(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartModulePayload>,
+    wasm_payload: Option<LegacySmartModulePayload>,
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ///        0  1  2  3  4  5  6

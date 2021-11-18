@@ -7,7 +7,7 @@ pub struct FilterOpt {
     attr3: bool,
 }
 
-#[smartstream(filter, params)]
+#[smartmodule(filter, params)]
 pub fn my_filter(_record: &Record, _opt: &FilterOpt) -> Result<bool> {
     unimplemented!()
 }

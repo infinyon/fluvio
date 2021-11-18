@@ -19,7 +19,7 @@ impl std::ops::Add for GithubStars {
     }
 }
 
-#[smartstream(aggregate)]
+#[smartmodule(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {
     // Parse accumulator
     let accumulated_stars: GithubStars =

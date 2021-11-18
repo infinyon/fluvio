@@ -39,7 +39,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
             pub unsafe fn aggregate(ptr: &mut u8, len: usize) -> i32 {
                 use fluvio_smartmodule::dataplane::smartstream::{
                     SmartStreamAggregateInput, SmartStreamInternalError,
-                    SmartModuleRuntimeError, SmartStreamType, SmartStreamOutput,SmartStreamAggregateOutput
+                    SmartModuleRuntimeError, SmartModuleKind, SmartStreamOutput,SmartStreamAggregateOutput
                 };
                 use fluvio_smartmodule::dataplane::core::{Encoder, Decoder};
                 use fluvio_smartmodule::dataplane::record::{Record, RecordData};
@@ -89,7 +89,7 @@ pub fn generate_aggregate_smartstream(func: &SmartStreamFn, has_params: bool) ->
                             let error = SmartModuleRuntimeError::new(
                                 &record,
                                 smartstream_input.base.base_offset,
-                                SmartStreamType::Aggregate,
+                                SmartModuleKind::Aggregate,
                                 err,
                             );
                             output.base.error = Some(error);

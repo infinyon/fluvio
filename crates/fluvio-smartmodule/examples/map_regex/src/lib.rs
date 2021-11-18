@@ -4,7 +4,7 @@ use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
 
 static SSN_RE: Lazy<Regex> = Lazy::new(|| Regex::new(r"\d{3}-\d{2}-\d{4}").unwrap());
 
-#[smartstream(map)]
+#[smartmodule(map)]
 pub fn map(record: &Record) -> Result<(Option<RecordData>, RecordData)> {
     let key = record.key.clone();
 

@@ -1,5 +1,5 @@
 pub use encoding::{
-    SmartModuleRuntimeError, SmartModuleInternalError, SmartModuleType, SmartModuleInput,
+    SmartModuleRuntimeError, SmartModuleInternalError, SmartModuleKind, SmartModuleInput,
     SmartModuleAggregateInput, SmartModuleOutput, SmartModuleExtraParams,
     SmartModuleAggregateOutput,
 };
@@ -131,7 +131,7 @@ mod encoding {
         /// The offset of the Record that had a runtime error
         pub offset: Offset,
         /// The type of SmartModule that had a runtime error
-        pub kind: SmartModuleType,
+        pub kind: SmartModuleKind,
         /// The Record key that caused this error
         pub record_key: Option<RecordData>,
         /// The Record value that caused this error
@@ -142,7 +142,7 @@ mod encoding {
         pub fn new(
             record: &Record,
             base_offset: Offset,
-            kind: SmartModuleType,
+            kind: SmartModuleKind,
             error: eyre::Error,
         ) -> Self {
             let hint = format!("{:?}", error);
@@ -188,7 +188,7 @@ mod encoding {
     }
 
     #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
-    pub enum SmartModuleType {
+    pub enum SmartModuleKind {
         Filter,
         Map,
         ArrayMap,
@@ -197,13 +197,13 @@ mod encoding {
         Aggregate,
     }
 
-    impl Default for SmartModuleType {
+    impl Default for SmartModuleKind {
         fn default() -> Self {
             Self::Filter
         }
     }
 
-    impl fmt::Display for SmartModuleType {
+    impl fmt::Display for SmartModuleKind {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
             // Use Debug for Display to print variant name
             fmt::Debug::fmt(self, f)
