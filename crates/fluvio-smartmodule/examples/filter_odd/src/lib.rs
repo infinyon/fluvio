@@ -22,7 +22,7 @@
 //!           filter_odd/src/lib.rs:45:38
 //! ```
 
-use fluvio_smartmodule::{smartstream, Record, Result};
+use fluvio_smartmodule::{smartmodule, Record, Result};
 
 #[derive(Debug, thiserror::Error)]
 pub enum SecondErrorWrapper {

@@ -1,4 +1,4 @@
-use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
 #[smartmodule(aggregate)]
 pub fn aggregate(accumulator: RecordData, current: &Record) -> Result<RecordData> {

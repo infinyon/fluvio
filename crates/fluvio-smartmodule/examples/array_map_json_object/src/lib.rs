@@ -51,7 +51,7 @@
 //! [c] "Cranberry"
 //! ```
 
-use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
 use serde_json::{Map, Value};
 
 #[smartmodule(array_map)]

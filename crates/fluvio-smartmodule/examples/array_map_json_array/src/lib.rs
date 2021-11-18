@@ -33,7 +33,7 @@
 //! "Cranberry"
 //! ```
 
-use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
 
 #[smartmodule(array_map)]
 pub fn array_map(record: &Record) -> Result<Vec<(Option<RecordData>, RecordData)>> {

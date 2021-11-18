@@ -1,4 +1,4 @@
-use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
 
 #[smartmodule(join)]
 pub fn join(left_record: &Record, right_record: &Record) -> Result<(Option<RecordData>, RecordData)> {

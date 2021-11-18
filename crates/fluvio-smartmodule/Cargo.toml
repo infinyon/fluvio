@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartmodule"
-version = "0.4.0"
+version = "0.1.0"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -19,7 +19,7 @@ crate-type = ['lib']
 [dependencies]
 eyre = { version = "0.6", default-features = false }
 fluvio-dataplane-protocol = { version = "0.8.0", path = "../fluvio-dataplane-protocol", default-features = false }
-fluvio-smartmodule-derive = { version = "0.3.1", path = "../fluvio-smartmodule-derive", optional = true }
+fluvio-smartmodule-derive = { version = "0.1.0", path = "../fluvio-smartmodule-derive", optional = true }
 fluvio-spu-schema = { version = "0.8", path = "../fluvio-spu-schema" }
 
 [dev-dependencies]

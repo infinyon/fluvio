@@ -45,7 +45,7 @@
 //! {"level":"error","message":"Unable to connect to database"}
 //! ```
 
-use fluvio_smartmodule::{smartstream, Record, Result};
+use fluvio_smartmodule::{smartmodule, Record, Result};
 
 #[derive(PartialEq, Eq, PartialOrd, Ord, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]

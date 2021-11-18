@@ -1,8 +1,8 @@
 use quote::quote;
 use proc_macro2::TokenStream;
-use crate::SmartStreamFn;
+use crate::SmartModuleFn;
 
-pub fn generate_join_smartstream(func: &SmartStreamFn, has_params: bool) -> TokenStream {
+pub fn generate_join_smartmodule(func: &SmartModuleFn, has_params: bool) -> TokenStream {
     let user_code = &func.func;
     let user_fn = &func.name;
 

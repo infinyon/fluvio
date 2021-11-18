@@ -1,4 +1,4 @@
-use fluvio_smartmodule::{smartstream, Record, Result};
+use fluvio_smartmodule::{smartmodule, Record, Result};
 use regex::Regex;
 
 #[smartmodule(filter)]

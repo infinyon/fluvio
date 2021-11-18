@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 use serde::{Serialize, Deserialize};
 
 #[derive(Default, Serialize, Deserialize)]

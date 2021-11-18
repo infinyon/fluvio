@@ -1,4 +1,4 @@
-use fluvio_smartmodule::{smartstream, Result, Record, RecordData};
+use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
 /// This aggegrate concanate accumulator and current value
 /// values: "a","b"

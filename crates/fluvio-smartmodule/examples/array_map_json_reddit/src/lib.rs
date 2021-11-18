@@ -4,7 +4,7 @@
 //! zero or many output records. This example showcases taking a stream of Reddit API
 //! responses and converting it into a stream of the individual posts.
 
-use fluvio_smartmodule::{smartstream, Record, RecordData, Result};
+use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]

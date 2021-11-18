@@ -2,11 +2,11 @@ use syn::{AttributeArgs, NestedMeta, Meta, ItemFn, Error as SynError, Result as 
 use syn::spanned::Spanned;
 use proc_macro2::Ident;
 
-/// The configuration for the Smart Stream that will be generated.
+/// The configuration for the SmartModule that will be generated.
 ///
 /// This is constructed from the AttributeArgs of the derive macro.
 #[derive(Debug)]
-pub struct SmartStreamConfig {
+pub struct SmartModuleConfig {
     pub kind: SmartModuleKind,
     pub has_params: bool,
 }
@@ -31,7 +31,7 @@ fn has_params(args: &AttributeArgs) -> bool {
         .is_some()
 }
 
-impl SmartStreamConfig {
+impl SmartModuleConfig {
     #[allow(clippy::ptr_arg)]
     pub fn from_ast(args: &AttributeArgs) -> SynResult<Self> {
         let kind = SmartModuleKind::from_ast(args)?;
@@ -72,18 +72,18 @@ impl SmartModuleKind {
                     _ => None,
                 })
                 .next()
-                .ok_or_else(|| SynError::new(args[0].span(), "Missing SmartStream type"))?;
+                .ok_or_else(|| SynError::new(args[0].span(), "Missing SmartModule type"))?;
 
         Ok(ss_type)
     }
 }
 
-pub struct SmartStreamFn<'a> {
+pub struct SmartModuleFn<'a> {
     pub name: &'a Ident,
     pub func: &'a ItemFn,
 }
 
-impl<'a> SmartStreamFn<'a> {
+impl<'a> SmartModuleFn<'a> {
     pub fn from_ast(func: &'a ItemFn) -> SynResult<Self> {
         let name = &func.sig.ident;
         Ok(Self { name, func })
