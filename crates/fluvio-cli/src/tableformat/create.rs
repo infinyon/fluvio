@@ -28,9 +28,11 @@ pub struct CreateTableFormatOpt {
 
 impl CreateTableFormatOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
-        let tableformat_spec: TableFormatSpec = if let Some(config_file) = self.config {
+        let tableformat_spec = if let Some(config_file) = self.config {
             let config = TableFormatConfig::from_file(&config_file)?;
-            config.clone().into()
+            let mut spec: TableFormatSpec = config.clone().into();
+            spec.name = self.name.clone();
+            spec
         } else {
             TableFormatSpec {
                 name: self.name.clone(),
