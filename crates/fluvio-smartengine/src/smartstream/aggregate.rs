@@ -58,9 +58,16 @@ impl SmartStream for SmartStreamAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartStreamAggregateOutput = self.base.read_output(AGGREGATOR_API)?;
-        self.accumulator = output.accumulator;
-        Ok(output.base)
+        if let Ok(agg_output) = self
+            .base
+            .read_output::<SmartStreamAggregateOutput>(AGGREGATOR_API)
+        {
+            self.accumulator = agg_output.accumulator;
+            Ok(agg_output.base)
+        } else {
+            // Backward compatible with old version
+            Ok(self.base.read_output(0)?)
+        }
     }
     fn params(&self) -> SmartStreamExtraParams {
         self.base.params.clone()
