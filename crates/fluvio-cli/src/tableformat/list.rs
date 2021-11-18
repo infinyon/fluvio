@@ -1,31 +1,31 @@
-//! # List Tables CLI
+//! # List TableFormats CLI
 //!
-//! CLI tree and processing to list Tables
+//! CLI tree and processing to list TableFormats
 //!
 
 use std::sync::Arc;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::table::TableSpec;
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
 use crate::CliError;
 
 #[derive(Debug, StructOpt)]
-pub struct ListTablesOpt {
+pub struct ListTableFormatsOpt {
     #[structopt(flatten)]
     output: OutputFormat,
 }
 
-impl ListTablesOpt {
+impl ListTableFormatsOpt {
     /// Process list connectors cli request
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<TableSpec, _>(vec![]).await?;
+        let lists = admin.list::<TableFormatSpec, _>(vec![]).await?;
 
-        output::tables_response_to_output(out, lists, self.output.format)
+        output::tableformats_response_to_output(out, lists, self.output.format)
     }
 }
 
@@ -46,33 +46,33 @@ mod output {
     use fluvio_extension_common::Terminal;
 
     use fluvio::metadata::objects::Metadata;
-    use fluvio_controlplane_metadata::table::TableSpec;
+    use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
     use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
     #[derive(Serialize)]
-    struct ListTables(Vec<Metadata<TableSpec>>);
+    struct ListTableFormats(Vec<Metadata<TableFormatSpec>>);
 
     // -----------------------------------
     // Format Output
     // -----------------------------------
 
-    /// Format Table list
-    pub fn tables_response_to_output<O: Terminal>(
+    /// Format TableFormat list
+    pub fn tableformats_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
-        list_tables: Vec<Metadata<TableSpec>>,
+        list_tableformats: Vec<Metadata<TableFormatSpec>>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
-        debug!("tables: {:#?}", list_tables);
+        debug!("tableformats: {:#?}", list_tableformats);
 
-        if !list_tables.is_empty() {
-            let tables = ListTables(list_tables);
-            out.render_list(&tables, output_type)?;
+        if !list_tableformats.is_empty() {
+            let tableformats = ListTableFormats(list_tableformats);
+            out.render_list(&tableformats, output_type)?;
             Ok(())
         } else {
-            t_println!(out, "no tables");
+            t_println!(out, "no tableformats");
             Ok(())
         }
     }
@@ -80,8 +80,8 @@ mod output {
     // -----------------------------------
     // Output Handlers
     // -----------------------------------
-    impl TableOutputHandler for ListTables {
-        /// table header implementation
+    impl TableOutputHandler for ListTableFormats {
+        /// tableformat header implementation
         fn header(&self) -> Row {
             row!["NAME", "STATUS",]
         }
@@ -91,7 +91,7 @@ mod output {
             vec![]
         }
 
-        /// table content implementation
+        /// table content implementation for tableformat (sry, naming makes this confusing)
         fn content(&self) -> Vec<Row> {
             self.0
                 .iter()

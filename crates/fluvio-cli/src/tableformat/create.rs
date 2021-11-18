@@ -1,7 +1,7 @@
 //!
-//! # Create a Table display specification
+//! # Create a TableFormat display specification
 //!
-//! CLI tree to generate Create a Table spec
+//! CLI tree to generate Create a TableFormat spec
 //!
 
 use std::path::PathBuf;
@@ -9,7 +9,7 @@ use structopt::StructOpt;
 use tracing::debug;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::table::TableSpec;
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
 use crate::CliError;
 
@@ -18,24 +18,29 @@ use crate::CliError;
 // -----------------------------------
 
 #[derive(Debug, StructOpt, Default)]
-pub struct CreateTableOpt {
+pub struct CreateTableFormatOpt {
     pub name: String,
-    /// The name for the new Table spec
+    /// The name for the new TableFormat spec
     #[structopt(short, long, parse(from_os_str))]
     pub config: Option<PathBuf>, // PathBuf
 }
 
-impl CreateTableOpt {
+impl CreateTableFormatOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
-        let table_spec = TableSpec {
+        let tableformat_spec = TableFormatSpec {
             name: self.name.clone(),
             ..Default::default()
         };
 
-        debug!("creating table: {} spec: {:#?}", self.name, table_spec);
+        debug!(
+            "creating tableformat: {} spec: {:#?}",
+            self.name, tableformat_spec
+        );
         let admin = fluvio.admin().await;
-        admin.create(self.name.clone(), false, table_spec).await?;
-        println!("table \"{}\" created", self.name);
+        admin
+            .create(self.name.clone(), false, tableformat_spec)
+            .await?;
+        println!("tableformat \"{}\" created", self.name);
 
         Ok(())
     }

@@ -41,8 +41,8 @@ pub async fn handle_delete_request<AC: AuthContext>(
         ObjectApiDeleteRequest::SmartModule(req) => {
             super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
         }
-        ObjectApiDeleteRequest::Table(req) => {
-            super::table::handle_delete_table(req.key(), auth_ctx).await?
+        ObjectApiDeleteRequest::TableFormat(req) => {
+            super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
         }
         ObjectApiDeleteRequest::SmartStream(req) => {
             let name = req.key();

@@ -9,7 +9,7 @@ use fluvio_protocol::Version;
 use crate::topic::TopicSpec;
 use crate::customspu::CustomSpuSpec;
 use crate::smartmodule::SmartModuleSpec;
-use crate::table::TableSpec;
+use crate::tableformat::TableFormatSpec;
 use crate::spg::SpuGroupSpec;
 use crate::connector::ManagedConnectorSpec;
 
@@ -46,7 +46,7 @@ pub enum ObjectCreateRequest {
     SmartModule(SmartModuleSpec),
     ManagedConnector(ManagedConnectorSpec),
     SpuGroup(SpuGroupSpec),
-    Table(TableSpec),
+    TableFormat(TableFormatSpec),
     SmartStream(SmartStreamSpec),
 }
 
@@ -64,7 +64,7 @@ impl ObjectCreateRequest {
             Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
             Self::ManagedConnector(_) => ManagedConnectorSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
-            Self::Table(_) => TableSpec::CREATE_TYPE,
+            Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
             Self::SmartStream(_) => SmartStreamSpec::CREATE_TYPE,
         }
     }
@@ -81,7 +81,7 @@ impl Encoder for ObjectCreateRequest {
                 Self::SmartModule(s) => s.write_size(version),
                 Self::ManagedConnector(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
-                Self::Table(s) => s.write_size(version),
+                Self::TableFormat(s) => s.write_size(version),
                 Self::SmartStream(s) => s.write_size(version),
             }
     }
@@ -101,7 +101,7 @@ impl Encoder for ObjectCreateRequest {
             Self::ManagedConnector(s) => s.encode(dest, version)?,
             Self::SmartModule(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
-            Self::Table(s) => s.encode(dest, version)?,
+            Self::TableFormat(s) => s.encode(dest, version)?,
             Self::SmartStream(s) => s.encode(dest, version)?,
         }
 
@@ -130,11 +130,11 @@ impl dataplane::core::Decoder for ObjectCreateRequest {
                 Ok(())
             }
 
-            TableSpec::CREATE_TYPE => {
+            TableFormatSpec::CREATE_TYPE => {
                 tracing::trace!("detected table");
-                let mut request = TableSpec::default();
+                let mut request = TableFormatSpec::default();
                 request.decode(src, version)?;
-                *self = Self::Table(request);
+                *self = Self::TableFormat(request);
                 Ok(())
             }
 

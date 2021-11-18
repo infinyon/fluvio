@@ -5,7 +5,7 @@ pub mod spg;
 pub mod message;
 pub mod connector;
 pub mod smartmodule;
-pub mod table;
+pub mod tableformat;
 pub mod smartstream;
 
 pub use fluvio_stream_model::core;
@@ -31,7 +31,7 @@ pub mod extended {
         Partition,
         ManagedConnector,
         SmartModule,
-        Table,
+        TableFormat,
         SmartStream,
     }
 

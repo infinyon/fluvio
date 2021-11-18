@@ -12,7 +12,7 @@ use crate::stores::topic::*;
 use crate::stores::spg::*;
 use crate::stores::connector::*;
 use crate::stores::smartmodule::*;
-use crate::stores::table::*;
+use crate::stores::tableformat::*;
 use crate::stores::smartstream::*;
 use crate::stores::*;
 
@@ -28,7 +28,7 @@ pub struct Context {
     spgs: StoreContext<SpuGroupSpec>,
     managed_connectors: StoreContext<ManagedConnectorSpec>,
     smartmodules: StoreContext<SmartModuleSpec>,
-    tables: StoreContext<TableSpec>,
+    tableformats: StoreContext<TableFormatSpec>,
     smart_streams: StoreContext<SmartStreamSpec>,
     health: SharedHealthCheck,
     config: ScConfig,
@@ -52,7 +52,7 @@ impl Context {
             spgs: StoreContext::new(),
             managed_connectors: StoreContext::new(),
             smartmodules: StoreContext::new(),
-            tables: StoreContext::new(),
+            tableformats: StoreContext::new(),
             smart_streams: StoreContext::new(),
             health: HealthCheck::shared(),
             config,
@@ -86,8 +86,8 @@ impl Context {
         &self.smartmodules
     }
 
-    pub fn tables(&self) -> &StoreContext<TableSpec> {
-        &self.tables
+    pub fn tableformats(&self) -> &StoreContext<TableFormatSpec> {
+        &self.tableformats
     }
 
     pub fn smartstreams(&self) -> &StoreContext<SmartStreamSpec> {

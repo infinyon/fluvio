@@ -13,7 +13,7 @@ mod consume;
 mod produce;
 mod partition;
 mod connector;
-mod table;
+mod tableformat;
 mod smartmodule;
 mod smartstream;
 
@@ -41,7 +41,7 @@ mod root {
 
     use crate::smartstream::SmartStreamCmd;
     use crate::connector::ManagedConnectorCmd;
-    use crate::table::TableCmd;
+    use crate::tableformat::TableFormatCmd;
     use crate::topic::TopicCmd;
     use crate::consume::ConsumeOpt;
     use crate::produce::ProduceOpt;
@@ -151,12 +151,13 @@ mod root {
         )]
         Metadata(MetadataOpt),
 
+        /// Create and work with Managed Connectors
         #[structopt(name = "connector")]
         ManagedConnector(ManagedConnectorCmd),
 
-        /// Create a table display specification
-        #[structopt(name = "table")]
-        Table(TableCmd),
+        /// Create a tableformat display specification
+        #[structopt(name = "tableformat")]
+        TableFormat(TableFormatCmd),
 
         #[structopt(name = "smartstream")]
         SmartStream(SmartStreamCmd),
@@ -200,9 +201,9 @@ mod root {
                     let fluvio = root.target.connect().await?;
                     group.process(out, &fluvio).await?;
                 }
-                Self::Table(table) => {
+                Self::TableFormat(tableformat) => {
                     let fluvio = root.target.connect().await?;
-                    table.process(out, &fluvio).await?;
+                    tableformat.process(out, &fluvio).await?;
                 }
                 Self::SmartStream(smartstream) => {
                     let fluvio = root.target.connect().await?;

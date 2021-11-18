@@ -140,13 +140,16 @@ pub enum ErrorCode {
     #[error("SmartModule runtime error {0}")]
     SmartModuleRuntimeError(SmartModuleRuntimeError),
 
-    // Table Errors
+    // TableFormat Errors
     #[fluvio(tag = 7000)]
-    #[error("a table error occurred")]
-    TableError,
+    #[error("a tableformat error occurred")]
+    TableFormatError,
     #[fluvio(tag = 7001)]
-    #[error("the table was not found")]
-    TableNotFound,
+    #[error("the tableformat was not found")]
+    TableFormatNotFound,
+    #[fluvio(tag = 7002)]
+    #[error("the tableformat already exists")]
+    TableFormatAlreadyExists,
 
     // SmartStream Object Errors
     #[fluvio(tag = 8000)]
