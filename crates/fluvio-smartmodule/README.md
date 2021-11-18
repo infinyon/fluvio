@@ -26,7 +26,7 @@ edition = "2018"
 crate-type = ['cdylib']
 
 [dependencies]
-fluvio-smartmodule = "0.2.0"
+fluvio-smartmodule = "0.1.0"
 ```
 
 ### Filtering
