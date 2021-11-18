@@ -410,14 +410,27 @@ impl TableModel {
         let selected_style = Style::default().add_modifier(Modifier::REVERSED);
         let normal_style = Style::default().bg(Color::Blue);
 
-        // TODO: If the column has an alternative label, use that
-        let header_cells = self.columns.iter().map(|h| {
-            Cell::from(h.key_path.as_str()).style(
+
+
+        let header_cells = self.columns.iter().map(|column| {
+
+            // If the column has an alternative label, use that
+            // Otherwise, use the key path
+            // TODO: Test this with a nested key. We probably want to use the inner-most key in the path
+            let header_label = if let Some(label) = column.header_label.clone() {
+                label
+            } else {
+                column.key_path.clone()
+            };
+
+
+            Cell::from(header_label).style(
                 Style::default()
                     .fg(Color::Yellow)
                     .add_modifier(Modifier::BOLD),
             )
         });
+
         let header = Row::new(header_cells)
             .style(normal_style)
             .height(1)

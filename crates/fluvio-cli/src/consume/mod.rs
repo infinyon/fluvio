@@ -194,10 +194,12 @@ impl ConsumeOpt {
                             name: "hardcoded_test".to_string(),
                             columns: Some(vec!(TableColumn {
                                 key_path: "key2".to_string(),
+                                header_label: Some("Key #2".to_string()),
                                 ..Default::default()
                             }, TableColumn {
                                 key_path: "key1".to_string(),
                                 //primary_key: true,
+                                header_label: Some("Key #1".to_string()),
                                 ..Default::default()
                             },)
                             ),
