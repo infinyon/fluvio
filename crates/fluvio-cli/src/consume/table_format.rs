@@ -13,6 +13,7 @@ use tui::{
     Frame, Terminal,
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 
 //use std::collections::BTreeMap;
 
@@ -56,17 +57,17 @@ pub struct TableModel {
 }
 
 impl TableModel {
-    //pub fn new() -> Self {
-    //    Self::default()
-    //}
+    pub fn new() -> Self {
+        Self::default()
+    }
 
-    ////pub fn with_tableformat(&mut self, tableformat: TableFormatSpec)
-    //pub fn with_tableformat(&mut self, ) {
-    //    unimplemented!()
+    pub fn with_tableformat(&mut self, tableformat: Option<TableFormatSpec>) {
 
-    //    //
+        if let Some(format) = tableformat {
+            unimplemented!()
+        }
 
-    //}
+    }
 
     // I think this should accept headers that don't exist in the data. Print empty columns
     pub fn update_header(&mut self, columns: Vec<String>) -> Result<()> {

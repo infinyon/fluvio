@@ -28,6 +28,7 @@ setup_file() {
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_output --partial "TableFormatAlreadyExists"
+    assert_failure
 }
 
 # List tableformat

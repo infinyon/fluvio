@@ -4,22 +4,27 @@
 //! CLI command for Consume operation
 //!
 
+use std::ops::RangeBounds;
 use std::{io::Error as IoError, path::PathBuf};
 use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
+use fluvio::dataplane::ErrorCode;
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use prettytable::Table;
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use fluvio_future::io::StreamExt;
 use futures::{select, FutureExt};
+use fluvio_sc_schema::ApiError;
 
 mod record_format;
 mod table_format;
 use table_format::{TableEventResponse, TableModel};
 
-use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
+use fluvio::{ConsumerConfig, Fluvio, FluvioError, MultiplePartitionConsumer, Offset};
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use fluvio::consumer::{
     SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartStreamInvocation,
@@ -87,9 +92,9 @@ pub struct ConsumeOpt {
     #[structopt(short = "F", long, conflicts_with_all = &["output", "key_value"])]
     pub format: Option<String>,
 
-    /// Consume records using the formatting rules defined by Table name
+    /// Consume records using the formatting rules defined by TableFormat name
     #[structopt(long, conflicts_with_all = &["output", "key_value", "format"])]
-    pub table_format: Option<String>,
+    pub tableformat: Option<String>,
 
     /// Consume records starting X from the beginning of the log (default: 0)
     #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
@@ -177,11 +182,41 @@ impl ConsumeOpt {
         fields(topic = %self.topic, partition = self.partition),
     )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+
+        let tableformat = if let Some(ref tableformat_name) = self.tableformat {
+            let admin = fluvio.admin().await;
+            let tableformats = admin.list::<TableFormatSpec, _>(vec![]).await?;
+
+            let mut found= None;
+
+            if !tableformats.is_empty() {
+
+                for t in tableformats {
+                    if t.name.as_str() == tableformat_name {
+                        found = Some(t.spec);
+                        break;
+                    }
+                }
+
+                if found.is_none() {
+                    return Err(CliError::TableFormatNotFound(tableformat_name.to_string()))
+                }
+
+                    found
+
+            } else {
+                // We should throw a client error here. tableformat not found
+                None
+            }
+
+        } else { None };
+
+
         if self.all_partitions {
             let consumer = fluvio
                 .consumer(PartitionSelectionStrategy::All(self.topic.clone()))
                 .await?;
-            self.consume_records(consumer).await?;
+            self.consume_records(consumer, tableformat).await?;
         } else {
             let consumer = fluvio
                 .consumer(PartitionSelectionStrategy::Multiple(vec![(
@@ -189,7 +224,7 @@ impl ConsumeOpt {
                     self.partition,
                 )]))
                 .await?;
-            self.consume_records(consumer).await?;
+            self.consume_records(consumer, tableformat).await?;
         };
 
         Ok(())
@@ -204,7 +239,7 @@ impl ConsumeOpt {
         }
     }
 
-    pub async fn consume_records(&self, consumer: MultiplePartitionConsumer) -> Result<()> {
+    pub async fn consume_records(&self, consumer: MultiplePartitionConsumer, tableformat: Option<TableFormatSpec>) -> Result<()> {
         trace!(config = ?self, "Starting consumer:");
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
@@ -296,8 +331,9 @@ impl ConsumeOpt {
         }
 
         let consume_config = builder.build()?;
+        let tableformat = TableFormatSpec::default();
         debug!("consume config: {:#?}", consume_config);
-        self.consume_records_stream(consumer, offset, consume_config)
+        self.consume_records_stream(consumer, offset, consume_config, Some(tableformat))
             .await?;
 
         if !self.disable_continuous {
@@ -313,6 +349,7 @@ impl ConsumeOpt {
         consumer: MultiplePartitionConsumer,
         offset: Offset,
         config: ConsumerConfig,
+        tableformat: Option<TableFormatSpec>,
     ) -> Result<()> {
         self.print_status();
         let mut stream = consumer.stream_with_config(offset, config).await?;
@@ -326,9 +363,6 @@ impl ConsumeOpt {
             }
         };
 
-        // If there was a tableformat specified, go fetch it
-        // let mut maybe_tableformat = ...
-
         // TableModel and Terminal for full_table rendering
         let mut maybe_table_model = None; // Add a create table model fn. This will need to support the TableFormat crd
         let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
@@ -339,7 +373,9 @@ impl ConsumeOpt {
 
                 // Look at tables for a spec that might belong to the topic
 
-                let model = TableModel::default();
+                let mut model = TableModel::new();
+                model.with_tableformat(tableformat);
+
                 maybe_table_model = Some(model);
 
                 let stdout = io::stdout();
@@ -638,6 +674,15 @@ fn create_smartmodule(
         kind,
         params: params.into(),
     })
+}
+
+fn _create_table_format(name: &str, table_format_spec: TableFormatSpec) -> Result<TableFormatInvocation> {
+
+    let table_format = TableFormatInvocation::default();
+    // Do stuff to 
+
+
+    Ok(table_format)
 }
 
 // Uses clap::arg_enum to choose possible variables

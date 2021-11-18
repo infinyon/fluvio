@@ -3,6 +3,46 @@
 use dataplane::core::{Encoder, Decoder};
 //use std::collections::BTreeMap;
 
+
+// This is what I put in spu schema. Should it go here instead?
+
+//#[derive(Debug, Clone, Encoder, Decoder)]
+//pub enum TableDataKind {
+//    Json,
+//    Yaml,
+//    Toml,
+//}
+//
+//impl Default for TableDataKind {
+//    fn default() -> Self {
+//        Self::Json
+//    }
+//}
+//
+//// Worry about this later
+////pub enum DataFormat {
+////    DateTime,
+////}
+//
+//#[derive(Debug, Default, Clone, Encoder, Decoder)]
+//pub struct TableColumn {
+//    key_path: String,
+//    primary_key: bool,
+//    display: bool,
+//    header_label: Option<String>,
+//    alignment: Option<String>,
+//    header_fg_color: Option<String>,
+//    header_bg_color: Option<String>,
+//    //width: Option<String>,
+//    //format: Option<String>,
+//}
+
+
+
+
+
+
+
 #[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
@@ -19,13 +59,13 @@ pub struct TableFormatSpec {
 
 #[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum InputFormat {
+pub enum DataFormat {
     JSON,
-    YAML,
-    TOML,
+    //YAML,
+    //TOML,
 }
 
-impl Default for InputFormat {
+impl Default for DataFormat {
     fn default() -> Self {
         Self::JSON
     }

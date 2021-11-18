@@ -73,6 +73,8 @@ pub enum CliError {
     Infallible(#[from] Infallible),
     #[error("Dataplane error: {0}")]
     DataPlaneError(#[from] ErrorCode),
+    #[error("TableFormat not found: {0}")]
+    TableFormatNotFound(String),
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -124,6 +126,14 @@ impl CliError {
                 }
                 ApiError::Code(ErrorCode::TopicInvalidName, _) => {
                     println!("Invalid topic name: topic name may only include lowercase letters (a-z), numbers (0-9), and hyphens (-).");
+                    Ok(())
+                }
+                ApiError::Code(ErrorCode::TableFormatAlreadyExists, _) => {
+                    println!("TableFormat already exists");
+                    Ok(())
+                }
+                ApiError::Code(ErrorCode::TableFormatNotFound, _) => {
+                    println!("TableFormat not found");
                     Ok(())
                 }
                 _ => Err(self),
