@@ -1,0 +1,11 @@
+apiVersion: fluvio.infinyon.com/v1
+kind: TableFormat
+metadata:
+  name: "examplename"
+spec:
+  name: "exampleformat"
+  inputFormat: "JSON"
+  columns:
+    - keyPath: "key2"
+      display: true
+    - keyPath: "key1"

@@ -1,17 +1,15 @@
 use std::sync::Arc;
 use structopt::StructOpt;
 
-//use serde::Deserialize;
-//use std::collections::BTreeMap;
-//use std::path::PathBuf;
-//use std::fs::File;
-//use std::io::Read;
+use serde::Deserialize;
+use std::path::PathBuf;
+use std::fs::File;
+use std::io::Read;
 
 use fluvio::Fluvio;
-//use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
-
 mod create;
 mod delete;
 mod list;
@@ -62,45 +60,30 @@ impl TableFormatCmd {
     }
 }
 
-//#[derive(Debug, Deserialize, Clone)]
-//pub struct ConnectorConfig {
-//    name: String,
-//    #[serde(rename = "type")]
-//    type_: String,
-//    pub(crate) topic: String,
-//    #[serde(default)]
-//    pub(crate) create_topic: bool,
-//    #[serde(default)]
-//    parameters: BTreeMap<String, String>,
-//    #[serde(default)]
-//    secrets: BTreeMap<String, String>,
-//}
-//
-//impl ConnectorConfig {
-//    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<ConnectorConfig, CliError> {
-//        let mut file = File::open(path.into())?;
-//        let mut contents = String::new();
-//        file.read_to_string(&mut contents)?;
-//        let connector_config: ConnectorConfig = serde_yaml::from_str(&contents)?;
-//        Ok(connector_config)
-//    }
-//}
-//
-//impl From<ConnectorConfig> for TableFormatSpec {
-//    fn from(config: ConnectorConfig) -> TableFormatSpec {
-//        TableFormatSpec {
-//            name: config.name,
-//            type_: config.type_,
-//            topic: config.topic,
-//            parameters: config.parameters,
-//            secrets: config.secrets,
-//        }
-//    }
-//}
+#[derive(Debug, Deserialize, Clone)]
+pub struct TableFormatConfig {
+    spec: TableFormatSpec,
+}
 
-//#[test]
-//fn config_test() {
-//    let _: TableFormatSpec = ConnectorConfig::from_file("test-data/test-config.yaml")
-//        .expect("Failed to load test config")
-//        .into();
-//}
+impl TableFormatConfig {
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<TableFormatConfig, CliError> {
+        let mut file = File::open(path.into())?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        let table_format_config: TableFormatConfig = serde_yaml::from_str(&contents)?;
+        Ok(table_format_config)
+    }
+}
+
+impl From<TableFormatConfig> for TableFormatSpec {
+    fn from(config: TableFormatConfig) -> TableFormatSpec {
+        config.spec
+    }
+}
+
+#[test]
+fn config_test() {
+    let _: TableFormatSpec = TableFormatConfig::from_file("test-data/test-tableformat-config.yaml")
+        .expect("Failed to load test config")
+        .into();
+}
