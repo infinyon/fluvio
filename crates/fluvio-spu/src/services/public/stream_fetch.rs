@@ -31,7 +31,7 @@ use dataplane::smartmodule::SmartModuleRuntimeError;
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
-use crate::smartengine::SmartStreamContext;
+use crate::smartengine::SmartModuleContext;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
@@ -129,7 +129,7 @@ impl StreamFetchHandler {
     ) -> Result<(), SocketError> {
         debug!("request: {:#?}", msg);
 
-        let smart_stream_ctx = match SmartStreamContext::extract(
+        let smartstream_ctx = match SmartModuleContext::extract(
             msg.wasm_payload,
             msg.smartmodule,
             msg.smartstream,
@@ -146,7 +146,7 @@ impl StreamFetchHandler {
 
         let max_bytes = msg.max_bytes as u32;
         // compute max fetch bytes depends on smart stream
-        let max_fetch_bytes = if smart_stream_ctx.is_some() {
+        let max_fetch_bytes = if smartstream_ctx.is_some() {
             u32::MAX
         } else {
             max_bytes
@@ -178,23 +178,24 @@ impl StreamFetchHandler {
             max_fetch_bytes,
         };
 
-        handler.process(starting_offset, smart_stream_ctx).await
+        handler.process(starting_offset, smartstream_ctx).await
     }
 
     async fn process(
         mut self,
         starting_offset: Offset,
-        smart_stream_ctx: Option<SmartStreamContext>,
+        smartstream_ctx: Option<SmartModuleContext>,
     ) -> Result<(), SocketError> {
-        let (mut smartstream, mut right_consumer_stream) = if let Some(ctx) = smart_stream_ctx {
-            let SmartStreamContext {
-                smartstream: st,
-                right_consumer_stream,
-            } = ctx;
-            (Some(st), right_consumer_stream)
-        } else {
-            (None, None)
-        };
+        let (mut smartmodule_instance, mut right_consumer_stream) =
+            if let Some(ctx) = smartstream_ctx {
+                let SmartModuleContext {
+                    smartmodule_instance: st,
+                    right_consumer_stream,
+                } = ctx;
+                (Some(st), right_consumer_stream)
+            } else {
+                (None, None)
+            };
         let mut join_record = if let Some(join_stream) = right_consumer_stream.as_mut() {
             // we wait for at least one record
             join_stream.next().await.transpose().map_err(|err| {
@@ -208,7 +209,11 @@ impl StreamFetchHandler {
         };
 
         let (mut last_partition_offset, consumer_wait) = self
-            .send_back_records(starting_offset, smartstream.as_mut(), join_record.as_ref())
+            .send_back_records(
+                starting_offset,
+                smartmodule_instance.as_mut(),
+                join_record.as_ref(),
+            )
             .await?;
 
         let mut leader_offset_receiver = self.leader_state.offset_listener(&self.isolation);
@@ -279,7 +284,7 @@ impl StreamFetchHandler {
                         last_partition_offset,
                         "Consumer offset updated and is behind, need to send records",
                     );
-                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartstream.as_mut(), join_record.as_ref()).await?;
+                    let (offset, wait) = self.send_back_records(consumer_offset_update, smartmodule_instance.as_mut(), join_record.as_ref()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -320,7 +325,7 @@ impl StreamFetchHandler {
 
                     // We need to send the consumer all records since the last consumer offset
                     debug!(partition_offset_update, last_consumer_offset, "reading offset event");
-                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartstream.as_mut(), join_record.as_ref()).await?;
+                    let (offset, wait) = self.send_back_records(last_consumer_offset, smartmodule_instance.as_mut(), join_record.as_ref()).await?;
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;
@@ -351,13 +356,13 @@ impl StreamFetchHandler {
     /// return (next offset, consumer wait)
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
-        skip(self, smartstream, join_last_record),
+        skip(self, smartmodule_instance, join_last_record),
         fields(stream_id = self.stream_id)
     )]
     async fn send_back_records(
         &mut self,
         starting_offset: Offset,
-        smartstream: Option<&mut Box<dyn SmartModuleInstance>>,
+        smartmodule_instance: Option<&mut Box<dyn SmartModuleInstance>>,
         join_last_record: Option<&fluvio::consumer::Record>,
     ) -> Result<(Offset, bool), SocketError> {
         let now = Instant::now();
@@ -400,31 +405,31 @@ impl StreamFetchHandler {
         let records = &file_partition_response.records;
         let mut file_batch_iterator = FileBatchIterator::from_raw_slice(records.raw_slice());
 
-        // If a smartstream module is provided, we need to read records from file to memory
-        // In-memory records are then processed by smartstream and returned to consumer
-        let output = match smartstream {
-            Some(smartstream) => {
-                let (batch, smartstream_error) = smartstream
+        // If a SmartModule is provided, we need to read records from file to memory
+        // In-memory records are then processed by SmartModule and returned to consumer
+        let output = match smartmodule_instance {
+            Some(smartmodule_instance) => {
+                let (batch, smartmodule_error) = smartmodule_instance
                     .process_batch(
                         &mut file_batch_iterator,
                         self.max_bytes as usize,
                         join_last_record.map(|s| s.inner()),
                     )
                     .map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
+                        IoError::new(ErrorKind::Other, format!("SmartModule err {}", err))
                     })?;
 
                 self.send_processed_response(
                     file_partition_response,
                     next_offset,
                     batch,
-                    smartstream_error,
+                    smartmodule_error,
                 )
                 .await?
             }
             None => {
-                // If no smartstream is provided, respond using raw file records
-                debug!("No SmartStream, sending back entire log");
+                // If no SmartModule is provided, respond using raw file records
+                debug!("No SmartModule, sending back entire log");
 
                 let response = StreamFetchResponse {
                     topic: self.replica.topic.clone(),
@@ -454,21 +459,21 @@ impl StreamFetchHandler {
         Ok(output)
     }
 
-    #[instrument(skip(self, file_partition_response, batch, smartstream_error))]
+    #[instrument(skip(self, file_partition_response, batch, smartmodule_error))]
     async fn send_processed_response(
         &self,
         file_partition_response: FilePartitionResponse,
         mut next_offset: Offset,
         batch: Batch,
-        smartstream_error: Option<SmartModuleRuntimeError>,
+        smartmodule_error: Option<SmartModuleRuntimeError>,
     ) -> Result<(Offset, bool), SocketError> {
         type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
 
-        let error_code = match smartstream_error {
+        let error_code = match smartmodule_error {
             Some(error) => ErrorCode::SmartModuleRuntimeError(error),
             None => file_partition_response.error_code,
         };
-        trace!(?error_code, "Smartstream error code output:");
+        trace!(?error_code, "SmartModule error code output:");
 
         let has_error = !matches!(error_code, ErrorCode::None);
         let has_records = !batch.records().is_empty();
@@ -479,7 +484,7 @@ impl StreamFetchHandler {
         }
 
         if has_records {
-            trace!(?batch, "Smartstream batch:");
+            trace!(?batch, "SmartModule batch:");
             next_offset = batch.get_last_offset() + 1;
         }
 
@@ -514,7 +519,7 @@ impl StreamFetchHandler {
             stream_response,
         );
 
-        trace!("Sending SmartStream response: {:#?}", response_msg);
+        trace!("Sending SmartModule response: {:#?}", response_msg);
 
         let mut inner_sink = self.sink.lock().await;
         inner_sink

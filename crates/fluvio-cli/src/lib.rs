@@ -252,7 +252,7 @@ mod root {
 
         /// Create and manage SmartModules
         ///
-        /// SmartModules are compiled WASM modules used to create SmartStreams.
+        /// SmartModules are compiled WASM modules used to create SmartModules.
         #[structopt(name = "smartmodule")]
         SmartModule(SmartModuleCmd),
     }

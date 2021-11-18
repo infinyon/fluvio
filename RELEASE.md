@@ -29,7 +29,7 @@ Review Fluvio website:
     - [ ] https://www.fluvio.io/docs/
 
 Other dependent repos:
-- [ ] Update [`infinyon/fluvio-smartstream-template`](https://github.com/infinyon/fluvio-smartstream-template) if needed.
+- [ ] Update [`infinyon/fluvio-smartmodule-template`](https://github.com/infinyon/fluvio-smartmodule-template) if needed.
 
 ## Release workflow
 

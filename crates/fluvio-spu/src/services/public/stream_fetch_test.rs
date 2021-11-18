@@ -1965,8 +1965,8 @@ async fn test_stream_fetch_filter_with_params(
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_smartstream_legacy() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream_legacy");
+async fn test_stream_fetch_invalid_smartmodule_legacy() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_smartmodule_legacy");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path.clone();
 
@@ -1978,12 +1978,12 @@ async fn test_stream_fetch_invalid_smartstream_legacy() {
         ..Default::default()
     };
 
-    test_stream_fetch_invalid_smartstream(ctx, test_path, Some(wasm_payload), None).await
+    test_stream_fetch_invalid_smartmodule(ctx, test_path, Some(wasm_payload), None).await
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_smartstream_adhoc() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream_adhoc");
+async fn test_stream_fetch_invalid_smartmodule_adhoc() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_smartmodule_adhoc");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path.clone();
 
@@ -1995,12 +1995,12 @@ async fn test_stream_fetch_invalid_smartstream_adhoc() {
         ..Default::default()
     };
 
-    test_stream_fetch_invalid_smartstream(ctx, test_path, None, Some(smartmodule)).await
+    test_stream_fetch_invalid_smartmodule(ctx, test_path, None, Some(smartmodule)).await
 }
 
 #[fluvio_future::test(ignore)]
-async fn test_stream_fetch_invalid_smartstream_predefined() {
-    let test_path = temp_dir().join("test_stream_fetch_invalid_smartstream_predefined");
+async fn test_stream_fetch_invalid_smartmodule_predefined() {
+    let test_path = temp_dir().join("test_stream_fetch_invalid_smartmodule_predefined");
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path.clone();
 
@@ -2022,10 +2022,10 @@ async fn test_stream_fetch_invalid_smartstream_predefined() {
         ..Default::default()
     };
 
-    test_stream_fetch_invalid_smartstream(ctx, test_path, None, Some(smartmodule)).await
+    test_stream_fetch_invalid_smartmodule(ctx, test_path, None, Some(smartmodule)).await
 }
 
-async fn test_stream_fetch_invalid_smartstream(
+async fn test_stream_fetch_invalid_smartmodule(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
     wasm_payload: Option<LegacySmartModulePayload>,
@@ -2044,7 +2044,7 @@ async fn test_stream_fetch_invalid_smartstream(
         MultiplexerSocket::shared(FluvioSocket::connect(&addr).await.expect("connect"));
 
     // perform for two versions
-    let topic = "test_invalid_smartstream";
+    let topic = "test_invalid_smartmodule";
     let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
     let test_id = test.id.clone();
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())

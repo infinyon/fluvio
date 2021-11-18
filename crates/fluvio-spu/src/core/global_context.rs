@@ -153,7 +153,7 @@ where
             .await;
     }
 
-    pub fn smartstream_owned(&self) -> SmartEngine {
+    pub fn smartengine_owned(&self) -> SmartEngine {
         self.sm_engine.clone()
     }
 

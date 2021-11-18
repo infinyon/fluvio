@@ -77,7 +77,7 @@ impl SmartEngine {
         smart_payload: LegacySmartModulePayload,
     ) -> Result<Box<dyn SmartModuleInstance>> {
         let smartmodule = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
-        let smart_stream: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
+        let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
             SmartModuleKind::Filter => Box::new(smartmodule.create_filter(smart_payload.params)?),
             SmartModuleKind::FilterMap => {
                 Box::new(smartmodule.create_filter_map(smart_payload.params)?)
@@ -95,7 +95,7 @@ impl SmartEngine {
                 Box::new(smartmodule.create_aggregate(smart_payload.params, accumulator.clone())?)
             }
         };
-        Ok(smart_stream)
+        Ok(smartmodule_instance)
     }
 }
 
@@ -227,9 +227,9 @@ impl dyn SmartModuleInstance + '_ {
         max_bytes: usize,
         join_last_record: Option<&Record>,
     ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
-        let mut smartstream_batch = Batch::<MemoryRecords>::default();
-        smartstream_batch.base_offset = -1; // indicate this is unitialized
-        smartstream_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
+        let mut smartmodule_batch = Batch::<MemoryRecords>::default();
+        smartmodule_batch.base_offset = -1; // indicate this is unitialized
+        smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
 
         let mut total_bytes = 0;
 
@@ -240,19 +240,19 @@ impl dyn SmartModuleInstance + '_ {
                 Some(batch_result) => batch_result?,
                 None => {
                     debug!(
-                        total_records = smartstream_batch.records().len(),
+                        total_records = smartmodule_batch.records().len(),
                         "No more batches, SmartModuleInstance end"
                     );
-                    return Ok((smartstream_batch, None));
+                    return Ok((smartmodule_batch, None));
                 }
             };
 
             debug!(
                 current_batch_offset = file_batch.batch.base_offset,
                 current_batch_offset_delta = file_batch.offset_delta(),
-                smartstream_offset_delta = smartstream_batch.get_header().last_offset_delta,
-                smartstream_base_offset = smartstream_batch.base_offset,
-                smartstream_records = smartstream_batch.records().len(),
+                smartmodule_offset_delta = smartmodule_batch.get_header().last_offset_delta,
+                smartmodule_base_offset = smartmodule_batch.base_offset,
+                smartmodule_records = smartmodule_batch.records().len(),
                 "Starting SmartModuleInstance processing"
             );
 
@@ -268,25 +268,25 @@ impl dyn SmartModuleInstance + '_ {
                 params: self.params().clone(),
             };
             let output = self.process(input)?;
-            debug!(smartstream_execution_time = %now.elapsed().as_millis());
+            debug!(smartmodule_execution_time = %now.elapsed().as_millis());
 
             let maybe_error = output.error;
             let mut records = output.successes;
 
-            trace!("smartstream processed records: {:#?}", records);
+            trace!("smartmodule processed records: {:#?}", records);
 
-            // there are smartstreamed records!!
+            // there are smartmoduleed records!!
             if records.is_empty() {
-                debug!("smartstreams records empty");
+                debug!("smartmodules records empty");
             } else {
                 // set base offset if this is first time
-                if smartstream_batch.base_offset == -1 {
-                    smartstream_batch.base_offset = file_batch.base_offset();
+                if smartmodule_batch.base_offset == -1 {
+                    smartmodule_batch.base_offset = file_batch.base_offset();
                 }
 
-                // difference between smartstream batch and and current batch
+                // difference between smartmodule batch and and current batch
                 // since base are different we need update delta offset for each records
-                let relative_base_offset = smartstream_batch.base_offset - file_batch.base_offset();
+                let relative_base_offset = smartmodule_batch.base_offset - file_batch.base_offset();
 
                 for record in &mut records {
                     record.add_base_offset(relative_base_offset);
@@ -294,36 +294,36 @@ impl dyn SmartModuleInstance + '_ {
 
                 let record_bytes = records.write_size(0);
 
-                // if smartstream bytes exceed max bytes then we skip this batch
+                // if smartmodule bytes exceed max bytes then we skip this batch
                 if total_bytes + record_bytes > max_bytes {
                     debug!(
                         total_bytes = total_bytes + record_bytes,
                         max_bytes, "Total SmartModuleInstance bytes reached"
                     );
-                    return Ok((smartstream_batch, maybe_error));
+                    return Ok((smartmodule_batch, maybe_error));
                 }
 
                 total_bytes += record_bytes;
 
                 debug!(
-                    smartstream_records = records.len(),
-                    total_bytes, "finished smartstreaming"
+                    smartmodule_records = records.len(),
+                    total_bytes, "finished smartmoduleing"
                 );
-                smartstream_batch.mut_records().append(&mut records);
+                smartmodule_batch.mut_records().append(&mut records);
             }
 
-            // only increment smartstream offset delta if smartstream_batch has been initialized
-            if smartstream_batch.base_offset != -1 {
+            // only increment smartmodule offset delta if smartmodule_batch has been initialized
+            if smartmodule_batch.base_offset != -1 {
                 debug!(
                     offset_delta = file_batch.offset_delta(),
                     "adding to offset delta"
                 );
-                smartstream_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
+                smartmodule_batch.add_to_offset_delta(file_batch.offset_delta() + 1);
             }
 
             // If we had a processing error, return current batch and error
             if maybe_error.is_some() {
-                return Ok((smartstream_batch, maybe_error));
+                return Ok((smartmodule_batch, maybe_error));
             }
         }
     }

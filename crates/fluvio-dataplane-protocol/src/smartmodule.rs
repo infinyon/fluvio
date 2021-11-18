@@ -93,7 +93,7 @@ mod encoding {
     //
     // The presence of one of these errors most likely indicates a logic bug.
     // This error type is `#[repr(i32)]` because these errors are returned
-    // as the raw return type of a Smartstream WASM function, i.e. the return
+    // as the raw return type of a SmartModule WASM function, i.e. the return
     // type in `extern "C" fn filter(ptr, len) -> i32`. Positive return values
     // indicate the numbers of records, and negative values indicate various
     // types of errors.
@@ -103,17 +103,17 @@ mod encoding {
     #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
     #[fluvio(encode_discriminant)]
     pub enum SmartModuleInternalError {
-        #[error("encountered unknown error during Smartstream processing")]
+        #[error("encountered unknown error during SmartModule processing")]
         UnknownError = -1,
-        #[error("failed to decode Smartstream base input")]
+        #[error("failed to decode SmartModule base input")]
         DecodingBaseInput = -11,
-        #[error("failed to decode Smartstream record input")]
+        #[error("failed to decode SmartModule record input")]
         DecodingRecords = -22,
-        #[error("failed to encode Smartstream output")]
+        #[error("failed to encode SmartModule output")]
         EncodingOutput = -33,
-        #[error("failed to parse Smartstream extra params")]
+        #[error("failed to parse SmartModule extra params")]
         ParsingExtraParams = -44,
-        #[error("undefined right record in Join smartstream")]
+        #[error("undefined right record in Join SmartModule")]
         UndefinedRightRecord = -55,
     }
 

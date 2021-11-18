@@ -14,22 +14,22 @@ use futures_util::{StreamExt, stream::BoxStream};
 
 use crate::core::DefaultSharedGlobalContext;
 
-pub struct SmartStreamContext {
-    pub smartstream: Box<dyn SmartModuleInstance>,
+pub struct SmartModuleContext {
+    pub smartmodule_instance: Box<dyn SmartModuleInstance>,
     pub right_consumer_stream:
         Option<BoxStream<'static, Result<fluvio::consumer::Record, ErrorCode>>>,
 }
 
-impl SmartStreamContext {
+impl SmartModuleContext {
     /// find wasm payload, they can be loaded from payload or from smart module
     /// smart module has precedent over payload
     pub async fn extract(
         wasm_payload: Option<LegacySmartModulePayload>,
         smartmodule: Option<SmartModuleInvocation>,
-        smart_stream: Option<SmartStreamInvocation>,
+        smartstream: Option<SmartStreamInvocation>,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Option<Self>, ErrorCode> {
-        let derived_sm_modules = if let Some(ss_inv) = smart_stream {
+        let derived_sm_modules = if let Some(ss_inv) = smartstream {
             Some(extract_smartstream_context(ss_inv, ctx).await?)
         } else {
             None
@@ -49,7 +49,7 @@ impl SmartStreamContext {
             None => {
                 if let Some(payload) = wasm_payload {
                     Ok(Some(Self {
-                        smartstream: Self::payload_to_smartmodule(payload, ctx)?,
+                        smartmodule_instance: Self::payload_to_smartmodule(payload, ctx)?,
                         right_consumer_stream: None,
                     }))
                 } else {
@@ -59,7 +59,7 @@ impl SmartStreamContext {
         }
     }
 
-    /// given smartstream invocation and context, generate execution context
+    /// given SmartModule invocation and context, generate execution context
     async fn extract_smartmodule_context(
         invocation: SmartModuleInvocation,
         ctx: &DefaultSharedGlobalContext,
@@ -131,7 +131,7 @@ impl SmartStreamContext {
             _ => None,
         };
 
-        // then get smartstream context
+        // then get smartmodule context
         let payload = match invocation.wasm {
             SmartModuleInvocationWasm::Predefined(name) => {
                 if let Some(smartmodule) = ctx.smartmodule_localstore().spec(&name) {
@@ -156,7 +156,7 @@ impl SmartStreamContext {
         };
 
         Ok(Self {
-            smartstream: Self::payload_to_smartmodule(payload, ctx)?,
+            smartmodule_instance: Self::payload_to_smartmodule(payload, ctx)?,
             right_consumer_stream,
         })
     }
@@ -173,9 +173,9 @@ impl SmartStreamContext {
                 name: None,
             })?;
 
-        debug!(len = raw.len(), "wasm WASM module with bytes");
+        debug!(len = raw.len(), "SmartModule with bytes");
 
-        let sm_engine = ctx.smartstream_owned();
+        let sm_engine = ctx.smartengine_owned();
         let kind = payload.kind.clone();
 
         sm_engine
@@ -183,7 +183,7 @@ impl SmartStreamContext {
             .map_err(|err| {
                 error!(
                     error = err.to_string().as_str(),
-                    "Error Instantiating SmartStream"
+                    "Error Instantiating SmartModule"
                 );
                 ErrorCode::SmartModuleInvalidExports {
                     kind: format!("{:?}", kind),
@@ -278,7 +278,7 @@ async fn extract_smartstream_context(
                 Ok(sm)
             }
         } else {
-            debug!(%name, "invalid smart stream");
+            debug!(%name, "invalid SmartStream");
             Err(ErrorCode::SmartStreamInvalid(name))
         }
     } else {

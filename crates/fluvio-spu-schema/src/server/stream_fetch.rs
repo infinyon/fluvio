@@ -31,7 +31,7 @@ use super::SpuServerApiKey;
 pub const WASM_MODULE_API: i16 = 11;
 pub const WASM_MODULE_V2_API: i16 = 12;
 
-// version for aggregator smartstream
+// version for aggregator SmartModule
 pub const AGGREGATOR_API: i16 = 13;
 
 // version for gzipped WASM payloads
@@ -369,17 +369,17 @@ mod tests {
         value.decode(&mut std::io::Cursor::new(bytes), 12).unwrap();
         assert_eq!(value.topic, "one");
         assert_eq!(value.partition, 3);
-        let smartstream = match value.wasm_payload {
+        let sm = match value.wasm_payload {
             Some(wasm) => wasm,
             _ => panic!("should have smartstreeam payload"),
         };
-        let wasm = match smartstream.wasm {
+        let wasm = match sm.wasm {
             SmartModuleWasmCompressed::Raw(wasm) => wasm,
             #[allow(unreachable_patterns)]
             _ => panic!("should be SmartModuleWasm::Raw"),
         };
         assert_eq!(wasm, vec![0xde, 0xad, 0xbe, 0xef]);
-        assert!(matches!(smartstream.kind, SmartModuleKind::Filter));
+        assert!(matches!(sm.kind, SmartModuleKind::Filter));
     }
 
     #[test]

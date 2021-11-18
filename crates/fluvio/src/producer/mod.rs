@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use fluvio_protocol::Encoder;
 #[cfg(feature = "smartengine")]
-use fluvio_smartengine::SmartStream;
+use fluvio_smartengine::SmartModule;
 use tracing::debug;
 use tracing::instrument;
 use once_cell::sync::Lazy;
@@ -37,7 +37,7 @@ pub struct TopicProducer {
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
     #[cfg(feature = "smartengine")]
-    pub(crate) smartengine: Option<Arc<RwLock<Box<dyn SmartStream>>>>,
+    pub(crate) smartengine: Option<Arc<RwLock<Box<dyn SmartModule>>>>,
 }
 cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
@@ -48,12 +48,12 @@ cfg_if::cfg_if! {
         impl TopicProducer {
             fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
                 let engine = SmartEngine::default();
-                let  smartstream = engine.create_module_from_payload(
+                let  smartmodule = engine.create_module_from_payload(
                     smart_payload).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-                self.smartengine = Some(Arc::new(RwLock::new(smartstream)));
+                self.smartengine = Some(Arc::new(RwLock::new(smartmodule)));
                 Ok(())
             }
-            /// Adds a SmartStream filter to this TopicProducer
+            /// Adds a SmartModule filter to this TopicProducer
             pub fn with_filter<T: Into<Vec<u8>>>(
                 mut self,
                 filter: T,
@@ -68,7 +68,7 @@ cfg_if::cfg_if! {
                 Ok(self)
             }
 
-            /// Adds a SmartStream map to this TopicProducer
+            /// Adds a SmartModule map to this TopicProducer
             pub fn with_map<T: Into<Vec<u8>>>(
                 mut self,
                 map: T,
@@ -83,7 +83,7 @@ cfg_if::cfg_if! {
                 Ok(self)
             }
 
-            /// Adds a SmartStream array_map to this TopicProducer
+            /// Adds a SmartModule array_map to this TopicProducer
             pub fn with_array_map<T: Into<Vec<u8>>>(
                 mut self,
                 map: T,
@@ -99,7 +99,7 @@ cfg_if::cfg_if! {
                 Ok(self)
             }
 
-            /// Adds a SmartStream aggregate to this TopicProducer
+            /// Adds a SmartModule aggregate to this TopicProducer
             pub fn with_aggregate<T: Into<Vec<u8>>>(
                 mut self,
                 map: T,
@@ -185,14 +185,14 @@ impl TopicProducer {
                     .map(Record::from)
                     .collect::<Vec<Record>>();
                 use fluvio_smartengine::{SmartEngine};
-                use dataplane::smartmodule::SmartStreamInput;
+                use dataplane::smartmodule::SmartModuleInput;
                 use std::convert::TryFrom;
 
                 if let Some(
                     smartengine_ref
                 ) = &self.smartengine {
                     let mut smartengine = smartengine_ref.write().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-                    let output = smartengine.process(SmartStreamInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    let output = smartengine.process(SmartModuleInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;
                 }
             } else {

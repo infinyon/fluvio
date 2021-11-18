@@ -117,28 +117,28 @@ pub struct ConsumeOpt {
     )]
     pub output: Option<ConsumeOutputType>,
 
-    /// Path to a SmartStream filter wasm file
+    /// Name of SmartStream
     #[structopt(long)]
     pub smartstream: Option<String>,
 
-    /// Path to a SmartStream filter wasm file
+    /// Path to a SmartModule filter wasm file
     #[structopt(long, group("smartmodule"))]
     pub filter: Option<String>,
 
-    /// Path to a SmartStream map wasm file
+    /// Path to a SmartModule map wasm file
     #[structopt(long, group("smartmodule"))]
     pub map: Option<String>,
 
-    /// Path to a SmartStream filter_map wasm file
+    /// Path to a SmartModule filter_map wasm file
     #[structopt(long, group("smartmodule"))]
     pub filter_map: Option<String>,
 
-    /// Path to a SmartStream array_map wasm file
+    /// Path to a SmartModule array_map wasm file
     #[structopt(long, group("smartmodule"))]
     pub array_map: Option<String>,
 
-    /// Path to a SmartStream join wasm filee
-    #[structopt(long, group("smartstream"))]
+    /// Path to a SmartModule join wasm filee
+    #[structopt(long, group("smartmodule"))]
     pub join: Option<String>,
 
     /// Path to a WASM file for aggregation
