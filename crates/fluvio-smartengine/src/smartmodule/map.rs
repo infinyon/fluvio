@@ -1,19 +1,36 @@
 use std::convert::TryFrom;
 use anyhow::Result;
-use wasmtime::TypedFunc;
+use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
-use crate::smartmodule::{
-    SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
-    SmartModuleExtraParams,
+use crate::{
+    WasmSlice,
+    smartmodule::{
+        SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
+        SmartModuleExtraParams,
+    },
 };
 
 const MAP_FN_NAME: &str = "map";
+type OldMapFn = TypedFunc<(i32, i32), i32>;
 type MapFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleMap {
     base: SmartModuleContext,
-    map_fn: MapFn,
+    map_fn: MapFnKind,
+}
+enum MapFnKind {
+    Old(OldMapFn),
+    New(MapFn),
+}
+
+impl MapFnKind {
+    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
+        match self {
+            Self::Old(map_fn) => map_fn.call(store, (slice.0, slice.1)),
+            Self::New(map_fn) => map_fn.call(store, slice),
+        }
+    }
 }
 
 impl SmartModuleMap {
@@ -24,8 +41,13 @@ impl SmartModuleMap {
         version: i16,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params, version)?;
-        let map_fn: MapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
-
+        let map_fn = if let Ok(map_fn) = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)
+        {
+            MapFnKind::New(map_fn)
+        } else {
+            let map_fn: OldMapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
+            MapFnKind::Old(map_fn)
+        };
         Ok(Self { base, map_fn })
     }
 }

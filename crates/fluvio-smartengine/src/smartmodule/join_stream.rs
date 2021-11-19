@@ -2,20 +2,38 @@ use std::convert::TryFrom;
 
 use anyhow::Result;
 use tracing::{debug, instrument};
-use wasmtime::TypedFunc;
+use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
-use crate::smartmodule::{
-    SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
-    SmartModuleExtraParams,
+use crate::{
+    WasmSlice,
+    smartmodule::{
+        SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
+        SmartModuleExtraParams,
+    },
 };
 
 const JOIN_FN_NAME: &str = "join";
+type OldJoinFn = TypedFunc<(i32, i32), i32>;
 type JoinFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleJoinStream {
     base: SmartModuleContext,
-    join_fn: JoinFn,
+    join_fn: JoinFnKind,
+}
+
+pub enum JoinFnKind {
+    Old(OldJoinFn),
+    New(JoinFn),
+}
+
+impl JoinFnKind {
+    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
+        match self {
+            Self::Old(join_fn) => join_fn.call(store, (slice.0, slice.1)),
+            Self::New(join_fn) => join_fn.call(store, slice),
+        }
+    }
 }
 
 impl SmartModuleJoinStream {
@@ -26,10 +44,15 @@ impl SmartModuleJoinStream {
         version: i16,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params, version)?;
-        let join_fn: JoinFn = base
-            .instance
-            .get_typed_func(&mut base.store, JOIN_FN_NAME)?;
-
+        let join_fn =
+            if let Ok(join_fn) = base.instance.get_typed_func(&mut base.store, JOIN_FN_NAME) {
+                JoinFnKind::New(join_fn)
+            } else {
+                let join_fn = base
+                    .instance
+                    .get_typed_func(&mut base.store, JOIN_FN_NAME)?;
+                JoinFnKind::Old(join_fn)
+            };
         Ok(Self { base, join_fn })
     }
 }
