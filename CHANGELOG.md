@@ -2,7 +2,7 @@
 
 ## Platform Version 0.9.13 - UNRELEASED
 * Fix connector create with `create_topic` option to succeed if topic already exists. ([#1823](https://github.com/infinyon/fluvio/pull/1823))
-* Add `#[smartmodule(filter_map)]` for filtering and transforming at the same time. ([#1826](https://github.com/infinyon/fluvio/issues/1826))
+* Add `#[smartstream(filter_map)]` for filtering and transforming at the same time. ([#1826](https://github.com/infinyon/fluvio/issues/1826))
 * Add table display output option to consumer for json objects ([#1642](https://github.com/infinyon/fluvio/issues/1642))
 * Streamlined Admin API ([#1803](https://github.com/infinyon/fluvio/issues/1803))
 * Add SpuDirectory trait to Fluvio Client ([#1863](https://github.com/infinyon/fluvio/issues/1863))
@@ -68,7 +68,7 @@
 ## Platform Version 0.9.3 - 2021-08-19
 * Fix Replication timing. ([#1439](https://github.com/infinyon/fluvio/pull/1439))
 * Fix release workflow to include Helm charts ([#1361](https://github.com/infinyon/fluvio/issues/1361))
-* Implement SmartStream Aggregates (`#[smartmodule(aggregate)]`) API ([#1173](https://github.com/infinyon/fluvio/issues/1173))
+* Implement SmartStream Aggregates (`#[smartstream(aggregate)]`) API ([#1173](https://github.com/infinyon/fluvio/issues/1173))
 * Fix bounds when resolving relative Offsets ([#1210](https://github.com/infinyon/fluvio/issues/1210))
 * Add `--tail` CLI option for reading recent records from a stream ([#1216](https://github.com/infinyon/fluvio/issues/1210))
 * Fix consumer stream API that waited for records before initializing ([#986](https://github.com/infinyon/fluvio/issues/986))
@@ -97,14 +97,14 @@
 * Fix owner reference type to work delete in K 1.20.0 ([#1342](https://github.com/infinyon/fluvio/issues/1342))
 * Fix Upgrading K8 Cluster ([#1347](https://github.com/infinyon/fluvio/issues/1347))
 * Add Error Handling to SmartStreams ([#1198](https://github.com/infinyon/fluvio/pull/1198))
-* Finish SmartStream Map (`#[smartmodule(map)]`) API ([#1174](https://github.com/infinyon/fluvio/pull/1174), [#1198](https://github.com/infinyon/fluvio/pull/1198))
+* Finish SmartStream Map (`#[smartstream(map)]`) API ([#1174](https://github.com/infinyon/fluvio/pull/1174), [#1198](https://github.com/infinyon/fluvio/pull/1198))
 
 ## Platform Version 0.8.5 - 2021-07-14
 * Add unstable Admin Watch API for topics, partitions, and SPUs ([#1136](https://github.com/infinyon/fluvio/pull/1136))
 * Make recipes for smoke tests no longer build by default, helps caching. ([#1165](https://github.com/infinyon/fluvio/pull/1165))
 * Relax requirement of `FluvioAdmin` methods from `&mut self` to `&self`. ([#1178](https://github.com/infinyon/fluvio/pull/1178))
 * Sort output of `fluvio partition list` by Topic then Partition. ([#1181](https://github.com/infinyon/fluvio/issues/1181))
-* Add SmartStream Map (`#[smartmodule(map)]`) API for transforming records. ([#1174](https://github.com/infinyon/fluvio/pull/1174))
+* Add SmartStream Map (`#[smartstream(map)]`) API for transforming records. ([#1174](https://github.com/infinyon/fluvio/pull/1174))
 * Change C compiler to `zig` and linker to `lld`. Resolves segfaults when cross compiling to musl. ([#464](https://github.com/infinyon/fluvio/pull/464))
 * Consumer CLI prints a status when consuming from the end of a partition. ([#1171](https://github.com/infinyon/fluvio/pull/1171))
 * Upgrade wasmtime to thread-safe API. ([#1200](https://github.com/infinyon/fluvio/issues/1200))

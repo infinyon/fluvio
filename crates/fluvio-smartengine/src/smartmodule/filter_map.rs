@@ -5,7 +5,8 @@ use wasmtime::TypedFunc;
 
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
 use crate::smartmodule::{
-    SmartEngine, SmartModuleModule, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
+    SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
+    SmartModuleExtraParams,
 };
 
 const FILTER_MAP_FN_NAME: &str = "filter_map";
@@ -19,7 +20,7 @@ pub struct SmartModuleFilterMap {
 impl SmartModuleFilterMap {
     pub fn new(
         engine: &SmartEngine,
-        module: &SmartModuleModule,
+        module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params)?;

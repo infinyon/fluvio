@@ -45,7 +45,7 @@ impl SmartEngine {
     pub fn create_module_from_smartmodule_spec(
         self,
         spec: &SmartModuleSpec,
-    ) -> Result<SmartModuleModule> {
+    ) -> Result<SmartModuleWithEngine> {
         use fluvio_controlplane_metadata::smartmodule::{SmartModuleWasmFormat};
         use flate2::bufread::GzDecoder;
         use std::io::Read;
@@ -59,15 +59,15 @@ impl SmartEngine {
             SmartModuleWasmFormat::Binary => Module::from_binary(&self.0, &buffer)?,
             SmartModuleWasmFormat::Text => return Err(Error::msg("Format not supported")),
         };
-        Ok(SmartModuleModule {
+        Ok(SmartModuleWithEngine {
             module,
             engine: self,
         })
     }
 
-    pub fn create_module_from_binary(self, bytes: &[u8]) -> Result<SmartModuleModule> {
+    pub fn create_module_from_binary(self, bytes: &[u8]) -> Result<SmartModuleWithEngine> {
         let module = Module::from_binary(&self.0, bytes)?;
-        Ok(SmartModuleModule {
+        Ok(SmartModuleWithEngine {
             module,
             engine: self,
         })
@@ -105,12 +105,12 @@ impl Debug for SmartEngine {
     }
 }
 
-pub struct SmartModuleModule {
+pub struct SmartModuleWithEngine {
     pub(crate) module: Module,
     pub(crate) engine: SmartEngine,
 }
 
-impl SmartModuleModule {
+impl SmartModuleWithEngine {
     fn create_filter(&self, params: SmartModuleExtraParams) -> Result<SmartModuleFilter> {
         let filter = SmartModuleFilter::new(&self.engine, self, params)?;
         Ok(filter)
@@ -161,7 +161,7 @@ pub struct SmartModuleContext {
 impl SmartModuleContext {
     pub fn new(
         engine: &SmartEngine,
-        module: &SmartModuleModule,
+        module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
     ) -> Result<Self> {
         let mut store = Store::new(&engine.0, ());

@@ -57,10 +57,8 @@ where
     pub isolation: Isolation,
     /// no longer used, but keep to avoid breaking compatibility, this will not be honored
     // TODO: remove in 0.10
-    // #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.11")]
     #[fluvio(min_version = 11)]
     pub wasm_module: Vec<u8>,
-    // #[deprecated(note = "Use 'smartmodule' instead", since = "0.9.13")]
     // TODO: remove in 0.10
     #[fluvio(min_version = 12)]
     pub wasm_payload: Option<LegacySmartModulePayload>,

@@ -7,7 +7,8 @@ use wasmtime::TypedFunc;
 use fluvio_spu_schema::server::stream_fetch::SMART_MODULE_API;
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
 use crate::smartmodule::{
-    SmartEngine, SmartModuleModule, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
+    SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
+    SmartModuleExtraParams,
 };
 
 const JOIN_FN_NAME: &str = "join";
@@ -21,7 +22,7 @@ pub struct SmartModuleJoinStream {
 impl SmartModuleJoinStream {
     pub fn new(
         engine: &SmartEngine,
-        module: &SmartModuleModule,
+        module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params)?;

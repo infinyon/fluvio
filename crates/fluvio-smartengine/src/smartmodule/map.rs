@@ -5,7 +5,8 @@ use wasmtime::TypedFunc;
 use fluvio_spu_schema::server::stream_fetch::WASM_MODULE_V2_API;
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
 use crate::smartmodule::{
-    SmartEngine, SmartModuleModule, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
+    SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
+    SmartModuleExtraParams,
 };
 
 const MAP_FN_NAME: &str = "map";
@@ -19,7 +20,7 @@ pub struct SmartModuleMap {
 impl SmartModuleMap {
     pub fn new(
         engine: &SmartEngine,
-        module: &SmartModuleModule,
+        module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params)?;

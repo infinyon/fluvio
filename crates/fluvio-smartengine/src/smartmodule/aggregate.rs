@@ -5,7 +5,7 @@ use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::TypedFunc;
 
-use crate::smartmodule::{SmartEngine, SmartModuleModule, SmartModuleContext, SmartModuleInstance};
+use crate::smartmodule::{SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance};
 use dataplane::smartmodule::{
     SmartModuleAggregateInput, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
     SmartModuleExtraParams, SmartModuleAggregateOutput,
@@ -23,7 +23,7 @@ pub struct SmartModuleAggregate {
 impl SmartModuleAggregate {
     pub fn new(
         engine: &SmartEngine,
-        module: &SmartModuleModule,
+        module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
     ) -> Result<Self> {
