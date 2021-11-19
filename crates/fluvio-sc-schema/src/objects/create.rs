@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
-use fluvio_controlplane_metadata::smartstream::SmartStreamSpec;
+use fluvio_controlplane_metadata::derivedstream::DerivedStreamSpec;
 use fluvio_protocol::Version;
 use crate::topic::TopicSpec;
 use crate::customspu::CustomSpuSpec;
@@ -47,7 +47,7 @@ pub enum ObjectCreateRequest {
     ManagedConnector(ManagedConnectorSpec),
     SpuGroup(SpuGroupSpec),
     TableFormat(TableFormatSpec),
-    SmartStream(SmartStreamSpec),
+    DerivedStream(DerivedStreamSpec),
 }
 
 impl Default for ObjectCreateRequest {
@@ -65,7 +65,7 @@ impl ObjectCreateRequest {
             Self::ManagedConnector(_) => ManagedConnectorSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
             Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
-            Self::SmartStream(_) => SmartStreamSpec::CREATE_TYPE,
+            Self::DerivedStream(_) => DerivedStreamSpec::CREATE_TYPE,
         }
     }
 }
@@ -82,7 +82,7 @@ impl Encoder for ObjectCreateRequest {
                 Self::ManagedConnector(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
                 Self::TableFormat(s) => s.write_size(version),
-                Self::SmartStream(s) => s.write_size(version),
+                Self::DerivedStream(s) => s.write_size(version),
             }
     }
 
@@ -102,7 +102,7 @@ impl Encoder for ObjectCreateRequest {
             Self::SmartModule(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
             Self::TableFormat(s) => s.encode(dest, version)?,
-            Self::SmartStream(s) => s.encode(dest, version)?,
+            Self::DerivedStream(s) => s.encode(dest, version)?,
         }
 
         Ok(())
@@ -170,11 +170,11 @@ impl dataplane::core::Decoder for ObjectCreateRequest {
                 Ok(())
             }
 
-            SmartStreamSpec::CREATE_TYPE => {
-                tracing::trace!("detected smartstream");
-                let mut request = SmartStreamSpec::default();
+            DerivedStreamSpec::CREATE_TYPE => {
+                tracing::trace!("detected derivedstream");
+                let mut request = DerivedStreamSpec::default();
                 request.decode(src, version)?;
-                *self = Self::SmartStream(request);
+                *self = Self::DerivedStream(request);
                 Ok(())
             }
 

@@ -16,32 +16,32 @@ mod metadata {
 
     use super::*;
 
-    impl Spec for SmartStreamSpec {
-        const LABEL: &'static str = "SmartStream";
+    impl Spec for DerivedStreamSpec {
+        const LABEL: &'static str = "DerivedStream";
         type IndexKey = String;
-        type Status = SmartStreamStatus;
+        type Status = DerivedStreamStatus;
         type Owner = Self;
     }
 
-    impl SpecExt for SmartStreamSpec {
+    impl SpecExt for DerivedStreamSpec {
         const OBJECT_TYPE: ObjectType = ObjectType::Topic;
     }
 
-    impl Removable for SmartStreamSpec {
+    impl Removable for DerivedStreamSpec {
         type DeleteKey = String;
     }
 
-    impl Creatable for SmartStreamSpec {}
+    impl Creatable for DerivedStreamSpec {}
 
-    impl Status for SmartStreamStatus {}
+    impl Status for DerivedStreamStatus {}
 
     #[allow(clippy::enum_variant_names)]
     #[derive(thiserror::Error, Debug)]
-    pub enum SmartStreamValidationError {
+    pub enum DerivedStreamValidationError {
         #[error("Topic not found: {0}")]
         TopicNotFound(String),
-        #[error("SmartStream not found: {0}")]
-        SmartStreamNotFound(String),
+        #[error("DerivedStream not found: {0}")]
+        DerivedStreamNotFound(String),
         #[error("SmartModule not found: {0}")]
         SmartModuleNotFound(String),
     }
@@ -56,9 +56,9 @@ mod metadata {
         use crate::k8_types::K8Obj;
         use crate::store::k8::default_convert_from_k8;
 
-        use super::SmartStreamSpec;
+        use super::DerivedStreamSpec;
 
-        impl K8ExtendedSpec for SmartStreamSpec {
+        impl K8ExtendedSpec for DerivedStreamSpec {
             type K8Spec = Self;
             type K8Status = Self::Status;
 

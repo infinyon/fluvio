@@ -65,7 +65,7 @@ where
     #[fluvio(min_version = 16)]
     pub smartmodule: Option<SmartModuleInvocation>,
     #[fluvio(min_version = 16)]
-    pub smartstream: Option<SmartStreamInvocation>,
+    pub derivedstream: Option<DerivedStreamInvocation>,
     pub data: PhantomData<R>,
 }
 
@@ -132,7 +132,7 @@ pub enum SmartModuleKind {
     #[fluvio(min_version = SMART_MODULE_API)]
     JoinStream {
         topic: String,
-        smartstream: String,
+        derivedstream: String,
     },
 }
 
@@ -221,7 +221,7 @@ impl Debug for SmartModuleWasmCompressed {
 
 ///
 #[derive(Debug, Default, Clone, Encoder, Decoder)]
-pub struct SmartStreamInvocation {
+pub struct DerivedStreamInvocation {
     pub stream: String,
     pub params: SmartModuleExtraParams,
 }

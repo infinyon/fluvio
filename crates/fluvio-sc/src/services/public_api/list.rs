@@ -58,11 +58,11 @@ pub async fn handle_list_request<AC: AuthContext>(
             )
             .await?,
         ),
-        ObjectApiListRequest::SmartStream(req) => ObjectApiListResponse::SmartStream(
+        ObjectApiListRequest::DerivedStream(req) => ObjectApiListResponse::DerivedStream(
             fetch::handle_fetch_request(
                 req.name_filters,
                 auth_ctx,
-                auth_ctx.global_ctx.smartstreams(),
+                auth_ctx.global_ctx.derivedstreams(),
             )
             .await?,
         ),

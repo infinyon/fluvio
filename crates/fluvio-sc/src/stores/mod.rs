@@ -12,6 +12,6 @@ pub mod actions {
     pub use crate::dispatcher::actions::*;
 }
 
-pub mod smartstream {
-    pub use fluvio_controlplane_metadata::smartstream::*;
+pub mod derivedstream {
+    pub use fluvio_controlplane_metadata::derivedstream::*;
 }

@@ -234,7 +234,7 @@ impl ClusterUninstaller {
         let _ = self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"), false);
         let _ = self.remove_custom_objects("tables", ns, None, false);
         let _ = self.remove_custom_objects("managedconnectors", ns, None, false);
-        let _ = self.remove_custom_objects("smartstreams", ns, None, false);
+        let _ = self.remove_custom_objects("derivedstreams", ns, None, false);
         let _ = self.remove_custom_objects("smartmodules", ns, None, false);
 
         // delete secrets

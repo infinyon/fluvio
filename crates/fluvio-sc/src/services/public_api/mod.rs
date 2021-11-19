@@ -11,7 +11,7 @@ mod delete;
 mod list;
 mod watch;
 mod tableformat;
-mod smartstream;
+mod derivedstream;
 
 pub use server::start_public_server;
 

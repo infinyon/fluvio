@@ -16,7 +16,7 @@ use crate::core::SharedContext;
 use crate::controllers::spus::SpuController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
-use crate::controllers::smartstreams::SmartStreamController;
+use crate::controllers::derivedstreams::DerivedStreamController;
 use crate::config::{ScConfig};
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
@@ -37,7 +37,7 @@ where
     use crate::stores::connector::ManagedConnectorSpec;
     use crate::stores::tableformat::TableFormatSpec;
     use crate::stores::smartmodule::SmartModuleSpec;
-    use crate::stores::smartstream::SmartStreamSpec;
+    use crate::stores::derivedstream::DerivedStreamSpec;
 
     info!(PlatformVersion = &*crate::VERSION, "SC Platform Version");
 
@@ -101,10 +101,10 @@ where
         ctx.smartmodules().clone(),
     );
 
-    K8ClusterStateDispatcher::<SmartStreamSpec, C>::start(
+    K8ClusterStateDispatcher::<DerivedStreamSpec, C>::start(
         namespace,
         metadata_client,
-        ctx.smartstreams().clone(),
+        ctx.derivedstreams().clone(),
     );
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
@@ -122,8 +122,8 @@ where
         pub_server::start(ctx.clone(), auth_policy)
     );
 
-    SmartStreamController::start(
-        ctx.smartstreams().clone(),
+    DerivedStreamController::start(
+        ctx.derivedstreams().clone(),
         ctx.topics().clone(),
         ctx.smartmodules().clone(),
     );

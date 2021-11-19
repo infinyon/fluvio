@@ -13,7 +13,7 @@ use fluvio_spu_schema::server::stream_fetch::{
     LegacySmartModulePayload, SmartModuleWasmCompressed, WASM_MODULE_API, WASM_MODULE_V2_API,
 };
 pub use fluvio_spu_schema::server::stream_fetch::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartStreamInvocation,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, DerivedStreamInvocation,
 };
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
@@ -431,7 +431,7 @@ where
             .unwrap_or((WASM_MODULE_API - 1) as i16);
         debug!(%stream_fetch_version, "stream_fetch_version");
 
-        stream_request.smartstream = config.smartstream;
+        stream_request.derivedstream = config.derivedstream;
 
         if let Some(smartmodule) = config.smartmodule {
             if stream_fetch_version < SMART_MODULE_API as i16 {
@@ -720,7 +720,7 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
-    pub(crate) smartstream: Option<SmartStreamInvocation>,
+    pub(crate) derivedstream: Option<DerivedStreamInvocation>,
 }
 
 impl ConsumerConfig {

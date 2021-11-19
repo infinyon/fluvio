@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use structopt::StructOpt;
 
-use fluvio::metadata::smartstream::SmartStreamSpec;
+use fluvio::metadata::derivedstream::DerivedStreamSpec;
 use fluvio::Fluvio;
 
 use crate::common::output::Terminal;
@@ -11,15 +11,15 @@ use crate::Result;
 
 /// List all existing SmartModules
 #[derive(Debug, StructOpt)]
-pub struct ListSmartStreamOpt {
+pub struct ListDerivedStreamOpt {
     #[structopt(flatten)]
     output: OutputFormat,
 }
 
-impl ListSmartStreamOpt {
+impl ListDerivedStreamOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SmartStreamSpec, _>(vec![]).await?;
+        let lists = admin.list::<DerivedStreamSpec, _>(vec![]).await?;
         output::smart_stream_response_to_output(out, lists, self.output.format)
     }
 }
@@ -41,14 +41,14 @@ mod output {
     use fluvio_extension_common::Terminal;
 
     use fluvio::metadata::objects::Metadata;
-    use fluvio::metadata::smartstream::SmartStreamSpec;
+    use fluvio::metadata::derivedstream::DerivedStreamSpec;
 
     use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
     #[derive(Serialize)]
-    struct ListSmartStream(Vec<Metadata<SmartStreamSpec>>);
+    struct ListDerivedStream(Vec<Metadata<DerivedStreamSpec>>);
 
     // -----------------------------------
     // Format Output
@@ -56,13 +56,13 @@ mod output {
 
     pub fn smart_stream_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
-        list_smart_streams: Vec<Metadata<SmartStreamSpec>>,
+        list_smart_streams: Vec<Metadata<DerivedStreamSpec>>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
         debug!("smart streams: {:#?}", list_smart_streams);
 
         if !list_smart_streams.is_empty() {
-            let smart_streams = ListSmartStream(list_smart_streams);
+            let smart_streams = ListDerivedStream(list_smart_streams);
             out.render_list(&smart_streams, output_type)?;
             Ok(())
         } else {
@@ -74,7 +74,7 @@ mod output {
     // -----------------------------------
     // Output Handlers
     // -----------------------------------
-    impl TableOutputHandler for ListSmartStream {
+    impl TableOutputHandler for ListDerivedStream {
         /// table header implementation
         fn header(&self) -> Row {
             row!["NAME", "STATUS", "INPUT", "STEPS"]

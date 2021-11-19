@@ -13,7 +13,7 @@ use crate::stores::spg::*;
 use crate::stores::connector::*;
 use crate::stores::smartmodule::*;
 use crate::stores::tableformat::*;
-use crate::stores::smartstream::*;
+use crate::stores::derivedstream::*;
 use crate::stores::*;
 
 pub type SharedContext = Arc<Context>;
@@ -29,7 +29,7 @@ pub struct Context {
     managed_connectors: StoreContext<ManagedConnectorSpec>,
     smartmodules: StoreContext<SmartModuleSpec>,
     tableformats: StoreContext<TableFormatSpec>,
-    smart_streams: StoreContext<SmartStreamSpec>,
+    smart_streams: StoreContext<DerivedStreamSpec>,
     health: SharedHealthCheck,
     config: ScConfig,
 }
@@ -90,7 +90,7 @@ impl Context {
         &self.tableformats
     }
 
-    pub fn smartstreams(&self) -> &StoreContext<SmartStreamSpec> {
+    pub fn derivedstreams(&self) -> &StoreContext<DerivedStreamSpec> {
         &self.smart_streams
     }
 

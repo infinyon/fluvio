@@ -15,14 +15,14 @@ use self::describe::*;
 use self::delete::*;
 
 #[derive(Debug, StructOpt)]
-pub enum SmartStreamCmd {
-    Create(CreateSmartStreamOpt),
-    List(ListSmartStreamOpt),
-    Describe(DescribeSmartStreamOpt),
-    Delete(DeleteSmartStreamOpt),
+pub enum DerivedStreamCmd {
+    Create(CreateDerivedStreamOpt),
+    List(ListDerivedStreamOpt),
+    Describe(DescribeDerivedStreamOpt),
+    Delete(DeleteDerivedStreamOpt),
 }
 
-impl SmartStreamCmd {
+impl DerivedStreamCmd {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         match self {
             Self::Create(opt) => {

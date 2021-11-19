@@ -1,17 +1,17 @@
 use structopt::StructOpt;
 use crate::Result;
 use fluvio::Fluvio;
-use fluvio::metadata::smartstream::SmartStreamSpec;
+use fluvio::metadata::derivedstream::DerivedStreamSpec;
 
 #[derive(Debug, StructOpt)]
-pub struct DeleteSmartStreamOpt {
+pub struct DeleteDerivedStreamOpt {
     name: String,
 }
 
-impl DeleteSmartStreamOpt {
+impl DeleteDerivedStreamOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
-        admin.delete::<SmartStreamSpec, _>(&self.name).await?;
+        admin.delete::<DerivedStreamSpec, _>(&self.name).await?;
         Ok(())
     }
 }

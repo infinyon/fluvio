@@ -1,5 +1,5 @@
 //!
-//! # SmartStream Status
+//! # DerivedStream Status
 //!
 use std::fmt;
 
@@ -15,34 +15,34 @@ use dataplane::core::{Encoder, Decoder};
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct SmartStreamStatus {
-    pub resolution: SmartStreamResolution,
+pub struct DerivedStreamStatus {
+    pub resolution: DerivedStreamResolution,
 }
 
-impl fmt::Display for SmartStreamStatus {
+impl fmt::Display for DerivedStreamStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:#?}", self.resolution)
     }
 }
 
-impl SmartStreamStatus {
+impl DerivedStreamStatus {
     // whether this is valid (deployable)
     pub fn is_deployable(&self) -> bool {
-        matches!(self.resolution, SmartStreamResolution::Provisioned)
+        matches!(self.resolution, DerivedStreamResolution::Provisioned)
     }
 }
 
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartStreamResolution {
+pub enum DerivedStreamResolution {
     Init,
     InvalidConfig(String),
     Provisioned,
 }
 
-impl Default for SmartStreamResolution {
+impl Default for DerivedStreamResolution {
     fn default() -> Self {
-        SmartStreamResolution::Init
+        DerivedStreamResolution::Init
     }
 }
 
@@ -52,17 +52,17 @@ mod states {
 
     use fluvio_stream_model::core::MetadataItem;
 
-    use crate::smartstream::{SmartStreamSpec, SmartStreamValidationInput};
+    use crate::derivedstream::{DerivedStreamSpec, DerivedStreamValidationInput};
 
     use super::*;
 
-    impl SmartStreamResolution {
+    impl DerivedStreamResolution {
         /// for this resolution, compute next state based on smartmodules
         #[instrument(skip(spec, objects))]
         pub async fn next<'a, C>(
             &'a self,
-            spec: &SmartStreamSpec,
-            objects: &SmartStreamValidationInput<'a, C>,
+            spec: &DerivedStreamSpec,
+            objects: &DerivedStreamValidationInput<'a, C>,
             force: bool,
         ) -> Option<Self>
         where

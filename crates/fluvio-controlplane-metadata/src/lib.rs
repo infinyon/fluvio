@@ -6,7 +6,7 @@ pub mod message;
 pub mod connector;
 pub mod smartmodule;
 pub mod tableformat;
-pub mod smartstream;
+pub mod derivedstream;
 
 pub use fluvio_stream_model::core;
 
@@ -32,7 +32,7 @@ pub mod extended {
         ManagedConnector,
         SmartModule,
         TableFormat,
-        SmartStream,
+        DerivedStream,
     }
 
     pub trait SpecExt: Spec {

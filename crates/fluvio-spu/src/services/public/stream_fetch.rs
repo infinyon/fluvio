@@ -129,10 +129,10 @@ impl StreamFetchHandler {
     ) -> Result<(), SocketError> {
         debug!("request: {:#?}", msg);
 
-        let smartstream_ctx = match SmartModuleContext::extract(
+        let derivedstream_ctx = match SmartModuleContext::extract(
             msg.wasm_payload,
             msg.smartmodule,
-            msg.smartstream,
+            msg.derivedstream,
             &ctx,
         )
         .await
@@ -146,7 +146,7 @@ impl StreamFetchHandler {
 
         let max_bytes = msg.max_bytes as u32;
         // compute max fetch bytes depends on smart stream
-        let max_fetch_bytes = if smartstream_ctx.is_some() {
+        let max_fetch_bytes = if derivedstream_ctx.is_some() {
             u32::MAX
         } else {
             max_bytes
@@ -178,16 +178,16 @@ impl StreamFetchHandler {
             max_fetch_bytes,
         };
 
-        handler.process(starting_offset, smartstream_ctx).await
+        handler.process(starting_offset, derivedstream_ctx).await
     }
 
     async fn process(
         mut self,
         starting_offset: Offset,
-        smartstream_ctx: Option<SmartModuleContext>,
+        derivedstream_ctx: Option<SmartModuleContext>,
     ) -> Result<(), SocketError> {
         let (mut smartmodule_instance, mut right_consumer_stream) =
-            if let Some(ctx) = smartstream_ctx {
+            if let Some(ctx) = derivedstream_ctx {
                 let SmartModuleContext {
                     smartmodule_instance: st,
                     right_consumer_stream,
