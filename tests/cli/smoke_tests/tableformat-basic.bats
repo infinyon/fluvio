@@ -5,15 +5,18 @@ load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
 load "$BATS_TEST_DIRNAME"/../test_helper/bats-support/load.bash
 load "$BATS_TEST_DIRNAME"/../test_helper/bats-assert/load.bash
 
+
 setup_file() {
-    TABLEFORMAT_NAME="$(random_string)"
+    TABLEFORMAT_NAME="testtable"
     export TABLEFORMAT_NAME
+    TABLEFORMAT_CONFIG="$BATS_TEST_DIRNAME/../test_helper/test-tableformat-config.yml"
+    export TABLEFORMAT_CONFIG
     debug_msg "TableFormat name: $TABLEFORMAT_NAME"
 }
 
 # Create tableformat
 @test "Create tableformat" {
-    run timeout 15s "$FLUVIO_BIN" tableformat create "$TABLEFORMAT_NAME"
+    run timeout 15s "$FLUVIO_BIN" tableformat create --config "$TABLEFORMAT_CONFIG"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_success
@@ -21,7 +24,7 @@ setup_file() {
 
 # Create tableformat - Negative test
 @test "Attempt to create a tableformat with same name" {
-    run timeout 15s "$FLUVIO_BIN" tableformat create "$TABLEFORMAT_NAME"
+    run timeout 15s "$FLUVIO_BIN" tableformat create --config "$TABLEFORMAT_CONFIG"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_output --partial "TableFormatAlreadyExists"
