@@ -9,6 +9,7 @@ use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
+use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -86,6 +87,10 @@ pub struct ConsumeOpt {
     /// Offset 0 has key A and value Apple
     #[structopt(short = "F", long, conflicts_with_all = &["output", "key_value"])]
     pub format: Option<String>,
+
+    /// Consume records using the formatting rules defined by TableFormat name
+    #[structopt(long, conflicts_with_all = &["key_value", "format"])]
+    pub tableformat: Option<String>,
 
     /// Consume records starting X from the beginning of the log (default: 0)
     #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
@@ -173,11 +178,58 @@ impl ConsumeOpt {
         fields(topic = %self.topic, partition = self.partition),
     )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        let maybe_tableformat = if let Some(ref tableformat_name) = self.tableformat {
+            let admin = fluvio.admin().await;
+            let tableformats = admin.list::<TableFormatSpec, _>(vec![]).await?;
+
+            let mut found = None;
+
+            if !tableformats.is_empty() {
+                for t in tableformats {
+                    if t.name.as_str() == tableformat_name {
+                        //println!("debug: Found tableformat: {:?}", t.spec);
+                        found = Some(t.spec);
+
+                        //let tableformat_test = TableFormatSpec {
+                        //    name: "hardcoded_test".to_string(),
+                        //    columns: Some(vec![
+                        //        TableColumn {
+                        //            key_path: "key2".to_string(),
+                        //            header_label: Some("Key #2".to_string()),
+                        //            ..Default::default()
+                        //        },
+                        //        TableColumn {
+                        //            key_path: "key1".to_string(),
+                        //            //primary_key: true,
+                        //            header_label: Some("Key #1".to_string()),
+                        //            ..Default::default()
+                        //        },
+                        //    ]),
+                        //    ..Default::default()
+                        //};
+                        //println!("debug: Using test tableformat: {:?}", tableformat_test);
+                        //found = Some(tableformat_test);
+                        break;
+                    }
+                }
+
+                if found.is_none() {
+                    return Err(CliError::TableFormatNotFound(tableformat_name.to_string()));
+                }
+
+                found
+            } else {
+                return Err(CliError::TableFormatNotFound(tableformat_name.to_string()));
+            }
+        } else {
+            None
+        };
+
         if self.all_partitions {
             let consumer = fluvio
                 .consumer(PartitionSelectionStrategy::All(self.topic.clone()))
                 .await?;
-            self.consume_records(consumer).await?;
+            self.consume_records(consumer, maybe_tableformat).await?;
         } else {
             let consumer = fluvio
                 .consumer(PartitionSelectionStrategy::Multiple(vec![(
@@ -185,7 +237,7 @@ impl ConsumeOpt {
                     self.partition,
                 )]))
                 .await?;
-            self.consume_records(consumer).await?;
+            self.consume_records(consumer, maybe_tableformat).await?;
         };
 
         Ok(())
@@ -200,7 +252,11 @@ impl ConsumeOpt {
         }
     }
 
-    pub async fn consume_records(&self, consumer: MultiplePartitionConsumer) -> Result<()> {
+    pub async fn consume_records(
+        &self,
+        consumer: MultiplePartitionConsumer,
+        tableformat: Option<TableFormatSpec>,
+    ) -> Result<()> {
         trace!(config = ?self, "Starting consumer:");
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
@@ -293,7 +349,8 @@ impl ConsumeOpt {
 
         let consume_config = builder.build()?;
         debug!("consume config: {:#?}", consume_config);
-        self.consume_records_stream(consumer, offset, consume_config)
+
+        self.consume_records_stream(consumer, offset, consume_config, tableformat)
             .await?;
 
         if !self.disable_continuous {
@@ -309,6 +366,7 @@ impl ConsumeOpt {
         consumer: MultiplePartitionConsumer,
         offset: Offset,
         config: ConsumerConfig,
+        tableformat: Option<TableFormatSpec>,
     ) -> Result<()> {
         self.print_status();
         let mut stream = consumer.stream_with_config(offset, config).await?;
@@ -330,7 +388,11 @@ impl ConsumeOpt {
                 let mut stdout = io::stdout();
                 execute!(stdout, EnterAlternateScreen)?;
 
-                let model = TableModel::default();
+                let mut model = TableModel::new();
+
+                // Customize display options w/ tableformat spec
+                model.with_tableformat(tableformat);
+
                 maybe_table_model = Some(model);
 
                 let stdout = io::stdout();
@@ -383,9 +445,12 @@ impl ConsumeOpt {
                         match maybe_event {
                             Some(Ok(event)) => {
                                 if let Some(model) = maybe_table_model.as_mut() {
-                                    match model.event_handler(event) {
-                                        TableEventResponse::Terminate => break,
-                                        _ => continue
+                                    // Give the event handler access to redraw
+                                    if let Some(term) = maybe_terminal_stdout.as_mut() {
+                                        match model.event_handler(event, term) {
+                                            TableEventResponse::Terminate => break,
+                                            _ => continue
+                                        }
                                     }
                                 }
                             }
@@ -396,7 +461,7 @@ impl ConsumeOpt {
                 }
             }
         } else {
-            // We do not support `--output=table` when we don't have a TTY (i.e., CI environment)
+            // We do not support `--output=full_table` when we don't have a TTY (i.e., CI environment)
             while let Some(result) = stream.next().await {
                 let result: std::result::Result<Record, _> = result;
                 let record = match result {

@@ -29,6 +29,21 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
 
     debug!(%name,"creating tableformat");
 
+    if auth_ctx
+        .global_ctx
+        .tableformats()
+        .store()
+        .contains_key(&name)
+        .await
+    {
+        debug!("tableformat already exists");
+        return Ok(Status::new(
+            name.to_string(),
+            ErrorCode::TableFormatAlreadyExists,
+            Some(format!("tableformat '{}' already defined", name)),
+        ));
+    }
+
     if let Ok(authorized) = auth_ctx
         .auth
         .allow_type_action(TableFormatSpec::OBJECT_TYPE, TypeAction::Create)
@@ -52,27 +67,6 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
     Ok(status)
 }
 
-/// Validate topic, takes advantage of the validation routines inside topic action workflow
-async fn validate_tableformat_request(
-    ctx: &Context,
-    name: &str,
-    _tableformat_spec: &TableFormatSpec,
-) -> Status {
-    debug!("validating tableformat: {}", name);
-
-    let tableformats = ctx.tableformats().store();
-
-    if tableformats.contains_key(name).await {
-        return Status::new(
-            name.to_string(),
-            ErrorCode::TableFormatAlreadyExists,
-            Some(format!("tableformat '{}' already defined", name)),
-        );
-    }
-
-    Status::new_ok(name.to_string())
-}
-
 /// Process custom tableformat, converts tableformat spec to K8 and sends to KV store
 #[instrument(skip(ctx, name, tableformat_spec))]
 async fn process_tableformat_request(
@@ -80,12 +74,6 @@ async fn process_tableformat_request(
     name: String,
     tableformat_spec: TableFormatSpec,
 ) -> Status {
-    let status = validate_tableformat_request(ctx, &name, &tableformat_spec).await;
-
-    if status.is_error() {
-        return status;
-    }
-
     if let Err(err) = ctx
         .tableformats()
         .create_spec(name.clone(), tableformat_spec)
@@ -94,6 +82,6 @@ async fn process_tableformat_request(
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::TableFormatError, error) // TODO: create error type
     } else {
-        status
+        Status::new_ok(name.clone())
     }
 }
