@@ -16,6 +16,7 @@ pub struct ApiVersionsRequest {}
 
 impl Request for ApiVersionsRequest {
     const API_KEY: u16 = VERSIONS_API_KEY;
+    const DEFAULT_API_VERSION: i16 = 1;
     type Response = ApiVersionsResponse;
 }
 
