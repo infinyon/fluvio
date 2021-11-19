@@ -20,37 +20,27 @@ use crate::CliError;
 
 #[derive(Debug, StructOpt, Default)]
 pub struct CreateTableFormatOpt {
-    pub name: String,
-    /// The name for the new TableFormat spec
+    /// The path to the TableFormat config
     #[structopt(short, long, parse(from_os_str))]
-    pub config: Option<PathBuf>,
+    pub config: PathBuf,
 }
 
 impl CreateTableFormatOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
-        let tableformat_spec = if let Some(config_file) = self.config {
-            let config = TableFormatConfig::from_file(&config_file)?;
-            let mut spec: TableFormatSpec = config.clone().into();
-            spec.name = self.name.clone();
-            spec
-        } else {
-            TableFormatSpec {
-                name: self.name.clone(),
-                ..Default::default()
-            }
-        };
+        let config = TableFormatConfig::from_file(self.config)?;
+        let tableformat_spec: TableFormatSpec = config.into();
+        let name = tableformat_spec.name.clone();
 
         debug!(
             "creating tableformat: {} spec: {:#?}",
-            self.name.clone(),
-            tableformat_spec
+            &name, tableformat_spec
         );
 
         let admin = fluvio.admin().await;
         admin
-            .create(self.name.clone(), false, tableformat_spec)
+            .create(name.clone(), false, tableformat_spec)
             .await?;
-        println!("tableformat \"{}\" created", self.name);
+        println!("tableformat \"{}\" created", &name);
 
         Ok(())
     }

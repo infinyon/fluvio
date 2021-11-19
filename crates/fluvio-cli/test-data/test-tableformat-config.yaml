@@ -1,3 +1,4 @@
+name: testtable
 inputFormat: "JSON"
 columns:
   - keyPath: "key2"

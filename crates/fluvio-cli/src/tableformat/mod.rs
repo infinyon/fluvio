@@ -62,6 +62,7 @@ impl TableFormatCmd {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct TableFormatConfig {
+    pub name: String,
     pub input_format: Option<InputFormat>,
     pub columns: Vec<TableFormatColumnConfig>,
     pub smartmodule: Option<String>,
@@ -80,10 +81,10 @@ impl TableFormatConfig {
 impl From<TableFormatConfig> for TableFormatSpec {
     fn from(config: TableFormatConfig) -> TableFormatSpec {
         TableFormatSpec {
+            name: config.name,
             input_format: config.input_format.unwrap_or_default(),
             columns: config.columns,
             smartmodule: config.smartmodule,
-            ..Default::default()
         }
     }
 }
