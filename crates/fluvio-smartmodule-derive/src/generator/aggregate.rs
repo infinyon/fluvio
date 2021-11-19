@@ -51,7 +51,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut smartmodule_input = SmartModuleAggregateInput::default();
                 // 13 is version for aggregate
-                if let Err(_err) = Decoder::decode(&mut smartmodule_input, &mut std::io::Cursor::new(input_data), fluvio_smartmodule::api_versions::AGGREGATOR_API) {
+                if let Err(_err) = Decoder::decode(&mut smartmodule_input, &mut std::io::Cursor::new(input_data), fluvio_smartmodule::api_versions::SMART_MODULE_API) {
                     return SmartModuleInternalError::DecodingBaseInput as i32;
                 }
 
@@ -61,7 +61,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
 
                 let records_input = smartmodule_input.base.record_data;
                 let mut records: Vec<Record> = vec![];
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), fluvio_smartmodule::api_versions::AGGREGATOR_API) {
+                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), fluvio_smartmodule::api_versions::SMART_MODULE_API) {
                     return SmartModuleInternalError::DecodingRecords as i32;
                 };
 
@@ -102,7 +102,7 @@ pub fn generate_aggregate_smartmodule(func: &SmartModuleFn, has_params: bool) ->
 
                 // ENCODING
                 let mut out = vec![];
-                if let Err(_) = Encoder::encode(&mut output, &mut out, fluvio_smartmodule::api_versions::AGGREGATOR_API) {
+                if let Err(_) = Encoder::encode(&mut output, &mut out, fluvio_smartmodule::api_versions::SMART_MODULE_API) {
                     return SmartModuleInternalError::EncodingOutput as i32;
                 }
 
