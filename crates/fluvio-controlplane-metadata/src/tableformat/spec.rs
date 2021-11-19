@@ -11,8 +11,8 @@ use dataplane::core::{Encoder, Decoder};
 )]
 pub struct TableFormatSpec {
     pub name: String,
-    pub input_format: InputFormat,
-    pub columns: Vec<TableFormatColumnConfig>,
+    pub input_format: Option<InputFormat>,
+    pub columns: Option<Vec<TableFormatColumnConfig>>,
     #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "Option::is_none"))]
     pub smartmodule: Option<String>,
 }
