@@ -29,6 +29,21 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
 
     debug!(%name,"creating tableformat");
 
+    if auth_ctx
+        .global_ctx
+        .tableformats()
+        .store()
+        .contains_key(&name)
+        .await
+    {
+        debug!("tableformat already exists");
+        return Ok(Status::new(
+            name.to_string(),
+            ErrorCode::TableFormatAlreadyExists,
+            Some(format!("tableformat '{}' already defined", name)),
+        ));
+    }
+
     if let Ok(authorized) = auth_ctx
         .auth
         .allow_type_action(TableFormatSpec::OBJECT_TYPE, TypeAction::Create)
