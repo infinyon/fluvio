@@ -98,7 +98,7 @@ where
     K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
         namespace.clone(),
         metadata_client.clone(),
-        ctx.smart_modules().clone(),
+        ctx.smartmodules().clone(),
     );
 
     K8ClusterStateDispatcher::<SmartStreamSpec, C>::start(
@@ -125,7 +125,7 @@ where
     SmartStreamController::start(
         ctx.smartstreams().clone(),
         ctx.topics().clone(),
-        ctx.smart_modules().clone(),
+        ctx.smartmodules().clone(),
     );
 
     mod pub_server {

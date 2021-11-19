@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 use fluvio_protocol::Encoder;
 #[cfg(feature = "smartengine")]
-use fluvio_smartengine::SmartStream;
+use fluvio_smartengine::SmartModuleInstance;
 use tracing::debug;
 use tracing::instrument;
 use once_cell::sync::Lazy;
@@ -37,61 +37,61 @@ pub struct TopicProducer {
     pool: Arc<SpuPool>,
     partitioner: Box<dyn Partitioner + Send + Sync>,
     #[cfg(feature = "smartengine")]
-    pub(crate) smartengine: Option<Arc<RwLock<Box<dyn SmartStream>>>>,
+    pub(crate) smartmodule_instance: Option<Arc<RwLock<Box<dyn SmartModuleInstance>>>>,
 }
 cfg_if::cfg_if! {
     if #[cfg(feature = "smartengine")] {
-        use fluvio_spu_schema::server::stream_fetch::{SmartStreamWasm, SmartStreamKind, SmartStreamPayload};
+        use fluvio_spu_schema::server::stream_fetch::{SmartModuleWasmCompressed, SmartModuleKind, LegacySmartModulePayload};
         use std::collections::BTreeMap;
         use fluvio_smartengine::SmartEngine;
 
         impl TopicProducer {
-            fn init_engine(&mut self, smart_payload: SmartStreamPayload) -> Result<(), FluvioError> {
+            fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
                 let engine = SmartEngine::default();
-                let  smartstream = engine.create_module_from_payload(
+                let  smartmodule = engine.create_module_from_payload(
                     smart_payload).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-                self.smartengine = Some(Arc::new(RwLock::new(smartstream)));
+                self.smartmodule_instance = Some(Arc::new(RwLock::new(smartmodule)));
                 Ok(())
             }
-            /// Adds a SmartStream filter to this TopicProducer
+            /// Adds a SmartModule filter to this TopicProducer
             pub fn with_filter<T: Into<Vec<u8>>>(
                 mut self,
                 filter: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = SmartStreamPayload {
-                    wasm: SmartStreamWasm::Raw(filter.into()),
-                    kind: SmartStreamKind::Filter,
+                let smart_payload = LegacySmartModulePayload {
+                    wasm: SmartModuleWasmCompressed::Raw(filter.into()),
+                    kind: SmartModuleKind::Filter,
                     params: params.into(),
                 };
                 self.init_engine(smart_payload)?;
                 Ok(self)
             }
 
-            /// Adds a SmartStream map to this TopicProducer
+            /// Adds a SmartModule map to this TopicProducer
             pub fn with_map<T: Into<Vec<u8>>>(
                 mut self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = SmartStreamPayload {
-                    wasm: SmartStreamWasm::Raw(map.into()),
-                    kind: SmartStreamKind::Map,
+                let smart_payload = LegacySmartModulePayload {
+                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
+                    kind: SmartModuleKind::Map,
                     params: params.into(),
                 };
                 self.init_engine(smart_payload)?;
                 Ok(self)
             }
 
-            /// Adds a SmartStream array_map to this TopicProducer
+            /// Adds a SmartModule array_map to this TopicProducer
             pub fn with_array_map<T: Into<Vec<u8>>>(
                 mut self,
                 map: T,
                 params: BTreeMap<String, String>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = SmartStreamPayload {
-                    wasm: SmartStreamWasm::Raw(map.into()),
-                    kind: SmartStreamKind::ArrayMap,
+                let smart_payload = LegacySmartModulePayload {
+                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
+                    kind: SmartModuleKind::ArrayMap,
                     params: params.into(),
                 };
 
@@ -99,16 +99,16 @@ cfg_if::cfg_if! {
                 Ok(self)
             }
 
-            /// Adds a SmartStream aggregate to this TopicProducer
+            /// Adds a SmartModule aggregate to this TopicProducer
             pub fn with_aggregate<T: Into<Vec<u8>>>(
                 mut self,
                 map: T,
                 params: BTreeMap<String, String>,
                 accumulator: Vec<u8>,
             ) -> Result<Self, FluvioError> {
-                let smart_payload = SmartStreamPayload {
-                    wasm: SmartStreamWasm::Raw(map.into()),
-                    kind: SmartStreamKind::Aggregate { accumulator },
+                let smart_payload = LegacySmartModulePayload {
+                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
+                    kind: SmartModuleKind::Aggregate { accumulator },
                     params: params.into(),
                 };
                 self.init_engine(smart_payload)?;
@@ -126,7 +126,7 @@ impl TopicProducer {
             pool,
             partitioner,
             #[cfg(feature = "smartengine")]
-            smartengine: Default::default(),
+            smartmodule_instance: Default::default(),
         }
     }
 
@@ -184,14 +184,14 @@ impl TopicProducer {
                     .map::<(RecordKey, RecordData), _>(|(k, v)| (k.into(), v.into()))
                     .map(Record::from)
                     .collect::<Vec<Record>>();
-                use dataplane::smartstream::SmartStreamInput;
+                use dataplane::smartmodule::SmartModuleInput;
                 use std::convert::TryFrom;
 
                 if let Some(
-                    smartengine_ref
-                ) = &self.smartengine {
-                    let mut smartengine = smartengine_ref.write().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-                    let output = smartengine.process(SmartStreamInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    smartmodule_instance_ref
+                ) = &self.smartmodule_instance {
+                    let mut smartengine = smartmodule_instance_ref.write().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    let output = smartengine.process(SmartModuleInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;
                 }
             } else {

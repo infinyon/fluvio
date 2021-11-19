@@ -29,7 +29,7 @@ Review Fluvio website:
     - [ ] https://www.fluvio.io/docs/
 
 Other dependent repos:
-- [ ] Update [`infinyon/fluvio-smartstream-template`](https://github.com/infinyon/fluvio-smartstream-template) if needed.
+- [ ] Update [`infinyon/fluvio-smartmodule-template`](https://github.com/infinyon/fluvio-smartmodule-template) if needed.
 
 ## Release workflow
 
@@ -52,7 +52,7 @@ This workflow will:
 4. Publish fluvio artifacts to AWS S3 (via `fluvio package`) for installer
 5. Publish all public crates in the `crates` directory
     - [`fluvio`](https://crates.io/crates/fluvio) and any dependencies
-    - [`fluvio-smartstream`](https://crates.io/crates/fluvio-smartstream) and any dependencies
+    - [`fluvio-smartmodule`](https://crates.io/crates/fluvio-smartmodule) and any dependencies
     - The rest of the crates w/ a version number that isn't `v0.0.0`
 
 #### In event of failure in Release workflow

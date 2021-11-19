@@ -282,13 +282,13 @@ mod tests {
     #[test]
     fn test_deserialize_package_unknown_kind() {
         let json = r#"{
-          "name": "fluvio-smartstream-filter",
+          "name": "fluvio-smartmodule-filter",
           "group": "fluvio",
           "kind": "wasm",
           "releases": []
         }"#;
         let package: Package = serde_json::from_str(json).unwrap();
-        assert_eq!(package.name, "fluvio-smartstream-filter".parse().unwrap());
+        assert_eq!(package.name, "fluvio-smartmodule-filter".parse().unwrap());
         assert_eq!(package.group, "fluvio".parse().unwrap());
         assert_eq!(package.kind, PackageKind::Unknown("wasm".to_string()));
         assert!(package.releases.is_empty());

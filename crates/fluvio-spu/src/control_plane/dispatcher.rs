@@ -28,7 +28,7 @@ struct DispatcherCounter {
     pub replica_changes: u64, // replica changes received from sc
     pub spu_changes: u64,     // spu changes received from sc
     pub reconnect: u64,       // number of reconnect to sc
-    pub smart_module: u64,    // number of sm updates from sc
+    pub smartmodule: u64,     // number of sm updates from sc
     pub smartstream: u64,     // number of smartstream updates from sc
 }
 
@@ -152,8 +152,8 @@ impl ScDispatcher<FileReplica> {
                             }
                         },
                         Some(Ok(InternalSpuRequest::UpdateSmartModuleRequest(request))) => {
-                            self.counter.smart_module += 1;
-                            if let Err(err) = self.handle_update_smart_module_request(request).await {
+                            self.counter.smartmodule += 1;
+                            if let Err(err) = self.handle_update_smartmodule_request(request).await {
                                 error!("error handling update SmartModule request: {}", err);
                                 break;
                             }
@@ -345,8 +345,8 @@ impl ScDispatcher<FileReplica> {
     ///
     /// Handle SmartModule update sent by SC
     ///
-    #[instrument(skip(self, req_msg), name = "update_smart_module_request")]
-    async fn handle_update_smart_module_request(
+    #[instrument(skip(self, req_msg), name = "update_smartmodule_request")]
+    async fn handle_update_smartmodule_request(
         &mut self,
         req_msg: RequestMessage<UpdateSmartModuleRequest>,
     ) -> Result<(), IoError> {
@@ -361,7 +361,7 @@ impl ScDispatcher<FileReplica> {
                 "received smartmodule sync all"
             );
             trace!("received spu all items: {:#?}", request.all);
-            self.ctx.smart_module_localstore().sync_all(request.all)
+            self.ctx.smartmodule_localstore().sync_all(request.all)
         } else {
             debug!(
                 epoch = request.epoch,
@@ -370,7 +370,7 @@ impl ScDispatcher<FileReplica> {
             );
             trace!("received spu change items: {:#?}", request.changes);
             self.ctx
-                .smart_module_localstore()
+                .smartmodule_localstore()
                 .apply_changes(request.changes)
         };
 

@@ -20,7 +20,7 @@ use crate::services::auth::AuthServiceContext;
 
 /// Handler for smart module request
 #[instrument(skip(create, auth_ctx))]
-pub async fn handle_create_smart_module_request<AC: AuthContext>(
+pub async fn handle_create_smartmodule_request<AC: AuthContext>(
     create: CommonCreateRequest,
     spec: SmartModuleSpec,
     auth_ctx: &AuthServiceContext<AC>,
@@ -46,22 +46,22 @@ pub async fn handle_create_smart_module_request<AC: AuthContext>(
         return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
     }
 
-    let status = process_smart_module_request(&auth_ctx.global_ctx, name, spec).await;
+    let status = process_smartmodule_request(&auth_ctx.global_ctx, name, spec).await;
     trace!("create smart module response {:#?}", status);
 
     Ok(status)
 }
 
 /// Process custom smart module, converts smart module spec to K8 and sends to KV store
-#[instrument(skip(ctx, name, smart_module_spec))]
-async fn process_smart_module_request(
+#[instrument(skip(ctx, name, smartmodule_spec))]
+async fn process_smartmodule_request(
     ctx: &Context,
     name: String,
-    smart_module_spec: SmartModuleSpec,
+    smartmodule_spec: SmartModuleSpec,
 ) -> Status {
     if let Err(err) = ctx
-        .smart_modules()
-        .create_spec(name.clone(), smart_module_spec)
+        .smartmodules()
+        .create_spec(name.clone(), smartmodule_spec)
         .await
     {
         let error = Some(err.to_string());

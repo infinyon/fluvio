@@ -4,8 +4,7 @@ use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
 use crate::config::ConfigError;
 use semver::Version;
-use dataplane::smartstream::SmartStreamRuntimeError;
-use dataplane::SmartStreamError;
+use dataplane::smartmodule::SmartModuleRuntimeError;
 
 /// Possible errors that may arise when using Fluvio
 #[derive(thiserror::Error, Debug)]
@@ -44,11 +43,8 @@ To interact with this cluster, please install the matching CLI version using the
     },
     #[error("Consumer config error: {0}")]
     ConsumerConfig(String),
-    #[deprecated(since = "0.9.8", note = "use 'FluvioError::SmartStream' instead")]
-    #[error("Encountered a runtime error in the user's SmartStream: {0}")]
-    SmartStreamRuntime(#[from] SmartStreamRuntimeError),
-    #[error("SmartStream error")]
-    SmartStream(#[from] SmartStreamError),
+    #[error("SmartModule runtime error {0}")]
+    SmartModuleRuntime(#[from] SmartModuleRuntimeError),
     #[error("Unknown error: {0}")]
     Other(String),
 }

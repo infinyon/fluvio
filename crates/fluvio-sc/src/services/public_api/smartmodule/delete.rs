@@ -11,7 +11,7 @@ use crate::services::auth::AuthServiceContext;
 
 /// Handler for delete smart module request
 #[instrument(skip(name, auth_ctx))]
-pub async fn handle_delete_smart_module<AC: AuthContext>(
+pub async fn handle_delete_smartmodule<AC: AuthContext>(
     name: String,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
@@ -38,7 +38,7 @@ pub async fn handle_delete_smart_module<AC: AuthContext>(
 
     let status = if auth_ctx
         .global_ctx
-        .smart_modules()
+        .smartmodules()
         .store()
         .value(&name)
         .await
@@ -46,7 +46,7 @@ pub async fn handle_delete_smart_module<AC: AuthContext>(
     {
         if let Err(err) = auth_ctx
             .global_ctx
-            .smart_modules()
+            .smartmodules()
             .delete(name.clone())
             .await
         {
@@ -60,8 +60,8 @@ pub async fn handle_delete_smart_module<AC: AuthContext>(
         }
     } else {
         Status::new(
-            name,
-            ErrorCode::SmartModuleNotFound,
+            name.clone(),
+            ErrorCode::SmartModuleNotFound { name },
             Some("not found".to_owned()),
         )
     };

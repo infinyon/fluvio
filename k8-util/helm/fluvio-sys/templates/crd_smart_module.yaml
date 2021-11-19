@@ -65,7 +65,9 @@ spec:
                       name:
                         type: string
       additionalPrinterColumns:
-        - name: Kind
+        - name: Input Kind
           type: string
-          description: Type of SmartStream this module creates
-          jsonPath: .spec.kind
+          jsonPath: .spec.input_kind
+        - name: Output Kind
+          type: string
+          jsonPath: .spec.output_kind

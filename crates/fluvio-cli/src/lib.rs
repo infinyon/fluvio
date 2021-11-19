@@ -252,7 +252,7 @@ mod root {
 
         /// Create and manage SmartModules
         ///
-        /// SmartModules are compiled WASM modules used to create SmartStreams.
+        /// SmartModules are compiled WASM modules used to create SmartModules.
         #[structopt(name = "smartmodule")]
         SmartModule(SmartModuleCmd),
     }
@@ -276,8 +276,8 @@ mod root {
                 Self::Partition(partition) => {
                     partition.process(out, &fluvio).await?;
                 }
-                Self::SmartModule(smart_module) => {
-                    smart_module.process(out, &fluvio).await?;
+                Self::SmartModule(smartmodule) => {
+                    smartmodule.process(out, &fluvio).await?;
                 }
             }
 

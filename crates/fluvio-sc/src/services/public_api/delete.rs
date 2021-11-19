@@ -39,18 +39,19 @@ pub async fn handle_delete_request<AC: AuthContext>(
             super::connector::handle_delete_managed_connector(req.key(), auth_ctx).await?
         }
         ObjectApiDeleteRequest::SmartModule(req) => {
-            super::smartmodule::handle_delete_smart_module(req.key(), auth_ctx).await?
+            super::smartmodule::handle_delete_smartmodule(req.key(), auth_ctx).await?
         }
         ObjectApiDeleteRequest::TableFormat(req) => {
             super::tableformat::handle_delete_tableformat(req.key(), auth_ctx).await?
         }
         ObjectApiDeleteRequest::SmartStream(req) => {
+            let name = req.key();
             delete_handler::process(
-                req.key(),
+                name.clone(),
                 auth_ctx,
                 auth_ctx.global_ctx.smartstreams(),
                 |_| ErrorCode::SmartStreamObjectError,
-                || ErrorCode::SmartModuleNotFound,
+                || ErrorCode::SmartModuleNotFound { name },
             )
             .await?
         }

@@ -22,7 +22,7 @@ use table_format::{TableEventResponse, TableModel};
 use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use fluvio::consumer::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartStreamInvocation,
 };
 
 use tui::Terminal;
@@ -117,28 +117,28 @@ pub struct ConsumeOpt {
     )]
     pub output: Option<ConsumeOutputType>,
 
-    /// Path to a SmartStream filter wasm file
+    /// Name of SmartStream
     #[structopt(long)]
     pub smartstream: Option<String>,
 
-    /// Path to a SmartStream filter wasm file
+    /// Path to a SmartModule filter wasm file
     #[structopt(long, group("smartmodule"))]
     pub filter: Option<String>,
 
-    /// Path to a SmartStream map wasm file
+    /// Path to a SmartModule map wasm file
     #[structopt(long, group("smartmodule"))]
     pub map: Option<String>,
 
-    /// Path to a SmartStream filter_map wasm file
+    /// Path to a SmartModule filter_map wasm file
     #[structopt(long, group("smartmodule"))]
     pub filter_map: Option<String>,
 
-    /// Path to a SmartStream array_map wasm file
+    /// Path to a SmartModule array_map wasm file
     #[structopt(long, group("smartmodule"))]
     pub array_map: Option<String>,
 
-    /// Path to a SmartStream join wasm filee
-    #[structopt(long, group("smartstream"))]
+    /// Path to a SmartModule join wasm filee
+    #[structopt(long, group("smartmodule"))]
     pub join: Option<String>,
 
     /// Path to a WASM file for aggregation
@@ -225,34 +225,34 @@ impl ConsumeOpt {
 
         builder.smartstream(smartstream);
 
-        let smart_module = if let Some(name_or_path) = &self.filter {
-            Some(create_smart_module(
+        let smartmodule = if let Some(name_or_path) = &self.filter {
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::Filter,
+                SmartModuleKind::Filter,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.map {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::Map,
+                SmartModuleKind::Map,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.array_map {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::ArrayMap,
+                SmartModuleKind::ArrayMap,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.filter_map {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::FilterMap,
+                SmartModuleKind::FilterMap,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.join {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::Join(
+                SmartModuleKind::Join(
                     self.join_topic
                         .as_ref()
                         .expect("Join topic field is required when using join")
@@ -264,15 +264,15 @@ impl ConsumeOpt {
             match (&self.aggregate, &self.initial) {
                 (Some(name_or_path), Some(acc_path)) => {
                     let accumulator = std::fs::read(acc_path)?;
-                    Some(create_smart_module(
+                    Some(create_smartmodule(
                         name_or_path,
-                        SmartStreamKind::Aggregate { accumulator },
+                        SmartModuleKind::Aggregate { accumulator },
                         extra_params,
                     )?)
                 }
-                (Some(name_or_path), None) => Some(create_smart_module(
+                (Some(name_or_path), None) => Some(create_smartmodule(
                     name_or_path,
-                    SmartStreamKind::Aggregate {
+                    SmartModuleKind::Aggregate {
                         accumulator: Vec::new(),
                     },
                     extra_params,
@@ -285,7 +285,7 @@ impl ConsumeOpt {
             }
         };
 
-        builder.smart_module(smart_module);
+        builder.smartmodule(smartmodule);
 
         if self.disable_continuous {
             builder.disable_continuous(true);
@@ -608,9 +608,9 @@ impl ConsumeOpt {
     }
 }
 
-fn create_smart_module(
+fn create_smartmodule(
     name_or_path: &str,
-    kind: SmartStreamKind,
+    kind: SmartModuleKind,
     params: BTreeMap<String, String>,
 ) -> Result<SmartModuleInvocation> {
     let wasm = if PathBuf::from(name_or_path).exists() {

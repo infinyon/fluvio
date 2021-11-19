@@ -72,7 +72,7 @@ pub fn handle_watch_request<AC>(
         ObjectApiWatchRequest::SmartModule(_) => WatchController::<SmartModuleSpec>::update(
             sink,
             end_event,
-            auth_ctx.global_ctx.smart_modules().clone(),
+            auth_ctx.global_ctx.smartmodules().clone(),
             header,
         ),
         ObjectApiWatchRequest::TableFormat(_) => WatchController::<TableFormatSpec>::update(
