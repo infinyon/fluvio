@@ -13,7 +13,7 @@ use tui::{
     Frame, Terminal,
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
-use fluvio_controlplane_metadata::tableformat::{TableFormatColumnConfig, TableFormatSpec};
+use fluvio_controlplane_metadata::tableformat::{TableFormatColumnConfig, TableFormatSpec, DataFormat};
 
 use std::collections::BTreeMap;
 
@@ -43,7 +43,9 @@ impl TableModel {
 
     pub fn with_tableformat(&mut self, tableformat: Option<TableFormatSpec>) {
         if let Some(format) = tableformat {
-            self.input_format = format.input_format;
+            if let Some(input_format) = format.input_format {
+                self.input_format = input_format;
+            }
             if let Some(columns) = format.columns {
                 self.columns = columns;
             }
