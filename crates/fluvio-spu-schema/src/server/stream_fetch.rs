@@ -278,7 +278,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_encode_SmartModuleKind() {
+    fn test_encode_smartmodulekind() {
         let mut dest = Vec::new();
         let value: SmartModuleKind = SmartModuleKind::Filter;
         value.encode(&mut dest, 0).expect("should encode");
@@ -287,7 +287,7 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_SmartModuleKind() {
+    fn test_decode_smartmodulekind() {
         let bytes = vec![0x01];
         let mut value: SmartModuleKind = Default::default();
         value
@@ -297,7 +297,7 @@ mod tests {
     }
 
     #[test]
-    fn test_encode_SmartModuleWasm() {
+    fn test_encode_smartmodulewasm() {
         let mut dest = Vec::new();
         let value: SmartModuleWasmCompressed =
             SmartModuleWasmCompressed::Raw(vec![0xde, 0xad, 0xbe, 0xef]);
@@ -316,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    fn test_decode_SmartModuleWasm() {
+    fn test_decode_smartmodulewasm() {
         let bytes = vec![0x00, 0x00, 0x00, 0x00, 0x04, 0xde, 0xad, 0xbe, 0xef];
         let mut value: SmartModuleWasmCompressed = Default::default();
         value
