@@ -37,9 +37,7 @@ impl CreateTableFormatOpt {
         );
 
         let admin = fluvio.admin().await;
-        admin
-            .create(name.clone(), false, tableformat_spec)
-            .await?;
+        admin.create(name.clone(), false, tableformat_spec).await?;
         println!("tableformat \"{}\" created", &name);
 
         Ok(())
