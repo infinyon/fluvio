@@ -191,10 +191,14 @@ mod encoding {
     pub enum SmartModuleKind {
         Filter,
         Map,
+        #[fluvio(min_version = 15)]
         ArrayMap,
-        FilterMap,
-        Join,
+        #[fluvio(min_version = 13)]
         Aggregate,
+        #[fluvio(min_version = 16)]
+        FilterMap,
+        #[fluvio(min_version = 16)]
+        Join,
     }
 
     impl Default for SmartModuleKind {
