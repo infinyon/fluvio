@@ -1,5 +1,5 @@
 //!
-//! # SmartStream Spec
+//! # DerivedStream Spec
 //!
 //!
 
@@ -14,23 +14,23 @@ use tracing::trace;
 use crate::smartmodule::{SmartModuleSpec};
 use crate::topic::TopicSpec;
 
-use super::metadata::SmartStreamValidationError;
+use super::metadata::DerivedStreamValidationError;
 
-/// SmartStream is unstable feature
+/// DerivedStream is unstable feature
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct SmartStreamSpec {
-    pub input: SmartStreamInputRef,
+pub struct DerivedStreamSpec {
+    pub input: DerivedStreamInputRef,
     #[cfg_attr(feature = "use_serde", serde(flatten))]
-    pub steps: SmartStreamSteps,
+    pub steps: DerivedStreamSteps,
 }
 
-impl SmartStreamSpec {
+impl DerivedStreamSpec {
     // validat configuration
     pub async fn validate<'a, C>(
         &'a self,
-        objects: &SmartStreamValidationInput<'a, C>,
-    ) -> Result<(), SmartStreamValidationError>
+        objects: &DerivedStreamValidationInput<'a, C>,
+    ) -> Result<(), DerivedStreamValidationError>
     where
         C: MetadataItem,
     {
@@ -44,49 +44,51 @@ impl SmartStreamSpec {
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartStreamInputRef {
+pub enum DerivedStreamInputRef {
     #[cfg_attr(feature = "use_serde", serde(rename = "topic"))]
-    Topic(SmartStreamRef<TopicSpec>),
-    #[cfg_attr(feature = "use_serde", serde(rename = "smartstream"))]
-    SmartStream(SmartStreamRef<SmartStreamSpec>),
+    Topic(DerivedStreamRef<TopicSpec>),
+    #[cfg_attr(feature = "use_serde", serde(rename = "derivedstream"))]
+    DerivedStream(DerivedStreamRef<DerivedStreamSpec>),
 }
 
-impl Default for SmartStreamInputRef {
+impl Default for DerivedStreamInputRef {
     fn default() -> Self {
-        SmartStreamInputRef::Topic(SmartStreamRef::default())
+        DerivedStreamInputRef::Topic(DerivedStreamRef::default())
     }
 }
 
-impl Display for SmartStreamInputRef {
+impl Display for DerivedStreamInputRef {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SmartStreamInputRef::Topic(ref topic) => write!(f, "Topic({})", topic),
-            SmartStreamInputRef::SmartStream(ref stream) => write!(f, "SmartStream({})", stream),
+            DerivedStreamInputRef::Topic(ref topic) => write!(f, "Topic({})", topic),
+            DerivedStreamInputRef::DerivedStream(ref stream) => {
+                write!(f, "DerivedStream({})", stream)
+            }
         }
     }
 }
 
-impl SmartStreamInputRef {
+impl DerivedStreamInputRef {
     // validat configuration
     pub async fn validate<'a, C>(
         &'a self,
-        objects: &SmartStreamValidationInput<'a, C>,
-    ) -> Result<(), SmartStreamValidationError>
+        objects: &DerivedStreamValidationInput<'a, C>,
+    ) -> Result<(), DerivedStreamValidationError>
     where
         C: MetadataItem,
     {
         match self {
-            SmartStreamInputRef::Topic(ref topic_ref) => {
+            DerivedStreamInputRef::Topic(ref topic_ref) => {
                 if !topic_ref.validate(objects.topics).await {
                     trace!(topic = %topic_ref.name,"topic not found");
-                    return Err(SmartStreamValidationError::TopicNotFound(
+                    return Err(DerivedStreamValidationError::TopicNotFound(
                         topic_ref.name.clone(),
                     ));
                 }
             }
-            SmartStreamInputRef::SmartStream(ref smart_stream_ref) => {
-                if !smart_stream_ref.validate(objects.smartstreams).await {
-                    return Err(SmartStreamValidationError::SmartStreamNotFound(
+            DerivedStreamInputRef::DerivedStream(ref smart_stream_ref) => {
+                if !smart_stream_ref.validate(objects.derivedstreams).await {
+                    return Err(DerivedStreamValidationError::DerivedStreamNotFound(
                         smart_stream_ref.name.clone(),
                     ));
                 }
@@ -102,7 +104,7 @@ impl SmartStreamInputRef {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct SmartStreamRef<S>
+pub struct DerivedStreamRef<S>
 where
     S: Spec + Default + Encoder + Decoder,
     S::IndexKey: Default + Encoder + Decoder,
@@ -112,7 +114,7 @@ where
     data: PhantomData<S>,
 }
 
-impl<S> Display for SmartStreamRef<S>
+impl<S> Display for DerivedStreamRef<S>
 where
     S: Spec + Default + Encoder + Decoder,
     S::IndexKey: Default + Encoder + Decoder + Display,
@@ -122,20 +124,20 @@ where
     }
 }
 
-impl<S> SmartStreamRef<S>
+impl<S> DerivedStreamRef<S>
 where
     S: Spec + Default + Encoder + Decoder,
     S::IndexKey: Default + Encoder + Decoder,
 {
     pub fn new(name: S::IndexKey) -> Self {
-        SmartStreamRef {
+        DerivedStreamRef {
             name,
             data: PhantomData,
         }
     }
 }
 
-impl<S> SmartStreamRef<S>
+impl<S> DerivedStreamRef<S>
 where
     S: Spec + Default + Encoder + Decoder,
     S::IndexKey: Default + Encoder + Decoder,
@@ -149,12 +151,12 @@ where
     }
 }
 
-pub struct SmartStreamValidationInput<'a, C>
+pub struct DerivedStreamValidationInput<'a, C>
 where
     C: MetadataItem,
 {
     pub topics: &'a LocalStore<TopicSpec, C>,
-    pub smartstreams: &'a LocalStore<SmartStreamSpec, C>,
+    pub derivedstreams: &'a LocalStore<DerivedStreamSpec, C>,
     pub modules: &'a LocalStore<SmartModuleSpec, C>,
 }
 
@@ -164,29 +166,29 @@ where
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct SmartStreamSteps {
-    pub steps: Vec<SmartStreamStep>,
+pub struct DerivedStreamSteps {
+    pub steps: Vec<DerivedStreamStep>,
 }
 
-impl Display for SmartStreamSteps {
+impl Display for DerivedStreamSteps {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let modules: String = self.steps.iter().map(|t| t.to_string()).collect();
         write!(f, "{}", modules)
     }
 }
 
-impl SmartStreamSteps {
+impl DerivedStreamSteps {
     async fn validate<'a, C>(
         &'a self,
         modules: &'a LocalStore<SmartModuleSpec, C>,
-    ) -> Result<(), SmartStreamValidationError>
+    ) -> Result<(), DerivedStreamValidationError>
     where
         C: MetadataItem,
     {
         for step in &self.steps {
             let module = step.module();
             if !modules.contains_key(module).await {
-                return Err(SmartStreamValidationError::SmartModuleNotFound(
+                return Err(DerivedStreamValidationError::SmartModuleNotFound(
                     module.to_string(),
                 ));
             }
@@ -198,75 +200,75 @@ impl SmartStreamSteps {
 
 #[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum SmartStreamStep {
+pub enum DerivedStreamStep {
     #[cfg_attr(feature = "use_serde", serde(rename = "filter"))]
-    Filter(SmartStreamModule),
+    Filter(DerivedStreamModule),
     #[cfg_attr(feature = "use_serde", serde(rename = "map"))]
-    Map(SmartStreamModule),
+    Map(DerivedStreamModule),
     #[cfg_attr(feature = "use_serde", serde(rename = "filterMap"))]
-    FilterMap(SmartStreamModule),
+    FilterMap(DerivedStreamModule),
     #[cfg_attr(feature = "use_serde", serde(rename = "aggregate"))]
-    Aggregate(SmartStreamModule),
+    Aggregate(DerivedStreamModule),
     #[cfg_attr(feature = "use_serde", serde(rename = "join"))]
-    Join(SmartStreamJoinModule),
+    Join(DerivedStreamJoinModule),
 }
 
-impl Default for SmartStreamStep {
+impl Default for DerivedStreamStep {
     fn default() -> Self {
-        SmartStreamStep::Filter(SmartStreamModule::default())
+        DerivedStreamStep::Filter(DerivedStreamModule::default())
     }
 }
 
-impl Display for SmartStreamStep {
+impl Display for DerivedStreamStep {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SmartStreamStep::Filter(module) => write!(f, "Filter({})", module),
-            SmartStreamStep::Map(module) => write!(f, "Map({})", module),
-            SmartStreamStep::FilterMap(module) => write!(f, "FilterMap({})", module),
-            SmartStreamStep::Aggregate(module) => write!(f, "Aggregate({})", module),
-            SmartStreamStep::Join(module) => write!(f, "Join({})", module),
+            DerivedStreamStep::Filter(module) => write!(f, "Filter({})", module),
+            DerivedStreamStep::Map(module) => write!(f, "Map({})", module),
+            DerivedStreamStep::FilterMap(module) => write!(f, "FilterMap({})", module),
+            DerivedStreamStep::Aggregate(module) => write!(f, "Aggregate({})", module),
+            DerivedStreamStep::Join(module) => write!(f, "Join({})", module),
         }
     }
 }
 
-impl SmartStreamStep {
+impl DerivedStreamStep {
     pub fn module(&self) -> &str {
         match self {
-            SmartStreamStep::Filter(ref module) => &module.module,
-            SmartStreamStep::Map(ref module) => &module.module,
-            SmartStreamStep::FilterMap(ref module) => &module.module,
-            SmartStreamStep::Aggregate(ref module) => &module.module,
-            SmartStreamStep::Join(ref module) => &module.module,
+            DerivedStreamStep::Filter(ref module) => &module.module,
+            DerivedStreamStep::Map(ref module) => &module.module,
+            DerivedStreamStep::FilterMap(ref module) => &module.module,
+            DerivedStreamStep::Aggregate(ref module) => &module.module,
+            DerivedStreamStep::Join(ref module) => &module.module,
         }
     }
 }
 
-/// Generic SmartStream Module
+/// Generic DerivedStream Module
 #[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
-pub struct SmartStreamModule {
+pub struct DerivedStreamModule {
     pub module: String,
     pub id: Option<String>,
 }
 
-impl Display for SmartStreamModule {
+impl Display for DerivedStreamModule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.module)
     }
 }
 
-/// Generic SmartStream Module
+/// Generic DerivedStream Module
 #[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "use_serde", serde(rename_all = "camelCase"))]
-pub struct SmartStreamJoinModule {
+pub struct DerivedStreamJoinModule {
     pub module: String,
     pub id: Option<String>,
-    pub right: SmartStreamInputRef,
+    pub right: DerivedStreamInputRef,
 }
 
-impl Display for SmartStreamJoinModule {
+impl Display for DerivedStreamJoinModule {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.module)
     }
@@ -280,22 +282,22 @@ mod test {
     use super::*;
 
     #[fluvio_future::test]
-    async fn validate_smartstream() {
-        let smartstreams: LocalStore<SmartStreamSpec, MemoryMeta> = LocalStore::default();
+    async fn validate_derivedstream() {
+        let derivedstreams: LocalStore<DerivedStreamSpec, MemoryMeta> = LocalStore::default();
         let topics: LocalStore<TopicSpec, MemoryMeta> = LocalStore::default();
         let modules: LocalStore<SmartModuleSpec, MemoryMeta> = LocalStore::default();
 
-        let smartstream = SmartStreamSpec {
-            input: SmartStreamInputRef::Topic(SmartStreamRef::new("test".into())),
-            steps: SmartStreamSteps {
+        let derivedstream = DerivedStreamSpec {
+            input: DerivedStreamInputRef::Topic(DerivedStreamRef::new("test".into())),
+            steps: DerivedStreamSteps {
                 ..Default::default()
             },
         };
 
-        assert!(smartstream
-            .validate(&SmartStreamValidationInput {
+        assert!(derivedstream
+            .validate(&DerivedStreamValidationInput {
                 topics: &topics,
-                smartstreams: &smartstreams,
+                derivedstreams: &derivedstreams,
                 modules: &modules,
             })
             .await
@@ -307,10 +309,10 @@ mod test {
                 TopicSpec::default(),
             )]);
 
-        assert!(smartstream
-            .validate(&SmartStreamValidationInput {
+        assert!(derivedstream
+            .validate(&DerivedStreamValidationInput {
                 topics: &topics2,
-                smartstreams: &smartstreams,
+                derivedstreams: &derivedstreams,
                 modules: &modules,
             })
             .await
@@ -318,14 +320,14 @@ mod test {
     }
 
     #[fluvio_future::test]
-    async fn validate_smartstream_steps() {
-        let smartstreams: LocalStore<SmartStreamSpec, MemoryMeta> = LocalStore::default();
+    async fn validate_derivedstream_steps() {
+        let derivedstreams: LocalStore<DerivedStreamSpec, MemoryMeta> = LocalStore::default();
         let modules: LocalStore<SmartModuleSpec, MemoryMeta> = LocalStore::default();
 
-        let smartstream = SmartStreamSpec {
-            input: SmartStreamInputRef::Topic(SmartStreamRef::new("test".into())),
-            steps: SmartStreamSteps {
-                steps: vec![SmartStreamStep::Filter(SmartStreamModule {
+        let derivedstream = DerivedStreamSpec {
+            input: DerivedStreamInputRef::Topic(DerivedStreamRef::new("test".into())),
+            steps: DerivedStreamSteps {
+                steps: vec![DerivedStreamStep::Filter(DerivedStreamModule {
                     module: "module1".into(),
                     ..Default::default()
                 })],
@@ -338,10 +340,10 @@ mod test {
                 TopicSpec::default(),
             )]);
 
-        assert!(smartstream
-            .validate(&SmartStreamValidationInput {
+        assert!(derivedstream
+            .validate(&DerivedStreamValidationInput {
                 topics: &topics,
-                smartstreams: &smartstreams,
+                derivedstreams: &derivedstreams,
                 modules: &modules,
             })
             .await
@@ -353,10 +355,10 @@ mod test {
                 SmartModuleSpec::default(),
             )]);
 
-        assert!(smartstream
-            .validate(&SmartStreamValidationInput {
+        assert!(derivedstream
+            .validate(&DerivedStreamValidationInput {
                 topics: &topics,
-                smartstreams: &smartstreams,
+                derivedstreams: &derivedstreams,
                 modules: &modules2,
             })
             .await

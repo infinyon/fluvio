@@ -1,10 +1,10 @@
-use fluvio_controlplane_metadata::smartstream::{SmartStreamInputRef, SmartStreamStep};
+use fluvio_controlplane_metadata::derivedstream::{DerivedStreamInputRef, DerivedStreamStep};
 use tracing::{debug, error};
 
 use dataplane::ErrorCode;
 use fluvio::{
     ConsumerConfig,
-    consumer::{SmartModuleInvocation, SmartStreamInvocation, SmartModuleKind},
+    consumer::{SmartModuleInvocation, DerivedStreamInvocation, SmartModuleKind},
 };
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_spu_schema::server::stream_fetch::{
@@ -26,11 +26,11 @@ impl SmartModuleContext {
     pub async fn extract(
         wasm_payload: Option<LegacySmartModulePayload>,
         smartmodule: Option<SmartModuleInvocation>,
-        smartstream: Option<SmartStreamInvocation>,
+        derivedstream: Option<DerivedStreamInvocation>,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Option<Self>, ErrorCode> {
-        let derived_sm_modules = if let Some(ss_inv) = smartstream {
-            Some(extract_smartstream_context(ss_inv, ctx).await?)
+        let derived_sm_modules = if let Some(ss_inv) = derivedstream {
+            Some(extract_derivedstream_context(ss_inv, ctx).await?)
         } else {
             None
         };
@@ -76,20 +76,20 @@ impl SmartModuleContext {
                         .await
                         .map_err(|err| {
                             error!("error fetching join data {}", err);
-                            ErrorCode::SmartStreamJoinFetchError
+                            ErrorCode::DerivedStreamJoinFetchError
                         })?
                         .boxed(),
                 )
             }
             SmartModuleKind::JoinStream {
                 topic: ref _topic,
-                smartstream: ref smartstream_name,
+                derivedstream: ref derivedstream_name,
             } => {
-                // first ensure smartstream exists
-                if let Some(smartstream) = ctx.smartstream_store().spec(smartstream_name) {
+                // first ensure derivedstream exists
+                if let Some(derivedstream) = ctx.derivedstream_store().spec(derivedstream_name) {
                     // find input which has topic
-                    match smartstream.spec.input {
-                        SmartStreamInputRef::Topic(topic) => {
+                    match derivedstream.spec.input {
+                        DerivedStreamInputRef::Topic(topic) => {
                             let consumer = ctx
                                 .leaders()
                                 .partition_consumer(topic.name.to_owned(), 0)
@@ -97,8 +97,8 @@ impl SmartModuleContext {
                             // need to build stream arg
                             let mut builder = ConsumerConfig::builder();
 
-                            builder.smartstream(Some(SmartStreamInvocation {
-                                stream: smartstream_name.to_owned(),
+                            builder.derivedstream(Some(DerivedStreamInvocation {
+                                stream: derivedstream_name.to_owned(),
                                 params: invocation.params.clone(),
                             }));
 
@@ -112,20 +112,22 @@ impl SmartModuleContext {
                                     .await
                                     .map_err(|err| {
                                         error!("error fetching join data {}", err);
-                                        ErrorCode::SmartStreamJoinFetchError
+                                        ErrorCode::DerivedStreamJoinFetchError
                                     })?
                                     .boxed(),
                             )
                         }
-                        SmartStreamInputRef::SmartStream(child_smart) => {
-                            return Err(ErrorCode::SmartStreamRecursion(
-                                smartstream_name.to_owned(),
+                        DerivedStreamInputRef::DerivedStream(child_smart) => {
+                            return Err(ErrorCode::DerivedStreamRecursion(
+                                derivedstream_name.to_owned(),
                                 child_smart.name,
                             ));
                         }
                     }
                 } else {
-                    return Err(ErrorCode::SmartStreamNotFound(smartstream_name.to_owned()));
+                    return Err(ErrorCode::DerivedStreamNotFound(
+                        derivedstream_name.to_owned(),
+                    ));
                 }
             }
             _ => None,
@@ -193,83 +195,83 @@ impl SmartModuleContext {
     }
 }
 
-async fn extract_smartstream_context(
-    invocation: SmartStreamInvocation,
+async fn extract_derivedstream_context(
+    invocation: DerivedStreamInvocation,
     ctx: &DefaultSharedGlobalContext,
 ) -> Result<SmartModuleInvocation, ErrorCode> {
     let name = invocation.stream;
-    debug!(%name,"extracting smartstream");
+    debug!(%name,"extracting derivedstream");
     let params = invocation.params;
-    let ss_list = ctx.smartstream_store().all_keys();
-    debug!("smartstreams: {:#?}", ss_list);
-    if let Some(smartstream) = ctx.smartstream_store().spec(&name) {
-        let spec = smartstream.spec;
-        if smartstream.valid {
+    let ss_list = ctx.derivedstream_store().all_keys();
+    debug!("derivedstreams: {:#?}", ss_list);
+    if let Some(derivedstream) = ctx.derivedstream_store().spec(&name) {
+        let spec = derivedstream.spec;
+        if derivedstream.valid {
             let mut steps = spec.steps.steps;
             if steps.is_empty() {
-                debug!(name = %name,"no steps in smartstream");
-                Err(ErrorCode::SmartStreamInvalid(name))
+                debug!(name = %name,"no steps in derivedstream");
+                Err(ErrorCode::DerivedStreamInvalid(name))
             } else {
                 // for now, only perform a single step
                 let step = steps.pop().expect("first one");
                 let sm = match step {
-                    SmartStreamStep::Aggregate(module) => SmartModuleInvocation {
+                    DerivedStreamStep::Aggregate(module) => SmartModuleInvocation {
                         wasm: SmartModuleInvocationWasm::Predefined(module.module),
                         kind: SmartModuleKind::Aggregate {
                             accumulator: vec![],
                         },
                         params,
                     },
-                    SmartStreamStep::Map(module) => SmartModuleInvocation {
+                    DerivedStreamStep::Map(module) => SmartModuleInvocation {
                         wasm: SmartModuleInvocationWasm::Predefined(module.module),
                         kind: SmartModuleKind::Map,
                         params,
                     },
-                    SmartStreamStep::FilterMap(module) => SmartModuleInvocation {
+                    DerivedStreamStep::FilterMap(module) => SmartModuleInvocation {
                         wasm: SmartModuleInvocationWasm::Predefined(module.module),
                         kind: SmartModuleKind::FilterMap,
                         params,
                     },
-                    SmartStreamStep::Filter(module) => SmartModuleInvocation {
+                    DerivedStreamStep::Filter(module) => SmartModuleInvocation {
                         wasm: SmartModuleInvocationWasm::Predefined(module.module),
                         kind: SmartModuleKind::Filter,
                         params,
                     },
-                    SmartStreamStep::Join(module) => match module.right {
-                        SmartStreamInputRef::Topic(ref topic) => SmartModuleInvocation {
+                    DerivedStreamStep::Join(module) => match module.right {
+                        DerivedStreamInputRef::Topic(ref topic) => SmartModuleInvocation {
                             wasm: SmartModuleInvocationWasm::Predefined(module.module),
                             kind: SmartModuleKind::Join(topic.name.to_owned()),
                             params,
                         },
-                        SmartStreamInputRef::SmartStream(ref smart_stream) => {
+                        DerivedStreamInputRef::DerivedStream(ref smart_stream) => {
                             let join_target_name = smart_stream.name.to_owned();
-                            // ensure smartstream exists
-                            if let Some(ctx) = ctx.smartstream_store().spec(&join_target_name) {
+                            // ensure derivedstream exists
+                            if let Some(ctx) = ctx.derivedstream_store().spec(&join_target_name) {
                                 let target_input = ctx.spec.input;
                                 // check target input, we can only do 1 level recursive definition now.
                                 match target_input {
-                                    SmartStreamInputRef::Topic(topic_target) => {
+                                    DerivedStreamInputRef::Topic(topic_target) => {
                                         SmartModuleInvocation {
                                             wasm: SmartModuleInvocationWasm::Predefined(
                                                 module.module,
                                             ),
                                             kind: SmartModuleKind::JoinStream {
                                                 topic: topic_target.name,
-                                                smartstream: join_target_name.to_owned(),
+                                                derivedstream: join_target_name.to_owned(),
                                             },
                                             params,
                                         }
                                     }
 
-                                    SmartStreamInputRef::SmartStream(child_child_target) => {
-                                        return Err(ErrorCode::SmartStreamRecursion(
+                                    DerivedStreamInputRef::DerivedStream(child_child_target) => {
+                                        return Err(ErrorCode::DerivedStreamRecursion(
                                             join_target_name,
                                             child_child_target.name,
                                         ));
                                     }
                                 }
                             } else {
-                                return Err(ErrorCode::SmartStreamNotFound(join_target_name));
+                                return Err(ErrorCode::DerivedStreamNotFound(join_target_name));
                             }
                         }
                     },
@@ -278,10 +280,10 @@ async fn extract_smartstream_context(
                 Ok(sm)
             }
         } else {
-            debug!(%name, "invalid SmartStream");
-            Err(ErrorCode::SmartStreamInvalid(name))
+            debug!(%name, "invalid DerivedStream");
+            Err(ErrorCode::DerivedStreamInvalid(name))
         }
     } else {
-        Err(ErrorCode::SmartStreamNotFound(name))
+        Err(ErrorCode::DerivedStreamNotFound(name))
     }
 }

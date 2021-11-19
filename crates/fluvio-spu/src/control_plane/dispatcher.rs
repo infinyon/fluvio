@@ -9,7 +9,7 @@ use futures_util::stream::StreamExt;
 
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
-use fluvio_controlplane::{InternalSpuApi, UpdateSmartModuleRequest, UpdateSmartStreamRequest};
+use fluvio_controlplane::{InternalSpuApi, UpdateSmartModuleRequest, UpdateDerivedStreamRequest};
 use fluvio_controlplane::InternalSpuRequest;
 use fluvio_controlplane::RegisterSpuRequest;
 use fluvio_controlplane::{UpdateSpuRequest, UpdateLrsRequest};
@@ -29,7 +29,7 @@ struct DispatcherCounter {
     pub spu_changes: u64,     // spu changes received from sc
     pub reconnect: u64,       // number of reconnect to sc
     pub smartmodule: u64,     // number of sm updates from sc
-    pub smartstream: u64,     // number of smartstream updates from sc
+    pub derivedstream: u64,   // number of derivedstream updates from sc
 }
 
 /// Controller for handling connection to SC
@@ -159,10 +159,10 @@ impl ScDispatcher<FileReplica> {
                             }
                         },
 
-                        Some(Ok(InternalSpuRequest::UpdateSmartStreamRequest(request))) => {
-                            self.counter.smartstream += 1;
-                            if let Err(err) = self.handle_update_smartstream_request(request).await {
-                                error!("error handling update SmartStream request: {}", err);
+                        Some(Ok(InternalSpuRequest::UpdateDerivedStreamRequest(request))) => {
+                            self.counter.derivedstream += 1;
+                            if let Err(err) = self.handle_update_derivedstream_request(request).await {
+                                error!("error handling update DerivedStream request: {}", err);
                                 break;
                             }
                         },
@@ -380,36 +380,41 @@ impl ScDispatcher<FileReplica> {
     }
 
     ///
-    /// Handle SmartStream update sent by SC
+    /// Handle DerivedStream update sent by SC
     ///
-    #[instrument(skip(self, req_msg), name = "update_smartstream_request")]
-    async fn handle_update_smartstream_request(
+    #[instrument(skip(self, req_msg), name = "update_derivedstream_request")]
+    async fn handle_update_derivedstream_request(
         &mut self,
-        req_msg: RequestMessage<UpdateSmartStreamRequest>,
+        req_msg: RequestMessage<UpdateDerivedStreamRequest>,
     ) -> Result<(), IoError> {
         let (_, request) = req_msg.get_header_request();
 
-        debug!( message = ?request,"starting SmartStream update");
+        debug!( message = ?request,"starting DerivedStream update");
 
         let actions = if !request.all.is_empty() {
             debug!(
                 epoch = request.epoch,
                 item_count = request.all.len(),
-                "received smartstream all"
+                "received derivedstream all"
             );
-            trace!("received smartstream all items: {:#?}", request.all);
-            self.ctx.smartstream_store().sync_all(request.all)
+            trace!("received derivedstream all items: {:#?}", request.all);
+            self.ctx.derivedstream_store().sync_all(request.all)
         } else {
             debug!(
                 epoch = request.epoch,
                 item_count = request.changes.len(),
-                "received smartstream changes"
+                "received derivedstream changes"
             );
-            trace!("received smartstream change items: {:#?}", request.changes);
-            self.ctx.smartstream_store().apply_changes(request.changes)
+            trace!(
+                "received derivedstream change items: {:#?}",
+                request.changes
+            );
+            self.ctx
+                .derivedstream_store()
+                .apply_changes(request.changes)
         };
 
-        debug!(actions = actions.count(), "finished SmartStream update");
+        debug!(actions = actions.count(), "finished DerivedStream update");
 
         Ok(())
     }

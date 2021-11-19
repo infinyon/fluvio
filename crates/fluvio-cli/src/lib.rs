@@ -15,7 +15,7 @@ mod partition;
 mod connector;
 mod tableformat;
 mod smartmodule;
-mod smartstream;
+mod derivedstream;
 
 pub(crate) use error::{Result, CliError};
 
@@ -39,7 +39,7 @@ mod root {
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
 
-    use crate::smartstream::SmartStreamCmd;
+    use crate::derivedstream::DerivedStreamCmd;
     use crate::connector::ManagedConnectorCmd;
     use crate::tableformat::TableFormatCmd;
     use crate::topic::TopicCmd;
@@ -159,8 +159,8 @@ mod root {
         #[structopt(name = "tableformat")]
         TableFormat(TableFormatCmd),
 
-        #[structopt(name = "smartstream")]
-        SmartStream(SmartStreamCmd),
+        #[structopt(name = "derivedstream")]
+        DerivedStream(DerivedStreamCmd),
 
         #[structopt(external_subcommand)]
         External(Vec<String>),
@@ -205,9 +205,9 @@ mod root {
                     let fluvio = root.target.connect().await?;
                     tableformat.process(out, &fluvio).await?;
                 }
-                Self::SmartStream(smartstream) => {
+                Self::DerivedStream(derivedstream) => {
                     let fluvio = root.target.connect().await?;
-                    smartstream.process(out, &fluvio).await?;
+                    derivedstream.process(out, &fluvio).await?;
                 }
                 Self::External(args) => {
                     process_external_subcommand(args)?;

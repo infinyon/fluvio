@@ -151,21 +151,21 @@ pub enum ErrorCode {
     #[error("the tableformat already exists")]
     TableFormatAlreadyExists,
 
-    // SmartStream Object Errors
+    // DerivedStream Object Errors
     #[fluvio(tag = 8000)]
-    #[error("SmartStream object error")]
-    SmartStreamObjectError,
+    #[error("DerivedStream object error")]
+    DerivedStreamObjectError,
     #[fluvio(tag = 8001)]
-    #[error("the smartstream was not found")]
-    SmartStreamNotFound(String),
+    #[error("the derivedstream was not found")]
+    DerivedStreamNotFound(String),
     #[fluvio(tag = 8002)]
-    #[error("the smartstream join data cannot be fetched")]
-    SmartStreamJoinFetchError,
+    #[error("the derivedstream join data cannot be fetched")]
+    DerivedStreamJoinFetchError,
     #[fluvio(tag = 8003)]
-    #[error("the smartstream {0} is invalid")]
-    SmartStreamInvalid(String),
-    #[error("can't do recursive smartstream yet: {0}->{1}")]
-    SmartStreamRecursion(String, String),
+    #[error("the derivedstream {0} is invalid")]
+    DerivedStreamInvalid(String),
+    #[error("can't do recursive derivedstream yet: {0}->{1}")]
+    DerivedStreamRecursion(String, String),
 }
 
 impl Default for ErrorCode {
@@ -191,15 +191,15 @@ impl ErrorCode {
     }
 }
 
-/// Deprecated. A type representing the possible errors that may occur during SmartStream execution.
+/// Deprecated. A type representing the possible errors that may occur during DerivedStream execution.
 #[derive(thiserror::Error, Debug, Clone, PartialEq, Encoder, Decoder)]
 pub enum LegacySmartModuleError {
     #[error("Runtime error")]
     Runtime(#[from] SmartModuleRuntimeError),
     #[error("WASM Module error: {0}")]
     InvalidWasmModule(String),
-    #[error("WASM module is not a valid '{0}' SmartStream. Are you missing a #[smartmodule({0})] attribute?")]
-    InvalidSmartStreamModule(String),
+    #[error("WASM module is not a valid '{0}' DerivedStream. Are you missing a #[smartmodule({0})] attribute?")]
+    InvalidDerivedStreamModule(String),
 }
 
 impl Default for LegacySmartModuleError {

@@ -1,4 +1,4 @@
-pub use fluvio_controlplane_metadata::smartstream::*;
+pub use fluvio_controlplane_metadata::derivedstream::*;
 
 mod convert {
 
@@ -16,29 +16,29 @@ mod convert {
     use crate::objects::WatchRequest;
     use crate::objects::WatchResponse;
 
-    use super::SmartStreamSpec;
+    use super::DerivedStreamSpec;
 
-    impl AdminSpec for SmartStreamSpec {
+    impl AdminSpec for DerivedStreamSpec {
         type ListFilter = NameFilter;
         type WatchResponseType = Self;
         type ListType = Metadata<Self>;
     }
 
-    impl CreatableAdminSpec for SmartStreamSpec {
+    impl CreatableAdminSpec for DerivedStreamSpec {
         const CREATE_TYPE: u8 = 10;
     }
 
-    impl DeletableAdminSpec for SmartStreamSpec {
+    impl DeletableAdminSpec for DerivedStreamSpec {
         type DeleteKey = String;
     }
 
-    CreateFrom!(SmartStreamSpec, SmartStream);
-    ObjectFrom!(WatchRequest, SmartStream);
-    ObjectFrom!(WatchResponse, SmartStream);
-    ObjectFrom!(ListRequest, SmartStream);
-    ObjectFrom!(ListResponse, SmartStream);
-    ObjectFrom!(DeleteRequest, SmartStream);
+    CreateFrom!(DerivedStreamSpec, DerivedStream);
+    ObjectFrom!(WatchRequest, DerivedStream);
+    ObjectFrom!(WatchResponse, DerivedStream);
+    ObjectFrom!(ListRequest, DerivedStream);
+    ObjectFrom!(ListResponse, DerivedStream);
+    ObjectFrom!(DeleteRequest, DerivedStream);
 
-    ObjectTryFrom!(WatchResponse, SmartStream);
-    ObjectTryFrom!(ListResponse, SmartStream);
+    ObjectTryFrom!(WatchResponse, DerivedStream);
+    ObjectTryFrom!(ListResponse, DerivedStream);
 }

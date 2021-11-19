@@ -1,5 +1,5 @@
 apiVersion: fluvio.infinyon.com/v1
-kind: SmartStream
+kind: DerivedStream
 metadata:
   name: rdouble
 spec:

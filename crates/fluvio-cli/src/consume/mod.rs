@@ -23,7 +23,7 @@ use table_format::{TableEventResponse, TableModel};
 use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use fluvio::consumer::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, SmartStreamInvocation,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, DerivedStreamInvocation,
 };
 
 use tui::Terminal;
@@ -122,9 +122,9 @@ pub struct ConsumeOpt {
     )]
     pub output: Option<ConsumeOutputType>,
 
-    /// Name of SmartStream
+    /// Name of DerivedStream
     #[structopt(long)]
-    pub smartstream: Option<String>,
+    pub derivedstream: Option<String>,
 
     /// Path to a SmartModule filter wasm file
     #[structopt(long, group("smartmodule"))]
@@ -271,15 +271,15 @@ impl ConsumeOpt {
             Some(params) => params.clone().into_iter().collect(),
         };
 
-        let smartstream = self
-            .smartstream
-            .as_ref()
-            .map(|smartstream_name| SmartStreamInvocation {
-                stream: smartstream_name.clone(),
-                params: extra_params.clone().into(),
-            });
+        let derivedstream =
+            self.derivedstream
+                .as_ref()
+                .map(|derivedstream_name| DerivedStreamInvocation {
+                    stream: derivedstream_name.clone(),
+                    params: extra_params.clone().into(),
+                });
 
-        builder.smartstream(smartstream);
+        builder.derivedstream(derivedstream);
 
         let smartmodule = if let Some(name_or_path) = &self.filter {
             Some(create_smartmodule(

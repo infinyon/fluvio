@@ -107,7 +107,7 @@ mod object_macro {
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     TableFormat($api<crate::tableformat::TableFormatSpec>),
-                    SmartStream($api<crate::smartstream::SmartStreamSpec>),
+                    DerivedStream($api<crate::derivedstream::DerivedStreamSpec>),
                 }
 
                 impl Default for [<ObjectApi $api>] {
@@ -128,7 +128,7 @@ mod object_macro {
                             Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
-                            Self::SmartStream(_) => crate::smartstream::SmartStreamSpec::LABEL,
+                            Self::DerivedStream(_) => crate::derivedstream::DerivedStreamSpec::LABEL,
 
                         }
                     }
@@ -149,7 +149,7 @@ mod object_macro {
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::TableFormat(s) => s.write_size(version),
-                                Self::SmartStream(s) => s.write_size(version),
+                                Self::DerivedStream(s) => s.write_size(version),
                             }
                     }
 
@@ -171,7 +171,7 @@ mod object_macro {
                             Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
                             Self::TableFormat(s) => s.encode(dest, version)?,
-                            Self::SmartStream(s) => s.encode(dest, version)?,
+                            Self::DerivedStream(s) => s.encode(dest, version)?,
                         }
 
                         Ok(())
@@ -257,11 +257,11 @@ mod object_macro {
                                 Ok(())
                             },
 
-                            crate::smartstream::SmartStreamSpec::LABEL => {
-                                tracing::trace!("detected smartstream");
-                                let mut request = $api::<crate::smartstream::SmartStreamSpec>::default();
+                            crate::derivedstream::DerivedStreamSpec::LABEL => {
+                                tracing::trace!("detected derivedstream");
+                                let mut request = $api::<crate::derivedstream::DerivedStreamSpec>::default();
                                 request.decode(src, version)?;
-                                *self = Self::SmartStream(request);
+                                *self = Self::DerivedStream(request);
                                 Ok(())
                             }
 
@@ -347,7 +347,7 @@ mod delete_macro {
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
                     TableFormat($api<crate::tableformat::TableFormatSpec>),
-                    SmartStream($api<crate::smartstream::SmartStreamSpec>),
+                    DerivedStream($api<crate::derivedstream::DerivedStreamSpec>),
                 }
 
                 impl Default for [<ObjectApi $api>] {
@@ -366,7 +366,7 @@ mod delete_macro {
                             Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
                             Self::TableFormat(_) => crate::tableformat::TableFormatSpec::LABEL,
-                            Self::SmartStream(_) => crate::smartstream::SmartStreamSpec::LABEL,
+                            Self::DerivedStream(_) => crate::derivedstream::DerivedStreamSpec::LABEL,
                         }
                     }
                 }
@@ -384,7 +384,7 @@ mod delete_macro {
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::TableFormat(s) => s.write_size(version),
-                                Self::SmartStream(s) => s.write_size(version),
+                                Self::DerivedStream(s) => s.write_size(version),
                             }
                     }
 
@@ -404,7 +404,7 @@ mod delete_macro {
                             Self::ManagedConnector(s) => s.encode(dest, version)?,
                             Self::SmartModule(s) => s.encode(dest, version)?,
                             Self::TableFormat(s) => s.encode(dest, version)?,
-                            Self::SmartStream(s) => s.encode(dest, version)?,
+                            Self::DerivedStream(s) => s.encode(dest, version)?,
                         }
 
                         Ok(())
@@ -475,11 +475,11 @@ mod delete_macro {
                                 Ok(())
                             },
 
-                            crate::smartstream::SmartStreamSpec::LABEL => {
-                                tracing::trace!("detected smartstream");
-                                let mut request = $api::<crate::smartstream::SmartStreamSpec>::default();
+                            crate::derivedstream::DerivedStreamSpec::LABEL => {
+                                tracing::trace!("detected derivedstream");
+                                let mut request = $api::<crate::derivedstream::DerivedStreamSpec>::default();
                                 request.decode(src, version)?;
-                                *self = Self::SmartStream(request);
+                                *self = Self::DerivedStream(request);
                                 Ok(())
                             }
 

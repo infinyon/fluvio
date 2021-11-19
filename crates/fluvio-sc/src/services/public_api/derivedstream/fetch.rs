@@ -3,7 +3,7 @@ use std::io::{Error, ErrorKind};
 use tracing::{debug, trace, instrument};
 
 use fluvio_sc_schema::objects::{ListResponse, NameFilter, Metadata};
-use fluvio_sc_schema::smartstream::SmartStreamSpec;
+use fluvio_sc_schema::derivedstream::DerivedStreamSpec;
 use fluvio_auth::{AuthContext, TypeAction};
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_controlplane_metadata::extended::SpecExt;

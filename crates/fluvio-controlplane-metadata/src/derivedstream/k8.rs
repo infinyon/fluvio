@@ -1,20 +1,20 @@
 use crate::k8_types::{Crd, GROUP, V1, CrdNames, Spec, Status, DefaultHeader};
 
-use super::SmartStreamSpec;
-use super::SmartStreamStatus;
+use super::DerivedStreamSpec;
+use super::DerivedStreamStatus;
 
 const SMART_STREAM_API: Crd = Crd {
     group: GROUP,
     version: V1,
     names: CrdNames {
-        kind: "SmartStream",
-        plural: "smartstreams",
-        singular: "smartstream",
+        kind: "DerivedStream",
+        plural: "derivedstreams",
+        singular: "derivedstream",
     },
 };
 
-impl Spec for SmartStreamSpec {
-    type Status = SmartStreamStatus;
+impl Spec for DerivedStreamSpec {
+    type Status = DerivedStreamStatus;
     type Header = DefaultHeader;
 
     fn metadata() -> &'static Crd {
@@ -22,4 +22,4 @@ impl Spec for SmartStreamSpec {
     }
 }
 
-impl Status for SmartStreamStatus {}
+impl Status for DerivedStreamStatus {}

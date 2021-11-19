@@ -6,5 +6,5 @@ steps:
   - join:
       module: join
       right:
-        smartstream:
+        derivedstream:
           name: rdouble

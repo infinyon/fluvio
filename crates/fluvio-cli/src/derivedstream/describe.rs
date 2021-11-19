@@ -1,13 +1,13 @@
 use structopt::StructOpt;
 use crate::Result;
 
-/// Print details about a given SmartStream
+/// Print details about a given DerivedStream
 #[derive(Debug, StructOpt)]
-pub struct DescribeSmartStreamOpt {
+pub struct DescribeDerivedStreamOpt {
     name: String,
 }
 
-impl DescribeSmartStreamOpt {
+impl DescribeDerivedStreamOpt {
     pub fn process(self) -> Result<()> {
         todo!()
     }
