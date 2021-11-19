@@ -11,7 +11,7 @@ use crate::smartmodule::{
 };
 
 const JOIN_FN_NAME: &str = "join";
-type JoinFn = TypedFunc<(i32, i32), i32>;
+type JoinFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleJoin {
     base: SmartModuleContext,
@@ -23,7 +23,7 @@ impl SmartModuleJoin {
         engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
-        version: i16
+        version: i16,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params, version)?;
         let join_fn: JoinFn = base

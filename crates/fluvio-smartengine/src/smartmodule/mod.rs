@@ -31,7 +31,7 @@ pub mod join;
 pub mod file_batch;
 pub mod join_stream;
 
-pub type WasmSlice = (i32, i32);
+pub type WasmSlice = (i32, i32, u32);
 #[cfg(feature = "smartmodule")]
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
 
@@ -82,22 +82,30 @@ impl SmartEngine {
         let version = maybe_version.unwrap_or(DEFAULT_SMARTENGINE_VERSION);
         let smartmodule = self.create_module_from_binary(&smart_payload.wasm.get_raw()?)?;
         let smartmodule_instance: Box<dyn SmartModuleInstance> = match &smart_payload.kind {
-            SmartModuleKind::Filter => Box::new(smartmodule.create_filter(smart_payload.params, version)?),
+            SmartModuleKind::Filter => {
+                Box::new(smartmodule.create_filter(smart_payload.params, version)?)
+            }
             SmartModuleKind::FilterMap => {
                 Box::new(smartmodule.create_filter_map(smart_payload.params, version)?)
             }
-            SmartModuleKind::Map => Box::new(smartmodule.create_map(smart_payload.params, version)?),
+            SmartModuleKind::Map => {
+                Box::new(smartmodule.create_map(smart_payload.params, version)?)
+            }
             SmartModuleKind::ArrayMap => {
                 Box::new(smartmodule.create_array_map(smart_payload.params, version)?)
             }
-            SmartModuleKind::Join(_) => Box::new(smartmodule.create_join(smart_payload.params, version)?),
+            SmartModuleKind::Join(_) => {
+                Box::new(smartmodule.create_join(smart_payload.params, version)?)
+            }
             SmartModuleKind::JoinStream {
                 topic: _,
                 derivedstream: _,
             } => Box::new(smartmodule.create_join_stream(smart_payload.params, version)?),
-            SmartModuleKind::Aggregate { accumulator } => {
-                Box::new(smartmodule.create_aggregate(smart_payload.params, accumulator.clone(), version)?)
-            }
+            SmartModuleKind::Aggregate { accumulator } => Box::new(smartmodule.create_aggregate(
+                smart_payload.params,
+                accumulator.clone(),
+                version,
+            )?),
         };
         Ok(smartmodule_instance)
     }
@@ -115,7 +123,11 @@ pub struct SmartModuleWithEngine {
 }
 
 impl SmartModuleWithEngine {
-    fn create_filter(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleFilter> {
+    fn create_filter(
+        &self,
+        params: SmartModuleExtraParams,
+        version: i16,
+    ) -> Result<SmartModuleFilter> {
         let filter = SmartModuleFilter::new(&self.engine, self, params, version)?;
         Ok(filter)
     }
@@ -125,12 +137,20 @@ impl SmartModuleWithEngine {
         Ok(map)
     }
 
-    fn create_filter_map(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleFilterMap> {
+    fn create_filter_map(
+        &self,
+        params: SmartModuleExtraParams,
+        version: i16,
+    ) -> Result<SmartModuleFilterMap> {
         let filter_map = SmartModuleFilterMap::new(&self.engine, self, params, version)?;
         Ok(filter_map)
     }
 
-    fn create_array_map(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleArrayMap> {
+    fn create_array_map(
+        &self,
+        params: SmartModuleExtraParams,
+        version: i16,
+    ) -> Result<SmartModuleArrayMap> {
         let map = SmartModuleArrayMap::new(&self.engine, self, params, version)?;
         Ok(map)
     }
@@ -140,7 +160,11 @@ impl SmartModuleWithEngine {
         Ok(join)
     }
 
-    fn create_join_stream(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleJoinStream> {
+    fn create_join_stream(
+        &self,
+        params: SmartModuleExtraParams,
+        version: i16,
+    ) -> Result<SmartModuleJoinStream> {
         let join = SmartModuleJoinStream::new(&self.engine, self, params, version)?;
         Ok(join)
     }
@@ -149,9 +173,10 @@ impl SmartModuleWithEngine {
         &self,
         params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
-        version: i16
+        version: i16,
     ) -> Result<SmartModuleAggregate> {
-        let aggregate = SmartModuleAggregate::new(&self.engine, self, params, accumulator, version)?;
+        let aggregate =
+            SmartModuleAggregate::new(&self.engine, self, params, accumulator, version)?;
         Ok(aggregate)
     }
 }
@@ -207,7 +232,7 @@ impl SmartModuleContext {
         let array_ptr =
             self::memory::copy_memory_to_instance(&mut self.store, &self.instance, &input_data)?;
         let length = input_data.len();
-        Ok((array_ptr as i32, length as i32))
+        Ok((array_ptr as i32, length as i32, self.version as u32))
     }
 
     pub fn read_output<D: Decoder + Default>(&mut self) -> Result<D> {

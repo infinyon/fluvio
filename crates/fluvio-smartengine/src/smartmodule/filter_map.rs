@@ -9,7 +9,7 @@ use crate::smartmodule::{
 };
 
 const FILTER_MAP_FN_NAME: &str = "filter_map";
-type FilterMapFn = TypedFunc<(i32, i32), i32>;
+type FilterMapFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleFilterMap {
     base: SmartModuleContext,

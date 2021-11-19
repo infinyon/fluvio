@@ -11,7 +11,7 @@ use dataplane::smartmodule::{
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
-type AggregateFn = TypedFunc<(i32, i32), i32>;
+type AggregateFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleAggregate {
     base: SmartModuleContext,

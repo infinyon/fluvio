@@ -35,7 +35,7 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
         mod __system {
             #[no_mangle]
             #[allow(clippy::missing_safety_doc)]
-            pub unsafe fn filter(ptr: *mut u8, len: usize) -> i32 {
+            pub unsafe fn filter(ptr: *mut u8, len: usize, version: i16) -> i32 {
                 use fluvio_smartmodule::dataplane::smartmodule::{
                     SmartModuleInput, SmartModuleInternalError,
                     SmartModuleRuntimeError, SmartModuleKind, SmartModuleOutput,
@@ -50,13 +50,13 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
 
                 let input_data = Vec::from_raw_parts(ptr, len, len);
                 let mut smartmodule_input = SmartModuleInput::default();
-                if let Err(_err) = Decoder::decode(&mut smartmodule_input, &mut std::io::Cursor::new(input_data), fluvio_smartmodule::api_versions::WASM_MODULE_V2_API) {
+                if let Err(_err) = Decoder::decode(&mut smartmodule_input, &mut std::io::Cursor::new(input_data), version) {
                     return SmartModuleInternalError::DecodingBaseInput as i32;
                 }
 
                 let records_input = smartmodule_input.record_data;
                 let mut records: Vec<Record> = vec![];
-                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), fluvio_smartmodule::api_versions::WASM_MODULE_V2_API) {
+                if let Err(_err) = Decoder::decode(&mut records, &mut std::io::Cursor::new(records_input), version) {
                     return SmartModuleInternalError::DecodingRecords as i32;
                 };
 
@@ -92,7 +92,7 @@ pub fn generate_filter_smartmodule(func: &SmartModuleFn, has_params: bool) -> To
 
                 // ENCODING
                 let mut out = vec![];
-                if let Err(_) = Encoder::encode(&mut output, &mut out, fluvio_smartmodule::api_versions::WASM_MODULE_V2_API) {
+                if let Err(_) = Encoder::encode(&mut output, &mut out, version) {
                     return SmartModuleInternalError::EncodingOutput as i32;
                 }
 

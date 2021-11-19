@@ -8,7 +8,7 @@ use dataplane::smartmodule::{
 use crate::smartmodule::{SmartModuleWithEngine, SmartEngine, SmartModuleContext, SmartModuleInstance};
 
 const FILTER_FN_NAME: &str = "filter";
-type FilterFn = TypedFunc<(i32, i32), i32>;
+type FilterFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleFilter {
     base: SmartModuleContext,
@@ -20,7 +20,7 @@ impl SmartModuleFilter {
         engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
-        version: i16
+        version: i16,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params, version)?;
         let filter_fn: FilterFn = base

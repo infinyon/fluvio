@@ -8,7 +8,7 @@ use dataplane::smartmodule::{
 use crate::smartmodule::{SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance};
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
-type ArrayMapFn = TypedFunc<(i32, i32), i32>;
+type ArrayMapFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleArrayMap {
     base: SmartModuleContext,
@@ -20,7 +20,7 @@ impl SmartModuleArrayMap {
         engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
-        version: i16
+        version: i16,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params, version)?;
         let map_fn: ArrayMapFn = base

@@ -9,7 +9,7 @@ use crate::smartmodule::{
 };
 
 const MAP_FN_NAME: &str = "map";
-type MapFn = TypedFunc<(i32, i32), i32>;
+type MapFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleMap {
     base: SmartModuleContext,
@@ -21,7 +21,7 @@ impl SmartModuleMap {
         engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
-        version: i16
+        version: i16,
     ) -> Result<Self> {
         let mut base = SmartModuleContext::new(engine, module, params, version)?;
         let map_fn: MapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
