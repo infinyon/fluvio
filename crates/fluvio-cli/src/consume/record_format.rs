@@ -180,7 +180,8 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
             new_data.insert(key, value);
         }
 
-        // This only needs to be run once, and changed only if the columns have not yet been defined
+        // This only expected if the columns have not yet been defined
+        // Typically the result is columns sorted alphabetically
         if table_model.columns().is_empty() {
             //println!("Columns empty");
             // Build a list of TableColumn
@@ -193,12 +194,9 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
             if table_model.update_columns(columns).is_err() {
                 println!("Unable to set table headers")
             }
-
-            //println!("Columns after update: {:?}", table_model.columns());
-        } else {
-            //println!("debugcolumnsnotempty");
         }
 
+        // This will append if now primary keys or update rows based on primary key values
         if table_model.update_row(new_data).is_err() {
             println!("Unable to update table row");
         }

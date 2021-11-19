@@ -9,7 +9,7 @@ use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
-use fluvio_controlplane_metadata::tableformat::{TableFormatSpec, TableColumn};
+use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -187,26 +187,28 @@ impl ConsumeOpt {
             if !tableformats.is_empty() {
                 for t in tableformats {
                     if t.name.as_str() == tableformat_name {
-                        println!("debug: Found tableformat: {:?}", t.spec);
-                        //found = Some(t.spec);
+                        //println!("debug: Found tableformat: {:?}", t.spec);
+                        found = Some(t.spec);
 
-                        let tableformat_test = TableFormatSpec {
-                            name: "hardcoded_test".to_string(),
-                            columns: Some(vec!(TableColumn {
-                                key_path: "key2".to_string(),
-                                header_label: Some("Key #2".to_string()),
-                                ..Default::default()
-                            }, TableColumn {
-                                key_path: "key1".to_string(),
-                                //primary_key: true,
-                                header_label: Some("Key #1".to_string()),
-                                ..Default::default()
-                            },)
-                            ),
-                            ..Default::default()
-                        };
-                        println!("debug: Using test tableformat: {:?}", tableformat_test);
-                        found = Some(tableformat_test);
+                        //let tableformat_test = TableFormatSpec {
+                        //    name: "hardcoded_test".to_string(),
+                        //    columns: Some(vec![
+                        //        TableColumn {
+                        //            key_path: "key2".to_string(),
+                        //            header_label: Some("Key #2".to_string()),
+                        //            ..Default::default()
+                        //        },
+                        //        TableColumn {
+                        //            key_path: "key1".to_string(),
+                        //            //primary_key: true,
+                        //            header_label: Some("Key #1".to_string()),
+                        //            ..Default::default()
+                        //        },
+                        //    ]),
+                        //    ..Default::default()
+                        //};
+                        //println!("debug: Using test tableformat: {:?}", tableformat_test);
+                        //found = Some(tableformat_test);
                         break;
                     }
                 }
@@ -379,16 +381,16 @@ impl ConsumeOpt {
         };
 
         // TableModel and Terminal for full_table rendering
-        let mut maybe_table_model = None; // Add a create table model fn. This will need to support the TableFormat crd
+        let mut maybe_table_model = None;
         let mut maybe_terminal_stdout = if let Some(ConsumeOutputType::full_table) = &self.output {
             if io::stdout().is_tty() {
                 enable_raw_mode()?;
                 let mut stdout = io::stdout();
                 execute!(stdout, EnterAlternateScreen)?;
 
-                // Look at tables for a spec that might belong to the topic
-
                 let mut model = TableModel::new();
+
+                // Customize display options w/ tableformat spec
                 model.with_tableformat(tableformat);
 
                 maybe_table_model = Some(model);

@@ -17,32 +17,6 @@ use fluvio_controlplane_metadata::tableformat::{TableFormatColumnConfig, TableFo
 
 use std::collections::BTreeMap;
 
-//pub enum TableCell {
-//    Header(StdCell),
-//    Cell(StdCell)
-//}
-//
-//pub struct TableRowData<'a> {
-//    cells: BTreeMap<&'a str, TableCell>,
-//    fg_color: String,
-//    bg_color: String,
-//}
-//
-//#[derive(Debug, Default, Clone)]
-//pub struct HeaderCell {
-//    is_primary: bool,
-//    key_path: String,
-//    value: String,
-//}
-//
-//#[derive(Debug, Default, Clone)]
-//pub struct StdCell {
-//    key_path: String,
-//    value: String
-//}
-
-// Need to add some cell type
-// Make the struct fields private
 #[derive(Debug, Default, Clone)]
 pub struct TableModel {
     state: TableState,
@@ -50,9 +24,7 @@ pub struct TableModel {
 
     // Maybe data should be some kind of map structure, so we can enforce headers as column order easier
     data: Vec<BTreeMap<String, String>>,
-    // primary key: set of keys to select when deciding to update table view: Default on 1st header key
-    // column display ordering rules: alphabetical, manual: Default alphabetical
-    // toggle for update-row vs append-row
+    input_format: DataFormat,
     // display-cache time?
 }
 
@@ -71,6 +43,7 @@ impl TableModel {
 
     pub fn with_tableformat(&mut self, tableformat: Option<TableFormatSpec>) {
         if let Some(format) = tableformat {
+            self.input_format = format.input_format;
             if let Some(columns) = format.columns {
                 self.columns = columns;
             }
@@ -84,13 +57,11 @@ impl TableModel {
         Ok(())
     }
 
-    // TODO: When we support manual column ordering
-    // I think this should accept headers that don't exist in the data. Just ignore the keys that don't exist. Don't error
-    //pub fn update_ordering(&mut self, headers: Vec<String>) -> Result<()> {}
-
-    // We should support a pure append-only workflow if we know that's what we want
-    //pub fn insert_row(&mut self, row: Vec<String>) -> Result<()> { }
-
+    // By default, we append rows
+    // To in-place update rows, create a tableformat and define what columns are your primary keys
+    // Then new_data is compared against all the table data
+    // The comparison is for a row where the values at the primary keys match the new_data values
+    // If found, that row is replaced with new_data values
     pub fn update_row(&mut self, new_data: BTreeMap<String, String>) -> Result<()> {
         // For the first row, we know we can just insert data
         if self.data.is_empty() {
@@ -99,80 +70,68 @@ impl TableModel {
         }
 
         // Get a list of the primary keys
-        // If we don't have a primary key set, the default behavior is the use the first left-most column
-        let primary_keys = self
-            .get_primary_keys()
-            .unwrap_or_else(|| vec![self.columns[0].key_path.clone()]);
-
+        // If we don't have a primary key set, the default behavior is to append the row
+        let all_primary_keys = self.get_primary_keys();
         //println!("Primary key: {:?}", primary_keys);
 
-        // Enumerate through the rows
-        // If we find a row that match the primary keys for new_data
-        // then replace that row with new_data
-        // Otherwise, if not found we append to data
+        if let Some(primary_keys) = all_primary_keys {
+            let mut append_row = true;
 
-        let mut all_keys_match;
-        let mut append_row = true;
+            // use the primary keys when evaluating a row update
+            for (index, row) in self.data.iter().enumerate() {
+                // Look over the primary keys to determine if we update the row
 
-        // use the primary keys when evaluating a row update
-        for (index, row) in self.data.iter().enumerate() {
-            // Look over the primary keys to determine if we update the row
+                // Reset flag for next row processing
+                append_row = false;
 
-            // Reset flag for next row processing
-            all_keys_match = true;
-            append_row = false;
-
-            for (index, key) in primary_keys.iter().enumerate() {
-                match row.get(key.as_str()) {
-                    Some(value) => {
-                        //println!("matched value");
-                        if let Some(new_data_value) = new_data.get(key.as_str()) {
-                            // primary key value, and new_data values don't match
-                            if value != new_data_value {
-                                //println!("AAA");
-                                append_row = true;
-                                all_keys_match = false;
-                                continue;
-                            } else {
-                                // If this is the last primary key we're checking
-                                // Break out of the primary key loop
-                                if (index + 1) == self.data.len() {
-                                    all_keys_match = true;
-                                    append_row = false;
-                                    break;
+                for (index, key) in primary_keys.iter().enumerate() {
+                    match row.get(key.as_str()) {
+                        Some(value) => {
+                            if let Some(new_data_value) = new_data.get(key.as_str()) {
+                                // primary key value, and new_data values don't match
+                                if value != new_data_value {
+                                    append_row = true;
+                                    continue;
+                                } else {
+                                    // If this is the last primary key we're checking
+                                    // Break out of the primary key loop
+                                    if (index + 1) == self.data.len() {
+                                        append_row = false;
+                                        break;
+                                    }
                                 }
+                            } else {
+                                // key doesn't exist in new_data
+                                append_row = true;
                             }
-                        } else {
-                            // key doesn't exist in new_data
-                            //println!("BBB");
-                            all_keys_match = false;
+                        }
+                        None => {
+                            // key doesn't exist in row
                             append_row = true;
                         }
                     }
-                    None => {
-                        // key doesn't exist in row
-                        //println!("CCC");
-                        all_keys_match = false;
-                        append_row = true;
-                    }
+                }
+
+                // If the values for the primary keys match, then update the row
+                if !append_row {
+                    self.data[index] = new_data.clone();
+                    break;
                 }
             }
 
-            // If the values for the primary keys match, then update the row
-            if all_keys_match {
-                self.data[index] = new_data.clone();
-                break;
+            // Otherwise append the data to the end after we look at all the rows
+            if append_row {
+                self.data.push(new_data);
             }
-        }
-
-        // Otherwise append the data to the end after we look at all the rows
-        if append_row {
+        } else {
+            // Append data
             self.data.push(new_data);
         }
+
         Ok(())
     }
 
-    //TODO
+    //TODO: Seems like we're going to need this, but not now
     //pub fn delete_row(&mut self, row_index: usize) -> Result<()> {}
 
     /// Return number of rows in cache
@@ -180,7 +139,8 @@ impl TableModel {
         self.columns.len()
     }
 
-    // The default behavior right now is if we don't define a primary, we should use the left-most column
+    // The purpose of the primary keys is to control whether a record
+    // is appended or updated based on matching values on the list of keys
     pub fn get_primary_keys(&self) -> Option<Vec<String>> {
         if !self.columns.is_empty() {
             let mut primary_keys = Vec::new();
@@ -302,7 +262,7 @@ impl TableModel {
         }
     }
 
-    /// Takes in `user_input` and handles the side-effect, (except for exiting table)
+    /// Takes in `user_input` and triggers a render to the table
     /// Returns the appropriate `TableEventResponse`
     pub fn event_handler(
         &mut self,
@@ -399,7 +359,7 @@ impl TableModel {
 
         let mut column_constraints: Vec<Constraint> = Vec::new();
 
-        // Todo
+        // TODO: Maybe provide a way to size the width of a column
         // Define the widths of the columns
         for _ in 0..self.num_columns() {
             column_constraints.push(Constraint::Percentage(equal_column_width));
@@ -408,31 +368,27 @@ impl TableModel {
         let selected_symbol = format!("{} >> ", self.current_selected());
 
         let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-        let normal_style = Style::default().bg(Color::Blue);
-
-
 
         let header_cells = self.columns.iter().map(|column| {
-
             // If the column has an alternative label, use that
             // Otherwise, use the key path
-            // TODO: Test this with a nested key. We probably want to use the inner-most key in the path
             let header_label = if let Some(label) = column.header_label.clone() {
                 label
             } else {
+                // TODO: Test this with a nested key.
+                // We probably want to use the inner-most key in the path if no label given
                 column.key_path.clone()
             };
 
-
-            Cell::from(header_label).style(
-                Style::default()
-                    .fg(Color::Yellow)
-                    .add_modifier(Modifier::BOLD),
-            )
+            Cell::from(header_label)
         });
 
+        let header_style = Style::default()
+            .bg(Color::Blue)
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD);
         let header = Row::new(header_cells)
-            .style(normal_style)
+            .style(header_style)
             .height(1)
             .bottom_margin(0);
 
@@ -446,16 +402,10 @@ impl TableModel {
                 let value = if let Some(v) = row_data.get(key_path) {
                     v
                 } else {
-                    "debugskipped"
+                    // If the user provides a key that doesn't exist
+                    // we want to print a column, but leave the value blank
+                    ""
                 };
-
-                //let height = 1;
-                //let height = item
-                //    .iter()
-                //    .map(|content| content.chars().filter(|c| *c == '\n').count())
-                //    .max()
-                //    .unwrap_or(0)
-                //    + 1;
 
                 cells.push(Cell::from(value));
             }
@@ -464,12 +414,18 @@ impl TableModel {
             rows.push(Row::new(cells).height(1).bottom_margin(0))
         }
 
+        let table_title_text = format!(
+            "('c' to clear table | 'q' or ESC to exit) | Items: {}",
+            self.data.len()
+        );
+
         let t = Table::new(rows)
             .header(header)
-            .block(Block::default().borders(Borders::ALL).title(format!(
-                "('c' to clear table | 'q' or ESC to exit) | Items: {}",
-                self.data.len()
-            )))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(table_title_text),
+            )
             .highlight_style(selected_style)
             .highlight_symbol(selected_symbol.as_str())
             .widths(&column_constraints);
