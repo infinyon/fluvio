@@ -1,6 +1,5 @@
 use std::convert::TryFrom;
 
-use fluvio_spu_schema::server::stream_fetch::AGGREGATOR_API;
 use tracing::{debug, instrument};
 use anyhow::Result;
 use wasmtime::TypedFunc;
@@ -26,8 +25,9 @@ impl SmartModuleAggregate {
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
+        version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params)?;
+        let mut base = SmartModuleContext::new(engine, module, params, version)?;
         let aggregate_fn: AggregateFn = base
             .instance
             .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)?;
@@ -48,7 +48,7 @@ impl SmartModuleInstance for SmartModuleAggregate {
             base,
             accumulator: self.accumulator.clone(),
         };
-        let slice = self.base.write_input(&input, AGGREGATOR_API)?;
+        let slice = self.base.write_input(&input)?;
         let aggregate_output = self.aggregate_fn.call(&mut self.base.store, slice)?;
 
         debug!(aggregate_output);
@@ -58,7 +58,7 @@ impl SmartModuleInstance for SmartModuleAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleAggregateOutput = self.base.read_output(AGGREGATOR_API)?;
+        let output: SmartModuleAggregateOutput = self.base.read_output()?;
         self.accumulator = output.accumulator;
         Ok(output.base)
     }

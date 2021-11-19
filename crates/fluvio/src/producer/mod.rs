@@ -49,7 +49,8 @@ cfg_if::cfg_if! {
             fn init_engine(&mut self, smart_payload: LegacySmartModulePayload) -> Result<(), FluvioError> {
                 let engine = SmartEngine::default();
                 let  smartmodule = engine.create_module_from_payload(
-                    smart_payload).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+                    smart_payload,
+                    None).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                 self.smartmodule_instance = Some(Arc::new(RwLock::new(smartmodule)));
                 Ok(())
             }

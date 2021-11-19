@@ -2,7 +2,6 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use wasmtime::TypedFunc;
 
-use fluvio_spu_schema::server::stream_fetch::WASM_MODULE_V2_API;
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInternalError};
 use crate::smartmodule::{
     SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
@@ -22,8 +21,9 @@ impl SmartModuleMap {
         engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
+        version: i16
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params)?;
+        let mut base = SmartModuleContext::new(engine, module, params, version)?;
         let map_fn: MapFn = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)?;
 
         Ok(Self { base, map_fn })
@@ -32,7 +32,7 @@ impl SmartModuleMap {
 
 impl SmartModuleInstance for SmartModuleMap {
     fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
-        let slice = self.base.write_input(&input, WASM_MODULE_V2_API)?;
+        let slice = self.base.write_input(&input)?;
         let map_output = self.map_fn.call(&mut self.base.store, slice)?;
 
         if map_output < 0 {
@@ -41,7 +41,7 @@ impl SmartModuleInstance for SmartModuleMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = self.base.read_output(WASM_MODULE_V2_API)?;
+        let output: SmartModuleOutput = self.base.read_output()?;
         Ok(output)
     }
 

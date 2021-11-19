@@ -128,11 +128,13 @@ impl StreamFetchHandler {
         msg: StreamFetchRequest<FileRecordSet>,
     ) -> Result<(), SocketError> {
         debug!("request: {:#?}", msg);
+        let version = header.api_version();
 
         let derivedstream_ctx = match SmartModuleContext::extract(
             msg.wasm_payload,
             msg.smartmodule,
             msg.derivedstream,
+            version,
             &ctx,
         )
         .await
