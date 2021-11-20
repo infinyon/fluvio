@@ -1,15 +1,17 @@
 #!/usr/bin/env bats
 
-load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/bats-support/load.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/bats-assert/load.bash
+TEST_HELPER_DIR="$BATS_TEST_DIRNAME/../test_helper"
+export TEST_HELPER_DIR
 
+load "$TEST_HELPER_DIR"/tools_check.bash
+load "$TEST_HELPER_DIR"/fluvio_dev.bash
+load "$TEST_HELPER_DIR"/bats-support/load.bash
+load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
     TABLEFORMAT_NAME="testtable"
     export TABLEFORMAT_NAME
-    TABLEFORMAT_CONFIG="$BATS_TEST_DIRNAME/../test_helper/test-tableformat-config.yml"
+    TABLEFORMAT_CONFIG="$TEST_HELPER_DIR/test-tableformat-config.yml"
     export TABLEFORMAT_CONFIG
     debug_msg "TableFormat name: $TABLEFORMAT_NAME"
 }

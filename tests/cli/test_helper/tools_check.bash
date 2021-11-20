@@ -1,10 +1,20 @@
 # Resolve path to `fluvio` binary instead of expecting it in PATH
 # Search order: $FLUVIO_BIN, in PATH, current directory, home directory
 main() {
+    # Take in override to test_helper directory
+    TEST_HELPER_DIR=${TEST_HELPER_DIR:-./test_helper}
+    export TEST_HELPER_DIR
+
     check_load_bats_libraries;
     check_fluvio_bin_path;
     check_timeout_bin;
-    check_fluvio_cluster;
+
+    if [[ -n $SKIP_CLUSTER_START ]]; then
+        echo "# Skipping cluster start" >&3
+    else
+        echo "# Starting cluster" >&3
+        check_fluvio_cluster;
+    fi
 }
 
 function check_fluvio_bin_path() {
@@ -13,26 +23,26 @@ function check_fluvio_bin_path() {
         if [[ -n $DEBUG ]]; then
             echo "# DEBUG: found: FLUVIO_BIN was defined" >&3
         fi
-        set_fluvio_bin_path_then_exit "$FLUVIO_BIN";
+        _set_fluvio_bin_path_then_exit "$FLUVIO_BIN";
     elif which fluvio; then
         if [[ -n $DEBUG ]]; then
             echo "# DEBUG: found: fluvio in PATH" >&3
         fi
-        set_fluvio_bin_path_then_exit "$(which fluvio)";
+        _set_fluvio_bin_path_then_exit "$(which fluvio)";
     elif test -f "$(pwd)/fluvio"; then
         if [[ -n $DEBUG ]]; then
             echo "# DEBUG: found: fluvio in current directory" >&3
         fi
-        set_fluvio_bin_path_then_exit "$(pwd)/fluvio";
+        _set_fluvio_bin_path_then_exit "$(pwd)/fluvio";
     elif test -f "$HOME/.fluvio/bin/fluvio"; then
         if [[ -n $DEBUG ]]; then
             echo "# DEBUG: found: fluvio in home directory" >&3
         fi
-        set_fluvio_bin_path_then_exit "$HOME/.fluvio/bin/fluvio";
+        _set_fluvio_bin_path_then_exit "$HOME/.fluvio/bin/fluvio";
     fi
 }
 
-function set_fluvio_bin_path_then_exit() {
+function _set_fluvio_bin_path_then_exit() {
     FLUVIO_BIN=$1
     export FLUVIO_BIN
     if [[ -n $DEBUG ]]; then
