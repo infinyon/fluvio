@@ -66,6 +66,9 @@ fluvio-spu-schema = { version = "0.8.6", path = "../fluvio-spu-schema" }
 async-std = { version = "1.6.4", default-features = false }
 fluvio-future = { version = "0.3.0", features = ["fixture"] }
 
+[build-dependencies]
+built = "0.5.1"
+
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3.24"
 fluvio_ws_stream_wasm = "0.7.0"

@@ -50,7 +50,11 @@ impl VersionedSocket {
         // now get versions
         // Query for API versions
 
-        let mut req_msg = RequestMessage::new_request(ApiVersionsRequest::default());
+        let mut req_msg = RequestMessage::new_request(ApiVersionsRequest {
+            client_version: crate::built_info::PKG_VERSION.into(),
+            client_os: crate::built_info::CFG_OS.into(),
+            client_arch: crate::built_info::CFG_TARGET_ARCH.into(),
+        });
         req_msg.get_mut_header().set_client_id(&config.client_id);
 
         debug!("querying versions");

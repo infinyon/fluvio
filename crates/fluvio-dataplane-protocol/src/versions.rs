@@ -12,7 +12,14 @@ pub const VERSIONS_API_KEY: u16 = 18;
 // -----------------------------------
 
 #[derive(Decoder, Encoder, Default, Debug)]
-pub struct ApiVersionsRequest {}
+pub struct ApiVersionsRequest {
+    #[fluvio(min_version = 1)]
+    pub client_version: String,
+    #[fluvio(min_version = 1)]
+    pub client_os: String,
+    #[fluvio(min_version = 1)]
+    pub client_arch: String,
+}
 
 impl Request for ApiVersionsRequest {
     const API_KEY: u16 = VERSIONS_API_KEY;
