@@ -15,6 +15,7 @@ use fluvio_spu_schema::{ApiVersionsRequest, ApiVersionsResponse};
 pub async fn handle_api_version_request(
     request: RequestMessage<ApiVersionsRequest>,
 ) -> Result<ResponseMessage<ApiVersionsResponse>, Error> {
+    let client_version = &request.request.client_version;
     let mut response = ApiVersionsResponse::default();
     response.api_keys.push(make_version_key(
         SpuServerApiKey::Produce,
@@ -34,7 +35,12 @@ pub async fn handle_api_version_request(
     response.api_keys.push(make_version_key(
         SpuServerApiKey::StreamFetch,
         0,
-        DefaultStreamFetchRequest::DEFAULT_API_VERSION,
+        // Client version is empty in Fluvio <= 0.9.12
+        if client_version.is_empty() {
+            15
+        } else {
+            DefaultStreamFetchRequest::DEFAULT_API_VERSION
+        },
     ));
     response.api_keys.push(make_version_key(
         SpuServerApiKey::UpdateOffsets,

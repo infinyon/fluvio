@@ -119,7 +119,10 @@ impl FluvioAdmin {
         debug!(addr = %inner_client.config().addr(), "connected to cluster");
 
         let (socket, config, versions) = inner_client.split();
-        if let Some(watch_version) = versions.lookup_version(ObjectApiWatchRequest::API_KEY) {
+        if let Some(watch_version) = versions.lookup_version(
+            ObjectApiWatchRequest::API_KEY,
+            ObjectApiWatchRequest::DEFAULT_API_VERSION,
+        ) {
             let socket = MultiplexerSocket::shared(socket);
             let metadata = MetadataStores::start(socket.clone(), watch_version).await?;
             let versioned_socket = VersionedSerialSocket::new(socket, config, versions);

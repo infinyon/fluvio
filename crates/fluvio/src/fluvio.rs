@@ -86,7 +86,10 @@ impl Fluvio {
         let (socket, config, versions) = inner_client.split();
 
         // get version for watch
-        if let Some(watch_version) = versions.lookup_version(ObjectApiWatchRequest::API_KEY) {
+        if let Some(watch_version) = versions.lookup_version(
+            ObjectApiWatchRequest::API_KEY,
+            ObjectApiWatchRequest::DEFAULT_API_VERSION,
+        ) {
             debug!(platform = %versions.platform_version(),"checking platform version");
             check_platform_compatible(versions.platform_version())?;
 
