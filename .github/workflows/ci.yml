@@ -937,13 +937,13 @@ jobs:
           ./k8-util/cluster/reset-k3d.sh
 
       - name: Install stable CLI and start Fluvio cluster
-        if: matrix.cluster_version == stable
+        if: matrix.cluster_version == 'stable'
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cluster_version }} bash
           ~/.fluvio/bin/fluvio cluster start
 
       - name: Install latest CLI and start Fluvio cluster
-        if: matrix.cluster_version == latest 
+        if: matrix.cluster_version == 'latest' 
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cluster_version }} bash
           ~/.fluvio/bin/fluvio cluster start --image-version latest
