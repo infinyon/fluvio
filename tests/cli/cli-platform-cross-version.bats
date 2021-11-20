@@ -87,6 +87,6 @@ teardown_file() {
 @test "Consume message" {
     run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
 
-    assert_output --partial "$MESSAGE"abc
+    assert_output --partial "$MESSAGE"
     assert_success
 }
