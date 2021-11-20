@@ -106,7 +106,7 @@ pub use offset::Offset;
 pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
 
-pub mod built_info {
+pub(crate) mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));
 }
 
