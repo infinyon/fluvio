@@ -1,9 +1,12 @@
 #!/usr/bin/env bats
 
-load "$BATS_TEST_DIRNAME"/../test_helper/tools_check.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/fluvio_dev.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/bats-support/load.bash
-load "$BATS_TEST_DIRNAME"/../test_helper/bats-assert/load.bash
+TEST_HELPER_DIR="$BATS_TEST_DIRNAME/../test_helper"
+export TEST_HELPER_DIR
+
+load "$TEST_HELPER_DIR"/tools_check.bash
+load "$TEST_HELPER_DIR"/fluvio_dev.bash
+load "$TEST_HELPER_DIR"/bats-support/load.bash
+load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
     SMARTMODULE_NAME=$(random_string)
