@@ -935,7 +935,11 @@ jobs:
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
+
+      - name: Install ${{ matrix.cluster_version }} CLI and start Fluvio cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cluster_version }} bash
+          ~/.fluvio/bin/fluvio cluster start
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |
-          CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} bats -t ./tests/cli/cli-x-platform-x-backcompat.bats
-          #make FLUVIO_BIN=~/.fluvio/bin/fluvio CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=~/.fluvio/bin/fluvio cli-platform-cross-version-test
