@@ -29,7 +29,7 @@ function random_string() {
     # https://github.com/infinyon/fluvio/issues/1864
 
     HEAD=$(shuf -zer -n1 {a..z} {0..9})
-    BODY=$(shuf -zer -n"$(($STRING_LEN-2))" {a..z} {0..9} "-")
+    BODY=$(shuf -zer -n"$(($STRING_LEN - 2))" {a..z} {0..9} "-")
     FOOT=$(shuf -zer -n1 {a..z} {0..9})
 
     RANDOM_STRING=$HEAD$BODY$FOOT
@@ -56,7 +56,7 @@ function setup_fluvio_cluster() {
     curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=$CLUSTER_VERSION bash
     echo "# Starting cluster @ VERSION: $CLUSTER_VERSION" >&3
 
-    if [ $CLUSTER_VERSION = "latest" ]; then
+    if [ "$CLUSTER_VERSION" = "latest" ]; then
         $FLUVIO_BIN cluster start --image-version latest 
     else
         $FLUVIO_BIN cluster start

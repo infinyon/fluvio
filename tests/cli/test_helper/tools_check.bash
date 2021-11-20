@@ -10,9 +10,10 @@ main() {
     check_timeout_bin;
 
     if [[ -n $SKIP_CLUSTER_START ]]; then
-        echo "# Skipping cluster start" >&3
+        #echo "# Skipping cluster start" >&3
+        :
     else
-        echo "# Starting cluster" >&3
+        #echo "# Starting cluster" >&3
         check_fluvio_cluster;
     fi
 }

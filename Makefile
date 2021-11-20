@@ -206,7 +206,7 @@ longevity-test: build-test
 endif
 
 cli-platform-cross-version-test:
-	./tests/cli-platform-cross-version-test.sh $(CLI_VERSION) $(CLUSTER_VERSION)
+	CLI_VERSION=$(CLI_VERSION) CLUSTER_VERSION=$(CLUSTER_VERSION) bats -t ./tests/cli/cli-x-platform-x-backcompat.bats
 
 cli-smoke:
 	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
