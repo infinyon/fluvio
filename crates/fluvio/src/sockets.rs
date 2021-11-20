@@ -270,3 +270,33 @@ impl SerialFrame for VersionedSerialSocket {
         &self.config
     }
 }
+
+#[cfg(test)]
+mod test {
+    use dataplane::versions::ApiVersionKey;
+
+    use super::ApiVersionsResponse;
+    use super::Versions;
+
+    #[test]
+    fn test_version_lookup() {
+        let mut response = ApiVersionsResponse::default();
+
+        response.api_keys.push(ApiVersionKey {
+            api_key: 1000,
+            min_version: 0,
+            max_version: 10,
+        });
+
+        let versions = Versions::new(response);
+
+        // None if api_key not found
+        assert_eq!(versions.lookup_version(0, 10), None);
+
+        // Must use max version of the client
+        (0..10).for_each(|i| assert_eq!(versions.lookup_version(1000, i), Some(i)));
+
+        // Since max_version of the client is larger than the max_version of the server, should use the max_version of the server
+        (10..12).for_each(|i| assert_eq!(versions.lookup_version(1000, i), Some(10)));
+    }
+}
