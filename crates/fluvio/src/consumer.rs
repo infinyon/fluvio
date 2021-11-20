@@ -427,7 +427,10 @@ where
         // add wasm module if SPU supports it
         let stream_fetch_version = serial_socket
             .versions()
-            .lookup_version(DefaultStreamFetchRequest::API_KEY)
+            .lookup_version(
+                DefaultStreamFetchRequest::API_KEY,
+                DefaultStreamFetchRequest::DEFAULT_API_VERSION,
+            )
             .unwrap_or((WASM_MODULE_API - 1) as i16);
         debug!(%stream_fetch_version, "stream_fetch_version");
 

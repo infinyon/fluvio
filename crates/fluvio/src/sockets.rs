@@ -190,10 +190,10 @@ impl Versions {
     }
 
     /// Given an API key, it returns max_version. None if not found
-    pub fn lookup_version(&self, api_key: u16) -> Option<i16> {
+    pub fn lookup_version(&self, api_key: u16, client_version: i16) -> Option<i16> {
         for version in &self.api_versions {
             if version.api_key == api_key as i16 {
-                return Some(version.max_version);
+                return Some(std::cmp::min(version.max_version, client_version));
             }
         }
         None
@@ -237,7 +237,11 @@ impl VersionedSerialSocket {
     where
         R: Request + Send + Sync,
     {
-        let req_msg = self.new_request(request, self.versions.lookup_version(R::API_KEY));
+        let req_msg = self.new_request(
+            request,
+            self.versions
+                .lookup_version(R::API_KEY, R::DEFAULT_API_VERSION),
+        );
 
         // send request & save response
         self.socket.send_and_receive(req_msg).await
