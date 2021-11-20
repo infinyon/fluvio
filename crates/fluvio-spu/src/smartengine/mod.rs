@@ -27,6 +27,7 @@ impl SmartModuleContext {
         wasm_payload: Option<LegacySmartModulePayload>,
         smartmodule: Option<SmartModuleInvocation>,
         derivedstream: Option<DerivedStreamInvocation>,
+        version: i16,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Option<Self>, ErrorCode> {
         let derived_sm_modules = if let Some(ss_inv) = derivedstream {
@@ -44,12 +45,12 @@ impl SmartModuleContext {
 
         match module {
             Some(smartmodule_invocation) => Ok(Some(
-                Self::extract_smartmodule_context(smartmodule_invocation, ctx).await?,
+                Self::extract_smartmodule_context(smartmodule_invocation, version, ctx).await?,
             )),
             None => {
                 if let Some(payload) = wasm_payload {
                     Ok(Some(Self {
-                        smartmodule_instance: Self::payload_to_smartmodule(payload, ctx)?,
+                        smartmodule_instance: Self::payload_to_smartmodule(payload, version, ctx)?,
                         right_consumer_stream: None,
                     }))
                 } else {
@@ -62,6 +63,7 @@ impl SmartModuleContext {
     /// given SmartModule invocation and context, generate execution context
     async fn extract_smartmodule_context(
         invocation: SmartModuleInvocation,
+        version: i16,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Self, ErrorCode> {
         // check for right consumer stream exists, this only happens for join type
@@ -158,13 +160,14 @@ impl SmartModuleContext {
         };
 
         Ok(Self {
-            smartmodule_instance: Self::payload_to_smartmodule(payload, ctx)?,
+            smartmodule_instance: Self::payload_to_smartmodule(payload, version, ctx)?,
             right_consumer_stream,
         })
     }
 
     fn payload_to_smartmodule(
         payload: LegacySmartModulePayload,
+        version: i16,
         ctx: &DefaultSharedGlobalContext,
     ) -> Result<Box<dyn SmartModuleInstance>, ErrorCode> {
         let raw = payload
@@ -181,7 +184,7 @@ impl SmartModuleContext {
         let kind = payload.kind.clone();
 
         sm_engine
-            .create_module_from_payload(payload)
+            .create_module_from_payload(payload, Some(version))
             .map_err(|err| {
                 error!(
                     error = err.to_string().as_str(),

@@ -35,9 +35,9 @@ mod encoding {
         pub base_offset: Offset,
         /// The records for the SmartModule to process
         pub record_data: Vec<u8>,
+        pub params: SmartModuleExtraParams,
         #[fluvio(min_version = 16)]
         pub join_record: Vec<u8>,
-        pub params: SmartModuleExtraParams,
     }
     impl std::convert::TryFrom<Vec<Record>> for SmartModuleInput {
         type Error = std::io::Error;
@@ -85,7 +85,7 @@ mod encoding {
     pub struct SmartModuleAggregateOutput {
         /// The base output required by all SmartModules
         pub base: SmartModuleOutput,
-
+        #[fluvio(min_version = 16)]
         pub accumulator: Vec<u8>,
     }
 
@@ -191,10 +191,14 @@ mod encoding {
     pub enum SmartModuleKind {
         Filter,
         Map,
+        #[fluvio(min_version = 15)]
         ArrayMap,
-        FilterMap,
-        Join,
+        #[fluvio(min_version = 13)]
         Aggregate,
+        #[fluvio(min_version = 16)]
+        FilterMap,
+        #[fluvio(min_version = 16)]
+        Join,
     }
 
     impl Default for SmartModuleKind {

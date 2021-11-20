@@ -120,11 +120,11 @@ impl Default for SmartModuleInvocationWasm {
 pub enum SmartModuleKind {
     Filter,
     Map,
+    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
+    ArrayMap,
     Aggregate {
         accumulator: Vec<u8>,
     },
-    #[fluvio(min_version = ARRAY_MAP_WASM_API)]
-    ArrayMap,
     #[fluvio(min_version = ARRAY_MAP_WASM_API)]
     FilterMap,
     #[fluvio(min_version = SMART_MODULE_API)]

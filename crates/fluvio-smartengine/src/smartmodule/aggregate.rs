@@ -1,23 +1,39 @@
 use std::convert::TryFrom;
 
-use fluvio_spu_schema::server::stream_fetch::AGGREGATOR_API;
 use tracing::{debug, instrument};
 use anyhow::Result;
-use wasmtime::TypedFunc;
+use wasmtime::{AsContextMut, Trap, TypedFunc};
 
-use crate::smartmodule::{SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance};
+use crate::{
+    WasmSlice,
+    smartmodule::{SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
+};
 use dataplane::smartmodule::{
     SmartModuleAggregateInput, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
     SmartModuleExtraParams, SmartModuleAggregateOutput,
 };
 
 const AGGREGATE_FN_NAME: &str = "aggregate";
-type AggregateFn = TypedFunc<(i32, i32), i32>;
+type OldAggregateFn = TypedFunc<(i32, i32), i32>;
+type AggregateFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleAggregate {
     base: SmartModuleContext,
-    aggregate_fn: AggregateFn,
+    aggregate_fn: AggregateFnKind,
     accumulator: Vec<u8>,
+}
+pub enum AggregateFnKind {
+    Old(OldAggregateFn),
+    New(AggregateFn),
+}
+
+impl AggregateFnKind {
+    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
+        match self {
+            Self::Old(aggregate_fn) => aggregate_fn.call(store, (slice.0, slice.1)),
+            Self::New(aggregate_fn) => aggregate_fn.call(store, slice),
+        }
+    }
 }
 
 impl SmartModuleAggregate {
@@ -26,11 +42,20 @@ impl SmartModuleAggregate {
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
+        version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params)?;
-        let aggregate_fn: AggregateFn = base
+        let mut base = SmartModuleContext::new(engine, module, params, version)?;
+        let aggregate_fn: AggregateFnKind = if let Ok(agg_fn) = base
             .instance
-            .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)?;
+            .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)
+        {
+            AggregateFnKind::New(agg_fn)
+        } else {
+            let agg_fn: OldAggregateFn = base
+                .instance
+                .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)?;
+            AggregateFnKind::Old(agg_fn)
+        };
 
         Ok(Self {
             base,
@@ -48,7 +73,7 @@ impl SmartModuleInstance for SmartModuleAggregate {
             base,
             accumulator: self.accumulator.clone(),
         };
-        let slice = self.base.write_input(&input, AGGREGATOR_API)?;
+        let slice = self.base.write_input(&input)?;
         let aggregate_output = self.aggregate_fn.call(&mut self.base.store, slice)?;
 
         debug!(aggregate_output);
@@ -58,7 +83,7 @@ impl SmartModuleInstance for SmartModuleAggregate {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleAggregateOutput = self.base.read_output(AGGREGATOR_API)?;
+        let output: SmartModuleAggregateOutput = self.base.read_output()?;
         self.accumulator = output.accumulator;
         Ok(output.base)
     }

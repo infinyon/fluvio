@@ -1,19 +1,35 @@
 use std::convert::TryFrom;
 use anyhow::Result;
-use fluvio_spu_schema::server::stream_fetch::ARRAY_MAP_WASM_API;
-use wasmtime::TypedFunc;
+use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use dataplane::smartmodule::{
     SmartModuleInput, SmartModuleOutput, SmartModuleInternalError, SmartModuleExtraParams,
 };
-use crate::smartmodule::{SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance};
+use crate::{
+    WasmSlice,
+    smartmodule::{SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
+};
 
 const ARRAY_MAP_FN_NAME: &str = "array_map";
-type ArrayMapFn = TypedFunc<(i32, i32), i32>;
+type OldArrayMapFn = TypedFunc<(i32, i32), i32>;
+type ArrayMapFn = TypedFunc<(i32, i32, u32), i32>;
 
 pub struct SmartModuleArrayMap {
     base: SmartModuleContext,
-    array_map_fn: ArrayMapFn,
+    array_map_fn: ArrayMapFnKind,
+}
+
+enum ArrayMapFnKind {
+    Old(OldArrayMapFn),
+    New(ArrayMapFn),
+}
+impl ArrayMapFnKind {
+    fn call(&self, store: impl AsContextMut, slice: WasmSlice) -> Result<i32, Trap> {
+        match self {
+            Self::Old(array_map_fn) => array_map_fn.call(store, (slice.0, slice.1)),
+            Self::New(array_map_fn) => array_map_fn.call(store, slice),
+        }
+    }
 }
 
 impl SmartModuleArrayMap {
@@ -21,11 +37,20 @@ impl SmartModuleArrayMap {
         engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
+        version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params)?;
-        let map_fn: ArrayMapFn = base
+        let mut base = SmartModuleContext::new(engine, module, params, version)?;
+        let map_fn = if let Ok(array_map_fn) = base
             .instance
-            .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)?;
+            .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)
+        {
+            ArrayMapFnKind::New(array_map_fn)
+        } else {
+            let array_map_fn = base
+                .instance
+                .get_typed_func(&mut base.store, ARRAY_MAP_FN_NAME)?;
+            ArrayMapFnKind::Old(array_map_fn)
+        };
 
         Ok(Self {
             base,
@@ -36,7 +61,7 @@ impl SmartModuleArrayMap {
 
 impl SmartModuleInstance for SmartModuleArrayMap {
     fn process(&mut self, input: SmartModuleInput) -> Result<SmartModuleOutput> {
-        let slice = self.base.write_input(&input, ARRAY_MAP_WASM_API)?;
+        let slice = self.base.write_input(&input)?;
         let map_output = self.array_map_fn.call(&mut self.base.store, slice)?;
 
         if map_output < 0 {
@@ -45,7 +70,7 @@ impl SmartModuleInstance for SmartModuleArrayMap {
             return Err(internal_error.into());
         }
 
-        let output: SmartModuleOutput = self.base.read_output(ARRAY_MAP_WASM_API)?;
+        let output: SmartModuleOutput = self.base.read_output()?;
         Ok(output)
     }
 
