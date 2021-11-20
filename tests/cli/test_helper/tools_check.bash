@@ -64,14 +64,14 @@ function check_load_bats_libraries() {
     # Look for bats-support, bats-assert, bats-file
     # If not there, try to clone it into place
 
-    if ! test -d "$BATS_TEST_DIRNAME/../test_helper/bats-support"; then
-        echo "# Installing bats-support in $BATS_TEST_DIRNAME/../test_helper" >&3
-        git clone https://github.com/bats-core/bats-support "$BATS_TEST_DIRNAME/../test_helper/bats-support"
+    if ! test -d "$TEST_HELPER_DIR/bats-support"; then
+        echo "# Installing bats-support in $TEST_HELPER_DIR" >&3
+        git clone https://github.com/bats-core/bats-support "$TEST_HELPER_DIR/bats-support"
     fi
 
-    if ! test -d "$BATS_TEST_DIRNAME/../test_helper/bats-assert"; then
-        echo "# Installing bats-assert in $BATS_TEST_DIRNAME/../test_helper" >&3
-        git clone https://github.com/bats-core/bats-assert "$BATS_TEST_DIRNAME/../test_helper/bats-assert"
+    if ! test -d "$TEST_HELPER_DIR/bats-assert"; then
+        echo "# Installing bats-assert in $TEST_HELPER_DIR" >&3
+        git clone https://github.com/bats-core/bats-assert "$TEST_HELPER_DIR/bats-assert"
     fi
 }
 
