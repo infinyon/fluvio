@@ -10,6 +10,7 @@ PUBLISH_CRATES=(
     fluvio-stream-model
     fluvio-controlplane-metadata
     fluvio-spu-schema
+    fluvio-smartengine
     fluvio-smartmodule-derive
     fluvio-smartmodule
     fluvio-sc-schema
