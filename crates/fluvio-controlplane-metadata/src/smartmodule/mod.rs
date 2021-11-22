@@ -69,6 +69,14 @@ mod metadata {
         type Owner = Self;
     }
 
+    impl Spec for SmartModuleMetadataSpec {
+        const LABEL: &'static str = "SmartModuleMetadata";
+        type IndexKey = String;
+        type Status = SmartModuleStatus;
+        type Owner = Self;
+    }
+
+
     impl SpecExt for SmartModuleSpec {
         const OBJECT_TYPE: ObjectType = ObjectType::SmartModule;
     }

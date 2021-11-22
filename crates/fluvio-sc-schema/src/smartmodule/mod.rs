@@ -34,4 +34,16 @@ mod convert {
 
     ObjectTryFrom!(WatchResponse, SmartModule);
     ObjectTryFrom!(ListResponse, SmartModule);
+
+    use super::SmartModuleMetadataSpec;
+
+    impl AdminSpec for SmartModuleMetadataSpec {
+        type ListFilter = NameFilter;
+        type WatchResponseType = Self;
+        type ListType = Metadata<Self>;
+    }
+    ObjectFrom!(WatchRequest, SmartModuleMetadata);
+    ObjectFrom!(WatchResponse, SmartModuleMetadata);
+    ObjectFrom!(ListRequest, SmartModuleMetadata);
+    ObjectFrom!(ListResponse, SmartModuleMetadata);
 }

@@ -89,7 +89,7 @@ mod object_macro {
 
     /// Macro to objectify generic Request/Response for Admin Objects
     /// AdminSpec is difficult to turn into TraitObject due to associated types and use of other derived
-    /// properties such as `PartialEq`.  This generates all possible variation of given API.  
+    /// properties such as `PartialEq`.  This generates all possible variation of given API.
     /// Not all variation will be constructed or used
     macro_rules! ObjectApiEnum {
         ($api:ident) => {
@@ -103,6 +103,7 @@ mod object_macro {
                     Spu($api<crate::spu::SpuSpec>),
                     CustomSpu($api<crate::customspu::CustomSpuSpec>),
                     SmartModule($api<crate::smartmodule::SmartModuleSpec>),
+                    SmartModuleMetadata($api<crate::smartmodule::SmartModuleMetadataSpec>),
                     Partition($api<crate::partition::PartitionSpec>),
                     ManagedConnector($api<crate::connector::ManagedConnectorSpec>),
                     SpuGroup($api<crate::spg::SpuGroupSpec>),
@@ -124,6 +125,7 @@ mod object_macro {
                             Self::Spu(_) => crate::spu::SpuSpec::LABEL,
                             Self::CustomSpu(_) => crate::customspu::CustomSpuSpec::LABEL,
                             Self::SmartModule(_) => crate::smartmodule::SmartModuleSpec::LABEL,
+                            Self::SmartModuleMetadata(_) => crate::smartmodule::SmartModuleMetadataSpec::LABEL,
                             Self::Partition(_) => crate::partition::PartitionSpec::LABEL,
                             Self::ManagedConnector(_) => crate::connector::ManagedConnectorSpec::LABEL,
                             Self::SpuGroup(_) => crate::spg::SpuGroupSpec::LABEL,
@@ -146,6 +148,7 @@ mod object_macro {
                                 Self::CustomSpu(s) => s.write_size(version),
                                 Self::Partition(s) => s.write_size(version),
                                 Self::SmartModule(s) => s.write_size(version),
+                                Self::SmartModuleMetadata(s) => s.write_size(version),
                                 Self::ManagedConnector(s) => s.write_size(version),
                                 Self::SpuGroup(s) => s.write_size(version),
                                 Self::TableFormat(s) => s.write_size(version),
@@ -172,6 +175,7 @@ mod object_macro {
                             Self::SmartModule(s) => s.encode(dest, version)?,
                             Self::TableFormat(s) => s.encode(dest, version)?,
                             Self::DerivedStream(s) => s.encode(dest, version)?,
+                            Self::SmartModuleMetadata(s) => s.encode(dest, version)?,
                         }
 
                         Ok(())
@@ -238,6 +242,13 @@ mod object_macro {
                                 let mut request = $api::<crate::smartmodule::SmartModuleSpec>::default();
                                 request.decode(src, version)?;
                                 *self = Self::SmartModule(request);
+                                return Ok(())
+                            }
+                            crate::smartmodule::SmartModuleMetadataSpec::LABEL => {
+                                tracing::trace!("detected smartmodule");
+                                let mut request = $api::<crate::smartmodule::SmartModuleMetadataSpec>::default();
+                                request.decode(src, version)?;
+                                *self = Self::SmartModuleMetadata(request);
                                 return Ok(())
                             }
 

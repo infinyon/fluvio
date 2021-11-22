@@ -31,6 +31,7 @@ pub mod extended {
         Partition,
         ManagedConnector,
         SmartModule,
+        SmartModuleMetadata,
         TableFormat,
         DerivedStream,
     }

@@ -14,6 +14,28 @@ pub struct SmartModuleSpec {
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
+#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SmartModuleMetadataSpec {
+    pub input_kind: SmartModuleInputKind,
+    pub output_kind: SmartModuleOutputKind,
+    pub source_code: Option<SmartModuleSourceCode>,
+    pub wasm_size: i64,
+    pub parameters: Option<Vec<SmartModuleParameter>>,
+}
+
+impl From<SmartModuleSpec> for SmartModuleMetadataSpec {
+    fn from(spec: SmartModuleSpec) -> Self {
+        Self {
+            input_kind: spec.input_kind,
+            output_kind: spec.output_kind,
+            source_code: spec.source_code,
+            wasm_size: spec.wasm.payload.len() as i64,
+            parameters: spec.parameters,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleSourceCode {
