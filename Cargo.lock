@@ -1818,7 +1818,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.6.2"
+version = "0.6.3"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1831,7 +1831,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.3.1"
+version = "0.3.2"
 dependencies = [
  "fluvio-protocol",
  "proc-macro2",

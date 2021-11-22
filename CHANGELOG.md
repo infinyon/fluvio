@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.14 - UNRELEASED
+* Add support for tuple structs in fluvio-protocol derived macros. ([#1828](https://github.com/infinyon/fluvio/issues/1828))
 
 ## Platform Version 0.9.13 - 2021-11-19
 * Fix connector create with `create_topic` option to succeed if topic already exists. ([#1823](https://github.com/infinyon/fluvio/pull/1823))
