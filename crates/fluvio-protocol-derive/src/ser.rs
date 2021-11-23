@@ -1,3 +1,5 @@
+use crate::ast::prop::UnnamedProp;
+use crate::ast::r#struct::FluvioStructProps;
 use crate::ast::{
     container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
     DeriveItem,
@@ -12,10 +14,10 @@ use syn::{Ident, LitInt, Token};
 pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
         DeriveItem::Struct(kf_struct, _attrs) => {
-            let ident = &kf_struct.struct_ident;
-            let (impl_generics, ty_generics, where_clause) = kf_struct.generics.split_for_impl();
-            let encoded_field_tokens = parse_struct_props_encoding(&kf_struct.props, ident);
-            let size_field_tokens = parse_struct_props_size(&kf_struct.props, ident);
+            let ident = kf_struct.struct_ident();
+            let (impl_generics, ty_generics, where_clause) = kf_struct.generics().split_for_impl();
+            let encoded_field_tokens = parse_struct_props_encoding(&kf_struct.props(), ident);
+            let size_field_tokens = parse_struct_props_size(&kf_struct.props(), ident);
             quote! {
                 impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
                     fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
@@ -56,10 +58,20 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-fn parse_struct_props_encoding(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
+fn parse_struct_props_encoding(props: &FluvioStructProps, struct_ident: &Ident) -> TokenStream {
+    match props {
+        FluvioStructProps::Named(named_props) => {
+            parse_struct_named_props_encoding(named_props, struct_ident)
+        }
+        FluvioStructProps::Unnamed(unnamed_props) => {
+            parse_struct_unnamed_props_encoding(unnamed_props, struct_ident)
+        }
+    }
+}
+
+fn parse_struct_named_props_encoding(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
-
         if prop.attrs.varint {
             quote! {
                 tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
@@ -88,7 +100,49 @@ fn parse_struct_props_encoding(props: &[NamedProp], struct_ident: &Ident) -> Tok
     }
 }
 
-fn parse_struct_props_size(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
+fn parse_struct_unnamed_props_encoding(props: &[UnnamedProp], struct_ident: &Ident) -> TokenStream {
+    let recurse = props.iter().enumerate().map(|(idx, prop)| {
+        let field_idx = syn::Index::from(idx);
+        if prop.attrs.varint {
+            quote! {
+                tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                let result = self.#field_idx.encode_varint(dest);
+                if result.is_err() {
+                    tracing::error!("error varint encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                    return result;
+                }
+            }
+        } else {
+            let base = quote! {
+                tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                let result = self.#field_idx.encode(dest,version);
+                if result.is_err() {
+                    tracing::error!("Error Encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                    return result;
+                }
+            };
+
+            prop.version_check_token_stream(base)
+        }
+    });
+
+    quote! {
+        #(#recurse)*
+    }
+}
+
+fn parse_struct_props_size(props: &FluvioStructProps, struct_ident: &Ident) -> TokenStream {
+    match props {
+        FluvioStructProps::Named(named_props) => {
+            parse_struct_named_props_size(named_props, struct_ident)
+        }
+        FluvioStructProps::Unnamed(unnamed_props) => {
+            parse_struct_unnamed_props_size(unnamed_props, struct_ident)
+        }
+    }
+}
+
+fn parse_struct_named_props_size(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
@@ -101,6 +155,29 @@ fn parse_struct_props_size(props: &[NamedProp], struct_ident: &Ident) -> TokenSt
             let base = quote! {
                 let write_size = self.#fname.write_size(version);
                 tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#fname),write_size);
+                len += write_size;
+            };
+            prop.version_check_token_stream(base)
+        }
+    });
+    quote! {
+        #(#recurse)*
+    }
+}
+
+fn parse_struct_unnamed_props_size(props: &[UnnamedProp], struct_ident: &Ident) -> TokenStream {
+    let recurse = props.iter().enumerate().map(|(idx, prop)| {
+        let field_idx = syn::Index::from(idx);
+        if prop.attrs.varint {
+            quote! {
+                let write_size = self.#field_idx.var_write_size();
+                tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#idx),write_size);
+                len += write_size;
+            }
+        } else {
+            let base = quote! {
+                let write_size = self.#field_idx.write_size(version);
+                tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#idx),write_size);
                 len += write_size;
             };
             prop.version_check_token_stream(base)

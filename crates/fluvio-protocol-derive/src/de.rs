@@ -1,3 +1,5 @@
+use crate::ast::prop::UnnamedProp;
+use crate::ast::r#struct::FluvioStructProps;
 use crate::ast::{
     container::ContainerAttributes, prop::NamedProp, r#enum::EnumProp, r#enum::FieldKind,
     DeriveItem,
@@ -15,9 +17,9 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
         DeriveItem::Struct(kf_struct, _attrs) => {
             // TODO: struct level attrs is not used.
-            let field_tokens = generate_struct_fields(&kf_struct.props, &kf_struct.struct_ident);
-            let ident = &kf_struct.struct_ident;
-            let (impl_generics, ty_generics, where_clause) = kf_struct.generics.split_for_impl();
+            let field_tokens = generate_struct_fields(&kf_struct.props(), kf_struct.struct_ident());
+            let ident = &kf_struct.struct_ident();
+            let (impl_generics, ty_generics, where_clause) = kf_struct.generics().split_for_impl();
             quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
@@ -53,7 +55,24 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-pub(crate) fn generate_struct_fields(props: &[NamedProp], struct_ident: &Ident) -> TokenStream {
+pub(crate) fn generate_struct_fields(
+    props: &FluvioStructProps,
+    struct_ident: &Ident,
+) -> TokenStream {
+    match props {
+        FluvioStructProps::Named(named_fields) => {
+            generate_struct_named_fields(named_fields, struct_ident)
+        }
+        FluvioStructProps::Unnamed(unnamed_fields) => {
+            generate_struct_unnamed_fields(unnamed_fields, struct_ident)
+        }
+    }
+}
+
+pub(crate) fn generate_struct_named_fields(
+    props: &[NamedProp],
+    struct_ident: &Ident,
+) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
@@ -75,6 +94,43 @@ pub(crate) fn generate_struct_fields(props: &[NamedProp], struct_ident: &Ident) 
                     tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
                 } else {
                     tracing::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    return result;
+                }
+            };
+
+            prop.version_check_token_stream(base)
+        }
+    });
+    quote! {
+        #(#recurse)*
+    }
+}
+
+pub(crate) fn generate_struct_unnamed_fields(
+    props: &[UnnamedProp],
+    struct_ident: &Ident,
+) -> TokenStream {
+    let recurse = props.iter().enumerate().map(|(idx, prop)| {
+        let field_idx = syn::Index::from(idx);
+        if prop.attrs.varint {
+            quote! {
+                tracing::trace!("start decoding varint field <{}>", stringify!(#idx));
+                let result = self.#field_idx.decode_varint(src);
+                if result.is_ok() {
+                    tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#idx),&self.#field_idx);
+                } else {
+                    tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                    return result;
+                }
+            }
+        } else {
+            let base = quote! {
+                tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#idx));
+                let result = self.#field_idx.decode(src,version);
+                if result.is_ok() {
+                    tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                } else {
+                    tracing::trace!("error decoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
                     return result;
                 }
             };
@@ -295,9 +351,9 @@ fn generate_try_enum_from_kf_enum(
 pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
     match &input {
         DeriveItem::Struct(kf_struct, _attrs) => {
-            let ident = &kf_struct.struct_ident;
-            let field_tokens = generate_default_impls(&kf_struct.props);
-            let (impl_generics, ty_generics, where_clause) = kf_struct.generics.split_for_impl();
+            let ident = &kf_struct.struct_ident();
+            let field_tokens = generate_default_impls(&kf_struct.props());
+            let (impl_generics, ty_generics, where_clause) = kf_struct.generics().split_for_impl();
             quote! {
                 impl #impl_generics Default for #ident #ty_generics #where_clause {
                     fn default() -> Self {
@@ -312,7 +368,15 @@ pub(crate) fn generate_default_trait_impls(input: &DeriveItem) -> TokenStream {
     }
 }
 
-pub(crate) fn generate_default_impls(props: &[NamedProp]) -> TokenStream {
+pub(crate) fn generate_default_impls(props: &FluvioStructProps) -> TokenStream {
+    match props {
+        FluvioStructProps::Named(named_fields) => generate_default_impls_named_fields(named_fields),
+        FluvioStructProps::Unnamed(unnamed_fields) => {
+            generate_default_impls_unnamed_fields(unnamed_fields)
+        }
+    }
+}
+pub(crate) fn generate_default_impls_named_fields(props: &[NamedProp]) -> TokenStream {
     let recurse = props.iter().map(|prop| {
         let fname = format_ident!("{}", prop.field_name);
         if let Some(def) = &prop.attrs.default_value {
@@ -328,6 +392,31 @@ pub(crate) fn generate_default_impls(props: &[NamedProp]) -> TokenStream {
         } else {
             quote! {
                 #fname: std::default::Default::default(),
+            }
+        }
+    });
+    quote! {
+        #(#recurse)*
+    }
+}
+
+pub(crate) fn generate_default_impls_unnamed_fields(props: &[UnnamedProp]) -> TokenStream {
+    let recurse = props.iter().enumerate().map(|(idx, prop)| {
+        let field_idx = syn::Index::from(idx);
+
+        if let Some(def) = &prop.attrs.default_value {
+            if let Ok(liter) = TokenStream::from_str(def) {
+                quote! {
+                    #field_idx: #liter,
+                }
+            } else {
+                quote! {
+                    #field_idx: std::default::Default::default(),
+                }
+            }
+        } else {
+            quote! {
+                #field_idx: std::default::Default::default(),
             }
         }
     });
