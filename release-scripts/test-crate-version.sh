@@ -47,7 +47,7 @@ function toml2json_check() {
 # Check if we have xsv in path
 # If not, attempt to download it
 function xsv_check() {
-    if which toml2json;
+    if which xsv;
     then
         echo "🔧 xsv found"
     else
@@ -63,7 +63,7 @@ function check_if_crate_published() {
     # Requires: curl, xsv (crate binary)
     CRATE_NAME=$1
 
-    if xsv select name ./crates_io/db_snapshot/*/data/crates.csv | grep -E "^$CRATE_NAME$" > /dev/null;
+    if $(xsv select name ./crates_io/db_snapshot/*/data/crates.csv | grep -E "^$CRATE_NAME$" > /dev/null);
     then
         return 0
     else
