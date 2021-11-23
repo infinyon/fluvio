@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use structopt::StructOpt;
 use crate::Result;
-use fluvio::metadata::smartmodule::SmartModuleSpec;
+use fluvio::metadata::smartmodule::SmartModuleMetadataSpec;
 use fluvio::Fluvio;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
@@ -16,7 +16,7 @@ pub struct ListSmartModuleOpt {
 impl ListSmartModuleOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SmartModuleSpec, _>(vec![]).await?;
+        let lists = admin.list::<SmartModuleMetadataSpec, _>(vec![]).await?;
         output::smartmodules_response_to_output(out, lists, self.output.format)
     }
 }
@@ -38,14 +38,14 @@ mod output {
     use fluvio_extension_common::Terminal;
 
     use fluvio::metadata::objects::Metadata;
-    use fluvio::metadata::smartmodule::SmartModuleSpec;
+    use fluvio::metadata::smartmodule::SmartModuleMetadataSpec;
 
     use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
     use fluvio_extension_common::t_println;
 
     #[derive(Serialize)]
-    struct ListSmartModules(Vec<Metadata<SmartModuleSpec>>);
+    struct ListSmartModules(Vec<Metadata<SmartModuleMetadataSpec>>);
 
     // -----------------------------------
     // Format Output
@@ -54,7 +54,7 @@ mod output {
     /// Format Smart Modules based on output type
     pub fn smartmodules_response_to_output<O: Terminal>(
         out: std::sync::Arc<O>,
-        list_smartmodules: Vec<Metadata<SmartModuleSpec>>,
+        list_smartmodules: Vec<Metadata<SmartModuleMetadataSpec>>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
         debug!("smart modules: {:#?}", list_smartmodules);
@@ -92,7 +92,7 @@ mod output {
                     Row::new(vec![
                         Cell::new_align(&r.name, Alignment::RIGHT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
-                        Cell::new_align(&r.spec.wasm.payload.len().to_string(), Alignment::RIGHT),
+                        Cell::new_align(&r.spec.wasm_size.to_string(), Alignment::RIGHT),
                     ])
                 })
                 .collect()

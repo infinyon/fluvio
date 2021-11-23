@@ -21,7 +21,7 @@ pub async fn handle_metadata_fetch_request<AC: AuthContext>(
 
     if let Ok(authorized) = auth_ctx
         .auth
-        .allow_type_action(SmartModuleSpec::OBJECT_TYPE, TypeAction::Read)
+        .allow_type_action(SmartModuleMetadataSpec::OBJECT_TYPE, TypeAction::Read)
         .await
     {
         if !authorized {
@@ -47,8 +47,13 @@ pub async fn handle_metadata_fetch_request<AC: AuthContext>(
             }
         })
         .map(|value| {
-            let spec : SmartModuleMetadataSpec = value.spec.into();
-            let spec : Metadata<SmartModuleMetadataSpec> = spec.into();
+            let spec : SmartModuleMetadataSpec = value.spec.clone().into();
+            let status = value.status.clone();
+            let spec : Metadata<SmartModuleMetadataSpec> = Metadata {
+                name: value.key().to_string(),
+                status,
+                spec,
+            };
             spec
         })
         .collect();

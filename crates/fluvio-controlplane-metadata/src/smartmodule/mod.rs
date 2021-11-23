@@ -54,6 +54,42 @@ where
         }
     }
 }
+/*
+
+impl<C> From<MetadataStoreObject<SmartModuleMetadataSpec, C>> for SmartModuleMetadata
+where
+    C: MetadataItem,
+{
+    fn from(mso: MetadataStoreObject<SmartModuleSpec, C>) -> Self {
+        let name = mso.key_owned();
+        let SmartModuleSpec {
+            input_kind,
+            output_kind,
+            source_code,
+            wasm_size,
+            parameters,
+        } = mso.spec;
+        Self {
+            name,
+            input_kind,
+            output_kind,
+            source_code,
+            wasm_size,
+            parameters,
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
+pub struct SmartModuleMetadata {
+    pub name: SmartModuleName,
+    pub input_kind: SmartModuleInputKind,
+    pub output_kind: SmartModuleOutputKind,
+    pub source_code: Option<SmartModuleSourceCode>,
+    pub wasm_size: i64,
+    pub parameters: Option<Vec<SmartModuleParameter>>,
+}
+*/
 
 mod metadata {
 
@@ -75,7 +111,9 @@ mod metadata {
         type Status = SmartModuleStatus;
         type Owner = Self;
     }
-
+    impl SpecExt for SmartModuleMetadataSpec{
+        const OBJECT_TYPE: ObjectType = ObjectType::SmartModuleMetadata;
+    }
 
     impl SpecExt for SmartModuleSpec {
         const OBJECT_TYPE: ObjectType = ObjectType::SmartModule;
