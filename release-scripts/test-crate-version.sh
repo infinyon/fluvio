@@ -12,7 +12,8 @@
 set -eu
 
 # Read in PUBLISH_CRATES var
-source $(dirname -- ${BASH_SOURCE[0]})/publish-list
+# shellcheck source=/dev/null
+source "$(dirname -- "${BASH_SOURCE[0]}")/publish-list"
 
 ALL_CRATE_CHECK_PASS=true
 CHECK_CRATES=()
@@ -63,7 +64,7 @@ function check_if_crate_published() {
     # Requires: curl, xsv (crate binary)
     CRATE_NAME=$1
 
-    if $(xsv select name ./crates_io/db_snapshot/*/data/crates.csv | grep -E "^$CRATE_NAME$" > /dev/null);
+    if xsv select name ./crates_io/db_snapshot/*/data/crates.csv | grep -E "^$CRATE_NAME$" > /dev/null;
     then
         return 0
     else
@@ -272,6 +273,9 @@ function main() {
 
     # Download crates.io db
     download_crates_io_data;
+
+    echo "Order of crates:"
+    printf "* %s\n" "${PUBLISH_CRATES[@]}"
 
     for crate in "${PUBLISH_CRATES[@]}" ; do
         echo
