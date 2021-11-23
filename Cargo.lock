@@ -1934,7 +1934,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.0.0"
+version = "0.1.0"
 dependencies = [
  "anyhow",
  "flate2",
@@ -1962,7 +1962,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "proc-macro2",
  "quote",

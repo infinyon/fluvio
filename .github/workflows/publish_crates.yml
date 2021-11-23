@@ -1,0 +1,66 @@
+name: Publish crates to crates.io 
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+
+#env:
+#  USE_COMMIT: ${{ github.event.inputs.commit }}
+#  FORCE_RELEASE: ${{ github.event.inputs.force }}
+
+jobs:
+  #cd_dev_check:
+  #  name: CD_Dev check
+  #  runs-on: ubuntu-latest
+  #  steps:
+  #    - uses: actions/checkout@v2
+  #    - name: Login GH CLI
+  #      run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+  #    - name: Get status of latest CD_Dev run
+  #      id: cd_dev_check
+  #      run: |
+  #        gh api /repos/{owner}/{repo}/actions/workflows/cd_dev.yaml/runs | jq .workflow_runs[0] > /tmp/cd_dev_latest.txt  
+  #        echo "Latest CD_Dev run: $(cat /tmp/cd_dev_latest.txt | jq .html_url | tr -d '"')"
+  #        CD_DEV_CHECK=$(cat /tmp/cd_dev_latest.txt | jq .conclusion | tr -d '"')
+  #        if [[ "$CD_DEV_CHECK" = "success" ]]
+  #        then
+  #          echo ✅ Most recent CD_Dev run passed
+  #          exit 0;
+  #        else
+  #          echo ❌ Most recent CD_Dev run failed
+  #          exit 1;
+  #        fi
+  publish_crates:
+    name: Publish crates to crates.io 
+    strategy:
+      matrix:
+        rust: [stable]
+    runs-on: ubuntu-latest
+    #permissions: write-all
+    steps:
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+
+      - uses: actions/checkout@v2
+
+      - name: Run publish script
+        env:
+          VERBOSE: true
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: |
+          ./release-scripts/publish-crates.sh
+
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+        if: failure()
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

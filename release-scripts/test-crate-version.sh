@@ -1,9 +1,19 @@
 #!/usr/bin/env bash
 
+# Check all the crates we list in `publish-list`
+# Test whether we should bump the version number
+#
+# Based on:
+# - If source code has changed
+# - If Cargo.toml has changed
+#
+# Supports new crates that haven't been initially published
+
 set -eu
 
 # Read in PUBLISH_CRATES var
-source $(dirname -- ${BASH_SOURCE[0]})/publish-list
+# shellcheck source=/dev/null
+source "$(dirname -- "${BASH_SOURCE[0]}")/publish-list"
 
 ALL_CRATE_CHECK_PASS=true
 CHECK_CRATES=()
@@ -34,6 +44,51 @@ function toml2json_check() {
         cargo install toml2json 
     fi
 }
+
+# Check if we have xsv in path
+# If not, attempt to download it
+function xsv_check() {
+    if which xsv;
+    then
+        echo "🔧 xsv found"
+    else
+        echo "xsv not found"
+        echo "Attempting to download"
+        cargo install xsv 
+    fi
+}
+
+# in the crates db snapshot list of published crates
+function check_if_crate_published() {
+
+    # Requires: curl, xsv (crate binary)
+    CRATE_NAME=$1
+
+    if xsv select name ./crates_io/db_snapshot/*/data/crates.csv | grep -E "^$CRATE_NAME$" > /dev/null;
+    then
+        return 0
+    else
+        return 1
+    fi
+}
+
+function download_crates_io_data() {
+
+    mkdir -p ./crates_io/db_snapshot;
+    pushd ./crates_io/db_snapshot >/dev/null
+    # Download crates.io (daily) data locally
+    # From: https://crates.io/data-access
+    # https://static.crates.io/db-dump.tar.gz
+
+    # Extract
+    wget --quiet https://static.crates.io/db-dump.tar.gz
+    tar xzf db-dump.tar.gz
+    rm db-dump.tar.gz
+
+    popd >/dev/null
+}
+
+
 
 function download_crate() {
     CRATE_NAME=$1
@@ -210,10 +265,17 @@ function main() {
     # Tools check
     cargo_download_check;
     toml2json_check;
+    xsv_check;
 
     # Cleanup previous runs
     rm -rf ./crates_io
     mkdir -p ./crates_io;
+
+    # Download crates.io db
+    download_crates_io_data;
+
+    echo "Order of crates:"
+    printf "* %s\n" "${PUBLISH_CRATES[@]}"
 
     for crate in "${PUBLISH_CRATES[@]}" ; do
         echo
@@ -224,29 +286,38 @@ function main() {
         VERSION_MATCH=false
         CARGO_TOML_MATCH=false
 
-        download_crate "$crate";
-
-        if compare_crates_src "$crate";
+        # Check if crate exists first
+        if check_if_crate_published "$crate";
         then
-            SRC_MATCH=true
-        fi
+            # if it does exist
 
+            download_crate "$crate";
 
-        if compare_crates_version "$crate";
-        then
-            VERSION_MATCH=true
-        fi
-
-        # We only need to compare Cargo.toml contents if there's a chance for Cargo.toml only changes 
-        if [[ "$SRC_MATCH" == true ]] && [[ "$VERSION_MATCH" == true ]];
-        then
-            if compare_crates_content "$crate";
+            if compare_crates_src "$crate";
             then
-                CARGO_TOML_MATCH=true
+                SRC_MATCH=true
             fi
-        fi
 
-        check_crate "$SRC_MATCH" "$VERSION_MATCH" "$CARGO_TOML_MATCH" "$crate";
+
+            if compare_crates_version "$crate";
+            then
+                VERSION_MATCH=true
+            fi
+
+            # We only need to compare Cargo.toml contents if there's a chance for Cargo.toml only changes 
+            if [[ "$SRC_MATCH" == true ]] && [[ "$VERSION_MATCH" == true ]];
+            then
+                if compare_crates_content "$crate";
+                then
+                    CARGO_TOML_MATCH=true
+                fi
+            fi
+
+            check_crate "$SRC_MATCH" "$VERSION_MATCH" "$CARGO_TOML_MATCH" "$crate";
+        else
+            # if it does not exist, 
+            echo "🟡 Crate not found in crates.io (Possible cause: Not published yet?)"
+        fi
     done
 
     echo
