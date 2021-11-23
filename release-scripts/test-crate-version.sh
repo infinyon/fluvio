@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+# Check all the crates we list in `publish-list`
+# Test whether we should bump the version number
+#
+# Based on:
+# - If source code has changed
+# - If Cargo.toml has changed
+#
+# Supports new crates that haven't been initially published
+
 set -eu
 
 # Read in PUBLISH_CRATES var
@@ -48,20 +57,13 @@ function xsv_check() {
     fi
 }
 
+# in the crates db snapshot list of published crates
 function check_if_crate_published() {
 
     # Requires: curl, xsv (crate binary)
     CRATE_NAME=$1
 
-
-    # date --date="yesterday" +"%Y-%m-%d"
-    #YESTERDAY="$(date --date="yesterday" +"%Y-%m-%d")"
-    # cd into dir ()
-    #pushd $YESTERDAY-*/data
-
-    # xsv select name crates.csv | grep -E "^fluvio$"
-    pwd;
-    if xsv select name ./crates_io/db_yesterday/*/data/crates.csv | grep -E "^$CRATE_NAME$";
+    if xsv select name ./crates_io/db_snapshot/*/data/crates.csv | grep -E "^$CRATE_NAME$" > /dev/null;
     then
         return 0
     else
@@ -71,19 +73,18 @@ function check_if_crate_published() {
 
 function download_crates_io_data() {
 
-    mkdir -p ./crates_io/db_yesterday;
-    pushd ./crates_io/db_yesterday
+    mkdir -p ./crates_io/db_snapshot;
+    pushd ./crates_io/db_snapshot >/dev/null
     # Download crates.io (daily) data locally
     # From: https://crates.io/data-access
     # https://static.crates.io/db-dump.tar.gz
 
     # Extract
-
     wget --quiet https://static.crates.io/db-dump.tar.gz
     tar xzf db-dump.tar.gz
     rm db-dump.tar.gz
 
-    popd
+    popd >/dev/null
 }
 
 
@@ -91,12 +92,6 @@ function download_crates_io_data() {
 function download_crate() {
     CRATE_NAME=$1
     mkdir -p ./crates_io/"$CRATE_NAME"
-
-
-    # Check if crate exists
-    # (To support adding new crates that haven't been published yet)
-    check_if_crate_published "$CRATE_NAME";
-
 
     if [[ $VERBOSE == true ]];
     then
