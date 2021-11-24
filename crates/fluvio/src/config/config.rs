@@ -131,7 +131,7 @@ impl ConfigFile {
     }
 
     /// add or update profile with a simple cluster address
-    /// this will create a new cluster if it doesn't exists
+    /// this will create or replace cluster config if it doesn't exists
     pub fn add_or_replace_profile(
         &mut self,
         profile_name: &str,
