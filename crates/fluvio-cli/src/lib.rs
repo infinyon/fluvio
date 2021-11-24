@@ -138,7 +138,6 @@ mod root {
         Version(VersionOpt),
 
         /// Generate command-line completions for Fluvio
-        /// 
         /// Run the following two commands to enable fluvio completions.
         /// fluvio completions bash > ~/fluvio_completions.sh
         /// echo "source ~/fluvio_completions.sh" >> ~/.bashrc
