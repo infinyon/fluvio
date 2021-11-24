@@ -138,10 +138,12 @@ mod root {
         Version(VersionOpt),
 
         /// Generate command-line completions for Fluvio
-        #[structopt(
-            name = "completions",
-            settings = &[AppSettings::Hidden]
-        )]
+        /// 
+        /// Run the following two commands to enable fluvio completions.
+        /// fluvio completions bash > ~/fluvio_completions.sh
+        /// echo "source ~/fluvio_completions.sh" >> ~/.bashrc
+        /// Open a new terminal for changes to take effect.
+        #[structopt(name = "completions")]
         Completions(CompletionCmd),
 
         /// Generate metadata for Fluvio base CLI
