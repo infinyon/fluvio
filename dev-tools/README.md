@@ -39,3 +39,10 @@ IME_WAIT is normal. It's a state after a socket has closed, used by the kernel t
 
 ```
 
+# SPU debugging
+
+To show log size:
+```
+kubectl exec fluvio-spg-main-0 -- ls -lh /var/lib/fluvio/data/spu-logs-0/<topic-name>-0/00000000000000000000.log
+```
+
