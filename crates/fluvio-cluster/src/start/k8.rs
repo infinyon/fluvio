@@ -1089,7 +1089,11 @@ impl ClusterInstaller {
 
         let profile_name = self.compute_profile_name()?;
         let mut config_file = ConfigFile::load_default_or_new()?;
-        config_file.add_or_replace_profile(&profile_name,&external_addr, &self.config.client_tls_policy)?;
+        config_file.add_or_replace_profile(
+            &profile_name,
+            external_addr,
+            &self.config.client_tls_policy,
+        )?;
         self.pb.set_message("");
         Ok(())
     }

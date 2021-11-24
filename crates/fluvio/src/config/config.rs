@@ -138,12 +138,11 @@ impl ConfigFile {
         cluster_addr: &str,
         tls_policy: &TlsPolicy,
     ) -> Result<(), FluvioError> {
-    
         let config = self.mut_config();
 
         // if cluster exists, just update extern addr
         // if not create new config
-        match config.cluster_mut(&profile_name) {
+        match config.cluster_mut(profile_name) {
             Some(cluster) => {
                 cluster.endpoint = cluster_addr.to_string();
                 cluster.tls = tls_policy.clone();
@@ -156,7 +155,7 @@ impl ConfigFile {
         }
 
         // add profile or exist
-        match config.profile_mut(&profile_name) {
+        match config.profile_mut(profile_name) {
             Some(profile) => {
                 profile.set_cluster(profile_name.to_string());
             }
@@ -166,11 +165,10 @@ impl ConfigFile {
             }
         };
 
-        config.set_current_profile(&profile_name);
+        config.set_current_profile(profile_name);
         self.save()?;
         Ok(())
     }
-    
 }
 
 pub const LOCAL_PROFILE: &str = "local";

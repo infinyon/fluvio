@@ -525,10 +525,14 @@ impl LocalInstaller {
     fn set_profile(&self) -> Result<(), LocalInstallError> {
         self.pb
             .set_message(format!("Creating Local Profile to: {}", LOCAL_SC_ADDRESS));
-      
+
         let mut config_file = ConfigFile::load_default_or_new()?;
-        config_file.add_or_replace_profile(LOCAL_PROFILE, LOCAL_SC_ADDRESS,  &self.config.client_tls_policy)?;
-       
+        config_file.add_or_replace_profile(
+            LOCAL_PROFILE,
+            LOCAL_SC_ADDRESS,
+            &self.config.client_tls_policy,
+        )?;
+
         self.pb.println(InstallProgressMessage::ProfileSet.msg());
 
         Ok(())
