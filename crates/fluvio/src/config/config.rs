@@ -29,6 +29,8 @@ use serde::Serialize;
 use fluvio_types::defaults::{CLI_CONFIG_PATH};
 use crate::{FluvioConfig, FluvioError};
 
+use super::TlsPolicy;
+
 #[derive(Error, Debug)]
 pub enum ConfigError {
     #[error(transparent)]
@@ -127,6 +129,48 @@ impl ConfigFile {
             .map_err(ConfigError::ConfigFileError)?;
         Ok(())
     }
+
+    /// add or update profile with a simple cluster address
+    /// this will create a new cluster if it doesn't exists
+    pub fn add_or_replace_profile(
+        &mut self,
+        profile_name: &str,
+        cluster_addr: &str,
+        tls_policy: &TlsPolicy,
+    ) -> Result<(), FluvioError> {
+    
+        let config = self.mut_config();
+
+        // if cluster exists, just update extern addr
+        // if not create new config
+        match config.cluster_mut(&profile_name) {
+            Some(cluster) => {
+                cluster.endpoint = cluster_addr.to_string();
+                cluster.tls = tls_policy.clone();
+            }
+            None => {
+                let mut new_cluster = FluvioConfig::new(cluster_addr);
+                new_cluster.tls = tls_policy.clone();
+                config.add_cluster(new_cluster, profile_name.to_string());
+            }
+        }
+
+        // add profile or exist
+        match config.profile_mut(&profile_name) {
+            Some(profile) => {
+                profile.set_cluster(profile_name.to_string());
+            }
+            None => {
+                let profile = Profile::new(profile_name.to_string());
+                config.add_profile(profile, profile_name.to_string());
+            }
+        };
+
+        config.set_current_profile(&profile_name);
+        self.save()?;
+        Ok(())
+    }
+    
 }
 
 pub const LOCAL_PROFILE: &str = "local";

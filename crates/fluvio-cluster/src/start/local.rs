@@ -10,7 +10,7 @@ use tracing::{debug, error, instrument, warn};
 use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
-use fluvio::config::{TlsPolicy, ConfigFile, Profile, LOCAL_PROFILE};
+use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
@@ -522,43 +522,16 @@ impl LocalInstaller {
 
     /// set local profile
     #[instrument(skip(self))]
-    fn set_profile(&self) -> Result<String, LocalInstallError> {
-        let local_addr = LOCAL_SC_ADDRESS.to_owned();
+    fn set_profile(&self) -> Result<(), LocalInstallError> {
+        self.pb
+            .set_message(format!("Creating Local Profile to: {}", LOCAL_SC_ADDRESS));
+      
         let mut config_file = ConfigFile::load_default_or_new()?;
-
-        let config = config_file.mut_config();
-        // check if local cluster exists otherwise, create new one
-        match config.cluster_mut(LOCAL_PROFILE) {
-            Some(cluster) => {
-                cluster.endpoint = local_addr.clone();
-                cluster.tls = self.config.client_tls_policy.clone();
-            }
-            None => {
-                let mut local_cluster = FluvioConfig::new(local_addr.clone());
-                local_cluster.tls = self.config.client_tls_policy.clone();
-                config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
-            }
-        };
-
-        // check if we local profile exits otherwise, create new one, then set it's cluster
-        match config.profile_mut(LOCAL_PROFILE) {
-            Some(profile) => {
-                profile.set_cluster(LOCAL_PROFILE.to_owned());
-            }
-            None => {
-                let profile = Profile::new(LOCAL_PROFILE.to_owned());
-                config.add_profile(profile, LOCAL_PROFILE.to_owned());
-            }
-        }
-
-        // finally we set current profile to local
-        assert!(config.set_current_profile(LOCAL_PROFILE));
-
-        config_file.save()?;
-
+        config_file.add_or_replace_profile(LOCAL_PROFILE, LOCAL_SC_ADDRESS,  &self.config.client_tls_policy)?;
+       
         self.pb.println(InstallProgressMessage::ProfileSet.msg());
 
-        Ok(format!("local context is set to: {}", local_addr))
+        Ok(())
     }
 
     #[instrument(skip(self))]

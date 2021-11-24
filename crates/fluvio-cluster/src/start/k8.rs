@@ -20,7 +20,7 @@ use semver::Version;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
-use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
+use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile};
 use fluvio_future::timer::sleep;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
@@ -713,7 +713,7 @@ impl ClusterInstaller {
         self.pb.set_message("");
 
         if self.config.save_profile {
-            self.update_profile(address.clone())?;
+            self.update_profile(&address)?;
             self.pb.println(InstallProgressMessage::ProfileSet.msg());
         }
 
@@ -1083,38 +1083,13 @@ impl ClusterInstaller {
     }
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
-    fn update_profile(&self, external_addr: String) -> Result<(), K8InstallError> {
+    fn update_profile(&self, external_addr: &str) -> Result<(), K8InstallError> {
         self.pb
-            .set_message(format!("updating profile for: {}", external_addr));
-        let mut config_file = ConfigFile::load_default_or_new()?;
-        let config = config_file.mut_config();
+            .set_message(format!("Creating K8 profile for: {}", external_addr));
 
         let profile_name = self.compute_profile_name()?;
-
-        match config.cluster_mut(&profile_name) {
-            Some(cluster) => {
-                cluster.endpoint = external_addr;
-                cluster.tls = self.config.client_tls_policy.clone();
-            }
-            None => {
-                let mut local_cluster = FluvioConfig::new(external_addr);
-                local_cluster.tls = self.config.client_tls_policy.clone();
-                config.add_cluster(local_cluster, profile_name.clone());
-            }
-        }
-
-        match config.profile_mut(&profile_name) {
-            Some(profile) => {
-                profile.set_cluster(profile_name.clone());
-            }
-            None => {
-                let profile = Profile::new(profile_name.clone());
-                config.add_profile(profile, profile_name.clone());
-            }
-        };
-
-        config.set_current_profile(&profile_name);
-        config_file.save()?;
+        let mut config_file = ConfigFile::load_default_or_new()?;
+        config_file.add_or_replace_profile(&profile_name,&external_addr, &self.config.client_tls_policy)?;
         self.pb.set_message("");
         Ok(())
     }
