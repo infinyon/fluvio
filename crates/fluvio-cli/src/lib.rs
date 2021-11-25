@@ -144,7 +144,7 @@ mod root {
         /// 
         /// $ fluvio completions bash > ~/fluvio_completions.sh
         /// 
-        /// $ echo "source ~/fluvio_completions.sh" >> ~/.bashrc
+        /// $ echo "source ~/fluvio_completions.sh" >> ~/.bashrc 
         #[structopt(name = "completions")]
         Completions(CompletionCmd),
 
