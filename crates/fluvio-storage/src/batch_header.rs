@@ -1,8 +1,4 @@
-use std::io::Error as IoError;
-
-use dataplane::core::{Version, Decoder, Encoder};
-use dataplane::bytes::Buf;
-use dataplane::bytes::BufMut;
+use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::BatchRecords;
 
 use crate::batch::FileBatchStream;
@@ -12,36 +8,12 @@ pub type BatchHeaderStream = FileBatchStream<FileEmptyRecords>;
 
 pub type BatchHeaderPos = FileBatchPos<FileEmptyRecords>;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Encoder, Decoder)]
 pub struct FileEmptyRecords {}
 
 impl BatchRecords for FileEmptyRecords {
     fn remainder_bytes(&self, _remainder: usize) -> usize {
         0
-    }
-}
-
-// nothing to decode for header
-impl Decoder for FileEmptyRecords {
-    fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), IoError>
-    where
-        T: Buf,
-    {
-        Ok(())
-    }
-}
-
-// nothing to do decode for header
-impl Encoder for FileEmptyRecords {
-    fn write_size(&self, _versio: Version) -> usize {
-        0
-    }
-
-    fn encode<T>(&self, _dest: &mut T, _version: Version) -> Result<(), IoError>
-    where
-        T: BufMut,
-    {
-        Ok(())
     }
 }
 

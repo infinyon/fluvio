@@ -113,7 +113,7 @@ where
         content_len: usize,
     ) -> Result<(), IoError> {
         // for now se
-        let (_bytes, read_len) = file.read_bytes(content_len as u32);
+        let (bytes, read_len) = file.read_bytes(content_len as u32);
 
         trace!(
             "file batch: read records {} bytes out of {}",
@@ -129,10 +129,9 @@ where
         }
 
         // skip decoding the records
-        /*
+
         let mut cursor = Cursor::new(bytes);
         self.inner.mut_records().decode(&mut cursor, 0)?;
-        */
 
         Ok(())
     }
