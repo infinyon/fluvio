@@ -26,77 +26,105 @@ pub enum LogValidationError {
     NoBatches,
     #[error("Batch already exists")]
     ExistingBatch,
+    #[error("Unepxected Eof: {0}")]
+    UnexpectedEof(i64),
+}
+
+#[derive(Debug)]
+pub struct LogValidator {
+    pub base_offset: Offset,
+    pub batches: u32,
+    pub last_offset: Offset,
+}
+
+impl LogValidator {
+    /// validate the file and find last offset
+    /// if file is not valid then return error
+    pub async fn validate<P>(path: P) -> Result<Self, LogValidationError>
+    where
+        P: AsRef<Path>,
+    {
+        let file_path = path.as_ref();
+
+        let mut val = Self {
+            base_offset: log_path_get_offset(file_path)?,
+            batches: 0,
+            last_offset: -1,
+        };
+
+        debug!(
+            file_name = %file_path.display(),
+            val.base_offset,
+            "validating",
+        );
+
+        let mut batch_stream = match BatchHeaderStream::open(file_path).await {
+            Ok(batch_stream) => batch_stream,
+            Err(err) => match err.kind() {
+                ErrorKind::UnexpectedEof => {
+                    return Err(LogValidationError::UnexpectedEof(val.base_offset))
+                }
+                _ => return Err(err.into()),
+            },
+        };
+
+        while let Some(batch_pos) = batch_stream.next().await {
+            let batch_base_offset = batch_pos.get_batch().get_base_offset();
+            let header = batch_pos.get_batch().get_header();
+            let offset_delta = header.last_offset_delta;
+
+            trace!(batch_base_offset, offset_delta, "found batch");
+
+            if batch_base_offset < val.base_offset {
+                warn!(
+                    "batch base offset: {} is less than base offset: {} path: {:#?}",
+                    batch_base_offset,
+                    val.base_offset,
+                    file_path.display()
+                );
+                return Err(LogValidationError::BaseOff);
+            }
+
+            /*
+            if batch_base_offset <= last_offset {
+                warn!(
+                    "batch offset is  {} is less than prev offset  {}",
+                    batch_base_offset, last_offset
+                );
+                return Err(LogValidationError::OffsetNotOrdered);
+            }
+            */
+
+            val.last_offset = batch_base_offset + offset_delta as Offset;
+            val.batches += 1;
+        }
+
+        if let Some(err) = batch_stream.invalid() {
+            return Err(err.into());
+        }
+
+        debug!(val.last_offset, "found last offset");
+        Ok(val)
+    }
+
+    fn next_offset(&self) -> Offset {
+        if self.last_offset == -1 {
+            return self.base_offset;
+        }
+
+        self.last_offset + 1
+    }
 }
 
 /// validate the file and find last offset
 /// if file is not valid then return error
-#[allow(dead_code)]
 pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
 where
     P: AsRef<Path>,
 {
-    let file_path = path.as_ref();
-    let base_offset = log_path_get_offset(file_path)?;
-    let file_name = file_path.display().to_string();
+    let val = LogValidator::validate(path).await?;
 
-    debug!(
-        %file_name,
-        base_offset,
-        "validating",
-    );
-
-    let mut batch_stream = match BatchHeaderStream::open(path).await {
-        Ok(batch_stream) => batch_stream,
-        Err(err) => match err.kind() {
-            ErrorKind::UnexpectedEof => {
-                debug!(%file_name, "empty");
-                return Ok(base_offset);
-            }
-            _ => return Err(err.into()),
-        },
-    };
-
-    let mut last_offset: Offset = -1;
-
-    while let Some(batch_pos) = batch_stream.next().await {
-        let batch_base_offset = batch_pos.get_batch().get_base_offset();
-        let header = batch_pos.get_batch().get_header();
-        let offset_delta = header.last_offset_delta;
-
-        trace!(batch_base_offset, offset_delta, "found batch");
-
-        if batch_base_offset < base_offset {
-            warn!(
-                "batch base offset: {} is less than base offset: {} path: {:#?}",
-                batch_base_offset, base_offset, file_name
-            );
-            return Err(LogValidationError::BaseOff);
-        }
-
-        /*
-        if batch_base_offset <= last_offset {
-            warn!(
-                "batch offset is  {} is less than prev offset  {}",
-                batch_base_offset, last_offset
-            );
-            return Err(LogValidationError::OffsetNotOrdered);
-        }
-        */
-
-        last_offset = batch_base_offset + offset_delta as Offset;
-    }
-
-    if let Some(err) = batch_stream.invalid() {
-        return Err(err.into());
-    }
-
-    if last_offset == -1 {
-        trace!("no batch found, returning last offset delta 0");
-        return Ok(base_offset);
-    }
-
-    debug!(last_offset, "found last offset");
-    Ok(last_offset + 1)
+    Ok(val.next_offset())
 }
 
 #[cfg(test)]
@@ -231,19 +259,18 @@ mod perf {
 
     use std::time::Instant;
 
-    use super::validate;
+    use super::*;
 
-    //#[fluvio_future::test]
-    #[allow(unused)]
+    #[fluvio_future::test]
+    //#[allow(unused)]
     async fn perf_test() {
-        const TEST_PATH: &str =
-            "/tmp/fluvio-large-data/spu-logs-5002/longevity-0/00000000000000000000.log";
+        const TEST_PATH: &str = "/tmp/perf/00000000000000000000.log";
 
         println!("starting test");
         let write_time = Instant::now();
-        let last_offset = validate(&TEST_PATH).await.expect("validate");
+        let info = LogValidator::validate(TEST_PATH).await.expect("validate");
         let time = write_time.elapsed();
         println!("took: {:#?}", time);
-        println!("next offset: {}", last_offset);
+        println!("validator: {:#?}", info);
     }
 }
