@@ -29,7 +29,7 @@ env:
   K3D_VERSION: v4.4.8
 
 jobs:
-  # test fluvio in local cluster 
+  # Perform E2E sanity checks
   verify_latest_releases:
     name: Verify latest (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
@@ -41,8 +41,6 @@ jobs:
     env:
       SLEEP: 10
       TOPIC: foobar
-      FLV_SOCKET_WAIT: 600
-
     steps:
       - uses: actions/checkout@v2
       - name: Install Fluvio CLI
@@ -61,23 +59,18 @@ jobs:
         if: ${{ matrix.os == 'macos-11' }}
         run: |
           brew install kind
-          kind create cluster --config k8-util/cluster/kind.yaml 
-      - name: Create Fluvio cluster and run E2E Test
-        env:
-          FLV_DISPATCHER_WAIT: 300  
-        timeout-minutes: 5
+          kind create cluster --config k8-util/cluster/kind.yaml
+      - name: Install Local Fluvio cluster
+        timeout-minutes: 3
+        if: ${{ matrix.cluster_type == 'local' }}
+        run: fluvio cluster start --local
+      - name: Install k8 Fluvio cluster
+        timeout-minutes: 3
+        if: ${{ matrix.cluster_type == 'k8' }}
+        run: fluvio cluster start --image-version latest
+      - name: Run E2E Test
+        timeout-minutes: 2
         run: |
-            export PATH=~/.fluvio/bin:$PATH
-            if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
-              echo "Installing local cluster"
-              fluvio cluster delete
-              fluvio cluster start --local
-            else
-              echo "Installing k8 cluster"
-              fluvio cluster delete
-              fluvio cluster start --image-version latest
-            fi
-            sleep 30
             fluvio version
             fluvio topic create ${{ env.TOPIC }}
             echo foo | fluvio produce ${{ env.TOPIC }}
