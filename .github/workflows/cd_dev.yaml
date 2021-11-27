@@ -54,9 +54,14 @@ jobs:
       - name: Set up K8 for ubuntu(kind)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: ./k8-util/cluster/reset-k3d.sh
-      - name: Set up Minikube for Mac
+      - name: Install Docker for Mac
         if: ${{ matrix.os == 'macos-11' }}
-        run: ./k8-util/cluster/start-minikube-mac.sh
+        uses: docker-practice/actions-setup-docker@master
+      - name: Set up Kind for Mac
+        if: ${{ matrix.os == 'macos-11' }}
+        run: |
+          brew install kind
+          kind create cluster --config k8-util/cluster/kind.yaml 
       - name: Create Fluvio cluster and run E2E Test
         env:
           FLV_DISPATCHER_WAIT: 300  
