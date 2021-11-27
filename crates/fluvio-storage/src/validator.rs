@@ -30,8 +30,8 @@ pub enum LogValidationError {
     NoBatches,
     #[error("Batch already exists")]
     ExistingBatch,
-    #[error("Unepxected Eof: {0}")]
-    UnexpectedEof(i64),
+    #[error("Empty file: {0}")]
+    Empty(i64),
 }
 
 /// Validation Log file
@@ -69,9 +69,7 @@ impl LogValidatorResult {
         let mut batch_stream: FileBatchStream<R, S> = match FileBatchStream::open(file_path).await {
             Ok(batch_stream) => batch_stream,
             Err(err) => match err.kind() {
-                ErrorKind::UnexpectedEof => {
-                    return Err(LogValidationError::UnexpectedEof(val.base_offset))
-                }
+                ErrorKind::UnexpectedEof => return Err(LogValidationError::Empty(val.base_offset)),
                 _ => return Err(err.into()),
             },
         };
@@ -142,8 +140,11 @@ pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
 where
     P: AsRef<Path>,
 {
-    let val = LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap>(path).await?;
-    Ok(val.next_offset())
+    match LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap>(path).await {
+        Ok(val) => Ok(val.next_offset()),
+        Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
+        Err(err) => Err(err),
+    }
 }
 
 #[cfg(test)]
