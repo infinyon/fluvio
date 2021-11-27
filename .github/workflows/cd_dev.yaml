@@ -69,7 +69,7 @@ jobs:
       - name: Install k8 Fluvio cluster
         timeout-minutes: 3
         if: ${{ matrix.cluster_type == 'k8' }}
-        run: fluvio cluster start --image-version latest
+        run: RUST_LOG=debug fluvio cluster start --image-version latest
       - name: Run E2E Test
         timeout-minutes: 2
         run: |
