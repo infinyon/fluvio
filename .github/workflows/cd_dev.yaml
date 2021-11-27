@@ -80,10 +80,13 @@ jobs:
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
 
+      - name: Debug failure for Mac
+        if: failure() && ${{ matrix.os == 'macos-11' }}
+        run: |
+          docker port `docker ps -aqf "name=fluvio-control-plane"`
       - name: Debug failure
         if: failure()
         run: |
-          lscpu
           kubectl get pods
           kubectl get pvc
           kubectl get svc
