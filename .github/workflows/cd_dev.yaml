@@ -81,7 +81,7 @@ jobs:
             # fluvio topic delete "${{ env.TOPIC }}"
 
       - name: Debug failure for Mac
-        if: failure() && ${{ matrix.os == 'macos-11' }}
+        if: failure()
         run: |
           docker port `docker ps -aqf "name=fluvio-control-plane"`
       - name: Debug failure
