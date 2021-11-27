@@ -2,11 +2,15 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::Path;
 
+use dataplane::batch::BatchRecords;
 use tracing::{debug, warn, trace};
 
 use dataplane::Offset;
 
-use crate::batch_header::BatchHeaderStream;
+use crate::batch::FileBatchStream;
+use crate::batch::SequentialMmap;
+use crate::batch::StorageBytesIterator;
+use crate::batch_header::FileEmptyRecords;
 use crate::util::log_path_get_offset;
 use crate::util::OffsetError;
 
@@ -30,26 +34,30 @@ pub enum LogValidationError {
     UnexpectedEof(i64),
 }
 
-#[derive(Debug)]
-pub struct LogValidator {
+/// Validation Log file
+#[derive(Debug, Default)]
+pub struct LogValidatorResult {
     pub base_offset: Offset,
     pub batches: u32,
     pub last_offset: Offset,
+    pub success: u32,
+    pub failed: u32,
 }
 
-impl LogValidator {
-    /// validate the file and find last offset
-    /// if file is not valid then return error
-    pub async fn validate<P>(path: P) -> Result<Self, LogValidationError>
+impl LogValidatorResult {
+    /// open validator on the log file path
+    pub async fn validate<P, R, S>(path: P) -> Result<Self, LogValidationError>
     where
         P: AsRef<Path>,
+        R: BatchRecords + Default + std::fmt::Debug,
+        S: StorageBytesIterator,
     {
         let file_path = path.as_ref();
 
         let mut val = Self {
             base_offset: log_path_get_offset(file_path)?,
-            batches: 0,
             last_offset: -1,
+            ..Default::default()
         };
 
         debug!(
@@ -58,7 +66,7 @@ impl LogValidator {
             "validating",
         );
 
-        let mut batch_stream = match BatchHeaderStream::open(file_path).await {
+        let mut batch_stream: FileBatchStream<R, S> = match FileBatchStream::open(file_path).await {
             Ok(batch_stream) => batch_stream,
             Err(err) => match err.kind() {
                 ErrorKind::UnexpectedEof => {
@@ -86,16 +94,28 @@ impl LogValidator {
             }
 
             /*
-            if batch_base_offset <= last_offset {
-                warn!(
-                    "batch offset is  {} is less than prev offset  {}",
-                    batch_base_offset, last_offset
-                );
-                return Err(LogValidationError::OffsetNotOrdered);
+            // test converting batch to slice
+
+            for record in batch_pos.get_batch().records() {
+
+                let result: Result<serde_json::Value,_> = serde_json::from_slice(record.value.as_ref());
+                match result {
+                    Ok(_) => val.success += 1,
+                    Err(err) => {
+                        val.failed += 1;
+                        if val.failed < 2 {
+                            println!("{}",record.value.as_str().unwrap());
+                            println!("failed: {:#?}",err);
+                        }
+                    }
+                }
             }
             */
 
             val.last_offset = batch_base_offset + offset_delta as Offset;
+
+            // perform a simple json decoding
+
             val.batches += 1;
         }
 
@@ -122,8 +142,7 @@ pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
 where
     P: AsRef<Path>,
 {
-    let val = LogValidator::validate(path).await?;
-
+    let val = LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap>(path).await?;
     Ok(val.next_offset())
 }
 
@@ -259,18 +278,31 @@ mod perf {
 
     use std::time::Instant;
 
+    use dataplane::batch::MemoryRecords;
+
+    use crate::batch_header::FileEmptyRecords;
+
     use super::*;
 
-    #[fluvio_future::test]
-    //#[allow(unused)]
+    //#[fluvio_future::test]
+    #[allow(unused)]
+    // execute this with: `cargo test perf_test -p fluvio-storage --release -- --nocapture`
     async fn perf_test() {
         const TEST_PATH: &str = "/tmp/perf/00000000000000000000.log";
 
         println!("starting test");
-        let write_time = Instant::now();
-        let info = LogValidator::validate(TEST_PATH).await.expect("validate");
-        let time = write_time.elapsed();
-        println!("took: {:#?}", time);
-        println!("validator: {:#?}", info);
+        let header_time = Instant::now();
+        let msm_result =
+            LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap>(TEST_PATH)
+                .await
+                .expect("validate");
+        println!("header only took: {:#?}", header_time.elapsed());
+        println!("validator: {:#?}", msm_result);
+
+        let record_time = Instant::now();
+        let _ = LogValidatorResult::validate::<_, MemoryRecords, SequentialMmap>(TEST_PATH)
+            .await
+            .expect("validate");
+        println!("full scan took: {:#?}", record_time.elapsed());
     }
 }

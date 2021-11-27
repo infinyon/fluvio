@@ -10,6 +10,7 @@ use std::path::Path;
 use tracing::trace;
 use tracing::debug;
 use memmap::Mmap;
+use async_trait::async_trait;
 
 use fluvio_future::task::spawn_blocking;
 
@@ -62,8 +63,10 @@ where
     }
 
     /// decode next batch from sequence map
-    pub(crate) fn read_from(file: &mut SequentialMmap) -> Result<Option<FileBatchPos<R>>, IoError> {
-        let pos = file.pos;
+    pub(crate) fn read_from<S: StorageBytesIterator>(
+        file: &mut S,
+    ) -> Result<Option<FileBatchPos<R>>, IoError> {
+        let pos = file.get_pos();
         let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32);
         trace!(
             read_len,
@@ -107,11 +110,10 @@ where
     }
 
     /// decode the records of contents
-    fn read_records<'a>(
-        &'a mut self,
-        file: &'a mut SequentialMmap,
-        content_len: usize,
-    ) -> Result<(), IoError> {
+    fn read_records<'a, S>(&'a mut self, file: &'a mut S, content_len: usize) -> Result<(), IoError>
+    where
+        S: StorageBytesIterator,
+    {
         // for now se
         let (bytes, read_len) = file.read_bytes(content_len as u32);
 
@@ -128,8 +130,6 @@ where
             ));
         }
 
-        // skip decoding the records
-
         let mut cursor = Cursor::new(bytes);
         self.inner.mut_records().decode(&mut cursor, 0)?;
 
@@ -137,44 +137,95 @@ where
     }
 }
 
-/*
-impl FileBatchPos<MemoryRecords> {
+// stream to iterate batch
+pub struct FileBatchStream<R = MemoryRecords, S = SequentialMmap> {
+    invalid: Option<IoError>,
+    byte_iterator: S,
+    data: PhantomData<R>,
+}
 
-    /// decode the records of contents
-    async fn read_records<'a>(
-        &'a mut self,
-        file: &'a mut SequentialMmap,
-        content_len: usize,
-    ) -> Result<(), IoError> {
-        let (bytes, read_len) = file.read_bytes(content_len as u32);
+impl<R, S> FileBatchStream<R, S>
+where
+    R: Default + Debug,
+    S: StorageBytesIterator,
+{
+    pub async fn open<P>(path: P) -> Result<FileBatchStream<R, S>, IoError>
+    where
+        P: AsRef<Path> + Send,
+    {
+        let byte_iterator = S::open(path).await?;
 
-        trace!(
-            "file batch: read records {} bytes out of {}",
-            read_len,
-            content_len
-        );
+        //trace!("opening batch stream on: {}",file);
+        Ok(Self {
+            byte_iterator,
+            invalid: None,
+            data: PhantomData,
+        })
+    }
 
-        if read_len < content_len as u32 {
-            return Err(IoError::new(
-                ErrorKind::UnexpectedEof,
-                "not enough for records",
-            ));
+    /// check if it is invalid
+    pub fn invalid(self) -> Option<IoError> {
+        self.invalid
+    }
+
+    #[inline(always)]
+    pub fn get_pos(&self) -> Size {
+        self.byte_iterator.get_pos()
+    }
+
+    #[inline(always)]
+    pub fn seek(&mut self, pos: Size) {
+        self.byte_iterator.seek(pos);
+    }
+
+    #[inline(always)]
+    pub fn set_absolute(&mut self, abs_offset: Size) {
+        self.byte_iterator.set_absolute(abs_offset);
+    }
+}
+
+impl<R, S> FileBatchStream<R, S>
+where
+    R: BatchRecords,
+    S: StorageBytesIterator,
+{
+    pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
+        trace!(pos = self.get_pos(), "reading next from");
+        match FileBatchPos::read_from(&mut self.byte_iterator) {
+            Ok(batch_res) => batch_res,
+            Err(err) => {
+                debug!("error getting batch: {}", err);
+                self.invalid = Some(err);
+                None
+            }
         }
-
-        let mut cursor = Cursor::new(bytes);
-        self.inner.mut_records().decode(&mut cursor, 0)?;
-
-        Ok(())
     }
 }
-*/
 
 pub struct SequentialMmap {
     map: Mmap,
     pos: Size,
 }
 
-impl SequentialMmap {
+#[async_trait]
+impl StorageBytesIterator for SequentialMmap {
+    async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
+        let m_path = path.as_ref().to_owned();
+        let (mmap, _file, _) = spawn_blocking(move || {
+            let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
+            let meta = mfile.metadata().unwrap();
+            if meta.len() == 0 {
+                // if file size is zero, we can't map it, and there is no offset, se return error
+                return Err(IoError::new(ErrorKind::UnexpectedEof, "file size is zero"));
+            }
+
+            unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))
+        })
+        .await?;
+
+        Ok(Self { map: mmap, pos: 0 })
+    }
+
     fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
         // println!("inner len: {}, read_len: {}", self.map.len(),len);
         let bytes = (&self.map).split_at(self.pos as usize).1;
@@ -191,85 +242,32 @@ impl SequentialMmap {
     }
 
     // seek absolute
-    pub fn set_absolute(&mut self, offset: Size) -> Size {
+    fn set_absolute(&mut self, offset: Size) -> Size {
         self.pos = min(self.map.len() as Size, offset);
+        self.pos
+    }
+
+    #[inline(always)]
+    fn get_pos(&self) -> Size {
         self.pos
     }
 }
 
-// stream to iterate batch
-pub struct FileBatchStream<R = MemoryRecords> {
-    invalid: Option<IoError>,
-    seq_map: SequentialMmap,
-    data: PhantomData<R>,
-}
+/// Iterate over some kind of storage with bytes
+#[async_trait]
+pub trait StorageBytesIterator: Sized {
+    async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError>;
 
-impl<R> FileBatchStream<R>
-where
-    R: Default + Debug,
-{
-    pub async fn open<P>(path: P) -> Result<FileBatchStream<R>, IoError>
-    where
-        P: AsRef<Path>,
-    {
-        let m_path = path.as_ref().to_owned();
-        let (mmap, _file, _) = spawn_blocking(move || {
-            let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
-            let meta = mfile.metadata().unwrap();
-            if meta.len() == 0 {
-                // if file size is zero, we can't map it, and there is no offset, se return error
-                return Err(IoError::new(ErrorKind::UnexpectedEof, "file size is zero"));
-            }
+    fn get_pos(&self) -> Size;
 
-            unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))
-        })
-        .await?;
+    /// return slice of bytes at current position
+    fn read_bytes(&mut self, len: Size) -> (&[u8], Size);
 
-        let seq_map = SequentialMmap { map: mmap, pos: 0 };
-        //trace!("opening batch stream on: {}",file);
-        Ok(Self {
-            seq_map,
-            invalid: None,
-            data: PhantomData,
-        })
-    }
+    /// seek relative
+    fn seek(&mut self, amount: Size) -> Size;
 
-    /// check if it is invalid
-    pub fn invalid(self) -> Option<IoError> {
-        self.invalid
-    }
-
-    #[inline(always)]
-    pub fn get_pos(&self) -> Size {
-        self.seq_map.pos
-    }
-
-    #[inline(always)]
-    pub fn seek(&mut self, pos: Size) {
-        self.seq_map.seek(pos);
-    }
-
-    #[inline(always)]
-    pub fn set_absolute(&mut self, abs_offset: Size) {
-        self.seq_map.set_absolute(abs_offset);
-    }
-}
-
-impl<R> FileBatchStream<R>
-where
-    R: BatchRecords,
-{
-    pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
-        trace!(pos = self.get_pos(), "reading next from");
-        match FileBatchPos::read_from(&mut self.seq_map) {
-            Ok(batch_res) => batch_res,
-            Err(err) => {
-                debug!("error getting batch: {}", err);
-                self.invalid = Some(err);
-                None
-            }
-        }
-    }
+    /// set absolute position
+    fn set_absolute(&mut self, offset: Size) -> Size;
 }
 
 #[cfg(test)]
