@@ -71,9 +71,9 @@ jobs:
         if: ${{ matrix.cluster_type == 'k8' }}
         run: |
           if [[ ${{ matrix.os }} == 'macos-11' ]]; then
-              export PROXY = "--proxy-addr  127.0.0.1"
+              export PROXY="--proxy-addr  127.0.0.1"
             else
-              export PROXY = ""
+              export PROXY=""
           fi
           fluvio cluster start --image-version latest $PROXY
       - name: Run E2E Test
