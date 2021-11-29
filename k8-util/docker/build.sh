@@ -46,7 +46,15 @@ main() {
   if [ "$K8" = "kind" ]; then
     echo "export image to kind cluster"
     kind load docker-image $docker_repo:$commit_hash
-  fi    
+  fi
+
+  if [ "$K8" = "microk8" ]; then
+    echo "export image to microk8s cluster"
+    # next 2 lines are hack until figure out how to run docker directly on microk8s
+    docker image save "$docker_repo:$commit_hash" --output /tmp/infinyon-fluvio.tar
+    multipass transfer /tmp/infinyon-fluvio.tar microk8s-vm:/tmp/infinyon-fluvio.tar
+    microk8s ctr image import /tmp/infinyon-fluvio.tar
+  fi        
 
   popd || true
   rm -rf "${tmp_dir}"
