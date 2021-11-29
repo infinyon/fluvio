@@ -42,8 +42,12 @@ mod convert {
         type WatchResponseType = Self;
         type ListType = Metadata<Self>;
     }
+    impl CreatableAdminSpec for SmartModuleMetadataSpec {
+        const CREATE_TYPE: u8 = 4;
+    }
     //ObjectFrom!(WatchRequest, SmartModuleMetadata);
     //ObjectFrom!(WatchResponse, SmartModuleMetadata);
+    CreateFrom!(SmartModuleMetadataSpec, SmartModuleMetadata);
     ObjectFrom!(ListRequest, SmartModuleMetadata);
     ObjectFrom!(ListResponse, SmartModuleMetadata);
 }

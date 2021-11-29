@@ -43,6 +43,9 @@ pub async fn handle_create_request<AC: AuthContext>(
             super::smartmodule::handle_create_smartmodule_request(common, create, auth_context)
                 .await?
         }
+        ObjectCreateRequest::SmartModuleMetadata(_) => {
+            unimplemented!("This isn't meant to be created");
+        }
         ObjectCreateRequest::TableFormat(create) => {
             super::tableformat::handle_create_tableformat_request(common, create, auth_context)
                 .await?

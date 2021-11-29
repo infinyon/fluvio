@@ -9,6 +9,7 @@ use fluvio_protocol::Version;
 use crate::topic::TopicSpec;
 use crate::customspu::CustomSpuSpec;
 use crate::smartmodule::SmartModuleSpec;
+use crate::smartmodule::SmartModuleMetadataSpec;
 use crate::tableformat::TableFormatSpec;
 use crate::spg::SpuGroupSpec;
 use crate::connector::ManagedConnectorSpec;
@@ -44,6 +45,7 @@ pub enum ObjectCreateRequest {
     Topic(TopicSpec),
     CustomSpu(CustomSpuSpec),
     SmartModule(SmartModuleSpec),
+    SmartModuleMetadata(SmartModuleMetadataSpec),
     ManagedConnector(ManagedConnectorSpec),
     SpuGroup(SpuGroupSpec),
     TableFormat(TableFormatSpec),
@@ -62,6 +64,7 @@ impl ObjectCreateRequest {
             Self::Topic(_) => TopicSpec::CREATE_TYPE,
             Self::CustomSpu(_) => CustomSpuSpec::CREATE_TYPE,
             Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
+            Self::SmartModuleMetadata(_) => SmartModuleMetadataSpec::CREATE_TYPE,
             Self::ManagedConnector(_) => ManagedConnectorSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
             Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
@@ -79,6 +82,7 @@ impl Encoder for ObjectCreateRequest {
                 Self::Topic(s) => s.write_size(version),
                 Self::CustomSpu(s) => s.write_size(version),
                 Self::SmartModule(s) => s.write_size(version),
+                Self::SmartModuleMetadata(s) => s.write_size(version),
                 Self::ManagedConnector(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
                 Self::TableFormat(s) => s.write_size(version),
@@ -100,6 +104,7 @@ impl Encoder for ObjectCreateRequest {
             Self::CustomSpu(s) => s.encode(dest, version)?,
             Self::ManagedConnector(s) => s.encode(dest, version)?,
             Self::SmartModule(s) => s.encode(dest, version)?,
+            Self::SmartModuleMetadata(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
             Self::TableFormat(s) => s.encode(dest, version)?,
             Self::DerivedStream(s) => s.encode(dest, version)?,

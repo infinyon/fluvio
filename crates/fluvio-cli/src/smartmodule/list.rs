@@ -2,6 +2,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 use crate::Result;
 use fluvio::metadata::smartmodule::SmartModuleMetadataSpec;
+use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
