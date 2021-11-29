@@ -2896,7 +2896,7 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "5.4.0"
-source = "git+https://github.com/infinyon/k8-api.git#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
 dependencies = [
  "async-trait",
  "base64",
@@ -2922,7 +2922,7 @@ dependencies = [
 [[package]]
 name = "k8-config"
 version = "1.5.0"
-source = "git+https://github.com/infinyon/k8-api.git#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
 dependencies = [
  "dirs 4.0.0",
  "hostfile",
@@ -2936,7 +2936,7 @@ dependencies = [
 [[package]]
 name = "k8-diff"
 version = "0.1.2"
-source = "git+https://github.com/infinyon/k8-api.git#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
 dependencies = [
  "serde",
  "serde_json",
@@ -2945,7 +2945,7 @@ dependencies = [
 [[package]]
 name = "k8-metadata-client"
 version = "3.2.1"
-source = "git+https://github.com/infinyon/k8-api.git#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -2960,7 +2960,7 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.5.1"
-source = "git+https://github.com/infinyon/k8-api.git#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
 dependencies = [
  "serde",
  "serde_json",
