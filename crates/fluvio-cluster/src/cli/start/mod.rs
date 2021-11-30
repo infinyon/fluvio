@@ -1,5 +1,6 @@
 use std::{fmt, str::FromStr};
 use std::path::PathBuf;
+use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
 use structopt::StructOpt;
 use semver::Version;
 
@@ -45,10 +46,22 @@ impl FromStr for DefaultLogDirectory {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct SpuConfig {
+pub struct SpuCliConfig {
     /// set spu storage size
     #[structopt(long, default_value = "10")]
     pub spu_storage_size: u16,
+}
+
+impl SpuCliConfig {
+    pub fn as_spu_config(&self) -> SpuConfig {
+        SpuConfig {
+            storage: Some(StorageConfig {
+                size: Some(format!("{}Gi", self.spu_storage_size)),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
+    }
 }
 
 #[derive(Debug, StructOpt)]
@@ -96,7 +109,7 @@ pub struct StartOpt {
     pub k8_config: K8Install,
 
     #[structopt(flatten)]
-    pub spu_config: SpuConfig,
+    pub spu_config: SpuCliConfig,
 
     #[structopt(long)]
     pub skip_profile_creation: bool,
