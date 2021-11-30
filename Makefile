@@ -327,10 +327,11 @@ upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --sys
 	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
 
-
-clean:
-	cargo clean
+clean_charts:
 	make -C k8-util/helm clean
+
+clean:	clean_charts
+	cargo clean
 
 
 .EXPORT_ALL_VARIABLES:
