@@ -45,6 +45,13 @@ impl FromStr for DefaultLogDirectory {
 }
 
 #[derive(Debug, StructOpt)]
+pub struct SpuConfig {
+    /// set spu storage size
+    #[structopt(long, default_value = "10")]
+    pub spu_storage_size: u16,
+}
+
+#[derive(Debug, StructOpt)]
 pub struct K8Install {
     /// k8: use specific chart version
     #[structopt(long)]
@@ -87,6 +94,9 @@ pub struct StartOpt {
 
     #[structopt(flatten)]
     pub k8_config: K8Install,
+
+    #[structopt(flatten)]
+    pub spu_config: SpuConfig,
 
     #[structopt(long)]
     pub skip_profile_creation: bool,
