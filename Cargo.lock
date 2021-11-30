@@ -1671,7 +1671,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.12.4"
+version = "0.12.5"
 dependencies = [
  "async-trait",
  "base64",
@@ -1729,9 +1729,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.11"
+version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2645caef3993b4bcb8a4aa90da3546d993a9ce8a710acebb5fed588d4c2f1e7"
+checksum = "f7fe88112f29cac1cf6b091ec04613b4b4611f5083a3b64423d7a8632e9bf012"
 dependencies = [
  "async-fs",
  "async-io",
