@@ -1,7 +1,0 @@
-# This is deprecated since 0.9.0.  
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: fluvio-spu
-provisioner: k8s.io/minikube-hostpath
-reclaimPolicy: Delete
