@@ -298,7 +298,7 @@ jobs:
       - name: Load image to kind
         if: ${{ matrix.k8 == 'kind' }}
         run: |
-          kind load docker-image infinyon/fluvio:${{ github.sha }}
+          kind load docker-image infinyon/fluvio:${{ github.sha }} fluvio
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 10
         env:
