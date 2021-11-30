@@ -294,6 +294,7 @@ jobs:
         if: ${{ matrix.k8 == 'kind' }}
         run: |
           brew install kind
+          kind version
           kind create cluster --config k8-util/cluster/kind.yaml 
       - name: Load image to kind
         if: ${{ matrix.k8 == 'kind' }}
