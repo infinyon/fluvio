@@ -20,5 +20,5 @@ pkg_app:	fluvio-app/*.* ../../VERSION
 	helm package ./fluvio-app --app-version $(APP_VERSION) -d pkg_app
 	cd pkg_app;mv fluvio-app-* fluvio-chart-app.tgz
 
-package:	pkg_sys pkg_app
+package:	clean pkg_sys pkg_app
 	echo "Packaged charts are in pkg_sys and pkg_app"
