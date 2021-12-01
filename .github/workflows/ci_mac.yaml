@@ -302,9 +302,7 @@ jobs:
         run: |
           kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar --name fluvio
       - name: Run smoke-test-k8
-        timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
+        timeout-minutes: 3
         run: |
             date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8

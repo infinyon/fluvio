@@ -614,6 +614,13 @@ impl ClusterInstaller {
     /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
+        const DISPATCHER_WAIT: &str = "FLV_DISPATCHER_WAIT";
+
+        // HACK. set FLV_DISPATCHER if not set
+        if env::var(DISPATCHER_WAIT).is_err() {
+            env::set_var("FLV_DISPATCHER_WAIT", "300");
+        }
+
         let mut sys_config: ChartConfig = ChartConfig::sys_builder()
             .version(self.config.chart_version.clone())
             .namespace(&self.config.namespace)
