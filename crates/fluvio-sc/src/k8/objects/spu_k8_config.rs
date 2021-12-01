@@ -105,11 +105,10 @@ impl ScK8Config {
         if let Some(service_template) = &self.service {
             if let Some(ty) = &service_template.r#type {
                 k8_service.r#type = Some(ty.clone());
-                match (ty, self.spu_pod_config.base_node_port) {
-                    (LoadBalancerType::NodePort, Some(node_port)) => {
-                        public_port.node_port = Some(node_port + replica);
-                    }
-                    _ => (),
+                if let (LoadBalancerType::NodePort, Some(node_port)) =
+                    (ty, self.spu_pod_config.base_node_port)
+                {
+                    public_port.node_port = Some(node_port + replica);
                 };
             }
             if let Some(local_traffic) = &service_template.external_traffic_policy {
