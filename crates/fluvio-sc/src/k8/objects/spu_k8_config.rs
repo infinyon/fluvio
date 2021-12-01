@@ -9,7 +9,7 @@ use k8_client::{ClientError};
 
 use k8_types::core::pod::{ResourceRequirements, PodSecurityContext};
 use k8_types::core::config_map::{ConfigMapSpec, ConfigMapStatus};
-use k8_types::core::service::{ServicePort, ServiceSpec, TargetPort};
+use k8_types::core::service::{ServicePort, ServiceSpec, TargetPort, LoadBalancerType};
 use fluvio_controlplane_metadata::core::MetadataContext;
 
 use crate::dispatcher::core::{Spec, Status};
@@ -105,9 +105,12 @@ impl ScK8Config {
         if let Some(service_template) = &self.service {
             if let Some(ty) = &service_template.r#type {
                 k8_service.r#type = Some(ty.clone());
-                if let Some(node_port) = self.spu_pod_config.base_node_port {
-                    public_port.node_port = Some(node_port + replica);
-                }
+                match (ty, self.spu_pod_config.base_node_port) {
+                    (LoadBalancerType::NodePort, Some(node_port)) => {
+                        public_port.node_port = Some(node_port + replica);
+                    }
+                    _ => (),
+                };
             }
             if let Some(local_traffic) = &service_template.external_traffic_policy {
                 k8_service.external_traffic_policy = Some(local_traffic.clone());
