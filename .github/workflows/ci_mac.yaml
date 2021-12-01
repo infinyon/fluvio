@@ -297,9 +297,6 @@ jobs:
           brew install kind
           kind version
           kind create cluster --config k8-util/cluster/kind.yaml
-          sleep 10
-          kind get clusters
-          kubectl get nodes 
       - name: Load image to kind
         if: ${{ matrix.k8 == 'kind' }}
         run: |
@@ -310,7 +307,7 @@ jobs:
           FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8-tls
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8
       - name: Print version
         run: |
           ./fluvio version
