@@ -297,7 +297,8 @@ jobs:
           kind version
           kind create cluster --config k8-util/cluster/kind.yaml
           sleep 10
-          kind get clusters 
+          kind get clusters
+          kubectl get nodes 
       - name: Load image to kind
         if: ${{ matrix.k8 == 'kind' }}
         run: |
