@@ -561,7 +561,9 @@ jobs:
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
       - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 5
+        timeout-minutes: 10
+        env:
+          FLV_DISPATCHER_WAIT: 300
         run: |
             date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean smoke-test-k8-tls-root
