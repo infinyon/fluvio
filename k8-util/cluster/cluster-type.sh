@@ -8,7 +8,7 @@ if echo ${nodes} | grep -q minikube;  then
     echo 'minikube'
 elif echo ${nodes} | grep -q k3d; then
     echo "k3d"
-elif echo ${nodes} | grep -q kind; then
+elif echo ${nodes} | grep -q control-plane; then
     echo "kind"
 elif echo ${nodes} | grep -q microk8s; then
     echo "microk8"

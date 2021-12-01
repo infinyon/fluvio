@@ -284,6 +284,7 @@ jobs:
         uses: docker-practice/actions-setup-docker@master
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image for K3d
+        if: ${{ false }}
         run: |
           ls -la /tmp
           docker image load --input /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
@@ -302,7 +303,7 @@ jobs:
       - name: Load image to kind
         if: ${{ matrix.k8 == 'kind' }}
         run: |
-          kind load docker-image infinyon/fluvio:${{ github.sha }}
+          kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar --name fluvio
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 10
         env:
