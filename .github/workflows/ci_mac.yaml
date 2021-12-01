@@ -301,7 +301,7 @@ jobs:
         if: ${{ matrix.k8 == 'kind' }}
         run: |
           kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar --name fluvio
-      - name: Run smoke-test-k8-tls-root
+      - name: Run smoke-test-k8
         timeout-minutes: 10
         env:
           FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
