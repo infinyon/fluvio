@@ -5,7 +5,10 @@ permissions:
 
 on:
   workflow_dispatch:
-
+  workflow_run:
+    workflows: [Release]
+    branches: [master]
+    types: [completed]
 #env:
 #  USE_COMMIT: ${{ github.event.inputs.commit }}
 #  FORCE_RELEASE: ${{ github.event.inputs.force }}
