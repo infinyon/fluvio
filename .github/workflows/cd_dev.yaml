@@ -132,7 +132,6 @@ jobs:
         timeout-minutes: 10
         env:
           TEST_DATA_BYTES: 10000
-          FLV_DISPATCHER_WAIT: 300 
         run: |
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
