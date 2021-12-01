@@ -3,6 +3,7 @@ use std::fs::create_dir_all;
 use std::process::{Command};
 use std::time::Duration;
 
+use fluvio_controlplane_metadata::spg::SpuConfig;
 use indicatif::ProgressBar;
 use semver::Version;
 use derive_builder::Builder;
@@ -202,6 +203,9 @@ pub struct LocalConfig {
     /// ```
     #[builder(default = "false")]
     render_checks: bool,
+
+    #[builder(setter(into), default)]
+    spu_config: SpuConfig,
 }
 
 impl LocalConfig {

@@ -9,6 +9,7 @@ use std::env;
 
 use derive_builder::Builder;
 use fluvio::FluvioAdmin;
+use fluvio_controlplane_metadata::spg::SpuConfig;
 use indicatif::ProgressBar;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
@@ -317,6 +318,9 @@ pub struct ClusterConfig {
     /// Use proxy address for communicating with kubernetes cluster
     #[builder(setter(into), default)]
     proxy_addr: Option<String>,
+
+    #[builder(setter(into), default)]
+    spu_config: SpuConfig,
 }
 
 impl ClusterConfig {
@@ -1133,7 +1137,7 @@ impl ClusterInstaller {
             let spu_spec = SpuGroupSpec {
                 replicas: self.config.spu_replicas,
                 min_id: 0,
-                ..SpuGroupSpec::default()
+                spu_config: self.config.spu_config.clone(),
             };
 
             admin.create(name, false, spu_spec).await?;

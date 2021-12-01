@@ -1,6 +1,7 @@
 use std::convert::TryInto;
 use fluvio::config::TlsPolicy;
 use semver::Version;
+use tracing::debug;
 
 use crate::{ClusterInstaller, K8InstallError, StartStatus, ClusterConfig, ClusterError};
 use crate::cli::ClusterCliError;
@@ -34,6 +35,7 @@ pub async fn process_k8(
         .render_checks(true)
         .upgrade(upgrade)
         .proxy_addr(opt.proxy_addr)
+        .spu_config(opt.spu_config.as_spu_config())
         .with_if(skip_sys, |b| b.install_sys(false))
         .with_if(opt.skip_checks, |b| b.skip_checks(true));
 
@@ -62,6 +64,8 @@ pub async fn process_k8(
     }
 
     let config = builder.build()?;
+
+    debug!("cluster config: {:#?}", config);
     let installer = ClusterInstaller::from_config(config)?;
     if opt.setup {
         setup_k8(&installer).await?;
