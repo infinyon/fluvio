@@ -753,7 +753,7 @@ impl ClusterInstaller {
             install_settings.push(("image.tag", Cow::Borrowed(tag)))
         }
 
-        let mut chart_values = self.config.chart_values.clone();
+        let mut chart_values = Vec::new();
 
         // NodePort services need to provide SPU with an external address
         // We're going to provide it via annotation on the SPU's K8 service
@@ -842,6 +842,8 @@ impl ClusterInstaller {
             self.pb
                 .set_message(InstallProgressMessage::InstallingChart.msg());
         }
+
+        chart_values.append(&mut self.config.chart_values.clone());
 
         let mut config = ChartConfig::app_builder()
             .namespace(&self.config.namespace)
