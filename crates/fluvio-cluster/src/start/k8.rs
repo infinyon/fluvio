@@ -1137,7 +1137,7 @@ impl ClusterInstaller {
             let spu_spec = SpuGroupSpec {
                 replicas: self.config.spu_replicas,
                 min_id: 0,
-                ..SpuGroupSpec::default()
+                spu_config: self.config.spu_config.clone(),
             };
 
             admin.create(name, false, spu_spec).await?;

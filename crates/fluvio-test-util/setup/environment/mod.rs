@@ -28,8 +28,8 @@ mod common {
 
     #[derive(Clone)]
     pub enum TestEnvironmentDriver {
-        K8(K8EnvironmentDriver),
-        Local(LocalEnvDriver),
+        K8(Box<K8EnvironmentDriver>),
+        Local(Box<LocalEnvDriver>),
     }
 
     impl TestEnvironmentDriver {
@@ -63,10 +63,10 @@ mod common {
     pub fn create_driver(option: EnvironmentSetup) -> TestEnvironmentDriver {
         if option.local {
             //println!("using local environment driver");
-            TestEnvironmentDriver::Local(LocalEnvDriver::new(option))
+            TestEnvironmentDriver::Local(Box::new(LocalEnvDriver::new(option)))
         } else {
             //println!("using k8 environment driver");
-            TestEnvironmentDriver::K8(K8EnvironmentDriver::new(option))
+            TestEnvironmentDriver::K8(Box::new(K8EnvironmentDriver::new(option)))
         }
     }
 }
