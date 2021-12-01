@@ -627,7 +627,7 @@ impl ClusterInstaller {
 
         // HACK. set FLV_DISPATCHER if not set
         if env::var(DISPATCHER_WAIT).is_err() {
-            env::set_var("FLV_DISPATCHER_WAIT", "300");
+            env::set_var(DISPATCHER_WAIT, "300");
         }
 
         let mut sys_config: ChartConfig = ChartConfig::sys_builder()
