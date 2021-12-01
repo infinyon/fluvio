@@ -85,7 +85,7 @@ fn run_test(
     let test_case = TestCase::new(environment, test_opt);
 
     if std::env::var("CI").is_ok() {
-        test_driver.run_test(test_case, test_meta);
+        test_driver.run_test(test_case, test_meta)
     } else {
         let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
             (test_meta.test_fn)(test_driver, test_case)
