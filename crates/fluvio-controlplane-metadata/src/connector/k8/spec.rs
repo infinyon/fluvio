@@ -6,7 +6,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use super::super::ManagedConnectorStatus;
+use super::super::{ManagedConnectorStatus, SecretString};
 use crate::k8_types::{Spec, Crd, DefaultHeader};
 use std::collections::BTreeMap;
 
@@ -43,7 +43,7 @@ pub struct K8ManagedConnectorSpec {
     pub type_: String, // syslog, github star, slack
     pub topic: String,
     pub parameters: BTreeMap<String, String>,
-    pub secrets: BTreeMap<String, String>,
+    pub secrets: BTreeMap<String, SecretString>,
 }
 mod convert {
 

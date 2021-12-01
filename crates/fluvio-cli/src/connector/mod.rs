@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::Read;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::{ManagedConnectorSpec, SecretString};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -74,7 +74,7 @@ pub struct ConnectorConfig {
     #[serde(default)]
     parameters: BTreeMap<String, String>,
     #[serde(default)]
-    secrets: BTreeMap<String, String>,
+    secrets: BTreeMap<String, SecretString>,
 }
 
 impl ConnectorConfig {
