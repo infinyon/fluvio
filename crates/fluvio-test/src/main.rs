@@ -83,18 +83,23 @@ fn run_test(
     let test_driver = TestDriver::new(Some(test_cluster_opts));
 
     let test_case = TestCase::new(environment, test_opt);
-    let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
-        (test_meta.test_fn)(test_driver, test_case)
-    }));
 
-    // If we've panicked from the test, we need to terminate all the child processes too to stop the test
-    match test_result {
-        Ok(r) => r.unwrap(),
-        Err(_) => {
-            // nix uses pid 0 to refer to the group process, so reap the child processes
-            let pid = Pid::from_raw(0);
-            kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
-            exit(1);
+    if std::env::var("CI").is_ok() {
+        test_driver.run_test(test_case, test_meta);
+    } else {
+        let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
+            (test_meta.test_fn)(test_driver, test_case)
+        }));
+
+        // If we've panicked from the test, we need to terminate all the child processes too to stop the test
+        match test_result {
+            Ok(r) => r.unwrap(),
+            Err(_) => {
+                // nix uses pid 0 to refer to the group process, so reap the child processes
+                let pid = Pid::from_raw(0);
+                kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
+                exit(1);
+            }
         }
     }
 }
