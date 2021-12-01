@@ -305,7 +305,7 @@ jobs:
         timeout-minutes: 3
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  DEFAULT_SPU=1 REPL=1 EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8
       - name: Print version
         run: |
           ./fluvio version
