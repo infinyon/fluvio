@@ -9,6 +9,8 @@ load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
+    # Compile the smartmodule examples
+    pushd "$BATS_TEST_DIRNAME/../../.." && make build_smartmodules && popd
     SMARTMODULE_BUILD_DIR="$BATS_TEST_DIRNAME/../../../crates/fluvio-smartmodule/examples/target/wasm32-unknown-unknown/release/"
     export SMARTMODULE_BUILD_DIR
     
