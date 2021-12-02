@@ -125,7 +125,7 @@ pub struct ConsumeOpt {
 
     /// Name of DerivedStream
     #[structopt(long)]
-    pub derivedstream: Option<String>,
+    pub derived_stream: Option<String>,
 
     /// Path to a SmartModule filter wasm file
     #[structopt(long, group("smartmodule"))]

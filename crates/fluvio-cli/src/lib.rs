@@ -164,7 +164,6 @@ mod root {
         ///
         /// Used with the consumer output type `full_table` to
         /// describe how to render JSON data in a tabular form
-        #[structopt(name = "derived-stream", aliases = &["ds"])]
         #[structopt(name = "table-format", aliases = &["tf"])]
         TableFormat(TableFormatCmd),
 
