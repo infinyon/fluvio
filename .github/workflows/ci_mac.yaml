@@ -305,9 +305,9 @@ jobs:
           kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
       - name: Start Cluster
         if: ${{ matrix.k8 == 'kind' }}
-        timeout-minutes: 1
+        timeout-minutes: 3
         run: |
-          ./fluvio cluster start  --develop --proxy-addr  127.0.0.1
+          ./fluvio cluster start  --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
       - name: Run smoke-test-k8
         timeout-minutes: 3
         run: |
