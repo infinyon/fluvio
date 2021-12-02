@@ -121,7 +121,6 @@ jobs:
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
     runs-on: ${{ matrix.os }}
-    if: ${{ false }}
     needs:
       - build_primary_binaries
       - config
@@ -308,6 +307,7 @@ jobs:
         timeout-minutes: 3
         run: |
           ./fluvio cluster start  --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
+      # run a simpler configuration to run in a constraint mac
       - name: Run smoke-test-k8
         timeout-minutes: 3
         run: |
