@@ -100,6 +100,10 @@ pub struct ConsumeOpt {
     #[structopt(short, long, value_name = "integer", conflicts_with_all = &["from_beginning", "tail"])]
     pub offset: Option<u32>,
 
+    /// The offset of the last record to consume 
+    #[structopt(long, value_name = "integer")]
+    pub end_offset: Option<i64>,
+
     /// Consume records starting X from the end of the log (default: 10)
     #[structopt(short = "T", long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
     pub tail: Option<Option<u32>>,
@@ -347,6 +351,10 @@ impl ConsumeOpt {
             builder.disable_continuous(true);
         }
 
+        if let Some(end_offset) = self.end_offset {
+            builder.end_offset(Some(end_offset));
+        }
+
         let consume_config = builder.build()?;
         debug!("consume config: {:#?}", consume_config);
 
@@ -369,6 +377,7 @@ impl ConsumeOpt {
         tableformat: Option<TableFormatSpec>,
     ) -> Result<()> {
         self.print_status();
+        let potential_offset: i64 = config.end_offset.unwrap_or(-1);
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
         let templates = match self.format.as_deref() {
@@ -482,6 +491,11 @@ impl ConsumeOpt {
                     &mut None,
                     &mut None,
                 );
+
+                if potential_offset == record.offset {
+                    println!("Ending offset has been reached; exiting consumer stream.");
+                    break;
+                }
             }
         }
 
