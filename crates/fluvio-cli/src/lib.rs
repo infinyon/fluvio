@@ -226,7 +226,7 @@ mod root {
     pub enum FluvioCmd {
         /// Read messages from a topic/partition
         #[structopt(name = "consume")]
-        Consume(ConsumeOpt),
+        Consume(Box<ConsumeOpt>),
 
         /// Write messages to a topic/partition
         #[structopt(name = "produce")]

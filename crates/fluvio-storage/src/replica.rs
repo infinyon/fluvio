@@ -105,8 +105,8 @@ impl ReplicaStorage for FileReplica {
             }
         }
 
-        for mut batch in &mut records.batches {
-            self.write_batch(&mut batch).await?;
+        for batch in &mut records.batches {
+            self.write_batch(batch).await?;
         }
 
         if update_highwatermark {

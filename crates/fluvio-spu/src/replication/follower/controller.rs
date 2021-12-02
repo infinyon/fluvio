@@ -35,7 +35,7 @@ impl FollowerGroups {
             leaders.sync();
         } else {
             // don't have leader, so we need to create new one
-            let notification = GroupNotification::shared(leader);
+            let notification = GroupNotification::shared();
             if let Some(old_notification) = leaders.insert(leader, notification.clone()) {
                 old_notification.shutdown();
             } else {
@@ -424,14 +424,12 @@ mod inner {
     /// Used to communicate changes to Group Controller
     #[derive(Debug)]
     pub struct GroupNotification {
-        spu: SpuId,
         pub events: Arc<OffsetPublisher>,
     }
 
     impl GroupNotification {
-        pub fn shared(spu: SpuId) -> Arc<Self> {
+        pub fn shared() -> Arc<Self> {
             Arc::new(Self {
-                spu,
                 events: Arc::new(OffsetPublisher::new(0)),
             })
         }

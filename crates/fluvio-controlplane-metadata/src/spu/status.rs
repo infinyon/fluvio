@@ -9,7 +9,7 @@ use std::fmt;
 
 use dataplane::core::{Encoder, Decoder};
 
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SpuStatus {
     pub resolution: SpuStatusResolution,
@@ -18,14 +18,6 @@ pub struct SpuStatus {
 impl fmt::Display for SpuStatus {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:#?}", self.resolution)
-    }
-}
-
-impl Default for SpuStatus {
-    fn default() -> Self {
-        SpuStatus {
-            resolution: SpuStatusResolution::default(),
-        }
     }
 }
 

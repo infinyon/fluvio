@@ -28,7 +28,6 @@ use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
 use fluvio_command::CommandExt;
 
-use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
@@ -249,26 +248,10 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[allow(dead_code)]
     #[builder(default = "true")]
     install_sys: bool,
-    /// Whether to update the `kubectl` context to match the Fluvio installation. Defaults to `true`.
-    ///
-    /// # Example
-    ///
-    /// If you do not want your Kubernetes contexts to be updated, you can do this
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
-    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = builder
-    ///     .update_context(false)
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[builder(default = "false")]
-    update_context: bool,
-    /// Whether to upgrade an existing installation
+
     #[builder(default = "false")]
     upgrade: bool,
     /// Whether to skip pre-install checks before installation. Defaults to `false`.
@@ -579,8 +562,6 @@ pub struct ClusterInstaller {
     config: ClusterConfig,
     /// Shared Kubernetes client for install
     kube_client: SharedK8Client,
-    /// Helm client for performing installs
-    helm_client: HelmClient,
     pb: ProgressRenderer,
 }
 
@@ -605,7 +586,6 @@ impl ClusterInstaller {
         Ok(Self {
             config,
             kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
-            helm_client: HelmClient::new().map_err(K8InstallError::HelmError)?,
             pb,
         })
     }
@@ -617,10 +597,8 @@ impl ClusterInstaller {
     /// for more details:
     ///
     /// - [`system_chart`]
-    /// - [`update_context`]
     ///
     /// [`system_chart`]: ./struct.ClusterInstaller.html#method.system_chart
-    /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
         const DISPATCHER_WAIT: &str = "FLV_DISPATCHER_WAIT";
