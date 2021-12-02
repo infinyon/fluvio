@@ -5,15 +5,15 @@ nodes:
   - role: control-plane
     # port forward 80 on the host to 80 on this node
     extraPortMappings:
-      - containerPort: 31003 #sc
-        hostPort: 31003
+      - containerPort: 30003 #sc
+        hostPort: 30003
         protocol: TCP
-      - containerPort: 31004 #spu 1
-        hostPort: 31004
+      - containerPort: 30004 #spu 1
+        hostPort: 30004
         protocol: TCP
-      - containerPort: 31005 #spu 2
+      - containerPort: 30005 #spu 2
+        hostPort: 30005
+        protocol: TCP
+      - containerPort: 30006 #spu 3
         hostPort: 31005
-        protocol: TCP
-      - containerPort: 31006 #spu 3
-        hostPort: 31006
         protocol: TCP

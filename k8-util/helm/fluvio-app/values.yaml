@@ -23,7 +23,7 @@ scPod:
       memory: 512Mi
   nodeSelector: {}
   publicPort: 9003
-  nodePort: null
+  nodePort: 30003
 spuPod:
   resources:
     requests:
@@ -32,7 +32,7 @@ spuPod:
       memory: 1Gi
   nodeSelector: {}
   storageClass: null
-  baseNodePort: null
+  baseNodePort: 30004
 
 rbac:
   create: true
