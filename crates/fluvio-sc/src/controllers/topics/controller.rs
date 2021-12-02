@@ -10,7 +10,6 @@ use fluvio_future::task::spawn;
 
 use crate::core::SharedContext;
 use crate::stores::topic::TopicSpec;
-use crate::stores::spu::SpuSpec;
 use crate::stores::partition::PartitionSpec;
 use crate::stores::{StoreContext, K8ChangeListener};
 
@@ -20,7 +19,6 @@ use super::reducer::TopicReducer;
 pub struct TopicController {
     topics: StoreContext<TopicSpec>,
     partitions: StoreContext<PartitionSpec>,
-    _spus: StoreContext<SpuSpec>,
     reducer: TopicReducer,
 }
 
@@ -38,7 +36,6 @@ impl TopicController {
             ),
             topics,
             partitions,
-            _spus: ctx.spus().clone(),
         };
 
         spawn(controller.dispatch_loop());
