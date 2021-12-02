@@ -66,18 +66,27 @@ setup_file() {
     assert_success
 
     # Produce to topic
-    TEST_MESSAGE="$(random_string 10)"
+    NEGATIVE_TEST_MESSAGE="zzzzzzzzzzzzzz"
+    export NEGATIVE_TEST_MESSAGE
+    run bash -c 'echo "$NEGATIVE_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    assert_success
+
+    TEST_MESSAGE="$(random_string 10)aaa"
     export TEST_MESSAGE
     run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     assert_success
 
-    # Consume from topic
-    #EXPECTED_OUTPUT="${TEST_MESSAGE^^}"
-    #export EXPECTED_OUTPUT
-    #run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --filter "$SMARTMODULE_NAME"
+    # Consume from topic and verify we should have 2 entries
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+    assert_line --index 0 "$NEGATIVE_TEST_MESSAGE"
+    assert_line --index 1 "$TEST_MESSAGE"
 
-    #assert_output --partial "$EXPECTED_OUTPUT"
-    #assert_success
+    # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
+    EXPECTED_OUTPUT="${TEST_MESSAGE}"
+    export EXPECTED_OUTPUT
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --filter "$SMARTMODULE_NAME"
+    refute_line "$NEGATIVE_TEST_MESSAGE"
+    assert_output "$EXPECTED_OUTPUT"
 
     # Delete topic
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
