@@ -1,8 +1,9 @@
 //!
-//! # Delete Managed Connectors
+//! # Get the logs for Managed Connectors
 //!
-//! CLI tree to generate Delete Managed Connectors
+//! CLI tree to logs for managed connectors
 //!
+use std::process::Command;
 use structopt::StructOpt;
 use crate::CliError;
 
@@ -12,11 +13,14 @@ use crate::CliError;
 
 #[derive(Debug, StructOpt)]
 pub struct LogsManagedConnectorOpt {
-    /// The name of the connector to delete
+    /// The name of the connector to view the logs
     #[structopt(value_name = "name")]
     name: String,
+
+    /// Follow the logs
+    #[structopt(long, short)]
+    pub follow: bool,
 }
-use std::process::Command;
 
 impl LogsManagedConnectorOpt {
     pub async fn process(self) -> Result<(), CliError> {
@@ -29,10 +33,12 @@ impl LogsManagedConnectorOpt {
 
         if let Some(pod) = pod {
             println!();
-            Command::new("kubectl")
-                .args(["logs", "-f", pod])
-                .spawn()?
-                .wait()?;
+            let args = if self.follow {
+                vec!["logs", "-f", pod]
+            } else {
+                vec!["logs", pod]
+            };
+            Command::new("kubectl").args(args).spawn()?.wait()?;
         }
         Ok(())
     }
