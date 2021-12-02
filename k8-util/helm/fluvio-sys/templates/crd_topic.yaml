@@ -34,6 +34,15 @@ spec:
                   type: integer
                   minimum: 1
                   maximum: 5000
+                cleanUpPolicy:
+                  type: object
+                  properties:
+                    segment:
+                      type: object
+                      properties:
+                        timeSeconds:
+                          type: integer
+                          minimum: 3600
                 ignoreRackAssignment:
                   type: boolean
                 customReplicaAssignment:
