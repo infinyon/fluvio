@@ -273,7 +273,7 @@ impl ConsumeOpt {
         };
 
         let derivedstream =
-            self.derivedstream
+            self.derived_stream
                 .as_ref()
                 .map(|derivedstream_name| DerivedStreamInvocation {
                     stream: derivedstream_name.clone(),
