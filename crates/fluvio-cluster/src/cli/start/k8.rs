@@ -63,6 +63,10 @@ pub async fn process_k8(
         builder.service_type(service_type);
     }
 
+    if opt.hide_spinner {
+        builder.hide_spinner(true);
+    }
+
     let config = builder.build()?;
 
     debug!("cluster config: {:#?}", config);

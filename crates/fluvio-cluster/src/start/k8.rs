@@ -10,7 +10,6 @@ use std::env;
 use derive_builder::Builder;
 use fluvio::FluvioAdmin;
 use fluvio_controlplane_metadata::spg::SpuConfig;
-use indicatif::ProgressBar;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use tracing::{warn, debug, instrument};
@@ -33,6 +32,7 @@ use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
+use crate::render::ProgressRenderer;
 use crate::start::common::check_crd;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::charts::{ChartConfig, ChartInstaller};
@@ -315,6 +315,10 @@ pub struct ClusterConfig {
     #[builder(default = "false")]
     render_checks: bool,
 
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "false")]
+    hide_spinner: bool,
+
     /// Use proxy address for communicating with kubernetes cluster
     #[builder(setter(into), default)]
     proxy_addr: Option<String>,
@@ -577,7 +581,7 @@ pub struct ClusterInstaller {
     kube_client: SharedK8Client,
     /// Helm client for performing installs
     helm_client: HelmClient,
-    pb: ProgressBar,
+    pb: ProgressRenderer,
 }
 
 impl ClusterInstaller {
@@ -593,11 +597,16 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {
+        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
         Ok(Self {
             config,
             kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
             helm_client: HelmClient::new().map_err(K8InstallError::HelmError)?,
-            pb: create_progress_indicator(),
+            pb,
         })
     }
 
@@ -634,7 +643,7 @@ impl ClusterInstaller {
 
         if self.config.render_checks {
             self.pb
-                .println(InstallProgressMessage::PreFlightCheck.msg());
+                .println(&InstallProgressMessage::PreFlightCheck.msg());
 
             let mut progress = checker.run_and_fix_with_progress();
             render_check_progress_with_indicator(&mut progress, &self.pb).await
@@ -688,7 +697,7 @@ impl ClusterInstaller {
             self.install_app().await?;
         } else {
             self.pb
-                .println(InstallProgressMessage::AlreadyInstalled.msg())
+                .println(&InstallProgressMessage::AlreadyInstalled.msg())
         }
 
         let namespace = &self.config.namespace;
@@ -703,7 +712,7 @@ impl ClusterInstaller {
         let address = format!("{}:{}", host_name, port);
 
         self.pb
-            .println(InstallProgressMessage::FoundSC(address.clone()).msg());
+            .println(&InstallProgressMessage::FoundSC(address.clone()).msg());
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
@@ -718,12 +727,12 @@ impl ClusterInstaller {
 
         if self.config.save_profile {
             self.update_profile(&address)?;
-            self.pb.println(InstallProgressMessage::ProfileSet.msg());
+            self.pb.println(&InstallProgressMessage::ProfileSet.msg());
         }
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-        self.pb.println(InstallProgressMessage::Success.msg());
+        self.pb.println(&InstallProgressMessage::Success.msg());
         self.pb.finish_and_clear();
 
         Ok(StartStatus {
@@ -742,7 +751,7 @@ impl ClusterInstaller {
         );
 
         self.pb
-            .println(InstallProgressMessage::InstallingFluvio.msg());
+            .println(&InstallProgressMessage::InstallingFluvio.msg());
 
         // If configured with TLS, copy certs to server
         if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
@@ -865,7 +874,7 @@ impl ClusterInstaller {
         installer.process(self.config.upgrade)?;
 
         self.pb
-            .println(InstallProgressMessage::ChartInstalled.msg());
+            .println(&InstallProgressMessage::ChartInstalled.msg());
         self.pb.set_message("");
 
         Ok(())
@@ -1022,7 +1031,8 @@ impl ClusterInstaller {
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
-                self.pb.println(InstallProgressMessage::SpusConfirmed.msg());
+                self.pb
+                    .println(&InstallProgressMessage::SpusConfirmed.msg());
 
                 return Ok(true);
             } else {
@@ -1145,11 +1155,11 @@ impl ClusterInstaller {
             admin.create(name, false, spu_spec).await?;
 
             self.pb.println(
-                InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
+                &InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
             );
         } else {
             self.pb
-                .println(InstallProgressMessage::SpuGroupExists.msg());
+                .println(&InstallProgressMessage::SpuGroupExists.msg());
         }
 
         // Wait for the SPU cluster to spin up

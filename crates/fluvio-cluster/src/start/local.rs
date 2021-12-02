@@ -4,7 +4,6 @@ use std::process::{Command};
 use std::time::Duration;
 
 use fluvio_controlplane_metadata::spg::SpuConfig;
-use indicatif::ProgressBar;
 use semver::Version;
 use derive_builder::Builder;
 use tracing::{debug, error, instrument, warn};
@@ -18,7 +17,7 @@ use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::render::ProgressRenderedText;
+use crate::render::{ProgressRenderedText, ProgressRenderer};
 use crate::{
     ClusterChecker, ClusterError, K8InstallError, LocalInstallError, StartStatus, UserChartLocation,
 };
@@ -204,6 +203,10 @@ pub struct LocalConfig {
     #[builder(default = "false")]
     render_checks: bool,
 
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "false")]
+    hide_spinner: bool,
+
     #[builder(setter(into), default)]
     spu_config: SpuConfig,
 }
@@ -365,7 +368,7 @@ impl LocalConfigBuilder {
 pub struct LocalInstaller {
     /// Configuration options for this process
     config: LocalConfig,
-    pb: ProgressBar,
+    pb: ProgressRenderer,
 }
 
 impl LocalInstaller {
@@ -384,10 +387,12 @@ impl LocalInstaller {
     /// ```
 
     pub fn from_config(config: LocalConfig) -> Self {
-        Self {
-            config,
-            pb: create_progress_indicator(),
-        }
+        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
+        Self { config, pb }
     }
 
     /// Checks if all of the prerequisites for installing Fluvio locally are met
@@ -404,7 +409,7 @@ impl LocalInstaller {
 
         if self.config.render_checks {
             self.pb
-                .println(InstallProgressMessage::PreFlightCheck.msg());
+                .println(&InstallProgressMessage::PreFlightCheck.msg());
             let mut progress = ClusterChecker::empty()
                 .with_local_checks()
                 .with_check(SysChartCheck::new(sys_config))
@@ -470,17 +475,17 @@ impl LocalInstaller {
 
         let fluvio = self.launch_sc(&address, port).await?;
 
-        self.pb.println(InstallProgressMessage::ScLaunched.msg());
+        self.pb.println(&InstallProgressMessage::ScLaunched.msg());
 
         self.launch_spu_group(client.clone()).await?;
         self.pb
-            .println(InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas).msg());
+            .println(&InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas).msg());
 
         self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
 
         self.set_profile()?;
 
-        self.pb.println(InstallProgressMessage::Success.msg());
+        self.pb.println(&InstallProgressMessage::Success.msg());
 
         Ok(StartStatus {
             address,
@@ -537,7 +542,7 @@ impl LocalInstaller {
             &self.config.client_tls_policy,
         )?;
 
-        self.pb.println(InstallProgressMessage::ProfileSet.msg());
+        self.pb.println(&InstallProgressMessage::ProfileSet.msg());
 
         Ok(())
     }
