@@ -10,7 +10,6 @@ use std::env;
 use derive_builder::Builder;
 use fluvio::FluvioAdmin;
 use fluvio_controlplane_metadata::spg::SpuConfig;
-use indicatif::ProgressBar;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use tracing::{warn, debug, instrument};
@@ -33,6 +32,7 @@ use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
+use crate::render::ProgressRenderer;
 use crate::start::common::check_crd;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::charts::{ChartConfig, ChartInstaller};
@@ -315,6 +315,10 @@ pub struct ClusterConfig {
     #[builder(default = "false")]
     render_checks: bool,
 
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "false")]
+    hide_spinner: bool,
+
     /// Use proxy address for communicating with kubernetes cluster
     #[builder(setter(into), default)]
     proxy_addr: Option<String>,
@@ -577,7 +581,7 @@ pub struct ClusterInstaller {
     kube_client: SharedK8Client,
     /// Helm client for performing installs
     helm_client: HelmClient,
-    pb: ProgressBar,
+    pb: ProgressRenderer,
 }
 
 impl ClusterInstaller {
@@ -593,11 +597,16 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {
+        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
         Ok(Self {
             config,
             kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
             helm_client: HelmClient::new().map_err(K8InstallError::HelmError)?,
-            pb: create_progress_indicator(),
+            pb,
         })
     }
 
@@ -714,7 +723,7 @@ impl ClusterInstaller {
             Some(fluvio) => fluvio,
             None => return Err(K8InstallError::SCServiceTimeout),
         };
-        self.pb.set_message("");
+        self.pb.set_message("".into());
 
         if self.config.save_profile {
             self.update_profile(&address)?;
@@ -866,7 +875,7 @@ impl ClusterInstaller {
 
         self.pb
             .println(InstallProgressMessage::ChartInstalled.msg());
-        self.pb.set_message("");
+        self.pb.set_message("".into());
 
         Ok(())
     }
@@ -1100,7 +1109,7 @@ impl ClusterInstaller {
             external_addr,
             &self.config.client_tls_policy,
         )?;
-        self.pb.set_message("");
+        self.pb.set_message("".into());
         Ok(())
     }
 
@@ -1156,7 +1165,7 @@ impl ClusterInstaller {
         if !self.config.skip_spu_liveness_check {
             self.wait_for_spu(&admin).await?;
         }
-        self.pb.set_message("");
+        self.pb.set_message("".into());
 
         Ok(())
     }

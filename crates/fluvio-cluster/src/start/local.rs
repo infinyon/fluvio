@@ -4,7 +4,6 @@ use std::process::{Command};
 use std::time::Duration;
 
 use fluvio_controlplane_metadata::spg::SpuConfig;
-use indicatif::ProgressBar;
 use semver::Version;
 use derive_builder::Builder;
 use tracing::{debug, error, instrument, warn};
@@ -18,7 +17,7 @@ use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::render::ProgressRenderedText;
+use crate::render::{ProgressRenderedText, ProgressRenderer};
 use crate::{
     ClusterChecker, ClusterError, K8InstallError, LocalInstallError, StartStatus, UserChartLocation,
 };
@@ -204,6 +203,10 @@ pub struct LocalConfig {
     #[builder(default = "false")]
     render_checks: bool,
 
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "false")]
+    hide_spinner: bool,
+
     #[builder(setter(into), default)]
     spu_config: SpuConfig,
 }
@@ -365,7 +368,7 @@ impl LocalConfigBuilder {
 pub struct LocalInstaller {
     /// Configuration options for this process
     config: LocalConfig,
-    pb: ProgressBar,
+    pb: ProgressRenderer,
 }
 
 impl LocalInstaller {
@@ -384,10 +387,12 @@ impl LocalInstaller {
     /// ```
 
     pub fn from_config(config: LocalConfig) -> Self {
-        Self {
-            config,
-            pb: create_progress_indicator(),
-        }
+        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
+        Self { config, pb }
     }
 
     /// Checks if all of the prerequisites for installing Fluvio locally are met

@@ -147,6 +147,10 @@ pub struct StartOpt {
     #[structopt(long)]
     pub setup: bool,
 
+    /// Used to hide spinner animation for progress updates
+    #[structopt(long)]
+    pub hide_spinner: bool,
+
     /// Proxy address
     #[structopt(long)]
     pub proxy_addr: Option<String>,
