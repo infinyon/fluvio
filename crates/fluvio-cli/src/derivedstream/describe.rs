@@ -4,7 +4,7 @@ use crate::Result;
 /// Print details about a given DerivedStream
 #[derive(Debug, StructOpt)]
 pub struct DescribeDerivedStreamOpt {
-    name: String,
+    _name: String,
 }
 
 impl DescribeDerivedStreamOpt {

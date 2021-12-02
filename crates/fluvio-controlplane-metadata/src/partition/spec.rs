@@ -10,7 +10,7 @@ use dataplane::core::{Encoder, Decoder};
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
 /// one of replica is leader which is duplicated in the leader field
-#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -19,15 +19,6 @@ use dataplane::core::{Encoder, Decoder};
 pub struct PartitionSpec {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
-}
-
-impl std::default::Default for PartitionSpec {
-    fn default() -> Self {
-        PartitionSpec {
-            leader: 0,
-            replicas: Vec::default(),
-        }
-    }
 }
 
 impl PartitionSpec {
