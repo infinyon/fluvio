@@ -46,7 +46,7 @@ pub fn render_check_result(check_result: &CheckResult) {
 
 /// Render a single check result
 pub fn render_check_result_with_indicator(check_result: &CheckResult, pb: &ProgressRenderer) {
-    pb.println(check_result.msg());
+    pb.println(&check_result.msg());
 }
 
 /// Render a slice of `CheckStatus`es all at once

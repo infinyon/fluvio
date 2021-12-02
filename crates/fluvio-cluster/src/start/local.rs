@@ -409,7 +409,7 @@ impl LocalInstaller {
 
         if self.config.render_checks {
             self.pb
-                .println(InstallProgressMessage::PreFlightCheck.msg());
+                .println(&InstallProgressMessage::PreFlightCheck.msg());
             let mut progress = ClusterChecker::empty()
                 .with_local_checks()
                 .with_check(SysChartCheck::new(sys_config))
@@ -475,17 +475,17 @@ impl LocalInstaller {
 
         let fluvio = self.launch_sc(&address, port).await?;
 
-        self.pb.println(InstallProgressMessage::ScLaunched.msg());
+        self.pb.println(&InstallProgressMessage::ScLaunched.msg());
 
         self.launch_spu_group(client.clone()).await?;
         self.pb
-            .println(InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas).msg());
+            .println(&InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas).msg());
 
         self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
 
         self.set_profile()?;
 
-        self.pb.println(InstallProgressMessage::Success.msg());
+        self.pb.println(&InstallProgressMessage::Success.msg());
 
         Ok(StartStatus {
             address,
@@ -542,7 +542,7 @@ impl LocalInstaller {
             &self.config.client_tls_policy,
         )?;
 
-        self.pb.println(InstallProgressMessage::ProfileSet.msg());
+        self.pb.println(&InstallProgressMessage::ProfileSet.msg());
 
         Ok(())
     }

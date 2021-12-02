@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use indicatif::ProgressBar;
 
 pub trait ProgressRenderedText {
@@ -14,14 +16,15 @@ pub enum ProgressRenderer {
 }
 
 impl ProgressRenderer {
-    pub fn println(&self, msg: String) {
+    pub fn println(&self, msg: &str) {
         match self {
             ProgressRenderer::Std => eprintln!("{}", msg),
-            ProgressRenderer::Indicatiff(pb) => pb.println(&msg),
+            ProgressRenderer::Indicatiff(pb) => pb.println(msg),
         }
     }
 
-    pub fn set_message(&self, msg: String) {
+    pub fn set_message(&self, msg: impl Into<Cow<'static, str>>) {
+        let msg = msg.into();
         match self {
             ProgressRenderer::Std => eprintln!("{}", msg),
             ProgressRenderer::Indicatiff(pb) => pb.set_message(msg),
