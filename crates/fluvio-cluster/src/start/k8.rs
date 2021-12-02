@@ -761,8 +761,8 @@ impl ClusterInstaller {
             .println(&InstallProgressMessage::InstallingFluvio.msg());
 
         // If configured with TLS, copy certs to server
-        if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
-            self.upload_tls_secrets(tls)?;
+        if let (TlsPolicy::Verified(server_tls), TlsPolicy::Verified(client_tls)) = (&self.config.server_tls_policy, &self.config.client_tls_policy) {
+            self.upload_tls_secrets(server_tls, client_tls)?;
         }
 
         // Specify common installation settings to pass to helm
@@ -888,12 +888,16 @@ impl ClusterInstaller {
     }
 
     /// Uploads TLS secrets to Kubernetes
-    fn upload_tls_secrets(&self, tls: &TlsConfig) -> Result<(), K8InstallError> {
-        let paths: Cow<TlsPaths> = match tls {
+    fn upload_tls_secrets(&self, server_tls: &TlsConfig, client_tls: &TlsConfig) -> Result<(), K8InstallError> {
+        let server_paths: Cow<TlsPaths> = match server_tls {
             TlsConfig::Files(paths) => Cow::Borrowed(paths),
             TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
         };
-        self.upload_tls_secrets_from_files(paths.as_ref())?;
+        let client_paths: Cow<TlsPaths> = match client_tls {
+            TlsConfig::Files(paths) => Cow::Borrowed(paths),
+            TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
+        };
+        self.upload_tls_secrets_from_files(server_paths.as_ref(), client_paths.as_ref())?;
         Ok(())
     }
 
@@ -1060,19 +1064,27 @@ impl ClusterInstaller {
     }
 
     /// Install server-side TLS by uploading secrets to kubernetes
-    #[instrument(skip(self, paths))]
-    fn upload_tls_secrets_from_files(&self, paths: &TlsPaths) -> Result<(), K8InstallError> {
-        let ca_cert = paths
+    #[instrument(skip(self, server_paths, client_paths))]
+    fn upload_tls_secrets_from_files(&self, server_paths: &TlsPaths, client_paths: &TlsPaths) -> Result<(), K8InstallError> {
+        let ca_cert = server_paths
             .ca_cert
             .to_str()
             .ok_or_else(|| IoError::new(ErrorKind::InvalidInput, "ca_cert must be a valid path"))?;
-        let server_cert = paths.cert.to_str().ok_or_else(|| {
+        let server_cert = server_paths.cert.to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "server_cert must be a valid path")
         })?;
-        let server_key = paths.key.to_str().ok_or_else(|| {
+        let server_key = server_paths.key.to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "server_key must be a valid path")
         })?;
-        debug!("Using TLS from paths: {:?}", paths);
+        debug!("Using server TLS from paths: {:?}", server_paths);
+
+        let client_cert = client_paths.cert.to_str().ok_or_else(|| {
+            IoError::new(ErrorKind::InvalidInput, "client_cert must be a valid path")
+        })?;
+        let client_key = client_paths.key.to_str().ok_or_else(|| {
+            IoError::new(ErrorKind::InvalidInput, "client_key must be a valid path")
+        })?;
+        debug!("Using client TLS from paths: {:?}", client_paths);
 
         // Try uninstalling secrets first to prevent duplication error
         Command::new("kubectl")
@@ -1088,6 +1100,12 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
+            .args(&["delete", "secret", "fluvio-client-tls", "--ignore-not-found=true"])
+            .args(&["--namespace", &self.config.namespace])
+            .inherit()
+            .result()?;
+
+        Command::new("kubectl")
             .args(&["create", "secret", "generic", "fluvio-ca"])
             .args(&["--from-file", ca_cert])
             .args(&["--namespace", &self.config.namespace])
@@ -1098,6 +1116,14 @@ impl ClusterInstaller {
             .args(&["create", "secret", "tls", "fluvio-tls"])
             .args(&["--cert", server_cert])
             .args(&["--key", server_key])
+            .args(&["--namespace", &self.config.namespace])
+            .inherit()
+            .result()?;
+
+        Command::new("kubectl")
+            .args(&["create", "secret", "tls", "fluvio-client-tls"])
+            .args(&["--cert", client_cert])
+            .args(&["--key", client_key])
             .args(&["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
