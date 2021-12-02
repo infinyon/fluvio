@@ -203,50 +203,50 @@ setup_file() {
 #    assert_success
 #}
 
-@test "smartmodule array-map" {
-    # Load the smartmodule
-    SMARTMODULE_NAME="json-object-flatten"
-    export SMARTMODULE_NAME
-    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_array_map_object.wasm 
-
-    assert_success
-
-    # Create topic
-    TOPIC_NAME="$(random_string)"
-    export TOPIC_NAME
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
-    assert_success
-
-    # Produce to topic
-    FULL_TEST_MESSAGE='{"a": "Apple", "b": "Banana", "c": "Cranberry"}'
-    export FULL_TEST_MESSAGE
-    FIRST_MESSAGE='"Apple"'
-    export FIRST_MESSAGE
-    SECOND_MESSAGE='"Banana"'
-    export SECOND_MESSAGE
-    THIRD_MESSAGE='"Cranberry"'
-    export THIRD_MESSAGE
-    run bash -c 'echo "$FULL_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
-    assert_success
-
-    # Consume from topic and verify we should have the json message
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
-    assert_output "$FULL_TEST_MESSAGE"
-
-    # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --array-map "$SMARTMODULE_NAME"
-    assert_line --index 0 "$FIRST_MESSAGE"
-    assert_line --index 1 "$SECOND_MESSAGE"
-    assert_line --index 2 "$THIRD_MESSAGE"
-
-    # Delete topic
-    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
-    assert_success
-
-    # Delete smartmodule
-    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
-    assert_success
-}
+#@test "smartmodule array-map" {
+#    # Load the smartmodule
+#    SMARTMODULE_NAME="json-object-flatten"
+#    export SMARTMODULE_NAME
+#    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_array_map_object.wasm 
+#
+#    assert_success
+#
+#    # Create topic
+#    TOPIC_NAME="$(random_string)"
+#    export TOPIC_NAME
+#    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+#    assert_success
+#
+#    # Produce to topic
+#    FULL_TEST_MESSAGE='{"a": "Apple", "b": "Banana", "c": "Cranberry"}'
+#    export FULL_TEST_MESSAGE
+#    FIRST_MESSAGE='"Apple"'
+#    export FIRST_MESSAGE
+#    SECOND_MESSAGE='"Banana"'
+#    export SECOND_MESSAGE
+#    THIRD_MESSAGE='"Cranberry"'
+#    export THIRD_MESSAGE
+#    run bash -c 'echo "$FULL_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+#    assert_success
+#
+#    # Consume from topic and verify we should have the json message
+#    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
+#    assert_output "$FULL_TEST_MESSAGE"
+#
+#    # Consume from topic with smartmodule and verify we don't see the $NEGATIVE_TEST_MESSAGE
+#    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --array-map "$SMARTMODULE_NAME"
+#    assert_line --index 0 "$FIRST_MESSAGE"
+#    assert_line --index 1 "$SECOND_MESSAGE"
+#    assert_line --index 2 "$THIRD_MESSAGE"
+#
+#    # Delete topic
+#    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+#    assert_success
+#
+#    # Delete smartmodule
+#    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+#    assert_success
+#}
 
 #@test "smartmodule aggregate" {
 #    # Load the smartmodule
@@ -262,18 +262,20 @@ setup_file() {
 #    assert_success
 #
 #    # Produce to topic
-#    TEST_MESSAGE="$(random_string 10)"
-#    export TEST_MESSAGE
-#    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+#    TEST_MESSAGE_1="$(random_string 10)"
+#    export TEST_MESSAGE_1
+#    run bash -c 'echo "$TEST_MESSAGE_1" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+#    assert_success
+#
+#    TEST_MESSAGE_2="$(random_string 10)"
+#    export TEST_MESSAGE_2
+#    run bash -c 'echo "$TEST_MESSAGE_2" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
 #    assert_success
 #
 #    # Consume from topic
-#    #EXPECTED_OUTPUT="${TEST_MESSAGE^^}"
-#    #export EXPECTED_OUTPUT
-#    #run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --aggregate "$SMARTMODULE_NAME"
-#
-#    #assert_output --partial "$EXPECTED_OUTPUT"
-#    #assert_success
+#    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --aggregate "$SMARTMODULE_NAME"
+#    assert_line --index 0 "$TEST_MESSAGE_1"
+#    assert_line --index 1 "$TEST_MESSAGE_1$TEST_MESSAGE_2"
 #
 #    # Delete topic
 #    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
@@ -283,7 +285,7 @@ setup_file() {
 #    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
 #    assert_success
 #}
-#
+
 #@test "smartmodule join" {
 #    # Load the smartmodule
 #    SMARTMODULE_NAME="concat-strings"
