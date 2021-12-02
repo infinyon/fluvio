@@ -45,7 +45,8 @@ main() {
 
   if [ "$K8" = "kind" ]; then
     echo "export image to kind cluster"
-    kind load docker-image $docker_repo:$commit_hash
+    docker image save "$docker_repo:$commit_hash" --output /tmp/infinyon-fluvio.tar
+    kind load image-archive /tmp/infinyon-fluvio.tar
   fi
 
   if [ "$K8" = "microk8" ]; then

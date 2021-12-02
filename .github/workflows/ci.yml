@@ -562,8 +562,8 @@ jobs:
           docker image load --input /tmp/infinyon-fluvio.tar
       - name: Run smoke-test-k8-tls-root
         timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
+      #  env:
+      #    FLV_DISPATCHER_WAIT: 300
         run: |
             date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean smoke-test-k8-tls-root

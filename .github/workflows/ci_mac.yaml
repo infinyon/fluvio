@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ 'ci_tier2' }}
+  group: ${{ github.head_ref }}-ci_mac
   cancel-in-progress: true
 
 on:
@@ -239,7 +239,7 @@ jobs:
       - name: Build Docker image
         run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
       - name: Export Docker Image to tarball
-        run: docker image save infinyon/fluvio:${{ github.sha }}-${{ matrix.rust-target }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
       - name: Upload tarball as artifact
         uses: actions/upload-artifact@v2
         with:
@@ -284,6 +284,7 @@ jobs:
         uses: docker-practice/actions-setup-docker@master
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image for K3d
+        if: ${{ false }}
         run: |
           ls -la /tmp
           docker image load --input /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
@@ -294,18 +295,24 @@ jobs:
         if: ${{ matrix.k8 == 'kind' }}
         run: |
           brew install kind
-          kind create cluster --config k8-util/cluster/kind.yaml 
+          kind version
+          kind create cluster --config k8-util/cluster/kind.yaml
+          kind get clusters
       - name: Load image to kind
         if: ${{ matrix.k8 == 'kind' }}
         run: |
-          kind load docker-image infinyon/fluvio:${{ github.sha }}
-      - name: Run smoke-test-k8-tls-root
-        timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 300   # k3d in Github make take while to provision PVC
+          kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
+      - name: Start Cluster
+        if: ${{ matrix.k8 == 'kind' }}
+        timeout-minutes: 3
+        run: |
+          ./fluvio cluster start  --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
+      # run a simpler configuration to run in a constraint mac
+      - name: Run smoke-test-k8
+        timeout-minutes: 3
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  EXTRA_ARG="--cluster-start --proxy-addr  127.0.0.1" UNINSTALL=noclean smoke-test-k8-tls
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  DEFAULT_SPU=1 REPL=1 UNINSTALL=noclean smoke-test-k8
       - name: Print version
         run: |
           ./fluvio version
@@ -334,6 +341,7 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
+          kubectl describe pod  `(kubectl get pod -l app=fluvio-sc  -o jsonpath="{.items[0].metadata.name}")`
           kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
           kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
           ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
