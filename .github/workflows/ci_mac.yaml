@@ -240,9 +240,7 @@ jobs:
       - name: Build Docker image
         run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
       - name: Export Docker Image to tarball
-        run: |
-          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.k8-target }} infinyon/fluvio:${{ github.sha }}
-          docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
       - name: Upload tarball as artifact
         uses: actions/upload-artifact@v2
         with:
