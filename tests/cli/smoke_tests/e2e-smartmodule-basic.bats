@@ -286,38 +286,51 @@ setup_file() {
 #    assert_success
 #}
 
-#@test "smartmodule join" {
-#    # Load the smartmodule
-#    SMARTMODULE_NAME="concat-strings"
-#    export SMARTMODULE_NAME
-#    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_join.wasm 
-#    assert_success
-#
-#    # Create topic
-#    TOPIC_NAME="$(random_string)"
-#    export TOPIC_NAME
-#    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
-#    assert_success
-#
-#    # Produce to topic
-#    TEST_MESSAGE="$(random_string 10)"
-#    export TEST_MESSAGE
-#    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
-#    assert_success
-#
-#    # Consume from topic
-#    #EXPECTED_OUTPUT="${TEST_MESSAGE^^}"
-#    #export EXPECTED_OUTPUT
-#    #run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --aggregate "$SMARTMODULE_NAME"
-#
-#    #assert_output --partial "$EXPECTED_OUTPUT"
-#    #assert_success
-#
-#    # Delete topic
-#    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
-#    assert_success
-#
-#    # Delete smartmodule
-#    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
-#    assert_success
-#}
+@test "smartmodule join" {
+    # Load the smartmodule
+    SMARTMODULE_NAME="join-sum"
+    export SMARTMODULE_NAME
+    run timeout 15s "$FLUVIO_BIN" smartmodule create $SMARTMODULE_NAME --wasm-file $SMARTMODULE_BUILD_DIR/fluvio_wasm_join.wasm 
+    assert_success
+
+    # Create topic
+    MAIN_TOPIC_NAME="$(random_string)"
+    export MAIN_TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" topic create "$MAIN_TOPIC_NAME"
+    assert_success
+
+    JOIN_TOPIC_NAME="$(random_string)"
+    export JOIN_TOPIC_NAME
+    run timeout 15s "$FLUVIO_BIN" topic create "$JOIN_TOPIC_NAME"
+    assert_success
+
+    # Produce to join topic first
+    #R1_TEST_MESSAGE="$RANDOM"
+    R1_TEST_MESSAGE="1"
+    export R1_TEST_MESSAGE
+    run bash -c 'echo "$R1_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$JOIN_TOPIC_NAME"'
+    assert_success
+
+    # Then to main topic
+    #L1_TEST_MESSAGE="$RANDOM"
+    L1_TEST_MESSAGE="2"
+    export L1_TEST_MESSAGE
+    run bash -c 'echo "$L1_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$MAIN_TOPIC_NAME"'
+    assert_success
+
+    # Consume from topic
+    EXPECTED_OUTPUT_0="$((R1_TEST_MESSAGE+L1_TEST_MESSAGE))"
+    export EXPECTED_OUTPUT_0
+    run timeout 15s "$FLUVIO_BIN" consume "$MAIN_TOPIC_NAME" -B -d --join "$SMARTMODULE_NAME" --join-topic $JOIN_TOPIC_NAME
+    assert_output "$EXPECTED_OUTPUT_0"
+
+    # Delete topics
+    run timeout 15s "$FLUVIO_BIN" topic delete "$MAIN_TOPIC_NAME"
+    assert_success
+    run timeout 15s "$FLUVIO_BIN" topic delete "$JOIN_TOPIC_NAME"
+    assert_success
+
+    # Delete smartmodule
+    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+    assert_success
+}
