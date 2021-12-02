@@ -4,6 +4,7 @@
 * Add support for tuple structs in fluvio-protocol derived macros. ([#1828](https://github.com/infinyon/fluvio/issues/1828))
 * Expose fluvio completions in the top-level subcommand. ([#1850](https://github.com/infinyon/fluvio/issues/1850))
 * Make installation more reliable ([#1961](https://github.com/infinyon/fluvio/pull/1961))
+* Add Spinner to `fluvio consume` command. ([#1881](https://github.com/infinyon/fluvio/issues/1881))
 
 ## Platform Version 0.9.13 - 2021-11-19
 * Fix connector create with `create_topic` option to succeed if topic already exists. ([#1823](https://github.com/infinyon/fluvio/pull/1823))

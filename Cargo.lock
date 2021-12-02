@@ -1575,6 +1575,7 @@ dependencies = [
  "hex",
  "home",
  "http-types",
+ "indicatif",
  "k8-client",
  "k8-config",
  "k8-types",

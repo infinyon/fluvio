@@ -35,6 +35,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
+use crate::render::ProgressRenderer;
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
@@ -414,6 +415,10 @@ impl ConsumeOpt {
         if io::stdout().is_tty() {
             // This needs to know if it is a tty before opening this
             let mut user_input_reader = EventStream::new();
+            let pb = indicatif::ProgressBar::new(1);
+            pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
+            pb.enable_steady_tick(100);
+            let pb: ProgressRenderer = pb.into();
 
             loop {
                 select! {
@@ -437,6 +442,7 @@ impl ConsumeOpt {
                                 &mut header_print,
                                 &mut maybe_terminal_stdout,
                                 &mut maybe_table_model,
+                                &pb,
                             );
                         },
                         None => break,
@@ -461,6 +467,7 @@ impl ConsumeOpt {
                 }
             }
         } else {
+            let pb = ProgressRenderer::default();
             // We do not support `--output=full_table` when we don't have a TTY (i.e., CI environment)
             while let Some(result) = stream.next().await {
                 let result: std::result::Result<Record, _> = result;
@@ -481,6 +488,7 @@ impl ConsumeOpt {
                     &mut header_print,
                     &mut None,
                     &mut None,
+                    &pb,
                 );
             }
         }
@@ -512,6 +520,7 @@ impl ConsumeOpt {
         header_print: &mut bool,
         terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
         table_model: &mut Option<TableModel>,
+        pb: &ProgressRenderer,
     ) {
         let formatted_key = record
             .key()
@@ -563,10 +572,11 @@ impl ConsumeOpt {
         if self.output != Some(ConsumeOutputType::full_table) {
             match formatted_value {
                 Some(value) if self.key_value => {
-                    println!("[{}] {}", formatted_key, value);
+                    let output = format!("[{}] {}", formatted_key, value);
+                    pb.println(&output);
                 }
                 Some(value) => {
-                    println!("{}", value);
+                    pb.println(&value);
                 }
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),

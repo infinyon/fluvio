@@ -16,6 +16,7 @@ mod connector;
 mod tableformat;
 mod smartmodule;
 mod derivedstream;
+mod render;
 
 pub(crate) use error::{Result, CliError};
 
