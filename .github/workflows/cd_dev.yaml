@@ -204,6 +204,7 @@ jobs:
         os: [ubuntu-latest]
         cluster_version: [stable, latest]
         cli_version: [stable, latest]
+        iteration: [r1,r2,r3,r4,r5,r6]
     steps:
       - uses: actions/checkout@v2
       - name: Setup BATS
