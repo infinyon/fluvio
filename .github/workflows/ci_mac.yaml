@@ -121,6 +121,7 @@ jobs:
   local_cluster_test:
     name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
     runs-on: ${{ matrix.os }}
+    if: ${{ false }}
     needs:
       - build_primary_binaries
       - config
