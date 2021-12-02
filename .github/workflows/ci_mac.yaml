@@ -298,15 +298,16 @@ jobs:
           brew install kind
           kind version
           kind create cluster --config k8-util/cluster/kind.yaml
+          kind get clusters
       - name: Load image to kind
         if: ${{ matrix.k8 == 'kind' }}
         run: |
-          kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar --name fluvio
+          kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
       - name: Start Cluster
         if: ${{ matrix.k8 == 'kind' }}
-        timeout-minutes: 3
+        timeout-minutes: 1
         run: |
-          RUST_LOG=debug ./fluvio cluster start  --develop --proxy-addr  127.0.0.1
+          ./fluvio cluster start  --develop --proxy-addr  127.0.0.1
       - name: Run smoke-test-k8
         timeout-minutes: 3
         run: |
