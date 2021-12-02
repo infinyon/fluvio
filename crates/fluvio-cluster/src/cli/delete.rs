@@ -11,10 +11,6 @@ pub struct DeleteOpt {
     #[structopt(long, default_value = "fluvio")]
     name: String,
 
-    /// don't wait for clean up
-    #[structopt(long)]
-    no_wait: bool,
-
     /// Remove local spu/sc(custom) fluvio installation
     #[structopt(long)]
     local: bool,

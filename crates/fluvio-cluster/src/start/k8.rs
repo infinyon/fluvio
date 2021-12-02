@@ -28,7 +28,6 @@ use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
 use fluvio_command::CommandExt;
 
-use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
@@ -579,8 +578,6 @@ pub struct ClusterInstaller {
     config: ClusterConfig,
     /// Shared Kubernetes client for install
     kube_client: SharedK8Client,
-    /// Helm client for performing installs
-    helm_client: HelmClient,
     pb: ProgressRenderer,
 }
 
@@ -605,7 +602,6 @@ impl ClusterInstaller {
         Ok(Self {
             config,
             kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
-            helm_client: HelmClient::new().map_err(K8InstallError::HelmError)?,
             pb,
         })
     }

@@ -424,14 +424,14 @@ mod inner {
     /// Used to communicate changes to Group Controller
     #[derive(Debug)]
     pub struct GroupNotification {
-        spu: SpuId,
+        _spu: SpuId,
         pub events: Arc<OffsetPublisher>,
     }
 
     impl GroupNotification {
         pub fn shared(spu: SpuId) -> Arc<Self> {
             Arc::new(Self {
-                spu,
+                _spu: spu,
                 events: Arc::new(OffsetPublisher::new(0)),
             })
         }

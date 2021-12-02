@@ -20,7 +20,7 @@ use super::reducer::TopicReducer;
 pub struct TopicController {
     topics: StoreContext<TopicSpec>,
     partitions: StoreContext<PartitionSpec>,
-    spus: StoreContext<SpuSpec>,
+    _spus: StoreContext<SpuSpec>,
     reducer: TopicReducer,
 }
 
@@ -38,7 +38,7 @@ impl TopicController {
             ),
             topics,
             partitions,
-            spus: ctx.spus().clone(),
+            _spus: ctx.spus().clone(),
         };
 
         spawn(controller.dispatch_loop());
