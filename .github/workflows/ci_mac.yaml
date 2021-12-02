@@ -305,7 +305,7 @@ jobs:
       - name: Start Cluster
         if: ${{ matrix.k8 == 'kind' }}
         run: |
-          ./fluvio cluster start  --develop --proxy-addr  127.0.0.1
+          RUST_LOG=debug ./fluvio cluster start  --develop --proxy-addr  127.0.0.1
       - name: Run smoke-test-k8
         timeout-minutes: 3
         run: |
