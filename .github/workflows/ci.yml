@@ -492,7 +492,7 @@ jobs:
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
-    name: Kubernetes cluster test run (${{ matrix.run }}) k8 (${{ matrix.k8 }})
+    name: Kubernetes cluster test - ${{ matrix.make-target }} (${{ matrix.run }}) k8 (${{ matrix.k8 }})
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
@@ -501,7 +501,7 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        make-target: [smoke-test-k8-tls-root,smoke-test-k8-tls]
+        make-target: [smoke-test-k8-tls-root,smoke-test-k8-tls,smoke-test-k8]
         k8: [k3d,minikube]
     steps:
       - uses: actions/checkout@v2
