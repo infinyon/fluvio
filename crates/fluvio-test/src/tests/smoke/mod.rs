@@ -130,15 +130,17 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             let new_smoke_test_case = SmokeTestCase {
                 environment: EnvironmentSetup {
                     topic_name: Some(config.topic.clone()),
-                    //tls: smoke_test_case.environment.tls.clone(),
-                    //tls_user: smoke_test_case.environment.tls_user().clone(),
+                    tls: smoke_test_case.environment.tls,
+                    tls_user: smoke_test_case.environment.tls_user(),
                     spu: smoke_test_case.environment.spu,
+                    replication: smoke_test_case.environment.replication,
                     partition: smoke_test_case.environment.partition,
                     ..Default::default()
                 },
                 option: SmokeTestOption {
                     skip_consumer_validate: true,
                     producer_iteration: 100,
+                    connector_config: smoke_test_case.option.connector_config.clone(),
                     ..Default::default()
                 },
             };

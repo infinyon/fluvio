@@ -33,6 +33,7 @@ TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
 TEST_ARG_PRODUCER_ITERATION=--producer-iteration=${DEFAULT_ITERATION}
+TEST_ARG_CONNECTOR_CONFIG=
 
 export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
 
@@ -80,7 +81,8 @@ smoke-test: test-setup
 			${TEST_ARG_EXTRA} \
 			-- \
 			${TEST_ARG_CONSUMER_WAIT} \
-			${TEST_ARG_PRODUCER_ITERATION}
+			${TEST_ARG_PRODUCER_ITERATION} \
+			${TEST_ARG_CONNECTOR_CONFIG}
 
 smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
 smoke-test-local: smoke-test
@@ -162,9 +164,11 @@ endif
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
+smoke-test-k8: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8: build_k8_image smoke-test 
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
+smoke-test-k8-tls: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls: build_k8_image smoke-test
 
 smoke-test-k8-tls-policy-setup:
@@ -172,6 +176,7 @@ smoke-test-k8-tls-policy-setup:
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization $(EXTRA_ARG)
+smoke-test-k8-tls-policy: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls-policy: build_k8_image smoke-test-k8-tls-policy-setup smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
