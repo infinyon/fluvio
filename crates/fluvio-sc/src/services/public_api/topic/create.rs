@@ -11,6 +11,7 @@
 
 use std::io::{Error as IoError, ErrorKind};
 
+use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::{debug, trace, instrument};
@@ -100,7 +101,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         );
     }
 
-    match topic_spec.replicas {
+    match &topic_spec.replicas {
         ReplicaSpec::Computed(param) => {
             let next_state = validate_computed_topic_parameters(param);
             trace!("validating, computed topic: {:#?}", next_state);

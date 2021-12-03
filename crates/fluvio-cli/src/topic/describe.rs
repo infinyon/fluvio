@@ -120,7 +120,7 @@ mod display {
 
             key_values.push(("Name".to_owned(), Some(self.0.name.clone())));
             key_values.push(("Type".to_owned(), Some(spec.type_label().to_string())));
-            match spec.replicas {
+            match &spec.replicas {
                 ReplicaSpec::Computed(param) => {
                     key_values.push((
                         "Partition Count".to_owned(),

@@ -103,7 +103,7 @@ impl CreateTopicOpt {
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
 
-        let topic = if let Some(replica_assign_file) = &self.replica_assignment {
+        let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
             ReplicaSpec::Assigned(PartitionMaps::file_decode(replica_assign_file).map_err(
                 |err| {
                     IoError::new(
@@ -132,7 +132,7 @@ impl CreateTopicOpt {
         }
 
         // return server separately from config
-        Ok((self.topic, topic))
+        Ok((self.topic, replica_spec.into()))
     }
 }
 

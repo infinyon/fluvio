@@ -42,7 +42,10 @@ impl CreateManagedConnectorOpt {
         if config.create_topic {
             let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
             debug!("topic spec: {:?}", replica_spec);
-            match admin.create(config.topic, false, replica_spec.into()).await {
+            match admin
+                .create::<TopicSpec>(config.topic, false, replica_spec.into())
+                .await
+            {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
                     //println!("Topic already exists");
                     Ok(())
