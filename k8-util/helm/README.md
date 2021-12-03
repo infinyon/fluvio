@@ -20,6 +20,7 @@ The packaged chart uses the app version, the fluvio cluster version.
 
 Fluvio cluster installer are build into CLI.  At the top of the repo:
 ```
+$ make -C k8-util/helm clean
 $ make build-cli
 ```
 

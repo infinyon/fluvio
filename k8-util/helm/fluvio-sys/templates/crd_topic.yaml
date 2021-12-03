@@ -12,7 +12,7 @@ spec:
   versions: 
     - name: v1
       served: true
-      storage:  true
+      storage: false
       schema:
         openAPIV3Schema:
           type: object
@@ -84,7 +84,7 @@ spec:
             jsonPath: .status.resolution
     - name: v2
       served: true
-      storage:  false
+      storage: true
       schema:
         openAPIV3Schema:
           type: object
@@ -98,42 +98,42 @@ spec:
               properties:
                 replicas:
                   type: object
-                    properties:
-                      oneOf:
-                      - required: ["managed"]
-                      - required: ["assigned"]
-                      managed:
+                  properties:
+                    managed:
+                      type: object
+                      properties:
+                        partitions:
+                          type: integer
+                          minimum: 1
+                          maximum: 5000
+                        replicationFactor:
+                          type: integer
+                          minimum: 1
+                          maximum: 5000
+                    assigned:
+                      type: array
+                      items:
                         type: object
+                        required:
+                        - partition
                         properties:
-                          partitions:
-                            type: integer
-                            minimum: 1
-                            maximum: 5000
-                          replicationFactor:
-                            type: integer
-                            minimum: 1
-                            maximum: 5000
-                      assigned:
-                        type: array
-                        items:
-                          type: object
-                          required:
-                          - partition
-                          properties:
-                            partition:
-                              type: object
-                              required:
-                              - id
-                              - replicas
-                              properties:
-                                id:
+                          partition:
+                            type: object
+                            required:
+                            - id
+                            - replicas
+                            properties:
+                              id:
+                                type: integer
+                                minimum: 0
+                              replicas:
+                                type: array
+                                items:
                                   type: integer
                                   minimum: 0
-                                replicas:
-                                  type: array
-                                  items:
-                                    type: integer
-                                    minimum: 0
+                  oneOf:
+                    - required: ["managed"]
+                    - required: ["assigned"]
                 cleanUpPolicy:
                   type: object
                   properties:
