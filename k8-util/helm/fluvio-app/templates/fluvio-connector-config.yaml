@@ -11,11 +11,24 @@ data:
     cluster = "k8-config-map-deployment"
 
     [cluster.k8-config-map-deployment]
-    {{ if .Values.tls }}
-    endpoint = "fluvio-sc-public:9005"
-    {{else}}
     endpoint = "fluvio-sc-public:9003"
-    {{end}}
     use_spu_local_address = true
+
+    {{ if .Values.tls }}
+
+    [cluster.k8-config-map-deployment.tls]
+    tls_policy = "verified"
+    tls_source = "files"
+
+    [cluster.k8-config-map-deployment.tls.certs]
+    domain = "fluvio.local"
+    key = "/var/certs/client-tls/tls.key"
+    cert = "/var/certs/client-tls/tls.crt"
+    ca_cert = "/var/certs/ca/ca.crt"
+
+    {{else}}
+
     [cluster.k8-config-map-deployment.tls]
     tls_policy = "disabled"
+
+    {{end}}

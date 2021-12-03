@@ -6,7 +6,7 @@ use k8_types::{
     LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
     core::pod::{
         ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
-        VolumeSpec,
+        VolumeSpec, SecretVolumeSpec,
     },
 };
 
@@ -25,23 +25,25 @@ use crate::k8::objects::managed_connector_deployment::{
     ManagedConnectorDeploymentSpec, K8DeploymentSpec,
 };
 
+use crate::cli::TlsConfig;
+
 /// Update Statefulset and Service from SPG
 pub struct ManagedConnectorDeploymentController {
-    namespace: String,
     connectors: StoreContext<ManagedConnectorSpec>,
     deployments: StoreContext<ManagedConnectorDeploymentSpec>,
+    tls_config: Option<TlsConfig>,
 }
 
 impl ManagedConnectorDeploymentController {
     pub fn start(
-        namespace: String,
         connectors: StoreContext<ManagedConnectorSpec>,
         deployments: StoreContext<ManagedConnectorDeploymentSpec>,
+        tls_config: Option<TlsConfig>,
     ) {
         let controller = Self {
-            namespace,
             connectors,
             deployments,
+            tls_config
         };
 
         spawn(controller.dispatch_loop());
@@ -159,7 +161,7 @@ impl ManagedConnectorDeploymentController {
         let key = managed_connector.key();
 
         let k8_deployment_spec =
-            Self::generate_k8_deployment_spec(managed_connector.spec(), &self.namespace, key);
+            Self::generate_k8_deployment_spec(managed_connector.spec(), self.tls_config.as_ref());
         trace!(?k8_deployment_spec);
         let deployment_action = WSAction::Apply(
             MetadataStoreObject::with_spec(key, k8_deployment_spec.into())
@@ -176,8 +178,7 @@ impl ManagedConnectorDeploymentController {
     const DEFAULT_CONNECTOR_NAME: &'static str = "fluvio-connector";
     pub fn generate_k8_deployment_spec(
         mc_spec: &ManagedConnectorSpec,
-        _namespace: &str,
-        _name: &str,
+        tls_config: Option<&TlsConfig>
     ) -> K8DeploymentSpec {
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
@@ -222,6 +223,50 @@ impl ManagedConnectorDeploymentController {
                 ImagePullPolicy::IfNotPresent,
             ),
         };
+
+        let mut volume_mounts = vec![VolumeMount {
+            name: "fluvio-config-volume".to_string(),
+            mount_path: "/home/fluvio/.fluvio".to_string(),
+            ..Default::default()
+        }];
+
+        let mut volumes = vec![config_map_volume_spec];
+
+        if let Some(tls) = tls_config {
+            if tls.enable_client_cert {
+                volume_mounts.push(VolumeMount {
+                    name: "cacert".to_owned(),
+                    mount_path: "/var/certs/ca".to_owned(),
+                    read_only: Some(true),
+                    ..Default::default()
+                });
+                volumes.push(VolumeSpec {
+                    name: "cacert".to_owned(),
+                    secret: Some(SecretVolumeSpec {
+                        secret_name: "fluvio-ca".to_owned(), // fixed
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                });
+
+                volume_mounts.push(VolumeMount {
+                    name: "client-tls".to_owned(),
+                    mount_path: "/var/certs/client-tls".to_owned(),
+                    read_only: Some(true),
+                    ..Default::default()
+                });
+    
+                volumes.push(VolumeSpec {
+                    name: "client-tls".to_owned(),
+                    secret: Some(SecretVolumeSpec {
+                        secret_name: "fluvio-client-tls".to_owned(),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                });
+            }
+        }
+
         debug!(
             "Starting connector for image: {:?} with arguments {:?}",
             image, args
@@ -239,15 +284,11 @@ impl ManagedConnectorDeploymentController {
                     /*
                     env, // TODO
                     */
-                    volume_mounts: vec![VolumeMount {
-                        name: "fluvio-config-volume".to_string(),
-                        mount_path: "/home/fluvio/.fluvio".to_string(),
-                        ..Default::default()
-                    }],
+                    volume_mounts,
                     args,
                     ..Default::default()
                 }],
-                volumes: vec![config_map_volume_spec],
+                volumes,
                 //security_context: spu_k8_config.pod_security_context.clone(),
                 //node_selector: Some(spu_pod_config.node_selector.clone()),
                 ..Default::default()
