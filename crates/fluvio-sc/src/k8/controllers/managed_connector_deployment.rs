@@ -6,7 +6,7 @@ use k8_types::{
     LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
     core::pod::{
         ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
-        VolumeSpec, SecretVolumeSpec,
+        VolumeSpec, SecretVolumeSpec, PodSecurityContext,
     },
 };
 
@@ -43,7 +43,7 @@ impl ManagedConnectorDeploymentController {
         let controller = Self {
             connectors,
             deployments,
-            tls_config
+            tls_config,
         };
 
         spawn(controller.dispatch_loop());
@@ -178,7 +178,7 @@ impl ManagedConnectorDeploymentController {
     const DEFAULT_CONNECTOR_NAME: &'static str = "fluvio-connector";
     pub fn generate_k8_deployment_spec(
         mc_spec: &ManagedConnectorSpec,
-        tls_config: Option<&TlsConfig>
+        tls_config: Option<&TlsConfig>,
     ) -> K8DeploymentSpec {
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
@@ -243,7 +243,7 @@ impl ManagedConnectorDeploymentController {
                 volumes.push(VolumeSpec {
                     name: "cacert".to_owned(),
                     secret: Some(SecretVolumeSpec {
-                        secret_name: "fluvio-ca".to_owned(), // fixed
+                        secret_name: "fluvio-ca".to_owned(),
                         ..Default::default()
                     }),
                     ..Default::default()
@@ -255,7 +255,7 @@ impl ManagedConnectorDeploymentController {
                     read_only: Some(true),
                     ..Default::default()
                 });
-    
+
                 volumes.push(VolumeSpec {
                     name: "client-tls".to_owned(),
                     secret: Some(SecretVolumeSpec {
@@ -277,6 +277,10 @@ impl ManagedConnectorDeploymentController {
             ),
             spec: PodSpec {
                 termination_grace_period_seconds: Some(10),
+                security_context: Some(PodSecurityContext {
+                    fs_group: Some(1000),
+                    ..Default::default()
+                }),
                 containers: vec![ContainerSpec {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image),

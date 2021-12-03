@@ -125,11 +125,7 @@ pub struct TlsCerts {
 
 impl Debug for TlsCerts {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "TlsCerts {{ domain: {} }}",
-            self.domain
-        )
+        write!(f, "TlsCerts {{ domain: {} }}", self.domain)
     }
 }
 
@@ -140,12 +136,25 @@ impl TlsCerts {
     /// temporary files were written.
     pub fn try_into_temp_files(&self) -> Result<TlsPaths, IoError> {
         use std::fs::write;
-        let tmp_dir = tempdir::TempDir::new("fluvio_tls")?;
-        // let tmp = std::env::temp_dir();
+        use rand::distributions::Alphanumeric;
+        use std::iter;
+        use rand::Rng;
+        const NUM_RAND_DIR_CHARS: usize = 12;
 
-        let tls_key = tmp_dir.path().join("tls.key");
-        let tls_cert = tmp_dir.path().join("tls.crt");
-        let ca_cert = tmp_dir.path().join("ca.crt");
+        let mut rng = rand::thread_rng();
+        let rand_dir_name: String = iter::repeat(())
+            .map(|()| rng.sample(Alphanumeric))
+            .map(char::from)
+            .take(NUM_RAND_DIR_CHARS)
+            .collect();
+
+        let tmp_dir = std::env::temp_dir().join(rand_dir_name);
+
+        std::fs::create_dir(&tmp_dir)?;
+
+        let tls_key = tmp_dir.join("tls.key");
+        let tls_cert = tmp_dir.join("tls.crt");
+        let ca_cert = tmp_dir.join("ca.crt");
 
         write(&tls_key, self.key.as_bytes())?;
         write(&tls_cert, self.cert.as_bytes())?;

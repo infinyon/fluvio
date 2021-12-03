@@ -9,12 +9,12 @@ tls: false
 imagePullSecrets: []
 image:
   registry: infinyon
-  tag:  ""
+  tag: ""
   pullPolicy: IfNotPresent
 cert:
   caCert: fluvio-ca
   tls: fluvio-tls
-authorizationConfigMap: null
+authorizationConfigMap: ""
 scPod:
   resources:
     requests:

@@ -761,7 +761,10 @@ impl ClusterInstaller {
             .println(&InstallProgressMessage::InstallingFluvio.msg());
 
         // If configured with TLS, copy certs to server
-        if let (TlsPolicy::Verified(server_tls), TlsPolicy::Verified(client_tls)) = (&self.config.server_tls_policy, &self.config.client_tls_policy) {
+        if let (TlsPolicy::Verified(server_tls), TlsPolicy::Verified(client_tls)) = (
+            &self.config.server_tls_policy,
+            &self.config.client_tls_policy,
+        ) {
             self.upload_tls_secrets(server_tls, client_tls)?;
         }
 
@@ -888,7 +891,11 @@ impl ClusterInstaller {
     }
 
     /// Uploads TLS secrets to Kubernetes
-    fn upload_tls_secrets(&self, server_tls: &TlsConfig, client_tls: &TlsConfig) -> Result<(), K8InstallError> {
+    fn upload_tls_secrets(
+        &self,
+        server_tls: &TlsConfig,
+        client_tls: &TlsConfig,
+    ) -> Result<(), K8InstallError> {
         let server_paths: Cow<TlsPaths> = match server_tls {
             TlsConfig::Files(paths) => Cow::Borrowed(paths),
             TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
@@ -1065,7 +1072,11 @@ impl ClusterInstaller {
 
     /// Install server-side TLS by uploading secrets to kubernetes
     #[instrument(skip(self, server_paths, client_paths))]
-    fn upload_tls_secrets_from_files(&self, server_paths: &TlsPaths, client_paths: &TlsPaths) -> Result<(), K8InstallError> {
+    fn upload_tls_secrets_from_files(
+        &self,
+        server_paths: &TlsPaths,
+        client_paths: &TlsPaths,
+    ) -> Result<(), K8InstallError> {
         let ca_cert = server_paths
             .ca_cert
             .to_str()
@@ -1100,7 +1111,12 @@ impl ClusterInstaller {
             .result()?;
 
         Command::new("kubectl")
-            .args(&["delete", "secret", "fluvio-client-tls", "--ignore-not-found=true"])
+            .args(&[
+                "delete",
+                "secret",
+                "fluvio-client-tls",
+                "--ignore-not-found=true",
+            ])
             .args(&["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
