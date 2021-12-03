@@ -152,7 +152,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
             println!("Verify connector is creating data: (start: {})", start);
 
-            const CI_TIME: u64 = 60;
+            const CI_TIME: u64 = 90;
             const DEV_TIME: u64 = 10;
 
             let wait_sec = if std::env::var("CI").is_ok() {
