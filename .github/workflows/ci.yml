@@ -492,7 +492,7 @@ jobs:
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
-    name: Kubernetes cluster test run (${{ matrix.run }}) k8 (${{ matrix.k8 }})
+    name: Kubernetes cluster test - ${{ matrix.make-target }} (${{ matrix.run }}) k8 (${{ matrix.k8 }})
     needs: build_image
     runs-on: ${{ matrix.os }}
     strategy:
@@ -501,6 +501,7 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
+        make-target: [smoke-test-k8-tls-root,smoke-test-k8-tls,smoke-test-k8]
         k8: [k3d,minikube]
     steps:
       - uses: actions/checkout@v2
@@ -560,14 +561,20 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
-      - name: Run smoke-test-k8-tls-root
+      # When we are ready to merge https://github.com/infinyon/fluvio/pull/1989
+      # The following two steps can be combined by removing the 2nd step, and removing the `if` from the first step
+      - name: Run ${{ matrix.make-target }}
+        if: ${{ matrix.make-target == 'smoke-test-k8'}}
         timeout-minutes: 10
-      #  env:
-      #    FLV_DISPATCHER_WAIT: 300
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean smoke-test-k8-tls-root
-        # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean ${{ matrix.make-target }} 
+      - name: Run ${{ matrix.make-target }}
+        if: ${{ matrix.make-target != 'smoke-test-k8'}}
+        timeout-minutes: 10
+        run: |
+            date
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean TEST_ARG_CONNECTOR_CONFIG= ${{ matrix.make-target }} 
       - name: Print version
         run: |
           ./fluvio version
@@ -581,6 +588,7 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
+          ./fluvio partition list
 
       - name: Save logs
         if: failure()
@@ -785,7 +793,7 @@ jobs:
       - local_cluster_test
       - k8_cluster_test
       - k8_upgrade_test
-     # - k8_cli_smoke
+      - k8_cli_smoke
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
