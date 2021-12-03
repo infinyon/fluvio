@@ -15,10 +15,12 @@ use fluvio_extension_common::COMMAND_TEMPLATE;
 mod create;
 mod delete;
 mod list;
+mod logs;
 
 use create::CreateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
+use logs::LogsManagedConnectorOpt;
 use crate::CliError;
 
 #[derive(Debug, StructOpt)]
@@ -37,6 +39,13 @@ pub enum ManagedConnectorCmd {
     )]
     Delete(DeleteManagedConnectorOpt),
 
+    /// Get the logs for a Managed Connector
+    #[structopt(
+        name = "logs",
+        template = COMMAND_TEMPLATE,
+    )]
+    Logs(LogsManagedConnectorOpt),
+
     /// List all Managed Connectors
     #[structopt(
         name = "list",
@@ -53,6 +62,9 @@ impl ManagedConnectorCmd {
             }
             Self::Delete(delete) => {
                 delete.process(fluvio).await?;
+            }
+            Self::Logs(logs) => {
+                logs.process().await?;
             }
             Self::List(list) => {
                 list.process(out, fluvio).await?;
