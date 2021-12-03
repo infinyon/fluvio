@@ -139,7 +139,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                 },
                 option: SmokeTestOption {
                     skip_consumer_validate: true,
-                    producer_iteration: 100,
+                    producer_iteration: 10,
                     connector_config: smoke_test_case.option.connector_config.clone(),
                     ..Default::default()
                 },
