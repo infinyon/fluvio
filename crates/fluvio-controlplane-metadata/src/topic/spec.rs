@@ -27,6 +27,7 @@ use dataplane::core::{Encoder, Decoder};
 )]
 pub struct TopicSpec {
     pub replicas: ReplicaSpec,
+    #[fluvio(min_version = 3)]
     pub cleanup_policy: Option<CleanupPolicy>,
 }
 
