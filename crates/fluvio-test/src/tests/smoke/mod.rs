@@ -176,42 +176,42 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         None
     };
 
-    //// We're going to handle the `--consumer-wait` flag in this process
-    //let producer_wait = async_process!(async {
-    //    let mut test_driver_consumer_wait = test_driver.clone();
+    // We're going to handle the `--consumer-wait` flag in this process
+    let producer_wait = async_process!(async {
+        let mut test_driver_consumer_wait = test_driver.clone();
 
-    //    test_driver
-    //        .connect()
-    //        .await
-    //        .expect("Connecting to cluster failed");
-    //    println!("About to start producer test");
+        test_driver
+            .connect()
+            .await
+            .expect("Connecting to cluster failed");
+        println!("About to start producer test");
 
-    //    let start_offset = produce::produce_message(test_driver, &smoke_test_case).await;
+        let start_offset = produce::produce_message(test_driver, &smoke_test_case).await;
 
-    //    // If we've passed in `--consumer-wait` then we should start the consumer after the producer
-    //    if smoke_test_case.option.consumer_wait {
-    //        test_driver_consumer_wait
-    //            .connect()
-    //            .await
-    //            .expect("Connecting to cluster failed");
-    //        validate_consume_message_api(test_driver_consumer_wait, start_offset, &smoke_test_case)
-    //            .await;
-    //    }
-    //});
+        // If we've passed in `--consumer-wait` then we should start the consumer after the producer
+        if smoke_test_case.option.consumer_wait {
+            test_driver_consumer_wait
+                .connect()
+                .await
+                .expect("Connecting to cluster failed");
+            validate_consume_message_api(test_driver_consumer_wait, start_offset, &smoke_test_case)
+                .await;
+        }
+    });
 
-    //// By default, we should run the consumer and producer at the same time
-    //if !smoke_test_case.option.consumer_wait {
-    //    let consumer_wait = async_process!(async {
-    //        test_driver
-    //            .connect()
-    //            .await
-    //            .expect("Connecting to cluster failed");
-    //        consume::validate_consume_message(test_driver, &smoke_test_case).await;
-    //    });
+    // By default, we should run the consumer and producer at the same time
+    if !smoke_test_case.option.consumer_wait {
+        let consumer_wait = async_process!(async {
+            test_driver
+                .connect()
+                .await
+                .expect("Connecting to cluster failed");
+            consume::validate_consume_message(test_driver, &smoke_test_case).await;
+        });
 
-    //    let _ = consumer_wait.join();
-    //}
-    //let _ = producer_wait.join();
+        let _ = consumer_wait.join();
+    }
+    let _ = producer_wait.join();
 
     if let Some(connector_wait) = maybe_connector {
         let _ = connector_wait.join();
