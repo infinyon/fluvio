@@ -787,7 +787,7 @@ jobs:
       - local_cluster_test
       - k8_cluster_test
       - k8_upgrade_test
-     # - k8_cli_smoke
+      - k8_cli_smoke
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
