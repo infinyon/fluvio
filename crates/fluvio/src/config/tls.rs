@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::fmt::{Debug, self};
 
 use tracing::info;
 use serde::{Deserialize, Serialize};
@@ -110,7 +111,7 @@ impl From<TlsPaths> for TlsConfig {
 /// IuH6soJvn4Mpk5MpTwBw1raCOoKSz2H4oE0B1dBAmQ==
 /// -----END CERTIFICATE-----
 /// ```
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct TlsCerts {
     /// Domain name
     pub domain: String,
@@ -122,6 +123,16 @@ pub struct TlsCerts {
     pub ca_cert: String,
 }
 
+impl Debug for TlsCerts {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TlsCerts {{ domain: {} }}",
+            self.domain
+        )
+    }
+}
+
 impl TlsCerts {
     /// Attempts to write the inline TLS certs into temporary files
     ///
@@ -129,11 +140,12 @@ impl TlsCerts {
     /// temporary files were written.
     pub fn try_into_temp_files(&self) -> Result<TlsPaths, IoError> {
         use std::fs::write;
-        let tmp = std::env::temp_dir();
+        let tmp_dir = tempdir::TempDir::new("fluvio_tls")?;
+        // let tmp = std::env::temp_dir();
 
-        let tls_key = tmp.join("tls.key");
-        let tls_cert = tmp.join("tls.crt");
-        let ca_cert = tmp.join("ca.crt");
+        let tls_key = tmp_dir.path().join("tls.key");
+        let tls_cert = tmp_dir.path().join("tls.crt");
+        let ca_cert = tmp_dir.path().join("ca.crt");
 
         write(&tls_key, self.key.as_bytes())?;
         write(&tls_cert, self.cert.as_bytes())?;

@@ -1517,6 +1517,7 @@ dependencies = [
  "serde",
  "serde_json",
  "siphasher",
+ "tempdir",
  "thiserror",
  "tokio",
  "toml",
