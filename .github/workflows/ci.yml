@@ -561,7 +561,7 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
-      - name: Run smoke-test-k8-tls-root
+      - name: Run ${{ matrix.make-target }}
         timeout-minutes: 10
       #  env:
       #    FLV_DISPATCHER_WAIT: 300
