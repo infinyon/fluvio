@@ -26,8 +26,8 @@ use dataplane::core::{Encoder, Decoder};
     serde(tag = "type")
 )]
 pub struct TopicSpec {
-    replicas: ReplicaSpec,
-    cleanup_policy: Option<CleanupPolicy>,
+    pub replicas: ReplicaSpec,
+    pub cleanup_policy: Option<CleanupPolicy>,
 }
 
 impl Deref for TopicSpec {
@@ -61,6 +61,15 @@ impl TopicSpec {
     }
 }
 
+impl From<ReplicaSpec> for TopicSpec {
+    fn from(replicas: ReplicaSpec) -> Self {
+        Self {
+            replicas,
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
@@ -88,7 +97,6 @@ impl Default for ReplicaSpec {
 }
 
 impl ReplicaSpec {
-
     pub fn new_assigned<J>(partition_map: J) -> Self
     where
         J: Into<PartitionMaps>,
@@ -101,9 +109,7 @@ impl ReplicaSpec {
         replication: ReplicationFactor,
         ignore_rack: Option<IgnoreRackAssignment>,
     ) -> Self {
-        Self::Computed(
-                (partitions, replication, ignore_rack.unwrap_or(false)).into(),
-            )
+        Self::Computed((partitions, replication, ignore_rack.unwrap_or(false)).into())
     }
 
     pub fn is_computed(&self) -> bool {

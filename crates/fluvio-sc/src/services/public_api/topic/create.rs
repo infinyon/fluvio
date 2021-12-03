@@ -100,8 +100,8 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         );
     }
 
-    match topic_spec {
-        TopicSpec::Computed(param) => {
+    match topic_spec.replicas {
+        ReplicaSpec::Computed(param) => {
             let next_state = validate_computed_topic_parameters(param);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {
@@ -124,7 +124,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
                 }
             }
         }
-        TopicSpec::Assigned(ref partition_map) => {
+        ReplicaSpec::Assigned(ref partition_map) => {
             let next_state = validate_assigned_topic_parameters(partition_map);
             trace!("validating, computed topic: {:#?}", next_state);
             if next_state.resolution.is_invalid() {

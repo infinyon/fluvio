@@ -4,6 +4,7 @@
 //! CLI tree to generate Create a Managed Connector
 //!
 
+use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -39,9 +40,9 @@ impl CreateManagedConnectorOpt {
 
         let admin = fluvio.admin().await;
         if config.create_topic {
-            let topic_spec = TopicSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            debug!("topic spec: {:?}", topic_spec);
-            match admin.create(config.topic, false, topic_spec).await {
+            let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
+            debug!("topic spec: {:?}", replica_spec);
+            match admin.create(config.topic, false, replica_spec.into()).await {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
                     //println!("Topic already exists");
                     Ok(())
