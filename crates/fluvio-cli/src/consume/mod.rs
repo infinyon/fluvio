@@ -91,7 +91,7 @@ pub struct ConsumeOpt {
 
     /// Consume records using the formatting rules defined by TableFormat name
     #[structopt(long, conflicts_with_all = &["key_value", "format"])]
-    pub tableformat: Option<String>,
+    pub table_format: Option<String>,
 
     /// Consume records starting X from the beginning of the log (default: 0)
     #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
@@ -125,7 +125,7 @@ pub struct ConsumeOpt {
 
     /// Name of DerivedStream
     #[structopt(long)]
-    pub derivedstream: Option<String>,
+    pub derived_stream: Option<String>,
 
     /// Path to a SmartModule filter wasm file
     #[structopt(long, group("smartmodule"))]
@@ -179,7 +179,7 @@ impl ConsumeOpt {
         fields(topic = %self.topic, partition = self.partition),
     )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        let maybe_tableformat = if let Some(ref tableformat_name) = self.tableformat {
+        let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
             let admin = fluvio.admin().await;
             let tableformats = admin.list::<TableFormatSpec, _>(vec![]).await?;
 
@@ -273,7 +273,7 @@ impl ConsumeOpt {
         };
 
         let derivedstream =
-            self.derivedstream
+            self.derived_stream
                 .as_ref()
                 .map(|derivedstream_name| DerivedStreamInvocation {
                     stream: derivedstream_name.clone(),

@@ -9,58 +9,58 @@ load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
-    SMARTMODULE_NAME=$(random_string)
-    export SMARTMODULE_NAME
-    debug_msg "SmartModule name: $SMARTMODULE_NAME"
+    SMART_MODULE_NAME=$(random_string)
+    export SMART_MODULE_NAME
+    debug_msg "SmartModule name: $SMART_MODULE_NAME"
 }
 
-# Create smartmodule
+# Create smart-module
 # Currently just using an empty file
-@test "Create smartmodule" {
-    run timeout 15s "$FLUVIO_BIN" smartmodule create "$SMARTMODULE_NAME" --wasm-file "$(mktemp)"
+@test "Create smart-module" {
+    run timeout 15s "$FLUVIO_BIN" smart-module create "$SMART_MODULE_NAME" --wasm-file "$(mktemp)"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_success
 }
 
-# Create smartmodule - Negative test
-@test "Attempt to create a smartmodule with same name" {
+# Create smart-module - Negative test
+@test "Attempt to create a smart-module with same name" {
     skip "Smartmodule creation doesn't fail w/ same names at the moment"
-    run timeout 15s "$FLUVIO_BIN" smartmodule create "$SMARTMODULE_NAME"
+    run timeout 15s "$FLUVIO_BIN" smart-module create "$SMART_MODULE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_failure
     assert_output --partial "Smartmodule already exists"
 }
 
-# Describe smartmodule
-@test "Describe smartmodule" {
+# Describe smart-module
+@test "Describe smart-module" {
     skip "Describe is not yet implemented"
-    run timeout 15s "$FLUVIO_BIN" smartmodule describe "$SMARTMODULE_NAME" 
+    run timeout 15s "$FLUVIO_BIN" smart-module describe "$SMART_MODULE_NAME" 
     debug_msg "status: $status"
     debug_msg "output: $output"
     assert_success
 }
 
-# List smartmodule
-@test "List smartmodule" {
-    run timeout 15s "$FLUVIO_BIN" smartmodule list
+# List smart-module
+@test "List smart-module" {
+    run timeout 15s "$FLUVIO_BIN" smart-module list
     debug_msg "status: $status"
     debug_msg "output: $output"
     assert_success
 }
 
-# Delete smartmodule
-@test "Delete smartmodule" {
-    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+# Delete smart-module
+@test "Delete smart-module" {
+    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMART_MODULE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[0]}"
     assert_success
 }
 
-# Delete smartmodule - Negative test
-@test "Attempt to delete a smartmodule that doesn't exist" {
-    run timeout 15s "$FLUVIO_BIN" smartmodule delete "$SMARTMODULE_NAME"
+# Delete smart-module - Negative test
+@test "Attempt to delete a smart-module that doesn't exist" {
+    run timeout 15s "$FLUVIO_BIN" smart-module delete "$SMART_MODULE_NAME"
     debug_msg "status: $status"
     debug_msg "output: ${lines[3]}"
     assert_failure

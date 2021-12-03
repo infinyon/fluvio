@@ -139,9 +139,12 @@ mod root {
         Version(VersionOpt),
 
         /// Generate command-line completions for Fluvio
-        /// {n}{n}Run the following two commands to enable fluvio command completions.
+        ///
+        /// Run the following two commands to enable fluvio command completions.
+        ///
         /// Open a new terminal for the changes to take effect.
-        /// {n}{n}$ fluvio completions bash > ~/fluvio_completions.sh
+        ///
+        /// $ fluvio completions bash > ~/fluvio_completions.sh
         /// {n}$ echo "source ~/fluvio_completions.sh" >> ~/.bashrc
         #[structopt(name = "completions")]
         Completions(CompletionCmd),
@@ -157,11 +160,18 @@ mod root {
         #[structopt(name = "connector")]
         ManagedConnector(ManagedConnectorCmd),
 
-        /// Create a tableformat display specification
-        #[structopt(name = "tableformat")]
+        /// Create a TableFormat display specification
+        ///
+        /// Used with the consumer output type `full_table` to
+        /// describe how to render JSON data in a tabular form
+        #[structopt(name = "table-format", aliases = &["tf"])]
         TableFormat(TableFormatCmd),
 
-        #[structopt(name = "derivedstream")]
+        /// Create and manage DerivedStreams
+        ///
+        /// Use topics, SmartModules or other DerivedStreams
+        /// to build a customized stream to consume
+        #[structopt(name = "derived-stream", aliases = &["ds"])]
         DerivedStream(DerivedStreamCmd),
 
         #[structopt(external_subcommand)]
@@ -255,7 +265,7 @@ mod root {
         /// Create and manage SmartModules
         ///
         /// SmartModules are compiled WASM modules used to create SmartModules.
-        #[structopt(name = "smartmodule")]
+        #[structopt(name = "smart-module", aliases = &["sm"])]
         SmartModule(SmartModuleCmd),
     }
 
