@@ -13,6 +13,7 @@ spec:
     - name: v1
       served: true
       storage: false
+      deprecated: true
       schema:
         openAPIV3Schema:
           type: object
@@ -140,7 +141,7 @@ spec:
                     segment:
                       type: object
                       properties:
-                        timeeconds:
+                        timeInSeconds:
                           type: integer
                           minimum: 3600
                 
@@ -160,6 +161,9 @@ spec:
             type: string
             description: Topic Status
             jsonPath: .status.resolution
-
+  conversion:
+    # None conversion assumes the same schema for all versions and only sets the apiVersion
+    # field of custom resources to the proper value
+    strategy: None
                    
 

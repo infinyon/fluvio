@@ -1,9 +1,11 @@
 use crate::k8_types::{Crd, GROUP, V1, CrdNames, Spec, Status, DefaultHeader};
 
+use super::PartitionMaps;
+use super::TopicReplicaParam;
 use super::TopicStatus;
 use super::TopicSpec;
 
-const TOPIC_API: Crd = Crd {
+const TOPIC_V1_API: Crd = Crd {
     group: GROUP,
     version: V1,
     names: CrdNames {
@@ -13,13 +15,52 @@ const TOPIC_API: Crd = Crd {
     },
 };
 
+const TOPIC_V2_API: Crd = Crd {
+    group: GROUP,
+    version: "v2",
+    names: CrdNames {
+        kind: "Topic",
+        plural: "topics",
+        singular: "topic",
+    },
+};
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
+pub enum TopicSpecV1 {
+    Assigned(PartitionMaps),
+    Computed(TopicReplicaParam),
+}
+
+// -----------------------------------
+// Implementation
+// -----------------------------------
+impl Default for TopicSpecV1 {
+    fn default() -> Self {
+        Self::Assigned(PartitionMaps::default())
+    }
+}
+
+impl Spec for TopicSpecV1 {
+    type Status = TopicStatus;
+    type Header = DefaultHeader;
+
+    fn metadata() -> &'static Crd {
+        &TOPIC_V1_API
+    }
+}
+
+impl Status for TopicStatus {}
+
 impl Spec for TopicSpec {
     type Status = TopicStatus;
     type Header = DefaultHeader;
 
     fn metadata() -> &'static Crd {
-        &TOPIC_API
+        &TOPIC_V2_API
     }
 }
-
-impl Status for TopicStatus {}

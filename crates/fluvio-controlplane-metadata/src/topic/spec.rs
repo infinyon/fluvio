@@ -9,6 +9,7 @@
 //!
 use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
+use std::ops::Deref;
 
 use tracing::trace;
 use fluvio_types::{ReplicaMap, SpuId};
@@ -18,32 +19,22 @@ use dataplane::core::Version;
 use dataplane::bytes::{Buf, BufMut};
 use dataplane::core::{Encoder, Decoder};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(tag = "type")
 )]
-pub enum TopicSpec {
-    Assigned(PartitionMaps),
-    Computed(TopicReplicaParam),
+pub struct TopicSpec {
+    replicas: ReplicaSpec,
+    cleanup_policy: Option<CleanupPolicy>,
 }
 
-impl std::fmt::Display for TopicSpec {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            TopicSpec::Assigned(partition_map) => write!(f, "assigned::{}", partition_map),
-            TopicSpec::Computed(param) => write!(f, "computed::({})", param),
-        }
-    }
-}
+impl Deref for TopicSpec {
+    type Target = ReplicaSpec;
 
-// -----------------------------------
-// Implementation
-// -----------------------------------
-impl Default for TopicSpec {
-    fn default() -> TopicSpec {
-        TopicSpec::Assigned(PartitionMaps::default())
+    fn deref(&self) -> &Self::Target {
+        &self.replicas
     }
 }
 
@@ -52,7 +43,10 @@ impl TopicSpec {
     where
         J: Into<PartitionMaps>,
     {
-        TopicSpec::Assigned(partition_map.into())
+        Self {
+            replicas: ReplicaSpec::new_assigned(partition_map),
+            ..Default::default()
+        }
     }
 
     pub fn new_computed(
@@ -60,34 +54,83 @@ impl TopicSpec {
         replication: ReplicationFactor,
         ignore_rack: Option<IgnoreRackAssignment>,
     ) -> Self {
-        TopicSpec::Computed((partitions, replication, ignore_rack.unwrap_or(false)).into())
+        Self {
+            replicas: ReplicaSpec::new_computed(partitions, replication, ignore_rack),
+            ..Default::default()
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
+pub enum ReplicaSpec {
+    Assigned(PartitionMaps),
+    Computed(TopicReplicaParam),
+}
+
+impl std::fmt::Display for ReplicaSpec {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Self::Assigned(partition_map) => write!(f, "assigned::{}", partition_map),
+            Self::Computed(param) => write!(f, "computed::({})", param),
+        }
+    }
+}
+
+impl Default for ReplicaSpec {
+    fn default() -> Self {
+        Self::Assigned(PartitionMaps::default())
+    }
+}
+
+impl ReplicaSpec {
+
+    pub fn new_assigned<J>(partition_map: J) -> Self
+    where
+        J: Into<PartitionMaps>,
+    {
+        Self::Assigned(partition_map.into())
+    }
+
+    pub fn new_computed(
+        partitions: PartitionCount,
+        replication: ReplicationFactor,
+        ignore_rack: Option<IgnoreRackAssignment>,
+    ) -> Self {
+        Self::Computed(
+                (partitions, replication, ignore_rack.unwrap_or(false)).into(),
+            )
     }
 
     pub fn is_computed(&self) -> bool {
         match self {
-            TopicSpec::Computed(_) => true,
-            TopicSpec::Assigned(_) => false,
+            Self::Computed(_) => true,
+            Self::Assigned(_) => false,
         }
     }
 
     pub fn partitions(&self) -> PartitionCount {
-        match self {
-            TopicSpec::Computed(param) => param.partitions,
-            TopicSpec::Assigned(partition_map) => partition_map.partition_count(),
+        match &self {
+            Self::Computed(param) => param.partitions,
+            Self::Assigned(partition_map) => partition_map.partition_count(),
         }
     }
 
     pub fn replication_factor(&self) -> Option<ReplicationFactor> {
         match self {
-            TopicSpec::Computed(param) => Some(param.replication_factor),
-            TopicSpec::Assigned(partition_map) => partition_map.replication_factor(),
+            Self::Computed(param) => Some(param.replication_factor),
+            Self::Assigned(partition_map) => partition_map.replication_factor(),
         }
     }
 
     pub fn ignore_rack_assignment(&self) -> IgnoreRackAssignment {
         match self {
-            TopicSpec::Computed(param) => param.ignore_rack_assignment,
-            TopicSpec::Assigned(_) => false,
+            Self::Computed(param) => param.ignore_rack_assignment,
+            Self::Assigned(_) => false,
         }
     }
 
@@ -175,7 +218,7 @@ impl TopicSpec {
     }
 }
 
-impl Decoder for TopicSpec {
+impl Decoder for ReplicaSpec {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
@@ -197,7 +240,7 @@ impl Decoder for TopicSpec {
             1 => {
                 let mut param = TopicReplicaParam::default();
                 param.decode(src, version)?;
-                *self = TopicSpec::Computed(param);
+                *self = Self::Computed(param);
                 Ok(())
             }
 
@@ -213,7 +256,7 @@ impl Decoder for TopicSpec {
 // -----------------------------------
 // Encoder / Decoder
 // -----------------------------------
-impl Encoder for TopicSpec {
+impl Encoder for ReplicaSpec {
     // compute size for fluvio replicas
     fn write_size(&self, version: Version) -> usize {
         let typ_size = (0u8).write_size(version);
@@ -241,14 +284,14 @@ impl Encoder for TopicSpec {
 
         match self {
             // encode assign partitions
-            TopicSpec::Assigned(partitions) => {
+            Self::Assigned(partitions) => {
                 let typ: u8 = 0;
                 typ.encode(dest, version)?;
                 partitions.encode(dest, version)?;
             }
 
             // encode computed partitions
-            TopicSpec::Computed(param) => {
+            Self::Computed(param) => {
                 let typ: u8 = 1;
                 typ.encode(dest, version)?;
                 param.encode(dest, version)?;
@@ -524,29 +567,45 @@ pub struct PartitionMap {
     pub replicas: Vec<SpuId>,
 }
 
-// -----------------------------------
-// Unit Tests
-// -----------------------------------
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum CleanupPolicy {
+    Segment(SegmentBasedPolicy),
+}
+
+impl Default for CleanupPolicy {
+    fn default() -> Self {
+        CleanupPolicy::Segment(SegmentBasedPolicy::default())
+    }
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct SegmentBasedPolicy {
+    pub time_in_seconds: u32,
+}
 
 #[cfg(test)]
 pub mod test {
-    use super::*;
+
     use std::io::Cursor;
+
+    use super::*;
 
     #[test]
     fn test_is_computed_topic() {
         let p1: PartitionMaps = vec![(1, vec![0]), (2, vec![2])].into();
-        let t1 = TopicSpec::new_assigned(p1);
+        let t1 = ReplicaSpec::new_assigned(p1);
         assert!(!t1.is_computed());
 
-        let t2 = TopicSpec::new_computed(0, 0, None);
+        let t2 = ReplicaSpec::new_computed(0, 0, None);
         assert!(t2.is_computed());
     }
 
     #[test]
     fn test_valid_computed_replica_params() {
         // -1 indicates an unassigned partition
-        let t1_result = TopicSpec::valid_partition(&-1);
+        let t1_result = ReplicaSpec::valid_partition(&-1);
         assert!(t1_result.is_err());
         assert_eq!(
             format!("{}", t1_result.unwrap_err()),
@@ -554,18 +613,18 @@ pub mod test {
         );
 
         // 0 is not a valid partition
-        let t2_result = TopicSpec::valid_partition(&0);
+        let t2_result = ReplicaSpec::valid_partition(&0);
         assert!(t2_result.is_err());
         assert_eq!(
             format!("{}", t2_result.unwrap_err()),
             "partition must be greater than 0"
         );
 
-        let t3_result = TopicSpec::valid_partition(&1);
+        let t3_result = ReplicaSpec::valid_partition(&1);
         assert!(t3_result.is_ok());
 
         // -1 indicates an unassigned replication factor
-        let t4_result = TopicSpec::valid_replication_factor(&-1);
+        let t4_result = ReplicaSpec::valid_replication_factor(&-1);
         assert!(t4_result.is_err());
         assert_eq!(
             format!("{}", t4_result.unwrap_err()),
@@ -573,7 +632,7 @@ pub mod test {
         );
 
         // 0 is not a valid replication factor
-        let t5_result = TopicSpec::valid_replication_factor(&0);
+        let t5_result = ReplicaSpec::valid_replication_factor(&0);
         assert!(t5_result.is_err());
         assert_eq!(
             format!("{}", t5_result.unwrap_err()),
@@ -581,7 +640,7 @@ pub mod test {
         );
 
         // positive numbers are OK
-        let t6_result = TopicSpec::valid_replication_factor(&1);
+        let t6_result = ReplicaSpec::valid_replication_factor(&1);
         assert!(t6_result.is_ok());
     }
 
@@ -708,7 +767,7 @@ pub mod test {
             replicas: vec![5001, 5002],
         }]
         .into();
-        let topic_spec = TopicSpec::Assigned(partition_map);
+        let topic_spec = ReplicaSpec::Assigned(partition_map);
         let mut dest = vec![];
 
         // test encode
@@ -725,12 +784,12 @@ pub mod test {
         assert_eq!(dest, expected_dest);
 
         // test encode
-        let mut topic_spec_decoded = TopicSpec::default();
+        let mut topic_spec_decoded = ReplicaSpec::default();
         let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest), 0);
         assert!(result.is_ok());
 
         match topic_spec_decoded {
-            TopicSpec::Assigned(partition_map) => {
+            ReplicaSpec::Assigned(partition_map) => {
                 assert_eq!(
                     partition_map,
                     vec![PartitionMap {
@@ -746,7 +805,7 @@ pub mod test {
 
     #[test]
     fn test_encode_decode_computed_topic_spec() {
-        let topic_spec = TopicSpec::Computed((2, 3, true).into());
+        let topic_spec = ReplicaSpec::Computed((2, 3, true).into());
         let mut dest = vec![];
 
         // test encode
@@ -762,12 +821,12 @@ pub mod test {
         assert_eq!(dest, expected_dest);
 
         // test encode
-        let mut topic_spec_decoded = TopicSpec::default();
+        let mut topic_spec_decoded = ReplicaSpec::default();
         let result = topic_spec_decoded.decode(&mut Cursor::new(&expected_dest), 0);
         assert!(result.is_ok());
 
         match topic_spec_decoded {
-            TopicSpec::Computed(param) => {
+            ReplicaSpec::Computed(param) => {
                 assert_eq!(param.partitions, 2);
                 assert_eq!(param.replication_factor, 3);
                 assert!(param.ignore_rack_assignment);
@@ -781,7 +840,7 @@ pub mod test {
         // Test multiple
         let p1: PartitionMaps =
             vec![(0, vec![0, 1, 3]), (1, vec![0, 2, 3]), (2, vec![1, 3, 4])].into();
-        let spec = TopicSpec::new_assigned(p1);
+        let spec = ReplicaSpec::new_assigned(p1);
         assert_eq!(
             spec.partition_map_str(),
             Some("0:[0, 1, 3], 1:[0, 2, 3], 2:[1, 3, 4]".to_string())
@@ -789,7 +848,7 @@ pub mod test {
 
         // Test empty
         let p2 = PartitionMaps::default();
-        let spec2 = TopicSpec::new_assigned(p2);
+        let spec2 = ReplicaSpec::new_assigned(p2);
         assert_eq!(spec2.partition_map_str(), Some("".to_string()));
     }
 }
