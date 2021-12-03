@@ -501,6 +501,7 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
+        make-target: [smoke-test-k8-tls-root,smoke-test-k8-tls]
         k8: [k3d,minikube]
     steps:
       - uses: actions/checkout@v2
@@ -566,7 +567,7 @@ jobs:
       #    FLV_DISPATCHER_WAIT: 300
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean smoke-test-k8-tls-root
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean ${{ matrix.make-target }} 
         # make FLUVIO_BIN=./fluvio TEST_BIN=./flv-test smoke-test-k8-tls-root
       - name: Print version
         run: |

@@ -120,23 +120,11 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
             // If the connector already exists, don't fail
             println!("Attempt to create connector");
-            if std::env::var("CI").is_ok() {
-                println!("Using fluvio binary to create connector");
-                std::process::Command::new("./fluvio")
-                    .args([
-                        "connector",
-                        "create",
-                        "--config",
-                        &format!("{}", &connector_config.as_path().display()),
-                    ])
-                    .spawn()
-                    .expect("Failed to run fluvio cli to start connectors");
-            } else {
-                admin
-                    .create(name.to_string(), false, spec)
-                    .await
-                    .unwrap_or(());
-            };
+            admin
+                .create(name.to_string(), false, spec)
+                .await
+                .unwrap_or(());
+
             // Build a new SmokeTestCase so we can use the consumer verify
             // Ending after a static number of records received
             let new_smoke_test_case = SmokeTestCase {
