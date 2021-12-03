@@ -109,7 +109,15 @@ pub async fn validate_consume_message_api(
                             offset,
                             bytes.len()
                         );
-                        validate_message(producer_iteration, offset, test_case, bytes);
+
+                        if test_case.option.skip_consumer_validate {
+                            info!(
+                                "Skipped message validation",
+                            );
+                        } else {
+                            validate_message(producer_iteration, offset, test_case, bytes);
+                        };
+
                         info!(
                             " total records: {}, validated offset: {}",
                             total_records, offset
@@ -221,7 +229,15 @@ pub async fn validate_consume_message_api(
                         bytes.len()
                     );
 
-                    validate_message(producer_iteration, offset, test_case, bytes);
+                    if test_case.option.skip_consumer_validate {
+                        info!(
+                            "Skipped message validation",
+                        );
+                    } else {
+                        validate_message(producer_iteration, offset, test_case, bytes);
+                    };
+
+
                     info!(
                         "2nd fetch total records: {}, validated offset: {}",
                         total_records, offset
