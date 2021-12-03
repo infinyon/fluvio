@@ -40,7 +40,7 @@ spec:
                     segment:
                       type: object
                       properties:
-                        timeSeconds:
+                        timeeconds:
                           type: integer
                           minimum: 3600
                 ignoreRackAssignment:
@@ -66,6 +66,7 @@ spec:
                             items:
                               type: integer
                               minimum: 0
+      
       subresources:
           status: {}
       additionalPrinterColumns:
@@ -77,6 +78,84 @@ spec:
             type: integer
             description: Replication Count
             jsonPath: .spec.replicationFactor
+          - name: Status
+            type: string
+            description: Topic Status
+            jsonPath: .status.resolution
+    - name: v2
+      served: true
+      storage:  false
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: ["spec"]
+          properties:
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            spec:
+              type: object
+              properties:
+                replicas:
+                  type: object
+                    properties:
+                      oneOf:
+                      - required: ["managed"]
+                      - required: ["assigned"]
+                      managed:
+                        type: object
+                        properties:
+                          partitions:
+                            type: integer
+                            minimum: 1
+                            maximum: 5000
+                          replicationFactor:
+                            type: integer
+                            minimum: 1
+                            maximum: 5000
+                      assigned:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                          - partition
+                          properties:
+                            partition:
+                              type: object
+                              required:
+                              - id
+                              - replicas
+                              properties:
+                                id:
+                                  type: integer
+                                  minimum: 0
+                                replicas:
+                                  type: array
+                                  items:
+                                    type: integer
+                                    minimum: 0
+                cleanUpPolicy:
+                  type: object
+                  properties:
+                    segment:
+                      type: object
+                      properties:
+                        timeeconds:
+                          type: integer
+                          minimum: 3600
+                
+      
+      subresources:
+          status: {}
+      additionalPrinterColumns:
+          - name: Partitions
+            type: integer
+            description: Parition count
+            jsonPath: .spec.replica.managed.partitions
+          - name: Replications
+            type: integer
+            description: Replication Count
+            jsonPath: .spec.replica.managed.replicationFactor
           - name: Status
             type: string
             description: Topic Status
