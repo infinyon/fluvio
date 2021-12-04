@@ -7,6 +7,7 @@
 
 mod controllers;
 mod objects;
+mod migration;
 
 #[cfg(test)]
 mod fixture;
