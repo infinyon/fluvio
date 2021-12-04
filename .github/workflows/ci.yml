@@ -561,20 +561,11 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
-      # When we are ready to merge https://github.com/infinyon/fluvio/pull/1989
-      # The following two steps can be combined by removing the 2nd step, and removing the `if` from the first step
       - name: Run ${{ matrix.make-target }}
-        if: ${{ matrix.make-target == 'smoke-test-k8'}}
         timeout-minutes: 10
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean ${{ matrix.make-target }} 
-      - name: Run ${{ matrix.make-target }}
-        if: ${{ matrix.make-target != 'smoke-test-k8'}}
-        timeout-minutes: 10
-        run: |
-            date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean TEST_ARG_CONNECTOR_CONFIG= ${{ matrix.make-target }} 
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean ${{ matrix.make-target }}
       - name: Print version
         run: |
           ./fluvio version
