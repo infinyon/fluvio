@@ -72,13 +72,13 @@ mod k8_operator {
 
         whitelist!(config, "k8_spg", {
             SpgStatefulSetController::start(
-                namespace.clone(),
+                namespace,
                 config_ctx.clone(),
                 global_ctx.spgs().clone(),
                 statefulset_ctx,
                 global_ctx.spus().clone(),
                 spg_service_ctx,
-                tls,
+                tls.clone(),
             );
         });
 
@@ -95,9 +95,9 @@ mod k8_operator {
         });
         whitelist!(config, "k8_managed_connector_delpoyment", {
             ManagedConnectorDeploymentController::start(
-                namespace,
                 global_ctx.managed_connectors().clone(),
                 managed_connector_deployments_ctx,
+                tls,
             );
         });
     }

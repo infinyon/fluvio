@@ -1631,6 +1631,7 @@ dependencies = [
  "nix",
  "once_cell",
  "prettytable-rs",
+ "rand 0.8.4",
  "remoteprocess",
  "semver 1.0.4",
  "serde",

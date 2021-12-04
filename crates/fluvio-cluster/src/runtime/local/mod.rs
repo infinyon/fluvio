@@ -37,6 +37,8 @@ mod process {
 
     use fluvio::config::{TlsConfig, TlsPaths};
 
+    use crate::tls_config_to_cert_paths;
+
     use super::LocalRuntimeError;
 
     pub trait FluvioLocalProcess {
@@ -47,10 +49,7 @@ mod process {
             tls: &TlsConfig,
             port: u16,
         ) -> Result<(), LocalRuntimeError> {
-            let paths: Cow<TlsPaths> = match tls {
-                TlsConfig::Files(paths) => Cow::Borrowed(paths),
-                TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
-            };
+            let paths: Cow<TlsPaths> = tls_config_to_cert_paths(tls)?;
 
             info!("starting SC with TLS options");
             let ca_cert = paths.ca_cert.to_str().ok_or_else(|| {
