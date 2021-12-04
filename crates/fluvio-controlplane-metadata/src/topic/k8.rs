@@ -1,6 +1,7 @@
 use crate::k8_types::{Crd, GROUP, V1, CrdNames, Spec, Status, DefaultHeader};
 
 use super::PartitionMaps;
+use super::ReplicaSpec;
 use super::TopicReplicaParam;
 use super::TopicStatus;
 use super::TopicSpec;
@@ -62,5 +63,23 @@ impl Spec for TopicSpec {
 
     fn metadata() -> &'static Crd {
         &TOPIC_V2_API
+    }
+}
+
+impl From<TopicSpecV1> for TopicSpec {
+    fn from(v1: TopicSpecV1) -> Self {
+        TopicSpec {
+            replicas: v1.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl From<TopicSpecV1> for ReplicaSpec {
+    fn from(v1: TopicSpecV1) -> Self {
+        match v1 {
+            TopicSpecV1::Assigned(partition_maps) =>  ReplicaSpec::Assigned(partition_maps),
+            TopicSpecV1::Computed(topic_replica_param) => ReplicaSpec::Computed(topic_replica_param),
+        }
     }
 }
