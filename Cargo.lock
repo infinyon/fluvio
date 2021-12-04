@@ -2897,7 +2897,8 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "5.4.0"
-source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9702cde04550bf080add52a38836f1e9b0e203f8a1956e98ac59220bd99c4da6"
 dependencies = [
  "async-trait",
  "base64",
@@ -2923,7 +2924,8 @@ dependencies = [
 [[package]]
 name = "k8-config"
 version = "1.5.0"
-source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed2fc1a4e4feceefa779c04d8b83eafebdf194cd54dc72de8c0a5135799b03cf"
 dependencies = [
  "dirs 4.0.0",
  "hostfile",
@@ -2937,16 +2939,19 @@ dependencies = [
 [[package]]
 name = "k8-diff"
 version = "0.1.2"
-source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef435d912eeb448129d7ae11d3c497691f1f383d2d2ff1dff4365a81c7bd4f3b"
 dependencies = [
  "serde",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
 name = "k8-metadata-client"
-version = "3.2.1"
-source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+version = "3.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a4a331f7fb753ac50d6d5d3ed5f26f4902849bcd4cc0477387d40af32c129bf"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -2961,7 +2966,8 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.5.1"
-source = "git+https://github.com/infinyon/k8-api.git?rev=27f86702a129f8b976917309ffd986bc0ed9c9a1#27f86702a129f8b976917309ffd986bc0ed9c9a1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "751ac45e0d493bcfdeed2b536a3eb3e818e3ad5e7088dc9e2a4b12d8cf69235a"
 dependencies = [
  "serde",
  "serde_json",
