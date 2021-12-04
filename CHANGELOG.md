@@ -1,6 +1,9 @@
 # Release Notes
 
-## Platform Version 0.9.14 - UNRELEASED
+## Platform Version 0.9.15 - UNRELEASED
+*
+
+## Platform Version 0.9.14 - 2021-12-04
 * Add support for tuple structs in fluvio-protocol derived macros. ([#1828](https://github.com/infinyon/fluvio/issues/1828))
 * Expose fluvio completions in the top-level subcommand. ([#1850](https://github.com/infinyon/fluvio/issues/1850))
 * Make installation more reliable ([#1961](https://github.com/infinyon/fluvio/pull/1961))
