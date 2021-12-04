@@ -333,6 +333,7 @@ impl ClusterCheck for K8Version {
         #[derive(Debug, serde::Deserialize)]
         #[serde(rename_all = "camelCase")]
         struct KubernetesVersion {
+            #[allow(dead_code)]
             client_version: ComponentVersion,
             server_version: Option<ComponentVersion>,
         }

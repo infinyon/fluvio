@@ -3,7 +3,6 @@ use std::fs::create_dir_all;
 use std::process::{Command};
 use std::time::Duration;
 
-use fluvio_controlplane_metadata::spg::SpuConfig;
 use semver::Version;
 use derive_builder::Builder;
 use tracing::{debug, error, instrument, warn};
@@ -149,25 +148,6 @@ pub struct LocalConfig {
     #[builder(setter(into, strip_option), default)]
     chart_location: Option<UserChartLocation>,
 
-    /// Whether to install the `fluvio-sys` chart in the full installation.
-    ///
-    /// Defaults to `true`.
-    ///
-    /// # Example
-    ///
-    /// If you want to disable installing the system chart, you can do this
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
-    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = builder
-    ///     .install_sys(false)
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[builder(default = "true")]
-    install_sys: bool,
     /// Whether to skip pre-install checks before installation.
     ///
     /// Defaults to `false`.
@@ -206,9 +186,6 @@ pub struct LocalConfig {
     /// Used to hide spinner animation for progress updates
     #[builder(default = "false")]
     hide_spinner: bool,
-
-    #[builder(setter(into), default)]
-    spu_config: SpuConfig,
 }
 
 impl LocalConfig {

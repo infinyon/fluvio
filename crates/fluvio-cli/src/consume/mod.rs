@@ -35,6 +35,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
+use crate::render::ProgressRenderer;
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
@@ -69,6 +70,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
+    /// disable the progress bar and wait spinner
+    #[structopt(long)]
+    pub disable_progressbar: bool,
+
     /// Print records in "[key] value" format, with "[null]" for no key
     #[structopt(short, long)]
     pub key_value: bool,
@@ -90,7 +95,7 @@ pub struct ConsumeOpt {
 
     /// Consume records using the formatting rules defined by TableFormat name
     #[structopt(long, conflicts_with_all = &["key_value", "format"])]
-    pub tableformat: Option<String>,
+    pub table_format: Option<String>,
 
     /// Consume records starting X from the beginning of the log (default: 0)
     #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
@@ -124,7 +129,7 @@ pub struct ConsumeOpt {
 
     /// Name of DerivedStream
     #[structopt(long)]
-    pub derivedstream: Option<String>,
+    pub derived_stream: Option<String>,
 
     /// Path to a SmartModule filter wasm file
     #[structopt(long, group("smartmodule"))]
@@ -178,7 +183,7 @@ impl ConsumeOpt {
         fields(topic = %self.topic, partition = self.partition),
     )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        let maybe_tableformat = if let Some(ref tableformat_name) = self.tableformat {
+        let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
             let admin = fluvio.admin().await;
             let tableformats = admin.list::<TableFormatSpec, _>(vec![]).await?;
 
@@ -272,7 +277,7 @@ impl ConsumeOpt {
         };
 
         let derivedstream =
-            self.derivedstream
+            self.derived_stream
                 .as_ref()
                 .map(|derivedstream_name| DerivedStreamInvocation {
                     stream: derivedstream_name.clone(),
@@ -414,6 +419,18 @@ impl ConsumeOpt {
         if io::stdout().is_tty() {
             // This needs to know if it is a tty before opening this
             let mut user_input_reader = EventStream::new();
+            let pb = indicatif::ProgressBar::new(1);
+
+            // Prevent the progress bars from displaying if we're using full_table
+            // or if we've explicitly disabled it
+            if let Some(ConsumeOutputType::full_table) = &self.output {
+                // Do nothing.
+            } else if !self.disable_progressbar {
+                pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
+                pb.enable_steady_tick(100);
+            }
+
+            let pb: ProgressRenderer = pb.into();
 
             loop {
                 select! {
@@ -437,6 +454,7 @@ impl ConsumeOpt {
                                 &mut header_print,
                                 &mut maybe_terminal_stdout,
                                 &mut maybe_table_model,
+                                &pb,
                             );
                         },
                         None => break,
@@ -461,6 +479,7 @@ impl ConsumeOpt {
                 }
             }
         } else {
+            let pb = ProgressRenderer::default();
             // We do not support `--output=full_table` when we don't have a TTY (i.e., CI environment)
             while let Some(result) = stream.next().await {
                 let result: std::result::Result<Record, _> = result;
@@ -481,6 +500,7 @@ impl ConsumeOpt {
                     &mut header_print,
                     &mut None,
                     &mut None,
+                    &pb,
                 );
             }
         }
@@ -512,6 +532,7 @@ impl ConsumeOpt {
         header_print: &mut bool,
         terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
         table_model: &mut Option<TableModel>,
+        pb: &ProgressRenderer,
     ) {
         let formatted_key = record
             .key()
@@ -563,10 +584,11 @@ impl ConsumeOpt {
         if self.output != Some(ConsumeOutputType::full_table) {
             match formatted_value {
                 Some(value) if self.key_value => {
-                    println!("[{}] {}", formatted_key, value);
+                    let output = format!("[{}] {}", formatted_key, value);
+                    pb.println(&output);
                 }
                 Some(value) => {
-                    println!("{}", value);
+                    pb.println(&value);
                 }
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
