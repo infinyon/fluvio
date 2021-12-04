@@ -739,20 +739,21 @@ impl ClusterInstaller {
         self.pb
             .println(&InstallProgressMessage::InstallingFluvio.msg());
 
+        // Specify common installation settings to pass to helm
+        let mut install_settings: Vec<(_, Cow<str>)> =
+            vec![("image.registry", Cow::Borrowed(&self.config.image_registry))];
+
+        if let Some(tag) = &self.config.image_tag {
+            install_settings.push(("image.tag", Cow::Borrowed(tag)));
+        }
+
         // If configured with TLS, copy certs to server
         if let (TlsPolicy::Verified(server_tls), TlsPolicy::Verified(client_tls)) = (
             &self.config.server_tls_policy,
             &self.config.client_tls_policy,
         ) {
             self.upload_tls_secrets(server_tls, client_tls)?;
-        }
-
-        // Specify common installation settings to pass to helm
-        let mut install_settings: Vec<(_, Cow<str>)> =
-            vec![("image.registry", Cow::Borrowed(&self.config.image_registry))];
-
-        if let Some(tag) = &self.config.image_tag {
-            install_settings.push(("image.tag", Cow::Borrowed(tag)))
+            install_settings.push(("cert.domain", Cow::Borrowed(server_tls.domain())));
         }
 
         let mut chart_values = Vec::new();
