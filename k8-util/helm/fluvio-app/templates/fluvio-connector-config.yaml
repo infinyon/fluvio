@@ -21,7 +21,7 @@ data:
     tls_source = "files"
 
     [cluster.k8-config-map-deployment.tls.certs]
-    domain = "fluvio.local"
+    domain = "{{ .Values.cert.domain }}"
     key = "/var/certs/client-tls/tls.key"
     cert = "/var/certs/client-tls/tls.crt"
     ca_cert = "/var/certs/ca/ca.crt"
