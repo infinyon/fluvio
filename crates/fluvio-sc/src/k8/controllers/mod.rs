@@ -72,7 +72,7 @@ mod k8_operator {
 
         whitelist!(config, "k8_spg", {
             SpgStatefulSetController::start(
-                namespace.clone(),
+                namespace,
                 config_ctx.clone(),
                 global_ctx.spgs().clone(),
                 statefulset_ctx,

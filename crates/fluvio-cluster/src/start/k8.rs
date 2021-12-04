@@ -33,6 +33,7 @@ use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
 use crate::render::ProgressRenderer;
 use crate::start::common::check_crd;
+use crate::tls_config_to_cert_paths;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress_with_indicator;
@@ -874,14 +875,8 @@ impl ClusterInstaller {
         server_tls: &TlsConfig,
         client_tls: &TlsConfig,
     ) -> Result<(), K8InstallError> {
-        let server_paths: Cow<TlsPaths> = match server_tls {
-            TlsConfig::Files(paths) => Cow::Borrowed(paths),
-            TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
-        };
-        let client_paths: Cow<TlsPaths> = match client_tls {
-            TlsConfig::Files(paths) => Cow::Borrowed(paths),
-            TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
-        };
+        let server_paths: Cow<TlsPaths> = tls_config_to_cert_paths(server_tls)?;
+        let client_paths: Cow<TlsPaths> = tls_config_to_cert_paths(client_tls)?;
         self.upload_tls_secrets_from_files(server_paths.as_ref(), client_paths.as_ref())?;
         Ok(())
     }

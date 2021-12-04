@@ -129,46 +129,6 @@ impl Debug for TlsCerts {
     }
 }
 
-impl TlsCerts {
-    /// Attempts to write the inline TLS certs into temporary files
-    ///
-    /// Returns a `TlsPaths` populated with the paths where the
-    /// temporary files were written.
-    pub fn try_into_temp_files(&self) -> Result<TlsPaths, IoError> {
-        use std::fs::write;
-        use rand::distributions::Alphanumeric;
-        use std::iter;
-        use rand::Rng;
-        const NUM_RAND_DIR_CHARS: usize = 12;
-
-        let mut rng = rand::thread_rng();
-        let rand_dir_name: String = iter::repeat(())
-            .map(|()| rng.sample(Alphanumeric))
-            .map(char::from)
-            .take(NUM_RAND_DIR_CHARS)
-            .collect();
-
-        let tmp_dir = std::env::temp_dir().join(rand_dir_name);
-
-        std::fs::create_dir(&tmp_dir)?;
-
-        let tls_key = tmp_dir.join("tls.key");
-        let tls_cert = tmp_dir.join("tls.crt");
-        let ca_cert = tmp_dir.join("ca.crt");
-
-        write(&tls_key, self.key.as_bytes())?;
-        write(&tls_cert, self.cert.as_bytes())?;
-        write(&ca_cert, self.ca_cert.as_bytes())?;
-
-        Ok(TlsPaths {
-            domain: self.domain.clone(),
-            key: tls_key,
-            cert: tls_cert,
-            ca_cert,
-        })
-    }
-}
-
 impl TryFrom<TlsPaths> for TlsCerts {
     type Error = IoError;
 

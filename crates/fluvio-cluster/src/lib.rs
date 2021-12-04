@@ -55,7 +55,10 @@ pub use common::*;
 
 mod common {
 
-    use std::path::PathBuf;
+    use std::{path::PathBuf, borrow::Cow};
+    use std::io::Error as IoError;
+
+    use fluvio::config::{TlsPaths, TlsConfig};
 
     use super::CheckStatuses;
 
@@ -96,5 +99,46 @@ mod common {
         Local(PathBuf),
         /// Remote charts will be located at a URL such as `https://...`
         Remote(String),
+    }
+
+    pub fn tls_config_to_cert_paths(config: &TlsConfig) -> Result<Cow<TlsPaths>, IoError> {
+        use std::fs::write;
+        use rand::distributions::Alphanumeric;
+        use std::iter;
+        use rand::Rng;
+
+        let cert_paths: Cow<TlsPaths> = match config {
+            TlsConfig::Files(paths) => Cow::Borrowed(paths),
+            TlsConfig::Inline(certs) => Cow::Owned({
+                const NUM_RAND_DIR_CHARS: usize = 12;
+
+                let mut rng = rand::thread_rng();
+                let rand_dir_name: String = iter::repeat(())
+                    .map(|()| rng.sample(Alphanumeric))
+                    .map(char::from)
+                    .take(NUM_RAND_DIR_CHARS)
+                    .collect();
+
+                let tmp_dir = std::env::temp_dir().join(rand_dir_name);
+
+                std::fs::create_dir(&tmp_dir)?;
+
+                let tls_key = tmp_dir.join("tls.key");
+                let tls_cert = tmp_dir.join("tls.crt");
+                let ca_cert = tmp_dir.join("ca.crt");
+
+                write(&tls_key, certs.key.as_bytes())?;
+                write(&tls_cert, certs.cert.as_bytes())?;
+                write(&ca_cert, certs.ca_cert.as_bytes())?;
+
+                TlsPaths {
+                    domain: certs.domain.clone(),
+                    key: tls_key,
+                    cert: tls_cert,
+                    ca_cert,
+                }
+            }),
+        };
+        Ok(cert_paths)
     }
 }
