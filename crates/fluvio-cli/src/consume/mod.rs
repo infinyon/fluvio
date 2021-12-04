@@ -70,6 +70,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
+    /// disable the progress bar and wait spinner
+    #[structopt(long)]
+    pub disable_progressbar: bool,
+
     /// Print records in "[key] value" format, with "[null]" for no key
     #[structopt(short, long)]
     pub key_value: bool,
@@ -416,8 +420,16 @@ impl ConsumeOpt {
             // This needs to know if it is a tty before opening this
             let mut user_input_reader = EventStream::new();
             let pb = indicatif::ProgressBar::new(1);
-            pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
-            pb.enable_steady_tick(100);
+
+            // Prevent the progress bars from displaying if we're using full_table
+            // or if we've explicitly disabled it
+            if let Some(ConsumeOutputType::full_table) = &self.output {
+                // Do nothing.
+            } else if !self.disable_progressbar {
+                pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
+                pb.enable_steady_tick(100);
+            }
+
             let pb: ProgressRenderer = pb.into();
 
             loop {
