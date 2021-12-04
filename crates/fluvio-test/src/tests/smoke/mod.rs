@@ -110,7 +110,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             // If the managed connector wants its topic created, don't fail if it already exists
             if config.create_topic {
                 println!("Attempt to create connector's topic");
-                let topic_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false)).into();
+                let topic_spec: TopicSpec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false)).into();
                 debug!("topic spec: {:?}", topic_spec);
                 admin
                     .create(config.topic.clone(), false, topic_spec)
