@@ -22,7 +22,7 @@ impl MigrationController {
             let old_spec = old_topic.spec;
             let old_status = old_topic.status;
             let new_spec: TopicSpec = old_spec.into();
-            self.0.create_item(ns,&new_spec).await?;
+          //  self.0.create_item(ns,&new_spec).await?;
         }
         Ok(())
     }
