@@ -5,7 +5,6 @@ use tracing::{trace, debug, instrument};
 
 use fluvio_sc_schema::objects::{ListResponse, Metadata};
 use fluvio_sc_schema::smartmodule::SmartModuleMetadataSpec;
-use fluvio_sc_schema::smartmodule::SmartModuleSpec;
 use fluvio_controlplane_metadata::store::KeyFilter;
 use fluvio_controlplane_metadata::extended::SpecExt;
 use fluvio_auth::{AuthContext, TypeAction};
