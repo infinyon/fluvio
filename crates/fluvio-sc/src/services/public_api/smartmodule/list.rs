@@ -1,4 +1,3 @@
-
 use std::io::{Error, ErrorKind};
 
 use tracing::{trace, debug, instrument};
@@ -46,9 +45,9 @@ pub async fn handle_metadata_fetch_request<AC: AuthContext>(
             }
         })
         .map(|value| {
-            let spec : SmartModuleMetadataSpec = value.spec.clone().into();
+            let spec: SmartModuleMetadataSpec = value.spec.clone().into();
             let status = value.status.clone();
-            let spec : Metadata<SmartModuleMetadataSpec> = Metadata {
+            let spec: Metadata<SmartModuleMetadataSpec> = Metadata {
                 name: value.key().to_string(),
                 status,
                 spec,

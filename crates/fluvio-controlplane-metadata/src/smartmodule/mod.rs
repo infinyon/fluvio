@@ -111,7 +111,7 @@ mod metadata {
         type Status = SmartModuleStatus;
         type Owner = Self;
     }
-    impl SpecExt for SmartModuleMetadataSpec{
+    impl SpecExt for SmartModuleMetadataSpec {
         const OBJECT_TYPE: ObjectType = ObjectType::SmartModuleMetadata;
     }
 

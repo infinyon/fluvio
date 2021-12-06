@@ -50,14 +50,16 @@ pub async fn handle_list_request<AC: AuthContext>(
             )
             .await?,
         ),
-        ObjectApiListRequest::SmartModuleMetadata(req) => ObjectApiListResponse::SmartModuleMetadata(
-            super::smartmodule::handle_metadata_fetch_request(
-                req.name_filters,
-                auth_ctx,
-                //auth_ctx.global_ctx.smartmodules(),
+        ObjectApiListRequest::SmartModuleMetadata(req) => {
+            ObjectApiListResponse::SmartModuleMetadata(
+                super::smartmodule::handle_metadata_fetch_request(
+                    req.name_filters,
+                    auth_ctx,
+                    //auth_ctx.global_ctx.smartmodules(),
+                )
+                .await?,
             )
-            .await?,
-        ),
+        }
         ObjectApiListRequest::TableFormat(req) => ObjectApiListResponse::TableFormat(
             fetch::handle_fetch_request(
                 req.name_filters,
