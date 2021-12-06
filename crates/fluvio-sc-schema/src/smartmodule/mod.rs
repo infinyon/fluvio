@@ -50,4 +50,5 @@ mod convert {
     CreateFrom!(SmartModuleMetadataSpec, SmartModuleMetadata);
     ObjectFrom!(ListRequest, SmartModuleMetadata);
     ObjectFrom!(ListResponse, SmartModuleMetadata);
+    ObjectTryFrom!(ListResponse, SmartModuleMetadata);
 }
