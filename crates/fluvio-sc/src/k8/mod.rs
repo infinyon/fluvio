@@ -38,7 +38,7 @@ pub fn main_k8_loop(opt: ScOpt) {
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
         if let Err(err) =
-            migration::MigrationController::migrate(k8_client.clone(), namespace.clone()).await
+            migration::MigrationController::migrate(k8_client.clone(), &namespace).await
         {
             panic!("migration failed: {}", err);
         }
