@@ -4,7 +4,7 @@ use k8_client::{ClientError, K8Client};
 use k8_metadata_client::MetadataClient;
 use fluvio_controlplane_metadata::topic::{TopicSpec, TopicSpecV1};
 use k8_types::{InputK8Obj, UpdateK8ObjStatus};
-use tracing::info;
+use tracing::{info, debug};
 
 /// Migrate old version of CRD to new version
 
@@ -23,11 +23,14 @@ impl MigrationController {
             let old_spec = old_topic.spec;
             let old_status = old_topic.status;
             let old_metadata = old_topic.metadata;
-            let new_spec: TopicSpec = old_spec.into();
             info!(%old_metadata.name, "migrating topic");
+            debug!("old topic: {:#?}", old_spec);
+            let new_spec: TopicSpec = old_spec.into();
+            debug!("new spec: {:#?}", new_spec);
             let input: InputK8Obj<TopicSpec> =
                 InputK8Obj::new(new_spec, old_metadata.clone().into());
-            self.0.apply(input).await?;
+
+            self.0.create_item(input).await?;
             let update_status: UpdateK8ObjStatus<TopicSpec> =
                 UpdateK8ObjStatus::new(old_status, old_metadata.clone().into());
             self.0.update_status(&update_status).await?;

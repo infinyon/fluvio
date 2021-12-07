@@ -35,15 +35,6 @@ spec:
                   type: integer
                   minimum: 1
                   maximum: 5000
-                cleanUpPolicy:
-                  type: object
-                  properties:
-                    segment:
-                      type: object
-                      properties:
-                        timeeconds:
-                          type: integer
-                          minimum: 3600
                 ignoreRackAssignment:
                   type: boolean
                 customReplicaAssignment:
@@ -100,7 +91,7 @@ spec:
                 replicas:
                   type: object
                   properties:
-                    managed:
+                    computed:
                       type: object
                       properties:
                         partitions:
@@ -135,7 +126,7 @@ spec:
                   oneOf:
                     - required: ["managed"]
                     - required: ["assigned"]
-                cleanUpPolicy:
+                cleanupPolicy:
                   type: object
                   properties:
                     segment:

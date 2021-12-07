@@ -23,7 +23,7 @@ use dataplane::core::{Encoder, Decoder};
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
+    serde(rename_all = "camelCase")
 )]
 pub struct TopicSpec {
     pub replicas: ReplicaSpec,
@@ -72,13 +72,11 @@ impl From<ReplicaSpec> for TopicSpec {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(tag = "type")
-)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ReplicaSpec {
+    #[cfg_attr(feature = "use_serde", serde(rename = "assigned"))]
     Assigned(PartitionMaps),
+    #[cfg_attr(feature = "use_serde", serde(rename = "computed"))]
     Computed(TopicReplicaParam),
 }
 
