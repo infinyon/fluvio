@@ -78,8 +78,10 @@ impl From<TopicSpecV1> for TopicSpec {
 impl From<TopicSpecV1> for ReplicaSpec {
     fn from(v1: TopicSpecV1) -> Self {
         match v1 {
-            TopicSpecV1::Assigned(partition_maps) =>  ReplicaSpec::Assigned(partition_maps),
-            TopicSpecV1::Computed(topic_replica_param) => ReplicaSpec::Computed(topic_replica_param),
+            TopicSpecV1::Assigned(partition_maps) => ReplicaSpec::Assigned(partition_maps),
+            TopicSpecV1::Computed(topic_replica_param) => {
+                ReplicaSpec::Computed(topic_replica_param)
+            }
         }
     }
 }

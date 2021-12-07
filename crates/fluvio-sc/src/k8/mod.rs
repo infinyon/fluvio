@@ -16,7 +16,6 @@ use k8_client::new_shared;
 
 use crate::cli::ScOpt;
 
-
 pub fn main_k8_loop(opt: ScOpt) {
     use std::time::Duration;
 
@@ -30,7 +29,7 @@ pub fn main_k8_loop(opt: ScOpt) {
     let is_local = opt.is_local();
     let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
 
-    println!("Starting SC, platform: {}",&*crate::VERSION);
+    println!("Starting SC, platform: {}", &*crate::VERSION);
 
     inspect_system();
 
@@ -38,6 +37,11 @@ pub fn main_k8_loop(opt: ScOpt) {
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
+        if let Err(err) =
+            migration::MigrationController::migrate(k8_client.clone(), namespace.clone()).await
+        {
+            panic!("migration failed: {}", err);
+        }
         let ctx = start_main_loop((sc_config.clone(), auth_policy), k8_client.clone()).await;
 
         if !is_local {
@@ -68,9 +72,8 @@ pub fn main_k8_loop(opt: ScOpt) {
 
 /// print out system information
 fn inspect_system() {
-
     use tracing::info;
-    
+
     use sysinfo::System;
     use sysinfo::SystemExt;
 

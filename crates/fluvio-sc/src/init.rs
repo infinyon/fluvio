@@ -36,7 +36,6 @@ where
     use crate::stores::smartmodule::SmartModuleSpec;
     use crate::stores::derivedstream::DerivedStreamSpec;
 
-
     let (sc_config, auth_policy) = sc_config_policy;
 
     let namespace = sc_config.namespace.clone();
@@ -142,4 +141,3 @@ where
 
     ctx
 }
-
