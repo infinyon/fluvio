@@ -102,6 +102,8 @@ spec:
                           type: integer
                           minimum: 1
                           maximum: 5000
+                        ignoreRackAssignment:
+                          type: boolean
                     assigned:
                       type: array
                       items:
