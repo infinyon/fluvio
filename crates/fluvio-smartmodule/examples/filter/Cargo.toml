@@ -9,4 +9,4 @@ publish = false
 crate-type = ['cdylib']
 
 [dependencies]
-fluvio-smartmodule = { path = "../../", version = "0.1.0" }
+fluvio-smartmodule = { path = "../../" }
