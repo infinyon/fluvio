@@ -124,7 +124,7 @@ spec:
                                   type: integer
                                   minimum: 0
                   oneOf:
-                    - required: ["managed"]
+                    - required: ["computed"]
                     - required: ["assigned"]
                 cleanupPolicy:
                   type: object
