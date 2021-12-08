@@ -26,7 +26,7 @@ use dataplane::core::{Encoder, Decoder};
     serde(rename_all = "camelCase")
 )]
 pub struct TopicSpec {
-    #[serde(flatten)]
+    #[cfg_attr(feature = "use_serde", serde(flatten))]
     inner: TopicSpecInner,
 }
 
