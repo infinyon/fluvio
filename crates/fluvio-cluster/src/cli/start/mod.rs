@@ -165,17 +165,21 @@ impl StartOpt {
         self,
         platform_version: Version,
         upgrade: bool,
-        skip_sys: bool,
+        skip_sys: bool, // only applies to upgrade
     ) -> Result<(), ClusterCliError> {
         use crate::cli::start::local::process_local;
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
         if self.sys {
-            process_sys(self, upgrade)?;
+            process_sys(&self, upgrade)?;
         } else if self.local {
             process_local(self, platform_version).await?;
         } else {
+            // if upgrade and not skip sys, invoke sys
+            if upgrade && !skip_sys {
+                process_sys(&self, upgrade)?;
+            }
             process_k8(self, platform_version, upgrade, skip_sys).await?;
         }
 
