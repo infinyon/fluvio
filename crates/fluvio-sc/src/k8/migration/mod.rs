@@ -27,13 +27,13 @@ impl MigrationController {
             let new_spec: TopicSpec = old_spec.into();
             debug!("new spec: {:#?}", new_spec);
             let input: UpdatedK8Obj<TopicSpec> =
-            UpdatedK8Obj::new(new_spec, old_metadata.clone().into());
+                UpdatedK8Obj::new(new_spec, old_metadata.clone().into());
 
             let topicv2 = self.0.replace_item(input).await?;
             let update_status: UpdateK8ObjStatus<TopicSpec> =
                 UpdateK8ObjStatus::new(old_status, topicv2.metadata.clone().into());
             self.0.update_status(&update_status).await?;
-          //  self.0.delete_item::<TopicSpec, _>(&old_metadata).await?;
+            //  self.0.delete_item::<TopicSpec, _>(&old_metadata).await?;
         }
 
         Ok(())
