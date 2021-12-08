@@ -80,7 +80,7 @@ pub struct ConnectorConfig {
     #[serde(rename = "type")]
     type_: String,
     pub(crate) topic: String,
-    pub(crate) connector_version: Option<String>,
+    pub(crate) version: Option<String>,
     #[serde(default)]
     pub(crate) create_topic: bool,
     #[serde(default)]
@@ -107,7 +107,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             topic: config.topic,
             parameters: config.parameters,
             secrets: config.secrets,
-            connector_version: config.connector_version,
+            version: config.version,
         }
     }
 }
