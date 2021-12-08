@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-spu-schema"
-version = "0.8.6"
-edition = "2018"
+version = "0.9.0"
+edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"
 repository = "https://github.com/infinyon/fluvio"
@@ -23,6 +23,6 @@ serde = { version = "1.0.103", features = ['derive'] }
 static_assertions = "1.1.0"
 
 # Fluvio dependencies
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
-dataplane = { version = "0.8", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
-fluvio-types = { version = "0.2", path = "../fluvio-types" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
+dataplane = { version = "0.9", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
+fluvio-types = { version = "0.3", path = "../fluvio-types" }

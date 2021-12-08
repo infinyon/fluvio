@@ -1,8 +1,8 @@
 [package]
 name = "fluvio-wasm-map-json"
-version = "0.1.0"
+version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 [lib]
