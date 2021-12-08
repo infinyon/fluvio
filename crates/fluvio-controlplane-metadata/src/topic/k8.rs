@@ -46,15 +46,6 @@ impl Default for TopicSpecV1 {
     }
 }
 
-impl Spec for TopicSpecV1 {
-    type Status = TopicStatus;
-    type Header = DefaultHeader;
-
-    fn metadata() -> &'static Crd {
-        &TOPIC_V1_API
-    }
-}
-
 impl Status for TopicStatus {}
 
 impl Spec for TopicSpec {
@@ -83,5 +74,25 @@ impl From<TopicSpecV1> for ReplicaSpec {
                 ReplicaSpec::Computed(topic_replica_param)
             }
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(tag = "type")
+)]
+pub struct TopicV1Wrapper {
+    #[serde(flatten)]
+    pub inner: Option<TopicSpecV1>,
+}
+
+impl Spec for TopicV1Wrapper {
+    type Status = TopicStatus;
+    type Header = DefaultHeader;
+
+    fn metadata() -> &'static Crd {
+        &TOPIC_V1_API
     }
 }
