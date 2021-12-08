@@ -61,10 +61,10 @@ fluvio-controlplane-metadata = { version = "0.13.0", features = [
     "serde",
 ], path = "../fluvio-controlplane-metadata" }
 fluvio-stream-dispatcher = { version = "0.6.6", path = "../fluvio-stream-dispatcher" }
-k8-client = { version = "5.4.0", optional = true }
+k8-client = { version = "5.5.0", optional = true }
 k8-metadata-client = { version = "3.2.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
-k8-types = { version = "0.5.0", features = ["app"] }
+k8-types = { version = "0.5.2", features = ["app"] }
 fluvio-socket = { path = "../fluvio-socket", version = "0.10.0" }
 dataplane = { version = "0.8.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-service = { path = "../fluvio-service", version = "0.0.0" }

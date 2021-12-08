@@ -1,9 +1,8 @@
 use std::sync::Arc;
 
-use k8_client::{ClientError, K8Client};
-use k8_metadata_client::MetadataClient;
+use k8_client::{ClientError, K8Client, meta_client::MetadataClient};
 use fluvio_controlplane_metadata::topic::{TopicSpec, TopicSpecV1};
-use k8_types::{InputK8Obj, UpdateK8ObjStatus};
+use k8_types::{UpdateK8ObjStatus, UpdatedK8Obj};
 use tracing::{info, debug};
 
 /// Migrate old version of CRD to new version
@@ -27,14 +26,14 @@ impl MigrationController {
             debug!("old topic: {:#?}", old_spec);
             let new_spec: TopicSpec = old_spec.into();
             debug!("new spec: {:#?}", new_spec);
-            let input: InputK8Obj<TopicSpec> =
-                InputK8Obj::new(new_spec, old_metadata.clone().into());
+            let input: UpdatedK8Obj<TopicSpec> =
+            UpdatedK8Obj::new(new_spec, old_metadata.clone().into());
 
-            self.0.create_item(input).await?;
+            let topicv2 = self.0.replace_item(input).await?;
             let update_status: UpdateK8ObjStatus<TopicSpec> =
-                UpdateK8ObjStatus::new(old_status, old_metadata.clone().into());
+                UpdateK8ObjStatus::new(old_status, topicv2.metadata.clone().into());
             self.0.update_status(&update_status).await?;
-            self.0.delete_item::<TopicSpec, _>(&old_metadata).await?;
+          //  self.0.delete_item::<TopicSpec, _>(&old_metadata).await?;
         }
 
         Ok(())

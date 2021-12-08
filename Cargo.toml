@@ -37,6 +37,10 @@ members = [
 ]
 resolver = "2"
 
+[patch.crates-io]
+k8-client = {  git = 'https://github.com/infinyon/k8-api.git', rev = "ed6732580c13550dcb990fb9f89a59d475aeddaa" }
+k8-metadata-client = { git = 'https://github.com/infinyon/k8-api.git', rev = "ed6732580c13550dcb990fb9f89a59d475aeddaa" }
+k8-types = { git = 'https://github.com/infinyon/k8-api.git', rev = "ed6732580c13550dcb990fb9f89a59d475aeddaa" }
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
 [profile.dev.package.backtrace]
