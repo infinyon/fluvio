@@ -209,7 +209,7 @@ impl ManagedConnectorDeploymentController {
 
         args.extend(parameters);
 
-        let (image, image_pull_policy) = match mc_spec.connector_version.as_deref() {
+        let (image, image_pull_policy) = match mc_spec.version.as_deref() {
             Some("dev") => (
                 format!("infinyon/fluvio-connect-{}", mc_spec.type_),
                 ImagePullPolicy::Never,
