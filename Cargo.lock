@@ -43,7 +43,7 @@ checksum = "f26201604c87b1e01bd3d98f8d5d9a8fcbb815e8cedb41ffccbeb4bf593a35fe"
 
 [[package]]
 name = "admin"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-std",
  "fluvio",
@@ -511,6 +511,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "block-buffer"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f1d36a02058e76b040de25a4464ba1c80935655595b661505c8b39b664828b95"
+dependencies = [
+ "generic-array 0.14.4",
+]
+
+[[package]]
 name = "block-padding"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -755,7 +764,7 @@ checksum = "245097e9a4535ee1e3e3931fcfcd55a796a44c643e8596ff6566d68f09b87bbc"
 
 [[package]]
 name = "consume"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-std",
  "fluvio",
@@ -1047,6 +1056,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crypto-common"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "567569e659735adb39ff2d4c20600f7cd78be5471f8c58ab162bce3c03fdbc5f"
+dependencies = [
+ "generic-array 0.14.4",
+]
+
+[[package]]
 name = "crypto-mac"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1247,6 +1265,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "digest"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8549e6bfdecd113b7e221fe60b433087f6957387a20f8118ebca9b12af19143d"
+dependencies = [
+ "block-buffer 0.10.0",
+ "crypto-common",
+ "generic-array 0.14.4",
+]
+
+[[package]]
 name = "directories"
 version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1339,7 +1368,7 @@ checksum = "ee2626afccd7561a06cf1367e2950c4718ea04565e20fb5029b6c7d8ad09abcf"
 
 [[package]]
 name = "echo"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-std",
  "fluvio",
@@ -1578,7 +1607,7 @@ dependencies = [
  "sha2",
  "static_assertions",
  "structopt",
- "sysinfo",
+ "sysinfo 0.20.5",
  "tempdir",
  "thiserror",
  "tracing",
@@ -1681,7 +1710,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -1702,7 +1731,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.5.2"
+version = "0.6.0"
 dependencies = [
  "async-trait",
  "fluvio",
@@ -1765,7 +1794,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-package-index"
-version = "0.5.1"
+version = "0.6.0"
 dependencies = [
  "http-types",
  "lazy_static",
@@ -1779,7 +1808,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.6.3"
+version = "0.7.0"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1792,7 +1821,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
  "fluvio-protocol",
  "proc-macro2",
@@ -1854,7 +1883,7 @@ dependencies = [
  "serde",
  "serde_json",
  "structopt",
- "sysinfo",
+ "sysinfo 0.21.1",
  "tokio",
  "tracing",
  "tracing-futures",
@@ -1895,7 +1924,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "flate2",
@@ -1912,7 +1941,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
@@ -1923,7 +1952,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule-derive"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1932,7 +1961,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.10.5"
+version = "0.11.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1993,7 +2022,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
- "sysinfo",
+ "sysinfo 0.20.5",
  "thiserror",
  "tokio",
  "toml",
@@ -2003,7 +2032,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.8.6"
+version = "0.9.0"
 dependencies = [
  "bytes",
  "flate2",
@@ -2044,7 +2073,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.6.6"
+version = "0.7.0"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -2066,7 +2095,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-model"
-version = "0.5.4"
+version = "0.6.0"
 dependencies = [
  "async-rwlock",
  "event-listener",
@@ -2179,7 +2208,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.2.7"
+version = "0.3.0"
 dependencies = [
  "event-listener",
  "fluvio-future",
@@ -3135,13 +3164,11 @@ checksum = "60302e4db3a61da70c0cb7991976248362f30319e88850c487b9b95bbf059e00"
 
 [[package]]
 name = "md-5"
-version = "0.9.1"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b5a279bb9607f9f53c22d496eade00d138d1bdcccd07d74650387cf94942a15"
+checksum = "e6a38fc55c8bbc10058782919516f88826e70320db6d206aebc49611d24216ae"
 dependencies = [
- "block-buffer 0.9.0",
- "digest 0.9.0",
- "opaque-debug 0.3.0",
+ "digest 0.10.0",
 ]
 
 [[package]]
@@ -3715,7 +3742,7 @@ dependencies = [
 
 [[package]]
 name = "produce"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-std",
  "fluvio",
@@ -3731,7 +3758,7 @@ dependencies = [
 
 [[package]]
 name = "produce-key-value"
-version = "0.1.0"
+version = "0.0.0"
 dependencies = [
  "async-std",
  "fluvio",
@@ -4593,6 +4620,21 @@ name = "sysinfo"
 version = "0.20.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e223c65cd36b485a34c2ce6e38efa40777d31c4166d9076030c74cdcf971679f"
+dependencies = [
+ "cfg-if",
+ "core-foundation-sys",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "rayon",
+ "winapi 0.3.9",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb6c2c4a6ca462f07ca89841a2618dca6e405304d19ae238997e64915d89f513"
 dependencies = [
  "cfg-if",
  "core-foundation-sys",

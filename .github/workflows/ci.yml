@@ -727,6 +727,16 @@ jobs:
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+      - name: Build smartmodules for E2E test
+        run: |
+          make build_smartmodules
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
