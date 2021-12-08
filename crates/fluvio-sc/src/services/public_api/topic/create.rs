@@ -101,7 +101,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         );
     }
 
-    match &topic_spec.replicas {
+    match topic_spec.replicas() {
         ReplicaSpec::Computed(param) => {
             let next_state = validate_computed_topic_parameters(param);
             trace!("validating, computed topic: {:#?}", next_state);

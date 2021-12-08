@@ -19,23 +19,64 @@ use dataplane::core::Version;
 use dataplane::bytes::{Buf, BufMut};
 use dataplane::core::{Encoder, Decoder};
 
-#[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
+#[derive(Debug, Clone, PartialEq, Default)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
 pub struct TopicSpec {
-    pub replicas: ReplicaSpec,
-    #[fluvio(min_version = 3)]
-    pub cleanup_policy: Option<CleanupPolicy>,
+    #[serde(flatten)]
+    inner: TopicSpecInner,
 }
 
 impl Deref for TopicSpec {
     type Target = ReplicaSpec;
 
     fn deref(&self) -> &Self::Target {
-        &self.replicas
+        &self.inner.replicas
+    }
+}
+
+impl Encoder for TopicSpec {
+    fn write_size(&self, version: Version) -> usize {
+        // classic topic
+        if version < 3 {
+            self.inner.replicas.write_size(version)
+        } else {
+            self.inner.write_size(version)
+        }
+    }
+
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        // classic topic
+        if version < 3 {
+            self.inner.replicas.encode(dest, version)
+        } else {
+            self.inner.encode(dest, version)
+        }
+    }
+}
+
+impl Decoder for TopicSpec {
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: Buf,
+    {
+        if version < 3 {
+            let mut replicas = ReplicaSpec::default();
+            replicas.decode(src, version)?;
+            self.inner.replicas = replicas;
+        } else {
+            let mut inner = TopicSpecInner::default();
+            inner.decode(src, version)?;
+            self.inner = inner;
+        }
+
+        Ok(())
     }
 }
 
@@ -45,8 +86,10 @@ impl TopicSpec {
         J: Into<PartitionMaps>,
     {
         Self {
-            replicas: ReplicaSpec::new_assigned(partition_map),
-            ..Default::default()
+            inner: TopicSpecInner {
+                replicas: ReplicaSpec::new_assigned(partition_map),
+                ..Default::default()
+            },
         }
     }
 
@@ -56,17 +99,38 @@ impl TopicSpec {
         ignore_rack: Option<IgnoreRackAssignment>,
     ) -> Self {
         Self {
-            replicas: ReplicaSpec::new_computed(partitions, replication, ignore_rack),
-            ..Default::default()
+            inner: TopicSpecInner {
+                replicas: ReplicaSpec::new_computed(partitions, replication, ignore_rack),
+                ..Default::default()
+            },
         }
     }
+
+    #[inline(always)]
+    pub fn replicas(&self) -> &ReplicaSpec {
+        &self.inner.replicas
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub(crate) struct TopicSpecInner {
+    replicas: ReplicaSpec,
+    #[fluvio(min_version = 3)]
+    cleanup_policy: Option<CleanupPolicy>,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
     fn from(replicas: ReplicaSpec) -> Self {
         Self {
-            replicas,
-            ..Default::default()
+            inner: TopicSpecInner {
+                replicas,
+                ..Default::default()
+            },
         }
     }
 }

@@ -172,7 +172,7 @@ impl TopicNextState {
         spu_store: &SpuAdminStore,
         partition_store: &PartitionAdminStore,
     ) -> TopicNextState {
-        match topic.spec().replicas {
+        match topic.spec().replicas() {
             // Computed Topic
             ReplicaSpec::Computed(ref param) => match topic.status.resolution {
                 TopicResolution::Init | TopicResolution::InvalidConfig => {

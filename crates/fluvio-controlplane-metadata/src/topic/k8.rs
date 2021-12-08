@@ -59,10 +59,8 @@ impl Spec for TopicSpec {
 
 impl From<TopicSpecV1> for TopicSpec {
     fn from(v1: TopicSpecV1) -> Self {
-        TopicSpec {
-            replicas: v1.into(),
-            ..Default::default()
-        }
+        let replicas: ReplicaSpec = v1.into();
+        replicas.into()
     }
 }
 
