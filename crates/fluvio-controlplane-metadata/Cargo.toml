@@ -16,7 +16,6 @@ use_serde = ["serde"]
 k8 = ["use_serde", "fluvio-stream-model/k8"]
 
 [dependencies]
-log = "0.4.8"
 tracing = "0.1.19"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"

@@ -1674,7 +1674,6 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
- "log",
  "serde",
  "thiserror",
  "tracing",

@@ -11,7 +11,7 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
-use tracing::trace;
+use tracing::{trace, debug};
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
 
@@ -67,6 +67,7 @@ impl Decoder for TopicSpec {
         T: Buf,
     {
         if version < 3 {
+            debug!("decoding classic TopicSpec");
             let mut replicas = ReplicaSpec::default();
             replicas.decode(src, version)?;
             self.inner.replicas = replicas;
