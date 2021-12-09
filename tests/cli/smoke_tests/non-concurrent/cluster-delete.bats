@@ -81,7 +81,7 @@ setup_file() {
 }
 
 @test "TableFormats deleted" {
-    skip "table-format deletion isn't working: https://github.com/infinyon/fluvio/issues/2004"
+    #skip "table-format deletion isn't working: https://github.com/infinyon/fluvio/issues/2004"
     run kubectl get tableformats
     assert_output 'No resources found in default namespace.'
 }
