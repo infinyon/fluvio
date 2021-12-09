@@ -33,13 +33,8 @@ pub async fn produce_message_with_api(
     offsets: Offsets,
     test_case: SmokeTestCase,
 ) {
-    use std::time::Duration;
-    use fluvio_future::timer::sleep;
-
     let partition = test_case.environment.partition;
-
     let produce_iteration = test_case.option.producer_iteration;
-
     let topic_name = test_case.environment.topic_name();
 
     for r in 0..partition {
@@ -66,7 +61,7 @@ pub async fn produce_message_with_api(
             if i % 100 == 0 {
                 let elapsed_chunk_time = chunk_time.elapsed().clone().unwrap().as_secs_f32();
                 println!(
-                    "total records sent: {} chunk time: {:.1} secs",
+                    "total records sent: {} chunk time: {:.5} secs",
                     i, elapsed_chunk_time
                 );
                 chunk_time = SystemTime::now();
@@ -75,9 +70,8 @@ pub async fn produce_message_with_api(
                 "completed send iter: {}, offset: {},len: {}",
                 topic_name, offset, len
             );
-
-            sleep(Duration::from_millis(10)).await;
         }
+        producer.flush().await.expect("flush");
     }
 }
 

@@ -1,0 +1,18 @@
+use async_channel::RecvError;
+
+use super::record::RecordMetadata;
+
+use crate::producer::PartitionId;
+
+#[derive(thiserror::Error, Debug, Clone)]
+#[non_exhaustive]
+pub enum ProducerError {
+    #[error("the given record is larger than the buffer max_size ({0} bytes)")]
+    RecordTooLarge(usize),
+    #[error("failed to send record metadata: {0}")]
+    SendRecordMetadata(#[from] async_channel::SendError<RecordMetadata>),
+    #[error("failed to get record metadata")]
+    GetRecordMetadata(#[from] Option<RecvError>),
+    #[error("partition: {0} not found")]
+    PartitionNotFound(PartitionId),
+}
