@@ -38,8 +38,9 @@ setup_file() {
 # The rest will be validated by `kubectl`
 @test "No connector pods left in K8 cluster" {
     # CI is kind of slow to terminate the pod, so we just care that no connector pods are running
-    kubectl get po -l app=fluvio-connector --field-selector=status.phase==Running
-    assert_output 'No resources found in default namespace.'
+    run kubectl get po -l app=fluvio-connector --field-selector=status.phase==Running
+    # `kubectl` will still return pods that are in Terminating state
+    refute_output --partial 'Running'
 }
 
 # CRD Resource Deletion checks
