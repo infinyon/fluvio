@@ -1,7 +1,7 @@
 [package]
 name = "fluvio-controlplane"
 version = "0.0.0"
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 description = "Fluvio control plane API"
 authors = ["fluvio.io"]
@@ -17,7 +17,7 @@ log = "0.4.8"
 tracing = "0.1.19"
 
 # Fluvio dependencies
-fluvio-types = { path = "../fluvio-types", version = "0.2.0" }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", version = "0.13.0" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
-dataplane = { version = "0.8", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
+fluvio-types = { path = "../fluvio-types" }
+fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
+fluvio-protocol = { path = "../fluvio-protocol" }
+dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }

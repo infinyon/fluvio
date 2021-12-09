@@ -63,7 +63,6 @@ impl Partitioner for SiphashRoundRobinPartitioner {
 
 fn partition_siphash(key: &[u8], partition_count: i32) -> i32 {
     use std::hash::{Hash, Hasher};
-    use std::convert::TryFrom;
 
     assert!(partition_count >= 0, "Partition must not be less than zero");
     let mut hasher = SipHasher::new();

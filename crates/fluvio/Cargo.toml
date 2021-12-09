@@ -1,7 +1,7 @@
 [package]
 name = "fluvio"
 version = "0.11.0"
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 categories = ["database"]
@@ -44,23 +44,23 @@ async-trait = "0.1.51"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.3.12", features = ["task", "openssl_tls", "task_unstable"] }
-fluvio-types = { version = "0.2.1", features = ["events"], path = "../fluvio-types" }
+fluvio-types = { version = "0.3.0", features = ["events"], path = "../fluvio-types" }
 fluvio-sc-schema = { version = "0.12.0", path = "../fluvio-sc-schema", default-features = false }
-fluvio-socket = { path = "../fluvio-socket", version = "0.10.0" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
-dataplane = { version = "0.8.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
+fluvio-socket = { path = "../fluvio-socket", version = "0.11.0" }
+fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
+dataplane = { version = "0.9.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 dirs = "4.0.0"
-fluvio-smartengine = { path = "../fluvio-smartengine/", optional = true, version = "0.1.0" }
+fluvio-smartengine = { path = "../fluvio-smartengine/", optional = true, version = "0.2.0" }
 
 [target.'cfg(unix)'.dependencies]
-fluvio-spu-schema = { version = "0.8.6", path = "../fluvio-spu-schema", features = ["file"] }
+fluvio-spu-schema = { version = "0.9.0", path = "../fluvio-spu-schema", features = ["file"] }
 [target.'cfg(windows)'.dependencies]
-fluvio-spu-schema = { version = "0.8.6", path = "../fluvio-spu-schema" }
+fluvio-spu-schema = { version = "0.9.0", path = "../fluvio-spu-schema" }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-fluvio-spu-schema = { version = "0.8.6", path = "../fluvio-spu-schema" }
+fluvio-spu-schema = { version = "0.9.0", path = "../fluvio-spu-schema" }
 
 [dev-dependencies]
 async-std = { version = "1.6.4", default-features = false }

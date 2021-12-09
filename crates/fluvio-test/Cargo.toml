@@ -2,7 +2,7 @@
 name = "fluvio-test"
 version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
-edition = "2018"
+edition = "2021"
 autotests = false
 description = "Fluvio Test Utility"
 repository = "https://github.com/infinyon/fluvio"
@@ -18,7 +18,7 @@ structopt = "0.3.5"
 async-trait = "0.1.21"
 syn = { version = "1.0", features = ["full"]}
 rand = "0.8"
-md-5 = "0.9"
+md-5 = "0.10"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.8"
@@ -35,7 +35,7 @@ crossbeam-channel = "0.5"
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }
-fluvio-types = { version = "0.2.0", path = "../fluvio-types" }
+fluvio-types = { path = "../fluvio-types" }
 fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }
 fluvio-command = { version = "0.2.0" }
 fluvio-cluster = { path = "../fluvio-cluster" }

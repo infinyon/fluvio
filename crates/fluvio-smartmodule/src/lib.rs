@@ -3,7 +3,6 @@
 pub use fluvio_dataplane_protocol as dataplane;
 pub use dataplane::record::{Record, RecordData};
 
-#[cfg(feature = "derive")]
 pub use fluvio_smartmodule_derive::{smartmodule, SmartOpt};
 
 pub const ENCODING_ERROR: i32 = -1;
