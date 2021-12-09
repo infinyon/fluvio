@@ -59,14 +59,14 @@ mod output {
         list_smart_streams: Vec<Metadata<DerivedStreamSpec>>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
-        debug!("smart streams: {:#?}", list_smart_streams);
+        debug!("derived streams: {:#?}", list_smart_streams);
 
         if !list_smart_streams.is_empty() {
             let smart_streams = ListDerivedStream(list_smart_streams);
             out.render_list(&smart_streams, output_type)?;
             Ok(())
         } else {
-            t_println!(out, "no smart streams");
+            t_println!(out, "no derived-streams");
             Ok(())
         }
     }
