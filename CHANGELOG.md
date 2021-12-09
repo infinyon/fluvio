@@ -1,7 +1,8 @@
 # Release Notes
 
 ## Platform Version 0.9.15 - UNRELEASED
-*
+* Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
+* TableFormat support for JSON array of objects ([#1967](https://github.com/infinyon/fluvio/issues/1967))
 
 ## Platform Version 0.9.14 - 2021-12-04
 * Add support for tuple structs in fluvio-protocol derived macros. ([#1828](https://github.com/infinyon/fluvio/issues/1828))
