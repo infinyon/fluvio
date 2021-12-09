@@ -9,9 +9,6 @@ keywords = ["streaming", "stream", "wasm", "fluvio"]
 repository = "https://github.com/infinyon/fluvio"
 description = "Fluvio SmartModule WASM library"
 
-[features]
-default = ["derive"]
-derive = ["fluvio-smartmodule-derive"]
 
 [lib]
 crate-type = ['lib']
@@ -19,7 +16,7 @@ crate-type = ['lib']
 [dependencies]
 eyre = { version = "0.6", default-features = false }
 fluvio-dataplane-protocol = { version = "0.9.0", path = "../fluvio-dataplane-protocol", default-features = false }
-fluvio-smartmodule-derive = { version = "0.2.0", path = "../fluvio-smartmodule-derive", optional = true }
+fluvio-smartmodule-derive = { version = "0.2.0", path = "../fluvio-smartmodule-derive" }
 fluvio-spu-schema = { version = "0.9", path = "../fluvio-spu-schema" }
 
 [dev-dependencies]
