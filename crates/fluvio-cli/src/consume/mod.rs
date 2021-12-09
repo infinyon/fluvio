@@ -639,8 +639,6 @@ impl ConsumeOpt {
                 )
                 .bold()
             );
-<<<<<<< HEAD
-=======
         // If --end-offset=X
         } else if let Some(end) = self.end_offset {
             eprintln!(
@@ -651,7 +649,6 @@ impl ConsumeOpt {
                 )
                 .bold()
             );
->>>>>>> 1acd71b6... rephrasing end offset message
         // If no offset config is given, read from the end
         } else {
             eprintln!(
