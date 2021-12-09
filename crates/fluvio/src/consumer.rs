@@ -29,28 +29,7 @@ pub use dataplane::record::ConsumerRecord as Record;
 
 /// An interface for consuming events from a particular partition
 ///
-/// There are two ways to consume events: by "fetching" events
-/// and by "streaming" events. Fetching involves specifying a
-/// range of events that you want to consume via their [`Offset`].
-/// A fetch is a sort of one-time batch operation: you'll receive
-/// all of the events in your range all at once. When you consume
-/// events via Streaming, you specify a starting [`Offset`] and
-/// receive an object that will continuously yield new events as
-/// they arrive.
 ///
-/// # Creating a Consumer
-///
-/// You can create a `PartitionConsumer` via the [`partition_consumer`]
-/// method on the [`Fluvio`] client, like so:
-///
-/// ```
-/// # use fluvio::{Fluvio, Offset, ConsumerConfig, FluvioError};
-/// # async fn example(fluvio: &Fluvio) -> Result<(), FluvioError> {
-/// let consumer = fluvio.partition_consumer("my-topic", 0).await?;
-/// let records = consumer.fetch(Offset::beginning()).await?;
-/// # Ok(())
-/// # }
-/// ```
 ///
 /// [`Offset`]: struct.Offset.html
 /// [`partition_consumer`]: struct.Fluvio.html#method.partition_consumer
