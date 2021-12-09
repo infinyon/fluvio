@@ -215,6 +215,7 @@ cli-platform-cross-version-test:
 
 cli-smoke:
 	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
+	bats ./tests/cli/smoke_tests/non-concurrent/cluster-delete.bats
 
 # test rbac
 #
