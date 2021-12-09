@@ -1478,7 +1478,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1674,7 +1674,6 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
- "log",
  "serde",
  "thiserror",
  "tracing",
@@ -1703,7 +1702,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "async-trait",
  "fluvio",
@@ -1863,7 +1862,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.11.1"
+version = "0.12.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2524,9 +2523,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.7"
+version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7fd819562fcebdac5afc5c113c3ec36f902840b70fd4fc458799c8ce4607ae55"
+checksum = "8d09bbc040ce3758a0d32a8a910562104a853aea429dbe1a998beb065c2eacb2"
 dependencies = [
  "bytes",
  "fnv",
@@ -2889,9 +2888,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "5.4.0"
+version = "5.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9702cde04550bf080add52a38836f1e9b0e203f8a1956e98ac59220bd99c4da6"
+checksum = "f3d8b64d2b3f935a032944175f42286062cbfcaf4871c4ea6e739bbca04ae719"
 dependencies = [
  "async-trait",
  "base64",
@@ -2942,9 +2941,9 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "3.3.0"
+version = "3.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a4a331f7fb753ac50d6d5d3ed5f26f4902849bcd4cc0477387d40af32c129bf"
+checksum = "7e808b58bfcfaca07297ddb40ab8ca9905714413db3f606cea22f327b68c757a"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -2958,9 +2957,9 @@ dependencies = [
 
 [[package]]
 name = "k8-types"
-version = "0.5.1"
+version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "751ac45e0d493bcfdeed2b536a3eb3e818e3ad5e7088dc9e2a4b12d8cf69235a"
+checksum = "0728e18a0784829b97808fc21c667d6ff78e58e8150b75e2d7de90b6d8787bdb"
 dependencies = [
  "serde",
  "serde_json",
@@ -3394,9 +3393,9 @@ checksum = "28988d872ab76095a6e6ac88d99b54fd267702734fd7ffe610ca27f533ddb95a"
 
 [[package]]
 name = "openssl-src"
-version = "300.0.2+3.0.0"
+version = "300.0.3+3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14a760a11390b1a5daf72074d4f6ff1a6e772534ae191f999f57e9ee8146d1fb"
+checksum = "c51ecedef28dcb23c303944dce1d44a9729f3d28d59f39e56f0c847329d1b134"
 dependencies = [
  "cc",
 ]
@@ -4392,9 +4391,9 @@ checksum = "43b2853a4d09f215c24cc5489c992ce46052d359b5109343cbafbf26bc62f8a3"
 
 [[package]]
 name = "signal-hook"
-version = "0.3.11"
+version = "0.3.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5a7a75ea6f4a29c7cd5a752ddcfc5453bd5ed97688db68b50698fd3c82f343a"
+checksum = "c35dfd12afb7828318348b8c408383cf5071a086c1d4ab1c0f9840ec92dbb922"
 dependencies = [
  "libc",
  "signal-hook-registry",

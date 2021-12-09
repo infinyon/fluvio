@@ -8,6 +8,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
+use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::debug;
 use structopt::StructOpt;
@@ -102,9 +103,9 @@ impl CreateTopicOpt {
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
 
-        let topic = if let Some(replica_assign_file) = &self.replica_assignment {
-            TopicSpec::Assigned(
-                PartitionMaps::file_decode(replica_assign_file).map_err(|err| {
+        let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
+            ReplicaSpec::Assigned(PartitionMaps::file_decode(replica_assign_file).map_err(
+                |err| {
                     IoError::new(
                         ErrorKind::InvalidInput,
                         format!(
@@ -112,10 +113,10 @@ impl CreateTopicOpt {
                             replica_assign_file, err
                         ),
                     )
-                })?,
-            )
+                },
+            )?)
         } else {
-            TopicSpec::Computed(TopicReplicaParam {
+            ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
                 replication_factor: self.replication as i32,
                 ignore_rack_assignment: self.ignore_rack_assigment,
@@ -131,7 +132,7 @@ impl CreateTopicOpt {
         }
 
         // return server separately from config
-        Ok((self.topic, topic))
+        Ok((self.topic, replica_spec.into()))
     }
 }
 

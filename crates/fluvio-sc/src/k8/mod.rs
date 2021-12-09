@@ -7,6 +7,7 @@
 
 mod controllers;
 mod objects;
+mod migration;
 
 #[cfg(test)]
 mod fixture;
@@ -14,8 +15,6 @@ mod fixture;
 use k8_client::new_shared;
 
 use crate::cli::ScOpt;
-
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn main_k8_loop(opt: ScOpt) {
     use std::time::Duration;
@@ -30,12 +29,19 @@ pub fn main_k8_loop(opt: ScOpt) {
     let is_local = opt.is_local();
     let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
 
-    println!("starting sc server with k8: {}", VERSION);
+    println!("Starting SC, platform: {}", &*crate::VERSION);
+
+    inspect_system();
 
     run_block_on(async move {
         // init k8 service
         let k8_client = new_shared(k8_config).expect("problem creating k8 client");
         let namespace = sc_config.namespace.clone();
+        if let Err(err) =
+            migration::MigrationController::migrate(k8_client.clone(), &namespace).await
+        {
+            panic!("migration failed: {}", err);
+        }
         let ctx = start_main_loop((sc_config.clone(), auth_policy), k8_client.clone()).await;
 
         if !is_local {
@@ -62,6 +68,26 @@ pub fn main_k8_loop(opt: ScOpt) {
             sleep(Duration::from_secs(60)).await;
         }
     });
+}
+
+/// print out system information
+fn inspect_system() {
+    use tracing::info;
+
+    use sysinfo::System;
+    use sysinfo::SystemExt;
+
+    let mut sys = System::new_all();
+    sys.refresh_all();
+    info!(version = &*crate::VERSION, "Platform");
+    info!(commit = env!("GIT_HASH"), "Git");
+    info!(name = ?sys.name(),"System");
+    info!(kernel = ?sys.kernel_version(),"System");
+    info!(os_version = ?sys.long_os_version(),"System");
+    info!(core_count = ?sys.physical_core_count(),"System");
+    info!(total_memory = sys.total_memory(), "System");
+    info!(available_memory = sys.available_memory(), "System");
+    info!(uptime = sys.uptime(), "Uptime in secs");
 }
 
 mod proxy {

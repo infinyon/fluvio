@@ -72,7 +72,7 @@ k8-config = { version = "1.4.0", optional = true }
 k8-client = { version = "5.4.0", optional = true }
 fluvio-cluster = { version = "0.0.0", path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
 
-fluvio = { version = "0.10.0", path = "../fluvio", default-features = false }
+fluvio = { version = "0.11.0", path = "../fluvio", default-features = false }
 fluvio-socket = { version = "0.10", path = "../fluvio-socket" }
 fluvio-command = { version = "0.2.0" }
 fluvio-package-index = { version = "0.5.0", path = "../fluvio-package-index" }
@@ -83,7 +83,7 @@ k8-types = { version = "0.5.0", features = ["core"] }
 # Optional Fluvio dependencies
 fluvio-types = { version = "0.2.0", path = "../fluvio-types", optional = true }
 fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
-fluvio-sc-schema = { version = "0.11.0", path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
+fluvio-sc-schema = { version = "0.12.0", path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 indicatif = "0.16.2"
 
 [dev-dependencies]

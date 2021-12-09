@@ -12,7 +12,8 @@ spec:
   versions: 
     - name: v1
       served: true
-      storage:  true
+      storage: false
+      deprecated: true
       schema:
         openAPIV3Schema:
           type: object
@@ -57,6 +58,7 @@ spec:
                             items:
                               type: integer
                               minimum: 0
+      
       subresources:
           status: {}
       additionalPrinterColumns:
@@ -72,6 +74,89 @@ spec:
             type: string
             description: Topic Status
             jsonPath: .status.resolution
-
+    - name: v2
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: ["spec"]
+          properties:
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true
+            spec:
+              type: object
+              properties:
+                replicas:
+                  type: object
+                  properties:
+                    computed:
+                      type: object
+                      properties:
+                        partitions:
+                          type: integer
+                          minimum: 1
+                          maximum: 5000
+                        replicationFactor:
+                          type: integer
+                          minimum: 1
+                          maximum: 5000
+                        ignoreRackAssignment:
+                          type: boolean
+                    assigned:
+                      type: array
+                      items:
+                        type: object
+                        required:
+                        - partition
+                        properties:
+                          partition:
+                            type: object
+                            required:
+                            - id
+                            - replicas
+                            properties:
+                              id:
+                                type: integer
+                                minimum: 0
+                              replicas:
+                                type: array
+                                items:
+                                  type: integer
+                                  minimum: 0
+                  oneOf:
+                    - required: ["computed"]
+                    - required: ["assigned"]
+                cleanupPolicy:
+                  type: object
+                  properties:
+                    segment:
+                      type: object
+                      properties:
+                        timeInSeconds:
+                          type: integer
+                          minimum: 3600
+                
+      
+      subresources:
+          status: {}
+      additionalPrinterColumns:
+          - name: Partitions
+            type: integer
+            description: Parition count
+            jsonPath: .spec.replica.managed.partitions
+          - name: Replications
+            type: integer
+            description: Replication Count
+            jsonPath: .spec.replica.managed.replicationFactor
+          - name: Status
+            type: string
+            description: Topic Status
+            jsonPath: .status.resolution
+  conversion:
+    # None conversion assumes the same schema for all versions and only sets the apiVersion
+    # field of custom resources to the proper value
+    strategy: None
                    
 

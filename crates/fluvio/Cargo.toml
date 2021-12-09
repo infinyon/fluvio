@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.10.1"
+version = "0.11.0"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -45,7 +45,7 @@ async-trait = "0.1.51"
 # Fluvio dependencies
 fluvio-future = { version = "0.3.12", features = ["task", "openssl_tls", "task_unstable"] }
 fluvio-types = { version = "0.2.1", features = ["events"], path = "../fluvio-types" }
-fluvio-sc-schema = { version = "0.11.0", path = "../fluvio-sc-schema", default-features = false }
+fluvio-sc-schema = { version = "0.12.0", path = "../fluvio-sc-schema", default-features = false }
 fluvio-socket = { path = "../fluvio-socket", version = "0.10.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
 dataplane = { version = "0.8.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
