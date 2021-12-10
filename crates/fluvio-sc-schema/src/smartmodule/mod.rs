@@ -37,14 +37,13 @@ mod convert {
 
     use super::SmartModuleMetadataSpec;
 
+    /*
     impl AdminSpec for SmartModuleMetadataSpec {
         type ListFilter = NameFilter;
         type WatchResponseType = Self;
         type ListType = Metadata<Self>;
     }
-    impl CreatableAdminSpec for SmartModuleMetadataSpec {
-        const CREATE_TYPE: u8 = 4;
-    }
+    */
     ObjectFrom!(ListRequest, SmartModuleMetadata);
     ObjectFrom!(ListResponse, SmartModuleMetadata);
     ObjectTryFrom!(ListResponse, SmartModuleMetadata);
