@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.15 - UNRELEASED
+## Platform Version 0.9.16 - UNRELEASED
+
+## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
 * TableFormat support for JSON array of objects ([#1967](https://github.com/infinyon/fluvio/issues/1967))
 
