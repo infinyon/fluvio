@@ -45,9 +45,6 @@ mod convert {
     impl CreatableAdminSpec for SmartModuleMetadataSpec {
         const CREATE_TYPE: u8 = 4;
     }
-    //ObjectFrom!(WatchRequest, SmartModuleMetadata);
-    //ObjectFrom!(WatchResponse, SmartModuleMetadata);
-    CreateFrom!(SmartModuleMetadataSpec, SmartModuleMetadata);
     ObjectFrom!(ListRequest, SmartModuleMetadata);
     ObjectFrom!(ListResponse, SmartModuleMetadata);
     ObjectTryFrom!(ListResponse, SmartModuleMetadata);
