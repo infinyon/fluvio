@@ -78,7 +78,6 @@ mod fetch {
     use std::io::{Error, ErrorKind};
 
     use fluvio_controlplane_metadata::core::Spec;
-    use fluvio_controlplane_metadata::store::k8::K8MetaItem;
     use fluvio_protocol::{Decoder, Encoder};
     use fluvio_sc_schema::AdminSpec;
     use fluvio_stream_dispatcher::store::StoreContext;
@@ -86,7 +85,7 @@ mod fetch {
 
     use fluvio_sc_schema::objects::{ListResponse, NameFilter};
     use fluvio_auth::{AuthContext, TypeAction};
-    use fluvio_controlplane_metadata::store::{KeyFilter, MetadataStoreObject};
+    use fluvio_controlplane_metadata::store::{KeyFilter};
     use fluvio_controlplane_metadata::extended::SpecExt;
 
     use crate::services::auth::AuthServiceContext;
@@ -98,10 +97,10 @@ mod fetch {
         object_ctx: &StoreContext<S>,
     ) -> Result<ListResponse<S>, Error>
     where
+        AC: AuthContext,
         S: AdminSpec + SpecExt,
         <S as Spec>::Status: Encoder + Decoder,
         <S as Spec>::IndexKey: AsRef<str>,
-        <S as AdminSpec>::ListType: From<MetadataStoreObject<S, K8MetaItem>>,
     {
         debug!(ty = %S::LABEL,"fetching");
 
@@ -119,14 +118,13 @@ mod fetch {
             return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
         }
 
-        let objects: Vec<<S as AdminSpec>::ListType> = object_ctx
-            .store()
-            .read()
-            .await
+        let reader = object_ctx.store().read().await;
+        let objects: Vec<<S as AdminSpec>::ListType> = reader
             .values()
             .filter_map(|value| {
                 if filters.filter(value.key().as_ref()) {
-                    Some(value.inner().clone().into())
+                    let list_obj: <S as AdminSpec>::ListType = AdminSpec::convert_from(value);
+                    Some(list_obj)
                 } else {
                     None
                 }

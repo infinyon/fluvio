@@ -41,6 +41,7 @@ mod admin {
     use std::fmt::Debug;
 
     use dataplane::core::{Encoder, Decoder};
+    use fluvio_controlplane_metadata::{store::MetadataStoreObject, core::MetadataItem};
 
     use super::core::{Spec};
 
@@ -52,6 +53,9 @@ mod admin {
         type ListFilter: Encoder + Decoder + Sized + Debug;
         type ListType: Encoder + Decoder + Debug;
         type WatchResponseType: Spec + Encoder + Decoder;
+
+        /// convert to list type
+        fn convert_from<C: MetadataItem>(obj: &MetadataStoreObject<Self, C>) -> Self::ListType;
     }
 
     /// Not every Admin Object can be created directly
