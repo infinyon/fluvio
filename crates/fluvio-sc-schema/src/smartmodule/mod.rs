@@ -2,6 +2,8 @@ pub use fluvio_controlplane_metadata::smartmodule::*;
 
 mod convert {
 
+    use fluvio_controlplane_metadata::smartmodule::SmartModuleMetadataSpec;
+
     use crate::{
         AdminSpec, CreatableAdminSpec, DeletableAdminSpec, NameFilter,
         objects::{
@@ -14,7 +16,17 @@ mod convert {
     impl AdminSpec for SmartModuleSpec {
         type ListFilter = NameFilter;
         type WatchResponseType = Self;
-        type ListType = Metadata<Self>;
+        type ListType = Metadata<SmartModuleMetadataSpec>;
+
+        fn convert_from<C: fluvio_controlplane_metadata::core::MetadataItem>(
+            obj: &fluvio_controlplane_metadata::store::MetadataStoreObject<Self, C>,
+        ) -> Self::ListType {
+            Metadata {
+                name: obj.key.to_string(),
+                spec: obj.spec.to_metadata(),
+                status: obj.status.clone(),
+            }
+        }
     }
 
     impl CreatableAdminSpec for SmartModuleSpec {
@@ -34,17 +46,4 @@ mod convert {
 
     ObjectTryFrom!(WatchResponse, SmartModule);
     ObjectTryFrom!(ListResponse, SmartModule);
-
-    use super::SmartModuleMetadataSpec;
-
-    /*
-    impl AdminSpec for SmartModuleMetadataSpec {
-        type ListFilter = NameFilter;
-        type WatchResponseType = Self;
-        type ListType = Metadata<Self>;
-    }
-    */
-    ObjectFrom!(ListRequest, SmartModuleMetadata);
-    ObjectFrom!(ListResponse, SmartModuleMetadata);
-    ObjectTryFrom!(ListResponse, SmartModuleMetadata);
 }

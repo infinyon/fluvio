@@ -1,11 +1,13 @@
 use std::sync::Arc;
+
 use structopt::StructOpt;
-use crate::Result;
-use fluvio::metadata::smartmodule::SmartModuleMetadataSpec;
+
 use fluvio::Fluvio;
+use fluvio_controlplane_metadata::smartmodule::SmartModuleSpec;
+
 use crate::common::output::Terminal;
 use crate::common::OutputFormat;
-
+use crate::Result;
 /// List all existing SmartModules
 #[derive(Debug, StructOpt)]
 pub struct ListSmartModuleOpt {
@@ -16,7 +18,7 @@ pub struct ListSmartModuleOpt {
 impl ListSmartModuleOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let admin = fluvio.admin().await;
-        let lists = admin.list::<SmartModuleMetadataSpec, _>(vec![]).await?;
+        let lists = admin.list::<SmartModuleSpec, _>(vec![]).await?;
         output::smartmodules_response_to_output(out, lists, self.output.format)
     }
 }

@@ -14,6 +14,19 @@ pub struct SmartModuleSpec {
     pub parameters: Option<Vec<SmartModuleParameter>>,
 }
 
+impl SmartModuleSpec {
+    /// convert myself to metadata
+    pub fn to_metadata(&self) -> SmartModuleMetadataSpec {
+        SmartModuleMetadataSpec {
+            input_kind: self.input_kind.clone(),
+            output_kind: self.output_kind.clone(),
+            source_code: self.source_code.clone(),
+            wasm_size: self.wasm.payload.len() as i64,
+            parameters: self.parameters.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SmartModuleMetadataSpec {
@@ -22,18 +35,6 @@ pub struct SmartModuleMetadataSpec {
     pub source_code: Option<SmartModuleSourceCode>,
     pub wasm_size: i64,
     pub parameters: Option<Vec<SmartModuleParameter>>,
-}
-
-impl From<SmartModuleSpec> for SmartModuleMetadataSpec {
-    fn from(spec: SmartModuleSpec) -> Self {
-        Self {
-            input_kind: spec.input_kind,
-            output_kind: spec.output_kind,
-            source_code: spec.source_code,
-            wasm_size: spec.wasm.payload.len() as i64,
-            parameters: spec.parameters,
-        }
-    }
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Encoder, Decoder)]
