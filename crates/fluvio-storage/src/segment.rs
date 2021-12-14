@@ -1,6 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use tracing::{debug, trace, instrument};
 
@@ -252,8 +253,8 @@ impl Segment<LogIndex, FileRecordsSlice> {
         })
     }
 
-    pub fn to_segment_slice(&self) -> SegmentSlice {
-        SegmentSlice::new_segment(self)
+    pub fn to_segment_slice(self: Arc<Self>) -> SegmentSlice<'static> {
+        SegmentSlice::new_segment(self.as_ref())
     }
 }
 

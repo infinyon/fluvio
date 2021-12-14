@@ -1,9 +1,15 @@
 use std::cmp::max;
 use std::cmp::min;
 use std::collections::BTreeMap;
+use std::ops::AddAssign;
 use std::ops::Bound::Included;
 use std::ffi::OsStr;
+use std::sync::Arc;
+use std::sync::atomic::AtomicI64;
 
+use async_lock::RwLock;
+use async_lock::RwLockReadGuard;
+use async_lock::RwLockWriteGuard;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
@@ -16,13 +22,48 @@ use crate::config::ConfigOption;
 use crate::util::log_path_get_offset;
 
 #[derive(Debug)]
-pub(crate) struct SegmentList {
+pub(crate) struct SharedSegments {
+    inner: Arc<RwLock<SegmentList>>,
+    max_offset: AtomicI64,
+    min_offset: AtomicI64,
+}
+
+impl SharedSegments {
+    pub async fn read(&self) -> RwLockReadGuard<'_, SegmentList> {
+        self.inner.read().await
+    }
+
+    pub async fn write(&self) -> RwLockWriteGuard<'_, SegmentList> {
+        self.inner.write().await
+    }
+
+    pub async fn add_segment(&mut self, segment: ReadSegment) {
+        debug!(
+            base_offset = segment.get_base_offset(),
+            end_offset = segment.get_end_offset(),
+            "inserting"
+        );
+        let mut writer = self.write().await;
+        writer.add_segment(segment);
+        self.max_offset
+            .store(writer.max_offset, std::sync::atomic::Ordering::SeqCst);
+        self.min_offset
+            .store(writer.min_offset, std::sync::atomic::Ordering::SeqCst);
+    }
+}
+
+#[derive(Debug)]
+struct SegmentList {
     segments: BTreeMap<Offset, ReadSegment>, // max base offset of all segments
     min_offset: Offset,
     max_offset: Offset,
 }
 
 impl SegmentList {
+    pub fn shared() -> Arc<RwLock<Self>> {
+        Arc::new(RwLock::new(Self::new()))
+    }
+
     pub fn new() -> Self {
         SegmentList {
             segments: BTreeMap::new(),
@@ -88,7 +129,7 @@ impl SegmentList {
         self.min_offset
     }
 
-    pub fn add_segment(&mut self, segment: ReadSegment) {
+    fn add_segment(&mut self, segment: ReadSegment) {
         debug!(
             base_offset = segment.get_base_offset(),
             end_offset = segment.get_end_offset(),
@@ -104,7 +145,7 @@ impl SegmentList {
     }
 
     #[allow(dead_code)]
-    pub fn get_segment(&self, offset: Offset) -> Option<&ReadSegment> {
+    fn get_segment(&self, offset: Offset) -> Option<&ReadSegment> {
         self.segments.get(&offset)
     }
 

@@ -10,7 +10,7 @@ use dataplane::batch::Batch;
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
-use crate::segments::SegmentList;
+use crate::segments::{SegmentList, SharedSegments};
 use crate::segment::MutableSegment;
 use crate::config::ConfigOption;
 use crate::{SegmentSlice};
@@ -27,7 +27,7 @@ pub struct FileReplica {
     partition: Size,
     option: ConfigOption,
     active_segment: MutableSegment,
-    prev_segments: SegmentList,
+    prev_segments: SharedSegments,
     commit_checkpoint: CheckPoint<Offset>,
 }
 
@@ -234,7 +234,7 @@ impl FileReplica {
     /// segment could be active segment which can be written
     /// or read only segment.
     #[instrument(skip(self))]
-    pub(crate) fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
+    pub(crate) async fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
         let active_base_offset = self.active_segment.get_base_offset();
         if offset >= active_base_offset {
             debug!(active_base_offset, "is in active segment");
@@ -244,6 +244,7 @@ impl FileReplica {
             debug!("segments: {:#?}", self.prev_segments);
             self.prev_segments
                 .find_segment(offset)
+                .await
                 .map(|(_, segment)| segment.to_segment_slice())
         }
     }
@@ -287,7 +288,7 @@ impl FileReplica {
         response.set_hw(hw);
         response.set_log_start_offset(self.get_log_start_offset());
 
-        match self.find_segment(start_offset) {
+        match self.find_segment(start_offset).await {
             Some(segment) => {
                 let slice = match segment {
                     SegmentSlice::MutableSegment(segment) => {
@@ -342,7 +343,7 @@ impl FileReplica {
                             response.set_slice(limited_slice);
                         }
                         None => {
-                            debug!("records not found for: {}", start_offset);
+                            debug!(start_offset, "records not found");
                             response.set_error_code(ErrorCode::OffsetOutOfRange);
                         }
                     },
@@ -354,7 +355,7 @@ impl FileReplica {
             }
             None => {
                 response.set_error_code(ErrorCode::OffsetOutOfRange);
-                debug!("segment not found for offset: {}", start_offset);
+                debug!(start_offset, "segment not found for offset");
             }
         }
 

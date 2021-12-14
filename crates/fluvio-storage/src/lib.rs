@@ -11,7 +11,6 @@ mod replica;
 pub mod segment;
 mod util;
 mod validator;
-mod cleanup;
 pub mod config;
 
 #[cfg(feature = "fixture")]
