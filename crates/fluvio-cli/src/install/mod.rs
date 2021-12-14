@@ -4,7 +4,9 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
+use crate::cli_config::CliChannelName;
 use crate::{Result, CliError};
+use super::cli_config::FluvioChannelConfig;
 
 pub mod update;
 pub mod plugins;
@@ -31,8 +33,31 @@ fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf> {
 }
 
 pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf> {
+    // Check on channel
+    let channel_config_path = FluvioChannelConfig::default_config_location();
+
+    let channel = if FluvioChannelConfig::exists(&channel_config_path) {
+        FluvioChannelConfig::from_file(channel_config_path)?
+    } else {
+        // Default to stable channel behavior
+        FluvioChannelConfig::default()
+    };
+
+
     let base_dir = fluvio_base_dir()?;
-    let path = base_dir.join("extensions");
+
+    // TODO: Check channel
+    // Open and load channel config
+    // if channel.current_channel == CliChannelName::Stable {
+    let path = if channel.current_channel() == CliChannelName::Stable {
+        base_dir.join("extensions")
+    }
+    //else if channel.current_channel() == CliChannelName::Dev {
+    else {
+        base_dir.join("extensions-dev")
+    };
+
+    //}
 
     if !path.exists() {
         std::fs::create_dir(&path)?;

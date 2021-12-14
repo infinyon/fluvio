@@ -6,6 +6,7 @@ mod http;
 mod error;
 mod install;
 mod profile;
+pub mod cli_config;
 mod version;
 mod metadata;
 mod topic;
@@ -48,6 +49,7 @@ mod root {
     use crate::produce::ProduceOpt;
     use crate::partition::PartitionCmd;
     use crate::profile::ProfileOpt;
+    use crate::cli_config::CliConfigOpt;
     use crate::install::update::UpdateOpt;
     use crate::install::plugins::InstallOpt;
     use crate::metadata::{MetadataOpt, subcommand_metadata};
@@ -100,6 +102,10 @@ mod root {
         #[structopt(flatten)]
         #[cfg(feature = "consumer")]
         Fluvio(FluvioCmd),
+
+        /// Manage Fluvio CLI config
+        #[structopt(name = "config")]
+        Config(CliConfigOpt),
 
         /// Manage Profiles, which describe linked clusters
         ///
@@ -184,6 +190,9 @@ mod root {
                 }
                 Self::Profile(profile) => {
                     profile.process(out).await?;
+                }
+                Self::Config(cli_config) => {
+                    cli_config.process()?;
                 }
                 #[cfg(feature = "k8s")]
                 Self::Cluster(cluster) => {
