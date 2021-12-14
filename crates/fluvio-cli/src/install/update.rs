@@ -4,6 +4,7 @@ use tracing::{debug, instrument};
 
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
+use crate::cli_config::{CliChannelName, FluvioChannelConfig};
 use crate::{Result, CliError};
 use crate::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
@@ -163,17 +164,23 @@ pub async fn check_update_required(agent: &HttpAgent) -> Result<bool> {
 )]
 pub async fn check_update_available(
     agent: &HttpAgent,
-    prerelease: bool,
+    channel: &FluvioChannelConfig,
 ) -> Result<Option<Version>> {
     let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
+    let prerelease_flag = if channel.current_channel() == CliChannelName::Stable {
+        false
+    } else {
+        true
+    };
+
     let request = agent.request_package(&id)?;
     let response = crate::http::execute(request).await?;
     let package = agent.package_from_response(response).await?;
 
-    let release = package.latest_release_for_target(&target, prerelease)?;
+    let release = package.latest_release_for_target(&target, prerelease_flag)?;
     let latest_version = release.version.clone();
     let current_version =
         Version::parse(&*crate::VERSION).expect("Fluvio CLI 'VERSION' should be a valid semver");
@@ -190,11 +197,18 @@ pub async fn check_update_available(
     skip(agent),
     fields(prefix = agent.base_url())
 )]
-pub async fn prompt_required_update(agent: &HttpAgent) -> Result<()> {
+pub async fn prompt_required_update(agent: &HttpAgent, channel: &FluvioChannelConfig) -> Result<()> {
     let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
+
+    let prerelease_flag = if channel.current_channel() == CliChannelName::Stable {
+        false
+    } else {
+        true
+    };
+
     debug!(%target, %id, "Fetching latest package version:");
-    let latest_version = fetch_latest_version(agent, &id, &target, false).await?;
+    let latest_version = fetch_latest_version(agent, &id, &target, prerelease_flag).await?;
 
     println!("⚠️ A major update to Fluvio has been detected!");
     println!("⚠️ You must complete this update before using any 'install' command");

@@ -3,6 +3,8 @@ use crate::Error;
 
 /// Represents names that may be used for Tags
 ///
+/// Example tags: stable, latest
+/// 
 /// This includes any ascii string that does not contain a `/`
 #[derive(Debug, Clone, PartialEq)]
 pub struct TagName(String);

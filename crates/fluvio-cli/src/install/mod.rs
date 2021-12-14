@@ -4,9 +4,8 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
-use crate::cli_config::CliChannelName;
+use crate::cli_config::{CliChannelName,FluvioChannelConfig};
 use crate::{Result, CliError};
-use super::cli_config::FluvioChannelConfig;
 
 pub mod update;
 pub mod plugins;

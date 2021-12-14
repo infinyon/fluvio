@@ -1,5 +1,6 @@
 use structopt::StructOpt;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
+use crate::cli_config::{CliChannelName, FluvioChannelConfig};
 
 use crate::{Result, CliError};
 use crate::install::{
@@ -30,15 +31,27 @@ impl InstallOpt {
             None => HttpAgent::default(),
         };
 
+        // Check on channel
+        let channel_config_path = FluvioChannelConfig::default_config_location();
+
+        let channel_config = if FluvioChannelConfig::exists(&channel_config_path) {
+            FluvioChannelConfig::from_file(channel_config_path)?
+        } else {
+            // Default to stable channel behavior
+            FluvioChannelConfig::default()
+        };
+
+
+
         // Before any "install" type command, check if the CLI needs updating.
         // This may be the case if the index schema has updated.
         let require_update = check_update_required(&agent).await?;
         if require_update {
-            prompt_required_update(&agent).await?;
+            prompt_required_update(&agent, &channel_config).await?;
             return Ok(());
         }
 
-        let result = self.install_plugin(&agent).await;
+        let result = self.install_plugin(&agent, &channel_config).await;
         match result {
             Ok(_) => (),
             Err(crate::CliError::IndexError(fluvio_index::Error::MissingTarget(target))) => {
@@ -59,14 +72,21 @@ impl InstallOpt {
 
         // After any "install" command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
-        let update_result = check_update_available(&agent, false).await;
+        let update_result = check_update_available(&agent, &channel_config).await;
         if let Ok(Some(latest_version)) = update_result {
             prompt_available_update(&latest_version);
         }
         Ok(())
     }
 
-    async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
+    async fn install_plugin(&self, agent: &HttpAgent, channel: &FluvioChannelConfig) -> Result<()> {
+
+        let prerelease_flag = if channel.current_channel() == CliChannelName::Stable {
+            false
+        } else {
+            true
+        };
+
         let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
@@ -82,7 +102,7 @@ impl InstallOpt {
             None => {
                 let id = &self.package;
                 install_println(format!("🎣 Fetching latest version for package: {}...", id));
-                let version = fetch_latest_version(agent, id, &target, self.develop).await?;
+                let version = fetch_latest_version(agent, id, &target, prerelease_flag).await?;
                 let id = id.clone().into_versioned(version.into());
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
