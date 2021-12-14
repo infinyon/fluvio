@@ -1,7 +1,7 @@
 use std::mem;
 
 use fluvio_protocol::Encoder;
-use tracing::{debug, trace, error, warn, instrument};
+use tracing::{debug, trace, error, warn, instrument, info};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
@@ -10,7 +10,7 @@ use dataplane::batch::Batch;
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
-use crate::range_map::SegmentList;
+use crate::segments::SegmentList;
 use crate::segment::MutableSegment;
 use crate::config::ConfigOption;
 use crate::{SegmentSlice};
@@ -174,26 +174,25 @@ impl FileReplica {
     {
         let replica_dir = option.base_dir.join(replica_dir_name(topic, partition));
 
-        debug!("creating rep dir: {}", replica_dir.display());
+        info!("creating rep dir: {}", replica_dir.display());
         create_dir_all(&replica_dir).await?; // ensure dir_name exits
 
         let mut rep_option = option.clone();
         rep_option.base_dir = replica_dir;
-        // create active segment
 
         let (segments, last_offset_res) = SegmentList::from_dir(&rep_option).await?;
 
         let active_segment = if let Some(last_offset) = last_offset_res {
-            trace!("last segment found, validating offsets: {}", last_offset);
+            debug!(last_offset, "last segment found, validating offsets");
             let mut last_segment = MutableSegment::open_for_write(last_offset, &rep_option).await?;
             last_segment.validate().await?;
-            debug!(
+            info!(
                 end_offset = last_segment.get_end_offset(),
-                "segment validated with last offset",
+                "existing segment validated with last offset",
             );
             last_segment
         } else {
-            debug!("no segment found, creating new one");
+            info!("no existing segment found, creating new one");
             MutableSegment::create(base_offset, &rep_option).await?
         };
 
@@ -219,7 +218,7 @@ impl FileReplica {
             .base_dir
             .join(replica_dir_name(&replica.topic, replica.partition as u32));
 
-        debug!("removing dir: {}", replica_dir.display());
+        info!("removing dir: {}", replica_dir.display());
         if let Err(err) = remove_dir_all(&replica_dir).await {
             warn!("error trying to remove: {:#?}, err: {}", replica_dir, err);
         }

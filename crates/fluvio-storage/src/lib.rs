@@ -6,11 +6,12 @@ mod records;
 mod index;
 mod mut_records;
 mod mut_index;
-mod range_map;
+mod segments;
 mod replica;
 pub mod segment;
 mod util;
 mod validator;
+mod cleanup;
 pub mod config;
 
 #[cfg(feature = "fixture")]
