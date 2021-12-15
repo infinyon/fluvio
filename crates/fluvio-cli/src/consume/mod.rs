@@ -659,6 +659,16 @@ impl ConsumeOpt {
                 )
                 .bold()
             );
+        // If --end-offset=X
+        } else if let Some(end) = self.end_offset {
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records starting from the end until record {} in topic '{}'",
+                    end, &self.topic
+                )
+                .bold()
+            );
         // If no offset config is given, read from the end
         } else {
             eprintln!(
