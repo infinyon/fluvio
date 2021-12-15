@@ -109,6 +109,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "T", long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
     pub tail: Option<Option<u32>>,
 
+    /// Consume records until end offset
+    #[structopt(long, value_name= "integer", conflicts_with_all = &["tail"])]
+    pub end_offset: Option<i64>,
+
     /// Maximum number of bytes to be retrieved
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
     pub max_bytes: Option<i32>,
