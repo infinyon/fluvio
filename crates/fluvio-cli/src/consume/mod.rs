@@ -458,6 +458,13 @@ impl ConsumeOpt {
                                 &mut maybe_terminal_stdout,
                                 &mut maybe_table_model,
                             );
+
+                            if let Some(potential_offset) = maybe_potential_offset {
+                                if record.offset >= potential_offset {
+                                    eprintln!("End-offset has been reached; exiting");
+                                    break;
+                                }
+                            }
                         },
                         None => break,
                     },
