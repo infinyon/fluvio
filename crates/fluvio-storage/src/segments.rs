@@ -31,6 +31,8 @@ pub(crate) struct SharedSegments {
 }
 
 impl SharedSegments {
+
+
     pub async fn read(&self) -> RwLockReadGuard<'_, SegmentList> {
         self.inner.read().await
     }

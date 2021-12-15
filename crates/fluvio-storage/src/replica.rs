@@ -312,7 +312,7 @@ impl FileReplica {
             let new_segment = MutableSegment::create(last_offset, &self.option).await?;
             let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
             let old_segment = old_mut_segment.as_segment().await?;
-            self.prev_segments.add_segment(old_segment);
+            self.prev_segments.add_segment(old_segment).await;
             self.active_segment.write_batch(item).await?;
         }
         Ok(())
@@ -416,14 +416,15 @@ mod tests {
         assert_eq!(batch.get_header().last_offset_delta, 1);
         assert_eq!(batch.records().len(), 2);
 
+        
         // there should not be any segment for offset 0 since base offset is 20
-        let segment = replica.find_segment(0);
+        let segment = replica.read_records(0,None,1000).await;
         assert!(segment.is_none());
 
         // segment with offset 20 should be active segment
-        assert!(replica.find_segment(20).unwrap().is_active());
-        assert!(replica.find_segment(21).unwrap().is_active());
-        assert!(replica.find_segment(30).is_some()); // any higher offset should result in current segment
+        assert!(prev_segments.find_segment(20).unwrap().is_active());
+        assert!(prev_segments.find_segment(21).unwrap().is_active());
+        assert!(prev_segments.find_segment(30).is_some()); // any higher offset should result in current segment
     }
 
     const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
