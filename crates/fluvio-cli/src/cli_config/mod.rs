@@ -322,12 +322,7 @@ impl CliConfigOpt {
         let config = if let Some(channel) = self.set_channel {
             // Change channel
             // Check if config knows about the channel first
-            let mut new_config = if config
-                .config
-                .channel
-                .get(&channel.to_string())
-                .is_some()
-            {
+            let mut new_config = if config.config.channel.get(&channel.to_string()).is_some() {
                 //println!("Found");
                 config
             } else {
