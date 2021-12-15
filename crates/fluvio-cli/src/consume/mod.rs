@@ -509,6 +509,13 @@ impl ConsumeOpt {
                     &mut None,
                     &mut None,
                 );
+
+                if let Some(potential_offset) = maybe_potential_offset {
+                    if record.offset >= potential_offset {
+                        eprintln!("End-offset has been reached; exiting");
+                        break;
+                    }
+                }
             }
         }
 
