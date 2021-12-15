@@ -3,7 +3,7 @@ use std::mem;
 
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_protocol::Encoder;
-use tracing::{debug, trace, error, warn, instrument, info};
+use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
@@ -15,8 +15,8 @@ use crate::{OffsetInfo, checkpoint::CheckPoint};
 use crate::segments::{SegmentList, SharedSegments};
 use crate::segment::MutableSegment;
 use crate::config::ConfigOption;
-use crate::{SegmentSlice, ReplicaSlice};
-use crate::{StorageError, SlicePartitionResponse, ReplicaStorage};
+use crate::{ReplicaSlice};
+use crate::{StorageError, ReplicaStorage};
 
 /// Replica is public abstraction for commit log which are distributed.
 /// Internally it is stored as list of segments.  Each segment contains finite sets of record batches.
@@ -69,26 +69,19 @@ impl ReplicaStorage for FileReplica {
 
     /// read partition slice
     /// return leo, hw
-    #[instrument(skip(self, offset, max_len, isolation, partition_response))]
-    async fn read_partition_slice<P>(
+    #[instrument(skip(self, offset, max_len, isolation))]
+    async fn read_partition_slice(
         &self,
         offset: Offset,
         max_len: u32,
         isolation: Isolation,
-        partition_response: &mut P,
-    ) -> OffsetInfo
-    where
-        P: SlicePartitionResponse + Send,
-    {
+    ) -> Result<ReplicaSlice, ErrorCode> {
         match isolation {
             Isolation::ReadCommitted => {
-                self.read_records(offset, Some(self.get_hw()), max_len, partition_response)
+                self.read_records(offset, Some(self.get_hw()), max_len)
                     .await
             }
-            Isolation::ReadUncommitted => {
-                self.read_records(offset, None, max_len, partition_response)
-                    .await
-            }
+            Isolation::ReadUncommitted => self.read_records(offset, None, max_len).await,
         }
     }
 
@@ -210,7 +203,7 @@ impl FileReplica {
             last_base_offset,
             partition,
             active_segment,
-            prev_segments: segments,
+            prev_segments: segments.as_shared(),
             commit_checkpoint,
         })
     }
@@ -234,38 +227,14 @@ impl FileReplica {
         self.update_high_watermark(self.get_leo()).await
     }
 
-    /// find the segment that contains offsets
-    /// segment could be active segment which can be written
-    /// or read only segment.
-    #[instrument(skip(self))]
-    pub(crate) fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
-        let active_base_offset = self.active_segment.get_base_offset();
-        if offset >= active_base_offset {
-            debug!(active_base_offset, "is in active segment");
-            Some(self.active_segment.to_segment_slice())
-        } else {
-            debug!(offset, active_base_offset, "not in segment");
-            debug!("segments: {:#?}", self.prev_segments);
-            self.prev_segments
-                .find_segment(offset)
-                .await
-                .map(|(_, segment)| segment.to_segment_slice())
-        }
-    }
-
     /// read all uncommitted records
     #[allow(unused)]
-    #[instrument(skip(self, max_len, response))]
+    #[instrument(skip(self, max_len))]
     pub async fn read_all_uncommitted_records<P>(
         &self,
         max_len: u32,
-        response: &mut P,
-    ) -> OffsetInfo
-    where
-        P: SlicePartitionResponse,
-    {
-        self.read_records(self.get_hw(), None, max_len, response)
-            .await
+    ) -> Result<ReplicaSlice, ErrorCode> {
+        self.read_records(self.get_hw(), None, max_len).await
     }
 
     /// read record slice into response
@@ -274,13 +243,12 @@ impl FileReplica {
     /// * `responsive`:  output
     /// * `max_len`:  max length of the slice
     //  return leo, hw
-    #[instrument(skip(self, response))]
-    async fn read_records<P>(
+    #[instrument(skip(self))]
+    async fn read_records(
         &self,
         start_offset: Offset,
         max_offset: Option<Offset>,
         max_len: u32,
-        response: &mut P,
     ) -> Result<ReplicaSlice, ErrorCode> {
         let hw = self.get_hw();
         let leo = self.get_leo();
@@ -295,7 +263,7 @@ impl FileReplica {
         let active_base_offset = self.active_segment.get_base_offset();
         let file_slice = if start_offset >= active_base_offset {
             debug!(start_offset, active_base_offset, "is in active segment");
-            if start_offset = leo {
+            if start_offset == leo {
                 trace!("start offset is same as end offset, skipping");
                 return Ok(slice);
             } else if start_offset > leo {
@@ -325,20 +293,13 @@ impl FileReplica {
         );
 
         debug!(
-            "retrieved record slice fd: {}, position: {}, len: {}",
-            slice.fd(),
-            slice.position(),
-            slice.len()
-        );
-
-        debug!(
             fd = limited_slice.fd(),
             pos = limited_slice.position(),
             len = limited_slice.len(),
             "retrieved slice",
         );
 
-        slice.file_slice = limited_slice;
+        slice.file_slice = Some(limited_slice);
         Ok(slice)
     }
 
@@ -384,7 +345,7 @@ mod tests {
     use flv_util::fixture::ensure_clean_dir;
 
     use crate::config::ConfigOption;
-    use crate::{SegmentSlice, StorageError};
+    use crate::{StorageError};
     use crate::ReplicaStorage;
 
     use super::FileReplica;

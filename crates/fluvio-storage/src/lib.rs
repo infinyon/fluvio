@@ -21,7 +21,7 @@ pub use crate::records::FileRecordsSlice;
 pub use crate::index::LogIndex;
 pub use crate::index::OffsetPosition;
 pub use crate::replica::FileReplica;
-pub use crate::segment::SegmentSlice;
+
 pub use inner::*;
 mod inner {
     use async_trait::async_trait;
@@ -166,13 +166,12 @@ mod inner {
 
         /// read partition slice
         /// return hw and leo
-        async fn read_partition_slice<P>(
+        async fn read_partition_slice(
             &self,
             offset: Offset,
             max_len: u32,
             isolation: Isolation,
-            partition_response: &mut P,
-        ) -> ReplicaSlice;
+        ) -> Result<ReplicaSlice, ErrorCode>;
 
         /// write record set
         async fn write_recordset(

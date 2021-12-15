@@ -39,6 +39,10 @@ impl SharedSegments {
         self.inner.write().await
     }
 
+    pub fn min_offset(&self) -> Offset {
+        self.min_offset.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
     pub async fn add_segment(&mut self, segment: ReadSegment) {
         debug!(
             base_offset = segment.get_base_offset(),
@@ -53,11 +57,14 @@ impl SharedSegments {
             .store(writer.min_offset, std::sync::atomic::Ordering::SeqCst);
     }
 
-
-    pub async fn find_slice(&self, start_offset: Offset,max_offset: Option<Offset>) -> Result<AsyncFileSlice, StorageError> {
+    pub async fn find_slice(
+        &self,
+        start_offset: Offset,
+        max_offset: Option<Offset>,
+    ) -> Result<AsyncFileSlice, ErrorCode> {
         let reader = self.read().await;
-        if let Some(segment) = reader.find_segment(start_offset) {
-            if let Some(slice) = segment.records_slice(start_offset,max_offset).await {
+        if let Some((_offset, segment)) = reader.find_segment(start_offset) {
+            if let Some(slice) = segment.records_slice(start_offset, max_offset).await? {
                 Ok(slice)
             } else {
                 Err(ErrorCode::OffsetOutOfRange)
@@ -66,27 +73,31 @@ impl SharedSegments {
             Err(ErrorCode::OffsetOutOfRange)
         }
     }
-
-
 }
 
 #[derive(Debug)]
-struct SegmentList {
+pub(crate) struct SegmentList {
     segments: BTreeMap<Offset, ReadSegment>, // max base offset of all segments
     min_offset: Offset,
     max_offset: Offset,
 }
 
 impl SegmentList {
-    pub fn shared() -> Arc<RwLock<Self>> {
-        Arc::new(RwLock::new(Self::new()))
-    }
-
     pub fn new() -> Self {
         SegmentList {
             segments: BTreeMap::new(),
             max_offset: 0,
             min_offset: -1,
+        }
+    }
+
+    pub fn as_shared(self) -> SharedSegments {
+        let min = self.min_offset;
+        let max = self.max_offset;
+        SharedSegments {
+            inner: Arc::new(RwLock::new(self)),
+            max_offset: AtomicI64::new(min),
+            min_offset: AtomicI64::new(max),
         }
     }
 
