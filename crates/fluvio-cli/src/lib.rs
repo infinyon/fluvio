@@ -77,12 +77,18 @@ mod root {
             self.command.process(self.opts).await?;
             Ok(())
         }
+
+        pub fn skip_channel_check(&self) -> bool {
+            self.opts.skip_channel_check
+        }
     }
 
     #[derive(StructOpt, Debug)]
     struct RootOpt {
         #[structopt(flatten)]
         target: ClusterTarget,
+        #[structopt(long)]
+        skip_channel_check: bool,
     }
 
     #[derive(Debug, StructOpt)]

@@ -57,7 +57,7 @@ impl FluvioChannelConfig {
             config: channel_config,
         };
 
-        println!("Config from file: {:#?}", &config);
+        debug!("Config from file: {:#?}", &config);
 
         Ok(config)
     }
@@ -204,6 +204,42 @@ impl FluvioChannelInfo {
         }
     }
     fn developer_channel() -> Self {
+        Self {
+            binary_location: PathBuf::default(),
+            extensions: PathBuf::default(),
+        }
+        //let mut binary_location;
+
+        //let mut extensions;
+        //if let Some(home_dir) = home_dir() {
+        //    binary_location = home_dir.clone();
+        //    extensions = home_dir.clone();
+
+        //    binary_location.push(CLI_CONFIG_PATH);
+        //    binary_location.push("bin");
+        //    binary_location.push("fluvio-dev");
+
+        //    extensions.push(CLI_CONFIG_PATH);
+        //    extensions.push("extensions-dev");
+        //} else {
+        //    // No home directory
+        //    binary_location = PathBuf::default();
+        //    extensions = PathBuf::default();
+
+        //    binary_location.push(CLI_CONFIG_PATH);
+        //    binary_location.push("bin");
+        //    binary_location.push("fluvio-dev");
+
+        //    extensions.push(CLI_CONFIG_PATH);
+        //    extensions.push("extensions-dev");
+        //}
+
+        //Self {
+        //    binary_location,
+        //    extensions,
+        //}
+    }
+    fn latest_channel() -> Self {
         let mut binary_location;
 
         let mut extensions;
@@ -213,10 +249,10 @@ impl FluvioChannelInfo {
 
             binary_location.push(CLI_CONFIG_PATH);
             binary_location.push("bin");
-            binary_location.push("fluvio-dev");
+            binary_location.push("fluvio-latest");
 
             extensions.push(CLI_CONFIG_PATH);
-            extensions.push("extensions-dev");
+            extensions.push("extensions-latest");
         } else {
             // No home directory
             binary_location = PathBuf::default();
@@ -224,10 +260,10 @@ impl FluvioChannelInfo {
 
             binary_location.push(CLI_CONFIG_PATH);
             binary_location.push("bin");
-            binary_location.push("fluvio-dev");
+            binary_location.push("fluvio-latest");
 
             extensions.push(CLI_CONFIG_PATH);
-            extensions.push("extensions-dev");
+            extensions.push("extensions-latest");
         }
 
         Self {
@@ -255,8 +291,8 @@ arg_enum! {
     #[structopt(rename_all = "kebab-case")]
     pub enum CliChannelName {
         Stable,
-        // TODO: Add channel: Latest
-        Dev, // TODO: This might be used for actual development
+        Latest,
+        Dev,
     }
 }
 
@@ -309,6 +345,12 @@ impl CliConfigOpt {
                         .config
                         .channel
                         .insert("stable".to_string(), FluvioChannelInfo::stable_channel());
+                    new_config_channel
+                        .config
+                        .channel
+                        .insert("latest".to_string(), FluvioChannelInfo::latest_channel());
+                    
+                    // I'm not sure we need this?
                     new_config_channel
                         .config
                         .channel
