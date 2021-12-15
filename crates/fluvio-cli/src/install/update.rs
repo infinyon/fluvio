@@ -170,11 +170,7 @@ pub async fn check_update_available(
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
-    let prerelease_flag = if channel.current_channel() == CliChannelName::Stable {
-        false
-    } else {
-        true
-    };
+    let prerelease_flag = !(channel.current_channel() == CliChannelName::Stable);
 
     let request = agent.request_package(&id)?;
     let response = crate::http::execute(request).await?;
@@ -197,15 +193,14 @@ pub async fn check_update_available(
     skip(agent),
     fields(prefix = agent.base_url())
 )]
-pub async fn prompt_required_update(agent: &HttpAgent, channel: &FluvioChannelConfig) -> Result<()> {
+pub async fn prompt_required_update(
+    agent: &HttpAgent,
+    channel: &FluvioChannelConfig,
+) -> Result<()> {
     let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
 
-    let prerelease_flag = if channel.current_channel() == CliChannelName::Stable {
-        false
-    } else {
-        true
-    };
+    let prerelease_flag = !(channel.current_channel() == CliChannelName::Stable);
 
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, &target, prerelease_flag).await?;

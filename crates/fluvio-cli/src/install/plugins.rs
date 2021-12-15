@@ -36,8 +36,6 @@ impl InstallOpt {
             FluvioChannelConfig::default()
         };
 
-
-
         // Before any "install" type command, check if the CLI needs updating.
         // This may be the case if the index schema has updated.
         let require_update = check_update_required(&agent).await?;
@@ -75,12 +73,7 @@ impl InstallOpt {
     }
 
     async fn install_plugin(&self, agent: &HttpAgent, channel: &FluvioChannelConfig) -> Result<()> {
-
-        let prerelease_flag = if channel.current_channel() == CliChannelName::Stable {
-            false
-        } else {
-            true
-        };
+        let prerelease_flag = !(channel.current_channel() == CliChannelName::Stable);
 
         let target = fluvio_index::package_target()?;
 

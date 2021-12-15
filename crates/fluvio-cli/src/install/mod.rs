@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
-use crate::cli_config::{CliChannelName,FluvioChannelConfig};
+use crate::cli_config::{CliChannelName, FluvioChannelConfig};
 use crate::{Result, CliError};
 
 pub mod update;
@@ -41,7 +41,6 @@ pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf> {
         // Default to stable channel behavior
         FluvioChannelConfig::default()
     };
-
 
     let base_dir = fluvio_base_dir()?;
 

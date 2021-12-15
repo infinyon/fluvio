@@ -21,7 +21,6 @@ fn main() -> Result<()> {
     // TODO: Add skip_channel_check to prevent an exec
 
     if !root.skip_channel_check() {
-
         let channel_config_path = FluvioChannelConfig::default_config_location();
 
         let channel = if FluvioChannelConfig::exists(&channel_config_path) {
@@ -55,9 +54,8 @@ fn main() -> Result<()> {
                 } else {
                     debug!("Will exec to binary @ {:?}", exe);
 
-
                     // Re-build the args list to pass onto exec'ed process
-                    let mut args : Vec<OsString> = std::env::args_os().map(|a| a).collect();
+                    let mut args: Vec<OsString> = std::env::args_os().collect();
                     if !args.is_empty() {
                         args.remove(0);
                     }
@@ -68,7 +66,6 @@ fn main() -> Result<()> {
                     let _err = proc.exec();
                     true
                 }
-
             } else {
                 debug!("You're using the configured current_channel binary");
                 false
@@ -76,7 +73,6 @@ fn main() -> Result<()> {
         } else {
             panic!("Default channel exe should be initialized")
         };
-
     }
     // If the CLI comes back with an error, attempt to handle it
     if let Err(e) = run_block_on(root.process()) {

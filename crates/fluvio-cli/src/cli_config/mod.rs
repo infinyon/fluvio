@@ -83,7 +83,7 @@ impl FluvioChannelConfig {
     }
 
     // Returns true if a channel config file exists in the configured location
-    pub fn exists(path: &PathBuf) -> bool {
+    pub fn exists(path: &Path) -> bool {
         path.exists()
     }
 
@@ -92,27 +92,17 @@ impl FluvioChannelConfig {
     }
 
     pub fn current_exe(&self) -> Option<PathBuf> {
-        if let Some(channel_info) = self
-            .config
+        self.config
             .channel
             .get(&self.current_channel().to_string().to_lowercase())
-        {
-            Some(channel_info.binary_location.clone())
-        } else {
-            None
-        }
+            .map(|channel_info| channel_info.binary_location.clone())
     }
 
     pub fn current_extensions(&self) -> Option<PathBuf> {
-        if let Some(channel_info) = self
-            .config
+        self.config
             .channel
             .get(&self.current_channel().to_string().to_lowercase())
-        {
-            Some(channel_info.extensions.clone())
-        } else {
-            None
-        }
+            .map(|channel_info| channel_info.extensions.clone())
     }
 }
 
@@ -151,7 +141,7 @@ impl Default for FluvioChannelInfo {
             binary_location.push("bin");
             binary_location.push("fluvio");
 
-            let mut extensions = home_dir.clone();
+            let mut extensions = home_dir;
             extensions.push(CLI_CONFIG_PATH);
             extensions.push("extensions");
 
@@ -177,7 +167,7 @@ impl FluvioChannelInfo {
         let mut extensions;
         if let Some(home_dir) = home_dir() {
             binary_location = home_dir.clone();
-            extensions = home_dir.clone();
+            extensions = home_dir;
 
             binary_location.push(CLI_CONFIG_PATH);
             binary_location.push("bin");
@@ -245,7 +235,7 @@ impl FluvioChannelInfo {
         let mut extensions;
         if let Some(home_dir) = home_dir() {
             binary_location = home_dir.clone();
-            extensions = home_dir.clone();
+            extensions = home_dir;
 
             binary_location.push(CLI_CONFIG_PATH);
             binary_location.push("bin");
@@ -332,31 +322,35 @@ impl CliConfigOpt {
         let config = if let Some(channel) = self.set_channel {
             // Change channel
             // Check if config knows about the channel first
-            let mut new_config =
-                if let Some(_) = config.clone().config.channel.get(&channel.to_string()) {
-                    //println!("Found");
-                    config
-                } else {
-                    // This is really just a matter of changing channels the first time
-                    // So we'll add the both channel info into the channel file
-                    let mut new_config_channel = config.clone();
+            let mut new_config = if config
+                .config
+                .channel
+                .get(&channel.to_string())
+                .is_some()
+            {
+                //println!("Found");
+                config
+            } else {
+                // This is really just a matter of changing channels the first time
+                // So we'll add the both channel info into the channel file
+                let mut new_config_channel = config;
 
-                    new_config_channel
-                        .config
-                        .channel
-                        .insert("stable".to_string(), FluvioChannelInfo::stable_channel());
-                    new_config_channel
-                        .config
-                        .channel
-                        .insert("latest".to_string(), FluvioChannelInfo::latest_channel());
-                    
-                    // I'm not sure we need this?
-                    new_config_channel
-                        .config
-                        .channel
-                        .insert("dev".to_string(), FluvioChannelInfo::developer_channel());
-                    new_config_channel
-                };
+                new_config_channel
+                    .config
+                    .channel
+                    .insert("stable".to_string(), FluvioChannelInfo::stable_channel());
+                new_config_channel
+                    .config
+                    .channel
+                    .insert("latest".to_string(), FluvioChannelInfo::latest_channel());
+
+                // I'm not sure we need this?
+                new_config_channel
+                    .config
+                    .channel
+                    .insert("dev".to_string(), FluvioChannelInfo::developer_channel());
+                new_config_channel
+            };
 
             // Change active channel
             let c = channel.to_string().to_lowercase();

@@ -175,7 +175,6 @@ impl StartOpt {
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
-
         // Check channel here:
         // If dev, set the `--develop` flag true
 
