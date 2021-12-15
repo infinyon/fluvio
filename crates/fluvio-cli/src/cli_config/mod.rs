@@ -77,7 +77,7 @@ impl FluvioChannelConfig {
             config_location.push("channel");
             config_location
         } else {
-            debug!("Home directory not found. Using current dir");
+            debug!("Home directory not found. Using current dir with relative path");
             PathBuf::from(".")
         }
     }
