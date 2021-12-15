@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.16 - UNRELEASED
+* Consume with end ([#1940](https://github.com/infinyon/fluvio/issues/1940))
 
 ## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
