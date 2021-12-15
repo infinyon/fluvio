@@ -684,7 +684,7 @@ impl ConsumeOpt {
                 .bold()
             );
         // If --end-offset=X
-        } else if let Some(end) = self.end {
+        } else if let Some(end) = self.end_offset {
             eprintln!(
                 "{}",
                 format!(
