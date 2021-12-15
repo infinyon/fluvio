@@ -103,7 +103,16 @@ mod inner {
 
     use crate::StorageError;
 
+    /// Contain information about slice of Replica
+    #[derive(Debug, Default)]
+    pub struct ReplicaSlice {
+        pub start: Offset,   // start offset
+        pub end: OffsetInfo, // end offset
+        pub file_slice: Option<AsyncFileSlice>,
+    }
+
     /// output from storage is represented as slice
+    /*
     pub trait SlicePartitionResponse {
         fn set_hw(&mut self, offset: i64);
 
@@ -131,6 +140,7 @@ mod inner {
             self.error_code = error;
         }
     }
+    */
 
     /// some storage configuration
     pub trait ReplicaStorageConfig {}
@@ -162,9 +172,7 @@ mod inner {
             max_len: u32,
             isolation: Isolation,
             partition_response: &mut P,
-        ) -> OffsetInfo
-        where
-            P: SlicePartitionResponse + Send;
+        ) -> ReplicaSlice;
 
         /// write record set
         async fn write_recordset(

@@ -1,5 +1,7 @@
+use std::cmp::min;
 use std::mem;
 
+use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_protocol::Encoder;
 use tracing::{debug, trace, error, warn, instrument, info};
 use async_trait::async_trait;
@@ -13,7 +15,7 @@ use crate::{OffsetInfo, checkpoint::CheckPoint};
 use crate::segments::{SegmentList, SharedSegments};
 use crate::segment::MutableSegment;
 use crate::config::ConfigOption;
-use crate::{SegmentSlice};
+use crate::{SegmentSlice, ReplicaSlice};
 use crate::{StorageError, SlicePartitionResponse, ReplicaStorage};
 
 /// Replica is public abstraction for commit log which are distributed.
@@ -44,11 +46,13 @@ impl ReplicaStorage for FileReplica {
         Self::create_or_load(replica.topic.clone(), replica.partition as u32, 0, config).await
     }
 
+    #[inline(always)]
     fn get_hw(&self) -> Offset {
         *self.commit_checkpoint.get_offset()
     }
 
     /// offset mark that beginning of uncommitted
+    #[inline(always)]
     fn get_leo(&self) -> Offset {
         self.active_segment.get_end_offset()
     }
@@ -234,7 +238,7 @@ impl FileReplica {
     /// segment could be active segment which can be written
     /// or read only segment.
     #[instrument(skip(self))]
-    pub(crate) async fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
+    pub(crate) fn find_segment(&self, offset: Offset) -> Option<SegmentSlice> {
         let active_base_offset = self.active_segment.get_base_offset();
         if offset >= active_base_offset {
             debug!(active_base_offset, "is in active segment");
@@ -277,89 +281,65 @@ impl FileReplica {
         max_offset: Option<Offset>,
         max_len: u32,
         response: &mut P,
-    ) -> OffsetInfo
-    where
-        P: SlicePartitionResponse,
-    {
+    ) -> Result<ReplicaSlice, ErrorCode> {
         let hw = self.get_hw();
         let leo = self.get_leo();
         debug!(hw, leo, "starting read records",);
 
-        response.set_hw(hw);
-        response.set_log_start_offset(self.get_log_start_offset());
+        let mut slice = ReplicaSlice {
+            end: OffsetInfo { hw, leo },
+            start: self.get_log_start_offset(),
+            ..Default::default()
+        };
 
-        match self.find_segment(start_offset).await {
-            Some(segment) => {
-                let slice = match segment {
-                    SegmentSlice::MutableSegment(segment) => {
-                        // optimization
-                        if start_offset == self.get_leo() {
-                            trace!("start offset is same as end offset, skipping");
-                            return OffsetInfo { hw, leo };
-                        } else {
-                            debug!(
-                                base_offset = segment.get_base_offset(),
-                                start_offset, "offset in active segment",
-                            );
-                            segment.records_slice(start_offset, max_offset).await
-                        }
-                    }
-                    SegmentSlice::Segment(segment) => {
-                        debug!(
-                            "read segment with base offset: {} found for offset: {}",
-                            segment.get_base_offset(),
-                            start_offset
-                        );
-                        segment.records_slice(start_offset, max_offset).await
-                    }
-                };
-
-                match slice {
-                    Ok(slice) => match slice {
-                        Some(slice) => {
-                            use fluvio_future::file_slice::AsyncFileSlice;
-
-                            let limited_slice = if slice.len() > max_len as u64 {
-                                debug!(
-                                    "retrieved record slice fd: {}, position: {}, max {} out of len {}",
-                                    slice.fd(),
-                                    slice.position(),
-                                    max_len,
-                                    slice.len()
-                                );
-                                AsyncFileSlice::new(slice.fd(), slice.position(), max_len as u64)
-                            } else {
-                                debug!(
-                                    "retrieved record slice fd: {}, position: {}, len: {}",
-                                    slice.fd(),
-                                    slice.position(),
-                                    slice.len()
-                                );
-
-                                slice
-                            };
-
-                            // limit slice
-                            response.set_slice(limited_slice);
-                        }
-                        None => {
-                            debug!(start_offset, "records not found");
-                            response.set_error_code(ErrorCode::OffsetOutOfRange);
-                        }
-                    },
-                    Err(err) => {
-                        response.set_error_code(ErrorCode::UnknownServerError);
-                        error!("error fetch: {:#?}", err);
-                    }
+        let active_base_offset = self.active_segment.get_base_offset();
+        let file_slice = if start_offset >= active_base_offset {
+            debug!(start_offset, active_base_offset, "is in active segment");
+            if start_offset = leo {
+                trace!("start offset is same as end offset, skipping");
+                return Ok(slice);
+            } else if start_offset > leo {
+                return Err(ErrorCode::OffsetOutOfRange);
+            } else {
+                if let Some(slice) = self
+                    .active_segment
+                    .records_slice(start_offset, max_offset)
+                    .await?
+                {
+                    slice
+                } else {
+                    return Err(ErrorCode::OffsetOutOfRange);
                 }
             }
-            None => {
-                response.set_error_code(ErrorCode::OffsetOutOfRange);
-                debug!(start_offset, "segment not found for offset");
-            }
-        }
+        } else {
+            debug!(start_offset, active_base_offset, "not in active sgments");
+            self.prev_segments
+                .find_slice(start_offset, max_offset)
+                .await?
+        };
 
-        OffsetInfo { hw, leo }
+        let limited_slice = AsyncFileSlice::new(
+            file_slice.fd(),
+            file_slice.position(),
+            min(file_slice.len(), max_len as u64),
+        );
+
+        debug!(
+            "retrieved record slice fd: {}, position: {}, len: {}",
+            slice.fd(),
+            slice.position(),
+            slice.len()
+        );
+
+        debug!(
+            fd = limited_slice.fd(),
+            pos = limited_slice.position(),
+            len = limited_slice.len(),
+            "retrieved slice",
+        );
+
+        slice.file_slice = limited_slice;
+        Ok(slice)
     }
 
     #[instrument(skip(self, item))]

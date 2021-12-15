@@ -10,6 +10,8 @@ use std::sync::atomic::AtomicI64;
 use async_lock::RwLock;
 use async_lock::RwLockReadGuard;
 use async_lock::RwLockWriteGuard;
+use dataplane::ErrorCode;
+use fluvio_future::file_slice::AsyncFileSlice;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
@@ -50,6 +52,22 @@ impl SharedSegments {
         self.min_offset
             .store(writer.min_offset, std::sync::atomic::Ordering::SeqCst);
     }
+
+
+    pub async fn find_slice(&self, start_offset: Offset,max_offset: Option<Offset>) -> Result<AsyncFileSlice, StorageError> {
+        let reader = self.read().await;
+        if let Some(segment) = reader.find_segment(start_offset) {
+            if let Some(slice) = segment.records_slice(start_offset,max_offset).await {
+                Ok(slice)
+            } else {
+                Err(ErrorCode::OffsetOutOfRange)
+            }
+        } else {
+            Err(ErrorCode::OffsetOutOfRange)
+        }
+    }
+
+
 }
 
 #[derive(Debug)]
@@ -149,7 +167,7 @@ impl SegmentList {
         self.segments.get(&offset)
     }
 
-    pub fn find_segment(&self, offset: Offset) -> Option<(&Offset, &ReadSegment)> {
+    fn find_segment(&self, offset: Offset) -> Option<(&Offset, &ReadSegment)> {
         if offset < self.min_offset {
             None
         } else if offset == self.min_offset {
