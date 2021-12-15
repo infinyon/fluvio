@@ -87,6 +87,8 @@ mod root {
     struct RootOpt {
         #[structopt(flatten)]
         target: ClusterTarget,
+
+        #[cfg(not(target_os = "windows"))]
         #[structopt(long)]
         skip_channel_check: bool,
     }

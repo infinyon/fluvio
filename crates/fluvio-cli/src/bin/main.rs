@@ -20,6 +20,7 @@ fn main() -> Result<()> {
     // But make sure we don't prevent any commands to change channel
     // TODO: Add skip_channel_check to prevent an exec
 
+    #[cfg(not(target_os = "windows"))]
     if !root.skip_channel_check() {
         let channel_config_path = FluvioChannelConfig::default_config_location();
 
