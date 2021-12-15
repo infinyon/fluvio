@@ -175,6 +175,13 @@ impl StartOpt {
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
+
+        // Check channel here:
+        // If dev, set the `--develop` flag true
+
+        // If channel latest
+        // Set the image version to VERSION+GIT_HASH
+
         if self.sys {
             process_sys(&self, upgrade)?;
         } else if self.local {

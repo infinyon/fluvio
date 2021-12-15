@@ -17,11 +17,6 @@ pub struct InstallOpt {
     /// Used for testing. Specifies alternate package location, e.g. "test/"
     #[structopt(hidden = true, long)]
     prefix: Option<String>,
-    /// Install the latest prerelease rather than the latest release
-    ///
-    /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
-    #[structopt(long)]
-    develop: bool,
 }
 
 impl InstallOpt {
