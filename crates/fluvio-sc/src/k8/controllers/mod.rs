@@ -31,6 +31,7 @@ mod k8_operator {
         k8_client: SharedK8Client,
         global_ctx: SharedContext,
         tls: Option<TlsConfig>,
+        connector_prefixes: Vec<String>
     ) {
         let config = global_ctx.config();
 
@@ -98,6 +99,7 @@ mod k8_operator {
                 global_ctx.managed_connectors().clone(),
                 managed_connector_deployments_ctx,
                 tls,
+                connector_prefixes,
             );
         });
     }

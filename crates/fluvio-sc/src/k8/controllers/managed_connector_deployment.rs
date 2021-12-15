@@ -15,7 +15,7 @@ use fluvio_stream_dispatcher::store::K8ChangeListener;
 
 use crate::stores::{
     StoreContext,
-    connector::{ManagedConnectorSpec, ManagedConnectorStatus, ManagedConnectorStatusResolution},
+    connector::{ManagedConnectorSpec, ThirdPartyConnectorSpec, ManagedConnectorStatus, ManagedConnectorStatusResolution},
     k8::K8MetaItem,
     MetadataStoreObject,
     actions::WSAction,
@@ -31,6 +31,7 @@ use crate::cli::TlsConfig;
 pub struct ManagedConnectorDeploymentController {
     connectors: StoreContext<ManagedConnectorSpec>,
     deployments: StoreContext<ManagedConnectorDeploymentSpec>,
+    allowable_connector_prefixes: Vec<String>,
     tls_config: Option<TlsConfig>,
 }
 
@@ -39,11 +40,13 @@ impl ManagedConnectorDeploymentController {
         connectors: StoreContext<ManagedConnectorSpec>,
         deployments: StoreContext<ManagedConnectorDeploymentSpec>,
         tls_config: Option<TlsConfig>,
+        allowable_connector_prefixes: Vec<String>,
     ) {
         let controller = Self {
             connectors,
             deployments,
             tls_config,
+            allowable_connector_prefixes,
         };
 
         spawn(controller.dispatch_loop());
@@ -161,25 +164,29 @@ impl ManagedConnectorDeploymentController {
         let key = managed_connector.key();
 
         let k8_deployment_spec =
-            Self::generate_k8_deployment_spec(managed_connector.spec(), self.tls_config.as_ref());
+            Self::generate_k8_deployment_spec(managed_connector.spec(), self.tls_config.as_ref(), &self.allowable_connector_prefixes).await;
         trace!(?k8_deployment_spec);
-        let deployment_action = WSAction::Apply(
-            MetadataStoreObject::with_spec(key, k8_deployment_spec.into())
+        if let Some(k8_deployment_spec) = k8_deployment_spec {
+
+            let deployment_action = WSAction::Apply(
+                MetadataStoreObject::with_spec(key, k8_deployment_spec.into())
                 .with_context(managed_connector.ctx().create_child()),
-        );
+            );
 
-        debug!(?deployment_action, "applying deployment");
+            debug!(?deployment_action, "applying deployment");
 
-        self.deployments.wait_action(key, deployment_action).await?;
+            self.deployments.wait_action(key, deployment_action).await?;
+        }
 
         Ok(())
     }
 
     const DEFAULT_CONNECTOR_NAME: &'static str = "fluvio-connector";
-    pub fn generate_k8_deployment_spec(
+    pub async fn generate_k8_deployment_spec(
         mc_spec: &ManagedConnectorSpec,
         tls_config: Option<&TlsConfig>,
-    ) -> K8DeploymentSpec {
+        allowed_connector_prefix: &Vec<String>,
+    ) -> Option<K8DeploymentSpec> {
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
             config_map: Some(ConfigMapVolumeSource {
@@ -206,20 +213,42 @@ impl ManagedConnectorDeploymentController {
             "--".to_string(),
             format!("--fluvio-topic={}", mc_spec.topic),
         ];
+        let type_ = &mc_spec.type_;
+        let image = if
+            type_.starts_with("https://")
+        {
+            let mut image = None;
+            for prefix in allowed_connector_prefix {
+                if type_.starts_with(prefix.as_str()) {
+                    if let Ok(spec) = ThirdPartyConnectorSpec::from_url(type_).await {
+                        image = Some(spec.image);
+                    }
+                    break;
+                }
+            }
+            if let Some(image) = image {
+                image
+            } else {
+                return None;
+            }
+
+        } else {
+            format!("infinyon/fluvio-connect-{}", type_)
+        };
 
         args.extend(parameters);
 
         let (image, image_pull_policy) = match mc_spec.version.as_deref() {
             Some("dev") => (
-                format!("infinyon/fluvio-connect-{}", mc_spec.type_),
+                image,
                 ImagePullPolicy::Never,
             ),
             Some("latest") | None => (
-                format!("infinyon/fluvio-connect-{}:latest", mc_spec.type_),
+                format!("{}:latest", image),
                 ImagePullPolicy::Always,
             ),
             Some(version) => (
-                format!("infinyon/fluvio-connect-{}:{}", mc_spec.type_, version),
+                format!("{}:{}", image, version),
                 ImagePullPolicy::IfNotPresent,
             ),
         };
@@ -302,10 +331,10 @@ impl ManagedConnectorDeploymentController {
         let mut match_labels = HashMap::new();
         match_labels.insert("app".to_owned(), Self::DEFAULT_CONNECTOR_NAME.to_owned());
 
-        K8DeploymentSpec {
+        Some(K8DeploymentSpec {
             template,
             selector: LabelSelector { match_labels },
             ..Default::default()
-        }
+        })
     }
 }
