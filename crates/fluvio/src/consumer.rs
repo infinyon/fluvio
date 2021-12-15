@@ -725,7 +725,7 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) derivedstream: Option<DerivedStreamInvocation>,
     #[builder(default)]
-    end_offset: Option<i64>,
+    pub end_offset: Option<i64>,
 }
 
 impl ConsumerConfig {
