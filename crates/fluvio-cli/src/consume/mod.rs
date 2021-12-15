@@ -395,6 +395,7 @@ impl ConsumeOpt {
         tableformat: Option<TableFormatSpec>,
     ) -> Result<()> {
         self.print_status();
+        let maybe_potential_offset: Option<i64> = config.end_offset;
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
         let templates = match self.format.as_deref() {
