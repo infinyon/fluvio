@@ -724,6 +724,8 @@ pub struct ConsumerConfig {
     pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
     pub(crate) derivedstream: Option<DerivedStreamInvocation>,
+    #[builder(default)]
+    end_offset: Option<i64>,
 }
 
 impl ConsumerConfig {
