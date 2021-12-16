@@ -100,14 +100,24 @@ async fn handle_fetch_partition(
         }
     };
 
-    leader_state
+    match leader_state
         .read_records(
             fetch_offset,
             fetch_request.max_bytes as u32,
             fetch_request.isolation_level.clone(),
-            &mut partition_response,
         )
-        .await;
+        .await
+    {
+        Ok(slice) => {
+            if let Some(file_slice) = slice.file_slice {
+                partition_response.records = file_slice.into();
+            }
+        }
+        Err(err) => {
+            debug!(%err,"Failed to read records for partition");
+            partition_response.error_code = err;
+        }
+    }
 
     Ok(partition_response)
 }

@@ -27,7 +27,6 @@ mod inner {
     use async_trait::async_trait;
 
     use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey};
-    use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::RecordSet;
     use fluvio_future::file_slice::AsyncFileSlice;
 

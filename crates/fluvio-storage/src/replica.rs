@@ -416,9 +416,8 @@ mod tests {
         assert_eq!(batch.get_header().last_offset_delta, 1);
         assert_eq!(batch.records().len(), 2);
 
-        
         // there should not be any segment for offset 0 since base offset is 20
-        let segment = replica.read_records(0,None,1000).await;
+        let segment = replica.read_records(0, None, 1000).await;
         assert!(segment.is_none());
 
         // segment with offset 20 should be active segment

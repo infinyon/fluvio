@@ -8,8 +8,8 @@ use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use fluvio_controlplane_metadata::partition::{ReplicaKey};
 use dataplane::{Isolation, record::RecordSet};
 use dataplane::core::Encoder;
-use dataplane::{Offset};
-use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError, OffsetInfo};
+use dataplane::{Offset, ErrorCode};
+use fluvio_storage::{ReplicaStorage, StorageError, OffsetInfo, ReplicaSlice};
 use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
@@ -101,21 +101,17 @@ where
 
     /// read records into partition response
     /// return leo and hw
-    #[instrument(skip(self, offset, max_len, isolation, partition_response))]
-    pub async fn read_records<P>(
+    #[instrument(skip(self, offset, max_len, isolation))]
+    pub async fn read_records(
         &self,
         offset: Offset,
         max_len: u32,
         isolation: Isolation,
-        partition_response: &mut P,
-    ) -> OffsetInfo
-    where
-        P: SlicePartitionResponse + Send,
-    {
+    ) -> Result<ReplicaSlice, ErrorCode> {
         let read_storage = self.read().await;
 
         read_storage
-            .read_partition_slice(offset, max_len, isolation, partition_response)
+            .read_partition_slice(offset, max_len, isolation)
             .await
     }
 

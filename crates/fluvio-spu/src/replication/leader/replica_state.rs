@@ -233,21 +233,26 @@ where
 
                 // if this follower's leo is less than leader's leo then send diff
                 if follower_info.leo < leader_offset.leo {
-                    let offset = self
-                        .read_records(
-                            follower_info.leo,
-                            max_bytes,
-                            Isolation::ReadUncommitted,
-                            &mut partition_response,
-                        )
-                        .await;
-                    debug!(
-                        hw = offset.hw,
-                        leo = offset.leo,
-                        replica = %self.id(),
-                        len = partition_response.records.len(),
-                        "read records"
-                    );
+                    match self
+                        .read_records(follower_info.leo, max_bytes, Isolation::ReadUncommitted)
+                        .await
+                    {
+                        Ok(slice) => {
+                            debug!(
+                                hw = slice.end.hw,
+                                leo = slice.end.leo,
+                                replica = %self.id(),
+                                "read records"
+                            );
+                            if let Some(file_slice) = slice.file_slice {
+                                partition_response.records = file_slice.into();
+                            }
+                        }
+                        Err(err) => {
+                            error!(%err, "error reading records");
+                            partition_response.error = err;
+                        }
+                    }
                 } else {
                     // only hw need to be updated
                     debug!(
@@ -671,8 +676,8 @@ mod test_leader {
     use async_trait::async_trait;
 
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
-    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo};
-    use dataplane::Offset;
+    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo, ReplicaSlice};
+    use dataplane::{Offset, ErrorCode};
     use dataplane::fixture::{create_recordset};
 
     use crate::{
@@ -719,17 +724,16 @@ mod test_leader {
             self.pos.leo
         }
 
-        async fn read_partition_slice<P>(
+        async fn read_partition_slice(
             &self,
             offset: Offset,
             _max_len: u32,
             _isolation: dataplane::Isolation,
-            _partition_response: &mut P,
-        ) -> OffsetInfo
-        where
-            P: fluvio_storage::SlicePartitionResponse + Send,
-        {
-            OffsetInfo { leo: offset, hw: 0 }
+        ) -> Result<ReplicaSlice, ErrorCode> {
+            Ok(ReplicaSlice {
+                end: OffsetInfo { leo: offset, hw: 0 },
+                ..Default::default()
+            })
         }
 
         // do dummy implementations of write

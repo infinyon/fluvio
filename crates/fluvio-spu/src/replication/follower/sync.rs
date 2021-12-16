@@ -15,8 +15,6 @@ use dataplane::api::Request;
 use dataplane::ErrorCode;
 use dataplane::store::StoreValue;
 use dataplane::store::FileWrite;
-use fluvio_storage::SlicePartitionResponse;
-use fluvio_future::file_slice::AsyncFileSlice;
 
 use super::api_key::FollowerPeerApiEnum;
 
@@ -154,20 +152,4 @@ impl FileWrite for PeerFilePartitionResponse {
         self.records.file_encode(src, data, version)?;
         Ok(())
     }
-}
-
-impl SlicePartitionResponse for PeerFilePartitionResponse {
-    fn set_hw(&mut self, offset: i64) {
-        self.hw = offset;
-    }
-
-    fn set_slice(&mut self, slice: AsyncFileSlice) {
-        self.records = slice.into();
-    }
-
-    fn set_error_code(&mut self, error: ErrorCode) {
-        self.error = error;
-    }
-
-    fn set_log_start_offset(&mut self, _offset: i64) {}
 }
