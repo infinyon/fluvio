@@ -1,4 +1,3 @@
-#[cfg(not(target_os = "windows"))]
 use structopt::StructOpt;
 use color_eyre::eyre::Result;
 use fluvio_cli::{Root, HelpOpt};
