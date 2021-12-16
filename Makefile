@@ -28,6 +28,7 @@ TEST_ENV_FLV_SPU_DELAY=
 TEST_ARG_SPU=--spu ${DEFAULT_SPU}
 TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
 TEST_ARG_REPLICATION=-r ${REPL}
+TEST_ARG_DEVELOP=$(if $(IMAGE_VERSION),--image-version ${IMAGE_VERSION}, --develop)
 TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
@@ -76,6 +77,7 @@ smoke-test: test-setup
 			${TEST_ARG_SPU} \
 			${TEST_ARG_LOG} \
 			${TEST_ARG_REPLICATION} \
+			${TEST_ARG_DEVELOP} \
 			${TEST_ARG_EXTRA} \
 			-- \
 			${TEST_ARG_CONSUMER_WAIT} \
@@ -107,6 +109,7 @@ election-test: test-setup
 		${TEST_ARG_SPU} \
 		${TEST_ARG_LOG} \
 		${TEST_ARG_REPLICATION} \
+		${TEST_ARG_DEVELOP} \
 		${TEST_ARG_EXTRA}
 
 multiple-partition-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
@@ -115,6 +118,7 @@ multiple-partition-test: test-setup
 		${TEST_ARG_SPU} \
                 ${TEST_ARG_LOG} \
                 ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
 batch-failure-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
@@ -148,6 +152,7 @@ reconnection-test: test-setup
                 ${TEST_ARG_SPU} \
                 ${TEST_ARG_LOG} \
                 ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
 # test rbac with user1 who doesn't have topic creation permission
@@ -166,7 +171,7 @@ test-permission-user1:
 
 
 k8-setup:	ensure_fluvio_bin
-	$(FLUVIO_BIN) cluster start --setup
+	$(FLUVIO_BIN) cluster start --setup --develop
 
 
 ifeq (${CI},true)
@@ -348,7 +353,7 @@ fluvio_run_bin: install_rustup_target
 # upgrade existing cluster
 upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --sys
-	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG)
+	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
 
 
 
