@@ -1,10 +1,9 @@
 use structopt::StructOpt;
 use color_eyre::eyre::Result;
-#[cfg(not(target_os = "windows"))]
-use fluvio_cli::{Root, HelpOpt, cli_config::CliChannelName};
+use fluvio_cli::{Root, HelpOpt};
 use fluvio_future::task::run_block_on;
 #[cfg(not(target_os = "windows"))]
-use fluvio_cli::cli_config::{FluvioChannelConfig, is_fluvio_bin_in_std_dir};
+use fluvio_cli::cli_config::{CliChannelName, FluvioChannelConfig, is_fluvio_bin_in_std_dir};
 use std::process::Stdio;
 #[cfg(not(target_os = "windows"))]
 use std::{env::current_exe, os::unix::prelude::CommandExt};
