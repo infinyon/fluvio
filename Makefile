@@ -171,7 +171,7 @@ test-permission-user1:
 
 
 k8-setup:	ensure_fluvio_bin
-	$(FLUVIO_BIN) cluster start --setup --develop
+	$(FLUVIO_BIN) cluster start --setup
 
 
 ifeq (${CI},true)
@@ -353,7 +353,7 @@ fluvio_run_bin: install_rustup_target
 # upgrade existing cluster
 upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --sys
-	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
+	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG)
 
 
 

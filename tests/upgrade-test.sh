@@ -145,7 +145,7 @@ function validate_upgrade_cluster_to_prerelease() {
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
         $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
+        $FLUVIO_BIN_ABS_PATH cluster upgrade
     fi
     popd
 
