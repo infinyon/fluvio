@@ -109,6 +109,9 @@ async fn handle_fetch_partition(
         .await
     {
         Ok(slice) => {
+            partition_response.high_watermark = slice.end.hw;
+            partition_response.log_start_offset = slice.start;
+
             if let Some(file_slice) = slice.file_slice {
                 partition_response.records = file_slice.into();
             }

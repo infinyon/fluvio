@@ -244,6 +244,8 @@ where
                                 replica = %self.id(),
                                 "read records"
                             );
+                            partition_response.hw = slice.end.hw;
+                            partition_response.leo = slice.end.leo;
                             if let Some(file_slice) = slice.file_slice {
                                 partition_response.records = file_slice.into();
                             }
