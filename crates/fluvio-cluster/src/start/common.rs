@@ -4,7 +4,7 @@ use fluvio_controlplane_metadata::spu::SpuSpec;
 use k8_client::{SharedK8Client, ClientError};
 use once_cell::sync::Lazy;
 use semver::Version;
-use tracing::{debug, error, instrument};
+use tracing::{debug, error, instrument, warn};
 
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_future::timer::sleep;
@@ -21,23 +21,16 @@ pub async fn try_connect_to_sc(
     config: &FluvioConfig,
     platform_version: &Version,
 ) -> Option<Fluvio> {
-    enum ScConnectionState {
-        Connected(Fluvio),
-        NotConnected,
-        VersionMismatch,
-        TimeOut,
-    }
-
     async fn try_connect_sc(
         fluvio_config: &FluvioConfig,
         expected_version: &Version,
-    ) -> ScConnectionState {
+    ) -> Option<Fluvio> {
         use tokio::select;
 
         select! {
             _ = &mut sleep(Duration::from_secs(10)) => {
                 debug!("timer expired");
-                ScConnectionState::TimeOut
+                None
             },
 
             connection = Fluvio::connect_with_config(fluvio_config) =>  {
@@ -46,17 +39,16 @@ pub async fn try_connect_to_sc(
                     Ok(fluvio) => {
                         let current_version = fluvio.platform_version();
                         if current_version == expected_version {
-                            debug!("Got updated SC Version {}", &expected_version);
-                            ScConnectionState::Connected(fluvio)
+                            debug!("Got updated SC Version{}", &expected_version);
+                            Some(fluvio)
                         } else {
-                            // This state will never change if we identify it, so exit early
-                            error!("Current Version {} is not same as expected: {}",current_version,expected_version);
-                            ScConnectionState::VersionMismatch
+                            warn!("Current Version {} is not same as expected: {}",current_version,expected_version);
+                            None
                         }
                     }
                     Err(err) => {
                         debug!("couldn't connect: {:#?}", err);
-                        ScConnectionState::NotConnected
+                        None
                     }
                 }
 
@@ -69,22 +61,11 @@ pub async fn try_connect_to_sc(
             "Trying to connect to sc at: {}, attempt: {}",
             config.endpoint, attempt
         );
-
-        match try_connect_sc(config, platform_version).await {
-            ScConnectionState::Connected(fluvio) => {
-                debug!("Connection to sc succeeded!");
-                return Some(fluvio);
-            }
-            ScConnectionState::VersionMismatch => {
-                return None;
-            }
-            _ => {
-                // Do nothing, let the connection loop spin
-            }
-        };
-
-        if attempt < *MAX_SC_LOOP - 1 {
-            debug!("Connection failed. Sleeping 10 seconds");
+        if let Some(fluvio) = try_connect_sc(config, platform_version).await {
+            debug!("Connection to sc suceed!");
+            return Some(fluvio);
+        } else if attempt < *MAX_SC_LOOP - 1 {
+            debug!("Connection failed.  sleeping 10 seconds");
             sleep(Duration::from_secs(10)).await;
         }
     }
