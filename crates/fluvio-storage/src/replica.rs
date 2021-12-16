@@ -230,7 +230,7 @@ impl FileReplica {
     /// read all uncommitted records
     #[allow(unused)]
     #[instrument(skip(self, max_len))]
-    pub async fn read_all_uncommitted_records<P>(
+    pub async fn read_all_uncommitted_records(
         &self,
         max_len: u32,
     ) -> Result<ReplicaSlice, ErrorCode> {
@@ -417,13 +417,13 @@ mod tests {
         assert_eq!(batch.records().len(), 2);
 
         // there should not be any segment for offset 0 since base offset is 20
-        let segment = replica.read_records(0, None, 1000).await;
-        assert!(segment.is_none());
+        let out_of_range_err = replica.read_records(0, None, 1000).await.unwrap_err();
+        assert_eq!(out_of_range_err, ErrorCode::OffsetOutOfRange);
 
         // segment with offset 20 should be active segment
-        assert!(prev_segments.find_segment(20).unwrap().is_active());
-        assert!(prev_segments.find_segment(21).unwrap().is_active());
-        assert!(prev_segments.find_segment(30).is_some()); // any higher offset should result in current segment
+        replica.read_records(20, None, 10000).await.expect("read");
+        replica.read_records(21, None, 10000).await.expect("read");
+        assert!(replica.read_records(30, None, 10000).await.is_err()); // any higher offset should result in current segment
     }
 
     const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
@@ -440,12 +440,12 @@ mod tests {
         assert_eq!(replica.get_hw(), 0);
 
         // reading empty replica should return empyt records
-        let mut empty_response = FilePartitionResponse::default();
-        replica
-            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut empty_response)
-            .await;
-        assert_eq!(empty_response.records.len(), 0);
-        assert_eq!(empty_response.error_code, ErrorCode::None);
+
+        let slice = replica
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN)
+            .await
+            .expect("read");
+        assert!(slice.file_slice.is_none());
 
         // write batches
         let mut batch = create_batch();
@@ -457,11 +457,11 @@ mod tests {
         assert_eq!(replica.get_hw(), 0);
 
         // read records
-        let mut partition_response = FilePartitionResponse::default();
-        replica
-            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
-            .await;
-        assert_eq!(partition_response.records.len(), batch_len);
+        let slice = replica
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN)
+            .await
+            .expect("read");
+        assert_eq!(slice.file_slice.unwrap().len() as usize, batch_len);
 
         replica.update_high_watermark(2).await.expect("update"); // first batch
         assert_eq!(replica.get_hw(), 2);
@@ -470,28 +470,29 @@ mod tests {
         let batch_len = batch.write_size(0);
         replica.write_batch(&mut batch).await.expect("write");
 
-        let mut partition_response = FilePartitionResponse::default();
-        replica
-            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
-            .await;
-        debug!("partiton response: {:#?}", partition_response);
-        assert_eq!(partition_response.records.len(), batch_len);
+        let slice = replica
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN)
+            .await
+            .expect("read");
+        debug!("slice: {:#?}", slice);
+        assert_eq!(slice.file_slice.unwrap().len() as usize, batch_len);
 
         replica
             .write_batch(&mut create_batch())
             .await
             .expect("write");
-        let mut partition_response = FilePartitionResponse::default();
-        replica
-            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN, &mut partition_response)
-            .await;
-        assert_eq!(partition_response.records.len(), batch_len * 2);
 
-        let mut partition_response = FilePartitionResponse::default();
-        replica
-            .read_all_uncommitted_records(50, &mut partition_response)
-            .await;
-        assert_eq!(partition_response.records.len(), 50);
+        let slice = replica
+            .read_all_uncommitted_records(FileReplica::PREFER_MAX_LEN)
+            .await
+            .expect("read");
+        assert_eq!(slice.file_slice.unwrap().len() as usize, batch_len * 2);
+
+        let slice = replica
+            .read_all_uncommitted_records(50)
+            .await
+            .expect("read");
+        assert_eq!(slice.file_slice.unwrap().len(), 50);
     }
 
     const TEST_OFFSET_DIR: &str = "test_offset";
@@ -612,17 +613,12 @@ mod tests {
             .await
             .expect("writing records");
 
-        let mut partition_response = FilePartitionResponse::default();
-        replica
-            .read_partition_slice(
-                0,
-                FileReplica::PREFER_MAX_LEN,
-                Isolation::ReadCommitted,
-                &mut partition_response,
-            )
-            .await;
-        debug!("partition response: {:#?}", partition_response);
-        assert_eq!(partition_response.records.len(), 0);
+        let slice = replica
+            .read_partition_slice(0, FileReplica::PREFER_MAX_LEN, Isolation::ReadCommitted)
+            .await
+            .expect("read");
+        debug!("slice response: {:#?}", slice);
+        assert_eq!(slice.file_slice.unwrap().len(), 0);
 
         replica
             .update_high_watermark_to_end()
@@ -635,17 +631,12 @@ mod tests {
             replica.get_hw()
         );
 
-        let mut partition_response = FilePartitionResponse::default();
-        replica
-            .read_partition_slice(
-                0,
-                FileReplica::PREFER_MAX_LEN,
-                Isolation::ReadCommitted,
-                &mut partition_response,
-            )
-            .await;
-        debug!("partition response: {:#?}", partition_response);
-        assert_eq!(partition_response.records.len(), batch_len);
+        let slice = replica
+            .read_partition_slice(0, FileReplica::PREFER_MAX_LEN, Isolation::ReadCommitted)
+            .await
+            .expect("read");
+        debug!("slice response: {:#?}", slice);
+        assert_eq!(slice.file_slice.unwrap().len() as usize, batch_len);
 
         // write 1 more batch
         let mut batch = create_batch();
@@ -659,18 +650,13 @@ mod tests {
             replica.get_hw()
         );
 
-        let mut partition_response = FilePartitionResponse::default();
-        replica
-            .read_partition_slice(
-                0,
-                FileReplica::PREFER_MAX_LEN,
-                Isolation::ReadCommitted,
-                &mut partition_response,
-            )
-            .await;
-        debug!("partition response: {:#?}", partition_response);
+        let slice = replica
+            .read_partition_slice(0, FileReplica::PREFER_MAX_LEN, Isolation::ReadCommitted)
+            .await
+            .expect("read");
+        debug!("slice response: {:#?}", slice);
         // should return same records as 1 batch since we didn't commit 2nd batch
-        assert_eq!(partition_response.records.len(), batch_len);
+        assert_eq!(slice.file_slice.unwrap().len() as usize, batch_len);
     }
 
     #[fluvio_future::test]
@@ -723,6 +709,7 @@ mod tests {
         ));
     }
 
+    /*
     /// create replicat with multiple segments
     #[fluvio_future::test]
     async fn test_replica_multiple_segment() {
@@ -785,4 +772,5 @@ mod tests {
             }
         }
     }
+    */
 }

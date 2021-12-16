@@ -96,17 +96,20 @@ async fn handle_response(socket: &mut FluvioSocket, replica: &FileReplica) {
     let mut topic_response = FileTopicResponse::default();
     let mut part_response = FilePartitionResponse::default();
     // log contains 182 bytes total
-    replica
+    let slice = replica
         .read_partition_slice(
             fetch_offset,
             FileReplica::PREFER_MAX_LEN,
             dataplane::Isolation::ReadUncommitted,
-            &mut part_response,
         )
-        .await;
-    debug!("response: {:#?}", part_response);
-    assert_eq!(part_response.partition_index, 0);
-    assert_eq!(part_response.error_code, ErrorCode::None);
+        .await
+        .expect("read");
+    debug!("response: {:#?}", slice);
+
+    part_response.partition_index = 0;
+    if let Some(file_slice) = slice.file_slice {
+        part_response.records = file_slice.into();
+    }
 
     // assert_eq!(part)
     topic_response.partitions.push(part_response);
