@@ -14,7 +14,7 @@ use crate::cli::ClusterCliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct DeleteManagedSpuGroupOpt {
     /// The name of the SPU Group to delete
     #[structopt(value_name = "name")]

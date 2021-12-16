@@ -1624,6 +1624,7 @@ version = "0.0.0"
 dependencies = [
  "async-h1",
  "atty",
+ "cfg-if",
  "color-eyre",
  "colored",
  "content_inspector",

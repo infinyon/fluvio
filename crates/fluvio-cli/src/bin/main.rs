@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use color_eyre::eyre::Result;
 use fluvio_cli::{Root, HelpOpt, cli_config::CliChannelName};
 use fluvio_future::task::run_block_on;
-use fluvio_cli::cli_config::FluvioChannelConfig;
+use fluvio_cli::cli_config::{FluvioChannelConfig, is_fluvio_bin_in_std_dir};
 use std::{env::current_exe, os::unix::prelude::CommandExt};
 use std::ffi::OsString;
 use tracing::debug;
@@ -21,59 +21,65 @@ fn main() -> Result<()> {
     // TODO: Add skip_channel_check to prevent an exec
 
     #[cfg(not(target_os = "windows"))]
-    if !root.skip_channel_check() {
-        let channel_config_path = FluvioChannelConfig::default_config_location();
-
-        let channel = if FluvioChannelConfig::exists(&channel_config_path) {
-            //println!("Config file exists @ {:#?}", &channel_config_path);
-            FluvioChannelConfig::from_file(channel_config_path)?
-            //FluvioChannelConfig::default()
-        } else {
-            // Default to stable channel behavior
-            FluvioChannelConfig::default()
-        };
-
-        //println!("{:#?}", &channel);
-
-        // Verify if the current binary is the same as the channel we're using
+    {
+        // Verify if the current binary is running in the "official" location
+        // If we're not in the fluvio directory then
+        // assume dev mode (i.e., do not exec to other binaries)
         let current_exe = current_exe()?;
 
-        //println!("Current exe: {:?}", &current_exe);
-        //println!("Config current exe: {:?}", &channel.current_exe());
+        if is_fluvio_bin_in_std_dir(&current_exe) && !root.skip_channel_check() {
+            let channel_config_path = FluvioChannelConfig::default_config_location();
 
-        debug!("channel: {:#?}", channel);
-        let _do_change_binary = if let Some(exe) = channel.current_exe() {
-            if exe != current_exe {
-                // If not, exec the correct binary
-                debug!("You're NOT using the configured current_channel binary");
-                // TODO:
-                // If we're CLIChannelName::Stable or CLIChannelName::Latest, then use that
-                // If we're CLIChannelName::Dev, do nothing
-                if channel.current_channel() == CliChannelName::Dev {
-                    debug!("You're in Developer mode");
-                    false
-                } else {
-                    debug!("Will exec to binary @ {:?}", exe);
+            let channel = if FluvioChannelConfig::exists(&channel_config_path) {
+                //println!("Config file exists @ {:#?}", &channel_config_path);
+                FluvioChannelConfig::from_file(channel_config_path)?
+                //FluvioChannelConfig::default()
+            } else {
+                // Default to stable channel behavior
+                FluvioChannelConfig::default()
+            };
 
-                    // Re-build the args list to pass onto exec'ed process
-                    let mut args: Vec<OsString> = std::env::args_os().collect();
-                    if !args.is_empty() {
-                        args.remove(0);
+            //println!("{:#?}", &channel);
+
+            //println!("Current exe: {:?}", &current_exe);
+            //println!("Config current exe: {:?}", &channel.current_exe());
+
+            debug!("channel: {:#?}", channel);
+            let _do_change_binary = if let Some(exe) = channel.current_exe() {
+                if exe != current_exe {
+                    // If not, exec the correct binary
+                    debug!("You're NOT using the configured current_channel binary");
+                    // TODO:
+                    // If we're CLIChannelName::Stable or CLIChannelName::Latest, then use that
+                    // If we're CLIChannelName::Dev, do nothing
+                    if channel.current_channel() == CliChannelName::Dev {
+                        debug!("You're in Developer mode");
+                        false
+                    } else {
+                        debug!("Will exec to binary @ {:?}", exe);
+
+                        // Re-build the args list to pass onto exec'ed process
+                        let mut args: Vec<OsString> = std::env::args_os().collect();
+                        if !args.is_empty() {
+                            args.remove(0);
+                        }
+
+                        let mut proc = std::process::Command::new(exe);
+                        proc.args(args);
+
+                        let _err = proc.exec();
+                        true
                     }
-
-                    let mut proc = std::process::Command::new(exe);
-                    proc.args(args);
-
-                    let _err = proc.exec();
-                    true
+                } else {
+                    debug!("You're using the configured current_channel binary");
+                    false
                 }
             } else {
-                debug!("You're using the configured current_channel binary");
-                false
-            }
+                panic!("Default channel exe should be initialized")
+            };
         } else {
-            panic!("Default channel exe should be initialized")
-        };
+            debug!("Fluvio bin not in standard install location. Assuming dev channel")
+        }
     }
     // If the CLI comes back with an error, attempt to handle it
     if let Err(e) = run_block_on(root.process()) {

@@ -21,14 +21,12 @@ pub async fn try_connect_to_sc(
     config: &FluvioConfig,
     platform_version: &Version,
 ) -> Option<Fluvio> {
-
     enum ScConnectionState {
         Connected(Fluvio),
         NotConnected,
         VersionMismatch,
         TimeOut,
     }
-
 
     async fn try_connect_sc(
         fluvio_config: &FluvioConfig,
@@ -48,7 +46,7 @@ pub async fn try_connect_to_sc(
                     Ok(fluvio) => {
                         let current_version = fluvio.platform_version();
                         if current_version == expected_version {
-                            debug!("Got updated SC Version{}", &expected_version);
+                            debug!("Got updated SC Version {}", &expected_version);
                             ScConnectionState::Connected(fluvio)
                         } else {
                             // This state will never change if we identify it, so exit early
@@ -76,15 +74,14 @@ pub async fn try_connect_to_sc(
             ScConnectionState::Connected(fluvio) => {
                 debug!("Connection to sc succeeded!");
                 return Some(fluvio);
-            },
+            }
             ScConnectionState::VersionMismatch => {
                 return None;
-            },
+            }
             _ => {
                 // Do nothing, let the connection loop spin
-            },
+            }
         };
-
 
         if attempt < *MAX_SC_LOOP - 1 {
             debug!("Connection failed. Sleeping 10 seconds");

@@ -366,3 +366,17 @@ impl CliConfigOpt {
         Ok(())
     }
 }
+
+// Check if we're running Fluvio in the location our installer places binaries
+// This is used to decide whether to use channel config
+pub fn is_fluvio_bin_in_std_dir(fluvio_bin: &Path) -> bool {
+    let fluvio_home_dir = if let Some(mut fluvio_home) = home_dir() {
+        fluvio_home.push(CLI_CONFIG_PATH);
+        fluvio_home
+    } else {
+        return false;
+    };
+
+    // Verify if fluvio_bin is in the same directory as {home_dir/CLI_CONFIG_PATH}
+    fluvio_bin.starts_with(fluvio_home_dir)
+}

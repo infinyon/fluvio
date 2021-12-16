@@ -7,7 +7,7 @@ use crate::check::render::{render_check_progress, render_results_next_steps};
 use crate::check::SysChartCheck;
 use crate::charts::ChartConfig;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct CheckOpt {}
 
 impl CheckOpt {

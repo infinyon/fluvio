@@ -12,8 +12,8 @@ mod check;
 mod error;
 mod diagnostics;
 
-use start::StartOpt;
-use start::UpgradeOpt;
+pub use start::StartOpt;
+pub use start::UpgradeOpt;
 use delete::DeleteOpt;
 use check::CheckOpt;
 use group::SpuGroupCmd;
@@ -27,7 +27,7 @@ use common::target::ClusterTarget;
 use common::output::Terminal;
 
 /// Manage and view Fluvio clusters
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Clone)]
 pub enum ClusterCmd {
     /// Install Fluvio cluster
     #[structopt(name = "start")]

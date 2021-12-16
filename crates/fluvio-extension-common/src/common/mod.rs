@@ -5,7 +5,7 @@ pub use self::hex_dump::*;
 
 use crate::output::OutputType;
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, StructOpt, Default, Clone)]
 pub struct OutputFormat {
     /// Output
     #[structopt(

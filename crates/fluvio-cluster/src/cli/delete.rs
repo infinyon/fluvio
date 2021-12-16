@@ -3,7 +3,7 @@ use structopt::StructOpt;
 use crate::delete::ClusterUninstallConfig;
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct DeleteOpt {
     #[structopt(long, value_name = "Kubernetes namespace")]
     namespace: Option<String>,

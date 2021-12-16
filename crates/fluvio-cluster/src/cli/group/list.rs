@@ -13,7 +13,7 @@ use crate::cli::common::output::Terminal;
 use crate::cli::common::OutputFormat;
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct ListManagedSpuGroupsOpt {
     #[structopt(flatten)]
     output: OutputFormat,

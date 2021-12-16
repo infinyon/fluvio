@@ -14,7 +14,7 @@ use create::CreateManagedSpuGroupOpt;
 use delete::DeleteManagedSpuGroupOpt;
 use list::ListManagedSpuGroupsOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub enum SpuGroupCmd {
     /// Create a new managed SPU Group
     #[structopt(

@@ -8,7 +8,7 @@ use fluvio::config::{TlsPolicy, TlsPaths};
 
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct TlsOpt {
     /// Whether to use TLS
     #[structopt(long)]

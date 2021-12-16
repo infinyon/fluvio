@@ -22,7 +22,7 @@ pub fn get_log_directory() -> &'static str {
     "/tmp"
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DefaultLogDirectory(String);
 
 impl Default for DefaultLogDirectory {
@@ -45,7 +45,7 @@ impl FromStr for DefaultLogDirectory {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct SpuCliConfig {
     /// set spu storage size
     #[structopt(long, default_value = "10")]
@@ -64,7 +64,7 @@ impl SpuCliConfig {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct K8Install {
     /// k8: use specific chart version
     #[structopt(long)]
@@ -99,7 +99,7 @@ pub struct K8Install {
     pub chart_values: Vec<PathBuf>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct StartOpt {
     /// use local image
     #[structopt(long)]
@@ -175,6 +175,7 @@ impl StartOpt {
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
+        // Based on channel, we should start this process differently
         // Check channel here:
         // If dev, set the `--develop` flag true
 
@@ -197,10 +198,10 @@ impl StartOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct UpgradeOpt {
     #[structopt(flatten)]
-    start: StartOpt,
+    pub start: StartOpt,
     /// Whether to skip upgrading the sys chart
     #[structopt(long)]
     skip_sys: bool,

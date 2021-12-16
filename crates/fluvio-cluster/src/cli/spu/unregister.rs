@@ -16,7 +16,7 @@ use crate::cli::ClusterCliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct UnregisterCustomSpuOpt {
     /// SPU id
     #[structopt(short = "i", long = "id", required_unless = "name")]

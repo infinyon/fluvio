@@ -12,7 +12,7 @@ use fluvio::metadata::customspu::CustomSpuSpec;
 use flv_util::socket_helpers::ServerAddress;
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct RegisterCustomSpuOpt {
     /// SPU id
     #[structopt(short = "i", long = "id")]
