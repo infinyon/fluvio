@@ -19,7 +19,6 @@ mod smartmodule;
 mod derivedstream;
 mod render;
 
-
 #[cfg(not(target_os = "windows"))]
 use std::env::current_exe;
 #[cfg(not(target_os = "windows"))]
