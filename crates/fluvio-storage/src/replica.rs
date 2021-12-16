@@ -417,10 +417,11 @@ mod tests {
         let reader = replica.prev_segments.read().await;
         assert!(reader.find_segment(0).is_none());
 
+        //println!("segments:")
         // segment with offset 20 should be active segment
         assert!(reader.find_segment(20).is_none());
         assert!(reader.find_segment(21).is_none());
-        assert!(reader.find_segment(30).is_some()); // any h
+        assert!(reader.find_segment(30).is_none()); // any h
     }
 
     const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
@@ -739,7 +740,7 @@ mod tests {
 
         let reader = new_replica.prev_segments.read().await;
         assert_eq!(reader.len(), 0);
-        assert!(reader.find_segment(0).is_some());
+        assert!(reader.find_segment(0).is_none());
         assert!(reader.find_segment(1).is_none());
         drop(reader);
 
