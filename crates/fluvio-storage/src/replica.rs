@@ -203,7 +203,7 @@ impl FileReplica {
             last_base_offset,
             partition,
             active_segment,
-            prev_segments: segments.as_shared(),
+            prev_segments: segments.into_shared_segments(),
             commit_checkpoint,
         })
     }
@@ -268,16 +268,14 @@ impl FileReplica {
                 return Ok(slice);
             } else if start_offset > leo {
                 return Err(ErrorCode::OffsetOutOfRange);
+            } else if let Some(slice) = self
+                .active_segment
+                .records_slice(start_offset, max_offset)
+                .await?
+            {
+                slice
             } else {
-                if let Some(slice) = self
-                    .active_segment
-                    .records_slice(start_offset, max_offset)
-                    .await?
-                {
-                    slice
-                } else {
-                    return Err(ErrorCode::OffsetOutOfRange);
-                }
+                return Err(ErrorCode::OffsetOutOfRange);
             }
         } else {
             debug!(start_offset, active_base_offset, "not in active sgments");
@@ -335,9 +333,8 @@ mod tests {
     use std::sync::Arc;
 
     use dataplane::{Isolation, batch::Batch};
-    use dataplane::{Offset, ErrorCode};
+    use dataplane::{Offset};
     use dataplane::core::{Decoder, Encoder};
-    use dataplane::fetch::FilePartitionResponse;
     use dataplane::record::{Record, RecordSet};
     use dataplane::batch::MemoryRecords;
     use dataplane::fixture::{BatchProducer, create_batch};
@@ -417,13 +414,13 @@ mod tests {
         assert_eq!(batch.records().len(), 2);
 
         // there should not be any segment for offset 0 since base offset is 20
-        let out_of_range_err = replica.read_records(0, None, 1000).await.unwrap_err();
-        assert_eq!(out_of_range_err, ErrorCode::OffsetOutOfRange);
+        let reader = replica.prev_segments.read().await;
+        assert!(reader.find_segment(0).is_none());
 
         // segment with offset 20 should be active segment
-        replica.read_records(20, None, 10000).await.expect("read");
-        replica.read_records(21, None, 10000).await.expect("read");
-        assert!(replica.read_records(30, None, 10000).await.is_err()); // any higher offset should result in current segment
+        assert!(reader.find_segment(20).is_none());
+        assert!(reader.find_segment(21).is_none());
+        assert!(reader.find_segment(30).is_some()); // any h
     }
 
     const TEST_UNCOMMIT_DIR: &str = "test_uncommitted";
@@ -709,7 +706,6 @@ mod tests {
         ));
     }
 
-    /*
     /// create replicat with multiple segments
     #[fluvio_future::test]
     async fn test_replica_multiple_segment() {
@@ -727,7 +723,9 @@ mod tests {
         let mut new_replica = FileReplica::create_or_load("test", 0, 0, option.clone())
             .await
             .expect("create");
-        assert!(new_replica.prev_segments.len() == 0);
+        let reader = new_replica.prev_segments.read().await;
+        assert!(reader.len() == 0);
+        drop(reader);
 
         // this will create  1 segment
         new_replica
@@ -738,39 +736,41 @@ mod tests {
             .write_batch(&mut producer.generate_batch())
             .await
             .expect("write");
-        assert_eq!(new_replica.prev_segments.len(), 0);
-        assert!(new_replica.find_segment(0).is_some());
-        assert!(new_replica.find_segment(1).expect("some").is_active());
+
+        let reader = new_replica.prev_segments.read().await;
+        assert_eq!(reader.len(), 0);
+        assert!(reader.find_segment(0).is_some());
+        assert!(reader.find_segment(1).is_none());
+        drop(reader);
 
         // overflow, will create 2nd segment
         new_replica
             .write_batch(&mut producer.generate_batch())
             .await
             .expect("write");
-        assert_eq!(new_replica.prev_segments.len(), 1);
+
         assert_eq!(new_replica.prev_segments.min_offset(), 0);
-        println!("new replica segments: {:#?}", new_replica.prev_segments);
-        let first_segment = new_replica.prev_segments.get_segment(0).expect("some");
+        let reader = new_replica.prev_segments.read().await;
+        assert_eq!(reader.len(), 1);
+
+        //    println!("new replica segments: {:#?}", new_replica.prev_segments);
+        let first_segment = reader.get_segment(0).expect("some");
         assert_eq!(first_segment.get_base_offset(), 0);
         assert_eq!(first_segment.get_end_offset(), 4);
-        assert!(new_replica.find_segment(0).is_some());
-
+        assert!(reader.find_segment(0).is_some());
+        drop(reader);
         drop(new_replica);
 
         // reload replica
         let old_replica = FileReplica::create_or_load("test", 0, 0, option.clone())
             .await
             .expect("read");
-        println!("old replica segments: {:#?}", old_replica.prev_segments);
-        assert!(old_replica.prev_segments.len() == 1);
-        let slice = old_replica.find_segment(0).expect("some");
-        match slice {
-            SegmentSlice::MutableSegment(_) => panic!("should be immutable"),
-            SegmentSlice::Segment(old) => {
-                assert_eq!(old.get_base_offset(), 0);
-                assert_eq!(old.get_end_offset(), 4);
-            }
-        }
+        let reader = old_replica.prev_segments.read().await;
+        //  println!("old replica segments: {:#?}", old_replica.prev_segments);
+        assert!(reader.len() == 1);
+        let (_, segment) = reader.find_segment(0).expect("some");
+
+        assert_eq!(segment.get_base_offset(), 0);
+        assert_eq!(segment.get_end_offset(), 4);
     }
-    */
 }

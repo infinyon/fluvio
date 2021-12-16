@@ -184,7 +184,7 @@ impl StreamFetchHandler {
                     send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
                     Ok(())
                 }
-                StreamFetchError::Socket(err) => return Err(err),
+                StreamFetchError::Socket(err) => Err(err),
             }
         } else {
             Ok(())

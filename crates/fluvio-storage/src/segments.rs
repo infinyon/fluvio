@@ -87,7 +87,7 @@ impl SegmentList {
         }
     }
 
-    pub fn as_shared(self) -> SharedSegments {
+    pub fn into_shared_segments(self) -> SharedSegments {
         let min = self.min_offset;
         SharedSegments {
             inner: Arc::new(RwLock::new(self)),
@@ -149,7 +149,7 @@ impl SegmentList {
         Ok((segments, last_offset))
     }
 
-    #[allow(dead_code)]
+    #[cfg(test)]
     pub fn len(&self) -> usize {
         self.segments.len()
     }
@@ -170,12 +170,12 @@ impl SegmentList {
         self.min_offset
     }
 
-    #[allow(dead_code)]
-    fn get_segment(&self, offset: Offset) -> Option<&ReadSegment> {
+    #[cfg(test)]
+    pub fn get_segment(&self, offset: Offset) -> Option<&ReadSegment> {
         self.segments.get(&offset)
     }
 
-    fn find_segment(&self, offset: Offset) -> Option<(&Offset, &ReadSegment)> {
+    pub fn find_segment(&self, offset: Offset) -> Option<(&Offset, &ReadSegment)> {
         if offset < self.min_offset {
             None
         } else if offset == self.min_offset {

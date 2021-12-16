@@ -10,7 +10,6 @@ use futures_lite::future::zip;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
 use dataplane::{
-    ErrorCode,
     fetch::{
         FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
         FilePartitionResponse, FileTopicResponse,
