@@ -1,10 +1,16 @@
 use structopt::StructOpt;
 use color_eyre::eyre::Result;
+#[cfg(not(target_os = "windows"))]
 use fluvio_cli::{Root, HelpOpt, cli_config::CliChannelName};
 use fluvio_future::task::run_block_on;
+#[cfg(not(target_os = "windows"))]
 use fluvio_cli::cli_config::{FluvioChannelConfig, is_fluvio_bin_in_std_dir};
+use std::process::Stdio;
+#[cfg(not(target_os = "windows"))]
 use std::{env::current_exe, os::unix::prelude::CommandExt};
+#[cfg(not(target_os = "windows"))]
 use std::ffi::OsString;
+#[cfg(not(target_os = "windows"))]
 use tracing::debug;
 
 fn main() -> Result<()> {
@@ -64,8 +70,13 @@ fn main() -> Result<()> {
                             args.remove(0);
                         }
 
+                        // Handle pipes
+
                         let mut proc = std::process::Command::new(exe);
                         proc.args(args);
+                        proc.stdin(Stdio::inherit());
+                        proc.stdout(Stdio::inherit());
+                        proc.stderr(Stdio::inherit());
 
                         let _err = proc.exec();
                         true
