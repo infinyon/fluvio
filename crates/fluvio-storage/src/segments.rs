@@ -25,7 +25,6 @@ use crate::util::log_path_get_offset;
 #[derive(Debug)]
 pub(crate) struct SharedSegments {
     inner: Arc<RwLock<SegmentList>>,
-    max_offset: AtomicI64,
     min_offset: AtomicI64,
 }
 
@@ -49,11 +48,9 @@ impl SharedSegments {
             "inserting"
         );
         let mut writer = self.write().await;
-        writer.add_segment(segment);
-        self.max_offset
-            .store(writer.max_offset, std::sync::atomic::Ordering::SeqCst);
+        let min_offset = writer.add_segment(segment);
         self.min_offset
-            .store(writer.min_offset, std::sync::atomic::Ordering::SeqCst);
+            .store(min_offset, std::sync::atomic::Ordering::SeqCst);
     }
 
     pub async fn find_slice(
@@ -92,11 +89,9 @@ impl SegmentList {
 
     pub fn as_shared(self) -> SharedSegments {
         let min = self.min_offset;
-        let max = self.max_offset;
         SharedSegments {
             inner: Arc::new(RwLock::new(self)),
-            max_offset: AtomicI64::new(min),
-            min_offset: AtomicI64::new(max),
+            min_offset: AtomicI64::new(min),
         }
     }
 
@@ -140,8 +135,14 @@ impl SegmentList {
         for offset in offsets {
             // for now, set end offset same as base, this will be reset when validation occurs
             match ReadSegment::open_unknown(offset, option).await {
-                Ok(segment) => segments.add_segment(segment),
-                Err(err) => error!("error opening segment: {:#?}", err),
+                Ok(segment) => {
+                    let min_offset = segments.add_segment(segment);
+                    debug!(min_offset, "adding segment");
+                }
+                Err(err) => {
+                    error!("error opening segment: {:#?}", err);
+                    return Err(err);
+                }
             }
         }
 
@@ -153,7 +154,7 @@ impl SegmentList {
         self.segments.len()
     }
 
-    fn add_segment(&mut self, segment: ReadSegment) {
+    fn add_segment(&mut self, segment: ReadSegment) -> Offset {
         debug!(
             base_offset = segment.get_base_offset(),
             end_offset = segment.get_end_offset(),
@@ -166,6 +167,7 @@ impl SegmentList {
             min(self.min_offset, segment.get_base_offset())
         };
         self.segments.insert(segment.get_base_offset(), segment);
+        self.min_offset
     }
 
     #[allow(dead_code)]
