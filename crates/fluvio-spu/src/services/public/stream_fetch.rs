@@ -1,7 +1,5 @@
 use std::sync::Arc;
 use std::time::Instant;
-use std::io::ErrorKind;
-use std::io::Error as IoError;
 
 use fluvio_smartengine::SmartModuleInstance;
 use futures_util::StreamExt;

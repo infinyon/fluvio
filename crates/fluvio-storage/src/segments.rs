@@ -1,7 +1,6 @@
 use std::cmp::max;
 use std::cmp::min;
 use std::collections::BTreeMap;
-use std::ops::AddAssign;
 use std::ops::Bound::Included;
 use std::ffi::OsStr;
 use std::sync::Arc;
@@ -152,10 +151,6 @@ impl SegmentList {
     #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.segments.len()
-    }
-
-    pub fn min_offset(&self) -> Offset {
-        self.min_offset
     }
 
     fn add_segment(&mut self, segment: ReadSegment) {
