@@ -4,6 +4,7 @@ use std::io::ErrorKind;
 use std::mem::size_of;
 use std::ops::Deref;
 use std::path::Path;
+use std::path::PathBuf;
 use std::slice;
 use std::sync::Arc;
 
@@ -76,6 +77,7 @@ impl OffsetPosition for (Size, Size) {
 pub struct LogIndex {
     #[allow(dead_code)]
     mmap: MemoryMappedFile,
+    path: PathBuf,
     ptr: *mut c_void,
     len: Size,
 }
@@ -99,7 +101,7 @@ impl LogIndex {
 
         // make sure it is log file
         let (m_file, file) =
-            MemoryMappedFile::open(index_file_path, INDEX_ENTRY_SIZE as u64).await?;
+            MemoryMappedFile::open(&index_file_path, INDEX_ENTRY_SIZE as u64).await?;
 
         let len = (file.metadata().await?).len();
 
@@ -118,6 +120,7 @@ impl LogIndex {
 
         Ok(LogIndex {
             mmap: m_file,
+            path: index_file_path,
             ptr,
             len: len as Size,
         })
@@ -148,6 +151,11 @@ impl LogIndex {
     #[inline]
     pub fn ptr(&self) -> *const (Size, Size) {
         self.ptr as *const (Size, Size)
+    }
+
+    /// return file path to be removed
+    pub fn clean(self) -> PathBuf {
+        self.path
     }
 }
 

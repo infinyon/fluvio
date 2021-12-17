@@ -7,6 +7,7 @@ use std::time::Duration;
 use std::time::SystemTime;
 use std::time::SystemTimeError;
 
+use fluvio_future::fs::remove_file;
 use tracing::debug;
 
 use fluvio_future::fs::File;
@@ -15,6 +16,7 @@ use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::AsyncFileExtension;
 use dataplane::{Offset, Size};
 use tracing::error;
+use tracing::info;
 
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
@@ -91,6 +93,11 @@ impl FileRecordsSlice {
                 false
             }
         }
+    }
+
+    pub(crate) async fn remove(self) -> Result<(), IoError> {
+        info!(log_path = %self.path.display(),"removing log file");
+        remove_file(&self.path).await
     }
 }
 

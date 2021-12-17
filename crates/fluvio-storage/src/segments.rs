@@ -13,6 +13,7 @@ use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use tracing::debug;
+use tracing::info;
 use tracing::trace;
 use tracing::error;
 
@@ -264,7 +265,7 @@ impl Cleaner {
                 debug!(count = expired_segments.len(), "found segments to remove");
                 let mut write = self.0.write().await;
                 for base_offset in expired_segments {
-                    debug!(base_offset, "removing segment");
+                    info!(base_offset, "removing segment");
                     if let Some((old_segment, _)) = write.remove_segment(&base_offset) {
                         if let Err(err) = old_segment.remove().await {
                             error!("failed to remove segment: {:#?}", err);

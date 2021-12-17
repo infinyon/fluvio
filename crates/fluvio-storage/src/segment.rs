@@ -3,7 +3,8 @@ use std::io::Error as IoError;
 use std::ops::Deref;
 use std::sync::Arc;
 
-use tracing::{debug, trace, instrument};
+use fluvio_future::fs::remove_file;
+use tracing::{debug, trace, instrument, info};
 
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size, ErrorCode};
@@ -255,7 +256,11 @@ impl Segment<LogIndex, FileRecordsSlice> {
         self.msg_log.is_expired(seconds)
     }
 
-    pub(crate) async fn remove(&self) -> Result<(), StorageError> {
+    pub(crate) async fn remove(self) -> Result<(), StorageError> {
+        self.msg_log.remove().await?;
+        let index_file_path = self.index.clean();
+        info!(index_path = %index_file_path.display(),"removing index file");
+        remove_file(&index_file_path).await?;
         Ok(())
     }
 }
