@@ -14,6 +14,7 @@ use fluvio_future::fs::util as file_util;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::AsyncFileExtension;
 use dataplane::{Offset, Size};
+use tracing::error;
 
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
@@ -80,6 +81,16 @@ impl FileRecordsSlice {
 
     pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {
         self.last_modifed_time.elapsed()
+    }
+
+    pub(crate) fn is_expired(&self, seconds: u32) -> bool {
+        match self.last_modifed_time.elapsed() {
+            Ok(elapsed) => elapsed.as_secs() > seconds as u64,
+            Err(err) => {
+                error!(path = %self.path.display(),"failed to get last modified time: {:?}", err);
+                false
+            }
+        }
     }
 }
 

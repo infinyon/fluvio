@@ -30,7 +30,7 @@ pub struct FileReplica {
     partition: Size,
     option: Arc<SharedReplicaConfig>,
     active_segment: MutableSegment,
-    prev_segments: SharedSegments,
+    prev_segments: Arc<SharedSegments>,
     commit_checkpoint: CheckPoint<Offset>,
 }
 

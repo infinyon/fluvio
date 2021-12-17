@@ -250,6 +250,14 @@ impl Segment<LogIndex, FileRecordsSlice> {
             end_offset,
         })
     }
+
+    pub(crate) fn is_expired(&self, seconds: u32) -> bool {
+        self.msg_log.is_expired(seconds)
+    }
+
+    pub(crate) async fn remove(&self) -> Result<(), StorageError> {
+        Ok(())
+    }
 }
 
 impl Unpin for Segment<MutLogIndex, MutFileRecords> {}

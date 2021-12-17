@@ -1,5 +1,3 @@
-use std::cmp::max;
-use std::cmp::min;
 use std::collections::BTreeMap;
 use std::ops::Bound::Included;
 use std::ffi::OsStr;
@@ -13,7 +11,7 @@ use async_lock::RwLockWriteGuard;
 use dataplane::ErrorCode;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::task::spawn;
-//use fluvio_future::timer::sleep;
+use fluvio_future::timer::sleep;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
@@ -44,7 +42,7 @@ impl SharedSegments {
 
     pub async fn from_dir(
         option: Arc<SharedReplicaConfig>,
-    ) -> Result<(SharedSegments, Option<Offset>), StorageError> {
+    ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
         let dirs = option.base_dir.read_dir()?;
         debug!("reading segments at: {:#?}", dirs);
         let files: Vec<_> = dirs.filter_map(|entry| entry.ok()).collect();
@@ -92,7 +90,12 @@ impl SharedSegments {
             }
         }
 
-        Ok((Self::from(segments, option), last_offset))
+        let shared_segments = Arc::new(SharedSegments::from(segments, option));
+
+        // launch cleaner
+        Cleaner::start(shared_segments.clone());
+
+        Ok((shared_segments, last_offset))
     }
 
     pub async fn read(&self) -> RwLockReadGuard<'_, SegmentList> {
@@ -107,7 +110,7 @@ impl SharedSegments {
         self.min_offset.load(std::sync::atomic::Ordering::SeqCst)
     }
 
-    pub async fn add_segment(&mut self, segment: ReadSegment) {
+    pub async fn add_segment(&self, segment: ReadSegment) {
         debug!(
             base_offset = segment.get_base_offset(),
             end_offset = segment.get_end_offset(),
@@ -166,14 +169,36 @@ impl SegmentList {
             end_offset = segment.get_end_offset(),
             "inserting"
         );
-        self.max_offset = max(self.max_offset, segment.get_end_offset());
-        self.min_offset = if self.min_offset < 0 {
-            segment.get_base_offset()
-        } else {
-            min(self.min_offset, segment.get_base_offset())
-        };
-        self.segments.insert(segment.get_base_offset(), segment);
+
+        self.update_min_max();
         self.min_offset
+    }
+
+    fn update_min_max(&mut self) {
+        let mut max_offset = 0;
+        let mut min_offset = -1;
+        self.segments.values().for_each(|segment| {
+            let base_offset = segment.get_base_offset();
+            let end_offset = segment.get_end_offset();
+            if end_offset > max_offset {
+                max_offset = end_offset;
+            }
+            if base_offset < min_offset {
+                min_offset = base_offset;
+            }
+        });
+        self.max_offset = max_offset;
+        self.min_offset = min_offset;
+    }
+
+    /// remove segment and return min offset
+    fn remove_segment(&mut self, offset: &Offset) -> Option<(ReadSegment, Offset)> {
+        if let Some(segment) = self.segments.remove(offset) {
+            self.update_min_max();
+            Some((segment, self.min_offset))
+        } else {
+            None
+        }
     }
 
     #[cfg(test)]
@@ -200,21 +225,27 @@ impl SegmentList {
         }
     }
 
-    fn find_expired_segments(&self) -> Vec<&ReadSegment> {
-        vec![]
+    fn find_expired_segments(&self, seconds: u32) -> Vec<Offset> {
+        self.segments
+            .iter()
+            .filter_map(|(base_offset, segment)| {
+                if segment.is_expired(seconds) {
+                    Some(*base_offset)
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 }
 
-const DELAY: Duration = Duration::from_millis(10000);
+const DELAY: Duration = Duration::from_secs(10);
 
-struct Cleaner {
-    segments: Arc<RwLock<SegmentList>>,
-    config: Arc<SharedReplicaConfig>,
-}
+struct Cleaner(Arc<SharedSegments>);
 
 impl Cleaner {
-    fn start(segments: Arc<RwLock<SegmentList>>, config: Arc<SharedReplicaConfig>) {
-        let cleaner = Cleaner { segments, config };
+    fn start(shared_segmen: Arc<SharedSegments>) {
+        let cleaner = Cleaner(shared_segmen);
 
         spawn(async move {
             cleaner.clean().await;
@@ -222,15 +253,27 @@ impl Cleaner {
     }
 
     async fn clean(&self) {
-
-        /*
         loop {
-
-            debug!("waiting");
+            debug!(seconds = DELAY.as_secs(), "sleeping seconds");
             sleep(DELAY).await;
-            let find = self.segments.read().await.find_expired_segments();
-
-        }*/
+            let read = self.0.read().await;
+            let expired_segments =
+                read.find_expired_segments(self.0.config.retention_seconds.get());
+            drop(read);
+            if !expired_segments.is_empty() {
+                debug!(count = expired_segments.len(), "found segments to remove");
+                let mut write = self.0.write().await;
+                for base_offset in expired_segments {
+                    debug!(base_offset, "removing segment");
+                    if let Some((old_segment, _)) = write.remove_segment(&base_offset) {
+                        if let Err(err) = old_segment.remove().await {
+                            error!("failed to remove segment: {:#?}", err);
+                        }
+                    }
+                }
+                drop(write);
+            }
+        }
     }
 }
 
