@@ -99,7 +99,15 @@ mod root {
         #[cfg(not(target_os = "windows"))]
         #[structopt(long)]
         skip_channel_check: bool,
+
         // TODO: Include flag for overriding channel choice in config
+    }
+
+    impl RootOpt {
+        #[cfg(not(target_os = "windows"))]
+        pub fn skip_channel_check(&self) -> bool {
+            self.skip_channel_check
+        }
     }
 
     #[derive(Debug, StructOpt)]
@@ -233,8 +241,8 @@ mod root {
                             let current_exe = current_exe()?;
 
                             // TODO: We need a way to propagate the skip_channel_check
-                            //if is_fluvio_bin_in_std_dir(&current_exe) && !root.skip_channel_check() {
-                            if is_fluvio_bin_in_std_dir(&current_exe) {
+                            if is_fluvio_bin_in_std_dir(&current_exe) && !root.skip_channel_check() {
+                            //if is_fluvio_bin_in_std_dir(&current_exe) {
                                 let channel_config_path = FluvioChannelConfig::default_config_location();
 
                                 let channel = if FluvioChannelConfig::exists(&channel_config_path) {

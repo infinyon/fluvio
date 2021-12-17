@@ -60,12 +60,6 @@ impl SwitchOpt {
                     .channel
                     .insert("latest".to_string(), FluvioChannelInfo::latest_channel());
 
-                // I'm not sure we need this?
-                //new_config_channel
-                //    .config
-                //    .channel
-                //    .insert("dev".to_string(), FluvioChannelInfo::developer_channel());
-
                 new_config_channel
             };
 
@@ -73,7 +67,7 @@ impl SwitchOpt {
             let c = self.channel.to_string().to_lowercase();
             new_config.config.current_channel = c.clone();
 
-            println!("Channel set to: {} ", c);
+            println!("Channel set to {} ", c);
 
             // Write the changes to config
             new_config.save()?;

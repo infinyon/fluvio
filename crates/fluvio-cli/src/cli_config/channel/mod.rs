@@ -21,7 +21,7 @@ mod switch;
 use switch::SwitchOpt;
 mod list;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 pub struct ChannelOpt {
     #[structopt(subcommand)]
     cmd: Option<ChannelCmd>,
@@ -31,7 +31,9 @@ impl ChannelOpt {
     pub async fn process(self) -> Result<()> {
         match self.cmd {
             Some(cmd) => cmd.process().await?,
-            None => CurrentOpt {}.process().await?,
+            None => {
+                CurrentOpt::default().process().await?
+            },
         }
         Ok(())
     }
@@ -59,10 +61,34 @@ impl ChannelCmd {
     }
 }
 
-struct CurrentOpt {}
+#[derive(Debug, StructOpt, Default)]
+struct CurrentOpt {
+    #[structopt(long)]
+    config: Option<PathBuf>,
+}
+
 impl CurrentOpt {
     pub async fn process(self) -> Result<()> {
-        println!("Print the current channel");
+
+        // Look for channel config
+        let channel_config_path = if let Some(path) = self.config {
+            path
+        } else {
+            FluvioChannelConfig::default_config_location()
+        };
+
+        let current_channel = if let Ok(config) = FluvioChannelConfig::from_file(channel_config_path) {
+            Some(config.current_channel())
+        } else {
+            None
+        };
+
+        if let Some(channel) = current_channel {
+            println!("Current channel: {}", channel.to_string().to_lowercase())
+        } else {
+            println!("No channel set")
+        }
+
         Ok(())
     }
 }
