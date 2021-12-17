@@ -1,5 +1,6 @@
 use std::cmp::min;
 use std::mem;
+use std::sync::Arc;
 
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_protocol::Encoder;
@@ -12,9 +13,9 @@ use dataplane::batch::Batch;
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
-use crate::segments::{SegmentList, SharedSegments};
+use crate::segments::{SharedSegments};
 use crate::segment::MutableSegment;
-use crate::config::ConfigOption;
+use crate::config::{ReplicaConfig, SharedReplicaConfig};
 use crate::{ReplicaSlice};
 use crate::{StorageError, ReplicaStorage};
 
@@ -27,7 +28,7 @@ pub struct FileReplica {
     last_base_offset: Offset,
     #[allow(dead_code)]
     partition: Size,
-    option: ConfigOption,
+    option: Arc<SharedReplicaConfig>,
     active_segment: MutableSegment,
     prev_segments: SharedSegments,
     commit_checkpoint: CheckPoint<Offset>,
@@ -37,7 +38,7 @@ impl Unpin for FileReplica {}
 
 #[async_trait]
 impl ReplicaStorage for FileReplica {
-    type Config = ConfigOption;
+    type Config = ReplicaConfig;
 
     async fn create_or_load(
         replica: &ReplicaKey,
@@ -94,7 +95,7 @@ impl ReplicaStorage for FileReplica {
         records: &mut RecordSet,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
-        let max_batch_size = self.option.max_batch_size as usize;
+        let max_batch_size = self.option.max_batch_size.get() as usize;
         // check if any of the records's batch exceed max length
         for batch in &records.batches {
             if batch.write_size(0) > max_batch_size {
@@ -164,7 +165,7 @@ impl FileReplica {
         topic: S,
         partition: Size,
         base_offset: Offset,
-        option: ConfigOption,
+        option: ReplicaConfig,
     ) -> Result<FileReplica, StorageError>
     where
         S: AsRef<str> + Send + 'static,
@@ -177,11 +178,14 @@ impl FileReplica {
         let mut rep_option = option.clone();
         rep_option.base_dir = replica_dir;
 
-        let (segments, last_offset_res) = SegmentList::from_dir(&rep_option).await?;
+        let shared_config: Arc<SharedReplicaConfig> = Arc::new(rep_option.into());
+
+        let (segments, last_offset_res) = SharedSegments::from_dir(shared_config.clone()).await?;
 
         let active_segment = if let Some(last_offset) = last_offset_res {
             debug!(last_offset, "last segment found, validating offsets");
-            let mut last_segment = MutableSegment::open_for_write(last_offset, &rep_option).await?;
+            let mut last_segment =
+                MutableSegment::open_for_write(last_offset, shared_config.clone()).await?;
             last_segment.validate().await?;
             info!(
                 end_offset = last_segment.get_end_offset(),
@@ -190,27 +194,27 @@ impl FileReplica {
             last_segment
         } else {
             info!("no existing segment found, creating new one");
-            MutableSegment::create(base_offset, &rep_option).await?
+            MutableSegment::create(base_offset, shared_config.clone()).await?
         };
 
         let last_base_offset = active_segment.get_base_offset();
 
         let commit_checkpoint: CheckPoint<Offset> =
-            CheckPoint::create(&rep_option, "replication.chk", last_base_offset).await?;
+            CheckPoint::create(shared_config.clone(), "replication.chk", last_base_offset).await?;
 
         Ok(Self {
-            option: rep_option,
+            option: shared_config,
             last_base_offset,
             partition,
             active_segment,
-            prev_segments: segments.into_shared_segments(),
+            prev_segments: segments,
             commit_checkpoint,
         })
     }
 
     /// clear the any holding directory for replica
     #[instrument(skip(replica, option))]
-    pub async fn clear(replica: &ReplicaKey, option: &ConfigOption) {
+    pub async fn clear(replica: &ReplicaKey, option: &SharedReplicaConfig) {
         let replica_dir = option
             .base_dir
             .join(replica_dir_name(&replica.topic, replica.partition as u32));
@@ -307,7 +311,7 @@ impl FileReplica {
             debug!("segment has no room, rolling over previous segment");
             self.active_segment.roll_over().await?;
             let last_offset = self.active_segment.get_end_offset();
-            let new_segment = MutableSegment::create(last_offset, &self.option).await?;
+            let new_segment = MutableSegment::create(last_offset, self.option.clone()).await?;
             let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
             let old_segment = old_mut_segment.as_segment().await?;
             self.prev_segments.add_segment(old_segment).await;
@@ -341,7 +345,7 @@ mod tests {
     use dataplane::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
 
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use crate::{StorageError};
     use crate::ReplicaStorage;
 
@@ -354,10 +358,10 @@ mod tests {
     const START_OFFSET: Offset = 20;
 
     /// create option, ensure they are clean
-    fn base_option(dir: &str) -> ConfigOption {
+    fn base_option(dir: &str) -> ReplicaConfigOption {
         let base_dir = temp_dir().join(dir);
         ensure_clean_dir(&base_dir);
-        ConfigOption {
+        ReplicaConfigOption {
             segment_max_bytes: 10000,
             base_dir,
             index_max_interval_bytes: 1000,
@@ -366,10 +370,10 @@ mod tests {
         }
     }
 
-    fn rollover_option(dir: &str) -> ConfigOption {
+    fn rollover_option(dir: &str) -> ReplicaConfigOption {
         let base_dir = temp_dir().join(dir);
         ensure_clean_dir(&base_dir);
-        ConfigOption {
+        ReplicaConfigOption {
             segment_max_bytes: 100,
             base_dir,
             index_max_bytes: 1000,

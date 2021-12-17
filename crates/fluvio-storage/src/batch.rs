@@ -280,11 +280,11 @@ mod tests {
     use dataplane::fixture::create_batch;
     use dataplane::fixture::create_batch_with_producer;
 
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use crate::segment::MutableSegment;
 
-    fn default_option(base_dir: PathBuf) -> ConfigOption {
-        ConfigOption {
+    fn default_option(base_dir: PathBuf) -> ReplicaConfigOption {
+        ReplicaConfigOption {
             base_dir,
             segment_max_bytes: 1000,
             index_max_bytes: 1000,

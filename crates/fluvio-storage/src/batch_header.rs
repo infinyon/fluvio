@@ -29,12 +29,12 @@ mod tests {
 
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use crate::records::FileRecords;
     use super::BatchHeaderStream;
 
-    fn default_option(base_dir: PathBuf) -> ConfigOption {
-        ConfigOption {
+    fn default_option(base_dir: PathBuf) -> ReplicaConfigOption {
+        ReplicaConfigOption {
             base_dir,
             segment_max_bytes: 1000,
             ..Default::default()

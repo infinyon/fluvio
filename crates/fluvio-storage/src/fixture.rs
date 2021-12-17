@@ -4,10 +4,10 @@ use derive_builder::Builder;
 
 use dataplane::{Size, batch::Batch, record::Record};
 
-use crate::config::ConfigOption;
+use crate::config::ReplicaConfig;
 
-pub fn default_option(index_max_interval_bytes: Size) -> ConfigOption {
-    ConfigOption {
+pub fn default_option(index_max_interval_bytes: Size) -> ReplicaConfig {
+    ReplicaConfig {
         segment_max_bytes: 100,
         index_max_interval_bytes,
         base_dir: temp_dir(),

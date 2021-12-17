@@ -162,7 +162,7 @@ mod tests {
 
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use crate::records::FileRecords;
     use crate::validator::LogValidationError;
 
@@ -175,7 +175,7 @@ mod tests {
         let test_dir = temp_dir().join("validation_empty");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfigOption {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
@@ -198,7 +198,7 @@ mod tests {
         let test_dir = temp_dir().join("validation_success");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfigOption {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
@@ -233,7 +233,7 @@ mod tests {
         let test_dir = temp_dir().join("validate_invalid_contents");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfigOption {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()

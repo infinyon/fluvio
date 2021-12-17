@@ -24,14 +24,14 @@ use dataplane::fixture::BatchProducer;
 use fluvio_socket::{FluvioSocket, SocketError};
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
-use fluvio_storage::config::ConfigOption;
+use fluvio_storage::config::ReplicaConfigOption;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;
 const TOPIC_NAME: &str = "testsimple";
 
-fn default_option() -> ConfigOption {
-    ConfigOption {
+fn default_option() -> ReplicaConfigOption {
+    ReplicaConfigOption {
         segment_max_bytes: 10000,
         base_dir: temp_dir().join(TEST_REP_DIR),
         index_max_interval_bytes: 1000,

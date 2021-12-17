@@ -5,6 +5,7 @@ use std::mem::size_of;
 use std::ops::Deref;
 use std::path::Path;
 use std::slice;
+use std::sync::Arc;
 
 use libc::c_void;
 use tracing::debug;
@@ -14,10 +15,11 @@ use pin_utils::unsafe_unpinned;
 use fluvio_future::fs::mmap::MemoryMappedFile;
 use dataplane::{Offset, Size};
 
+use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
 use crate::util::log_path_get_offset;
 use crate::validator::LogValidationError;
-use crate::config::ConfigOption;
+use crate::config::ReplicaConfig;
 use crate::StorageError;
 
 /// size of the memory mapped isze
@@ -89,7 +91,7 @@ impl LogIndex {
 
     pub async fn open_from_offset(
         base_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<Self, IoError> {
         let index_file_path = generate_file_name(&option.base_dir, base_offset, EXTENSION);
 
@@ -133,12 +135,12 @@ impl LogIndex {
             ));
         }
 
-        let option = ConfigOption {
+        let option = ReplicaConfig {
             base_dir: path_ref.parent().unwrap().to_path_buf(),
             ..Default::default()
         };
 
-        LogIndex::open_from_offset(base_offset, &option)
+        LogIndex::open_from_offset(base_offset, Arc::new(option.into()))
             .await
             .map_err(|err| err.into())
     }
@@ -196,7 +198,7 @@ mod tests {
     use super::lookup_entry;
     use super::LogIndex;
     use crate::mut_index::MutLogIndex;
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use super::OffsetPosition;
 
     #[allow(unused)]
@@ -225,8 +227,8 @@ mod tests {
     }
 
     #[allow(unused)]
-    fn default_option() -> ConfigOption {
-        ConfigOption {
+    fn default_option() -> ReplicaConfigOption {
+        ReplicaConfigOption {
             segment_max_bytes: 1000,
             base_dir: temp_dir(),
             index_max_bytes: 1000,

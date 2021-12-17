@@ -1,6 +1,7 @@
 use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
+use std::sync::Arc;
 
 use tracing::{debug, trace, instrument};
 
@@ -15,7 +16,7 @@ use crate::index::Index;
 use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
-use crate::config::ConfigOption;
+use crate::config::{SharedReplicaConfig};
 use crate::{StorageError};
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
@@ -26,7 +27,7 @@ pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
 
 /// Segment contains both message log and index
 pub struct Segment<I, L> {
-    option: ConfigOption,
+    option: Arc<SharedReplicaConfig>,
     msg_log: L,
     index: I,
     base_offset: Offset,
@@ -212,18 +213,18 @@ impl Segment<LogIndex, FileRecordsSlice> {
     pub async fn open_for_read(
         base_offset: Offset,
         end_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<Self, StorageError> {
         debug!(base_offset, end_offset, ?option, "open for read");
-        let msg_log = FileRecordsSlice::open(base_offset, option).await?;
+        let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
         debug!(base_offset, end_offset, "offset from msg log");
-        let index = LogIndex::open_from_offset(base_offset, option).await?;
+        let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
 
         Ok(Segment {
             msg_log,
             index,
-            option: option.to_owned(),
+            option,
             base_offset,
             end_offset,
         })
@@ -233,18 +234,18 @@ impl Segment<LogIndex, FileRecordsSlice> {
     #[instrument(skip(option),fields(base_dir=?option.base_dir))]
     pub async fn open_unknown(
         base_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<Self, StorageError> {
-        let msg_log = FileRecordsSlice::open(base_offset, option).await?;
+        let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
         let end_offset = msg_log.validate().await?;
         debug!(end_offset, base_offset, "base offset from msg_log");
-        let index = LogIndex::open_from_offset(base_offset, option).await?;
+        let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
 
         Ok(Segment {
             msg_log,
             index,
-            option: option.to_owned(),
+            option,
             base_offset,
             end_offset,
         })
@@ -259,12 +260,12 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
     pub async fn create(
         base_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<MutableSegment, StorageError> {
         debug!(base_offset, "creating new active segment");
-        let msg_log = MutFileRecords::create(base_offset, option).await?;
+        let msg_log = MutFileRecords::create(base_offset, option.clone()).await?;
 
-        let index = MutLogIndex::create(base_offset, option).await?;
+        let index = MutLogIndex::create(base_offset, option.clone()).await?;
 
         Ok(MutableSegment {
             option: option.to_owned(),
@@ -277,20 +278,20 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
     pub async fn open_for_write(
         base_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<MutableSegment, StorageError> {
         trace!(
             "opening mut segment: {} at: {:#?}",
             base_offset,
             &option.base_dir
         );
-        let msg_log = MutFileRecords::create(base_offset, option).await?;
+        let msg_log = MutFileRecords::create(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
-        let index = MutLogIndex::open(base_offset, option).await?;
+        let index = MutLogIndex::open(base_offset, option.clone()).await?;
 
         let base_offset = msg_log.get_base_offset();
         Ok(MutableSegment {
-            option: option.to_owned(),
+            option,
             msg_log,
             index,
             base_offset,
@@ -322,7 +323,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// convert to immutable segment
     #[allow(clippy::wrong_self_convention)]
     pub async fn as_segment(self) -> Result<ReadSegment, StorageError> {
-        Segment::open_for_read(self.get_base_offset(), self.end_offset, &self.option).await
+        Segment::open_for_read(self.get_base_offset(), self.end_offset, self.option.clone()).await
     }
 
     /// use only in test
@@ -407,13 +408,13 @@ mod tests {
 
     use super::MutableSegment;
 
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use crate::index::OffsetPosition;
 
     // TODO: consolidate
 
-    fn default_option(base_dir: PathBuf, index_max_interval_bytes: Size) -> ConfigOption {
-        ConfigOption {
+    fn default_option(base_dir: PathBuf, index_max_interval_bytes: Size) -> ReplicaConfigOption {
+        ReplicaConfigOption {
             segment_max_bytes: 1000,
             base_dir,
             index_max_interval_bytes,

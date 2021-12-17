@@ -4,6 +4,7 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::io::SeekFrom;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use bytes::Buf;
 use bytes::BufMut;
@@ -17,7 +18,8 @@ use fluvio_future::fs::File;
 use fluvio_future::fs::metadata;
 use fluvio_future::fs::util;
 
-use crate::config::ConfigOption;
+use crate::config::ReplicaConfig;
+use crate::config::SharedReplicaConfig;
 
 pub trait ReadToBuf: Sized {
     fn read_from<B>(buf: &mut B) -> Self
@@ -64,7 +66,7 @@ impl ReadToBuf for i64 {
 #[allow(dead_code)]
 #[derive(Debug)]
 pub struct CheckPoint<T> {
-    option: ConfigOption,
+    option: Arc<SharedReplicaConfig>,
     offset: T,
     path: PathBuf,
     file: File,
@@ -75,7 +77,7 @@ where
     T: Display + ReadToBuf + Clone + Sized + 'static,
 {
     pub async fn create(
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
         name: &str,
         initial_offset: T,
     ) -> Result<Self, IoError> {
@@ -86,7 +88,7 @@ where
                 trace!("checkpoint {:#?} exists, reading", checkpoint_path);
                 let file = util::open_read_write(&checkpoint_path).await?;
                 let mut checkpoint = CheckPoint {
-                    option: option.to_owned(),
+                    option: option.clone(),
                     file,
                     path: checkpoint_path,
                     offset: initial_offset.clone(),
@@ -102,7 +104,7 @@ where
                 let file = util::open_read_write(&checkpoint_path).await?;
                 trace!("file created: {:#?}", checkpoint_path);
                 let mut checkpoint = CheckPoint {
-                    option: option.to_owned(),
+                    option: option.clone(),
                     file,
                     offset: initial_offset.clone(),
                     path: checkpoint_path,
@@ -160,7 +162,7 @@ mod tests {
 
     use flv_util::fixture::ensure_clean_file;
 
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use super::CheckPoint;
 
     #[fluvio_future::test]
@@ -168,7 +170,7 @@ mod tests {
         let test_file = temp_dir().join("test.chk");
         ensure_clean_file(&test_file);
 
-        let option = ConfigOption {
+        let option = ReplicaConfigOption {
             base_dir: temp_dir(),
             ..Default::default()
         };

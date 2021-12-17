@@ -22,10 +22,10 @@ use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
 use dataplane::core::Encoder;
 
+use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
 use crate::validator::validate;
 use crate::validator::LogValidationError;
-use crate::config::ConfigOption;
 use crate::StorageError;
 use crate::records::FileRecords;
 
@@ -60,18 +60,18 @@ impl fmt::Debug for MutFileRecords {
 
 impl Unpin for MutFileRecords {}
 
-fn get_flush_policy_from_config(option: &ConfigOption) -> FlushPolicy {
-    if option.flush_idle_msec > 0 {
+fn get_flush_policy_from_config(option: &SharedReplicaConfig) -> FlushPolicy {
+    if option.flush_idle_msec.get() > 0 {
         FlushPolicy::IdleFlush {
-            delay_millis: option.flush_idle_msec,
+            delay_millis: option.flush_idle_msec.get(),
         }
-    } else if option.flush_write_count == 0 {
+    } else if option.flush_write_count.get() == 0 {
         FlushPolicy::NoFlush
-    } else if option.flush_write_count == 1 {
+    } else if option.flush_write_count.get() == 1 {
         FlushPolicy::EveryWrite
     } else {
         FlushPolicy::CountWrites {
-            n_writes: option.flush_write_count,
+            n_writes: option.flush_write_count.get(),
             write_tracking: 0,
         }
     }
@@ -80,11 +80,11 @@ fn get_flush_policy_from_config(option: &ConfigOption) -> FlushPolicy {
 impl MutFileRecords {
     pub async fn create(
         base_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<MutFileRecords, BoundedFileSinkError> {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
         let sink_option = BoundedFileOption {
-            max_len: Some(option.segment_max_bytes as u64),
+            max_len: Some(option.segment_max_bytes.get() as u64),
         };
         debug!(log_path = ?log_path, max_len = ?sink_option.max_len,"creating log at");
 
@@ -97,7 +97,7 @@ impl MutFileRecords {
             f_sink: Arc::new(Mutex::new(f_sink)),
             f_slice_root,
             cached_len,
-            flush_policy: get_flush_policy_from_config(option),
+            flush_policy: get_flush_policy_from_config(&option),
             write_count: 0,
             flush_count: Arc::new(AtomicU32::new(0)),
             item_last_offset_delta: 0,
@@ -366,7 +366,7 @@ mod tests {
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fixture::read_bytes_from_file;
 
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
     use crate::records::FileRecords;
     use crate::fixture::BatchProducer;
     use super::MutFileRecords;
@@ -378,7 +378,7 @@ mod tests {
         let test_dir = temp_dir().join("records_with_invalid_base");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfigOption {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
@@ -415,7 +415,7 @@ mod tests {
         let test_dir = temp_dir().join("write_records_every");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfigOption {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
@@ -481,7 +481,7 @@ mod tests {
             .build()
             .expect("build");
 
-        let options = ConfigOption {
+        let options = ReplicaConfigOption {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             flush_write_count: NUM_WRITES,

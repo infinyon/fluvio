@@ -5,30 +5,96 @@ use std::ops::Bound::Included;
 use std::ffi::OsStr;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
+use std::time::Duration;
 
 use async_lock::RwLock;
 use async_lock::RwLockReadGuard;
 use async_lock::RwLockWriteGuard;
 use dataplane::ErrorCode;
 use fluvio_future::file_slice::AsyncFileSlice;
+use fluvio_future::task::spawn;
+//use fluvio_future::timer::sleep;
 use tracing::debug;
 use tracing::trace;
 use tracing::error;
 
 use dataplane::Offset;
 
+use crate::config::SharedReplicaConfig;
 use crate::segment::ReadSegment;
 use crate::StorageError;
-use crate::config::ConfigOption;
 use crate::util::log_path_get_offset;
 
 #[derive(Debug)]
 pub(crate) struct SharedSegments {
     inner: Arc<RwLock<SegmentList>>,
     min_offset: AtomicI64,
+    config: Arc<SharedReplicaConfig>,
 }
 
 impl SharedSegments {
+    fn from(list: SegmentList, config: Arc<SharedReplicaConfig>) -> Self {
+        let min = list.min_offset;
+        Self {
+            inner: Arc::new(RwLock::new(list)),
+            min_offset: AtomicI64::new(min),
+            config,
+        }
+    }
+
+    pub async fn from_dir(
+        option: Arc<SharedReplicaConfig>,
+    ) -> Result<(SharedSegments, Option<Offset>), StorageError> {
+        let dirs = option.base_dir.read_dir()?;
+        debug!("reading segments at: {:#?}", dirs);
+        let files: Vec<_> = dirs.filter_map(|entry| entry.ok()).collect();
+        let mut offsets: Vec<Offset> = vec![];
+        for entry in files {
+            if let Ok(metadata) = entry.metadata() {
+                if metadata.is_file() {
+                    let path = entry.path();
+                    trace!("scanning file: {:#?}", path);
+
+                    if path.extension() == Some(OsStr::new("log")) {
+                        if let Ok(offset) = log_path_get_offset(&path) {
+                            trace!("detected valid log: {}", offset);
+                            offsets.push(offset);
+                            /*
+                            match Segment::open(offset,option).await {
+                                Ok(segment) => segments.add_segment(segment),
+                                Err(err) => error!("error opening segment: {:#?}",err)
+                            }
+                            } else {
+                                debug!("not log, skipping: {:#?}",path);
+                            */
+                        }
+                    }
+                }
+            }
+        }
+
+        offsets.sort_unstable();
+
+        let last_offset = offsets.pop();
+        let mut segments = SegmentList::new();
+
+        for offset in offsets {
+            // for now, set end offset same as base, this will be reset when validation occurs
+            match ReadSegment::open_unknown(offset, option.clone()).await {
+                Ok(segment) => {
+                    let min_offset = segments.add_segment(segment);
+                    debug!(min_offset, "adding segment");
+                }
+                Err(err) => {
+                    error!("error opening segment: {:#?}", err);
+                    return Err(err);
+                }
+            }
+        }
+
+        Ok((Self::from(segments, option), last_offset))
+    }
+
     pub async fn read(&self) -> RwLockReadGuard<'_, SegmentList> {
         self.inner.read().await
     }
@@ -72,7 +138,7 @@ impl SharedSegments {
 }
 
 #[derive(Debug)]
-pub(crate) struct SegmentList {
+pub struct SegmentList {
     segments: BTreeMap<Offset, ReadSegment>, // max base offset of all segments
     min_offset: Offset,
     max_offset: Offset,
@@ -87,67 +153,7 @@ impl SegmentList {
         }
     }
 
-    pub fn into_shared_segments(self) -> SharedSegments {
-        let min = self.min_offset;
-        SharedSegments {
-            inner: Arc::new(RwLock::new(self)),
-            min_offset: AtomicI64::new(min),
-        }
-    }
-
     // load segments
-    pub async fn from_dir(
-        option: &ConfigOption,
-    ) -> Result<(SegmentList, Option<Offset>), StorageError> {
-        let dirs = option.base_dir.read_dir()?;
-        debug!("reading segments at: {:#?}", dirs);
-        let files: Vec<_> = dirs.filter_map(|entry| entry.ok()).collect();
-        let mut offsets: Vec<Offset> = vec![];
-        for entry in files {
-            if let Ok(metadata) = entry.metadata() {
-                if metadata.is_file() {
-                    let path = entry.path();
-                    trace!("scanning file: {:#?}", path);
-
-                    if path.extension() == Some(OsStr::new("log")) {
-                        if let Ok(offset) = log_path_get_offset(&path) {
-                            trace!("detected valid log: {}", offset);
-                            offsets.push(offset);
-                            /*
-                            match Segment::open(offset,option).await {
-                                Ok(segment) => segments.add_segment(segment),
-                                Err(err) => error!("error opening segment: {:#?}",err)
-                            }
-                            } else {
-                                debug!("not log, skipping: {:#?}",path);
-                            */
-                        }
-                    }
-                }
-            }
-        }
-
-        offsets.sort_unstable();
-
-        let last_offset = offsets.pop();
-        let mut segments = Self::new();
-
-        for offset in offsets {
-            // for now, set end offset same as base, this will be reset when validation occurs
-            match ReadSegment::open_unknown(offset, option).await {
-                Ok(segment) => {
-                    let min_offset = segments.add_segment(segment);
-                    debug!(min_offset, "adding segment");
-                }
-                Err(err) => {
-                    error!("error opening segment: {:#?}", err);
-                    return Err(err);
-                }
-            }
-        }
-
-        Ok((segments, last_offset))
-    }
 
     #[cfg(test)]
     pub fn len(&self) -> usize {
@@ -193,6 +199,39 @@ impl SegmentList {
             (&self.segments).range(range).next_back()
         }
     }
+
+    fn find_expired_segments(&self) -> Vec<&ReadSegment> {
+        vec![]
+    }
+}
+
+const DELAY: Duration = Duration::from_millis(10000);
+
+struct Cleaner {
+    segments: Arc<RwLock<SegmentList>>,
+    config: Arc<SharedReplicaConfig>,
+}
+
+impl Cleaner {
+    fn start(segments: Arc<RwLock<SegmentList>>, config: Arc<SharedReplicaConfig>) {
+        let cleaner = Cleaner { segments, config };
+
+        spawn(async move {
+            cleaner.clean().await;
+        });
+    }
+
+    async fn clean(&self) {
+
+        /*
+        loop {
+
+            debug!("waiting");
+            sleep(DELAY).await;
+            let find = self.segments.read().await.find_expired_segments();
+
+        }*/
+    }
 }
 
 #[cfg(test)]
@@ -208,13 +247,13 @@ mod tests {
     use crate::StorageError;
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfigOption;
 
     use super::SegmentList;
 
     // create fake segment, this doesn't create a segment with all data, it just fill with a min data but with a valid end offset
     async fn create_segment(
-        option: &ConfigOption,
+        option: &ReplicaConfigOption,
         start: Offset,
         end_offset: Offset,
     ) -> Result<ReadSegment, StorageError> {
@@ -225,8 +264,8 @@ mod tests {
         Ok(segment)
     }
 
-    fn default_option(base_dir: PathBuf) -> ConfigOption {
-        ConfigOption {
+    fn default_option(base_dir: PathBuf) -> ReplicaConfigOption {
+        ReplicaConfigOption {
             segment_max_bytes: 100,
             base_dir,
             index_max_bytes: 1000,

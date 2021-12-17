@@ -29,7 +29,7 @@ use fluvio_types::defaults::FLV_LOG_BASE_DIR;
 use fluvio_types::defaults::FLV_LOG_SIZE;
 use fluvio_types::SpuId;
 use fluvio_storage::config::{
-    ConfigOption, DEFAULT_FLUSH_WRITE_COUNT, DEFAULT_FLUSH_IDLE_MSEC, DEFAULT_MAX_BATCH_SIZE,
+    ReplicaConfigOption, DEFAULT_FLUSH_WRITE_COUNT, DEFAULT_FLUSH_IDLE_MSEC, DEFAULT_MAX_BATCH_SIZE,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -145,10 +145,10 @@ impl SpuConfig {
     }
 }
 
-impl From<&SpuConfig> for ConfigOption {
+impl From<&SpuConfig> for ReplicaConfigOption {
     fn from(config: &SpuConfig) -> Self {
         let log = &config.log;
-        ConfigOption::builder()
+        ReplicaConfigOption::builder()
             .base_dir(log.base_dir.join(format!("spu-logs-{}", config.id)))
             .index_max_bytes(log.index_max_bytes)
             .index_max_interval_bytes(log.index_max_interval_bytes)

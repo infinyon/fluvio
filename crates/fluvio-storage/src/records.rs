@@ -2,6 +2,10 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::path::Path;
+use std::sync::Arc;
+use std::time::Duration;
+use std::time::SystemTime;
+use std::time::SystemTimeError;
 
 use tracing::debug;
 
@@ -11,10 +15,10 @@ use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::AsyncFileExtension;
 use dataplane::{Offset, Size};
 
+use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
 use crate::validator::validate;
 use crate::validator::LogValidationError;
-use crate::config::ConfigOption;
 use crate::StorageError;
 
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
@@ -37,25 +41,32 @@ pub struct FileRecordsSlice {
     file: File,
     path: PathBuf,
     len: u64,
+    last_modifed_time: SystemTime,
 }
 
 impl FileRecordsSlice {
     pub async fn open(
         base_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<FileRecordsSlice, StorageError> {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        debug!("opening commit log at: {}", log_path.display());
 
         let file = file_util::open(&log_path).await?;
         let metadata = file.metadata().await?;
         let len = metadata.len();
+        let last_modifed_time = metadata.modified()?;
 
+        debug!(
+            path = %log_path.display(), 
+            len,
+            seconds = last_modifed_time.elapsed().map_err(|err| StorageError::Other(format!("Other: {:#?}",err)))?. as_secs(),
+            "opened read only records");
         Ok(FileRecordsSlice {
             base_offset,
             file,
             path: log_path,
             len,
+            last_modifed_time,
         })
     }
 
@@ -65,6 +76,10 @@ impl FileRecordsSlice {
 
     pub async fn validate(&self) -> Result<Offset, LogValidationError> {
         validate(&self.path).await
+    }
+
+    pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {
+        self.last_modifed_time.elapsed()
     }
 }
 
