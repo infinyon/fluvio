@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
-use crate::cli_config::{CliChannelName, FluvioChannelConfig};
+use crate::cli_config::channel::{CliChannelName, FluvioChannelConfig};
 use crate::{Result, CliError};
 use crate::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,

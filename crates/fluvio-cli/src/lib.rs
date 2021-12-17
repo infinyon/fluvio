@@ -22,7 +22,7 @@ mod render;
 #[cfg(not(target_os = "windows"))]
 use std::env::current_exe;
 #[cfg(not(target_os = "windows"))]
-use crate::cli_config::{FluvioChannelConfig, is_fluvio_bin_in_std_dir, CliChannelName};
+use crate::cli_config::channel::{FluvioChannelConfig, is_fluvio_bin_in_std_dir, CliChannelName};
 
 pub(crate) use error::{Result, CliError};
 
@@ -47,6 +47,7 @@ mod root {
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
 
+    use crate::cli_config::ConfigCmd;
     use crate::derivedstream::DerivedStreamCmd;
     use crate::connector::ManagedConnectorCmd;
     use crate::tableformat::TableFormatCmd;
@@ -55,7 +56,6 @@ mod root {
     use crate::produce::ProduceOpt;
     use crate::partition::PartitionCmd;
     use crate::profile::ProfileOpt;
-    use crate::cli_config::CliConfigOpt;
     use crate::install::update::UpdateOpt;
     use crate::install::plugins::InstallOpt;
     use crate::metadata::{MetadataOpt, subcommand_metadata};
@@ -122,7 +122,7 @@ mod root {
 
         /// Manage Fluvio CLI config
         #[structopt(name = "config")]
-        Config(CliConfigOpt),
+        Config(ConfigCmd),
 
         /// Manage Profiles, which describe linked clusters
         ///
@@ -256,16 +256,30 @@ mod root {
                                 let modified_cluster_cmd = match channel.current_channel() {
                                     CliChannelName::Latest => {
 
+                                        // If we've specified an image version, use that
+                                        // Otherwise, use the image version we push to dockerhub
                                         let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
 
                                         if let ClusterCmd::Start(opts) = *cluster {
-                                            let mut new_start_opts = *opts;
-                                            new_start_opts.k8_config.image_version = Some(image_version) ;
-                                            Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
+
+                                            if opts.k8_config.image_version.is_none() {
+
+                                                let mut new_start_opts = *opts;
+                                                new_start_opts.k8_config.image_version = Some(image_version) ;
+                                                Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
+                                            } else {
+                                                Box::new(ClusterCmd::Start(opts))
+                                            }
                                         } else if let ClusterCmd::Upgrade(opts) = *cluster {
-                                            let mut new_upgrade_opts = *opts;
-                                            new_upgrade_opts.start.k8_config.image_version = Some(image_version) ;
-                                            Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
+
+                                            if opts.start.k8_config.image_version.is_none() {
+
+                                                let mut new_upgrade_opts = *opts;
+                                                new_upgrade_opts.start.k8_config.image_version = Some(image_version) ;
+                                                Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
+                                            } else {
+                                                Box::new(ClusterCmd::Upgrade(opts))
+                                            }
                                         } else {
                                             cluster
                                         }
