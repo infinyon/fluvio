@@ -83,7 +83,7 @@ pub(crate) fn get_extensions() -> Result<Vec<PathBuf>> {
     skip(agent, target, id),
     fields(%target, id = %id.pretty())
 )]
-async fn fetch_latest_version<T>(
+pub async fn fetch_latest_version<T>(
     agent: &HttpAgent,
     id: &PackageId<T>,
     target: &Target,
@@ -109,7 +109,7 @@ async fn fetch_latest_version<T>(
     skip(agent, id, target),
     fields(%target, %id)
 )]
-async fn fetch_package_file(
+pub async fn fetch_package_file(
     agent: &HttpAgent,
     id: &PackageId<WithVersion>,
     target: &Target,

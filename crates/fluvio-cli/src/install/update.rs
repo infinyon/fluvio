@@ -25,6 +25,9 @@ pub struct UpdateOpt {
 
 impl UpdateOpt {
     pub async fn process(self) -> Result<()> {
+        // Verify channel
+        // If latest, set the develop flag to true
+
         let agent = HttpAgent::default();
         let plugin_meta = subcommand_metadata()?;
 
@@ -170,7 +173,7 @@ pub async fn check_update_available(
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
-    let prerelease_flag = !(channel.current_channel() == CliChannelName::Stable);
+    let prerelease_flag = channel.current_channel() == CliChannelName::Latest;
 
     let request = agent.request_package(&id)?;
     let response = crate::http::execute(request).await?;
@@ -200,7 +203,7 @@ pub async fn prompt_required_update(
     let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
 
-    let prerelease_flag = !(channel.current_channel() == CliChannelName::Stable);
+    let prerelease_flag = channel.current_channel() == CliChannelName::Latest;
 
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, &target, prerelease_flag).await?;

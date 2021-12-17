@@ -73,7 +73,7 @@ impl InstallOpt {
     }
 
     async fn install_plugin(&self, agent: &HttpAgent, channel: &FluvioChannelConfig) -> Result<()> {
-        let prerelease_flag = !(channel.current_channel() == CliChannelName::Stable);
+        let prerelease_flag = channel.current_channel() == CliChannelName::Latest;
 
         let target = fluvio_index::package_target()?;
 
@@ -120,9 +120,14 @@ impl InstallOpt {
         install_println("🔑 Downloaded and verified package file");
 
         // Install the package to the ~/.fluvio/bin/ dir
+        // For non-windows, respect the channel
         let fluvio_dir = fluvio_extensions_dir()?;
         let package_filename = if target.to_string().contains("windows") {
             format!("{}.exe", id.name().as_str())
+        } else if channel.current_channel() == CliChannelName::Latest {
+            let mut latest_bin = id.name().to_string();
+            latest_bin.push_str("-latest");
+            latest_bin
         } else {
             id.name().to_string()
         };

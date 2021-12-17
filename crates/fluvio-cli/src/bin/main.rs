@@ -45,13 +45,10 @@ fn main() -> Result<()> {
                 FluvioChannelConfig::default()
             };
 
-            //println!("{:#?}", &channel);
-
-            //println!("Current exe: {:?}", &current_exe);
-            //println!("Config current exe: {:?}", &channel.current_exe());
-
             debug!("channel: {:#?}", channel);
-            let _do_change_binary = if let Some(exe) = channel.current_exe() {
+
+            // Switch binaries
+            if let Some(exe) = channel.current_exe() {
                 if exe != current_exe {
                     // If not, exec the correct binary
                     debug!("You're NOT using the configured current_channel binary");

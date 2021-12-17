@@ -3,7 +3,9 @@ use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all, read_to_string};
 use std::io::{ErrorKind, Error as IoError, Write};
 use std::str::FromStr;
-use crate::Result;
+use crate::{Result, CliError};
+use crate::install::{install_bin, fetch_latest_version, fetch_package_file, install_println};
+use fluvio_index::{PackageId, HttpAgent};
 use fluvio::FluvioError;
 use fluvio::config::ConfigError;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
@@ -193,42 +195,14 @@ impl FluvioChannelInfo {
             extensions,
         }
     }
-    fn developer_channel() -> Self {
-        Self {
-            binary_location: PathBuf::default(),
-            extensions: PathBuf::default(),
-        }
-        //let mut binary_location;
 
-        //let mut extensions;
-        //if let Some(home_dir) = home_dir() {
-        //    binary_location = home_dir.clone();
-        //    extensions = home_dir.clone();
+    //fn developer_channel() -> Self {
+    //    Self {
+    //        binary_location: PathBuf::default(),
+    //        extensions: PathBuf::default(),
+    //    }
+    //}
 
-        //    binary_location.push(CLI_CONFIG_PATH);
-        //    binary_location.push("bin");
-        //    binary_location.push("fluvio-dev");
-
-        //    extensions.push(CLI_CONFIG_PATH);
-        //    extensions.push("extensions-dev");
-        //} else {
-        //    // No home directory
-        //    binary_location = PathBuf::default();
-        //    extensions = PathBuf::default();
-
-        //    binary_location.push(CLI_CONFIG_PATH);
-        //    binary_location.push("bin");
-        //    binary_location.push("fluvio-dev");
-
-        //    extensions.push(CLI_CONFIG_PATH);
-        //    extensions.push("extensions-dev");
-        //}
-
-        //Self {
-        //    binary_location,
-        //    extensions,
-        //}
-    }
     fn latest_channel() -> Self {
         let mut binary_location;
 
@@ -301,7 +275,7 @@ pub struct CliConfigOpt {
 }
 
 impl CliConfigOpt {
-    pub fn process(self) -> Result<()> {
+    pub async fn process(self) -> Result<()> {
         // Load in the config file
         // Parse with the CLI Config parser
 
@@ -321,7 +295,12 @@ impl CliConfigOpt {
 
         let config = if let Some(channel) = self.set_channel {
             // Change channel
-            // Check if config knows about the channel first
+
+            // See if the channel file exists, if not, write a default config
+
+            // If channel == CliChannelName::Dev, then we only want to change the current channel
+            //
+
             let mut new_config = if config.config.channel.get(&channel.to_string()).is_some() {
                 //println!("Found");
                 config
@@ -340,10 +319,11 @@ impl CliConfigOpt {
                     .insert("latest".to_string(), FluvioChannelInfo::latest_channel());
 
                 // I'm not sure we need this?
-                new_config_channel
-                    .config
-                    .channel
-                    .insert("dev".to_string(), FluvioChannelInfo::developer_channel());
+                //new_config_channel
+                //    .config
+                //    .channel
+                //    .insert("dev".to_string(), FluvioChannelInfo::developer_channel());
+
                 new_config_channel
             };
 
@@ -355,6 +335,24 @@ impl CliConfigOpt {
 
             // Write the changes to config
             new_config.save()?;
+
+            // We should get the list of extensions from stable, and download it for latest
+
+            if new_config.current_channel() == CliChannelName::Latest {
+                // Only if the binary for the channel doesn't exist, download it
+                // The user needs to run `fluvio update` to update their `fluvio-latest`
+                let fluvio_latest_bin_exists =
+                    if let Some(c) = new_config.config.channel.get("latest") {
+                        c.clone().binary_location.exists()
+                    } else {
+                        FluvioChannelInfo::latest_channel().binary_location.exists()
+                    };
+
+                if !fluvio_latest_bin_exists {
+                    initial_install_fluvio_bin_latest(&new_config).await?;
+                }
+            }
+
             new_config
         } else {
             // Do nothing
@@ -365,6 +363,55 @@ impl CliConfigOpt {
 
         Ok(())
     }
+}
+
+// The first time we switch to the latest channel, we should install the binary
+async fn initial_install_fluvio_bin_latest(channel_config: &FluvioChannelConfig) -> Result<()> {
+    let agent = HttpAgent::default();
+    let target = fluvio_index::package_target()?;
+    let id: PackageId = "fluvio/fluvio".parse()?;
+    debug!(%target, %id, "Fluvio CLI updating self:");
+
+    // Find the latest version of this package
+    install_println("🎣 Fetching latest version for fluvio...");
+    let latest_version = fetch_latest_version(&agent, &id, &target, true).await?;
+    let id = id.into_versioned(latest_version.into());
+
+    // Download the package file from the package registry
+    install_println(format!(
+        "⏳ Downloading Fluvio CLI with latest version: {}...",
+        &id.version()
+    ));
+    let package_result = fetch_package_file(&agent, &id, &target).await;
+    let package_file = match package_result {
+        Ok(pf) => pf,
+        Err(CliError::PackageNotFound {
+            version, target, ..
+        }) => {
+            install_println(format!(
+                "❕ Fluvio is not published at version {} for {}, skipping self-update",
+                version, target
+            ));
+            return Ok(());
+        }
+        Err(other) => return Err(other),
+    };
+    install_println("🔑 Downloaded and verified package file");
+
+    // Install the update over the current executable
+    let fluvio_path = if let Some(c) = channel_config.config.channel.get("latest") {
+        c.clone().binary_location
+    } else {
+        FluvioChannelInfo::latest_channel().binary_location
+    };
+
+    install_bin(&fluvio_path, &package_file)?;
+    install_println(format!(
+        "✅ Successfully updated {}",
+        &fluvio_path.display(),
+    ));
+
+    Ok(())
 }
 
 // Check if we're running Fluvio in the location our installer places binaries

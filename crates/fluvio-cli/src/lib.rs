@@ -68,6 +68,7 @@ mod root {
     use crate::common::Terminal;
 
     use super::Result;
+    use super::VERSION;
 
     /// Fluvio Command Line Interface
     #[derive(StructOpt, Debug)]
@@ -208,7 +209,7 @@ mod root {
                     profile.process(out).await?;
                 }
                 Self::Config(cli_config) => {
-                    cli_config.process()?;
+                    cli_config.process().await?;
                 }
                 #[cfg(feature = "k8s")]
                 Self::Cluster(cluster) => {
@@ -254,13 +255,16 @@ mod root {
 
                                 let modified_cluster_cmd = match channel.current_channel() {
                                     CliChannelName::Latest => {
+
+                                        let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
+
                                         if let ClusterCmd::Start(opts) = *cluster {
                                             let mut new_start_opts = *opts;
-                                            new_start_opts.develop = true;
+                                            new_start_opts.k8_config.image_version = Some(image_version) ;
                                             Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
                                         } else if let ClusterCmd::Upgrade(opts) = *cluster {
                                             let mut new_upgrade_opts = *opts;
-                                            new_upgrade_opts.start.develop = true;
+                                            new_upgrade_opts.start.k8_config.image_version = Some(image_version) ;
                                             Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
                                         } else {
                                             cluster
