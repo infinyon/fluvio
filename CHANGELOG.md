@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.16 - UNRELEASED
+* Return base offset in partition produce response ([#2025](https://github.com/infinyon/fluvio/issues/2025))
 
 ## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
