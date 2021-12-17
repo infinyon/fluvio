@@ -366,7 +366,7 @@ mod tests {
     use dataplane::core::{Decoder, Encoder};
     use dataplane::fixture::read_bytes_from_file;
 
-    use crate::config::ReplicaConfigOption;
+    use crate::config::ReplicaConfig;
     use crate::records::FileRecords;
     use crate::fixture::BatchProducer;
     use super::MutFileRecords;
@@ -378,18 +378,19 @@ mod tests {
         let test_dir = temp_dir().join("records_with_invalid_base");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ReplicaConfigOption {
+        let options = ReplicaConfig {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
-        };
+        }
+        .shared();
 
         let mut builder = BatchProducer::builder()
             .base_offset(BASE_OFFSET)
             .build()
             .expect("build");
 
-        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, options)
             .await
             .expect("create");
 
@@ -415,12 +416,13 @@ mod tests {
         let test_dir = temp_dir().join("write_records_every");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ReplicaConfigOption {
+        let options = ReplicaConfig {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
-        };
-        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+        }
+        .shared();
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, options.clone())
             .await
             .expect("create");
 
@@ -459,7 +461,7 @@ mod tests {
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
 
         // check if we can read the records and get base offset
-        let old_msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+        let old_msg_sink = MutFileRecords::create(BASE_OFFSET, options)
             .await
             .expect("open");
         assert_eq!(old_msg_sink.get_base_offset(), BASE_OFFSET);
@@ -481,13 +483,14 @@ mod tests {
             .build()
             .expect("build");
 
-        let options = ReplicaConfigOption {
+        let options = ReplicaConfig {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             flush_write_count: NUM_WRITES,
             ..Default::default()
-        };
-        let mut msg_sink = MutFileRecords::create(OFFSET, &options)
+        }
+        .shared();
+        let mut msg_sink = MutFileRecords::create(OFFSET, options.clone())
             .await
             .expect("create");
         let test_file = msg_sink.get_path().to_owned();
@@ -528,7 +531,7 @@ mod tests {
         let nbytes = write_size * NUM_WRITES as usize;
         assert_eq!(bytes.len(), nbytes, "should be {} bytes", nbytes);
 
-        let old_msg_sink = MutFileRecords::create(OFFSET, &options)
+        let old_msg_sink = MutFileRecords::create(OFFSET, options)
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);

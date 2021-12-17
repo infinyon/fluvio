@@ -1,6 +1,7 @@
 use std::default::Default;
 use std::path::PathBuf;
 use std::fmt;
+use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 
 use derive_builder::Builder;
@@ -19,7 +20,7 @@ pub const DEFAULT_MAX_BATCH_SIZE: u32 = 1048588;
 pub const DEFAULT_RETENTION_SECONDS: u32 = 7 * 24 * 3600;
 
 // common option
-#[derive(Builder, Clone, Debug, Deserialize)]
+#[derive(Builder, Clone, Debug, PartialEq, Deserialize)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ReplicaConfig {
     #[builder(default = "default_base_dir()")]
@@ -100,6 +101,10 @@ impl ReplicaConfig {
     pub fn builder() -> ReplicaConfigBuilder {
         ReplicaConfigBuilder::default()
     }
+
+    pub fn shared(self) -> Arc<SharedReplicaConfig> {
+        Arc::new(self.into())
+    }
 }
 
 impl Default for ReplicaConfig {
@@ -121,13 +126,11 @@ impl Default for ReplicaConfig {
 impl ReplicaConfigBuilder {
     /// Build a [`ConfigOption`] with the current
     /// values in [`ConfigOptionBuilder`]
-    pub fn build(&self) -> SharedReplicaConfig {
+    pub fn build(&self) -> ReplicaConfig {
         // This will not fail as long as all fields
         // of ConfigOption have a #[builder(default = ..) attribute.
-        let config = self
-            .build_impl()
-            .expect("Error builing ConfigOption struct");
-        config.into()
+        self.build_impl()
+            .expect("Error builing ConfigOption struct")
     }
 }
 
@@ -186,8 +189,8 @@ mod tests {
 
     #[test]
     fn test_default_builder() {
-        let config: ReplicaConfigOption = ReplicaConfigOption::builder().build();
+        let config: ReplicaConfig = ReplicaConfig::builder().build();
 
-        assert_eq!(ReplicaConfigOption::default(), config);
+        assert_eq!(ReplicaConfig::default(), config);
     }
 }

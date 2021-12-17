@@ -57,7 +57,7 @@ impl FileRecordsSlice {
         let last_modifed_time = metadata.modified()?;
 
         debug!(
-            path = %log_path.display(), 
+            path = %log_path.display(),
             len,
             seconds = last_modifed_time.elapsed().map_err(|err| StorageError::Other(format!("Other: {:#?}",err)))?. as_secs(),
             "opened read only records");

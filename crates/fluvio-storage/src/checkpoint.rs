@@ -18,7 +18,6 @@ use fluvio_future::fs::File;
 use fluvio_future::fs::metadata;
 use fluvio_future::fs::util;
 
-use crate::config::ReplicaConfig;
 use crate::config::SharedReplicaConfig;
 
 pub trait ReadToBuf: Sized {
@@ -162,7 +161,7 @@ mod tests {
 
     use flv_util::fixture::ensure_clean_file;
 
-    use crate::config::ReplicaConfigOption;
+    use crate::config::ReplicaConfig;
     use super::CheckPoint;
 
     #[fluvio_future::test]
@@ -170,11 +169,13 @@ mod tests {
         let test_file = temp_dir().join("test.chk");
         ensure_clean_file(&test_file);
 
-        let option = ReplicaConfigOption {
+        let option = ReplicaConfig {
             base_dir: temp_dir(),
             ..Default::default()
-        };
-        let mut ck: CheckPoint<u64> = CheckPoint::create(&option, "test.chk", 0)
+        }
+        .shared();
+
+        let mut ck: CheckPoint<u64> = CheckPoint::create(option.clone(), "test.chk", 0)
             .await
             .expect("create");
         let _ = ck.read().await.expect("do initial read");
@@ -184,7 +185,7 @@ mod tests {
 
         drop(ck);
 
-        let mut ck2: CheckPoint<u64> = CheckPoint::create(&option, "test.chk", 0)
+        let mut ck2: CheckPoint<u64> = CheckPoint::create(option, "test.chk", 0)
             .await
             .expect("restore");
         ck2.read().await.expect("read");

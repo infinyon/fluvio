@@ -345,7 +345,7 @@ mod tests {
     use dataplane::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
 
-    use crate::config::ReplicaConfigOption;
+    use crate::config::ReplicaConfig;
     use crate::{StorageError};
     use crate::ReplicaStorage;
 
@@ -358,10 +358,10 @@ mod tests {
     const START_OFFSET: Offset = 20;
 
     /// create option, ensure they are clean
-    fn base_option(dir: &str) -> ReplicaConfigOption {
+    fn base_option(dir: &str) -> ReplicaConfig {
         let base_dir = temp_dir().join(dir);
         ensure_clean_dir(&base_dir);
-        ReplicaConfigOption {
+        ReplicaConfig {
             segment_max_bytes: 10000,
             base_dir,
             index_max_interval_bytes: 1000,
@@ -370,10 +370,10 @@ mod tests {
         }
     }
 
-    fn rollover_option(dir: &str) -> ReplicaConfigOption {
+    fn rollover_option(dir: &str) -> ReplicaConfig {
         let base_dir = temp_dir().join(dir);
         ensure_clean_dir(&base_dir);
-        ReplicaConfigOption {
+        ReplicaConfig {
             segment_max_bytes: 100,
             base_dir,
             index_max_bytes: 1000,

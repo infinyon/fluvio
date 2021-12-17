@@ -280,11 +280,11 @@ mod tests {
     use dataplane::fixture::create_batch;
     use dataplane::fixture::create_batch_with_producer;
 
-    use crate::config::ReplicaConfigOption;
+    use crate::config::ReplicaConfig;
     use crate::segment::MutableSegment;
 
-    fn default_option(base_dir: PathBuf) -> ReplicaConfigOption {
-        ReplicaConfigOption {
+    fn default_option(base_dir: PathBuf) -> ReplicaConfig {
+        ReplicaConfig {
             base_dir,
             segment_max_bytes: 1000,
             index_max_bytes: 1000,
@@ -297,9 +297,9 @@ mod tests {
         let test_dir = temp_dir().join("batch-stream-single");
         ensure_new_dir(&test_dir).expect("new");
 
-        let option = default_option(test_dir.clone());
+        let option = default_option(test_dir.clone()).shared();
 
-        let mut active_segment = MutableSegment::create(300, &option).await.expect("segment");
+        let mut active_segment = MutableSegment::create(300, option).await.expect("segment");
 
         active_segment
             .write_batch(&mut create_batch())
@@ -323,9 +323,9 @@ mod tests {
         let test_dir = temp_dir().join("batch-stream-multiple");
         ensure_new_dir(&test_dir).expect("new");
 
-        let option = default_option(test_dir.clone());
+        let option = default_option(test_dir.clone()).shared();
 
-        let mut active_segment = MutableSegment::create(300, &option).await.expect("create");
+        let mut active_segment = MutableSegment::create(300, option).await.expect("create");
 
         active_segment
             .write_batch(&mut create_batch())

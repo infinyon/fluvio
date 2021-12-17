@@ -275,7 +275,7 @@ mod follower_tests {
 
     use flv_util::fixture::ensure_clean_dir;
     use fluvio_types::SpuId;
-    use fluvio_storage::config::ReplicaConfigOption;
+    use fluvio_storage::config::ReplicaConfig;
 
     use super::*;
 
@@ -288,7 +288,7 @@ mod follower_tests {
         let test_path = "/tmp/follower_init";
         ensure_clean_dir(test_path);
 
-        let config = ReplicaConfigOption {
+        let config = ReplicaConfig {
             base_dir: PathBuf::from(test_path).join("spu-5002"),
             ..Default::default()
         };

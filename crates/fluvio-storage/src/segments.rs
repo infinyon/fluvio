@@ -239,21 +239,24 @@ mod tests {
 
     use std::env::temp_dir;
     use std::path::PathBuf;
+    use std::sync::Arc;
 
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
 
     use crate::StorageError;
+    use crate::config::SharedReplicaConfig;
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
-    use crate::config::ReplicaConfigOption;
+    use crate::config::ReplicaConfig;
+    use crate::segments::SharedSegments;
 
     use super::SegmentList;
 
     // create fake segment, this doesn't create a segment with all data, it just fill with a min data but with a valid end offset
     async fn create_segment(
-        option: &ReplicaConfigOption,
+        option: Arc<SharedReplicaConfig>,
         start: Offset,
         end_offset: Offset,
     ) -> Result<ReadSegment, StorageError> {
@@ -264,8 +267,8 @@ mod tests {
         Ok(segment)
     }
 
-    fn default_option(base_dir: PathBuf) -> ReplicaConfigOption {
-        ReplicaConfigOption {
+    fn default_option(base_dir: PathBuf) -> ReplicaConfig {
+        ReplicaConfig {
             segment_max_bytes: 100,
             base_dir,
             index_max_bytes: 1000,
@@ -278,11 +281,12 @@ mod tests {
     async fn test_segment_empty() {
         let rep_dir = temp_dir().join("segmentlist-read-empty");
         ensure_new_dir(&rep_dir).expect("new");
-        let option = default_option(rep_dir);
+        let option = default_option(rep_dir).shared();
 
-        let (segments, last_segment) = SegmentList::from_dir(&option).await.expect("from");
+        let (segments, last_segment) = SharedSegments::from_dir(option).await.expect("from");
 
-        assert_eq!(segments.len(), 0); // 0,500,2000
+        let read = segments.read().await;
+        assert_eq!(read.len(), 0); // 0,500,2000
         assert!(last_segment.is_none());
     }
 
@@ -292,9 +296,9 @@ mod tests {
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
-        let option = default_option(rep_dir);
+        let option = default_option(rep_dir).shared();
 
-        list.add_segment(create_segment(&option, 0, 500).await.expect("create"));
+        list.add_segment(create_segment(option, 0, 500).await.expect("create"));
         println!("segments: {:#?}", list);
 
         assert!(list.find_segment(-1).is_none());
@@ -311,9 +315,9 @@ mod tests {
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
-        let option = default_option(rep_dir);
+        let option = default_option(rep_dir).shared();
 
-        list.add_segment(create_segment(&option, 100, 500).await.expect("create"));
+        list.add_segment(create_segment(option, 100, 500).await.expect("create"));
         println!("segments: {:#?}", list);
 
         assert!(list.find_segment(50).is_none());
@@ -329,12 +333,28 @@ mod tests {
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
-        let option = default_option(rep_dir);
+        let option = default_option(rep_dir).shared();
 
-        list.add_segment(create_segment(&option, 0, 500).await.expect("create"));
-        list.add_segment(create_segment(&option, 500, 2000).await.expect("create"));
-        list.add_segment(create_segment(&option, 2000, 3000).await.expect("create"));
-        list.add_segment(create_segment(&option, 3000, 4000).await.expect("create"));
+        list.add_segment(
+            create_segment(option.clone(), 0, 500)
+                .await
+                .expect("create"),
+        );
+        list.add_segment(
+            create_segment(option.clone(), 500, 2000)
+                .await
+                .expect("create"),
+        );
+        list.add_segment(
+            create_segment(option.clone(), 2000, 3000)
+                .await
+                .expect("create"),
+        );
+        list.add_segment(
+            create_segment(option.clone(), 3000, 4000)
+                .await
+                .expect("create"),
+        );
 
         println!("segments: {:#?}", list);
 
@@ -355,11 +375,23 @@ mod tests {
         ensure_new_dir(&rep_dir).expect("new");
         let mut list = SegmentList::new();
 
-        let option = default_option(rep_dir);
+        let option = default_option(rep_dir).shared();
 
-        list.add_segment(create_segment(&option, 100, 600).await.expect("create"));
-        list.add_segment(create_segment(&option, 600, 4000).await.expect("create"));
-        list.add_segment(create_segment(&option, 4000, 9000).await.expect("create"));
+        list.add_segment(
+            create_segment(option.clone(), 100, 600)
+                .await
+                .expect("create"),
+        );
+        list.add_segment(
+            create_segment(option.clone(), 600, 4000)
+                .await
+                .expect("create"),
+        );
+        list.add_segment(
+            create_segment(option.clone(), 4000, 9000)
+                .await
+                .expect("create"),
+        );
 
         println!("segments: {:#?}", list);
 

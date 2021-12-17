@@ -198,7 +198,7 @@ mod tests {
     use super::lookup_entry;
     use super::LogIndex;
     use crate::mut_index::MutLogIndex;
-    use crate::config::ReplicaConfigOption;
+    use crate::config::ReplicaConfig;
     use super::OffsetPosition;
 
     #[allow(unused)]
@@ -227,8 +227,8 @@ mod tests {
     }
 
     #[allow(unused)]
-    fn default_option() -> ReplicaConfigOption {
-        ReplicaConfigOption {
+    fn default_option() -> ReplicaConfig {
+        ReplicaConfig {
             segment_max_bytes: 1000,
             base_dir: temp_dir(),
             index_max_bytes: 1000,
@@ -240,20 +240,20 @@ mod tests {
     #[allow(unused)]
     //#[fluvio_future::test]
     async fn test_index_read_offset() {
-        let option = default_option();
+        let option = default_option().shared();
         let test_file = option.base_dir.join(TEST_FILE);
         ensure_clean_file(&test_file);
 
-        let mut mut_index = MutLogIndex::create(921, &option).await.expect("create");
+        let mut mut_index = MutLogIndex::create(921, option.clone())
+            .await
+            .expect("create");
 
         mut_index.write_index((5, 16, 70)).await.expect("send");
         mut_index.write_index((10, 100, 70)).await.expect("send");
 
         mut_index.shrink().await.expect("shrink");
 
-        let log_index = LogIndex::open_from_offset(921, &option)
-            .await
-            .expect("open");
+        let log_index = LogIndex::open_from_offset(921, option).await.expect("open");
         let offset1 = log_index[0];
         assert_eq!(offset1.offset(), 5);
         assert_eq!(offset1.position(), 16);

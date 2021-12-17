@@ -272,11 +272,13 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_index_write() {
-        let option = default_option(50);
+        let option = default_option(50).shared();
         let test_file = option.base_dir.join(TEST_FILE);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(121, &option).await.expect("crate");
+        let mut index_sink = MutLogIndex::create(121, option.clone())
+            .await
+            .expect("crate");
 
         index_sink.write_index((5, 200, 70)).await.expect("send"); // this will be ignored
         index_sink.write_index((10, 100, 70)).await.expect("send"); // this will be written since batch size 70 is greater than 50
@@ -301,7 +303,7 @@ mod tests {
 
         // open same file
 
-        let index_sink = MutLogIndex::open(121, &option).await.expect("open");
+        let index_sink = MutLogIndex::open(121, option).await.expect("open");
         assert_eq!(index_sink.pos, 1);
     }
 
@@ -309,11 +311,11 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_index_shrink() {
-        let option = default_option(0);
+        let option = default_option(0).shared();
         let test_file = option.base_dir.join(TEST_FILE2);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(122, &option).await.expect("create");
+        let mut index_sink = MutLogIndex::create(122, option).await.expect("create");
 
         index_sink.write_index((5, 16, 70)).await.expect("send");
 
@@ -328,11 +330,11 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_mut_index_findoffset() {
-        let option = default_option(0);
+        let option = default_option(0).shared();
         let test_file = option.base_dir.join(TEST_FILE3);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(123, &option).await.expect("create");
+        let mut index_sink = MutLogIndex::create(123, option).await.expect("create");
 
         index_sink.write_index((100, 16, 70)).await.expect("send");
         index_sink.write_index((500, 200, 70)).await.expect("send");

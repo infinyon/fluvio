@@ -330,7 +330,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
     #[cfg(test)]
     pub async fn convert_to_segment(mut self) -> Result<ReadSegment, StorageError> {
         self.shrink_index().await?;
-        Segment::open_for_read(self.get_base_offset(), self.end_offset, &self.option).await
+        Segment::open_for_read(self.get_base_offset(), self.end_offset, self.option.clone()).await
     }
 
     /// write a batch, the batch is relative, we assume this would be add to current segment
@@ -408,13 +408,13 @@ mod tests {
 
     use super::MutableSegment;
 
-    use crate::config::ReplicaConfigOption;
+    use crate::config::ReplicaConfig;
     use crate::index::OffsetPosition;
 
     // TODO: consolidate
 
-    fn default_option(base_dir: PathBuf, index_max_interval_bytes: Size) -> ReplicaConfigOption {
-        ReplicaConfigOption {
+    fn default_option(base_dir: PathBuf, index_max_interval_bytes: Size) -> ReplicaConfig {
+        ReplicaConfig {
             segment_max_bytes: 1000,
             base_dir,
             index_max_interval_bytes,
@@ -431,11 +431,11 @@ mod tests {
         let test_dir = temp_dir().join("seg-single-record");
         ensure_new_dir(&test_dir).expect("dir");
 
-        let option = default_option(test_dir.clone(), 0);
+        let option = default_option(test_dir.clone(), 0).shared();
 
         let base_offset = 20;
 
-        let mut active_segment = MutableSegment::create(base_offset, &option)
+        let mut active_segment = MutableSegment::create(base_offset, option)
             .await
             .expect("create");
         assert_eq!(active_segment.get_end_offset(), 20);
@@ -480,11 +480,11 @@ mod tests {
         let test_dir = temp_dir().join("seg-multiple-record");
         ensure_new_dir(&test_dir).expect("new");
 
-        let option = default_option(test_dir.clone(), 0);
+        let option = default_option(test_dir.clone(), 0).shared();
 
         let base_offset = 20;
 
-        let mut active_segment = MutableSegment::create(base_offset, &option)
+        let mut active_segment = MutableSegment::create(base_offset, option)
             .await
             .expect("segment");
 
@@ -526,9 +526,9 @@ mod tests {
 
         let base_offset = 40;
 
-        let option = default_option(test_dir.clone(), 50);
+        let option = default_option(test_dir.clone(), 50).shared();
 
-        let mut seg_sink = MutableSegment::create(base_offset, &option)
+        let mut seg_sink = MutableSegment::create(base_offset, option)
             .await
             .expect("write");
         seg_sink
