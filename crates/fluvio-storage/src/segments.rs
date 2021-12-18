@@ -14,6 +14,7 @@ use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
 use tracing::debug;
 use tracing::info;
+use tracing::instrument;
 use tracing::trace;
 use tracing::error;
 
@@ -120,6 +121,19 @@ impl SharedSegments {
         let min_offset = writer.add_segment(segment);
         self.min_offset
             .store(min_offset, std::sync::atomic::Ordering::SeqCst);
+    }
+
+    #[instrument(skip(self))]
+    async fn remove_segment(&self, base_offset: Offset) {
+        let mut write = self.write().await;
+
+        if let Some((old_segment, min_offset)) = write.remove_segment(&base_offset) {
+            self.min_offset
+                .store(min_offset, std::sync::atomic::Ordering::SeqCst);
+            if let Err(err) = old_segment.remove().await {
+                error!("failed to remove segment: {:#?}", err);
+            }
+        }
     }
 
     pub async fn find_slice(
@@ -262,16 +276,10 @@ impl Cleaner {
             drop(read);
             if !expired_segments.is_empty() {
                 debug!(count = expired_segments.len(), "found segments to remove");
-                let mut write = self.0.write().await;
                 for base_offset in expired_segments {
                     info!(base_offset, "removing segment");
-                    if let Some((old_segment, _)) = write.remove_segment(&base_offset) {
-                        if let Err(err) = old_segment.remove().await {
-                            error!("failed to remove segment: {:#?}", err);
-                        }
-                    }
+                    self.0.remove_segment(base_offset).await;
                 }
-                drop(write);
             }
         }
     }
@@ -502,6 +510,6 @@ mod tests {
         sleep(Duration::from_secs(10)).await; // await 4 seconds
         let read = slist.read().await;
         assert_eq!(read.len(), 1);
-        assert_eq!(slist.min_offset(), 900); // first segment should be deleted
+        assert_eq!(slist.min_offset(), 600); // first segment should be deleted
     }
 }
