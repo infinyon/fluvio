@@ -184,9 +184,7 @@ impl SegmentList {
             if end_offset > max_offset {
                 max_offset = end_offset;
             }
-            if min_offset < 0 {
-                min_offset = base_offset;
-            } else if base_offset < min_offset {
+            if min_offset < 0 || base_offset < min_offset {
                 min_offset = base_offset;
             }
         });
@@ -298,9 +296,9 @@ mod tests {
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
     use crate::config::ReplicaConfig;
-    use crate::segments::SharedSegments;
 
     use super::SegmentList;
+    use super::SharedSegments;
 
     // create fake segment, this doesn't create a segment with all data, it just fill with a min data but with a valid end offset
     async fn create_segment(
@@ -466,31 +464,46 @@ mod tests {
     async fn test_segment_delete() {
         let rep_dir = temp_dir().join("segmentlist-delete");
         ensure_new_dir(&rep_dir).expect("new");
-        let mut list = SegmentList::new();
 
         let mut config = default_option(rep_dir);
         config.retention_seconds = 5; // 5 seconds
         let option = config.shared();
 
-        list.add_segment(
-            create_segment(option.clone(), 100, 600)
-                .await
-                .expect("create"),
-        );
+        let slist = SharedSegments::from(SegmentList::new(), option.clone());
 
-        assert_eq!(list.len(), 1);
-        assert_eq!(list.find_segment(100).expect("segment").0, &100);
+        slist
+            .add_segment(
+                create_segment(option.clone(), 100, 600)
+                    .await
+                    .expect("create"),
+            )
+            .await;
+
+        let read = slist.read().await;
+        assert_eq!(read.len(), 1);
+        assert_eq!(read.find_segment(100).expect("segment").0, &100);
+        assert_eq!(slist.min_offset(), 100);
+        drop(read);
 
         sleep(Duration::from_secs(4)).await; // await 4 seconds
-        list.add_segment(
-            create_segment(option.clone(), 600, 4000)
-                .await
-                .expect("create"),
-        );
+        slist
+            .add_segment(
+                create_segment(option.clone(), 600, 4000)
+                    .await
+                    .expect("create"),
+            )
+            .await;
 
-        println!("segments: {:#?}", list);
-        assert_eq!(list.len(), 2);
-        assert_eq!(list.find_segment(100).expect("segment").0, &100);
-        assert_eq!(list.find_segment(900).expect("segment").0, &600); // belong to 2nd segment
+        let read = slist.read().await;
+        assert_eq!(read.len(), 2);
+        assert_eq!(read.find_segment(100).expect("segment").0, &100);
+        assert_eq!(read.find_segment(900).expect("segment").0, &600); // belong to 2nd segment
+        drop(read);
+
+        sleep(Duration::from_secs(4)).await; // await 4 seconds
+                                             //  let read = slist.read().await;
+                                             //  assert_eq!(read.len(), 1);
+                                             // assert_eq!(slist.min_offset(), 900);
+                                             // first segment should be deleted
     }
 }
