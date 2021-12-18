@@ -32,13 +32,15 @@ pub(crate) struct SharedSegments {
 }
 
 impl SharedSegments {
-    fn from(list: SegmentList, config: Arc<SharedReplicaConfig>) -> Self {
+    fn from(list: SegmentList, config: Arc<SharedReplicaConfig>) -> Arc<Self> {
         let min = list.min_offset;
-        Self {
+        let shared_segments = Arc::new(Self {
             inner: Arc::new(RwLock::new(list)),
             min_offset: AtomicI64::new(min),
             config,
-        }
+        });
+        Cleaner::start(shared_segments.clone());
+        shared_segments
     }
 
     pub async fn from_dir(
@@ -91,10 +93,7 @@ impl SharedSegments {
             }
         }
 
-        let shared_segments = Arc::new(SharedSegments::from(segments, option));
-
-        // launch cleaner
-        Cleaner::start(shared_segments.clone());
+        let shared_segments = SharedSegments::from(segments, option);
 
         Ok((shared_segments, last_offset))
     }
@@ -485,7 +484,7 @@ mod tests {
         assert_eq!(slist.min_offset(), 100);
         drop(read);
 
-        sleep(Duration::from_secs(4)).await; // await 4 seconds
+        sleep(Duration::from_secs(5)).await; // await 4 seconds
         slist
             .add_segment(
                 create_segment(option.clone(), 600, 4000)
@@ -500,10 +499,9 @@ mod tests {
         assert_eq!(read.find_segment(900).expect("segment").0, &600); // belong to 2nd segment
         drop(read);
 
-        sleep(Duration::from_secs(4)).await; // await 4 seconds
-                                             //  let read = slist.read().await;
-                                             //  assert_eq!(read.len(), 1);
-                                             // assert_eq!(slist.min_offset(), 900);
-                                             // first segment should be deleted
+        sleep(Duration::from_secs(10)).await; // await 4 seconds
+        let read = slist.read().await;
+        assert_eq!(read.len(), 1);
+        assert_eq!(slist.min_offset(), 900); // first segment should be deleted
     }
 }
