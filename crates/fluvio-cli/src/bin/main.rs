@@ -10,8 +10,6 @@ use fluvio_cli::cli_config::channel::{CliChannelName, FluvioChannelConfig, is_fl
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
-#[cfg(target_os = "windows")]
 use std::io::{self, Write};
 use cfg_if::cfg_if;
 
@@ -83,10 +81,9 @@ fn main() -> Result<()> {
                         } else {
                             // TODO: This needs to be sure to add .exe to filename
                             // Handle unwrap()
-                            let output = proc.output()?
+                            let output = proc.output()?;
                             io::stdout().write_all(&output.stdout).unwrap();
                             io::stderr().write_all(&output.stderr).unwrap();
-
                         }
                     }
 
