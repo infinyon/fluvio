@@ -170,7 +170,7 @@ impl SegmentList {
             end_offset = segment.get_end_offset(),
             "inserting"
         );
-
+        self.segments.insert(segment.get_base_offset(), segment);
         self.update_min_max();
         self.min_offset
     }
@@ -184,7 +184,9 @@ impl SegmentList {
             if end_offset > max_offset {
                 max_offset = end_offset;
             }
-            if base_offset < min_offset {
+            if min_offset < 0 {
+                min_offset = base_offset;
+            } else if base_offset < min_offset {
                 min_offset = base_offset;
             }
         });
@@ -346,7 +348,8 @@ mod tests {
 
         list.add_segment(create_segment(option, 0, 500).await.expect("create"));
         println!("segments: {:#?}", list);
-
+        assert_eq!(list.min_offset, 0);
+        assert_eq!(list.max_offset, 500);
         assert!(list.find_segment(-1).is_none());
         assert!(list.find_segment(0).is_some());
         assert!(list.find_segment(1).is_some());
@@ -404,6 +407,9 @@ mod tests {
 
         println!("segments: {:#?}", list);
 
+        assert_eq!(list.min_offset, 0);
+        assert_eq!(list.max_offset, 4000);
+
         assert_eq!(list.len(), 4); // 0,500,2000
         assert_eq!(list.find_segment(0).expect("segment").0, &0);
         assert_eq!(list.find_segment(1).expect("segment").0, &0);
@@ -440,6 +446,9 @@ mod tests {
         );
 
         println!("segments: {:#?}", list);
+
+        assert_eq!(list.min_offset, 100);
+        assert_eq!(list.max_offset, 9000);
 
         assert_eq!(list.len(), 3);
         assert!(list.find_segment(0).is_none());
