@@ -99,7 +99,6 @@ mod root {
         #[cfg(not(target_os = "windows"))]
         #[structopt(long)]
         skip_channel_check: bool,
-
         // TODO: Include flag for overriding channel choice in config
     }
 

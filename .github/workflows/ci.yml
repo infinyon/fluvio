@@ -58,7 +58,7 @@ jobs:
           - x86_64-unknown-linux-musl
           - aarch64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio, fluvio-run, fluvio-test]
+        binary: [fluvio, fluvio-run, fluvio-test, fluvio-channel]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -105,6 +105,10 @@ jobs:
       - name: Build fluvio-test
         if: ${{ matrix.binary == 'fluvio-test' }}
         run: make build-test
+
+      - name: Build fluvio-channel
+        if: ${{ matrix.binary == 'fluvio-channel' }}
+        run: make build-channel
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
@@ -156,6 +160,28 @@ jobs:
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-run
+
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: arm-unknown-linux-gnueabihf
+            binary: fluvio-channel
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: armv7-unknown-linux-gnueabihf
+            binary: fluvio-channel
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-pc-windows-gnu
+            binary: fluvio-channel.exe
+          - os: macos-latest
+            rust: stable
+            rust-target: x86_64-apple-darwin
+            binary: fluvio-channel
+          - os: macos-11
+            rust: stable
+            rust-target: aarch64-apple-darwin
+            binary: fluvio-channel
+          
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -205,6 +231,14 @@ jobs:
       - name: Build fluvio-run
         if: ${{ matrix.binary == 'fluvio-run' }}
         run: make build-cluster
+
+      - name: Build fluvio-channel
+        if: ${{ matrix.binary == 'fluvio-channel' }}
+        run: make build-channel
+
+      - name: Build fluvio-channel
+        if: ${{ matrix.binary == 'fluvio-channel.exe' }}
+        run: make build-channel
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
