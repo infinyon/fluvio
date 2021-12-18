@@ -19,9 +19,7 @@ mod smartmodule;
 mod derivedstream;
 mod render;
 
-#[cfg(not(target_os = "windows"))]
 use std::env::current_exe;
-#[cfg(not(target_os = "windows"))]
 use crate::cli_config::channel::{FluvioChannelConfig, is_fluvio_bin_in_std_dir, CliChannelName};
 
 pub(crate) use error::{Result, CliError};

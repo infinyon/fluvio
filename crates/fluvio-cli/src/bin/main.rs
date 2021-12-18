@@ -10,7 +10,7 @@ use fluvio_cli::cli_config::channel::{CliChannelName, FluvioChannelConfig, is_fl
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
-use std::os::windows::process::CommandExt;
+use std::os::windows::prelude::*;
 
 // TODO: This needs to support more than the 3 main channels
 // Pass overrides for extension dir, image name/path, image pattern format
