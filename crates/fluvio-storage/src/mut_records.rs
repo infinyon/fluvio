@@ -558,14 +558,16 @@ mod tests {
         const IDLE_FLUSH: u32 = 500;
         const OFFSET: i64 = 300;
 
-        let options = ConfigOption {
+        let options = ReplicaConfig {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             flush_write_count: 0,
             flush_idle_msec: IDLE_FLUSH,
             ..Default::default()
-        };
-        let mut msg_sink = MutFileRecords::create(OFFSET, &options)
+        }
+        .shared();
+
+        let mut msg_sink = MutFileRecords::create(OFFSET, options.clone())
             .await
             .expect("create");
 
@@ -640,7 +642,7 @@ mod tests {
         drop(msg_sink);
         timer::after(dur).await;
 
-        let old_msg_sink = MutFileRecords::create(OFFSET, &options)
+        let old_msg_sink = MutFileRecords::create(OFFSET, options)
             .await
             .expect("check old sink");
         assert_eq!(old_msg_sink.get_base_offset(), OFFSET);
