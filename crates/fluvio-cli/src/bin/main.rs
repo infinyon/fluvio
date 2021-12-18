@@ -3,18 +3,14 @@ use color_eyre::eyre::Result;
 use fluvio_cli::{Root, HelpOpt};
 use fluvio_future::task::run_block_on;
 use std::env::current_exe;
-#[cfg(not(target_os = "windows"))]
-use fluvio_cli::cli_config::channel::{CliChannelName, FluvioChannelConfig, is_fluvio_bin_in_std_dir};
-#[cfg(not(target_os = "windows"))]
+use std::ffi::OsString;
+use tracing::debug;
 use std::process::Stdio;
+use fluvio_cli::cli_config::channel::{CliChannelName, FluvioChannelConfig, is_fluvio_bin_in_std_dir};
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
 use std::os::windows::prelude::CommandExt;
-#[cfg(not(target_os = "windows"))]
-use std::ffi::OsString;
-#[cfg(not(target_os = "windows"))]
-use tracing::debug;
 
 // TODO: This needs to support more than the 3 main channels
 // Pass overrides for extension dir, image name/path, image pattern format
