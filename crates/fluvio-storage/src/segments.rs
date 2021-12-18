@@ -284,7 +284,9 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
     use std::sync::Arc;
+    use std::time::Duration;
 
+    use fluvio_future::timer::sleep;
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
@@ -449,5 +451,37 @@ mod tests {
         assert_eq!(list.find_segment(8000).expect("segment").0, &4000);
         assert!(list.find_segment(9000).is_none());
         assert!(list.find_segment(10000).is_none());
+    }
+
+    #[fluvio_future::test]
+    async fn test_segment_delete() {
+        let rep_dir = temp_dir().join("segmentlist-delete");
+        ensure_new_dir(&rep_dir).expect("new");
+        let mut list = SegmentList::new();
+
+        let mut config = default_option(rep_dir);
+        config.retention_seconds = 5; // 5 seconds
+        let option = config.shared();
+
+        list.add_segment(
+            create_segment(option.clone(), 100, 600)
+                .await
+                .expect("create"),
+        );
+
+        assert_eq!(list.len(), 1);
+        assert_eq!(list.find_segment(100).expect("segment").0, &100);
+
+        sleep(Duration::from_secs(4)).await; // await 4 seconds
+        list.add_segment(
+            create_segment(option.clone(), 600, 4000)
+                .await
+                .expect("create"),
+        );
+
+        println!("segments: {:#?}", list);
+        assert_eq!(list.len(), 2);
+        assert_eq!(list.find_segment(100).expect("segment").0, &100);
+        assert_eq!(list.find_segment(900).expect("segment").0, &600); // belong to 2nd segment
     }
 }
