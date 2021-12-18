@@ -36,7 +36,6 @@ mod root {
     use std::sync::Arc;
     use std::path::PathBuf;
     use std::process::Command;
-    use cfg_if::cfg_if;
 
     use structopt::clap::{AppSettings, Shell, App, SubCommand};
     use structopt::StructOpt;
@@ -85,7 +84,6 @@ mod root {
             Ok(())
         }
 
-        #[cfg(not(target_os = "windows"))]
         pub fn skip_channel_check(&self) -> bool {
             self.opts.skip_channel_check
         }
@@ -96,14 +94,12 @@ mod root {
         #[structopt(flatten)]
         target: ClusterTarget,
 
-        #[cfg(not(target_os = "windows"))]
         #[structopt(long)]
         skip_channel_check: bool,
         // TODO: Include flag for overriding channel choice in config
     }
 
     impl RootOpt {
-        #[cfg(not(target_os = "windows"))]
         pub fn skip_channel_check(&self) -> bool {
             self.skip_channel_check
         }
@@ -227,126 +223,105 @@ mod root {
                     // If dev, set the develop flag
                     // If latest, change the image version to <VERSION>-<GIT_HASH>
 
-                    cfg_if! {
-                        if #[cfg(not(target_os = "windows"))] {
-                            use crate::current_exe;
-                            use crate::is_fluvio_bin_in_std_dir;
-                            use crate::FluvioChannelConfig;
-                            use crate::CliChannelName;
+                    use crate::current_exe;
+                    use crate::is_fluvio_bin_in_std_dir;
+                    use crate::FluvioChannelConfig;
+                    use crate::CliChannelName;
 
-                            // Verify if the current binary is running in the "official" location
-                            // If we're not in the fluvio directory then
-                            // assume dev mode (i.e., do not exec to other binaries)
-                            let current_exe = current_exe()?;
+                    // Verify if the current binary is running in the "official" location
+                    // If we're not in the fluvio directory then
+                    // assume dev mode (i.e., do not exec to other binaries)
+                    let current_exe = current_exe()?;
 
-                            // TODO: We need a way to propagate the skip_channel_check
-                            if is_fluvio_bin_in_std_dir(&current_exe) && !root.skip_channel_check() {
-                            //if is_fluvio_bin_in_std_dir(&current_exe) {
-                                let channel_config_path = FluvioChannelConfig::default_config_location();
+                    // TODO: We need a way to propagate the skip_channel_check
+                    if is_fluvio_bin_in_std_dir(&current_exe) && !root.skip_channel_check() {
+                        //if is_fluvio_bin_in_std_dir(&current_exe) {
+                        let channel_config_path = FluvioChannelConfig::default_config_location();
 
-                                let channel = if FluvioChannelConfig::exists(&channel_config_path) {
-                                    //println!("Config file exists @ {:#?}", &channel_config_path);
-                                    FluvioChannelConfig::from_file(channel_config_path)?
-                                    //FluvioChannelConfig::default()
+                        let channel = if FluvioChannelConfig::exists(&channel_config_path) {
+                            //println!("Config file exists @ {:#?}", &channel_config_path);
+                            FluvioChannelConfig::from_file(channel_config_path)?
+                            //FluvioChannelConfig::default()
+                        } else {
+                            // Default to stable channel behavior
+                            FluvioChannelConfig::default()
+                        };
+
+                        //println!("{:#?}", &channel);
+
+                        //println!("Current exe: {:?}", &current_exe);
+                        //println!("Config current exe: {:?}", &channel.current_exe());
+
+                        debug!("channel: {:#?}", channel);
+
+                        let modified_cluster_cmd = match channel.current_channel() {
+                            CliChannelName::Latest => {
+                                // If we've specified an image version, use that
+                                // Otherwise, use the image version we push to dockerhub
+                                let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
+
+                                if let ClusterCmd::Start(opts) = *cluster {
+                                    if opts.k8_config.image_version.is_none() {
+                                        let mut new_start_opts = *opts;
+                                        new_start_opts.k8_config.image_version =
+                                            Some(image_version);
+                                        Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
+                                    } else {
+                                        Box::new(ClusterCmd::Start(opts))
+                                    }
+                                } else if let ClusterCmd::Upgrade(opts) = *cluster {
+                                    if opts.start.k8_config.image_version.is_none() {
+                                        let mut new_upgrade_opts = *opts;
+                                        new_upgrade_opts.start.k8_config.image_version =
+                                            Some(image_version);
+                                        Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
+                                    } else {
+                                        Box::new(ClusterCmd::Upgrade(opts))
+                                    }
                                 } else {
-                                    // Default to stable channel behavior
-                                    FluvioChannelConfig::default()
-                                };
-
-                                //println!("{:#?}", &channel);
-
-                                //println!("Current exe: {:?}", &current_exe);
-                                //println!("Config current exe: {:?}", &channel.current_exe());
-
-                                debug!("channel: {:#?}", channel);
-
-                                let modified_cluster_cmd = match channel.current_channel() {
-                                    CliChannelName::Latest => {
-
-                                        // If we've specified an image version, use that
-                                        // Otherwise, use the image version we push to dockerhub
-                                        let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
-
-                                        if let ClusterCmd::Start(opts) = *cluster {
-
-                                            if opts.k8_config.image_version.is_none() {
-
-                                                let mut new_start_opts = *opts;
-                                                new_start_opts.k8_config.image_version = Some(image_version) ;
-                                                Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                                            } else {
-                                                Box::new(ClusterCmd::Start(opts))
-                                            }
-                                        } else if let ClusterCmd::Upgrade(opts) = *cluster {
-
-                                            if opts.start.k8_config.image_version.is_none() {
-
-                                                let mut new_upgrade_opts = *opts;
-                                                new_upgrade_opts.start.k8_config.image_version = Some(image_version) ;
-                                                Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
-                                            } else {
-                                                Box::new(ClusterCmd::Upgrade(opts))
-                                            }
-                                        } else {
-                                            cluster
-                                        }
-                                    }
-                                    CliChannelName::Stable => {
-                                        cluster
-                                    },
-                                    CliChannelName::Dev => {
-                                        // If we are dealing with a cluster start or upgrade, then we care about channels
-                                        if let ClusterCmd::Start(opts) = *cluster {
-                                            let mut new_start_opts = *opts;
-                                            new_start_opts.develop = true;
-                                            Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                                        } else if let ClusterCmd::Upgrade(opts) = *cluster {
-                                            let mut new_upgrade_opts = *opts;
-                                            new_upgrade_opts.start.develop = true;
-                                            Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
-                                        } else {
-                                            cluster
-                                        }
-                                    }
-                                };
-
-                                //// If we are dealing with a cluster start or upgrade, then we care about channels
-                                //let modified_cluster_cmd = if let ClusterCmd::Start(opts) = *cluster.clone() {
-                                //    let mut new_start_opts = *opts;
-                                //    new_start_opts.develop = true;
-                                //    Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                                //} else if let ClusterCmd::Upgrade(opts) = *cluster.clone() {
-                                //    let mut new_upgrade_opts = *opts;
-                                //    new_upgrade_opts.start.develop = true;
-                                //    Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
-                                //} else {
-                                //    cluster
-                                //};
-
-                                modified_cluster_cmd.process(out, version, root.target).await?;
-                            } else {
-                                debug!("Fluvio bin not in standard install location. Assuming dev channel");
-
+                                    cluster
+                                }
+                            }
+                            CliChannelName::Stable => cluster,
+                            CliChannelName::Dev => {
                                 // If we are dealing with a cluster start or upgrade, then we care about channels
-                                let modified_cluster_cmd = if let ClusterCmd::Start(opts) = *cluster.clone() {
+                                if let ClusterCmd::Start(opts) = *cluster {
                                     let mut new_start_opts = *opts;
                                     new_start_opts.develop = true;
                                     Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                                } else if let ClusterCmd::Upgrade(opts) = *cluster.clone() {
+                                } else if let ClusterCmd::Upgrade(opts) = *cluster {
                                     let mut new_upgrade_opts = *opts;
                                     new_upgrade_opts.start.develop = true;
                                     Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
                                 } else {
                                     cluster
-                                };
-
-                                modified_cluster_cmd.process(out, version, root.target).await?;
+                                }
                             }
-                        } else {
-                            // Currently Windows does not support channels
+                        };
 
-                            cluster.process(out, version, root.target).await?;
-                        }
+                        modified_cluster_cmd
+                            .process(out, version, root.target)
+                            .await?;
+                    } else {
+                        debug!("Fluvio bin not in standard install location. Assuming dev channel");
+
+                        // If we are dealing with a cluster start or upgrade, then we care about channels
+                        let modified_cluster_cmd = if let ClusterCmd::Start(opts) = *cluster.clone()
+                        {
+                            let mut new_start_opts = *opts;
+                            new_start_opts.develop = true;
+                            Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
+                        } else if let ClusterCmd::Upgrade(opts) = *cluster.clone() {
+                            let mut new_upgrade_opts = *opts;
+                            new_upgrade_opts.start.develop = true;
+                            Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
+                        } else {
+                            cluster
+                        };
+
+                        modified_cluster_cmd
+                            .process(out, version, root.target)
+                            .await?;
                     }
                 }
                 Self::Install(install) => {
