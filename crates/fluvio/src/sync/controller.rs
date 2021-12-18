@@ -15,13 +15,13 @@ use fluvio_sc_schema::objects::{
     Metadata, MetadataUpdate, ObjectApiWatchRequest, ObjectApiWatchResponse, WatchResponse,
 };
 use fluvio_sc_schema::{AdminSpec};
+use fluvio_sc_schema::message::MsgType;
 
 use crate::metadata::core::Spec;
+use crate::metadata::store::actions::LSUpdate;
 
 use super::StoreContext;
 use super::CacheMetadataStoreObject;
-use crate::metadata::store::actions::LSUpdate;
-use fluvio_sc_schema::message::MsgType;
 
 pub struct SimpleEvent {
     flag: AtomicBool,

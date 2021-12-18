@@ -12,6 +12,7 @@ use dataplane::ErrorCode;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::task::spawn;
 use fluvio_future::timer::sleep;
+use fluvio_types::event::StickyEvent;
 use tracing::debug;
 use tracing::info;
 use tracing::instrument;
@@ -30,17 +31,26 @@ pub(crate) struct SharedSegments {
     inner: Arc<RwLock<SegmentList>>,
     min_offset: AtomicI64,
     config: Arc<SharedReplicaConfig>,
+    end_event: Arc<StickyEvent>,
+}
+
+impl Drop for SharedSegments {
+    fn drop(&mut self) {
+        self.end_event.notify();
+    }
 }
 
 impl SharedSegments {
     fn from(list: SegmentList, config: Arc<SharedReplicaConfig>) -> Arc<Self> {
         let min = list.min_offset;
+        let end_event = StickyEvent::shared();
         let shared_segments = Arc::new(Self {
             inner: Arc::new(RwLock::new(list)),
             min_offset: AtomicI64::new(min),
             config,
+            end_event: end_event.clone(),
         });
-        Cleaner::start(shared_segments.clone());
+        Cleaner::start(shared_segments.clone(), end_event);
         shared_segments
     }
 
@@ -258,27 +268,39 @@ const DELAY: Duration = Duration::from_secs(10);
 struct Cleaner(Arc<SharedSegments>);
 
 impl Cleaner {
-    fn start(shared_segmen: Arc<SharedSegments>) {
+    fn start(shared_segmen: Arc<SharedSegments>, end_event: Arc<StickyEvent>) {
         let cleaner = Cleaner(shared_segmen);
 
         spawn(async move {
-            cleaner.clean().await;
+            cleaner.clean(end_event).await;
         });
     }
 
-    async fn clean(&self) {
+    async fn clean(&self, end_event: Arc<StickyEvent>) {
+        use tokio::select;
+
         loop {
             debug!(seconds = DELAY.as_secs(), "sleeping seconds");
-            sleep(DELAY).await;
-            let read = self.0.read().await;
-            let expired_segments =
-                read.find_expired_segments(self.0.config.retention_seconds.get());
-            drop(read);
-            if !expired_segments.is_empty() {
-                debug!(count = expired_segments.len(), "found segments to remove");
-                for base_offset in expired_segments {
-                    info!(base_offset, "removing segment");
-                    self.0.remove_segment(base_offset).await;
+
+            select! {
+                _ = end_event.listen() => {
+                    info!("cleaner end event received");
+                    break;
+                },
+                _ = sleep(DELAY) => {
+
+                    debug!("clear starting");
+                    let read = self.0.read().await;
+                    let expired_segments =
+                        read.find_expired_segments(self.0.config.retention_seconds.get());
+                    drop(read);
+                    if !expired_segments.is_empty() {
+                        debug!(count = expired_segments.len(), "found segments to remove");
+                        for base_offset in expired_segments {
+                            info!(base_offset, "removing segment");
+                            self.0.remove_segment(base_offset).await;
+                        }
+                    }
                 }
             }
         }

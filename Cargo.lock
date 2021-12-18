@@ -2063,6 +2063,7 @@ dependencies = [
  "serde",
  "structopt",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 
@@ -2203,7 +2204,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "event-listener",
  "fluvio-future",
