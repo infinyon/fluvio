@@ -10,7 +10,10 @@ use fluvio_cli::cli_config::channel::{CliChannelName, FluvioChannelConfig, is_fl
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
-use std::os::windows::prelude::*;
+use std::os::windows::process::CommandExt;
+#[cfg(target_os = "windows")]
+use std::io::{self, Write};
+use cfg_if::cfg_if;
 
 // TODO: This needs to support more than the 3 main channels
 // Pass overrides for extension dir, image name/path, image pattern format
@@ -68,14 +71,25 @@ fn main() -> Result<()> {
                     }
 
                     // Handle pipes
-
                     let mut proc = std::process::Command::new(exe);
                     proc.args(args);
                     proc.stdin(Stdio::inherit());
                     proc.stdout(Stdio::inherit());
                     proc.stderr(Stdio::inherit());
 
-                    let _err = proc.exec();
+                    cfg_if! {
+                        if #[cfg(not(target_os = "windows"))] {
+                            let _err = proc.exec();
+                        } else {
+                            // TODO: This needs to be sure to add .exe to filename
+                            // Handle unwrap()
+                            let output = proc.output()?
+                            io::stdout().write_all(&output.stdout).unwrap();
+                            io::stderr().write_all(&output.stderr).unwrap();
+
+                        }
+                    }
+
                     true
                 }
             } else {
