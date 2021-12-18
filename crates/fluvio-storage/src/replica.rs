@@ -780,4 +780,72 @@ mod tests {
         assert_eq!(segment.get_base_offset(), 0);
         assert_eq!(segment.get_end_offset(), 4);
     }
+
+    /// test replica with purging segments
+    #[fluvio_future::test]
+    async fn test_replica_segment_purge() {
+        let mut option = base_option("test_find_segment");
+        // enough for 2 batch (2 records per batch)
+        option.segment_max_bytes = 160;
+        option.index_max_interval_bytes = 50; // ensure we are writing to index
+
+        let producer = BatchProducer::builder()
+            .records(2u16)
+            .record_generator(Arc::new(|_, _| Record::new("1")))
+            .build()
+            .expect("batch");
+
+        let mut new_replica = FileReplica::create_or_load("test", 0, 0, option.clone())
+            .await
+            .expect("create");
+        let reader = new_replica.prev_segments.read().await;
+        assert!(reader.len() == 0);
+        drop(reader);
+
+        // this will create  1 segment
+        new_replica
+            .write_batch(&mut producer.generate_batch())
+            .await
+            .expect("write");
+        new_replica
+            .write_batch(&mut producer.generate_batch())
+            .await
+            .expect("write");
+
+        let reader = new_replica.prev_segments.read().await;
+        assert_eq!(reader.len(), 0);
+        assert!(reader.find_segment(0).is_none());
+        assert!(reader.find_segment(1).is_none());
+        drop(reader);
+
+        // overflow, will create 2nd segment
+        new_replica
+            .write_batch(&mut producer.generate_batch())
+            .await
+            .expect("write");
+
+        assert_eq!(new_replica.prev_segments.min_offset(), 0);
+        let reader = new_replica.prev_segments.read().await;
+        assert_eq!(reader.len(), 1);
+
+        //    println!("new replica segments: {:#?}", new_replica.prev_segments);
+        let first_segment = reader.get_segment(0).expect("some");
+        assert_eq!(first_segment.get_base_offset(), 0);
+        assert_eq!(first_segment.get_end_offset(), 4);
+        assert!(reader.find_segment(0).is_some());
+        drop(reader);
+        drop(new_replica);
+
+        // reload replica
+        let old_replica = FileReplica::create_or_load("test", 0, 0, option.clone())
+            .await
+            .expect("read");
+        let reader = old_replica.prev_segments.read().await;
+        //  println!("old replica segments: {:#?}", old_replica.prev_segments);
+        assert!(reader.len() == 1);
+        let (_, segment) = reader.find_segment(0).expect("some");
+
+        assert_eq!(segment.get_base_offset(), 0);
+        assert_eq!(segment.get_end_offset(), 4);
+    }
 }

@@ -3,21 +3,13 @@ use std::ops::Bound::Included;
 use std::ffi::OsStr;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
-use std::time::Duration;
 
-use async_lock::RwLock;
-use async_lock::RwLockReadGuard;
-use async_lock::RwLockWriteGuard;
+use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use tracing::{debug, trace, error, instrument};
+
 use dataplane::ErrorCode;
 use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_future::task::spawn;
-use fluvio_future::timer::sleep;
 use fluvio_types::event::StickyEvent;
-use tracing::debug;
-use tracing::info;
-use tracing::instrument;
-use tracing::trace;
-use tracing::error;
 
 use dataplane::Offset;
 
@@ -25,7 +17,12 @@ use crate::config::SharedReplicaConfig;
 use crate::segment::ReadSegment;
 use crate::StorageError;
 use crate::util::log_path_get_offset;
+use cleaner::Cleaner;
 
+const MEM_ORDER: std::sync::atomic::Ordering = std::sync::atomic::Ordering::SeqCst;
+
+/// Thread safe Segment list
+///
 #[derive(Debug)]
 pub(crate) struct SharedSegments {
     inner: Arc<RwLock<SegmentList>>,
@@ -112,7 +109,7 @@ impl SharedSegments {
     }
 
     pub fn min_offset(&self) -> Offset {
-        self.min_offset.load(std::sync::atomic::Ordering::SeqCst)
+        self.min_offset.load(MEM_ORDER)
     }
 
     pub async fn add_segment(&self, segment: ReadSegment) {
@@ -123,8 +120,7 @@ impl SharedSegments {
         );
         let mut writer = self.write().await;
         let min_offset = writer.add_segment(segment);
-        self.min_offset
-            .store(min_offset, std::sync::atomic::Ordering::SeqCst);
+        self.min_offset.store(min_offset, MEM_ORDER);
     }
 
     #[instrument(skip(self))]
@@ -132,14 +128,15 @@ impl SharedSegments {
         let mut write = self.write().await;
 
         if let Some((old_segment, min_offset)) = write.remove_segment(&base_offset) {
-            self.min_offset
-                .store(min_offset, std::sync::atomic::Ordering::SeqCst);
+            self.min_offset.store(min_offset, MEM_ORDER);
             if let Err(err) = old_segment.remove().await {
                 error!("failed to remove segment: {:#?}", err);
             }
         }
     }
 
+    /// find slice in the segments
+    /// if not found, return OutOfRange error
     pub async fn find_slice(
         &self,
         start_offset: Offset,
@@ -262,55 +259,70 @@ impl SegmentList {
     }
 }
 
-const DELAY: Duration = Duration::from_secs(10);
+mod cleaner {
 
-struct Cleaner(Arc<SharedSegments>);
+    use std::time::Duration;
 
-impl Cleaner {
-    fn start(shared_segmen: Arc<SharedSegments>, end_event: Arc<StickyEvent>) {
-        let cleaner = Cleaner(shared_segmen);
+    use tracing::{debug, info};
 
-        spawn(async move {
-            cleaner.clean(end_event).await;
-        });
-    }
+    use fluvio_future::task::spawn;
+    use fluvio_future::timer::sleep;
 
-    #[instrument(skip(self, end_event))]
-    async fn clean(&self, end_event: Arc<StickyEvent>) {
-        use tokio::select;
+    use super::{SharedSegments, StickyEvent};
+    use super::{Arc, instrument};
 
-        loop {
-            debug!(seconds = DELAY.as_secs(), "sleeping");
+    const DELAY: Duration = Duration::from_secs(10);
 
-            if end_event.is_set() {
-                info!("clear is terminated");
-                break;
-            }
+    /// Replica cleaner.  This is a background task that periodically checks for expired segments and
+    /// removes them.  In the future, this may be done by a central cleaner pool instead of per a replica.
+    pub(crate) struct Cleaner(Arc<SharedSegments>);
 
-            select! {
-                _ = end_event.listen() => {
-                    info!("cleaner end event received");
+    impl Cleaner {
+        pub(crate) fn start(shared_segmen: Arc<SharedSegments>, end_event: Arc<StickyEvent>) {
+            let cleaner = Cleaner(shared_segmen);
+
+            spawn(async move {
+                cleaner.clean(end_event).await;
+            });
+        }
+
+        #[instrument(skip(self, end_event))]
+        async fn clean(&self, end_event: Arc<StickyEvent>) {
+            use tokio::select;
+
+            loop {
+                debug!(seconds = DELAY.as_secs(), "sleeping");
+
+                if end_event.is_set() {
+                    info!("clear is terminated");
                     break;
-                },
-                _ = sleep(DELAY) => {
+                }
 
-                    debug!("clear starting");
-                    let read = self.0.read().await;
-                    let expired_segments =
-                        read.find_expired_segments(self.0.config.retention_seconds.get());
-                    drop(read);
-                    if !expired_segments.is_empty() {
-                        debug!(count = expired_segments.len(), "found segments to remove");
-                        for base_offset in expired_segments {
-                            info!(base_offset, "removing segment");
-                            self.0.remove_segment(base_offset).await;
+                select! {
+                    _ = end_event.listen() => {
+                        info!("cleaner end event received");
+                        break;
+                    },
+                    _ = sleep(DELAY) => {
+
+                        debug!("clear starting");
+                        let read = self.0.read().await;
+                        let expired_segments =
+                            read.find_expired_segments(self.0.config.retention_seconds.get());
+                        drop(read);
+                        if !expired_segments.is_empty() {
+                            debug!(count = expired_segments.len(), "found segments to remove");
+                            for base_offset in expired_segments {
+                                info!(base_offset, "removing segment");
+                                self.0.remove_segment(base_offset).await;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        info!("cleaner end");
+            info!("cleaner end");
+        }
     }
 }
 
