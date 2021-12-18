@@ -139,7 +139,9 @@ impl ReplicaStorage for FileReplica {
     async fn remove(&self) -> Result<(), StorageError> {
         remove_dir_all(&self.option.base_dir)
             .await
-            .map_err(|err| err.into())
+            .map_err(StorageError::Io)?;
+        self.prev_segments.clean();
+        Ok(())
     }
 }
 

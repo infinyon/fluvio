@@ -34,12 +34,6 @@ pub(crate) struct SharedSegments {
     end_event: Arc<StickyEvent>,
 }
 
-impl Drop for SharedSegments {
-    fn drop(&mut self) {
-        self.end_event.notify();
-    }
-}
-
 impl SharedSegments {
     fn from(list: SegmentList, config: Arc<SharedReplicaConfig>) -> Arc<Self> {
         let min = list.min_offset;
@@ -162,6 +156,11 @@ impl SharedSegments {
             Err(ErrorCode::OffsetOutOfRange)
         }
     }
+
+    /// perform any clean up such as shutdown of cleaner
+    pub fn clean(&self) {
+        self.end_event.notify();
+    }
 }
 
 #[derive(Debug)]
@@ -276,11 +275,17 @@ impl Cleaner {
         });
     }
 
+    #[instrument(skip(self, end_event))]
     async fn clean(&self, end_event: Arc<StickyEvent>) {
         use tokio::select;
 
         loop {
-            debug!(seconds = DELAY.as_secs(), "sleeping seconds");
+            debug!(seconds = DELAY.as_secs(), "sleeping");
+
+            if end_event.is_set() {
+                info!("clear is terminated");
+                break;
+            }
 
             select! {
                 _ = end_event.listen() => {
@@ -304,6 +309,8 @@ impl Cleaner {
                 }
             }
         }
+
+        info!("cleaner end");
     }
 }
 
@@ -319,6 +326,7 @@ mod tests {
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
+    use tracing::debug;
 
     use crate::StorageError;
     use crate::config::SharedReplicaConfig;
@@ -533,5 +541,12 @@ mod tests {
         let read = slist.read().await;
         assert_eq!(read.len(), 1);
         assert_eq!(slist.min_offset(), 600); // first segment should be deleted
+        debug!("droppping segment");
+        drop(read);
+        assert_eq!(Arc::strong_count(&slist), 2); // cleaner is pointing to shared segment
+        slist.clean(); // perform shutdown of cleaner
+        sleep(Duration::from_millis(200)).await;
+        assert_eq!(Arc::strong_count(&slist), 1); // cleaner is gone...
+        debug!("test done");
     }
 }
