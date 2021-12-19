@@ -2,6 +2,7 @@ use std::fmt;
 use std::io::Error as IoError;
 use std::ops::Deref;
 use std::sync::Arc;
+use std::time::Duration;
 
 use fluvio_future::fs::remove_file;
 use tracing::{debug, trace, instrument, info};
@@ -252,8 +253,8 @@ impl Segment<LogIndex, FileRecordsSlice> {
         })
     }
 
-    pub(crate) fn is_expired(&self, seconds: u32) -> bool {
-        self.msg_log.is_expired(seconds)
+    pub(crate) fn is_expired(&self, expired_duration: &Duration) -> bool {
+        self.msg_log.is_expired(expired_duration)
     }
 
     pub(crate) async fn remove(self) -> Result<(), StorageError> {

@@ -13,7 +13,7 @@ use dataplane::batch::Batch;
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
-use crate::segments::{SharedSegments};
+use crate::segments::{SharedSegments, CleanerConfig};
 use crate::segment::MutableSegment;
 use crate::config::{ReplicaConfig, SharedReplicaConfig};
 use crate::{ReplicaSlice};
@@ -782,7 +782,7 @@ mod tests {
     }
 
     /// test replica with purging segments
-    #[fluvio_future::test]
+    //#[fluvio_future::test]
     async fn test_replica_segment_purge() {
         let mut option = base_option("test_find_segment");
         // enough for 2 batch (2 records per batch)

@@ -3,6 +3,7 @@ use std::ops::Bound::Included;
 use std::ffi::OsStr;
 use std::sync::Arc;
 use std::sync::atomic::AtomicI64;
+use std::time::Duration;
 
 use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use tracing::{debug, trace, error, instrument};
@@ -19,6 +20,8 @@ use crate::StorageError;
 use crate::util::log_path_get_offset;
 use cleaner::Cleaner;
 
+pub use self::cleaner::CleanerConfig;
+
 const MEM_ORDER: std::sync::atomic::Ordering = std::sync::atomic::Ordering::SeqCst;
 
 /// Thread safe Segment list
@@ -32,7 +35,11 @@ pub(crate) struct SharedSegments {
 }
 
 impl SharedSegments {
-    fn from(list: SegmentList, config: Arc<SharedReplicaConfig>) -> Arc<Self> {
+    fn from(
+        list: SegmentList,
+        config: Arc<SharedReplicaConfig>,
+        clean_config: CleanerConfig,
+    ) -> Arc<Self> {
         let min = list.min_offset;
         let end_event = StickyEvent::shared();
         let shared_segments = Arc::new(Self {
@@ -41,12 +48,24 @@ impl SharedSegments {
             config,
             end_event: end_event.clone(),
         });
-        Cleaner::start(shared_segments.clone(), end_event);
+
+        Cleaner::start(clean_config, shared_segments.clone(), end_event);
         shared_segments
     }
 
     pub async fn from_dir(
         option: Arc<SharedReplicaConfig>,
+    ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
+        let clear_config = CleanerConfig::builder().build().map_err(|err| {
+            StorageError::Other(format!("failed to build cleaner config: {}", err))
+        })?;
+
+        Self::from_dir_with_config(option, clear_config).await
+    }
+
+    pub async fn from_dir_with_config(
+        option: Arc<SharedReplicaConfig>,
+        clean_config: CleanerConfig,
     ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
         let dirs = option.base_dir.read_dir()?;
         debug!("reading segments at: {:#?}", dirs);
@@ -95,7 +114,7 @@ impl SharedSegments {
             }
         }
 
-        let shared_segments = SharedSegments::from(segments, option);
+        let shared_segments = SharedSegments::from(segments, option, clean_config);
 
         Ok((shared_segments, last_offset))
     }
@@ -113,11 +132,6 @@ impl SharedSegments {
     }
 
     pub async fn add_segment(&self, segment: ReadSegment) {
-        debug!(
-            base_offset = segment.get_base_offset(),
-            end_offset = segment.get_end_offset(),
-            "inserting"
-        );
         let mut writer = self.write().await;
         let min_offset = writer.add_segment(segment);
         self.min_offset.store(min_offset, MEM_ORDER);
@@ -183,6 +197,7 @@ impl SegmentList {
         self.segments.len()
     }
 
+    #[instrument(skip(self, segment))]
     fn add_segment(&mut self, segment: ReadSegment) -> Offset {
         debug!(
             base_offset = segment.get_base_offset(),
@@ -245,11 +260,11 @@ impl SegmentList {
         }
     }
 
-    fn find_expired_segments(&self, seconds: u32) -> Vec<Offset> {
+    fn find_expired_segments(&self, expired_duration: &Duration) -> Vec<Offset> {
         self.segments
             .iter()
             .filter_map(|(base_offset, segment)| {
-                if segment.is_expired(seconds) {
+                if segment.is_expired(expired_duration) {
                     Some(*base_offset)
                 } else {
                     None
@@ -263,6 +278,7 @@ mod cleaner {
 
     use std::time::Duration;
 
+    use derive_builder::Builder;
     use tracing::{debug, info};
 
     use fluvio_future::task::spawn;
@@ -271,15 +287,32 @@ mod cleaner {
     use super::{SharedSegments, StickyEvent};
     use super::{Arc, instrument};
 
-    const DELAY: Duration = Duration::from_secs(10);
+    #[derive(Builder, Debug)]
+    pub struct CleanerConfig {
+        #[builder(default = "10000")] // 10 seconds
+        cleaning_interval_ms: u16,
+    }
+
+    impl CleanerConfig {
+        pub fn builder() -> CleanerConfigBuilder {
+            CleanerConfigBuilder::default()
+        }
+    }
 
     /// Replica cleaner.  This is a background task that periodically checks for expired segments and
     /// removes them.  In the future, this may be done by a central cleaner pool instead of per a replica.
-    pub(crate) struct Cleaner(Arc<SharedSegments>);
+    pub(crate) struct Cleaner {
+        config: CleanerConfig,
+        segments: Arc<SharedSegments>,
+    }
 
     impl Cleaner {
-        pub(crate) fn start(shared_segmen: Arc<SharedSegments>, end_event: Arc<StickyEvent>) {
-            let cleaner = Cleaner(shared_segmen);
+        pub(crate) fn start(
+            config: CleanerConfig,
+            segments: Arc<SharedSegments>,
+            end_event: Arc<StickyEvent>,
+        ) {
+            let cleaner = Cleaner { config, segments };
 
             spawn(async move {
                 cleaner.clean(end_event).await;
@@ -290,8 +323,10 @@ mod cleaner {
         async fn clean(&self, end_event: Arc<StickyEvent>) {
             use tokio::select;
 
+            let sleep_period = Duration::from_millis(self.config.cleaning_interval_ms as u64);
+
             loop {
-                debug!(seconds = DELAY.as_secs(), "sleeping");
+                debug!(ms = self.config.cleaning_interval_ms, "sleeping");
 
                 if end_event.is_set() {
                     info!("clear is terminated");
@@ -303,18 +338,19 @@ mod cleaner {
                         info!("cleaner end event received");
                         break;
                     },
-                    _ = sleep(DELAY) => {
+                    _ = sleep(sleep_period) => {
 
-                        debug!("clear starting");
-                        let read = self.0.read().await;
+
+                        let retention_secs = Duration::from_secs(self.segments.config.retention_seconds.get() as u64);
+                        let read = self.segments.read().await;
                         let expired_segments =
-                            read.find_expired_segments(self.0.config.retention_seconds.get());
+                            read.find_expired_segments(&retention_secs);
+                        debug!(seconds = retention_secs.as_secs(),expired = expired_segments.len(), "found expired segments");
                         drop(read);
                         if !expired_segments.is_empty() {
-                            debug!(count = expired_segments.len(), "found segments to remove");
                             for base_offset in expired_segments {
                                 info!(base_offset, "removing segment");
-                                self.0.remove_segment(base_offset).await;
+                                self.segments.remove_segment(base_offset).await;
                             }
                         }
                     }
@@ -334,11 +370,12 @@ mod tests {
     use std::sync::Arc;
     use std::time::Duration;
 
+    use tracing::debug;
+
     use fluvio_future::timer::sleep;
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
-    use tracing::debug;
 
     use crate::StorageError;
     use crate::config::SharedReplicaConfig;
@@ -346,8 +383,7 @@ mod tests {
     use crate::segment::ReadSegment;
     use crate::config::ReplicaConfig;
 
-    use super::SegmentList;
-    use super::SharedSegments;
+    use super::{SegmentList, SharedSegments, CleanerConfig};
 
     // create fake segment, this doesn't create a segment with all data, it just fill with a min data but with a valid end offset
     async fn create_segment(
@@ -515,10 +551,15 @@ mod tests {
         ensure_new_dir(&rep_dir).expect("new");
 
         let mut config = default_option(rep_dir);
-        config.retention_seconds = 5; // 5 seconds
+        config.retention_seconds = 1;
         let option = config.shared();
 
-        let slist = SharedSegments::from(SegmentList::new(), option.clone());
+        let clear_config = CleanerConfig::builder()
+            .cleaning_interval_ms(200)
+            .build()
+            .expect("build");
+
+        let slist = SharedSegments::from(SegmentList::new(), option.clone(), clear_config);
 
         slist
             .add_segment(
@@ -534,7 +575,7 @@ mod tests {
         assert_eq!(slist.min_offset(), 100);
         drop(read);
 
-        sleep(Duration::from_secs(5)).await; // await 4 seconds
+        sleep(Duration::from_millis(700)).await; // previous segment should not expire
         slist
             .add_segment(
                 create_segment(option.clone(), 600, 4000)
@@ -549,7 +590,7 @@ mod tests {
         assert_eq!(read.find_segment(900).expect("segment").0, &600); // belong to 2nd segment
         drop(read);
 
-        sleep(Duration::from_secs(10)).await; // await 4 seconds
+        sleep(Duration::from_millis(1000)).await; // enough time for cleaer should have deleted the first segment
         let read = slist.read().await;
         assert_eq!(read.len(), 1);
         assert_eq!(slist.min_offset(), 600); // first segment should be deleted
