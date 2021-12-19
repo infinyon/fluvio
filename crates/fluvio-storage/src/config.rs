@@ -19,7 +19,7 @@ pub const DEFAULT_FLUSH_IDLE_MSEC: u32 = 0;
 pub const DEFAULT_MAX_BATCH_SIZE: u32 = 1048588;
 pub const DEFAULT_RETENTION_SECONDS: u32 = 7 * 24 * 3600;
 
-// common option
+// Replica specific config
 #[derive(Builder, Clone, Debug, PartialEq, Deserialize)]
 #[builder(build_fn(private, name = "build_impl"))]
 pub struct ReplicaConfig {
@@ -180,6 +180,19 @@ impl From<ReplicaConfig> for SharedReplicaConfig {
             update_hw: config.update_hw,
             retention_seconds: SharedConfigValue::new(config.retention_seconds),
         }
+    }
+}
+
+/// Storage wide configuration
+#[derive(Builder, Debug, Clone)]
+pub struct StorageConfig {
+    #[builder(default = "10000")] // 10 seconds
+    pub cleaning_interval_ms: u16,
+}
+
+impl StorageConfig {
+    pub fn builder() -> StorageConfigBuilder {
+        StorageConfigBuilder::default()
     }
 }
 

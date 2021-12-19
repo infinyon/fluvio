@@ -13,7 +13,7 @@ use dataplane::batch::Batch;
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
-use crate::segments::{SharedSegments, CleanerConfig};
+use crate::segments::{SharedSegments};
 use crate::segment::MutableSegment;
 use crate::config::{ReplicaConfig, SharedReplicaConfig};
 use crate::{ReplicaSlice};
@@ -782,7 +782,7 @@ mod tests {
     }
 
     /// test replica with purging segments
-    //#[fluvio_future::test]
+    #[fluvio_future::test]
     async fn test_replica_segment_purge() {
         let mut option = base_option("test_find_segment");
         // enough for 2 batch (2 records per batch)
@@ -802,7 +802,7 @@ mod tests {
         assert!(reader.len() == 0);
         drop(reader);
 
-        // this will create  1 segment
+        // this will create active sgment
         new_replica
             .write_batch(&mut producer.generate_batch())
             .await
@@ -812,11 +812,7 @@ mod tests {
             .await
             .expect("write");
 
-        let reader = new_replica.prev_segments.read().await;
-        assert_eq!(reader.len(), 0);
-        assert!(reader.find_segment(0).is_none());
-        assert!(reader.find_segment(1).is_none());
-        drop(reader);
+        // wait 1 second
 
         // overflow, will create 2nd segment
         new_replica
@@ -824,17 +820,8 @@ mod tests {
             .await
             .expect("write");
 
-        assert_eq!(new_replica.prev_segments.min_offset(), 0);
         let reader = new_replica.prev_segments.read().await;
         assert_eq!(reader.len(), 1);
-
-        //    println!("new replica segments: {:#?}", new_replica.prev_segments);
-        let first_segment = reader.get_segment(0).expect("some");
-        assert_eq!(first_segment.get_base_offset(), 0);
-        assert_eq!(first_segment.get_end_offset(), 4);
-        assert!(reader.find_segment(0).is_some());
-        drop(reader);
-        drop(new_replica);
 
         // reload replica
         let old_replica = FileReplica::create_or_load("test", 0, 0, option.clone())

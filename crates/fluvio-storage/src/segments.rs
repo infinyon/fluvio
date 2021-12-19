@@ -14,13 +14,11 @@ use fluvio_types::event::StickyEvent;
 
 use dataplane::Offset;
 
-use crate::config::SharedReplicaConfig;
+use crate::config::{SharedReplicaConfig, StorageConfig};
 use crate::segment::ReadSegment;
 use crate::StorageError;
 use crate::util::log_path_get_offset;
 use cleaner::Cleaner;
-
-pub use self::cleaner::CleanerConfig;
 
 const MEM_ORDER: std::sync::atomic::Ordering = std::sync::atomic::Ordering::SeqCst;
 
@@ -38,7 +36,7 @@ impl SharedSegments {
     fn from(
         list: SegmentList,
         config: Arc<SharedReplicaConfig>,
-        clean_config: CleanerConfig,
+        clean_config: Arc<StorageConfig>,
     ) -> Arc<Self> {
         let min = list.min_offset;
         let end_event = StickyEvent::shared();
@@ -56,16 +54,16 @@ impl SharedSegments {
     pub async fn from_dir(
         option: Arc<SharedReplicaConfig>,
     ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
-        let clear_config = CleanerConfig::builder().build().map_err(|err| {
+        let clear_config = StorageConfig::builder().build().map_err(|err| {
             StorageError::Other(format!("failed to build cleaner config: {}", err))
         })?;
 
-        Self::from_dir_with_config(option, clear_config).await
+        Self::from_dir_with_config(option, Arc::new(clear_config)).await
     }
 
     pub async fn from_dir_with_config(
         option: Arc<SharedReplicaConfig>,
-        clean_config: CleanerConfig,
+        clean_config: Arc<StorageConfig>,
     ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
         let dirs = option.base_dir.read_dir()?;
         debug!("reading segments at: {:#?}", dirs);
@@ -278,37 +276,25 @@ mod cleaner {
 
     use std::time::Duration;
 
-    use derive_builder::Builder;
     use tracing::{debug, info};
 
     use fluvio_future::task::spawn;
     use fluvio_future::timer::sleep;
 
+    use crate::config::StorageConfig;
     use super::{SharedSegments, StickyEvent};
     use super::{Arc, instrument};
-
-    #[derive(Builder, Debug)]
-    pub struct CleanerConfig {
-        #[builder(default = "10000")] // 10 seconds
-        cleaning_interval_ms: u16,
-    }
-
-    impl CleanerConfig {
-        pub fn builder() -> CleanerConfigBuilder {
-            CleanerConfigBuilder::default()
-        }
-    }
 
     /// Replica cleaner.  This is a background task that periodically checks for expired segments and
     /// removes them.  In the future, this may be done by a central cleaner pool instead of per a replica.
     pub(crate) struct Cleaner {
-        config: CleanerConfig,
+        config: Arc<StorageConfig>,
         segments: Arc<SharedSegments>,
     }
 
     impl Cleaner {
         pub(crate) fn start(
-            config: CleanerConfig,
+            config: Arc<StorageConfig>,
             segments: Arc<SharedSegments>,
             end_event: Arc<StickyEvent>,
         ) {
@@ -378,12 +364,12 @@ mod tests {
     use dataplane::Offset;
 
     use crate::StorageError;
-    use crate::config::SharedReplicaConfig;
+    use crate::config::{SharedReplicaConfig, StorageConfig};
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
     use crate::config::ReplicaConfig;
 
-    use super::{SegmentList, SharedSegments, CleanerConfig};
+    use super::{SegmentList, SharedSegments};
 
     // create fake segment, this doesn't create a segment with all data, it just fill with a min data but with a valid end offset
     async fn create_segment(
@@ -554,12 +540,13 @@ mod tests {
         config.retention_seconds = 1;
         let option = config.shared();
 
-        let clear_config = CleanerConfig::builder()
+        let clear_config = StorageConfig::builder()
             .cleaning_interval_ms(200)
             .build()
             .expect("build");
 
-        let slist = SharedSegments::from(SegmentList::new(), option.clone(), clear_config);
+        let slist =
+            SharedSegments::from(SegmentList::new(), option.clone(), Arc::new(clear_config));
 
         slist
             .add_segment(
