@@ -6,8 +6,7 @@ use tracing::debug;
 
 #[derive(Debug, StructOpt)]
 pub struct SwitchOpt {
-    #[structopt(possible_values = &CliChannelName::variants(), case_insensitive = true)]
-    channel: CliChannelName,
+    channel: String, 
     #[structopt(long)]
     config: Option<PathBuf>,
 }
@@ -64,7 +63,7 @@ impl SwitchOpt {
             };
 
             // Change active channel
-            let c = self.channel.to_string().to_lowercase();
+            let c = self.channel.to_string();
             new_config.config.current_channel = c.clone();
 
             println!("Channel set to {} ", c);

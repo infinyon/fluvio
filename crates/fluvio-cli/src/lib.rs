@@ -6,7 +6,7 @@ mod http;
 mod error;
 mod install;
 mod profile;
-pub mod cli_config;
+pub mod channel;
 mod version;
 mod metadata;
 mod topic;
@@ -20,7 +20,9 @@ mod derivedstream;
 mod render;
 
 use std::env::current_exe;
-use crate::cli_config::channel::{FluvioChannelConfig, is_fluvio_bin_in_std_dir, CliChannelName};
+use crate::channel::{
+    FluvioChannelConfig, is_fluvio_bin_in_std_dir, FluvioChannelInfo, ImageTagStrategy,
+};
 
 pub(crate) use error::{Result, CliError};
 
@@ -44,7 +46,6 @@ mod root {
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
 
-    use crate::cli_config::ConfigCmd;
     use crate::derivedstream::DerivedStreamCmd;
     use crate::connector::ManagedConnectorCmd;
     use crate::tableformat::TableFormatCmd;
@@ -120,10 +121,6 @@ mod root {
         #[structopt(flatten)]
         #[cfg(feature = "consumer")]
         Fluvio(FluvioCmd),
-
-        /// Manage Fluvio CLI config
-        #[structopt(name = "config")]
-        Config(ConfigCmd),
 
         /// Manage Profiles, which describe linked clusters
         ///
@@ -209,9 +206,6 @@ mod root {
                 Self::Profile(profile) => {
                     profile.process(out).await?;
                 }
-                Self::Config(cli_config) => {
-                    cli_config.process().await?;
-                }
                 #[cfg(feature = "k8s")]
                 Self::Cluster(cluster) => {
                     let version = semver::Version::parse(crate::VERSION).unwrap();
@@ -224,7 +218,8 @@ mod root {
                     use crate::current_exe;
                     use crate::is_fluvio_bin_in_std_dir;
                     use crate::FluvioChannelConfig;
-                    use crate::CliChannelName;
+                    use crate::FluvioChannelInfo;
+                    use crate::ImageTagStrategy;
 
                     // Verify if the current binary is running in the "official" location
                     // If we're not in the fluvio directory then
@@ -252,8 +247,18 @@ mod root {
 
                         debug!("channel: {:#?}", channel);
 
-                        let modified_cluster_cmd = match channel.current_channel() {
-                            CliChannelName::Latest => {
+                        let current_channel_info = if let Some(channel_info) =
+                            channel.get_channel(&channel.current_channel())
+                        {
+                            channel_info
+                        } else {
+                            FluvioChannelInfo::stable_channel()
+                        };
+
+                        let modified_cluster_cmd = match current_channel_info
+                            .get_image_tag_strategy()
+                        {
+                            ImageTagStrategy::VersionGit => {
                                 // If we've specified an image version, use that
                                 // Otherwise, use the image version we push to dockerhub
                                 let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
@@ -280,8 +285,8 @@ mod root {
                                     cluster
                                 }
                             }
-                            CliChannelName::Stable => cluster,
-                            CliChannelName::Dev => {
+                            ImageTagStrategy::Version => cluster,
+                            ImageTagStrategy::Git => {
                                 // If we are dealing with a cluster start or upgrade, then we care about channels
                                 if let ClusterCmd::Start(opts) = *cluster {
                                     let mut new_start_opts = *opts;

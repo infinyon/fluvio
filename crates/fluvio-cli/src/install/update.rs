@@ -4,7 +4,7 @@ use tracing::{debug, instrument};
 
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
-use crate::cli_config::channel::{CliChannelName, FluvioChannelConfig};
+use crate::channel::{FluvioChannelConfig, FluvioChannelInfo, ImageTagStrategy};
 use crate::{Result, CliError};
 use crate::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
@@ -173,7 +173,14 @@ pub async fn check_update_available(
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
-    let prerelease_flag = channel.current_channel() == CliChannelName::Latest;
+    let current_channel_info =
+        if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
+            channel_info
+        } else {
+            FluvioChannelInfo::stable_channel()
+        };
+
+    let prerelease_flag = current_channel_info.get_image_tag_strategy() == ImageTagStrategy::Git;
 
     let request = agent.request_package(&id)?;
     let response = crate::http::execute(request).await?;
@@ -203,7 +210,14 @@ pub async fn prompt_required_update(
     let target = fluvio_index::package_target()?;
     let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
 
-    let prerelease_flag = channel.current_channel() == CliChannelName::Latest;
+    let current_channel_info =
+        if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
+            channel_info
+        } else {
+            FluvioChannelInfo::stable_channel()
+        };
+
+    let prerelease_flag = current_channel_info.get_image_tag_strategy() == ImageTagStrategy::Git;
 
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, &target, prerelease_flag).await?;

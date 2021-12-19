@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
-use crate::cli_config::channel::{CliChannelName, FluvioChannelConfig};
+use crate::channel::{FluvioChannelConfig, FluvioChannelInfo, ImageTagStrategy};
 
 use crate::{Result, CliError};
 use crate::install::{
@@ -73,7 +73,15 @@ impl InstallOpt {
     }
 
     async fn install_plugin(&self, agent: &HttpAgent, channel: &FluvioChannelConfig) -> Result<()> {
-        let prerelease_flag = channel.current_channel() == CliChannelName::Latest;
+        let current_channel_info =
+            if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
+                channel_info
+            } else {
+                FluvioChannelInfo::stable_channel()
+            };
+
+        let prerelease_flag =
+            current_channel_info.get_image_tag_strategy() == ImageTagStrategy::Git;
 
         let target = fluvio_index::package_target()?;
 
