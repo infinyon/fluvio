@@ -139,6 +139,10 @@ impl CreateTopicOpt {
             }));
         }
 
+        if let Some(segment_size) = self.setting.segment_size {
+            topic_spec.get_storage_mut().segment_size = Some(segment_size);
+        }
+
         // return server separately from config
         Ok((self.topic, topic_spec))
     }
@@ -148,13 +152,12 @@ impl CreateTopicOpt {
 pub struct TopicConfigOpt {
     /// Number of seconds to wait for discarding segments
     ///
-    /// Partitions are a way to divide the total traffic of a single Topic into
-    /// separate streams which may be processed independently. Data sent to different
-    /// partitions may be processed by separate SPUs on different computers. By
-    /// dividing the load of a Topic evenly among partitions, you can increase the
-    /// total throughput of the Topic.
-    #[structopt(long, value_name = "integer")]
+    #[structopt(long, value_name = "seconds")]
     retention_secs: Option<u32>,
+
+    /// Segment size in bytes
+    #[structopt(long, value_name = "bytes")]
+    segment_size: Option<u32>,
 }
 
 /// module to load partitions maps from file

@@ -140,10 +140,10 @@ spec:
                 storage:
                   type: object
                   properties:
-                    segmentSizeMb:
+                    segmentSize:
                       type: integer
-                      minimum: 1               
-      
+                      minimum: 1024               
+
       subresources:
           status: {}
       additionalPrinterColumns:

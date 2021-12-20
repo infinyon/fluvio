@@ -115,6 +115,10 @@ impl TopicSpec {
     pub fn set_cleanup_policy(&mut self, policy: CleanupPolicy) {
         self.inner.cleanup_policy = Some(policy);
     }
+
+    pub fn get_storage_mut(&mut self) -> &mut StorageConfig {
+        &mut self.inner.storage
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
@@ -668,7 +672,7 @@ pub struct SegmentBasedPolicy {
     serde(rename_all = "camelCase")
 )]
 pub struct StorageConfig {
-    pub segment_size_mb: Option<u32>, // segment size in MB
+    pub segment_size: Option<u32>, // segment size
 }
 
 #[cfg(test)]
