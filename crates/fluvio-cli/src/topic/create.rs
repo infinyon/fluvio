@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use fluvio_controlplane_metadata::topic::CleanupPolicy;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_controlplane_metadata::topic::SegmentBasedPolicy;
+use fluvio_controlplane_metadata::topic::TopicStorageConfig;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::debug;
 use structopt::StructOpt;
@@ -139,8 +140,14 @@ impl CreateTopicOpt {
             }));
         }
 
-        if let Some(segment_size) = self.setting.segment_size {
-            topic_spec.get_storage_mut().segment_size = Some(segment_size);
+        if self.setting.segment_size.is_some() {
+            let mut storage = TopicStorageConfig::default();
+
+            if let Some(segment_size) = self.setting.segment_size {
+                storage.segment_size = Some(segment_size);
+            }
+
+            topic_spec.set_storage(storage);
         }
 
         // return server separately from config

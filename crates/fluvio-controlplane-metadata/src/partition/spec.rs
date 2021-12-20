@@ -7,7 +7,7 @@
 use fluvio_types::SpuId;
 use dataplane::core::{Encoder, Decoder};
 
-use crate::topic::{CleanupPolicy, StorageConfig};
+use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec};
 
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
@@ -24,7 +24,7 @@ pub struct PartitionSpec {
     #[fluvio(min_version = 4)]
     cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
-    storage: StorageConfig,
+    storage: Option<TopicStorageConfig>,
 }
 
 impl PartitionSpec {
@@ -33,6 +33,18 @@ impl PartitionSpec {
             leader,
             replicas,
             ..Default::default()
+        }
+    }
+
+    /// Create new partition spec from replica mapping with topic spec. This assume first replica is leader
+    pub fn from_replicas(replicas: Vec<i32>, topic: &TopicSpec) -> Self {
+        let leader = if replicas.is_empty() { 0 } else { replicas[0] };
+
+        Self {
+            leader,
+            replicas,
+            cleanup_policy: topic.get_clean_policy().clone().map(|p| p.clone()),
+            storage: topic.get_storage().clone().map(|s| s.clone()),
         }
     }
 

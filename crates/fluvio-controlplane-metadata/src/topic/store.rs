@@ -26,7 +26,6 @@ where
     C: MetadataItem + Send + Sync,
 {
     /// create new partitions from my replica map if it doesn't exists
-    /// from partition store
     async fn create_new_partitions(
         &self,
         partition_store: &PartitionLocalStore<C>,
@@ -35,9 +34,10 @@ where
         for (idx, replicas) in self.status.replica_map.iter() {
             let replica_key = ReplicaKey::new(self.key(), *idx);
             debug!("Topic: {} creating partition: {}", self.key(), replica_key);
+            let partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec);
             if !partition_store.contains_key(&replica_key).await {
                 partitions.push(
-                    MetadataStoreObject::with_spec(replica_key, replicas.clone().into())
+                    MetadataStoreObject::with_spec(replica_key, partition_spec)
                         .with_context(self.ctx.create_child()),
                 )
             }

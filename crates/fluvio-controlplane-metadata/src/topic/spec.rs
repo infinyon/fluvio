@@ -116,8 +116,20 @@ impl TopicSpec {
         self.inner.cleanup_policy = Some(policy);
     }
 
-    pub fn get_storage_mut(&mut self) -> &mut StorageConfig {
-        &mut self.inner.storage
+    pub fn get_clean_policy(&self) -> Option<&CleanupPolicy> {
+        self.inner.cleanup_policy.as_ref()
+    }
+
+    pub fn get_storage(&self) -> Option<&TopicStorageConfig> {
+        self.inner.storage.as_ref()
+    }
+
+    pub fn get_storage_mut(&mut self) -> Option<&mut TopicStorageConfig> {
+        self.inner.storage.as_mut()
+    }
+
+    pub fn set_storage(&mut self, storage: TopicStorageConfig) {
+        self.inner.storage = Some(storage);
     }
 }
 
@@ -132,7 +144,7 @@ pub(crate) struct TopicSpecInner {
     #[fluvio(min_version = 3)]
     cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
-    storage: StorageConfig,
+    storage: Option<TopicStorageConfig>,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -671,7 +683,7 @@ pub struct SegmentBasedPolicy {
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "camelCase")
 )]
-pub struct StorageConfig {
+pub struct TopicStorageConfig {
     pub segment_size: Option<u32>, // segment size
 }
 
