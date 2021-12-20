@@ -128,7 +128,7 @@ where
     ) -> Result<LeaderReplicaState<S>, StorageError>
     where
         ReplicationConfig: From<&'a C>,
-        S::Config: From<&'a C>,
+        S::ReplicaConfig: From<&'a C>,
     {
         let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
 
@@ -711,7 +711,7 @@ mod test_leader {
     impl ReplicaStorage for MockStorage {
         async fn create_or_load(
             _replica: &dataplane::ReplicaKey,
-            _config: Self::Config,
+            _config: Self::ReplicaConfig,
         ) -> Result<Self, fluvio_storage::StorageError> {
             Ok(MockStorage {
                 pos: OffsetInfo { leo: 0, hw: 0 },
@@ -759,7 +759,7 @@ mod test_leader {
             Ok(true)
         }
 
-        type Config = MockConfig;
+        type ReplicaConfig = MockConfig;
 
         fn get_log_start_offset(&self) -> Offset {
             todo!()

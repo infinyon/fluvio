@@ -53,16 +53,6 @@ impl SharedSegments {
 
     pub async fn from_dir(
         option: Arc<SharedReplicaConfig>,
-    ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
-        let clear_config = StorageConfig::builder().build().map_err(|err| {
-            StorageError::Other(format!("failed to build cleaner config: {}", err))
-        })?;
-
-        Self::from_dir_with_config(option, Arc::new(clear_config)).await
-    }
-
-    pub async fn from_dir_with_config(
-        option: Arc<SharedReplicaConfig>,
         clean_config: Arc<StorageConfig>,
     ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
         let dirs = option.base_dir.read_dir()?;
@@ -365,6 +355,7 @@ mod tests {
 
     use crate::StorageError;
     use crate::config::{SharedReplicaConfig, StorageConfig};
+    use crate::fixture::storage_config;
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
     use crate::config::ReplicaConfig;
@@ -400,7 +391,9 @@ mod tests {
         ensure_new_dir(&rep_dir).expect("new");
         let option = default_option(rep_dir).shared();
 
-        let (segments, last_segment) = SharedSegments::from_dir(option).await.expect("from");
+        let (segments, last_segment) = SharedSegments::from_dir(option, storage_config())
+            .await
+            .expect("from");
 
         let read = segments.read().await;
         assert_eq!(read.len(), 0); // 0,500,2000

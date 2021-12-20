@@ -25,6 +25,7 @@ use fluvio_socket::{FluvioSocket, SocketError};
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
 use fluvio_storage::config::ReplicaConfig;
+use fluvio_storage::fixture::storage_config;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;
@@ -61,9 +62,10 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
 
     ensure_clean_dir(&option.base_dir);
 
-    let mut replica = FileReplica::create_or_load(TOPIC_NAME, 0, START_OFFSET, option)
-        .await
-        .expect("test replica");
+    let mut replica =
+        FileReplica::create_or_load(TOPIC_NAME, 0, START_OFFSET, option, storage_config())
+            .await
+            .expect("test replica");
     replica
         .write_recordset(&mut create_records(2), false)
         .await

@@ -173,10 +173,10 @@ where
     pub async fn create(
         leader: SpuId,
         replica_key: ReplicaKey,
-        config: S::Config,
+        config: S::ReplicaConfig,
     ) -> Result<Self, StorageError>
     where
-        S::Config: Display,
+        S::ReplicaConfig: Display,
     {
         debug!(
             %replica_key,

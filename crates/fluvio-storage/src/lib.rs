@@ -24,6 +24,7 @@ pub use crate::replica::FileReplica;
 
 pub use inner::*;
 mod inner {
+
     use async_trait::async_trait;
 
     use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey};
@@ -146,13 +147,13 @@ mod inner {
 
     #[async_trait]
     pub trait ReplicaStorage: Sized {
-        type Config: ReplicaStorageConfig;
+        type ReplicaConfig: ReplicaStorageConfig;
 
         /// create new storage area,
         /// if there exists replica state, this should restore state
         async fn create_or_load(
             replica: &ReplicaKey,
-            config: Self::Config,
+            replica_config: Self::ReplicaConfig,
         ) -> Result<Self, StorageError>;
 
         /// high water mark offset (records that has been replicated)

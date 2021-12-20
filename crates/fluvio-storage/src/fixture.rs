@@ -1,10 +1,13 @@
-use std::env::temp_dir;
+use std::{env::temp_dir, sync::Arc};
 
 use derive_builder::Builder;
 
 use dataplane::{Size, batch::Batch, record::Record};
 
-use crate::config::ReplicaConfig;
+use crate::{
+    config::{ReplicaConfig, StorageConfig},
+    StorageError,
+};
 
 pub fn default_option(index_max_interval_bytes: Size) -> ReplicaConfig {
     ReplicaConfig {
@@ -54,6 +57,14 @@ impl BatchProducer {
         self.base_offset += records as i64;
         batch
     }
+}
+
+pub fn storage_config() -> Arc<StorageConfig> {
+    let clear_config = StorageConfig::builder()
+        .build()
+        .map_err(|err| StorageError::Other(format!("failed to build cleaner config: {}", err)))
+        .expect("config");
+    Arc::new(clear_config)
 }
 
 #[cfg(test)]
