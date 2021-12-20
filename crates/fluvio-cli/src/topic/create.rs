@@ -134,7 +134,7 @@ impl CreateTopicOpt {
         }
 
         let mut topic_spec: TopicSpec = replica_spec.into();
-        if let Some(retention) = self.setting.retention_secs {
+        if let Some(retention) = self.setting.retention_time {
             topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
                 time_in_seconds: retention,
             }));
@@ -160,7 +160,7 @@ pub struct TopicConfigOpt {
     /// Number of seconds to wait for discarding segments
     ///
     #[structopt(long, value_name = "seconds")]
-    retention_secs: Option<u32>,
+    retention_time: Option<u32>,
 
     /// Segment size in bytes
     #[structopt(long, value_name = "bytes")]
