@@ -155,6 +155,10 @@ spec:
             type: integer
             description: Replication Count
             jsonPath: .spec.replica.managed.replicationFactor
+          - name: Retention(secs)
+            type: integer
+            description: Retention hours
+            jsonPath: .spec.cleanupPolicy.segment.timeInSeconds
           - name: Status
             type: string
             description: Topic Status

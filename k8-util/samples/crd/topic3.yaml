@@ -1,7 +1,15 @@
-apiVersion: "fluvio.infinyon.com/v1"
+apiVersion: "fluvio.infinyon.com/v2"
 kind: Topic
 metadata:
   name: topic3
 spec:
-  partitions: 1
-  replicationFactor: 3
+  replicas:
+    computed:
+      partitions: 1
+      replicationFactor: 1
+  cleanupPolicy:
+    segment:
+      timeInSeconds: 5000
+  storage:
+    segmentSize: 5000
+  

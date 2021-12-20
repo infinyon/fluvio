@@ -7,17 +7,15 @@ use std::sync::atomic::AtomicU32;
 use derive_builder::Builder;
 use serde::Deserialize;
 
-use fluvio_types::defaults::{SPU_LOG_INDEX_MAX_BYTES, SPU_LOG_BASE_DIR};
+use fluvio_types::defaults::{
+    SPU_LOG_INDEX_MAX_BYTES, SPU_LOG_BASE_DIR, STORAGE_FLUSH_WRITE_COUNT, STORAGE_FLUSH_IDLE_MSEC,
+    STORAGE_MAX_BATCH_SIZE, STORAGE_RETENTION_SECONDS,
+};
 use fluvio_types::defaults::SPU_LOG_INDEX_MAX_INTERVAL_BYTES;
 use fluvio_types::defaults::SPU_LOG_SEGMENT_MAX_BYTES;
 use dataplane::Size;
 
 use crate::{ReplicaStorageConfig};
-
-pub const DEFAULT_FLUSH_WRITE_COUNT: u32 = 1;
-pub const DEFAULT_FLUSH_IDLE_MSEC: u32 = 0;
-pub const DEFAULT_MAX_BATCH_SIZE: u32 = 1048588;
-pub const DEFAULT_RETENTION_SECONDS: u32 = 7 * 24 * 3600;
 
 // Replica specific config
 #[derive(Builder, Clone, Debug, PartialEq, Deserialize)]
@@ -81,19 +79,19 @@ const fn default_segment_max_bytes() -> Size {
 }
 
 const fn default_flush_write_count() -> Size {
-    DEFAULT_FLUSH_WRITE_COUNT
+    STORAGE_FLUSH_WRITE_COUNT
 }
 
 const fn default_flush_idle_msec() -> Size {
-    DEFAULT_FLUSH_IDLE_MSEC
+    STORAGE_FLUSH_IDLE_MSEC
 }
 
 const fn default_max_batch_size() -> Size {
-    DEFAULT_MAX_BATCH_SIZE
+    STORAGE_MAX_BATCH_SIZE
 }
 
 const fn default_retention_seconds() -> Size {
-    DEFAULT_RETENTION_SECONDS
+    STORAGE_RETENTION_SECONDS
 }
 
 impl ReplicaConfig {

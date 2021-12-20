@@ -11,6 +11,7 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
+use fluvio_types::defaults::STORAGE_RETENTION_SECONDS;
 use tracing::{trace, debug};
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
@@ -130,6 +131,13 @@ impl TopicSpec {
 
     pub fn set_storage(&mut self, storage: TopicStorageConfig) {
         self.inner.storage = Some(storage);
+    }
+
+    /// get retention secs that can be displayed
+    pub fn retention_secs(&self) -> u32 {
+        self.get_clean_policy()
+            .map(|policy| policy.retention_secs())
+            .unwrap_or_else(|| STORAGE_RETENTION_SECONDS)
     }
 }
 
@@ -675,6 +683,14 @@ impl Default for CleanupPolicy {
     }
 }
 
+impl CleanupPolicy {
+    pub fn retention_secs(&self) -> u32 {
+        match self {
+            CleanupPolicy::Segment(policy) => policy.retention_secs(),
+        }
+    }
+}
+
 #[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
@@ -683,6 +699,12 @@ impl Default for CleanupPolicy {
 )]
 pub struct SegmentBasedPolicy {
     pub time_in_seconds: u32,
+}
+
+impl SegmentBasedPolicy {
+    pub fn retention_secs(&self) -> u32 {
+        self.time_in_seconds
+    }
 }
 
 #[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]

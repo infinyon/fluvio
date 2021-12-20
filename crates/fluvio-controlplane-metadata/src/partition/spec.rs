@@ -43,8 +43,8 @@ impl PartitionSpec {
         Self {
             leader,
             replicas,
-            cleanup_policy: topic.get_clean_policy().clone().map(|p| p.clone()),
-            storage: topic.get_storage().clone().map(|s| s.clone()),
+            cleanup_policy: topic.get_clean_policy().cloned(),
+            storage: topic.get_storage().cloned(),
         }
     }
 
