@@ -662,6 +662,7 @@ pub struct PartitionMap {
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CleanupPolicy {
+    #[cfg_attr(feature = "use_serde", serde(rename = "segment"))]
     Segment(SegmentBasedPolicy),
 }
 
@@ -672,7 +673,11 @@ impl Default for CleanupPolicy {
 }
 
 #[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SegmentBasedPolicy {
     pub time_in_seconds: u32,
 }
