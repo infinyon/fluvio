@@ -2011,6 +2011,7 @@ dependencies = [
  "futures-util",
  "once_cell",
  "pin-utils",
+ "portpicker",
  "regex",
  "serde",
  "serde_json",
