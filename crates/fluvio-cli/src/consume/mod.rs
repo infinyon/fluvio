@@ -357,14 +357,15 @@ impl ConsumeOpt {
         }
 
         if let Some(end_offset) = self.end_offset {
+            if end_offset < 0 {
+                eprintln!("Argument end-offset must be greater than or equal to zero");
+            }
             if let Some(offset) = self.offset {
                 let o = offset as i64;
                 if end_offset < o {
                     eprintln!(
                         "Argument end-offset must be greater than or equal to specified offset"
                     );
-                } else if end_offset < 0 {
-                    eprintln!("Argument end-offset must be greater than or equal to zero");
                 }
             }
         }
