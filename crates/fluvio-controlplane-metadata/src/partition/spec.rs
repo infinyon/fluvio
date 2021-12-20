@@ -48,3 +48,9 @@ impl From<Vec<i32>> for PartitionSpec {
         }
     }
 }
+
+/// Setting applied to a replica
+#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
+pub struct PartitionConfig {
+    pub retention_time_seconds: Option<u32>,
+}

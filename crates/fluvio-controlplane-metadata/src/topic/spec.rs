@@ -127,6 +127,8 @@ pub(crate) struct TopicSpecInner {
     replicas: ReplicaSpec,
     #[fluvio(min_version = 3)]
     cleanup_policy: Option<CleanupPolicy>,
+    #[fluvio(min_version = 4)]
+    storage: StorageConfig,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -657,6 +659,16 @@ impl Default for CleanupPolicy {
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct SegmentBasedPolicy {
     pub time_in_seconds: u32,
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct StorageConfig {
+    pub segment_size_mb: Option<u32>, // segment size in MB
 }
 
 #[cfg(test)]

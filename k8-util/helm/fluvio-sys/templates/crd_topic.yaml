@@ -137,7 +137,12 @@ spec:
                         timeInSeconds:
                           type: integer
                           minimum: 3600
-                
+                storage:
+                  type: object
+                  properties:
+                    segmentSizeMb:
+                      type: integer
+                      minimum: 1               
       
       subresources:
           status: {}
