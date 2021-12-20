@@ -2,7 +2,7 @@
 use color_eyre::eyre::{Result, eyre};
 use structopt::StructOpt;
 
-use fluvio_cli::{Root, HelpOpt};
+use fluvio_cli::{Root, print_help_hack};
 use std::env::current_exe;
 use std::ffi::OsString;
 use tracing::debug;
@@ -122,54 +122,6 @@ fn main() -> Result<()> {
         };
 
         channel_info
-        //// Run the channel binary
-        //if let Some(exe) = channel.current_exe() {
-        //    if exe != current_exe {
-        //        // If not, exec the correct binary
-        //        debug!("You're NOT using the configured current_channel binary");
-        //        // TODO:
-        //        // If we're CLIChannelName::Stable or CLIChannelName::Latest, then use that
-        //        // If we're CLIChannelName::Dev, do nothing
-        //        if channel.current_channel() == CliChannelName::Dev {
-        //            debug!("You're in Developer mode");
-        //            false
-        //        } else {
-        //            debug!("Will exec to binary @ {:?}", exe);
-
-        //            // Re-build the args list to pass onto exec'ed process
-        //            let mut args: Vec<OsString> = std::env::args_os().collect();
-        //            if !args.is_empty() {
-        //                args.remove(0);
-        //            }
-
-        //            // Handle pipes
-        //            let mut proc = std::process::Command::new(exe);
-        //            proc.args(args);
-        //            proc.stdin(Stdio::inherit());
-        //            proc.stdout(Stdio::inherit());
-        //            proc.stderr(Stdio::inherit());
-
-        //            cfg_if! {
-        //                if #[cfg(not(target_os = "windows"))] {
-        //                    let _err = proc.exec();
-        //                } else {
-        //                    // TODO: This needs to be sure to add .exe to filename
-        //                    // Handle unwrap()
-        //                    let output = proc.output()?;
-        //                    io::stdout().write_all(&output.stdout).unwrap();
-        //                    io::stderr().write_all(&output.stderr).unwrap();
-        //                }
-        //            }
-
-        //            true
-        //        }
-        //    } else {
-        //        debug!("You're using the configured current_channel binary");
-        //        false
-        //    }
-        //} else {
-        //    panic!("Default channel exe should be initialized")
-        //};
     } else {
         debug!("Fluvio bin not in standard install location. Assuming dev channel");
         FluvioChannelInfo::dev_channel()
@@ -199,8 +151,8 @@ fn main() -> Result<()> {
             // TODO: This needs to be sure to add .exe to filename
             // Handle unwrap()
             let output = proc.output()?;
-            io::stdout().write_all(&output.stdout).unwrap();
-            io::stderr().write_all(&output.stderr).unwrap();
+            io::stdout().write_all(&output.stdout)?;
+            io::stderr().write_all(&output.stderr)?;
         }
     }
 
@@ -221,19 +173,5 @@ fn main() -> Result<()> {
     // In current directory
     // From FLUVIO_BIN env var
 
-    Ok(())
-}
-
-fn print_help_hack() -> Result<()> {
-    let mut args = std::env::args();
-    if args.len() < 2 {
-        HelpOpt {}.process()?;
-        std::process::exit(0);
-    } else if let Some(first_arg) = args.nth(1) {
-        if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
-            HelpOpt {}.process()?;
-            std::process::exit(0);
-        }
-    }
     Ok(())
 }

@@ -17,7 +17,7 @@ use thiserror::Error;
 use tracing::debug;
 use semver::Version;
 
-mod list;
+pub mod cli;
 
 #[derive(Error, Debug)]
 pub enum ChannelConfigError {
@@ -172,21 +172,6 @@ impl ChannelConfig {
     }
 }
 
-//impl Default for ChannelConfig {
-//    fn default() -> Self {
-//        let default_channel = "stable".to_string();
-//        let default_channel_info = FluvioChannelInfo::default();
-//
-//        let mut channel_map = HashMap::new();
-//        channel_map.insert(default_channel.clone(), default_channel_info);
-//
-//        Self {
-//            current_channel: default_channel,
-//            channel: channel_map,
-//        }
-//    }
-//}
-
 arg_enum! {
     #[derive(Debug, StructOpt, Clone, PartialEq, Serialize, Deserialize)]
     #[structopt(rename_all = "kebab-case")]
@@ -210,37 +195,50 @@ pub struct FluvioChannelInfo {
     image_tag_strategy: ImageTagStrategy,
 }
 
-// TODO: rename this to `fluvio-stable` when installer updated
-//impl Default for FluvioChannelInfo {
-//    fn default() -> Self {
-//        if let Some(home_dir) = home_dir() {
-//            let mut binary_location = home_dir.clone();
-//            binary_location.push(CLI_CONFIG_PATH);
-//            binary_location.push("bin");
-//            binary_location.push("fluvio");
-//
-//            let mut extensions = home_dir;
-//            extensions.push(CLI_CONFIG_PATH);
-//            extensions.push("extensions");
-//
-//            Self {
-//                binary_location,
-//                extensions,
-//                image_tag_strategy: ImageTagStrategy::Version,
-//            }
-//        } else {
-//            Self {
-//                binary_location: PathBuf::default(),
-//                extensions: PathBuf::default(),
-//                image_tag_strategy: ImageTagStrategy::Version,
-//            }
-//        }
-//    }
-//}
-
 // TODO: Clean up all the duplication mess
 // Look at the install module to re-use stuff
 impl FluvioChannelInfo {
+    pub fn new(
+        binary_location: PathBuf,
+        extensions: PathBuf,
+        image_tag_strategy: ImageTagStrategy,
+    ) -> Self {
+        Self {
+            binary_location,
+            extensions,
+            image_tag_strategy,
+        }
+    }
+
+    pub fn new_channel(channel_name: &str, image_tag_strategy: ImageTagStrategy) -> Self {
+        let (binary_location, extensions) = if let Some(home_dir) = home_dir() {
+            let binary_location = PathBuf::from(format!(
+                "{}/{}/bin/fluvio-{}",
+                home_dir.display(),
+                CLI_CONFIG_PATH,
+                channel_name
+            ));
+            let extensions = PathBuf::from(format!(
+                "{}/{}/extensions-{}",
+                home_dir.display(),
+                CLI_CONFIG_PATH,
+                channel_name
+            ));
+
+            (binary_location, extensions)
+        } else {
+            // No home directory
+            let binary_location =
+                PathBuf::from(format!("{}/bin/fluvio-{}", CLI_CONFIG_PATH, channel_name));
+            let extensions =
+                PathBuf::from(format!("{}/extensions-{}", CLI_CONFIG_PATH, channel_name));
+
+            (binary_location, extensions)
+        };
+
+        Self::new(binary_location, extensions, image_tag_strategy)
+    }
+
     pub fn set_binary_path(&mut self, path: PathBuf) -> Result<()> {
         self.binary_location = path;
         Ok(())
@@ -269,81 +267,14 @@ impl FluvioChannelInfo {
     }
 
     pub fn stable_channel() -> Self {
-        let mut binary_location;
-        let mut extensions;
-        let image_tag_strategy;
-        if let Some(home_dir) = home_dir() {
-            binary_location = home_dir.clone();
-            extensions = home_dir;
-
-            binary_location.push(CLI_CONFIG_PATH);
-            binary_location.push("bin");
-            binary_location.push("fluvio");
-
-            extensions.push(CLI_CONFIG_PATH);
-            extensions.push("extensions");
-
-            image_tag_strategy = ImageTagStrategy::Version;
-        } else {
-            // No home directory
-            binary_location = PathBuf::default();
-            extensions = PathBuf::default();
-
-            binary_location.push(CLI_CONFIG_PATH);
-            binary_location.push("bin");
-            binary_location.push("fluvio");
-
-            extensions.push(CLI_CONFIG_PATH);
-            extensions.push("extensions");
-
-            image_tag_strategy = ImageTagStrategy::Version;
-        }
-
-        Self {
-            binary_location,
-            extensions,
-            image_tag_strategy,
-        }
+        Self::new_channel("stable", ImageTagStrategy::Version)
     }
 
     pub fn latest_channel() -> Self {
-        let mut binary_location;
-        let mut extensions;
-        let image_tag_strategy;
-        if let Some(home_dir) = home_dir() {
-            binary_location = home_dir.clone();
-            extensions = home_dir;
-
-            binary_location.push(CLI_CONFIG_PATH);
-            binary_location.push("bin");
-            binary_location.push("fluvio-latest");
-
-            extensions.push(CLI_CONFIG_PATH);
-            extensions.push("extensions-latest");
-
-            image_tag_strategy = ImageTagStrategy::VersionGit;
-        } else {
-            // No home directory
-            binary_location = PathBuf::default();
-            extensions = PathBuf::default();
-
-            binary_location.push(CLI_CONFIG_PATH);
-            binary_location.push("bin");
-            binary_location.push("fluvio-latest");
-
-            extensions.push(CLI_CONFIG_PATH);
-            extensions.push("extensions-latest");
-
-            image_tag_strategy = ImageTagStrategy::VersionGit;
-        }
-
-        Self {
-            binary_location,
-            extensions,
-            image_tag_strategy,
-        }
+        Self::new_channel("latest", ImageTagStrategy::VersionGit)
     }
 
+    // The dev channel is used by CI
     pub fn dev_channel() -> Self {
         Self {
             binary_location: PathBuf::from("fluvio"),

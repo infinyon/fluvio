@@ -16,7 +16,6 @@ impl ListOpt {
 
         // Load in the config file
         // Parse with the CLI Config parser
-
         debug!("Looking for channel config");
 
         let cli_config_path = if let Some(path) = self.config {
@@ -28,7 +27,6 @@ impl ListOpt {
         };
 
         // Open file
-
         let config = if let Ok(load_config) = FluvioChannelConfig::from_file(cli_config_path) {
             debug!("Loaded channel config");
             load_config
