@@ -2011,6 +2011,7 @@ dependencies = [
  "futures-util",
  "once_cell",
  "pin-utils",
+ "portpicker",
  "regex",
  "serde",
  "serde_json",
@@ -2026,7 +2027,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "bytes",
  "flate2",

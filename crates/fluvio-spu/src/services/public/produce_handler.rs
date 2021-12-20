@@ -96,8 +96,9 @@ async fn handle_produce_partition(
         .await;
 
     match write_result {
-        Ok(_) => {
+        Ok(base_offset) => {
             partition_response.error_code = ErrorCode::None;
+            partition_response.base_offset = base_offset;
         }
         Err(err @ StorageError::BatchTooBig(_)) => {
             error!(%replica_id, "Batch is too big: {:#?}", err);

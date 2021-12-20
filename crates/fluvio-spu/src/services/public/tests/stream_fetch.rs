@@ -1,11 +1,11 @@
 use std::{
     env::temp_dir,
-    path::{Path, PathBuf},
-    sync::atomic::{AtomicU16, Ordering},
+    path::{PathBuf, Path},
     time::Duration,
 };
 
 use flate2::{Compression, bufread::GzEncoder};
+
 use fluvio_controlplane_metadata::{
     partition::Replica,
     smartmodule::{SmartModule, SmartModuleWasm, SmartModuleWasmFormat},
@@ -30,7 +30,7 @@ use fluvio_spu_schema::server::{
 use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
 use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
-use crate::core::GlobalContext;
+use crate::{core::GlobalContext, services::public::tests::create_filter_records};
 use crate::config::SpuConfig;
 use crate::replication::leader::LeaderReplicaState;
 use crate::services::public::create_public_server;
@@ -45,14 +45,52 @@ use dataplane::{
     record::RecordSet,
 };
 
-static NEXT_PORT: AtomicU16 = AtomicU16::new(12000);
+fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
+    let path = filter_path.as_ref();
+    std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()))
+}
+
+fn zip(raw_buffer: Vec<u8>) -> Vec<u8> {
+    use std::io::Read;
+    let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
+    let mut buffer = Vec::with_capacity(raw_buffer.len());
+    encoder
+        .read_to_end(&mut buffer)
+        .unwrap_or_else(|_| panic!("Unable to gzip file"));
+    buffer
+}
+
+fn read_wasm_module(module_name: &str) -> Vec<u8> {
+    let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
+    let wasm_path = PathBuf::from(spu_dir)
+        .parent()
+        .expect("parent")
+        .join(format!(
+            "fluvio-smartmodule/examples/target/wasm32-unknown-unknown/release/{}.wasm",
+            module_name
+        ));
+    read_filter_from_path(wasm_path)
+}
+
+fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str) {
+    let wasm = zip(read_wasm_module(module_name));
+    ctx.smartmodule_localstore().insert(SmartModule {
+        name: module_name.to_owned(),
+        wasm: SmartModuleWasm {
+            format: SmartModuleWasmFormat::Binary,
+            payload: wasm,
+        },
+        ..Default::default()
+    });
+}
 
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_basic() {
     let test_path = temp_dir().join("test_stream_fetch");
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
     let mut spu_config = SpuConfig::default();
     spu_config.log.base_dir = test_path;
     let ctx = GlobalContext::new_shared_context(spu_config);
@@ -197,65 +235,6 @@ async fn test_stream_fetch_basic() {
     debug!("terminated controller");
 }
 
-/// create records that can be filtered
-fn create_filter_records(records: u16) -> RecordSet {
-    BatchProducer::builder()
-        .records(records)
-        .record_generator(Arc::new(generate_record))
-        .build()
-        .expect("batch")
-        .records()
-}
-
-fn generate_record(record_index: usize, _producer: &BatchProducer) -> Record {
-    let msg = match record_index {
-        0 => "b".repeat(100),
-        1 => "a".repeat(100),
-        _ => "z".repeat(100),
-    };
-
-    Record::new(RecordData::from(msg))
-}
-
-fn read_filter_from_path(filter_path: impl AsRef<Path>) -> Vec<u8> {
-    let path = filter_path.as_ref();
-    std::fs::read(path).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()))
-}
-
-fn zip(raw_buffer: Vec<u8>) -> Vec<u8> {
-    use std::io::Read;
-    let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());
-    let mut buffer = Vec::with_capacity(raw_buffer.len());
-    encoder
-        .read_to_end(&mut buffer)
-        .unwrap_or_else(|_| panic!("Unable to gzip file"));
-    buffer
-}
-
-fn read_wasm_module(module_name: &str) -> Vec<u8> {
-    let spu_dir = std::env::var("CARGO_MANIFEST_DIR").expect("target");
-    let wasm_path = PathBuf::from(spu_dir)
-        .parent()
-        .expect("parent")
-        .join(format!(
-            "fluvio-smartmodule/examples/target/wasm32-unknown-unknown/release/{}.wasm",
-            module_name
-        ));
-    read_filter_from_path(wasm_path)
-}
-
-fn load_wasm_module<S: ReplicaStorage>(ctx: &GlobalContext<S>, module_name: &str) {
-    let wasm = zip(read_wasm_module(module_name));
-    ctx.smartmodule_localstore().insert(SmartModule {
-        name: module_name.to_owned(),
-        wasm: SmartModuleWasm {
-            format: SmartModuleWasmFormat::Binary,
-            payload: wasm,
-        },
-        ..Default::default()
-    });
-}
-
 async fn legacy_test<Fut, TestFn>(
     test_name: &str,
     module_name: &str,
@@ -385,8 +364,9 @@ async fn test_stream_fetch_filter(
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -561,8 +541,9 @@ async fn test_stream_fetch_filter_individual(
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -681,8 +662,9 @@ async fn test_stream_filter_error_fetch(
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -813,8 +795,9 @@ async fn test_stream_filter_max(
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -974,7 +957,9 @@ async fn test_stream_fetch_map_error(
 ) {
     ensure_clean_dir(&test_path);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1109,7 +1094,8 @@ async fn test_stream_aggregate_fetch_single_batch(
 ) {
     ensure_clean_dir(&test_path);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1253,8 +1239,9 @@ async fn test_stream_aggregate_fetch_multiple_batch(
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1387,8 +1374,9 @@ async fn test_stream_fetch_and_new_request(
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1503,8 +1491,9 @@ async fn test_stream_fetch_invalid_wasm_module(
     smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1601,7 +1590,8 @@ async fn test_stream_fetch_array_map(
 ) {
     ensure_clean_dir(&test_path);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1717,7 +1707,8 @@ async fn test_stream_fetch_filter_map(
 ) {
     ensure_clean_dir(&test_path);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1841,7 +1832,8 @@ async fn test_stream_fetch_filter_with_params(
     use std::collections::BTreeMap;
     ensure_clean_dir(&test_path);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -2033,7 +2025,8 @@ async fn test_stream_fetch_invalid_smartmodule(
 ) {
     ensure_clean_dir(&test_path);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -2099,7 +2092,7 @@ async fn test_stream_fetch_join(
     /// joined       20 31 42 53     77  88
     use fluvio::metadata::spu::SpuSpec;
     ensure_clean_dir(&test_path);
-    let port = NEXT_PORT.fetch_add(1, Ordering::Relaxed);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
 
     let addr = format!("127.0.0.1:{}", port);
 

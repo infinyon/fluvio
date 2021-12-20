@@ -109,6 +109,12 @@ pub enum SmartModuleInvocationWasm {
     AdHoc(Vec<u8>),
 }
 
+impl SmartModuleInvocationWasm {
+    pub fn adhoc_from_bytes(bytes: &[u8]) -> io::Result<Self> {
+        Ok(Self::AdHoc(zip(bytes)?))
+    }
+}
+
 impl Default for SmartModuleInvocationWasm {
     fn default() -> Self {
         Self::AdHoc(Vec::new())
@@ -332,6 +338,19 @@ mod tests {
         assert_eq!(inner[1], 0xad);
         assert_eq!(inner[2], 0xbe);
         assert_eq!(inner[3], 0xef);
+    }
+
+    #[test]
+    fn test_gzip_smartmoduleinvocationwasm() {
+        let bytes = vec![0xde, 0xad, 0xbe, 0xef];
+        let value: SmartModuleInvocationWasm =
+            SmartModuleInvocationWasm::adhoc_from_bytes(&bytes).expect("should encode");
+        if let SmartModuleInvocationWasm::AdHoc(compressed_bytes) = value {
+            let decompressed_bytes = unzip(&compressed_bytes).expect("should decompress");
+            assert_eq!(decompressed_bytes, bytes);
+        } else {
+            panic!("not adhoc")
+        }
     }
 
     #[test]
