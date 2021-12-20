@@ -346,12 +346,14 @@ fn replica_dir_name<S: AsRef<str>>(topic_name: S, partition_index: Size) -> Stri
 #[cfg(test)]
 mod tests {
 
+    use fluvio_future::timer::sleep;
     use tracing::debug;
     use std::env::temp_dir;
     use std::fs;
     use std::fs::metadata;
     use std::io::Cursor;
     use std::sync::Arc;
+    use std::time::Duration;
 
     use dataplane::{Isolation, batch::Batch};
     use dataplane::{Offset};
@@ -362,7 +364,7 @@ mod tests {
     use dataplane::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
 
-    use crate::config::{ReplicaConfig};
+    use crate::config::{ReplicaConfig, StorageConfig};
     use crate::{StorageError};
     use crate::ReplicaStorage;
     use crate::fixture::storage_config;
@@ -786,10 +788,16 @@ mod tests {
     /// test replica with purging segments
     #[fluvio_future::test]
     async fn test_replica_segment_purge() {
+        let storage_config = StorageConfig::builder()
+            .cleaning_interval_ms(200)
+            .build()
+            .expect("build");
+
         let mut option = base_option("test_replica_purge");
         // enough for 2 batch (2 records per batch)
         option.segment_max_bytes = 160;
         option.index_max_interval_bytes = 50; // ensure we are writing to index
+        option.retention_seconds = 1;
 
         let producer = BatchProducer::builder()
             .records(2u16)
@@ -797,7 +805,10 @@ mod tests {
             .build()
             .expect("batch");
 
-        let mut new_replica = create_replica("test", 0, option.clone()).await;
+        let mut new_replica =
+            FileReplica::create_or_load("test", 0, 0, option.clone(), Arc::new(storage_config))
+                .await
+                .expect("create");
         let reader = new_replica.prev_segments.read().await;
         assert!(reader.len() == 0);
         drop(reader);
@@ -812,7 +823,8 @@ mod tests {
             .await
             .expect("write");
 
-        // wait 1 second
+        // wait enough so it won't get purged
+        sleep(Duration::from_millis(700)).await;
 
         // overflow, will create 2nd segment
         new_replica
@@ -822,18 +834,19 @@ mod tests {
 
         let reader = new_replica.prev_segments.read().await;
         assert_eq!(reader.len(), 1);
+        drop(reader);
 
-        // reload replica
-        let old_replica =
-            FileReplica::create_or_load("test", 0, 0, option.clone(), storage_config())
-                .await
-                .expect("read");
-        let reader = old_replica.prev_segments.read().await;
-        //  println!("old replica segments: {:#?}", old_replica.prev_segments);
-        assert!(reader.len() == 1);
-        let (_, segment) = reader.find_segment(0).expect("some");
+        sleep(Duration::from_millis(1000)).await; // clear should purge
 
-        assert_eq!(segment.get_base_offset(), 0);
-        assert_eq!(segment.get_end_offset(), 4);
+        let segments = new_replica.prev_segments.clone();
+        assert_eq!(Arc::strong_count(&segments), 3);
+        let reader = new_replica.prev_segments.read().await;
+        assert_eq!(reader.len(), 0);
+        drop(reader);
+
+        new_replica.remove().await.expect("remove");
+        drop(new_replica);
+        sleep(Duration::from_millis(300)).await; // clear should end
+        assert_eq!(Arc::strong_count(&segments), 1);
     }
 }
