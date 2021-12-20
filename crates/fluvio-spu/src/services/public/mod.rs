@@ -6,7 +6,7 @@ mod offset_update;
 mod stream_fetch;
 
 #[cfg(test)]
-mod stream_fetch_test;
+mod tests;
 
 use std::sync::Arc;
 use async_trait::async_trait;
