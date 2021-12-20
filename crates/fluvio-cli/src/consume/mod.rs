@@ -363,12 +363,8 @@ impl ConsumeOpt {
                     eprintln!(
                         "Argument end-offset must be greater than or equal to specified offset"
                     );
-                }
-            } else {
-                if end_offset < 0 {
+                } else if end_offset < 0 {
                     eprintln!("Argument end-offset must be greater than or equal to zero");
-                } else {
-                    builder.end_offset(Some(end_offset));
                 }
             }
         }
@@ -395,7 +391,7 @@ impl ConsumeOpt {
         tableformat: Option<TableFormatSpec>,
     ) -> Result<()> {
         self.print_status();
-        let maybe_potential_offset: Option<i64> = config.end_offset;
+        let maybe_potential_offset: Option<i64> = self.end_offset;
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
         let templates = match self.format.as_deref() {
