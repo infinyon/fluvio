@@ -111,6 +111,10 @@ impl TopicSpec {
     pub fn replicas(&self) -> &ReplicaSpec {
         &self.inner.replicas
     }
+
+    pub fn set_cleanup_policy(&mut self, policy: CleanupPolicy) {
+        self.inner.cleanup_policy = Some(policy);
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]

@@ -8,7 +8,9 @@ use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
+use fluvio_controlplane_metadata::topic::CleanupPolicy;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
+use fluvio_controlplane_metadata::topic::SegmentBasedPolicy;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::debug;
 use structopt::StructOpt;
@@ -16,10 +18,6 @@ use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::{Result, CliError};
-
-// -----------------------------------
-// CLI Options
-// -----------------------------------
 
 #[derive(Debug, StructOpt)]
 pub struct CreateTopicOpt {
@@ -82,6 +80,9 @@ pub struct CreateTopicOpt {
     /// Validates configuration, does not provision
     #[structopt(short = "d", long)]
     dry_run: bool,
+
+    #[structopt(flatten)]
+    setting: TopicConfigOpt,
 }
 
 impl CreateTopicOpt {
@@ -131,9 +132,29 @@ impl CreateTopicOpt {
             ));
         }
 
+        let mut topic_spec: TopicSpec = replica_spec.into();
+        if let Some(retention) = self.setting.retention_secs {
+            topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
+                time_in_seconds: retention,
+            }));
+        }
+
         // return server separately from config
-        Ok((self.topic, replica_spec.into()))
+        Ok((self.topic, topic_spec))
     }
+}
+
+#[derive(Debug, StructOpt)]
+pub struct TopicConfigOpt {
+    /// Number of seconds to wait for discarding segments
+    ///
+    /// Partitions are a way to divide the total traffic of a single Topic into
+    /// separate streams which may be processed independently. Data sent to different
+    /// partitions may be processed by separate SPUs on different computers. By
+    /// dividing the load of a Topic evenly among partitions, you can increase the
+    /// total throughput of the Topic.
+    #[structopt(long, value_name = "integer")]
+    retention_secs: Option<u32>,
 }
 
 /// module to load partitions maps from file
