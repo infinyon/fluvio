@@ -11,7 +11,9 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
-use fluvio_types::defaults::STORAGE_RETENTION_SECONDS;
+use fluvio_types::defaults::{
+    STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
+};
 use tracing::{trace, debug};
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
@@ -138,6 +140,32 @@ impl TopicSpec {
         self.get_clean_policy()
             .map(|policy| policy.retention_secs())
             .unwrap_or_else(|| STORAGE_RETENTION_SECONDS)
+    }
+
+    /// validate configuration, return string with errors
+    pub fn validate_config(&self) -> Option<String> {
+        if let Some(policy) = self.get_clean_policy() {
+            if policy.retention_secs() < STORAGE_RETENTION_SECONDS_MIN {
+                return Some(format!(
+                    "retention_secs {} is less than minimum {}",
+                    policy.retention_secs(),
+                    STORAGE_RETENTION_SECONDS_MIN
+                ));
+            }
+        }
+
+        if let Some(storage) = self.get_storage() {
+            if let Some(segment_size) = storage.segment_size {
+                if segment_size < SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN {
+                    return Some(format!(
+                        "segment_size {} is less than minimum {}",
+                        segment_size, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN
+                    ));
+                }
+            }
+        }
+
+        None
     }
 }
 
