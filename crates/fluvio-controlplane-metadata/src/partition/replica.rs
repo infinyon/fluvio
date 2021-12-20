@@ -6,8 +6,10 @@ use dataplane::core::{Encoder, Decoder};
 use fluvio_types::SpuId;
 use crate::partition::ReplicaKey;
 use crate::core::{MetadataItem};
+use crate::spg::StorageConfig;
 use crate::store::MetadataStoreObject;
 use crate::partition::PartitionSpec;
+use crate::topic::CleanupPolicy;
 use super::store::*;
 
 /// Metadata about Replica send from SC
@@ -17,6 +19,8 @@ pub struct Replica {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
     pub is_being_deleted: bool,
+    pub cleanup_policy: Option<CleanupPolicy>,
+    pub storage: StorageConfig,
 }
 
 impl Replica {
@@ -35,6 +39,7 @@ impl Replica {
             leader,
             replicas,
             is_being_deleted,
+            ..Default::default()
         }
     }
 }
@@ -53,6 +58,7 @@ where
             leader: inner.spec.leader,
             replicas: inner.spec.replicas,
             is_being_deleted,
+            ..Default::default()
         }
     }
 }

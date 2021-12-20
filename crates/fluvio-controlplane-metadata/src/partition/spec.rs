@@ -7,6 +7,8 @@
 use fluvio_types::SpuId;
 use dataplane::core::{Encoder, Decoder};
 
+use crate::topic::{CleanupPolicy, StorageConfig};
+
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
 /// one of replica is leader which is duplicated in the leader field
@@ -19,11 +21,19 @@ use dataplane::core::{Encoder, Decoder};
 pub struct PartitionSpec {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
+    #[fluvio(min_version = 4)]
+    cleanup_policy: Option<CleanupPolicy>,
+    #[fluvio(min_version = 4)]
+    storage: StorageConfig,
 }
 
 impl PartitionSpec {
     pub fn new(leader: SpuId, replicas: Vec<SpuId>) -> Self {
-        Self { leader, replicas }
+        Self {
+            leader,
+            replicas,
+            ..Default::default()
+        }
     }
 
     pub fn has_spu(&self, spu: &SpuId) -> bool {
