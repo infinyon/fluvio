@@ -36,7 +36,7 @@ spec:
                       properties:
                         timeInSeconds:
                           type: integer
-                          minimum: 3600
+                          minimum: 10
                 storage:
                   type: object
                   properties:
