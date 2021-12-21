@@ -7,10 +7,10 @@ pub use self::msg_type::Message;
 pub use messages::*;
 
 pub use self::replica_msg::{ReplicaMsgs, ReplicaMsg};
-pub use self::smart_module_msg::{SmartModuleMsgs, SmartModuleMsg};
+pub use self::smartmodule_msg::{SmartModuleMsgs, SmartModuleMsg};
 
 pub use spu_msg::*;
-pub use smart_module_msg::*;
+pub use smartmodule_msg::*;
 pub use smart_stream_msg::*;
 
 mod spu_msg {
@@ -22,7 +22,7 @@ mod spu_msg {
     pub type SpuMsg = Message<SpuSpec>;
 }
 
-mod smart_module_msg {
+mod smartmodule_msg {
 
     use crate::smartmodule::SmartModule;
 
@@ -39,31 +39,31 @@ mod smart_stream_msg {
     use dataplane::core::{Encoder, Decoder};
     use fluvio_stream_model::{core::MetadataItem, store::MetadataStoreObject};
 
-    use crate::smartstream::SmartStreamSpec;
+    use crate::derivedstream::DerivedStreamSpec;
 
     use super::{Message, Messages};
 
-    pub type SmartStreamMsg = Message<SmartStreamControlData>;
-    pub type SmartStreamMsgs = Messages<SmartStreamControlData>;
+    pub type DerivedStreamMsg = Message<DerivedStreamControlData>;
+    pub type DerivedStreamMsgs = Messages<DerivedStreamControlData>;
 
     #[derive(Debug, Default, Clone, PartialEq, Encoder, Decoder)]
-    pub struct SmartStreamControlData {
+    pub struct DerivedStreamControlData {
         pub name: String,
-        pub spec: SmartStreamSpec,
+        pub spec: DerivedStreamSpec,
         pub valid: bool,
     }
 
-    impl fmt::Display for SmartStreamControlData {
+    impl fmt::Display for DerivedStreamControlData {
         fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-            write!(f, "SmartStream({})", self.name)
+            write!(f, "DerivedStream({})", self.name)
         }
     }
 
-    impl<C> From<MetadataStoreObject<SmartStreamSpec, C>> for SmartStreamControlData
+    impl<C> From<MetadataStoreObject<DerivedStreamSpec, C>> for DerivedStreamControlData
     where
         C: MetadataItem,
     {
-        fn from(mso: MetadataStoreObject<SmartStreamSpec, C>) -> Self {
+        fn from(mso: MetadataStoreObject<DerivedStreamSpec, C>) -> Self {
             let name = mso.key_owned();
             let spec = mso.spec;
             let valid = mso.status.is_deployable();

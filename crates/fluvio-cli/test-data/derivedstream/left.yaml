@@ -1,0 +1,10 @@
+name: sjoin
+input:
+  topic:
+    name: left      
+steps:
+  - join:
+      module: join
+      right:
+        derivedstream:
+          name: rdouble

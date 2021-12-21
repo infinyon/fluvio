@@ -7,8 +7,8 @@ pub mod smartmodule;
 pub mod partition;
 pub mod versions;
 pub mod objects;
-pub mod table;
-pub mod smartstream;
+pub mod tableformat;
+pub mod derivedstream;
 
 mod apis;
 mod request;

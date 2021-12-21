@@ -96,7 +96,8 @@ pub mod config;
 use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
-pub use producer::{TopicProducer, RecordKey, SmartStreamConfig};
+pub use producer::{TopicProducer, RecordKey};
+
 pub use consumer::{
     PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
 };
@@ -104,6 +105,10 @@ pub use offset::Offset;
 
 pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
+
+pub(crate) mod built_info {
+    include!(concat!(env!("OUT_DIR"), "/built.rs"));
+}
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
@@ -214,8 +219,8 @@ pub mod metadata {
         pub use fluvio_sc_schema::smartmodule::*;
     }
 
-    pub mod smartstream {
-        pub use fluvio_sc_schema::smartstream::*;
+    pub mod derivedstream {
+        pub use fluvio_sc_schema::derivedstream::*;
     }
 
     pub mod customspu {

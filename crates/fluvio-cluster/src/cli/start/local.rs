@@ -40,6 +40,10 @@ pub async fn process_local(
         builder.skip_checks(true);
     }
 
+    if opt.hide_spinner {
+        builder.hide_spinner(true);
+    }
+
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
     if opt.setup {

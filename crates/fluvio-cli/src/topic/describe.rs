@@ -45,6 +45,7 @@ impl DescribeTopicsOpt {
 
 mod display {
 
+    use fluvio_controlplane_metadata::topic::ReplicaSpec;
     use prettytable::Row;
     use prettytable::row;
     use serde::Serialize;
@@ -119,8 +120,8 @@ mod display {
 
             key_values.push(("Name".to_owned(), Some(self.0.name.clone())));
             key_values.push(("Type".to_owned(), Some(spec.type_label().to_string())));
-            match spec {
-                TopicSpec::Computed(param) => {
+            match spec.replicas() {
+                ReplicaSpec::Computed(param) => {
                     key_values.push((
                         "Partition Count".to_owned(),
                         Some(param.partitions.to_string()),
@@ -134,7 +135,7 @@ mod display {
                         Some(param.ignore_rack_assignment.to_string()),
                     ));
                 }
-                TopicSpec::Assigned(_partitions) => {
+                ReplicaSpec::Assigned(_partitions) => {
                     /*
                     key_values.push((
                         "Assigned Partitions".to_owned(),

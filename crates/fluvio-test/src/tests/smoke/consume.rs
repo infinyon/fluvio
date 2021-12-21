@@ -109,7 +109,15 @@ pub async fn validate_consume_message_api(
                             offset,
                             bytes.len()
                         );
-                        validate_message(producer_iteration, offset, test_case, bytes);
+
+                        if test_case.option.skip_consumer_validate {
+                            info!(
+                                "Skipped message validation",
+                            );
+                        } else {
+                            validate_message(producer_iteration, offset, test_case, bytes);
+                        };
+
                         info!(
                             " total records: {}, validated offset: {}",
                             total_records, offset
@@ -151,37 +159,41 @@ pub async fn validate_consume_message_api(
         }
     }
 
-    let replication = test_case.environment.replication;
-    if replication > 1 {
-        println!("waiting 5 seconds to verify replication status...");
-        // wait 5 seconds to get status and ensure replication is done
-        sleep(Duration::from_secs(5)).await;
+    // This check is unreliable when we are testing w/ connectors, so skip it
+    if test_case.option.connector_config.is_some() {
+        println!("skipping replication status verification");
+    } else {
+        let replication = test_case.environment.replication;
+        if replication > 1 {
+            println!("waiting 5 seconds to verify replication status...");
+            // wait 5 seconds to get status and ensure replication is done
+            sleep(Duration::from_secs(5)).await;
 
-        let admin = test_driver.client().admin().await;
-        let partitions = admin
-            .list::<PartitionSpec, _>(vec![])
-            .await
-            .expect("partitions");
+            let admin = test_driver.client().admin().await;
+            let partitions = admin
+                .list::<PartitionSpec, _>(vec![])
+                .await
+                .expect("partitions");
 
-        assert_eq!(partitions.len(), 1);
+            assert_eq!(partitions.len(), 1);
 
-        let test_topic = &partitions[0];
-        let status = &test_topic.status;
-        let leader = &status.leader;
+            let test_topic = &partitions[0];
+            let status = &test_topic.status;
+            let leader = &status.leader;
 
-        assert_eq!(leader.leo, base_offset + producer_iteration as i64);
-        println!("status: {:#?}", status);
+            assert_eq!(leader.leo, base_offset + producer_iteration as i64);
+            println!("status: {:#?}", status);
 
-        assert_eq!(status.replicas.len() as u16, replication - 1);
+            assert_eq!(status.replicas.len() as u16, replication - 1);
 
-        for i in 0..replication - 1 {
-            let follower_status = &status.replicas[i as usize];
-            assert_eq!(follower_status.hw, producer_iteration as i64);
-            assert_eq!(follower_status.leo, producer_iteration as i64);
+            for i in 0..replication - 1 {
+                let follower_status = &status.replicas[i as usize];
+                assert_eq!(follower_status.hw, producer_iteration as i64);
+                assert_eq!(follower_status.leo, producer_iteration as i64);
+            }
         }
+        println!("replication status verified");
     }
-
-    println!("replication status verified");
 
     println!("performing 2nd fetch check. waiting 5 seconds");
 
@@ -221,7 +233,15 @@ pub async fn validate_consume_message_api(
                         bytes.len()
                     );
 
-                    validate_message(producer_iteration, offset, test_case, bytes);
+                    if test_case.option.skip_consumer_validate {
+                        info!(
+                            "Skipped message validation",
+                        );
+                    } else {
+                        validate_message(producer_iteration, offset, test_case, bytes);
+                    };
+
+
                     info!(
                         "2nd fetch total records: {}, validated offset: {}",
                         total_records, offset

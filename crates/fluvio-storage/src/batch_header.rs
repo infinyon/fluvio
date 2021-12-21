@@ -1,8 +1,4 @@
-use std::io::Error as IoError;
-
-use dataplane::core::{Version, Decoder, Encoder};
-use dataplane::bytes::Buf;
-use dataplane::bytes::BufMut;
+use dataplane::core::{Decoder, Encoder};
 use dataplane::batch::BatchRecords;
 
 use crate::batch::FileBatchStream;
@@ -12,7 +8,7 @@ pub type BatchHeaderStream = FileBatchStream<FileEmptyRecords>;
 
 pub type BatchHeaderPos = FileBatchPos<FileEmptyRecords>;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Encoder, Decoder)]
 pub struct FileEmptyRecords {}
 
 impl BatchRecords for FileEmptyRecords {
@@ -21,35 +17,12 @@ impl BatchRecords for FileEmptyRecords {
     }
 }
 
-// nothing to decode for header
-impl Decoder for FileEmptyRecords {
-    fn decode<T>(&mut self, _src: &mut T, _version: Version) -> Result<(), IoError>
-    where
-        T: Buf,
-    {
-        Ok(())
-    }
-}
-
-// nothing to do decode for header
-impl Encoder for FileEmptyRecords {
-    fn write_size(&self, _versio: Version) -> usize {
-        0
-    }
-
-    fn encode<T>(&self, _dest: &mut T, _version: Version) -> Result<(), IoError>
-    where
-        T: BufMut,
-    {
-        Ok(())
-    }
-}
-
 #[cfg(test)]
 mod tests {
 
     use std::env::temp_dir;
     use std::path::PathBuf;
+    use std::sync::Arc;
     use std::time::Instant;
 
     use dataplane::Offset;
@@ -57,12 +30,12 @@ mod tests {
 
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfig;
     use crate::records::FileRecords;
     use super::BatchHeaderStream;
 
-    fn default_option(base_dir: PathBuf) -> ConfigOption {
-        ConfigOption {
+    fn default_option(base_dir: PathBuf) -> ReplicaConfig {
+        ReplicaConfig {
             base_dir,
             segment_max_bytes: 1000,
             ..Default::default()
@@ -85,7 +58,7 @@ mod tests {
             .build()
             .expect("build");
 
-        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, Arc::new(options.into()))
             .await
             .expect("create");
 
@@ -119,7 +92,7 @@ mod tests {
 
         let options = default_option(test_dir.clone());
 
-        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, Arc::new(options.into()))
             .await
             .expect("create");
 

@@ -61,3 +61,6 @@ impl Default for PassNamedEnum {
         }
     }
 }
+
+#[derive(Encoder, Default)]
+struct PassTupleStruct (u16, String);

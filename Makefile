@@ -1,6 +1,7 @@
 VERSION := $(shell cat VERSION)
 RUSTV?=stable
 GIT_COMMIT=$(shell git rev-parse HEAD)
+ARCH=$(shell uname -m)
 TARGET?=
 IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and should not be built
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
@@ -32,6 +33,7 @@ TEST_ARG_SKIP_CHECKS=
 TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
 TEST_ARG_PRODUCER_ITERATION=--producer-iteration=${DEFAULT_ITERATION}
+TEST_ARG_CONNECTOR_CONFIG=
 
 export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
 
@@ -79,7 +81,8 @@ smoke-test: test-setup
 			${TEST_ARG_EXTRA} \
 			-- \
 			${TEST_ARG_CONSUMER_WAIT} \
-			${TEST_ARG_PRODUCER_ITERATION}
+			${TEST_ARG_PRODUCER_ITERATION} \
+			${TEST_ARG_CONNECTOR_CONFIG}
 
 smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
 smoke-test-local: smoke-test
@@ -161,9 +164,11 @@ endif
 # Kubernetes Tests
 
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
+smoke-test-k8: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8: build_k8_image smoke-test 
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
+smoke-test-k8-tls: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls: build_k8_image smoke-test
 
 smoke-test-k8-tls-policy-setup:
@@ -171,6 +176,7 @@ smoke-test-k8-tls-policy-setup:
 	kubectl create configmap authorization --from-file=POLICY=${SC_AUTH_CONFIG}/policy.json --from-file=SCOPES=${SC_AUTH_CONFIG}/scopes.json
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization $(EXTRA_ARG)
+smoke-test-k8-tls-policy: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
 smoke-test-k8-tls-policy: build_k8_image smoke-test-k8-tls-policy-setup smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
@@ -205,10 +211,11 @@ longevity-test: build-test
 endif
 
 cli-platform-cross-version-test:
-	./tests/cli-platform-cross-version-test.sh $(CLI_VERSION) $(CLUSTER_VERSION)
+	bats -t ./tests/cli/cli-platform-cross-version.bats
 
 cli-smoke:
 	bats $(shell ls -1 ./tests/cli/smoke_tests/*.bats | sort -R)
+	bats ./tests/cli/smoke_tests/non-concurrent/cluster-delete.bats
 
 # test rbac
 #
@@ -262,16 +269,16 @@ check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
-build_smartstreams:
-	make -C crates/fluvio-smartstream/examples build
+build_smartmodules:
+	make -C crates/fluvio-smartmodule/examples build
 
 run-all-unit-test: install_rustup_target
 	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
-	cargo test -p fluvio-smartstream $(RELEASE_FLAG) $(TARGET_FLAG)
+	cargo test -p fluvio-smartmodule $(RELEASE_FLAG) $(TARGET_FLAG)
 	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
 	make test-all -C crates/fluvio-protocol
 
-run-integration-test:build_smartstreams install_rustup_target
+run-integration-test: build_smartmodules install_rustup_target
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-spu -- --ignored --test-threads=1
 	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-socket -- --ignored --test-threads=1
 
@@ -305,7 +312,11 @@ endif
 
 # Build docker image for Fluvio.
 ifndef TARGET
+ifeq ($(ARCH),arm64)
+fluvio_image: TARGET= aarch64-unknown-linux-musl
+else
 fluvio_image: TARGET=x86_64-unknown-linux-musl
+endif
 endif
 fluvio_image: fluvio_run_bin
 	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
@@ -321,6 +332,7 @@ fluvio_run_bin: install_rustup_target
 upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --sys
 	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
+
 
 
 clean:

@@ -1,11 +1,11 @@
 [package]
 name = "fluvio-package-index"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio Package Index"
 repository = "https://github.com/infinyon/fluvio"
 license = "Apache-2.0"
-edition = "2018"
+edition = "2021"
 build = "build.rs"
 
 [lib]

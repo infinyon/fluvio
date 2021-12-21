@@ -5,9 +5,6 @@
 //! and receivers.
 //!
 
-use sysinfo::System;
-use sysinfo::SystemExt;
-use tracing::info;
 use k8_metadata_client::SharedClient;
 use k8_metadata_client::MetadataClient;
 
@@ -16,7 +13,7 @@ use crate::core::SharedContext;
 use crate::controllers::spus::SpuController;
 use crate::controllers::topics::TopicController;
 use crate::controllers::partitions::PartitionController;
-use crate::controllers::smartstreams::SmartStreamController;
+use crate::controllers::derivedstreams::DerivedStreamController;
 use crate::config::{ScConfig};
 use crate::services::start_internal_server;
 use crate::dispatcher::dispatcher::K8ClusterStateDispatcher;
@@ -35,23 +32,9 @@ where
     use crate::stores::partition::PartitionSpec;
     use crate::stores::spg::SpuGroupSpec;
     use crate::stores::connector::ManagedConnectorSpec;
-    use crate::stores::table::TableSpec;
+    use crate::stores::tableformat::TableFormatSpec;
     use crate::stores::smartmodule::SmartModuleSpec;
-    use crate::stores::smartstream::SmartStreamSpec;
-
-    info!(PlatformVersion = &*crate::VERSION, "SC Platform Version");
-
-    let mut sys = System::new_all();
-    sys.refresh_all();
-    info!(version = &*crate::VERSION, "Platform");
-    info!(commit = env!("GIT_HASH"), "Git");
-    info!(name = ?sys.name(),"System");
-    info!(kernel = ?sys.kernel_version(),"System");
-    info!(os_version = ?sys.long_os_version(),"System");
-    info!(core_count = ?sys.physical_core_count(),"System");
-    info!(total_memory = sys.total_memory(), "System");
-    info!(available_memory = sys.available_memory(), "System");
-    info!(uptime = sys.uptime(), "Uptime in secs");
+    use crate::stores::derivedstream::DerivedStreamSpec;
 
     let (sc_config, auth_policy) = sc_config_policy;
 
@@ -89,22 +72,22 @@ where
         ctx.managed_connectors().clone(),
     );
 
-    K8ClusterStateDispatcher::<TableSpec, C>::start(
+    K8ClusterStateDispatcher::<TableFormatSpec, C>::start(
         namespace.clone(),
         metadata_client.clone(),
-        ctx.tables().clone(),
+        ctx.tableformats().clone(),
     );
 
     K8ClusterStateDispatcher::<SmartModuleSpec, C>::start(
         namespace.clone(),
         metadata_client.clone(),
-        ctx.smart_modules().clone(),
+        ctx.smartmodules().clone(),
     );
 
-    K8ClusterStateDispatcher::<SmartStreamSpec, C>::start(
+    K8ClusterStateDispatcher::<DerivedStreamSpec, C>::start(
         namespace,
         metadata_client,
-        ctx.smartstreams().clone(),
+        ctx.derivedstreams().clone(),
     );
 
     whitelist!(config, "spu", SpuController::start(ctx.clone()));
@@ -122,10 +105,10 @@ where
         pub_server::start(ctx.clone(), auth_policy)
     );
 
-    SmartStreamController::start(
-        ctx.smartstreams().clone(),
+    DerivedStreamController::start(
+        ctx.derivedstreams().clone(),
         ctx.topics().clone(),
-        ctx.smart_modules().clone(),
+        ctx.smartmodules().clone(),
     );
 
     mod pub_server {

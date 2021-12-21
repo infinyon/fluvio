@@ -8,17 +8,19 @@ use std::fs::File;
 use std::io::Read;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio_controlplane_metadata::connector::{ManagedConnectorSpec, SecretString};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
 mod create;
 mod delete;
 mod list;
+mod logs;
 
 use create::CreateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
+use logs::LogsManagedConnectorOpt;
 use crate::CliError;
 
 #[derive(Debug, StructOpt)]
@@ -37,6 +39,13 @@ pub enum ManagedConnectorCmd {
     )]
     Delete(DeleteManagedConnectorOpt),
 
+    /// Get the logs for a Managed Connector
+    #[structopt(
+        name = "logs",
+        template = COMMAND_TEMPLATE,
+    )]
+    Logs(LogsManagedConnectorOpt),
+
     /// List all Managed Connectors
     #[structopt(
         name = "list",
@@ -54,6 +63,9 @@ impl ManagedConnectorCmd {
             Self::Delete(delete) => {
                 delete.process(fluvio).await?;
             }
+            Self::Logs(logs) => {
+                logs.process().await?;
+            }
             Self::List(list) => {
                 list.process(out, fluvio).await?;
             }
@@ -68,13 +80,13 @@ pub struct ConnectorConfig {
     #[serde(rename = "type")]
     type_: String,
     pub(crate) topic: String,
-    pub(crate) connector_version: Option<String>,
+    pub(crate) version: Option<String>,
     #[serde(default)]
     pub(crate) create_topic: bool,
     #[serde(default)]
     parameters: BTreeMap<String, String>,
     #[serde(default)]
-    secrets: BTreeMap<String, String>,
+    secrets: BTreeMap<String, SecretString>,
 }
 
 impl ConnectorConfig {
@@ -95,7 +107,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             topic: config.topic,
             parameters: config.parameters,
             secrets: config.secrets,
-            connector_version: config.connector_version,
+            version: config.version,
         }
     }
 }

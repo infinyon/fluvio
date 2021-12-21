@@ -1,6 +1,24 @@
 # Release Notes
 
-## Platform Version 0.9.13 - UNRELEASED
+## Platform Version 0.9.16 - UNRELEASED
+* Consume with end ([#1940](https://github.com/infinyon/fluvio/issues/1940))
+* Return base offset in partition produce response ([#2025](https://github.com/infinyon/fluvio/issues/2025))
+* Simple Topic Retention with time ([#2019](https://github.com/infinyon/fluvio/issues/2019))
+
+## Platform Version 0.9.15 - 2021-12-10
+* Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
+* TableFormat support for JSON array of objects ([#1967](https://github.com/infinyon/fluvio/issues/1967))
+
+## Platform Version 0.9.14 - 2021-12-04
+* Add support for tuple structs in fluvio-protocol derived macros. ([#1828](https://github.com/infinyon/fluvio/issues/1828))
+* Expose fluvio completions in the top-level subcommand. ([#1850](https://github.com/infinyon/fluvio/issues/1850))
+* Make installation more reliable ([#1961](https://github.com/infinyon/fluvio/pull/1961))
+* Add Spinner to `fluvio consume` command. ([#1881](https://github.com/infinyon/fluvio/issues/1881))
+* Change CLI multi-word subcommand names to use kebab-case. ([#1947](https://github.com/infinyon/fluvio/issues/1947)
+* Update subcommand descriptions for consistency [#1948](https://github.com/infinyon/fluvio/issues/1948))
+* Add `fluvio connector logs <connector name>` ([#1969](https://github.com/infinyon/fluvio/pull/1969)).
+
+## Platform Version 0.9.13 - 2021-11-19
 * Fix connector create with `create_topic` option to succeed if topic already exists. ([#1823](https://github.com/infinyon/fluvio/pull/1823))
 * Add `#[smartstream(filter_map)]` for filtering and transforming at the same time. ([#1826](https://github.com/infinyon/fluvio/issues/1826))
 * Add table display output option to consumer for json objects ([#1642](https://github.com/infinyon/fluvio/issues/1642))
@@ -8,8 +26,11 @@
 * Add SpuDirectory trait to Fluvio Client ([#1863](https://github.com/infinyon/fluvio/issues/1863))
 * Add `fluvio consume <topic> --output=full_table` to render row updates over fullscreen terminal screen ([#1846](https://github.com/infinyon/fluvio/issues/1846))
 * Fix macOS kubernetes cluster management ([#1867](https://github.com/infinyon/fluvio/pull/1867))
-* Persist aggregate accumulator across file batches ([#1869](https://github.com/infinyon/fluvio/pull/1869))
-* Send SmartStream records to consumer when max_bytes reached ([#1888](https://github.com/infinyon/fluvio/pull/1888))
+* Persist aggregate accumulator across file batches  ([#1869](https://github.com/infinyon/fluvio/pull/1869))
+* Make Fluvio cluster working on Apple Silicon ([#1896](https://github.com/infinyon/fluvio/pull/1896))
+* Rename `fluvio table` to `fluvio tableformat` ([#1918](https://github.com/infinyon/fluvio/pull/1918))
+* Restrict max version in fluvio client ([#1930](https://github.com/infinyon/fluvio/issues/1930))
+* Use version from the client in SmartEngine to encode/decode input/output ([#1924](https://github.com/infinyon/fluvio/pull/1924))
 
 ## Platform Version 0.9.12 - 2021-10-27
 * Add examples for ArrayMap. ([#1804](https://github.com/infinyon/fluvio/issues/1804))

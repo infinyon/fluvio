@@ -86,7 +86,10 @@ impl Fluvio {
         let (socket, config, versions) = inner_client.split();
 
         // get version for watch
-        if let Some(watch_version) = versions.lookup_version(ObjectApiWatchRequest::API_KEY) {
+        if let Some(watch_version) = versions.lookup_version(
+            ObjectApiWatchRequest::API_KEY,
+            ObjectApiWatchRequest::DEFAULT_API_VERSION,
+        ) {
             debug!(platform = %versions.platform_version(),"checking platform version");
             check_platform_compatible(versions.platform_version())?;
 
@@ -156,19 +159,7 @@ impl Fluvio {
     /// If you have a topic with multiple partitions, then in order to receive
     /// all of the events in all of the partitions, use `consumer` instead.
     ///
-    /// # Example
     ///
-    /// ```no_run
-    /// # use fluvio::{Fluvio, Offset, FluvioError};
-    /// # async fn do_consume_from_partitions(fluvio: &Fluvio) -> Result<(), FluvioError> {
-    /// let consumer_one = fluvio.partition_consumer("my-topic", 0).await?;
-    /// let consumer_two = fluvio.partition_consumer("my-topic", 1).await?;
-    ///
-    /// let records_one = consumer_one.fetch(Offset::beginning()).await?;
-    /// let records_two = consumer_two.fetch(Offset::beginning()).await?;
-    /// # Ok(())
-    /// # }
-    /// ```
     pub async fn partition_consumer<S: Into<String>>(
         &self,
         topic: S,

@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use futures_util::stream::{Stream, select_all};
@@ -10,19 +9,14 @@ use futures_util::FutureExt;
 
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
-    SmartStreamPayload, SmartStreamWasm, WASM_MODULE_API, WASM_MODULE_V2_API,
+    LegacySmartModulePayload, SmartModuleWasmCompressed, WASM_MODULE_API, WASM_MODULE_V2_API,
 };
 pub use fluvio_spu_schema::server::stream_fetch::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, DerivedStreamInvocation,
 };
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
-use dataplane::fetch::DefaultFetchRequest;
-use dataplane::fetch::FetchPartition;
-use dataplane::fetch::FetchableTopic;
-use dataplane::fetch::FetchablePartitionResponse;
-use dataplane::record::RecordSet;
 use dataplane::batch::Batch;
 use fluvio_types::event::offsets::OffsetPublisher;
 
@@ -35,28 +29,7 @@ pub use dataplane::record::ConsumerRecord as Record;
 
 /// An interface for consuming events from a particular partition
 ///
-/// There are two ways to consume events: by "fetching" events
-/// and by "streaming" events. Fetching involves specifying a
-/// range of events that you want to consume via their [`Offset`].
-/// A fetch is a sort of one-time batch operation: you'll receive
-/// all of the events in your range all at once. When you consume
-/// events via Streaming, you specify a starting [`Offset`] and
-/// receive an object that will continuously yield new events as
-/// they arrive.
 ///
-/// # Creating a Consumer
-///
-/// You can create a `PartitionConsumer` via the [`partition_consumer`]
-/// method on the [`Fluvio`] client, like so:
-///
-/// ```
-/// # use fluvio::{Fluvio, Offset, ConsumerConfig, FluvioError};
-/// # async fn example(fluvio: &Fluvio) -> Result<(), FluvioError> {
-/// let consumer = fluvio.partition_consumer("my-topic", 0).await?;
-/// let records = consumer.fetch(Offset::beginning()).await?;
-/// # Ok(())
-/// # }
-/// ```
 ///
 /// [`Offset`]: struct.Offset.html
 /// [`partition_consumer`]: struct.Fluvio.html#method.partition_consumer
@@ -87,138 +60,6 @@ where
     /// Returns the ID of the partition that this consumer reads from
     pub fn partition(&self) -> i32 {
         self.partition
-    }
-
-    /// Fetches events from a particular offset in the consumer's partition
-    ///
-    /// A "fetch" is one of the two ways to consume events in Fluvio.
-    /// It is a batch request for records from a particular offset in
-    /// the partition. You specify the position of records to retrieve
-    /// using an [`Offset`], and receive the events as a list of records.
-    ///
-    /// If you want more fine-grained control over how records are fetched,
-    /// check out the [`fetch_with_config`] method.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio::{PartitionConsumer, Offset, ConsumerConfig, FluvioError};
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// let response = consumer.fetch(Offset::beginning()).await?;
-    /// for batch in response.records.batches {
-    ///     for record in batch.records() {
-    ///         let string = String::from_utf8_lossy(record.value.as_ref());
-    ///         println!("Got record: {}", string);
-    ///     }
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [`Offset`]: struct.Offset.html
-    /// [`fetch_with_config`]: struct.PartitionConsumer.html#method.fetch_with_config
-    #[deprecated(note = "Use 'stream' instead", since = "0.9.2")]
-    #[instrument(skip(self, offset))]
-    pub async fn fetch(
-        &self,
-        offset: Offset,
-    ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
-        let config = ConsumerConfig::builder().build()?;
-        #[allow(deprecated)]
-        let records = self.fetch_with_config(offset, config).await?;
-        Ok(records)
-    }
-
-    /// Fetches events from a consumer using a specific fetching configuration
-    ///
-    /// Most of the time, you shouldn't need to use a custom [`ConsumerConfig`].
-    /// If you don't know what these settings do, try checking out the simpler
-    /// [`fetch`] method that uses the default fetching settings.
-    ///
-    /// A "fetch" is one of the two ways to consume events in Fluvio.
-    /// It is a batch request for records from a particular offset in
-    /// the partition. You specify the range of records to retrieve
-    /// using an [`Offset`] and a [`ConsumerConfig`], and receive
-    /// the events as a list of records.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio::{PartitionConsumer, FluvioError, Offset, ConsumerConfig};
-    /// # async fn example(consumer: &PartitionConsumer) -> Result<(), FluvioError> {
-    /// // Use custom fetching configurations
-    /// let fetch_config = ConsumerConfig::builder()
-    ///     .max_bytes(1000)
-    ///     .build()?;
-    ///
-    /// let response = consumer.fetch_with_config(Offset::beginning(), fetch_config).await?;
-    /// for batch in response.records.batches {
-    ///     for record in batch.records() {
-    ///         let string = String::from_utf8_lossy(record.value.as_ref());
-    ///         println!("Got record: {}", string);
-    ///     }
-    /// }
-    /// # Ok(())
-    /// # }
-    /// ```
-    ///
-    /// [`ConsumerConfig`]: struct.ConsumerConfig.html
-    /// [`fetch`]: struct.PartitionConsumer.html#method.fetch
-    /// [`Offset`]: struct.Offset.html
-    #[deprecated(note = "Use 'stream_with_config' instead", since = "0.9.2")]
-    #[instrument(skip(self, offset, option))]
-    pub async fn fetch_with_config(
-        &self,
-        offset: Offset,
-        option: ConsumerConfig,
-    ) -> Result<FetchablePartitionResponse<RecordSet>, FluvioError> {
-        let replica = ReplicaKey::new(&self.topic, self.partition);
-        debug!(
-            "starting fetch log once: {:#?} from replica: {}",
-            offset, &replica,
-        );
-
-        let mut leader = self.pool.create_serial_socket(&replica).await?;
-        let offsets = fetch_offsets(&mut leader, &replica).await?;
-        debug!("found spu leader {}", leader);
-        let offset = offset.resolve(&offsets).await?;
-
-        let partition = FetchPartition {
-            partition_index: self.partition,
-            fetch_offset: offset,
-            max_bytes: option.max_bytes,
-            ..Default::default()
-        };
-
-        let topic_request = FetchableTopic {
-            name: self.topic.to_owned(),
-            fetch_partitions: vec![partition],
-        };
-
-        let fetch_request = DefaultFetchRequest {
-            topics: vec![topic_request],
-            isolation_level: option.isolation,
-            max_bytes: option.max_bytes,
-            ..Default::default()
-        };
-
-        let response = leader.send_receive(fetch_request).await?;
-
-        debug!("received fetch logs for {}", &replica);
-
-        if let Some(partition_response) = response.find_partition(&self.topic, self.partition) {
-            debug!(
-                "found partition response with: {} batches: {} bytes",
-                partition_response.records.batches.len(),
-                bytes_count(&partition_response.records)
-            );
-            Ok(partition_response)
-        } else {
-            Err(FluvioError::PartitionNotFound(
-                self.topic.clone(),
-                self.partition,
-            ))
-        }
     }
 
     /// Continuously streams events from a particular offset in the consumer's partition
@@ -427,19 +268,22 @@ where
         // add wasm module if SPU supports it
         let stream_fetch_version = serial_socket
             .versions()
-            .lookup_version(DefaultStreamFetchRequest::API_KEY)
+            .lookup_version(
+                DefaultStreamFetchRequest::API_KEY,
+                DefaultStreamFetchRequest::DEFAULT_API_VERSION,
+            )
             .unwrap_or((WASM_MODULE_API - 1) as i16);
         debug!(%stream_fetch_version, "stream_fetch_version");
 
-        stream_request.smartstream = config.smartstream;
+        stream_request.derivedstream = config.derivedstream;
 
-        if let Some(smart_module) = config.smart_module {
+        if let Some(smartmodule) = config.smartmodule {
             if stream_fetch_version < SMART_MODULE_API as i16 {
-                if let SmartModuleInvocationWasm::AdHoc(wasm) = smart_module.wasm {
-                    let legacy_module = SmartStreamPayload {
-                        wasm: SmartStreamWasm::Gzip(wasm),
-                        kind: smart_module.kind,
-                        params: smart_module.params,
+                if let SmartModuleInvocationWasm::AdHoc(wasm) = smartmodule.wasm {
+                    let legacy_module = LegacySmartModulePayload {
+                        wasm: SmartModuleWasmCompressed::Gzip(wasm),
+                        kind: smartmodule.kind,
+                        params: smartmodule.params,
                     };
                     legacy_set_wasm(stream_fetch_version, &mut stream_request, legacy_module)?;
                 } else {
@@ -449,7 +293,7 @@ where
                 }
             } else {
                 debug!("Using persistent WASM API");
-                stream_request.smart_module = Some(smart_module);
+                stream_request.smartmodule = Some(smartmodule);
             }
         }
 
@@ -551,19 +395,17 @@ where
 fn legacy_set_wasm(
     stream_fetch_version: i16,
     stream_request: &mut DefaultStreamFetchRequest,
-    mut module: SmartStreamPayload,
+    mut module: LegacySmartModulePayload,
 ) -> Result<(), FluvioError> {
     if stream_fetch_version < WASM_MODULE_API as i16 {
         return Err(FluvioError::Other("SPU does not support WASM".to_owned()));
     }
 
     if stream_fetch_version < WASM_MODULE_V2_API as i16 {
-        // SmartStream V1
         debug!("Using WASM V1 API");
         let wasm = module.wasm.get_raw()?;
         stream_request.wasm_module = wasm.into_owned();
     } else {
-        // SmartStream V2
         debug!("Using WASM V2 API");
         if stream_fetch_version < GZIP_WASM_API as i16 {
             module.wasm.to_raw()?;
@@ -684,21 +526,6 @@ mod publish_stream {
     }
 }
 
-/// compute total bytes in record set
-fn bytes_count(records: &RecordSet) -> usize {
-    records
-        .batches
-        .iter()
-        .map(|batch| {
-            batch
-                .records()
-                .iter()
-                .map(|record| record.value.len())
-                .sum::<usize>()
-        })
-        .sum()
-}
-
 /// MAX FETCH BYTES
 static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     use std::env;
@@ -718,11 +545,11 @@ pub struct ConsumerConfig {
     #[builder(default)]
     pub(crate) isolation: Isolation,
     #[builder(private, default, setter(into, strip_option))]
-    pub(crate) wasm_module: Option<SmartStreamPayload>,
+    pub(crate) wasm_module: Option<LegacySmartModulePayload>,
     #[builder(default)]
-    pub(crate) smart_module: Option<SmartModuleInvocation>,
+    pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
-    pub(crate) smartstream: Option<SmartStreamInvocation>,
+    pub(crate) derivedstream: Option<DerivedStreamInvocation>,
 }
 
 impl ConsumerConfig {
@@ -737,83 +564,6 @@ impl ConsumerConfigBuilder {
             FluvioError::ConsumerConfig(format!("Missing required config option: {}", e))
         })?;
         Ok(config)
-    }
-
-    /// Adds a SmartStream filter to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
-    pub fn wasm_filter<T: Into<Vec<u8>>>(
-        &mut self,
-        filter: T,
-        params: BTreeMap<String, String>,
-    ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(filter.into()),
-            kind: SmartStreamKind::Filter,
-            params: params.into(),
-        });
-        self
-    }
-
-    /// Adds a SmartStream map to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
-    pub fn wasm_map<T: Into<Vec<u8>>>(
-        &mut self,
-        map: T,
-        params: BTreeMap<String, String>,
-    ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(map.into()),
-            kind: SmartStreamKind::Map,
-            params: params.into(),
-        });
-        self
-    }
-
-    /// Adds a SmartStream filter_map to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
-    pub fn wasm_filter_map<T: Into<Vec<u8>>>(
-        &mut self,
-        filter_map: T,
-        params: BTreeMap<String, String>,
-    ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(filter_map.into()),
-            kind: SmartStreamKind::FilterMap,
-            params: params.into(),
-        });
-        self
-    }
-
-    /// Adds a SmartStream array_map to this ConsumerConfig
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
-    pub fn wasm_array_map<T: Into<Vec<u8>>>(
-        &mut self,
-        array_map: T,
-        params: BTreeMap<String, String>,
-    ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(array_map.into()),
-            kind: SmartStreamKind::ArrayMap,
-            params: params.into(),
-        })
-    }
-
-    /// Set a WASM aggregator function and initial accumulator value
-    #[deprecated(note = "Use 'smart_module' instead", since = "0.9.11")]
-    pub fn wasm_aggregate<T: Into<Vec<u8>>, U: Into<Vec<u8>>>(
-        &mut self,
-        aggregate: T,
-        accumulator: U,
-        params: BTreeMap<String, String>,
-    ) -> &mut Self {
-        self.wasm_module(SmartStreamPayload {
-            wasm: SmartStreamWasm::Raw(aggregate.into()),
-            kind: SmartStreamKind::Aggregate {
-                accumulator: accumulator.into(),
-            },
-            params: params.into(),
-        });
-        self
     }
 }
 

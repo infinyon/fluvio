@@ -2,10 +2,9 @@
 
 use futures_util::StreamExt;
 use async_channel::Receiver;
-use indicatif::ProgressBar;
 use crate::{
     CheckFailed, CheckResult, CheckResults, CheckStatus, CheckSuggestion,
-    render::ProgressRenderedText,
+    render::{ProgressRenderedText, ProgressRenderer},
 };
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
@@ -22,11 +21,11 @@ pub async fn render_check_progress(progress: &mut Receiver<CheckResult>) -> Chec
 
 pub async fn render_check_progress_with_indicator(
     progress: &mut Receiver<CheckResult>,
-    pb: &ProgressBar,
+    renderer: &ProgressRenderer,
 ) -> CheckResults {
     let mut check_results = vec![];
     while let Some(check_result) = progress.next().await {
-        render_check_result_with_indicator(&check_result, pb);
+        render_check_result_with_indicator(&check_result, renderer);
         check_results.push(check_result);
     }
     check_results
@@ -46,8 +45,8 @@ pub fn render_check_result(check_result: &CheckResult) {
 }
 
 /// Render a single check result
-pub fn render_check_result_with_indicator(check_result: &CheckResult, pb: &ProgressBar) {
-    pb.println(check_result.msg());
+pub fn render_check_result_with_indicator(check_result: &CheckResult, pb: &ProgressRenderer) {
+    pb.println(&check_result.msg());
 }
 
 /// Render a slice of `CheckStatus`es all at once

@@ -1,0 +1,6 @@
+name: testtable
+inputFormat: "JSON"
+columns:
+  - keyPath: "key2"
+    display: true
+  - keyPath: "key1"

@@ -1,5 +1,5 @@
 apiVersion: fluvio.infinyon.com/v1
-kind: SmartStream
+kind: DerivedStream
 metadata:
   name: ss1
 spec:
@@ -10,5 +10,5 @@ spec:
     - join:
         module: join2
         right:
-          smartstream:
+          derivedstream:
             name: rdoublee

@@ -10,8 +10,8 @@ mod create;
 mod delete;
 mod list;
 mod watch;
-mod table;
-mod smartstream;
+mod tableformat;
+mod derivedstream;
 
 pub use server::start_public_server;
 

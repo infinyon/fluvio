@@ -32,8 +32,6 @@ pub async fn find_offsets(test_driver: &TestDriver, test_case: &SmokeTestCase) -
 }
 
 async fn last_leo(admin: &mut FluvioAdmin, topic: &str) -> i64 {
-    use std::convert::TryInto;
-
     let partitions = admin
         .list::<PartitionSpec, _>(vec![])
         .await

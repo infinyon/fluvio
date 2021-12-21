@@ -9,7 +9,7 @@ use std::env;
 
 use derive_builder::Builder;
 use fluvio::FluvioAdmin;
-use indicatif::ProgressBar;
+use fluvio_controlplane_metadata::spg::SpuConfig;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use tracing::{warn, debug, instrument};
@@ -20,7 +20,7 @@ use semver::Version;
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio::metadata::spg::SpuGroupSpec;
 use fluvio::metadata::spu::SpuSpec;
-use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile, Profile};
+use fluvio::config::{TlsPolicy, TlsConfig, TlsPaths, ConfigFile};
 use fluvio_future::timer::sleep;
 use k8_config::K8Config;
 use k8_client::meta_client::MetadataClient;
@@ -28,11 +28,12 @@ use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
 use fluvio_command::CommandExt;
 
-use crate::helm::{HelmClient};
 use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
+use crate::render::ProgressRenderer;
 use crate::start::common::check_crd;
+use crate::tls_config_to_cert_paths;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress_with_indicator;
@@ -248,26 +249,10 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
+    #[allow(dead_code)]
     #[builder(default = "true")]
     install_sys: bool,
-    /// Whether to update the `kubectl` context to match the Fluvio installation. Defaults to `true`.
-    ///
-    /// # Example
-    ///
-    /// If you do not want your Kubernetes contexts to be updated, you can do this
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
-    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = builder
-    ///     .update_context(false)
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[builder(default = "false")]
-    update_context: bool,
-    /// Whether to upgrade an existing installation
+
     #[builder(default = "false")]
     upgrade: bool,
     /// Whether to skip pre-install checks before installation. Defaults to `false`.
@@ -314,9 +299,16 @@ pub struct ClusterConfig {
     #[builder(default = "false")]
     render_checks: bool,
 
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "false")]
+    hide_spinner: bool,
+
     /// Use proxy address for communicating with kubernetes cluster
     #[builder(setter(into), default)]
     proxy_addr: Option<String>,
+
+    #[builder(setter(into), default)]
+    spu_config: SpuConfig,
 }
 
 impl ClusterConfig {
@@ -571,9 +563,7 @@ pub struct ClusterInstaller {
     config: ClusterConfig,
     /// Shared Kubernetes client for install
     kube_client: SharedK8Client,
-    /// Helm client for performing installs
-    helm_client: HelmClient,
-    pb: ProgressBar,
+    pb: ProgressRenderer,
 }
 
 impl ClusterInstaller {
@@ -589,11 +579,15 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {
+        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
         Ok(Self {
             config,
             kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
-            helm_client: HelmClient::new().map_err(K8InstallError::HelmError)?,
-            pb: create_progress_indicator(),
+            pb,
         })
     }
 
@@ -604,12 +598,17 @@ impl ClusterInstaller {
     /// for more details:
     ///
     /// - [`system_chart`]
-    /// - [`update_context`]
     ///
     /// [`system_chart`]: ./struct.ClusterInstaller.html#method.system_chart
-    /// [`update_context`]: ./struct.ClusterInstaller.html#method.update_context
     #[instrument(skip(self))]
     pub async fn setup(&self) -> CheckResults {
+        const DISPATCHER_WAIT: &str = "FLV_DISPATCHER_WAIT";
+
+        // HACK. set FLV_DISPATCHER if not set
+        if env::var(DISPATCHER_WAIT).is_err() {
+            env::set_var(DISPATCHER_WAIT, "300");
+        }
+
         let mut sys_config: ChartConfig = ChartConfig::sys_builder()
             .version(self.config.chart_version.clone())
             .namespace(&self.config.namespace)
@@ -630,7 +629,7 @@ impl ClusterInstaller {
 
         if self.config.render_checks {
             self.pb
-                .println(InstallProgressMessage::PreFlightCheck.msg());
+                .println(&InstallProgressMessage::PreFlightCheck.msg());
 
             let mut progress = checker.run_and_fix_with_progress();
             render_check_progress_with_indicator(&mut progress, &self.pb).await
@@ -684,7 +683,7 @@ impl ClusterInstaller {
             self.install_app().await?;
         } else {
             self.pb
-                .println(InstallProgressMessage::AlreadyInstalled.msg())
+                .println(&InstallProgressMessage::AlreadyInstalled.msg())
         }
 
         let namespace = &self.config.namespace;
@@ -699,7 +698,7 @@ impl ClusterInstaller {
         let address = format!("{}:{}", host_name, port);
 
         self.pb
-            .println(InstallProgressMessage::FoundSC(address.clone()).msg());
+            .println(&InstallProgressMessage::FoundSC(address.clone()).msg());
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
@@ -713,13 +712,13 @@ impl ClusterInstaller {
         self.pb.set_message("");
 
         if self.config.save_profile {
-            self.update_profile(address.clone())?;
-            self.pb.println(InstallProgressMessage::ProfileSet.msg());
+            self.update_profile(&address)?;
+            self.pb.println(&InstallProgressMessage::ProfileSet.msg());
         }
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-        self.pb.println(InstallProgressMessage::Success.msg());
+        self.pb.println(&InstallProgressMessage::Success.msg());
         self.pb.finish_and_clear();
 
         Ok(StartStatus {
@@ -738,22 +737,26 @@ impl ClusterInstaller {
         );
 
         self.pb
-            .println(InstallProgressMessage::InstallingFluvio.msg());
-
-        // If configured with TLS, copy certs to server
-        if let TlsPolicy::Verified(tls) = &self.config.server_tls_policy {
-            self.upload_tls_secrets(tls)?;
-        }
+            .println(&InstallProgressMessage::InstallingFluvio.msg());
 
         // Specify common installation settings to pass to helm
         let mut install_settings: Vec<(_, Cow<str>)> =
             vec![("image.registry", Cow::Borrowed(&self.config.image_registry))];
 
         if let Some(tag) = &self.config.image_tag {
-            install_settings.push(("image.tag", Cow::Borrowed(tag)))
+            install_settings.push(("image.tag", Cow::Borrowed(tag)));
         }
 
-        let mut chart_values = self.config.chart_values.clone();
+        // If configured with TLS, copy certs to server
+        if let (TlsPolicy::Verified(server_tls), TlsPolicy::Verified(client_tls)) = (
+            &self.config.server_tls_policy,
+            &self.config.client_tls_policy,
+        ) {
+            self.upload_tls_secrets(server_tls, client_tls)?;
+            install_settings.push(("cert.domain", Cow::Borrowed(server_tls.domain())));
+        }
+
+        let mut chart_values = Vec::new();
 
         // NodePort services need to provide SPU with an external address
         // We're going to provide it via annotation on the SPU's K8 service
@@ -843,6 +846,8 @@ impl ClusterInstaller {
                 .set_message(InstallProgressMessage::InstallingChart.msg());
         }
 
+        chart_values.append(&mut self.config.chart_values.clone());
+
         let mut config = ChartConfig::app_builder()
             .namespace(&self.config.namespace)
             .version(self.config.chart_version.clone())
@@ -859,19 +864,21 @@ impl ClusterInstaller {
         installer.process(self.config.upgrade)?;
 
         self.pb
-            .println(InstallProgressMessage::ChartInstalled.msg());
+            .println(&InstallProgressMessage::ChartInstalled.msg());
         self.pb.set_message("");
 
         Ok(())
     }
 
     /// Uploads TLS secrets to Kubernetes
-    fn upload_tls_secrets(&self, tls: &TlsConfig) -> Result<(), K8InstallError> {
-        let paths: Cow<TlsPaths> = match tls {
-            TlsConfig::Files(paths) => Cow::Borrowed(paths),
-            TlsConfig::Inline(certs) => Cow::Owned(certs.try_into_temp_files()?),
-        };
-        self.upload_tls_secrets_from_files(paths.as_ref())?;
+    fn upload_tls_secrets(
+        &self,
+        server_tls: &TlsConfig,
+        client_tls: &TlsConfig,
+    ) -> Result<(), K8InstallError> {
+        let server_paths: Cow<TlsPaths> = tls_config_to_cert_paths(server_tls)?;
+        let client_paths: Cow<TlsPaths> = tls_config_to_cert_paths(client_tls)?;
+        self.upload_tls_secrets_from_files(server_paths.as_ref(), client_paths.as_ref())?;
         Ok(())
     }
 
@@ -1016,7 +1023,8 @@ impl ClusterInstaller {
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
-                self.pb.println(InstallProgressMessage::SpusConfirmed.msg());
+                self.pb
+                    .println(&InstallProgressMessage::SpusConfirmed.msg());
 
                 return Ok(true);
             } else {
@@ -1037,19 +1045,31 @@ impl ClusterInstaller {
     }
 
     /// Install server-side TLS by uploading secrets to kubernetes
-    #[instrument(skip(self, paths))]
-    fn upload_tls_secrets_from_files(&self, paths: &TlsPaths) -> Result<(), K8InstallError> {
-        let ca_cert = paths
+    #[instrument(skip(self, server_paths, client_paths))]
+    fn upload_tls_secrets_from_files(
+        &self,
+        server_paths: &TlsPaths,
+        client_paths: &TlsPaths,
+    ) -> Result<(), K8InstallError> {
+        let ca_cert = server_paths
             .ca_cert
             .to_str()
             .ok_or_else(|| IoError::new(ErrorKind::InvalidInput, "ca_cert must be a valid path"))?;
-        let server_cert = paths.cert.to_str().ok_or_else(|| {
+        let server_cert = server_paths.cert.to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "server_cert must be a valid path")
         })?;
-        let server_key = paths.key.to_str().ok_or_else(|| {
+        let server_key = server_paths.key.to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "server_key must be a valid path")
         })?;
-        debug!("Using TLS from paths: {:?}", paths);
+        debug!("Using server TLS from paths: {:?}", server_paths);
+
+        let client_cert = client_paths.cert.to_str().ok_or_else(|| {
+            IoError::new(ErrorKind::InvalidInput, "client_cert must be a valid path")
+        })?;
+        let client_key = client_paths.key.to_str().ok_or_else(|| {
+            IoError::new(ErrorKind::InvalidInput, "client_key must be a valid path")
+        })?;
+        debug!("Using client TLS from paths: {:?}", client_paths);
 
         // Try uninstalling secrets first to prevent duplication error
         Command::new("kubectl")
@@ -1060,6 +1080,17 @@ impl ClusterInstaller {
 
         Command::new("kubectl")
             .args(&["delete", "secret", "fluvio-tls", "--ignore-not-found=true"])
+            .args(&["--namespace", &self.config.namespace])
+            .inherit()
+            .result()?;
+
+        Command::new("kubectl")
+            .args(&[
+                "delete",
+                "secret",
+                "fluvio-client-tls",
+                "--ignore-not-found=true",
+            ])
             .args(&["--namespace", &self.config.namespace])
             .inherit()
             .result()?;
@@ -1079,42 +1110,29 @@ impl ClusterInstaller {
             .inherit()
             .result()?;
 
+        Command::new("kubectl")
+            .args(&["create", "secret", "tls", "fluvio-client-tls"])
+            .args(&["--cert", client_cert])
+            .args(&["--key", client_key])
+            .args(&["--namespace", &self.config.namespace])
+            .inherit()
+            .result()?;
+
         Ok(())
     }
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
-    fn update_profile(&self, external_addr: String) -> Result<(), K8InstallError> {
+    fn update_profile(&self, external_addr: &str) -> Result<(), K8InstallError> {
         self.pb
-            .set_message(format!("updating profile for: {}", external_addr));
-        let mut config_file = ConfigFile::load_default_or_new()?;
-        let config = config_file.mut_config();
+            .set_message(format!("Creating K8 profile for: {}", external_addr));
 
         let profile_name = self.compute_profile_name()?;
-
-        match config.cluster_mut(&profile_name) {
-            Some(cluster) => {
-                cluster.endpoint = external_addr;
-                cluster.tls = self.config.client_tls_policy.clone();
-            }
-            None => {
-                let mut local_cluster = FluvioConfig::new(external_addr);
-                local_cluster.tls = self.config.client_tls_policy.clone();
-                config.add_cluster(local_cluster, profile_name.clone());
-            }
-        }
-
-        match config.profile_mut(&profile_name) {
-            Some(profile) => {
-                profile.set_cluster(profile_name.clone());
-            }
-            None => {
-                let profile = Profile::new(profile_name.clone());
-                config.add_profile(profile, profile_name.clone());
-            }
-        };
-
-        config.set_current_profile(&profile_name);
-        config_file.save()?;
+        let mut config_file = ConfigFile::load_default_or_new()?;
+        config_file.add_or_replace_profile(
+            &profile_name,
+            external_addr,
+            &self.config.client_tls_policy,
+        )?;
         self.pb.set_message("");
         Ok(())
     }
@@ -1154,17 +1172,17 @@ impl ClusterInstaller {
             let spu_spec = SpuGroupSpec {
                 replicas: self.config.spu_replicas,
                 min_id: 0,
-                ..SpuGroupSpec::default()
+                spu_config: self.config.spu_config.clone(),
             };
 
             admin.create(name, false, spu_spec).await?;
 
             self.pb.println(
-                InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
+                &InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
             );
         } else {
             self.pb
-                .println(InstallProgressMessage::SpuGroupExists.msg());
+                .println(&InstallProgressMessage::SpuGroupExists.msg());
         }
 
         // Wait for the SPU cluster to spin up

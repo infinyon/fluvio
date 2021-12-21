@@ -7,18 +7,21 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::time::Duration;
 
-use fluvio_sc_schema::topic::validate::valid_topic_name;
 use tracing::debug;
 use structopt::StructOpt;
+use humantime::parse_duration;
+
+use fluvio_controlplane_metadata::topic::CleanupPolicy;
+use fluvio_controlplane_metadata::topic::ReplicaSpec;
+use fluvio_controlplane_metadata::topic::SegmentBasedPolicy;
+use fluvio_controlplane_metadata::topic::TopicStorageConfig;
+use fluvio_sc_schema::topic::validate::valid_topic_name;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::{Result, CliError};
-
-// -----------------------------------
-// CLI Options
-// -----------------------------------
 
 #[derive(Debug, StructOpt)]
 pub struct CreateTopicOpt {
@@ -81,6 +84,9 @@ pub struct CreateTopicOpt {
     /// Validates configuration, does not provision
     #[structopt(short = "d", long)]
     dry_run: bool,
+
+    #[structopt(flatten)]
+    setting: TopicConfigOpt,
 }
 
 impl CreateTopicOpt {
@@ -102,9 +108,9 @@ impl CreateTopicOpt {
         use fluvio::metadata::topic::TopicReplicaParam;
         use load::PartitionLoad;
 
-        let topic = if let Some(replica_assign_file) = &self.replica_assignment {
-            TopicSpec::Assigned(
-                PartitionMaps::file_decode(replica_assign_file).map_err(|err| {
+        let replica_spec = if let Some(replica_assign_file) = &self.replica_assignment {
+            ReplicaSpec::Assigned(PartitionMaps::file_decode(replica_assign_file).map_err(
+                |err| {
                     IoError::new(
                         ErrorKind::InvalidInput,
                         format!(
@@ -112,10 +118,10 @@ impl CreateTopicOpt {
                             replica_assign_file, err
                         ),
                     )
-                })?,
-            )
+                },
+            )?)
         } else {
-            TopicSpec::Computed(TopicReplicaParam {
+            ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
                 replication_factor: self.replication as i32,
                 ignore_rack_assignment: self.ignore_rack_assigment,
@@ -130,9 +136,38 @@ impl CreateTopicOpt {
             ));
         }
 
+        let mut topic_spec: TopicSpec = replica_spec.into();
+        if let Some(retention) = self.setting.retention_time {
+            topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
+                time_in_seconds: retention.as_secs() as u32,
+            }));
+        }
+
+        if self.setting.segment_size.is_some() {
+            let mut storage = TopicStorageConfig::default();
+
+            if let Some(segment_size) = self.setting.segment_size {
+                storage.segment_size = Some(segment_size);
+            }
+
+            topic_spec.set_storage(storage);
+        }
+
         // return server separately from config
-        Ok((self.topic, topic))
+        Ok((self.topic, topic_spec))
     }
+}
+
+#[derive(Debug, StructOpt)]
+pub struct TopicConfigOpt {
+    /// Retention time (round to seconds)
+    /// Ex: '1h', '2d 10s', '7 days' (default)
+    #[structopt(long, value_name = "time",parse(try_from_str = parse_duration))]
+    retention_time: Option<Duration>,
+
+    /// Segment size in bytes
+    #[structopt(long, value_name = "bytes")]
+    segment_size: Option<u32>,
 }
 
 /// module to load partitions maps from file

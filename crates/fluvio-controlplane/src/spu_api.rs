@@ -12,7 +12,7 @@ use dataplane::derive::Decoder;
 use super::UpdateSpuRequest;
 use super::UpdateReplicaRequest;
 use super::UpdateSmartModuleRequest;
-use super::UpdateSmartStreamRequest;
+use super::UpdateDerivedStreamRequest;
 
 #[repr(u16)]
 #[derive(PartialEq, Debug, Encoder, Decoder, Clone, Copy)]
@@ -21,7 +21,7 @@ pub enum InternalSpuApi {
     UpdateSpu = 1001,
     UpdateReplica = 1002,
     UpdateSmartModule = 1003,
-    UpdateSmartStream = 1004,
+    UpdateDerivedStream = 1004,
 }
 
 impl Default for InternalSpuApi {
@@ -35,7 +35,7 @@ pub enum InternalSpuRequest {
     UpdateSpuRequest(RequestMessage<UpdateSpuRequest>),
     UpdateReplicaRequest(RequestMessage<UpdateReplicaRequest>),
     UpdateSmartModuleRequest(RequestMessage<UpdateSmartModuleRequest>),
-    UpdateSmartStreamRequest(RequestMessage<UpdateSmartStreamRequest>),
+    UpdateDerivedStreamRequest(RequestMessage<UpdateDerivedStreamRequest>),
 }
 
 // Added to satisfy Encoder/Decoder traits
@@ -66,8 +66,8 @@ impl ApiMessage for InternalSpuRequest {
             InternalSpuApi::UpdateSmartModule => {
                 api_decode!(Self, UpdateSmartModuleRequest, src, header)
             }
-            InternalSpuApi::UpdateSmartStream => {
-                api_decode!(Self, UpdateSmartStreamRequest, src, header)
+            InternalSpuApi::UpdateDerivedStream => {
+                api_decode!(Self, UpdateDerivedStreamRequest, src, header)
             }
         }
     }

@@ -64,10 +64,7 @@ in Rust, built to make it easy to develop real-time applications.
 
 ## Release Status
 
-Fluvio is currently in **Alpha** and is not ready to be used in production.
-Our CLI and APIs are also in rapid development and may experience breaking
-changes at any time. We do our best to adhere to semantic versioning but
-until our R1 release we cannot guarantee it.
+Fluvio is currently in Beta and is not ready to be used in production. Our CLI and APIs are also in rapid development and may experience technical issues at any time. If you are interested in participating in our Beta Customer program please email us support@infinyon.com.
 
 ## Contributing
 

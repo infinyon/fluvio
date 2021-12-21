@@ -8,6 +8,7 @@ use crate::partition::ReplicaKey;
 use crate::core::{MetadataItem};
 use crate::store::MetadataStoreObject;
 use crate::partition::PartitionSpec;
+use crate::topic::{CleanupPolicy, TopicStorageConfig};
 use super::store::*;
 
 /// Metadata about Replica send from SC
@@ -17,6 +18,8 @@ pub struct Replica {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
     pub is_being_deleted: bool,
+    pub cleanup_policy: Option<CleanupPolicy>,
+    pub storage: Option<TopicStorageConfig>,
 }
 
 impl Replica {
@@ -35,6 +38,7 @@ impl Replica {
             leader,
             replicas,
             is_being_deleted,
+            ..Default::default()
         }
     }
 }
@@ -48,11 +52,15 @@ where
         // consider either metadata ctx is deleted or status is deleted
         let is_being_deleted =
             inner.status.is_being_deleted || inner.ctx().item().is_being_deleted();
+
+        let spec = inner.spec;
         Self {
             id: inner.key,
-            leader: inner.spec.leader,
-            replicas: inner.spec.replicas,
+            leader: spec.leader,
+            replicas: spec.replicas,
             is_being_deleted,
+            cleanup_policy: spec.cleanup_policy,
+            storage: spec.storage,
         }
     }
 }

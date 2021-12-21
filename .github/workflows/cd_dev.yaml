@@ -29,24 +29,20 @@ env:
   K3D_VERSION: v4.4.8
 
 jobs:
-  # test fluvio in local cluster 
+  # Perform E2E sanity checks
   verify_latest_releases:
     name: Verify latest (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest,macos-latest]
+        os: [ubuntu-latest,macos-11]
         cluster_type: [local,k8]
     env:
       SLEEP: 10
       TOPIC: foobar
-      FLV_SOCKET_WAIT: 600
-
     steps:
       - uses: actions/checkout@v2
-      - name: Install Fluvio CLI
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
       - name: Set up K3d for Ubuntu
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -54,25 +50,35 @@ jobs:
       - name: Set up K8 for ubuntu(kind)
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: ./k8-util/cluster/reset-k3d.sh
-      - name: Set up Minikube for Mac
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: ./k8-util/cluster/start-minikube-mac.sh
-      - name: Create Fluvio cluster and run E2E Test
-        env:
-          FLV_DISPATCHER_WAIT: 300  
-        timeout-minutes: 5
+      - name: Install Docker for Mac
+        if: ${{ matrix.os == 'macos-11' }}
+        uses: docker-practice/actions-setup-docker@master
+      - name: Set up Kind for Mac
+        if: ${{ matrix.os == 'macos-11' }}
         run: |
-            export PATH=~/.fluvio/bin:$PATH
-            if [[ ${{ matrix.cluster_type }} == 'local' ]]; then
-              echo "Installing local cluster"
-              fluvio cluster delete
-              fluvio cluster start --local
+          brew install kind
+          kind create cluster --config k8-util/cluster/kind.yaml
+      - name: Install Fluvio CLI
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Install Local Fluvio cluster
+        timeout-minutes: 3
+        if: ${{ matrix.cluster_type == 'local' }}
+        run: fluvio cluster start --local
+      - name: Install k8 Fluvio cluster
+        timeout-minutes: 3
+        if: ${{ matrix.cluster_type == 'k8' }}
+        run: |
+          if [[ ${{ matrix.os }} == 'macos-11' ]]; then
+              export PROXY="--proxy-addr  127.0.0.1"
             else
-              echo "Installing k8 cluster"
-              fluvio cluster delete
-              fluvio cluster start --image-version latest
-            fi
-            sleep 30
+              export PROXY=""
+          fi
+          fluvio cluster start --spu-storage-size 1 --image-version latest $PROXY
+      - name: Run E2E Test
+        timeout-minutes: 2
+        run: |
             fluvio version
             fluvio topic create ${{ env.TOPIC }}
             echo foo | fluvio produce ${{ env.TOPIC }}
@@ -80,10 +86,13 @@ jobs:
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
 
+      - name: Debug failure for Mac
+        if: failure()
+        run: |
+          docker port `docker ps -aqf "name=fluvio-control-plane"`
       - name: Debug failure
         if: failure()
         run: |
-          lscpu
           kubectl get pods
           kubectl get pvc
           kubectl get svc
@@ -123,7 +132,6 @@ jobs:
         timeout-minutes: 10
         env:
           TEST_DATA_BYTES: 10000
-          FLV_DISPATCHER_WAIT: 300 
         run: |
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
@@ -198,11 +206,28 @@ jobs:
         cli_version: [stable, latest]
     steps:
       - uses: actions/checkout@v2
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
       - name: Setup K3d
         run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
       - name: Create K3d cluster
         run: |
           ./k8-util/cluster/reset-k3d.sh
+
+      - name: Install stable CLI and start Fluvio cluster
+        if: matrix.cluster_version == 'stable'
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cluster_version }} bash
+          ~/.fluvio/bin/fluvio cluster start
+
+      - name: Install latest CLI and start Fluvio cluster
+        if: matrix.cluster_version == 'latest' 
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=${{ matrix.cluster_version }} bash
+          ~/.fluvio/bin/fluvio cluster start --image-version latest
+
       - name: CLI ${{ matrix.cli_version }} x Cluster ${{ matrix.cluster_version }}
         run: |
-          make FLUVIO_BIN=~/.fluvio/bin/fluvio CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=~/.fluvio/bin/fluvio cli-platform-cross-version-test

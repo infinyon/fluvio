@@ -4,12 +4,12 @@ use std::fmt::Debug;
 
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
-use fluvio_controlplane_metadata::smartstream::SmartStreamSpec;
+use fluvio_controlplane_metadata::derivedstream::DerivedStreamSpec;
 use fluvio_protocol::Version;
 use crate::topic::TopicSpec;
 use crate::customspu::CustomSpuSpec;
 use crate::smartmodule::SmartModuleSpec;
-use crate::table::TableSpec;
+use crate::tableformat::TableFormatSpec;
 use crate::spg::SpuGroupSpec;
 use crate::connector::ManagedConnectorSpec;
 
@@ -29,7 +29,7 @@ pub struct CommonCreateRequest {
 
 impl Request for ObjectApiCreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
-    const DEFAULT_API_VERSION: i16 = 2;
+    const DEFAULT_API_VERSION: i16 = 4;
     type Response = Status;
 }
 
@@ -46,8 +46,8 @@ pub enum ObjectCreateRequest {
     SmartModule(SmartModuleSpec),
     ManagedConnector(ManagedConnectorSpec),
     SpuGroup(SpuGroupSpec),
-    Table(TableSpec),
-    SmartStream(SmartStreamSpec),
+    TableFormat(TableFormatSpec),
+    DerivedStream(DerivedStreamSpec),
 }
 
 impl Default for ObjectCreateRequest {
@@ -64,8 +64,8 @@ impl ObjectCreateRequest {
             Self::SmartModule(_) => SmartModuleSpec::CREATE_TYPE,
             Self::ManagedConnector(_) => ManagedConnectorSpec::CREATE_TYPE,
             Self::SpuGroup(_) => SpuGroupSpec::CREATE_TYPE,
-            Self::Table(_) => TableSpec::CREATE_TYPE,
-            Self::SmartStream(_) => SmartStreamSpec::CREATE_TYPE,
+            Self::TableFormat(_) => TableFormatSpec::CREATE_TYPE,
+            Self::DerivedStream(_) => DerivedStreamSpec::CREATE_TYPE,
         }
     }
 }
@@ -81,8 +81,8 @@ impl Encoder for ObjectCreateRequest {
                 Self::SmartModule(s) => s.write_size(version),
                 Self::ManagedConnector(s) => s.write_size(version),
                 Self::SpuGroup(s) => s.write_size(version),
-                Self::Table(s) => s.write_size(version),
-                Self::SmartStream(s) => s.write_size(version),
+                Self::TableFormat(s) => s.write_size(version),
+                Self::DerivedStream(s) => s.write_size(version),
             }
     }
 
@@ -101,8 +101,8 @@ impl Encoder for ObjectCreateRequest {
             Self::ManagedConnector(s) => s.encode(dest, version)?,
             Self::SmartModule(s) => s.encode(dest, version)?,
             Self::SpuGroup(s) => s.encode(dest, version)?,
-            Self::Table(s) => s.encode(dest, version)?,
-            Self::SmartStream(s) => s.encode(dest, version)?,
+            Self::TableFormat(s) => s.encode(dest, version)?,
+            Self::DerivedStream(s) => s.encode(dest, version)?,
         }
 
         Ok(())
@@ -130,11 +130,11 @@ impl dataplane::core::Decoder for ObjectCreateRequest {
                 Ok(())
             }
 
-            TableSpec::CREATE_TYPE => {
+            TableFormatSpec::CREATE_TYPE => {
                 tracing::trace!("detected table");
-                let mut request = TableSpec::default();
+                let mut request = TableFormatSpec::default();
                 request.decode(src, version)?;
-                *self = Self::Table(request);
+                *self = Self::TableFormat(request);
                 Ok(())
             }
 
@@ -170,11 +170,11 @@ impl dataplane::core::Decoder for ObjectCreateRequest {
                 Ok(())
             }
 
-            SmartStreamSpec::CREATE_TYPE => {
-                tracing::trace!("detected smartstream");
-                let mut request = SmartStreamSpec::default();
+            DerivedStreamSpec::CREATE_TYPE => {
+                tracing::trace!("detected derivedstream");
+                let mut request = DerivedStreamSpec::default();
                 request.decode(src, version)?;
-                *self = Self::SmartStream(request);
+                *self = Self::DerivedStream(request);
                 Ok(())
             }
 

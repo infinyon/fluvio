@@ -3,21 +3,20 @@ use std::fs::create_dir_all;
 use std::process::{Command};
 use std::time::Duration;
 
-use indicatif::ProgressBar;
 use semver::Version;
 use derive_builder::Builder;
 use tracing::{debug, error, instrument, warn};
 use once_cell::sync::Lazy;
 
 use fluvio::{Fluvio, FluvioConfig};
-use fluvio::config::{TlsPolicy, ConfigFile, Profile, LOCAL_PROFILE};
+use fluvio::config::{TlsPolicy, ConfigFile, LOCAL_PROFILE};
 use fluvio_controlplane_metadata::spu::{SpuSpec};
 use fluvio_future::timer::sleep;
 use fluvio_command::CommandExt;
 use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
-use crate::render::ProgressRenderedText;
+use crate::render::{ProgressRenderedText, ProgressRenderer};
 use crate::{
     ClusterChecker, ClusterError, K8InstallError, LocalInstallError, StartStatus, UserChartLocation,
 };
@@ -149,25 +148,6 @@ pub struct LocalConfig {
     #[builder(setter(into, strip_option), default)]
     chart_location: Option<UserChartLocation>,
 
-    /// Whether to install the `fluvio-sys` chart in the full installation.
-    ///
-    /// Defaults to `true`.
-    ///
-    /// # Example
-    ///
-    /// If you want to disable installing the system chart, you can do this
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
-    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = builder
-    ///     .install_sys(false)
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[builder(default = "true")]
-    install_sys: bool,
     /// Whether to skip pre-install checks before installation.
     ///
     /// Defaults to `false`.
@@ -202,6 +182,10 @@ pub struct LocalConfig {
     /// ```
     #[builder(default = "false")]
     render_checks: bool,
+
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "false")]
+    hide_spinner: bool,
 }
 
 impl LocalConfig {
@@ -361,7 +345,7 @@ impl LocalConfigBuilder {
 pub struct LocalInstaller {
     /// Configuration options for this process
     config: LocalConfig,
-    pb: ProgressBar,
+    pb: ProgressRenderer,
 }
 
 impl LocalInstaller {
@@ -380,10 +364,12 @@ impl LocalInstaller {
     /// ```
 
     pub fn from_config(config: LocalConfig) -> Self {
-        Self {
-            config,
-            pb: create_progress_indicator(),
-        }
+        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
+        Self { config, pb }
     }
 
     /// Checks if all of the prerequisites for installing Fluvio locally are met
@@ -400,7 +386,7 @@ impl LocalInstaller {
 
         if self.config.render_checks {
             self.pb
-                .println(InstallProgressMessage::PreFlightCheck.msg());
+                .println(&InstallProgressMessage::PreFlightCheck.msg());
             let mut progress = ClusterChecker::empty()
                 .with_local_checks()
                 .with_check(SysChartCheck::new(sys_config))
@@ -466,17 +452,17 @@ impl LocalInstaller {
 
         let fluvio = self.launch_sc(&address, port).await?;
 
-        self.pb.println(InstallProgressMessage::ScLaunched.msg());
+        self.pb.println(&InstallProgressMessage::ScLaunched.msg());
 
         self.launch_spu_group(client.clone()).await?;
         self.pb
-            .println(InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas).msg());
+            .println(&InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas).msg());
 
         self.confirm_spu(self.config.spu_replicas, &fluvio).await?;
 
         self.set_profile()?;
 
-        self.pb.println(InstallProgressMessage::Success.msg());
+        self.pb.println(&InstallProgressMessage::Success.msg());
 
         Ok(StartStatus {
             address,
@@ -522,43 +508,20 @@ impl LocalInstaller {
 
     /// set local profile
     #[instrument(skip(self))]
-    fn set_profile(&self) -> Result<String, LocalInstallError> {
-        let local_addr = LOCAL_SC_ADDRESS.to_owned();
+    fn set_profile(&self) -> Result<(), LocalInstallError> {
+        self.pb
+            .set_message(format!("Creating Local Profile to: {}", LOCAL_SC_ADDRESS));
+
         let mut config_file = ConfigFile::load_default_or_new()?;
+        config_file.add_or_replace_profile(
+            LOCAL_PROFILE,
+            LOCAL_SC_ADDRESS,
+            &self.config.client_tls_policy,
+        )?;
 
-        let config = config_file.mut_config();
-        // check if local cluster exists otherwise, create new one
-        match config.cluster_mut(LOCAL_PROFILE) {
-            Some(cluster) => {
-                cluster.endpoint = local_addr.clone();
-                cluster.tls = self.config.client_tls_policy.clone();
-            }
-            None => {
-                let mut local_cluster = FluvioConfig::new(local_addr.clone());
-                local_cluster.tls = self.config.client_tls_policy.clone();
-                config.add_cluster(local_cluster, LOCAL_PROFILE.to_owned());
-            }
-        };
+        self.pb.println(&InstallProgressMessage::ProfileSet.msg());
 
-        // check if we local profile exits otherwise, create new one, then set it's cluster
-        match config.profile_mut(LOCAL_PROFILE) {
-            Some(profile) => {
-                profile.set_cluster(LOCAL_PROFILE.to_owned());
-            }
-            None => {
-                let profile = Profile::new(LOCAL_PROFILE.to_owned());
-                config.add_profile(profile, LOCAL_PROFILE.to_owned());
-            }
-        }
-
-        // finally we set current profile to local
-        assert!(config.set_current_profile(LOCAL_PROFILE));
-
-        config_file.save()?;
-
-        self.pb.println(InstallProgressMessage::ProfileSet.msg());
-
-        Ok(format!("local context is set to: {}", local_addr))
+        Ok(())
     }
 
     #[instrument(skip(self))]

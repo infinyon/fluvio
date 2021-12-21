@@ -4,8 +4,8 @@ mod leader_client;
 
 pub mod spus;
 pub mod replica;
-pub mod smart_module;
-pub mod smartstream;
+pub mod smartmodule;
+pub mod derivedstream;
 
 pub use self::global_context::{GlobalContext, ReplicaChange};
 pub use self::store::Spec;

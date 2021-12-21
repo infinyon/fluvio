@@ -2,8 +2,8 @@ use fluvio_protocol::FluvioDefault;
 
 #[derive(FluvioDefault, Debug)]
 struct TestRecord {
-    value: i8,
-    value2: i8,
+    _value: i8,
+    _value2: i8,
     #[fluvio(default = "4")]
     value3: i8,
     #[fluvio(default = "-1")]

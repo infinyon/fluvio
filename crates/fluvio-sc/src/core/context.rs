@@ -12,8 +12,8 @@ use crate::stores::topic::*;
 use crate::stores::spg::*;
 use crate::stores::connector::*;
 use crate::stores::smartmodule::*;
-use crate::stores::table::*;
-use crate::stores::smartstream::*;
+use crate::stores::tableformat::*;
+use crate::stores::derivedstream::*;
 use crate::stores::*;
 
 pub type SharedContext = Arc<Context>;
@@ -27,9 +27,9 @@ pub struct Context {
     topics: StoreContext<TopicSpec>,
     spgs: StoreContext<SpuGroupSpec>,
     managed_connectors: StoreContext<ManagedConnectorSpec>,
-    smart_modules: StoreContext<SmartModuleSpec>,
-    tables: StoreContext<TableSpec>,
-    smart_streams: StoreContext<SmartStreamSpec>,
+    smartmodules: StoreContext<SmartModuleSpec>,
+    tableformats: StoreContext<TableFormatSpec>,
+    smart_streams: StoreContext<DerivedStreamSpec>,
     health: SharedHealthCheck,
     config: ScConfig,
 }
@@ -51,8 +51,8 @@ impl Context {
             topics: StoreContext::new(),
             spgs: StoreContext::new(),
             managed_connectors: StoreContext::new(),
-            smart_modules: StoreContext::new(),
-            tables: StoreContext::new(),
+            smartmodules: StoreContext::new(),
+            tableformats: StoreContext::new(),
             smart_streams: StoreContext::new(),
             health: HealthCheck::shared(),
             config,
@@ -82,15 +82,15 @@ impl Context {
         &self.managed_connectors
     }
 
-    pub fn smart_modules(&self) -> &StoreContext<SmartModuleSpec> {
-        &self.smart_modules
+    pub fn smartmodules(&self) -> &StoreContext<SmartModuleSpec> {
+        &self.smartmodules
     }
 
-    pub fn tables(&self) -> &StoreContext<TableSpec> {
-        &self.tables
+    pub fn tableformats(&self) -> &StoreContext<TableFormatSpec> {
+        &self.tableformats
     }
 
-    pub fn smartstreams(&self) -> &StoreContext<SmartStreamSpec> {
+    pub fn derivedstreams(&self) -> &StoreContext<DerivedStreamSpec> {
         &self.smart_streams
     }
 

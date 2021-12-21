@@ -46,19 +46,23 @@ pub async fn handle_list_request<AC: AuthContext>(
             fetch::handle_fetch_request(
                 req.name_filters,
                 auth_ctx,
-                auth_ctx.global_ctx.smart_modules(),
+                auth_ctx.global_ctx.smartmodules(),
             )
             .await?,
         ),
-        ObjectApiListRequest::Table(req) => ObjectApiListResponse::Table(
-            fetch::handle_fetch_request(req.name_filters, auth_ctx, auth_ctx.global_ctx.tables())
-                .await?,
-        ),
-        ObjectApiListRequest::SmartStream(req) => ObjectApiListResponse::SmartStream(
+        ObjectApiListRequest::TableFormat(req) => ObjectApiListResponse::TableFormat(
             fetch::handle_fetch_request(
                 req.name_filters,
                 auth_ctx,
-                auth_ctx.global_ctx.smartstreams(),
+                auth_ctx.global_ctx.tableformats(),
+            )
+            .await?,
+        ),
+        ObjectApiListRequest::DerivedStream(req) => ObjectApiListResponse::DerivedStream(
+            fetch::handle_fetch_request(
+                req.name_filters,
+                auth_ctx,
+                auth_ctx.global_ctx.derivedstreams(),
             )
             .await?,
         ),

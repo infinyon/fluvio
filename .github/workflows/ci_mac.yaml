@@ -1,0 +1,354 @@
+# CI for Mac
+# Not part of staging yet.
+
+name: CI_Mac
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.head_ref }}-ci_mac
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    branches: [master]
+#  push:
+#    branches: [master]
+  workflow_dispatch:
+    inputs:
+      verbose:
+        description: "Set --verbose to get verbose build output"
+        required: false
+        default: ""
+
+env:
+  VERBOSE: ${{ github.events.input.verbose }}
+
+jobs:
+
+  config:
+    name: Set up Config
+    runs-on: ubuntu-latest
+    env:
+      ENABLE_CHECK: true
+      TEST_RUNS: "[r1]"   # default runs
+    outputs:
+      check: ${{ steps.check.outputs.check }}
+      runs: ${{ steps.runs.outputs.runs }}
+    steps:
+      - id: check
+        run: echo "::set-output name=check::${{ env.ENABLE_CHECK }}"
+
+  # Run all checks and unit test. This always run on debug mode
+  build_primary_binaries:
+    name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust-target:
+          - x86_64-apple-darwin
+        rust: [stable]
+        binary: [fluvio, fluvio-run, fluvio-test]
+        os: [macos-11]
+        include:
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio-run
+          - os: ubuntu-latest
+            rust: stable
+            rust-target: x86_64-unknown-linux-musl
+            binary: fluvio-test
+
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
+      RELEASE_NAME: debug
+    steps:
+      - uses: actions/checkout@v2
+
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode
+      - name: Set RELEASE mode
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        shell: bash
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
+
+      - name: Print env
+        run: |
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
+
+      - name: Build fluvio
+        if: ${{ matrix.binary == 'fluvio' }}
+        run: make build-cli
+
+      - name: Build fluvio-run
+        if: ${{ matrix.binary == 'fluvio-run' }}
+        run: make build-cluster
+
+      - name: Build fluvio-test
+        if: ${{ matrix.binary == 'fluvio-test' }}
+        run: make build-test
+
+      # Upload artifacts
+      - name: Upload artifact - ${{ matrix.binary }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+
+  local_cluster_test:
+    name: Local cluster test run (${{ matrix.run }})-${{ matrix.test }}
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build_primary_binaries
+      - config
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-11]
+        rust-target: [x86_64-apple-darwin]
+        run: [r1]
+        test: [smoke,election,multiple-partition,reconnection]
+     #   run: ${{ fromJson(needs.config.outputs.runs )}}
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: .
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/.fluvio/extensions
+      - run: chmod +x ~/.fluvio/extensions/fluvio-run
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: .
+      - name: Print artifacts and mark executable
+        run: chmod +x ./fluvio ./fluvio-test && ./fluvio version
+      - name: Set up Docker for Mac
+        uses: docker-practice/actions-setup-docker@master
+      - name: Install and start Kind
+        run: |
+          brew install kind
+          kind create cluster --config k8-util/cluster/kind.yaml 
+      - name: Run smoke-test
+        if: ${{ matrix.test == 'smoke' }}
+        timeout-minutes: 2
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start smoke-test-tls-root
+          date
+          kubectl get partitions
+          kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
+          echo "smoke test done"
+      - name: Run election-test
+        if: ${{ matrix.test == 'election' }}
+        timeout-minutes: 3
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
+          echo "election test done"
+      - name: Run multiple-partition-test
+        if: ${{ false }}
+        timeout-minutes: 3
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
+          echo "multiple partition test done"
+      - name: Run reconnection-test
+        if: ${{ matrix.test == 'reconnection' }}
+        timeout-minutes: 3
+        run: |
+          date
+          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnection-test
+          echo "reconnection test done"
+
+      - name: Save logs
+        if: failure()
+        run: |
+          date
+          uname -a
+          kubectl get spu
+          kubectl get statefulset
+          kubectl get topics
+          kubectl get partitions
+          ps -ef | grep fluvio
+
+      - name: Upload Logs
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: failure()
+        with:
+          name: local-${{ matrix.run }}-logs
+          path: /tmp/*.log
+
+ # same as in ci.yaml except no aa64
+  build_image:
+    name: Build Fluvio Docker image
+    needs: build_primary_binaries
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust-target:
+          - x86_64-unknown-linux-musl
+        rust: [stable]
+    steps:
+      # Needed for k8-util/docker/build.sh
+      - uses: actions/checkout@v2
+
+      # Download artifacts
+      - name: Download fluvio-run
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: .
+
+      - name: Print fluvio-run path
+        run: pwd && ls -la . && chmod +x ./fluvio-run && ./fluvio-run -h || true
+
+      # Build and upload docker image
+      - name: Build Docker image
+        run: k8-util/docker/build.sh ${{ matrix.rust-target }} ${{ github.sha }} "$(pwd)/fluvio-run"
+      - name: Export Docker Image to tarball
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+      - name: Upload tarball as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: infinyon-fluvio-${{ matrix.rust-target }}.tar
+          path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+
+  k8_cluster_test:
+    name: Kubernetes cluster test run (${{ matrix.run }}) k8 (${{ matrix.k8 }})
+    needs: build_image
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-11]
+        rust-target: [x86_64-apple-darwin]
+        k8-target: [x86_64-unknown-linux-musl]
+        run: [r1]
+        k8: [kind]
+    steps:
+      - uses: actions/checkout@v2
+      # Download artifacts
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: .
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: .
+      - name: Download Docker Image as Artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio-${{ matrix.k8-target }}.tar
+          path: /tmp
+
+      - name: Print artifacts and mark executable
+        run: chmod +x ./fluvio ./fluvio-test && ./fluvio version && ./fluvio-test -h
+
+      - name: Set up Docker for Mac
+        uses: docker-practice/actions-setup-docker@master
+      # Retag image to remove arch from tag
+      - name: Load Fluvio Docker Image for K3d
+        if: ${{ false }}
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-${{ matrix.k8-target }} infinyon/fluvio:${{ github.sha }}
+          docker image ls -a
+
+      - name: Install Kind
+        if: ${{ matrix.k8 == 'kind' }}
+        run: |
+          brew install kind
+          kind version
+          kind create cluster --config k8-util/cluster/kind.yaml
+          kind get clusters
+      - name: Load image to kind
+        if: ${{ matrix.k8 == 'kind' }}
+        run: |
+          kind load image-archive /tmp/infinyon-fluvio-${{ matrix.k8-target }}.tar
+      - name: Start Cluster
+        if: ${{ matrix.k8 == 'kind' }}
+        timeout-minutes: 3
+        run: |
+          ./fluvio cluster start  --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
+      # run a simpler configuration to run in a constraint mac
+      - name: Run smoke-test-k8
+        timeout-minutes: 3
+        run: |
+            date
+            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  DEFAULT_SPU=1 REPL=1 UNINSTALL=noclean smoke-test-k8
+      - name: Print version
+        run: |
+          ./fluvio version
+          date
+          uname -a
+          helm list
+          kubectl get crd
+          kubectl get spu
+          kubectl get statefulset
+          kubectl get pvc
+          kubectl get pods
+          kubectl get svc
+          kubectl get spg
+
+      - name: Save logs
+        if: failure()
+        run: |
+          date
+          uname -a
+          helm list
+          kubectl get crd
+          kubectl get spu
+          kubectl get partitions
+          kubectl get statefulset
+          kubectl get pvc
+          kubectl get pods
+          kubectl get svc
+          kubectl get spg
+          kubectl describe pod  `(kubectl get pod -l app=fluvio-sc  -o jsonpath="{.items[0].metadata.name}")`
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
+          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+      - name: Upload logs
+        timeout-minutes: 5
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: k8_${{ matrix.run }}_log
+          path: /tmp/k8_*.log

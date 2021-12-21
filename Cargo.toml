@@ -21,8 +21,8 @@ members = [
     "crates/fluvio-sc",
     "crates/fluvio-sc-schema",
     "crates/fluvio-service",
-    "crates/fluvio-smartstream",
-    "crates/fluvio-smartstream-derive",
+    "crates/fluvio-smartmodule",
+    "crates/fluvio-smartmodule-derive",
     "crates/fluvio-smartengine",
     "crates/fluvio-socket",
     "crates/fluvio-spu",
@@ -36,7 +36,6 @@ members = [
     "crates/fluvio-types",
 ]
 resolver = "2"
-
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds

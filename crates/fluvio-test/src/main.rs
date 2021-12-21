@@ -83,6 +83,8 @@ fn run_test(
     let test_driver = TestDriver::new(Some(test_cluster_opts));
 
     let test_case = TestCase::new(environment, test_opt);
+
+    // Run the test, but catch the panic so we can fail the test if event if we've got multiple processes running
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
         (test_meta.test_fn)(test_driver, test_case)
     }));

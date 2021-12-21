@@ -3,12 +3,14 @@ use quote::{quote, ToTokens};
 use syn::spanned::Spanned;
 use syn::{Attribute, Error, Field, Lit, Meta, NestedMeta, Type};
 
+#[derive(Clone)]
 pub(crate) struct NamedProp {
     pub field_name: String,
     pub field_type: Type,
     pub attrs: PropAttrs,
 }
 
+#[derive(Clone)]
 pub(crate) struct UnnamedProp {
     pub field_type: Type,
     pub attrs: PropAttrs,
@@ -85,6 +87,29 @@ impl UnnamedProp {
             Ok(prop)
         }
     }
+
+    pub fn version_check_token_stream(&self, field_stream: TokenStream) -> TokenStream {
+        let min = self.attrs.min_version;
+
+        if let Some(max) = self.attrs.max_version {
+            quote! {
+                #[allow(clippy::double_comparisons)]
+                if version >= #min && version <= #max {
+                    #field_stream
+                } else {
+                    tracing::trace!("Field from tuple struct:is skipped because version: {} is outside min: {}, max: {}",version,#min,#max);
+                }
+            }
+        } else {
+            quote! {
+                if version >= #min {
+                    #field_stream
+                } else {
+                    tracing::trace!("Field from tuple struct: is skipped because version: {} is less than min: {}",version,#min);
+                }
+            }
+        }
+    }
 }
 
 pub fn validate_versions(min: i16, max: Option<i16>, field: Option<&str>) -> Option<String> {
@@ -107,7 +132,7 @@ pub fn validate_versions(min: i16, max: Option<i16>, field: Option<&str>) -> Opt
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct PropAttrs {
     pub varint: bool,
     /// Will default to 0 if not specified.

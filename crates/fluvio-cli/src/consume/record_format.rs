@@ -4,8 +4,11 @@
 //! Connects to server and fetches logs
 //!
 
+use fluvio_controlplane_metadata::tableformat::TableFormatColumnConfig;
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use super::TableModel;
+use std::collections::BTreeMap;
+use crate::{CliError, Result};
 
 // -----------------------------------
 //  JSON
@@ -160,39 +163,22 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
         }
     };
 
-    let obj = if let Some(obj) = maybe_json.as_object() {
-        obj
-    } else {
-        println!("error: Unable to parse json as object map");
-        return None;
-    };
-
-    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
-
-    // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
-    let values_str: Vec<String> = obj
-        .values()
-        .map(|v| {
-            if v.is_string() {
-                if let Some(s) = v.as_str() {
-                    s.to_string()
-                } else {
-                    println!("error: Value in json not representable as str");
-                    String::new()
-                }
-            } else {
-                v.to_string()
+    // Handle updates as objects or list of objects
+    match maybe_json {
+        serde_json::Value::Object(json_obj) => {
+            update_table_row(table_model, json_obj).ok()?;
+        }
+        serde_json::Value::Array(vec_obj) => {
+            let json_array = flatten_json_array_updates(vec_obj).ok()?;
+            for json_obj in json_array {
+                update_table_row(table_model, json_obj).ok()?;
             }
-        })
-        .collect();
+        }
 
-    let header = keys_str;
-    if table_model.update_header(header).is_err() {
-        println!("Unable to set table headers")
-    }
-
-    if table_model.update_row(values_str).is_err() {
-        println!("Unable to update table row");
+        _ => {
+            println!("error: Unable to parse json as object map or array of objects");
+            return None;
+        }
     }
 
     None
@@ -205,4 +191,69 @@ pub fn format_fancy_table_record(record: &[u8], table_model: &mut TableModel) ->
 fn is_binary(bytes: &[u8]) -> bool {
     use content_inspector::{inspect, ContentType};
     matches!(inspect(bytes), ContentType::BINARY)
+}
+
+// Updates the table model based on a single json object
+fn update_table_row(
+    table_model: &mut TableModel,
+    object: serde_json::Map<String, serde_json::Value>,
+) -> Result<()> {
+    //if let serde_json::Value::Object(obj) = object {
+    let mut new_data: BTreeMap<String, String> = BTreeMap::new();
+    for (k, v) in object {
+        let key = k.to_string();
+        let value = if v.is_string() {
+            if let Some(s) = v.as_str() {
+                s.to_string()
+            } else {
+                println!("error: Value in json not representable as str");
+                String::new()
+            }
+        } else {
+            v.to_string()
+        };
+
+        new_data.insert(key, value);
+    }
+
+    // This only expected if the columns have not yet been defined
+    // Typically the result is columns sorted alphabetically
+    if table_model.columns().is_empty() {
+        //println!("Columns empty");
+        // Build a list of TableColumn
+        let mut columns = vec![];
+
+        for k in new_data.keys() {
+            columns.push(TableFormatColumnConfig::new(k.to_string()))
+        }
+
+        if table_model.update_columns(columns).is_err() {
+            println!("Unable to set table headers")
+        }
+    }
+
+    // This will append if now primary keys or update rows based on primary key values
+    if table_model.update_row(new_data).is_err() {
+        println!("Unable to update table row");
+    }
+    Ok(())
+}
+
+// This is to handle if a list of table updates are passed in via JSON array
+fn flatten_json_array_updates(
+    maybe_json_array: Vec<serde_json::Value>,
+) -> Result<Vec<serde_json::Map<String, serde_json::Value>>> {
+    let mut vec_json_objs = Vec::new();
+    // Check that array is all objects
+    for value in maybe_json_array {
+        if let serde_json::Value::Object(obj) = value {
+            vec_json_objs.push(obj);
+            continue;
+        } else {
+            return Err(CliError::Other(
+                "Expected all values in json array to be objects".to_string(),
+            ));
+        }
+    }
+    Ok(vec_json_objs)
 }

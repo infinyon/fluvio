@@ -1,0 +1,18 @@
+[package]
+name = "fluvio-smartmodule-derive"
+version = "0.2.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+categories = ["wasm", "database", "encoding"]
+keywords = ["streaming", "stream", "wasm", "fluvio"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio SmartModule WASM procedural macro"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+syn = { version = "1.0", features = ["full"] }
+quote = "1.0"
+proc-macro2 = "1.0"

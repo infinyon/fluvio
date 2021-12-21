@@ -1,5 +1,5 @@
 [package]
-edition = "2018"
+edition = "2021"
 name = "fluvio-service"
 version = "0.0.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -23,9 +23,9 @@ tokio = { version = "1.3.0", features = ["macros"] }
 # Fluvio dependencies
 futures-util = { version = "0.3.5" }
 fluvio-future = { version = "0.3.0" }
-fluvio-socket = { version = "0.10.0", path = "../fluvio-socket" }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.6", features = ["derive", "api", "codec"] }
-fluvio-types = { version = "0.2.3", features = ["events"], path = "../fluvio-types" }
+fluvio-socket = { path = "../fluvio-socket" }
+fluvio-protocol = { path = "../fluvio-protocol", features = ["derive", "api", "codec"] }
+fluvio-types = { features = ["events"], path = "../fluvio-types" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.0", features = ["fixture"] }

@@ -9,6 +9,7 @@ use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
+use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -22,7 +23,7 @@ use table_format::{TableEventResponse, TableModel};
 use fluvio::{ConsumerConfig, Fluvio, MultiplePartitionConsumer, Offset};
 use fluvio::consumer::{PartitionSelectionStrategy, Record};
 use fluvio::consumer::{
-    SmartModuleInvocation, SmartModuleInvocationWasm, SmartStreamKind, SmartStreamInvocation,
+    SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind, DerivedStreamInvocation,
 };
 
 use tui::Terminal;
@@ -34,6 +35,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 
+use crate::render::ProgressRenderer;
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
 use self::record_format::{
@@ -68,6 +70,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "d", long)]
     pub disable_continuous: bool,
 
+    /// disable the progress bar and wait spinner
+    #[structopt(long)]
+    pub disable_progressbar: bool,
+
     /// Print records in "[key] value" format, with "[null]" for no key
     #[structopt(short, long)]
     pub key_value: bool,
@@ -87,6 +93,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "F", long, conflicts_with_all = &["output", "key_value"])]
     pub format: Option<String>,
 
+    /// Consume records using the formatting rules defined by TableFormat name
+    #[structopt(long, conflicts_with_all = &["key_value", "format"])]
+    pub table_format: Option<String>,
+
     /// Consume records starting X from the beginning of the log (default: 0)
     #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
     pub from_beginning: Option<Option<u32>>,
@@ -98,6 +108,10 @@ pub struct ConsumeOpt {
     /// Consume records starting X from the end of the log (default: 10)
     #[structopt(short = "T", long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
     pub tail: Option<Option<u32>>,
+
+    /// Consume records until end offset
+    #[structopt(long, value_name= "integer", conflicts_with_all = &["tail"])]
+    pub end_offset: Option<i64>,
 
     /// Maximum number of bytes to be retrieved
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
@@ -117,28 +131,28 @@ pub struct ConsumeOpt {
     )]
     pub output: Option<ConsumeOutputType>,
 
-    /// Path to a SmartStream filter wasm file
+    /// Name of DerivedStream
     #[structopt(long)]
-    pub smartstream: Option<String>,
+    pub derived_stream: Option<String>,
 
-    /// Path to a SmartStream filter wasm file
+    /// Path to a SmartModule filter wasm file
     #[structopt(long, group("smartmodule"))]
     pub filter: Option<String>,
 
-    /// Path to a SmartStream map wasm file
+    /// Path to a SmartModule map wasm file
     #[structopt(long, group("smartmodule"))]
     pub map: Option<String>,
 
-    /// Path to a SmartStream filter_map wasm file
+    /// Path to a SmartModule filter_map wasm file
     #[structopt(long, group("smartmodule"))]
     pub filter_map: Option<String>,
 
-    /// Path to a SmartStream array_map wasm file
+    /// Path to a SmartModule array_map wasm file
     #[structopt(long, group("smartmodule"))]
     pub array_map: Option<String>,
 
-    /// Path to a SmartStream join wasm filee
-    #[structopt(long, group("smartstream"))]
+    /// Path to a SmartModule join wasm filee
+    #[structopt(long, group("smartmodule"))]
     pub join: Option<String>,
 
     /// Path to a WASM file for aggregation
@@ -173,11 +187,58 @@ impl ConsumeOpt {
         fields(topic = %self.topic, partition = self.partition),
     )]
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
+        let maybe_tableformat = if let Some(ref tableformat_name) = self.table_format {
+            let admin = fluvio.admin().await;
+            let tableformats = admin.list::<TableFormatSpec, _>(vec![]).await?;
+
+            let mut found = None;
+
+            if !tableformats.is_empty() {
+                for t in tableformats {
+                    if t.name.as_str() == tableformat_name {
+                        //println!("debug: Found tableformat: {:?}", t.spec);
+                        found = Some(t.spec);
+
+                        //let tableformat_test = TableFormatSpec {
+                        //    name: "hardcoded_test".to_string(),
+                        //    columns: Some(vec![
+                        //        TableColumn {
+                        //            key_path: "key2".to_string(),
+                        //            header_label: Some("Key #2".to_string()),
+                        //            ..Default::default()
+                        //        },
+                        //        TableColumn {
+                        //            key_path: "key1".to_string(),
+                        //            //primary_key: true,
+                        //            header_label: Some("Key #1".to_string()),
+                        //            ..Default::default()
+                        //        },
+                        //    ]),
+                        //    ..Default::default()
+                        //};
+                        //println!("debug: Using test tableformat: {:?}", tableformat_test);
+                        //found = Some(tableformat_test);
+                        break;
+                    }
+                }
+
+                if found.is_none() {
+                    return Err(CliError::TableFormatNotFound(tableformat_name.to_string()));
+                }
+
+                found
+            } else {
+                return Err(CliError::TableFormatNotFound(tableformat_name.to_string()));
+            }
+        } else {
+            None
+        };
+
         if self.all_partitions {
             let consumer = fluvio
                 .consumer(PartitionSelectionStrategy::All(self.topic.clone()))
                 .await?;
-            self.consume_records(consumer).await?;
+            self.consume_records(consumer, maybe_tableformat).await?;
         } else {
             let consumer = fluvio
                 .consumer(PartitionSelectionStrategy::Multiple(vec![(
@@ -185,7 +246,7 @@ impl ConsumeOpt {
                     self.partition,
                 )]))
                 .await?;
-            self.consume_records(consumer).await?;
+            self.consume_records(consumer, maybe_tableformat).await?;
         };
 
         Ok(())
@@ -200,7 +261,11 @@ impl ConsumeOpt {
         }
     }
 
-    pub async fn consume_records(&self, consumer: MultiplePartitionConsumer) -> Result<()> {
+    pub async fn consume_records(
+        &self,
+        consumer: MultiplePartitionConsumer,
+        tableformat: Option<TableFormatSpec>,
+    ) -> Result<()> {
         trace!(config = ?self, "Starting consumer:");
         self.init_ctrlc()?;
         let offset = self.calculate_offset()?;
@@ -215,44 +280,44 @@ impl ConsumeOpt {
             Some(params) => params.clone().into_iter().collect(),
         };
 
-        let smartstream = self
-            .smartstream
-            .as_ref()
-            .map(|smartstream_name| SmartStreamInvocation {
-                stream: smartstream_name.clone(),
-                params: extra_params.clone().into(),
-            });
+        let derivedstream =
+            self.derived_stream
+                .as_ref()
+                .map(|derivedstream_name| DerivedStreamInvocation {
+                    stream: derivedstream_name.clone(),
+                    params: extra_params.clone().into(),
+                });
 
-        builder.smartstream(smartstream);
+        builder.derivedstream(derivedstream);
 
-        let smart_module = if let Some(name_or_path) = &self.filter {
-            Some(create_smart_module(
+        let smartmodule = if let Some(name_or_path) = &self.filter {
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::Filter,
+                SmartModuleKind::Filter,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.map {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::Map,
+                SmartModuleKind::Map,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.array_map {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::ArrayMap,
+                SmartModuleKind::ArrayMap,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.filter_map {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::FilterMap,
+                SmartModuleKind::FilterMap,
                 extra_params,
             )?)
         } else if let Some(name_or_path) = &self.join {
-            Some(create_smart_module(
+            Some(create_smartmodule(
                 name_or_path,
-                SmartStreamKind::Join(
+                SmartModuleKind::Join(
                     self.join_topic
                         .as_ref()
                         .expect("Join topic field is required when using join")
@@ -264,15 +329,15 @@ impl ConsumeOpt {
             match (&self.aggregate, &self.initial) {
                 (Some(name_or_path), Some(acc_path)) => {
                     let accumulator = std::fs::read(acc_path)?;
-                    Some(create_smart_module(
+                    Some(create_smartmodule(
                         name_or_path,
-                        SmartStreamKind::Aggregate { accumulator },
+                        SmartModuleKind::Aggregate { accumulator },
                         extra_params,
                     )?)
                 }
-                (Some(name_or_path), None) => Some(create_smart_module(
+                (Some(name_or_path), None) => Some(create_smartmodule(
                     name_or_path,
-                    SmartStreamKind::Aggregate {
+                    SmartModuleKind::Aggregate {
                         accumulator: Vec::new(),
                     },
                     extra_params,
@@ -285,15 +350,30 @@ impl ConsumeOpt {
             }
         };
 
-        builder.smart_module(smart_module);
+        builder.smartmodule(smartmodule);
 
         if self.disable_continuous {
             builder.disable_continuous(true);
         }
 
+        if let Some(end_offset) = self.end_offset {
+            if end_offset < 0 {
+                eprintln!("Argument end-offset must be greater than or equal to zero");
+            }
+            if let Some(offset) = self.offset {
+                let o = offset as i64;
+                if end_offset < o {
+                    eprintln!(
+                        "Argument end-offset must be greater than or equal to specified offset"
+                    );
+                }
+            }
+        }
+
         let consume_config = builder.build()?;
         debug!("consume config: {:#?}", consume_config);
-        self.consume_records_stream(consumer, offset, consume_config)
+
+        self.consume_records_stream(consumer, offset, consume_config, tableformat)
             .await?;
 
         if !self.disable_continuous {
@@ -309,8 +389,10 @@ impl ConsumeOpt {
         consumer: MultiplePartitionConsumer,
         offset: Offset,
         config: ConsumerConfig,
+        tableformat: Option<TableFormatSpec>,
     ) -> Result<()> {
         self.print_status();
+        let maybe_potential_offset: Option<i64> = self.end_offset;
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
         let templates = match self.format.as_deref() {
@@ -330,7 +412,11 @@ impl ConsumeOpt {
                 let mut stdout = io::stdout();
                 execute!(stdout, EnterAlternateScreen)?;
 
-                let model = TableModel::default();
+                let mut model = TableModel::new();
+
+                // Customize display options w/ tableformat spec
+                model.with_tableformat(tableformat);
+
                 maybe_table_model = Some(model);
 
                 let stdout = io::stdout();
@@ -352,6 +438,18 @@ impl ConsumeOpt {
         if io::stdout().is_tty() {
             // This needs to know if it is a tty before opening this
             let mut user_input_reader = EventStream::new();
+            let pb = indicatif::ProgressBar::new(1);
+
+            // Prevent the progress bars from displaying if we're using full_table
+            // or if we've explicitly disabled it
+            if let Some(ConsumeOutputType::full_table) = &self.output {
+                // Do nothing.
+            } else if !self.disable_progressbar {
+                pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
+                pb.enable_steady_tick(100);
+            }
+
+            let pb: ProgressRenderer = pb.into();
 
             loop {
                 select! {
@@ -375,7 +473,15 @@ impl ConsumeOpt {
                                 &mut header_print,
                                 &mut maybe_terminal_stdout,
                                 &mut maybe_table_model,
+                                &pb,
                             );
+
+                            if let Some(potential_offset) = maybe_potential_offset {
+                                if record.offset >= potential_offset {
+                                    eprintln!("End-offset has been reached; exiting");
+                                    break;
+                                }
+                            }
                         },
                         None => break,
                     },
@@ -383,9 +489,12 @@ impl ConsumeOpt {
                         match maybe_event {
                             Some(Ok(event)) => {
                                 if let Some(model) = maybe_table_model.as_mut() {
-                                    match model.event_handler(event) {
-                                        TableEventResponse::Terminate => break,
-                                        _ => continue
+                                    // Give the event handler access to redraw
+                                    if let Some(term) = maybe_terminal_stdout.as_mut() {
+                                        match model.event_handler(event, term) {
+                                            TableEventResponse::Terminate => break,
+                                            _ => continue
+                                        }
                                     }
                                 }
                             }
@@ -396,7 +505,8 @@ impl ConsumeOpt {
                 }
             }
         } else {
-            // We do not support `--output=table` when we don't have a TTY (i.e., CI environment)
+            let pb = ProgressRenderer::default();
+            // We do not support `--output=full_table` when we don't have a TTY (i.e., CI environment)
             while let Some(result) = stream.next().await {
                 let result: std::result::Result<Record, _> = result;
                 let record = match result {
@@ -416,7 +526,15 @@ impl ConsumeOpt {
                     &mut header_print,
                     &mut None,
                     &mut None,
+                    &pb,
                 );
+
+                if let Some(potential_offset) = maybe_potential_offset {
+                    if record.offset >= potential_offset {
+                        eprintln!("End-offset has been reached; exiting");
+                        break;
+                    }
+                }
             }
         }
 
@@ -447,6 +565,7 @@ impl ConsumeOpt {
         header_print: &mut bool,
         terminal: &mut Option<Terminal<CrosstermBackend<Stdout>>>,
         table_model: &mut Option<TableModel>,
+        pb: &ProgressRenderer,
     ) {
         let formatted_key = record
             .key()
@@ -498,10 +617,11 @@ impl ConsumeOpt {
         if self.output != Some(ConsumeOutputType::full_table) {
             match formatted_value {
                 Some(value) if self.key_value => {
-                    println!("[{}] {}", formatted_key, value);
+                    let output = format!("[{}] {}", formatted_key, value);
+                    pb.println(&output);
                 }
                 Some(value) => {
-                    println!("{}", value);
+                    pb.println(&value);
                 }
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
@@ -560,6 +680,16 @@ impl ConsumeOpt {
                 )
                 .bold()
             );
+        // If --end-offset=X
+        } else if let Some(end) = self.end_offset {
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records starting from the end until record {} in topic '{}'",
+                    end, &self.topic
+                )
+                .bold()
+            );
         // If no offset config is given, read from the end
         } else {
             eprintln!(
@@ -608,9 +738,9 @@ impl ConsumeOpt {
     }
 }
 
-fn create_smart_module(
+fn create_smartmodule(
     name_or_path: &str,
-    kind: SmartStreamKind,
+    kind: SmartModuleKind,
     params: BTreeMap<String, String>,
 ) -> Result<SmartModuleInvocation> {
     let wasm = if PathBuf::from(name_or_path).exists() {

@@ -9,12 +9,13 @@ tls: false
 imagePullSecrets: []
 image:
   registry: infinyon
-  tag:  ""
+  tag: ""
   pullPolicy: IfNotPresent
 cert:
   caCert: fluvio-ca
   tls: fluvio-tls
-authorizationConfigMap: null
+  domain: fluvio.local
+authorizationConfigMap: ""
 scPod:
   resources:
     requests:
@@ -22,6 +23,8 @@ scPod:
     limits:
       memory: 512Mi
   nodeSelector: {}
+  publicPort: 9003
+  nodePort: 30003
 spuPod:
   resources:
     requests:
@@ -30,7 +33,7 @@ spuPod:
       memory: 1Gi
   nodeSelector: {}
   storageClass: null
-
+  baseNodePort: 30004
 
 rbac:
   create: true

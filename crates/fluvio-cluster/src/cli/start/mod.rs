@@ -1,5 +1,6 @@
 use std::{fmt, str::FromStr};
 use std::path::PathBuf;
+use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
 use structopt::StructOpt;
 use semver::Version;
 
@@ -41,6 +42,25 @@ impl FromStr for DefaultLogDirectory {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.to_string()))
+    }
+}
+
+#[derive(Debug, StructOpt)]
+pub struct SpuCliConfig {
+    /// set spu storage size
+    #[structopt(long, default_value = "10")]
+    pub spu_storage_size: u16,
+}
+
+impl SpuCliConfig {
+    pub fn as_spu_config(&self) -> SpuConfig {
+        SpuConfig {
+            storage: Some(StorageConfig {
+                size: Some(format!("{}Gi", self.spu_storage_size)),
+                ..Default::default()
+            }),
+            ..Default::default()
+        }
     }
 }
 
@@ -88,6 +108,9 @@ pub struct StartOpt {
     #[structopt(flatten)]
     pub k8_config: K8Install,
 
+    #[structopt(flatten)]
+    pub spu_config: SpuCliConfig,
+
     #[structopt(long)]
     pub skip_profile_creation: bool,
 
@@ -124,6 +147,10 @@ pub struct StartOpt {
     #[structopt(long)]
     pub setup: bool,
 
+    /// Used to hide spinner animation for progress updates
+    #[structopt(long)]
+    pub hide_spinner: bool,
+
     /// Proxy address
     #[structopt(long)]
     pub proxy_addr: Option<String>,
@@ -138,17 +165,21 @@ impl StartOpt {
         self,
         platform_version: Version,
         upgrade: bool,
-        skip_sys: bool,
+        skip_sys: bool, // only applies to upgrade
     ) -> Result<(), ClusterCliError> {
         use crate::cli::start::local::process_local;
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
         if self.sys {
-            process_sys(self, upgrade)?;
+            process_sys(&self, upgrade)?;
         } else if self.local {
             process_local(self, platform_version).await?;
         } else {
+            // if upgrade and not skip sys, invoke sys
+            if upgrade && !skip_sys {
+                process_sys(&self, upgrade)?;
+            }
             process_k8(self, platform_version, upgrade, skip_sys).await?;
         }
 

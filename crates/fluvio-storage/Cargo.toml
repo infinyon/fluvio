@@ -1,5 +1,5 @@
 [package]
-edition = "2018"
+edition = "2021"
 name = "fluvio-storage"
 version = "0.0.0"
 authors = ["fluvio.io"]
@@ -32,23 +32,25 @@ async-lock = "2.4.0"
 derive_builder = "0.10.2"
 thiserror = "1"
 memmap = { version = "0.7.0" }
+tokio = { version = "1.3.0", features = ["macros"] }
 
 # Fluvio dependencies
-fluvio-types = { version = "0.2.0", path = "../fluvio-types" }
+fluvio-types = { path = "../fluvio-types", features = [
+    "events",
+], version = "0.3.1" }
 fluvio-future = { version = "0.3.10", features = ["fs", "mmap", "zero_copy"] }
-fluvio-protocol = { path = "../fluvio-protocol", version = "0.6" }
-dataplane = { version = "0.8.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
+fluvio-protocol = { path = "../fluvio-protocol" }
+dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
     "file",
 ] }
+fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.9", features = ["fixture"] }
 flv-util = { version = "0.5.2", features = ["fixture"] }
-fluvio-socket = { path = "../fluvio-socket", version = "0.10.0", features = [
-    "file",
-] }
+fluvio-socket = { path = "../fluvio-socket", features = ["file"] }
 fluvio-storage = { path = ".", features = ["fixture"] }
-dataplane = { version = "0.8.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
+dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol", features = [
     "fixture",
 ] }
 derive_builder = { version = "0.10.0" }

@@ -13,62 +13,156 @@ use tui::{
     Frame, Terminal,
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
+use fluvio_controlplane_metadata::tableformat::{TableFormatColumnConfig, TableFormatSpec, DataFormat};
+
+use std::collections::BTreeMap;
 
 #[derive(Debug, Default, Clone)]
 pub struct TableModel {
-    pub state: TableState,
-    pub headers: Vec<String>,
-    pub data: Vec<Vec<String>>,
-    // primary key: set of keys to select when deciding to update table view: Default on 1st header key
-    // column display ordering rules: alphabetical, manual: Default alphabetical
-    // toggle for update-row vs append-row
+    state: TableState,
+    columns: Vec<TableFormatColumnConfig>, // List of json key paths. Should be initialized either at Self::new() or at first row entered
+
+    // Maybe data should be some kind of map structure, so we can enforce headers as column order easier
+    data: Vec<BTreeMap<String, String>>,
+    input_format: DataFormat,
     // display-cache time?
 }
 
 impl TableModel {
-    // I think this should accept headers that don't exist in the data. Print empty columns
-    pub fn update_header(&mut self, headers: Vec<String>) -> Result<()> {
-        self.headers = headers;
-
-        Ok(())
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    // TODO: When we support manual column ordering
-    // I think this should accept headers that don't exist in the data. Just ignore the keys that don't exist. Don't error
-    //pub fn update_ordering(&mut self, headers: Vec<String>) -> Result<()> {}
+    pub fn columns(&self) -> Vec<TableFormatColumnConfig> {
+        self.columns.clone()
+    }
 
-    // We should support a pure append-only workflow if we know that's what we want
-    //pub fn insert_row(&mut self, row: Vec<String>) -> Result<()> { }
+    pub fn _data(&self) -> Vec<BTreeMap<String, String>> {
+        self.data.clone()
+    }
 
-    // For now, this will look for the left-most column and if found, update that row
-    // Appends row if not found
-    // Issue: When we read in json data, it is sorted by key in alphanumeric order, so left-most will always be the alphabetical 1st
-    // This might cause issues w/r/t updates, since we treat 1st column as primary
-    pub fn update_row(&mut self, row: Vec<String>) -> Result<()> {
-        let mut found = None;
-
-        for (index, r) in self.data.iter().enumerate() {
-            if r[0] == row[0] {
-                found = Some(index);
-                break;
+    pub fn with_tableformat(&mut self, tableformat: Option<TableFormatSpec>) {
+        if let Some(format) = tableformat {
+            if let Some(input_format) = format.input_format {
+                self.input_format = input_format;
+            }
+            if let Some(columns) = format.columns {
+                self.columns = columns;
             }
         }
+    }
 
-        if let Some(row_index) = found {
-            self.data[row_index] = row;
+    // I think this should accept columns that don't exist in the data. Print empty columns
+    pub fn update_columns(&mut self, columns: Vec<TableFormatColumnConfig>) -> Result<()> {
+        self.columns = columns;
+
+        Ok(())
+    }
+
+    // By default, we append rows
+    // To in-place update rows, create a tableformat and define what columns are your primary keys
+    // Then new_data is compared against all the table data
+    // The comparison is for a row where the values at the primary keys match the new_data values
+    // If found, that row is replaced with new_data values
+    pub fn update_row(&mut self, new_data: BTreeMap<String, String>) -> Result<()> {
+        // For the first row, we know we can just insert data
+        if self.data.is_empty() {
+            self.data.push(new_data);
+            return Ok(());
+        }
+
+        // Get a list of the primary keys
+        // If we don't have a primary key set, the default behavior is to append the row
+        let all_primary_keys = self.get_primary_keys();
+        //println!("Primary key: {:?}", primary_keys);
+
+        if let Some(primary_keys) = all_primary_keys {
+            let mut append_row = true;
+
+            // use the primary keys when evaluating a row update
+            for (index, row) in self.data.iter().enumerate() {
+                // Look over the primary keys to determine if we update the row
+
+                // Reset flag for next row processing
+                append_row = false;
+
+                for (index, key) in primary_keys.iter().enumerate() {
+                    match row.get(key.as_str()) {
+                        Some(value) => {
+                            if let Some(new_data_value) = new_data.get(key.as_str()) {
+                                // primary key value, and new_data values don't match
+                                if value != new_data_value {
+                                    append_row = true;
+                                    continue;
+                                } else {
+                                    // If this is the last primary key we're checking
+                                    // Break out of the primary key loop
+                                    if (index + 1) == self.data.len() {
+                                        append_row = false;
+                                        break;
+                                    }
+                                }
+                            } else {
+                                // key doesn't exist in new_data
+                                append_row = true;
+                            }
+                        }
+                        None => {
+                            // key doesn't exist in row
+                            append_row = true;
+                        }
+                    }
+                }
+
+                // If the values for the primary keys match, then update the row
+                if !append_row {
+                    self.data[index] = new_data.clone();
+                    break;
+                }
+            }
+
+            // Otherwise append the data to the end after we look at all the rows
+            if append_row {
+                self.data.push(new_data);
+            }
         } else {
-            self.data.push(row);
+            // Append data
+            self.data.push(new_data);
         }
 
         Ok(())
     }
 
-    //TODO
+    //TODO: Seems like we're going to need this, but not now
     //pub fn delete_row(&mut self, row_index: usize) -> Result<()> {}
 
     /// Return number of rows in cache
     pub fn num_columns(&self) -> usize {
-        self.headers.len()
+        self.columns.len()
+    }
+
+    // The purpose of the primary keys is to control whether a record
+    // is appended or updated based on matching values on the list of keys
+    pub fn get_primary_keys(&self) -> Option<Vec<String>> {
+        if !self.columns.is_empty() {
+            let mut primary_keys = Vec::new();
+
+            for c in &self.columns {
+                if let Some(is_primary_key) = c.primary_key {
+                    if is_primary_key {
+                        primary_keys.push(c.key_path.clone());
+                    }
+                }
+            }
+
+            if !primary_keys.is_empty() {
+                Some(primary_keys)
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     /// Return the row selected
@@ -170,11 +264,16 @@ impl TableModel {
         }
     }
 
-    /// Takes in `user_input` and handles the side-effect, (except for exiting table)
+    /// Takes in `user_input` and triggers a render to the table
     /// Returns the appropriate `TableEventResponse`
-    pub fn event_handler(&mut self, user_input: Event) -> TableEventResponse {
+    pub fn event_handler(
+        &mut self,
+        user_input: Event,
+        terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    ) -> TableEventResponse {
+        let response;
         if let Event::Key(key) = user_input {
-            match key.code {
+            response = match key.code {
                 KeyCode::Char('q') | KeyCode::Esc => TableEventResponse::Terminate,
                 KeyCode::Char('c') => {
                     self.data = Vec::new();
@@ -208,7 +307,7 @@ impl TableModel {
                 _ => TableEventResponse::InputIgnored(user_input),
             }
         } else if let Event::Mouse(event) = user_input {
-            match event.kind {
+            response = match event.kind {
                 MouseEventKind::ScrollDown => {
                     self.next();
                     TableEventResponse::InputHandled(user_input)
@@ -220,8 +319,11 @@ impl TableModel {
                 _ => TableEventResponse::InputIgnored(user_input),
             }
         } else {
-            TableEventResponse::InputIgnored(user_input)
+            response = TableEventResponse::InputIgnored(user_input)
         }
+
+        self.render(terminal);
+        response
     }
 
     // This will take a full screen buffer
@@ -259,6 +361,7 @@ impl TableModel {
 
         let mut column_constraints: Vec<Constraint> = Vec::new();
 
+        // TODO: Maybe provide a way to size the width of a column
         // Define the widths of the columns
         for _ in 0..self.num_columns() {
             column_constraints.push(Constraint::Percentage(equal_column_width));
@@ -267,34 +370,69 @@ impl TableModel {
         let selected_symbol = format!("{} >> ", self.current_selected());
 
         let selected_style = Style::default().add_modifier(Modifier::REVERSED);
-        let normal_style = Style::default().bg(Color::Blue);
-        let header_cells = self
-            .headers
-            .iter()
-            .map(|h| Cell::from(h.as_str()).style(Style::default().fg(Color::Red)));
-        let header = Row::new(header_cells)
-            .style(normal_style)
-            .height(1)
-            .bottom_margin(1);
-        let rows = self.data.iter().map(|item| {
-            let height = item
-                .iter()
-                .map(|content| content.chars().filter(|c| *c == '\n').count())
-                .max()
-                .unwrap_or(0)
-                + 1;
-            let cells = item.iter().map(|c| Cell::from(c.as_str()));
-            Row::new(cells).height(height as u16).bottom_margin(1)
+
+        let header_cells = self.columns.iter().map(|column| {
+            // If the column has an alternative label, use that
+            // Otherwise, use the key path
+            let header_label = if let Some(label) = column.header_label.clone() {
+                label
+            } else {
+                // TODO: Test this with a nested key.
+                // We probably want to use the inner-most key in the path if no label given
+                column.key_path.clone()
+            };
+
+            Cell::from(header_label)
         });
+
+        let header_style = Style::default()
+            .bg(Color::Blue)
+            .fg(Color::Yellow)
+            .add_modifier(Modifier::BOLD);
+        let header = Row::new(header_cells)
+            .style(header_style)
+            .height(1)
+            .bottom_margin(0);
+
+        // render rows based on header order
+        let mut rows = vec![];
+
+        for (_index, row_data) in self.data.iter().enumerate() {
+            let mut cells = vec![];
+            for col in &self.columns {
+                let key_path = col.key_path.as_str();
+                let value = if let Some(v) = row_data.get(key_path) {
+                    v
+                } else {
+                    // If the user provides a key that doesn't exist
+                    // we want to print a column, but leave the value blank
+                    ""
+                };
+
+                cells.push(Cell::from(value));
+            }
+
+            //rows.push(Row::new(cells).height(height as u16).bottom_margin(0))
+            rows.push(Row::new(cells).height(1).bottom_margin(0))
+        }
+
+        let table_title_text = format!(
+            "('c' to clear table | 'q' or ESC to exit) | Items: {}",
+            self.data.len()
+        );
+
         let t = Table::new(rows)
             .header(header)
-            .block(Block::default().borders(Borders::ALL).title(format!(
-                "('c' to clear table | 'q' or ESC to exit) | Items: {}",
-                self.data.len()
-            )))
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(table_title_text),
+            )
             .highlight_style(selected_style)
             .highlight_symbol(selected_symbol.as_str())
             .widths(&column_constraints);
+
+        // draw
         f.render_stateful_widget(t, rects[0], &mut self.state);
     }
 }

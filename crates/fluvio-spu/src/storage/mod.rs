@@ -8,8 +8,8 @@ use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use fluvio_controlplane_metadata::partition::{ReplicaKey};
 use dataplane::{Isolation, record::RecordSet};
 use dataplane::core::Encoder;
-use dataplane::{Offset};
-use fluvio_storage::{ReplicaStorage, SlicePartitionResponse, StorageError, OffsetInfo};
+use dataplane::{Offset, ErrorCode};
+use fluvio_storage::{ReplicaStorage, StorageError, OffsetInfo, ReplicaSlice};
 use fluvio_types::{event::offsets::OffsetChangeListener};
 use fluvio_types::event::offsets::OffsetPublisher;
 
@@ -41,7 +41,7 @@ where
     S: ReplicaStorage,
 {
     /// create new storage replica or restore from durable storage based on configuration
-    pub async fn create(id: ReplicaKey, config: S::Config) -> Result<Self, StorageError> {
+    pub async fn create(id: ReplicaKey, config: S::ReplicaConfig) -> Result<Self, StorageError> {
         let storage = S::create_or_load(&id, config).await?;
 
         let leo = Arc::new(OffsetPublisher::new(storage.get_leo()));
@@ -101,21 +101,17 @@ where
 
     /// read records into partition response
     /// return leo and hw
-    #[instrument(skip(self, offset, max_len, isolation, partition_response))]
-    pub async fn read_records<P>(
+    #[instrument(skip(self, offset, max_len, isolation))]
+    pub async fn read_records(
         &self,
         offset: Offset,
         max_len: u32,
         isolation: Isolation,
-        partition_response: &mut P,
-    ) -> OffsetInfo
-    where
-        P: SlicePartitionResponse + Send,
-    {
+    ) -> Result<ReplicaSlice, ErrorCode> {
         let read_storage = self.read().await;
 
         read_storage
-            .read_partition_slice(offset, max_len, isolation, partition_response)
+            .read_partition_slice(offset, max_len, isolation)
             .await
     }
 
@@ -134,7 +130,7 @@ where
         &self,
         records: &mut RecordSet,
         hw_update: bool,
-    ) -> Result<(), StorageError> {
+    ) -> Result<i64, StorageError> {
         debug!(
             replica = %self.id,
             leo = self.leo(),
@@ -145,6 +141,9 @@ where
         );
 
         let mut writer = self.write().await;
+
+        let base_offset = writer.get_leo();
+
         let now = Instant::now();
         let _offset_updates = writer.write_recordset(records, hw_update).await?;
         debug!(write_time_ms = %now.elapsed().as_millis());
@@ -158,7 +157,7 @@ where
             self.hw.update(hw);
         }
 
-        Ok(())
+        Ok(base_offset)
     }
 
     /// perform permanent remove

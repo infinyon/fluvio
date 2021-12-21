@@ -40,19 +40,20 @@ pub async fn handle_create_request<AC: AuthContext>(
                 .await?
         }
         ObjectCreateRequest::SmartModule(create) => {
-            super::smartmodule::handle_create_smart_module_request(common, create, auth_context)
+            super::smartmodule::handle_create_smartmodule_request(common, create, auth_context)
                 .await?
         }
-        ObjectCreateRequest::Table(create) => {
-            super::table::handle_create_table_request(common, create, auth_context).await?
+        ObjectCreateRequest::TableFormat(create) => {
+            super::tableformat::handle_create_tableformat_request(common, create, auth_context)
+                .await?
         }
-        ObjectCreateRequest::SmartStream(create) => {
+        ObjectCreateRequest::DerivedStream(create) => {
             create_handler::process(
                 common,
                 create,
                 auth_context,
-                auth_context.global_ctx.smartstreams(),
-                |_| ErrorCode::SmartStreamObjectError,
+                auth_context.global_ctx.derivedstreams(),
+                |_| ErrorCode::DerivedStreamObjectError,
             )
             .await?
         }

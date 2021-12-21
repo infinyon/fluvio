@@ -13,9 +13,10 @@ mod consume;
 mod produce;
 mod partition;
 mod connector;
-mod table;
+mod tableformat;
 mod smartmodule;
-mod smartstream;
+mod derivedstream;
+mod render;
 
 pub(crate) use error::{Result, CliError};
 
@@ -39,9 +40,9 @@ mod root {
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
 
-    use crate::smartstream::SmartStreamCmd;
+    use crate::derivedstream::DerivedStreamCmd;
     use crate::connector::ManagedConnectorCmd;
-    use crate::table::TableCmd;
+    use crate::tableformat::TableFormatCmd;
     use crate::topic::TopicCmd;
     use crate::consume::ConsumeOpt;
     use crate::produce::ProduceOpt;
@@ -138,10 +139,14 @@ mod root {
         Version(VersionOpt),
 
         /// Generate command-line completions for Fluvio
-        #[structopt(
-            name = "completions",
-            settings = &[AppSettings::Hidden]
-        )]
+        ///
+        /// Run the following two commands to enable fluvio command completions.
+        ///
+        /// Open a new terminal for the changes to take effect.
+        ///
+        /// $ fluvio completions bash > ~/fluvio_completions.sh
+        /// {n}$ echo "source ~/fluvio_completions.sh" >> ~/.bashrc
+        #[structopt(name = "completions")]
         Completions(CompletionCmd),
 
         /// Generate metadata for Fluvio base CLI
@@ -151,15 +156,23 @@ mod root {
         )]
         Metadata(MetadataOpt),
 
+        /// Create and work with Managed Connectors
         #[structopt(name = "connector")]
         ManagedConnector(ManagedConnectorCmd),
 
-        /// Create a table display specification
-        #[structopt(name = "table")]
-        Table(TableCmd),
+        /// Create a TableFormat display specification
+        ///
+        /// Used with the consumer output type `full_table` to
+        /// describe how to render JSON data in a tabular form
+        #[structopt(name = "table-format", aliases = &["tf"])]
+        TableFormat(TableFormatCmd),
 
-        #[structopt(name = "smartstream")]
-        SmartStream(SmartStreamCmd),
+        /// Create and manage DerivedStreams
+        ///
+        /// Use topics, SmartModules or other DerivedStreams
+        /// to build a customized stream to consume
+        #[structopt(name = "derived-stream", aliases = &["ds"])]
+        DerivedStream(DerivedStreamCmd),
 
         #[structopt(external_subcommand)]
         External(Vec<String>),
@@ -200,13 +213,13 @@ mod root {
                     let fluvio = root.target.connect().await?;
                     group.process(out, &fluvio).await?;
                 }
-                Self::Table(table) => {
+                Self::TableFormat(tableformat) => {
                     let fluvio = root.target.connect().await?;
-                    table.process(out, &fluvio).await?;
+                    tableformat.process(out, &fluvio).await?;
                 }
-                Self::SmartStream(smartstream) => {
+                Self::DerivedStream(derivedstream) => {
                     let fluvio = root.target.connect().await?;
-                    smartstream.process(out, &fluvio).await?;
+                    derivedstream.process(out, &fluvio).await?;
                 }
                 Self::External(args) => {
                     process_external_subcommand(args)?;
@@ -224,7 +237,7 @@ mod root {
     pub enum FluvioCmd {
         /// Read messages from a topic/partition
         #[structopt(name = "consume")]
-        Consume(ConsumeOpt),
+        Consume(Box<ConsumeOpt>),
 
         /// Write messages to a topic/partition
         #[structopt(name = "produce")]
@@ -251,8 +264,8 @@ mod root {
 
         /// Create and manage SmartModules
         ///
-        /// SmartModules are compiled WASM modules used to create SmartStreams.
-        #[structopt(name = "smartmodule")]
+        /// SmartModules are compiled WASM modules used to create SmartModules.
+        #[structopt(name = "smart-module", aliases = &["sm"])]
         SmartModule(SmartModuleCmd),
     }
 
@@ -275,8 +288,8 @@ mod root {
                 Self::Partition(partition) => {
                     partition.process(out, &fluvio).await?;
                 }
-                Self::SmartModule(smart_module) => {
-                    smart_module.process(out, &fluvio).await?;
+                Self::SmartModule(smartmodule) => {
+                    smartmodule.process(out, &fluvio).await?;
                 }
             }
 

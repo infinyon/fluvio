@@ -4,7 +4,9 @@ use std::io::ErrorKind;
 use std::mem::size_of;
 use std::ops::Deref;
 use std::path::Path;
+use std::path::PathBuf;
 use std::slice;
+use std::sync::Arc;
 
 use libc::c_void;
 use tracing::debug;
@@ -14,10 +16,11 @@ use pin_utils::unsafe_unpinned;
 use fluvio_future::fs::mmap::MemoryMappedFile;
 use dataplane::{Offset, Size};
 
+use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
 use crate::util::log_path_get_offset;
 use crate::validator::LogValidationError;
-use crate::config::ConfigOption;
+use crate::config::ReplicaConfig;
 use crate::StorageError;
 
 /// size of the memory mapped isze
@@ -74,6 +77,7 @@ impl OffsetPosition for (Size, Size) {
 pub struct LogIndex {
     #[allow(dead_code)]
     mmap: MemoryMappedFile,
+    path: PathBuf,
     ptr: *mut c_void,
     len: Size,
 }
@@ -89,7 +93,7 @@ impl LogIndex {
 
     pub async fn open_from_offset(
         base_offset: Offset,
-        option: &ConfigOption,
+        option: Arc<SharedReplicaConfig>,
     ) -> Result<Self, IoError> {
         let index_file_path = generate_file_name(&option.base_dir, base_offset, EXTENSION);
 
@@ -97,7 +101,7 @@ impl LogIndex {
 
         // make sure it is log file
         let (m_file, file) =
-            MemoryMappedFile::open(index_file_path, INDEX_ENTRY_SIZE as u64).await?;
+            MemoryMappedFile::open(&index_file_path, INDEX_ENTRY_SIZE as u64).await?;
 
         let len = (file.metadata().await?).len();
 
@@ -116,6 +120,7 @@ impl LogIndex {
 
         Ok(LogIndex {
             mmap: m_file,
+            path: index_file_path,
             ptr,
             len: len as Size,
         })
@@ -133,12 +138,12 @@ impl LogIndex {
             ));
         }
 
-        let option = ConfigOption {
+        let option = ReplicaConfig {
             base_dir: path_ref.parent().unwrap().to_path_buf(),
             ..Default::default()
         };
 
-        LogIndex::open_from_offset(base_offset, &option)
+        LogIndex::open_from_offset(base_offset, Arc::new(option.into()))
             .await
             .map_err(|err| err.into())
     }
@@ -146,6 +151,11 @@ impl LogIndex {
     #[inline]
     pub fn ptr(&self) -> *const (Size, Size) {
         self.ptr as *const (Size, Size)
+    }
+
+    /// return file path to be removed
+    pub fn clean(self) -> PathBuf {
+        self.path
     }
 }
 
@@ -196,7 +206,7 @@ mod tests {
     use super::lookup_entry;
     use super::LogIndex;
     use crate::mut_index::MutLogIndex;
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfig;
     use super::OffsetPosition;
 
     #[allow(unused)]
@@ -225,8 +235,8 @@ mod tests {
     }
 
     #[allow(unused)]
-    fn default_option() -> ConfigOption {
-        ConfigOption {
+    fn default_option() -> ReplicaConfig {
+        ReplicaConfig {
             segment_max_bytes: 1000,
             base_dir: temp_dir(),
             index_max_bytes: 1000,
@@ -238,20 +248,20 @@ mod tests {
     #[allow(unused)]
     //#[fluvio_future::test]
     async fn test_index_read_offset() {
-        let option = default_option();
+        let option = default_option().shared();
         let test_file = option.base_dir.join(TEST_FILE);
         ensure_clean_file(&test_file);
 
-        let mut mut_index = MutLogIndex::create(921, &option).await.expect("create");
+        let mut mut_index = MutLogIndex::create(921, option.clone())
+            .await
+            .expect("create");
 
         mut_index.write_index((5, 16, 70)).await.expect("send");
         mut_index.write_index((10, 100, 70)).await.expect("send");
 
         mut_index.shrink().await.expect("shrink");
 
-        let log_index = LogIndex::open_from_offset(921, &option)
-            .await
-            .expect("open");
+        let log_index = LogIndex::open_from_offset(921, option).await.expect("open");
         let offset1 = log_index[0];
         assert_eq!(offset1.offset(), 5);
         assert_eq!(offset1.position(), 16);

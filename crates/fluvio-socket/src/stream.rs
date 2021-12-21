@@ -13,6 +13,7 @@ use futures_util::stream::{Stream, StreamExt};
 use tokio_util::codec::{FramedRead};
 use tokio_util::compat::FuturesAsyncReadCompatExt;
 use tokio_util::compat::Compat;
+use tracing::debug;
 use tracing::error;
 use tracing::trace;
 
@@ -96,7 +97,7 @@ impl FluvioStream {
                 }
             }
         } else {
-            error!("no more response. server has terminated connection");
+            debug!("no more response. server has terminated connection");
             Err(IoError::new(ErrorKind::UnexpectedEof, "server has terminated connection").into())
         }
     }
