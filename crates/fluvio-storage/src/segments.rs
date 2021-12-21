@@ -179,8 +179,6 @@ impl SegmentList {
     }
 
     // load segments
-
-    #[cfg(test)]
     pub fn len(&self) -> usize {
         self.segments.len()
     }
@@ -321,7 +319,7 @@ mod cleaner {
                         let read = self.segments.read().await;
                         let expired_segments =
                             read.find_expired_segments(&retention_secs);
-                        debug!(seconds = retention_secs.as_secs(),expired = expired_segments.len(), "found expired segments");
+                        debug!(seconds = retention_secs.as_secs(),total = read.len(), expired = expired_segments.len(), "expired segments");
                         drop(read);
                         if !expired_segments.is_empty() {
                             for base_offset in expired_segments {

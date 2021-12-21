@@ -87,7 +87,10 @@ impl FileRecordsSlice {
 
     pub(crate) fn is_expired(&self, expired_duration: &Duration) -> bool {
         match self.last_modifed_time.elapsed() {
-            Ok(ref elapsed) => elapsed > expired_duration,
+            Ok(ref elapsed) => {
+                debug!(elapsed = %elapsed.as_secs(), path = %self.path.display(), "segment");
+                elapsed > expired_duration
+            }
             Err(err) => {
                 error!(path = %self.path.display(),"failed to get last modified time: {:?}", err);
                 false
