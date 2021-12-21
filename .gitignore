@@ -8,3 +8,4 @@ VERSION
 .scripts
 .env
 .vscode/
+vendor/
