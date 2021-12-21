@@ -1,25 +1,17 @@
 use sha2::{Digest, Sha256};
 use structopt::StructOpt;
-use crate::channel::FluvioChannelConfig;
+use crate::channel::cli::current_channel;
 
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
 use fluvio_extension_common::target::ClusterTarget;
 use crate::Result;
 use crate::metadata::subcommand_metadata;
-use tracing::debug;
 
-mod switch;
-use switch::SwitchOpt;
-
-mod list;
-use list::ListOpt;
-
-mod create;
-use create::CreateOpt;
-
-mod delete;
-use delete::DeleteOpt;
+use crate::channel::cli::switch::SwitchOpt;
+use crate::channel::cli::list::ListOpt;
+use crate::channel::cli::create::CreateOpt;
+use crate::channel::cli::delete::DeleteOpt;
 
 #[derive(Debug, StructOpt)]
 pub struct VersionOpt {
@@ -41,7 +33,7 @@ pub struct CurrentOpt {}
 
 impl CurrentOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        self.print("Release Channel", &self.current_channel());
+        self.print("Release Channel", &current_channel());
 
         self.print("Fluvio CLI", crate::VERSION.trim());
 
@@ -119,24 +111,6 @@ impl CurrentOpt {
         }
 
         Some(formats)
-    }
-
-    fn current_channel(&self) -> String {
-        debug!("Looking for channel config");
-
-        let cli_config_path = FluvioChannelConfig::default_config_location();
-
-        // Open file
-
-        let config = if let Ok(load_config) = FluvioChannelConfig::from_file(cli_config_path) {
-            debug!("Loaded channel config");
-            load_config
-        } else {
-            debug!("No channel config found, using default");
-            FluvioChannelConfig::default()
-        };
-
-        config.current_channel()
     }
 }
 

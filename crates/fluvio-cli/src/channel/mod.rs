@@ -17,7 +17,7 @@ use thiserror::Error;
 use tracing::debug;
 use semver::Version;
 
-mod list;
+pub mod cli;
 
 #[derive(Error, Debug)]
 pub enum ChannelConfigError {
