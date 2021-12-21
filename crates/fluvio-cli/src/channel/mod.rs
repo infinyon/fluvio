@@ -389,55 +389,6 @@ impl FluvioBinVersion {
     }
 }
 
-// The first time we switch to the latest channel, we should install the binary
-pub async fn initial_install_fluvio_bin_latest(channel_config: &FluvioChannelConfig) -> Result<()> {
-    let agent = HttpAgent::default();
-    let target = fluvio_index::package_target()?;
-    let id: PackageId = "fluvio/fluvio".parse()?;
-    debug!(%target, %id, "Fluvio CLI updating self:");
-
-    // Find the latest version of this package
-    install_println("🎣 Fetching latest version for fluvio...");
-    let latest_version = fetch_latest_version(&agent, &id, &target, true).await?;
-    let id = id.into_versioned(latest_version.into());
-
-    // Download the package file from the package registry
-    install_println(format!(
-        "⏳ Downloading Fluvio CLI with latest version: {}...",
-        &id.version()
-    ));
-    let package_result = fetch_package_file(&agent, &id, &target).await;
-    let package_file = match package_result {
-        Ok(pf) => pf,
-        Err(CliError::PackageNotFound {
-            version, target, ..
-        }) => {
-            install_println(format!(
-                "❕ Fluvio is not published at version {} for {}, skipping self-update",
-                version, target
-            ));
-            return Ok(());
-        }
-        Err(other) => return Err(other),
-    };
-    install_println("🔑 Downloaded and verified package file");
-
-    // Install the update over the current executable
-    let fluvio_path = if let Some(c) = channel_config.config.channel.get("latest") {
-        c.clone().binary_location
-    } else {
-        FluvioChannelInfo::latest_channel().binary_location
-    };
-
-    install_bin(&fluvio_path, &package_file)?;
-    install_println(format!(
-        "✅ Successfully updated {}",
-        &fluvio_path.display(),
-    ));
-
-    Ok(())
-}
-
 pub async fn install_channel_fluvio_bin(
     channel_name: String,
     channel_config: &FluvioChannelConfig,

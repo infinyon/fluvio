@@ -21,6 +21,7 @@ pub struct UpdateOpt {
 
     /// (Optional) the name of one or more plugins to update
     plugins: Vec<PackageId>,
+    // TODO: This should support updating the fluvio-channel binary
 }
 
 impl UpdateOpt {
