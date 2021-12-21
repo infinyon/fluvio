@@ -7,14 +7,17 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::time::Duration;
+
+use tracing::debug;
+use structopt::StructOpt;
+use humantime::parse_duration;
 
 use fluvio_controlplane_metadata::topic::CleanupPolicy;
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_controlplane_metadata::topic::SegmentBasedPolicy;
 use fluvio_controlplane_metadata::topic::TopicStorageConfig;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
-use tracing::debug;
-use structopt::StructOpt;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
@@ -136,7 +139,7 @@ impl CreateTopicOpt {
         let mut topic_spec: TopicSpec = replica_spec.into();
         if let Some(retention) = self.setting.retention_time {
             topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
-                time_in_seconds: retention,
+                time_in_seconds: retention.as_secs() as u32,
             }));
         }
 
@@ -157,10 +160,10 @@ impl CreateTopicOpt {
 
 #[derive(Debug, StructOpt)]
 pub struct TopicConfigOpt {
-    /// Number of seconds to wait for discarding segments
-    ///
-    #[structopt(long, value_name = "seconds")]
-    retention_time: Option<u32>,
+    /// Retention time (round to seconds)
+    /// Ex: '1h', '2d 10s', '7 days' (default)
+    #[structopt(long, value_name = "time",parse(try_from_str = parse_duration))]
+    retention_time: Option<Duration>,
 
     /// Segment size in bytes
     #[structopt(long, value_name = "bytes")]

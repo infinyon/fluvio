@@ -41,12 +41,14 @@ impl ListTopicsOpt {
 
 mod display {
 
+    use std::time::Duration;
+
+    use humantime::{format_duration};
     use prettytable::*;
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
     use fluvio::metadata::topic::TopicSpec;
-    use time_humanize::HumanTime;
 
     use crate::common::output::{OutputType, TableOutputHandler, Terminal, OutputError};
     use crate::common::t_println;
@@ -83,7 +85,7 @@ mod display {
                 "TYPE",
                 "PARTITIONS",
                 "REPLICAS",
-                "RETENTION(secs)",
+                "RETENTION TIME",
                 "STATUS",
                 "REASON"
             ]
@@ -105,7 +107,7 @@ mod display {
                         c -> topic.type_label(),
                         c -> topic.partitions_display(),
                         c -> topic.replication_factor_display(),
-                        c -> HumanTime::from_seconds(topic.retention_secs() as i64),
+                        c -> format_duration(Duration::from_secs(topic.retention_secs() as u64)),
                         c -> metadata.status.resolution.to_string(),
                         l -> metadata.status.reason
                     ]

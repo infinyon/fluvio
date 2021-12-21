@@ -103,7 +103,11 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
 
     // check configuration
     if let Some(error) = topic_spec.validate_config() {
-        return Status::new(name.to_string(), ErrorCode::TopicInvalidConfig, Some(error));
+        return Status::new(
+            name.to_string(),
+            ErrorCode::TopicInvalidConfiguration,
+            Some(error),
+        );
     }
 
     match topic_spec.replicas() {
