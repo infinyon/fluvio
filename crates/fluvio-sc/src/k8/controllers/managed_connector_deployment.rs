@@ -198,7 +198,7 @@ impl ManagedConnectorDeploymentController {
     pub async fn generate_k8_deployment_spec(
         mc_spec: &ManagedConnectorSpec,
         tls_config: Option<&TlsConfig>,
-        allowed_connector_prefix: &Vec<String>,
+        allowed_connector_prefix: &[String],
     ) -> Option<K8DeploymentSpec> {
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
