@@ -811,19 +811,6 @@ impl ClusterInstaller {
 
             let mut service_annotation = BTreeMap::new();
             service_annotation.insert("serviceAnnotations", ingress_address);
-            /*
-            let mut connector_prefixes  = Vec::new();
-            for i in &self.config.connector_prefixes {
-                connector_prefixes.push(format!("--connector-prefix={}", i));
-            }
-            let mut sc_args = BTreeMap::new();
-            sc_args.insert("scArgs", connector_prefixes);
-
-            debug!(?sc_args, "sc_args");
-            serde_yaml::to_writer(&np_addr_fd, &sc_args)
-                .map_err(|err| K8InstallError::Other(err.to_string()))?;
-            println!("SC_ARGS {:?}", sc_args);
-            */
 
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);
