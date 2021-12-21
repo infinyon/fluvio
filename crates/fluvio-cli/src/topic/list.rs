@@ -5,6 +5,7 @@
 //!
 
 use std::sync::Arc;
+
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -40,6 +41,9 @@ impl ListTopicsOpt {
 
 mod display {
 
+    use std::time::Duration;
+
+    use humantime::{format_duration};
     use prettytable::*;
     use serde::Serialize;
 
@@ -81,7 +85,7 @@ mod display {
                 "TYPE",
                 "PARTITIONS",
                 "REPLICAS",
-                "IGNORE-RACK",
+                "RETENTION TIME",
                 "STATUS",
                 "REASON"
             ]
@@ -96,14 +100,14 @@ mod display {
         fn content(&self) -> Vec<Row> {
             self.0
                 .iter()
-                .map(|metadata| {
+                .map(|metadata| -> Row {
                     let topic = &metadata.spec;
                     row![
                         l -> metadata.name,
                         c -> topic.type_label(),
                         c -> topic.partitions_display(),
                         c -> topic.replication_factor_display(),
-                        c -> topic.ignore_rack_assign_display(),
+                        c -> format_duration(Duration::from_secs(topic.retention_secs() as u64)),
                         c -> metadata.status.resolution.to_string(),
                         l -> metadata.status.reason
                     ]

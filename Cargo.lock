@@ -1501,7 +1501,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1589,6 +1589,7 @@ dependencies = [
  "hex",
  "home",
  "http-types",
+ "humantime 2.1.0",
  "indicatif",
  "k8-client",
  "k8-config",
@@ -1687,7 +1688,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "async-trait",
  "base64",
@@ -1802,7 +1803,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1885,7 +1886,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.12.0"
+version = "0.12.1"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -1918,7 +1919,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "flate2",
@@ -1926,7 +1927,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-spu-schema",
- "fluvio-storage",
+ "fluvio-types",
  "futures-util",
  "nix",
  "tracing",
@@ -2049,6 +2050,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "derive_builder",
+ "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
@@ -2063,6 +2065,7 @@ dependencies = [
  "serde",
  "structopt",
  "thiserror",
+ "tokio",
  "tracing",
 ]
 
@@ -2203,7 +2206,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "event-listener",
  "fluvio-future",

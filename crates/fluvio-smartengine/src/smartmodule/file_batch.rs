@@ -131,7 +131,7 @@ mod test {
     use std::env::temp_dir;
     use std::os::unix::io::AsRawFd;
 
-    use fluvio_storage::config::DEFAULT_MAX_BATCH_SIZE;
+    use fluvio_types::defaults::STORAGE_MAX_BATCH_SIZE;
 
     use super::*;
 
@@ -145,7 +145,7 @@ mod test {
 
         let read_only = File::open(path).expect("open");
         let fd = read_only.as_raw_fd();
-        let mut buf = vec![0; DEFAULT_MAX_BATCH_SIZE as usize];
+        let mut buf = vec![0; STORAGE_MAX_BATCH_SIZE as usize];
         // let mut buf = BytesMut::with_capacity(64);
         let bytes_read = pread(fd, &mut buf, 1).expect("");
         println!("bytes read: {}", bytes_read);

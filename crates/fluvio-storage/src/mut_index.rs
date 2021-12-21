@@ -4,6 +4,7 @@ use std::mem::size_of;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::slice;
+use std::sync::Arc;
 
 use libc::c_void;
 use tracing::debug;
@@ -14,8 +15,8 @@ use fluvio_future::fs::File;
 use fluvio_future::fs::mmap::MemoryMappedMutFile;
 use dataplane::{Offset, Size};
 
+use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
-use crate::config::ConfigOption;
 use crate::index::lookup_entry;
 use crate::index::Index;
 use crate::index::OffsetPosition;
@@ -42,7 +43,7 @@ pub struct MutLogIndex {
     base_offset: Offset,
     bytes_delta: Size,
     pos: Size,
-    option: ConfigOption,
+    option: Arc<SharedReplicaConfig>,
     ptr: *mut c_void,
 }
 
@@ -52,10 +53,13 @@ unsafe impl Sync for MutLogIndex {}
 unsafe impl Send for MutLogIndex {}
 
 impl MutLogIndex {
-    pub async fn create(base_offset: Offset, option: &ConfigOption) -> Result<Self, IoError> {
+    pub async fn create(
+        base_offset: Offset,
+        option: Arc<SharedReplicaConfig>,
+    ) -> Result<Self, IoError> {
         let index_file_path = generate_file_name(&option.base_dir, base_offset, EXTENSION);
 
-        if option.index_max_bytes == 0 {
+        if option.index_max_bytes.get() == 0 {
             return Err(IoError::new(
                 ErrorKind::InvalidInput,
                 "index max bytes must be greater than 0",
@@ -64,12 +68,13 @@ impl MutLogIndex {
 
         debug!(
             ?index_file_path,
-            max_bytes = option.index_max_bytes,
+            max_bytes = option.index_max_bytes.get(),
             "creating index file"
         );
 
         let (m_file, file) =
-            MemoryMappedMutFile::create(&index_file_path, option.index_max_bytes as u64).await?;
+            MemoryMappedMutFile::create(&index_file_path, option.index_max_bytes.get() as u64)
+                .await?;
 
         let ptr = {
             let b_slices: &[u8] = &m_file.mut_inner();
@@ -81,23 +86,27 @@ impl MutLogIndex {
             file,
             pos: 0,
             bytes_delta: 0,
-            option: option.to_owned(),
+            option,
             ptr,
             base_offset,
         })
     }
 
-    pub async fn open(base_offset: Offset, option: &ConfigOption) -> Result<Self, IoError> {
+    pub async fn open(
+        base_offset: Offset,
+        option: Arc<SharedReplicaConfig>,
+    ) -> Result<Self, IoError> {
         let index_file_path = generate_file_name(&option.base_dir, base_offset, EXTENSION);
 
         // create new memory file and
-        if option.index_max_bytes == 0 {
+        if option.index_max_bytes.get() == 0 {
             return Err(IoError::new(ErrorKind::InvalidInput, "invalid API"));
         }
 
         // make sure it is log file
         let (m_file, file) =
-            MemoryMappedMutFile::create(&index_file_path, option.index_max_bytes as u64).await?;
+            MemoryMappedMutFile::create(&index_file_path, option.index_max_bytes.get() as u64)
+                .await?;
 
         let ptr = {
             let b_slices: &[u8] = &m_file.mut_inner();
@@ -111,7 +120,7 @@ impl MutLogIndex {
             file,
             pos: 0,
             bytes_delta: 0,
-            option: option.to_owned(),
+            option,
             ptr,
             base_offset,
         };
@@ -176,11 +185,11 @@ impl MutLogIndex {
         let batch_size = item.2;
 
         let bytes_delta = self.bytes_delta;
-        if bytes_delta < self.option.index_max_interval_bytes {
+        if bytes_delta < self.option.index_max_interval_bytes.get() {
             self.bytes_delta = bytes_delta + batch_size;
             debug!(
                 bytes_delta = self.bytes_delta,
-                max = self.option.index_max_interval_bytes,
+                max = self.option.index_max_interval_bytes.get(),
                 "no write due to less than max interval"
             );
             return Ok(());
@@ -224,7 +233,7 @@ impl Index for MutLogIndex {
     }
 
     fn len(&self) -> Size {
-        self.option.index_max_bytes
+        self.option.index_max_bytes.get()
     }
 }
 
@@ -263,11 +272,13 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_index_write() {
-        let option = default_option(50);
+        let option = default_option(50).shared();
         let test_file = option.base_dir.join(TEST_FILE);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(121, &option).await.expect("crate");
+        let mut index_sink = MutLogIndex::create(121, option.clone())
+            .await
+            .expect("crate");
 
         index_sink.write_index((5, 200, 70)).await.expect("send"); // this will be ignored
         index_sink.write_index((10, 100, 70)).await.expect("send"); // this will be written since batch size 70 is greater than 50
@@ -292,7 +303,7 @@ mod tests {
 
         // open same file
 
-        let index_sink = MutLogIndex::open(121, &option).await.expect("open");
+        let index_sink = MutLogIndex::open(121, option).await.expect("open");
         assert_eq!(index_sink.pos, 1);
     }
 
@@ -300,11 +311,11 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_index_shrink() {
-        let option = default_option(0);
+        let option = default_option(0).shared();
         let test_file = option.base_dir.join(TEST_FILE2);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(122, &option).await.expect("create");
+        let mut index_sink = MutLogIndex::create(122, option).await.expect("create");
 
         index_sink.write_index((5, 16, 70)).await.expect("send");
 
@@ -319,11 +330,11 @@ mod tests {
 
     #[fluvio_future::test]
     async fn test_mut_index_findoffset() {
-        let option = default_option(0);
+        let option = default_option(0).shared();
         let test_file = option.base_dir.join(TEST_FILE3);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(123, &option).await.expect("create");
+        let mut index_sink = MutLogIndex::create(123, option).await.expect("create");
 
         index_sink.write_index((100, 16, 70)).await.expect("send");
         index_sink.write_index((500, 200, 70)).await.expect("send");

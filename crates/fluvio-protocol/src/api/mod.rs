@@ -80,7 +80,7 @@ pub trait ApiMessage: Sized + Default {
 
 pub trait ApiKey: Sized + Encoder + Decoder + TryFrom<u16> {}
 
-#[derive(Debug, Encoder, Decoder, Default)]
+#[derive(Debug, Encoder, Decoder, Default, Clone)]
 pub struct RequestHeader {
     api_key: u16,
     api_version: i16,

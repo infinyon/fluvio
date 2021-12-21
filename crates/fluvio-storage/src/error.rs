@@ -8,6 +8,9 @@ use crate::validator::LogValidationError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum StorageError {
+    #[error("Other error: {0}")]
+    Other(String),
+
     #[error(transparent)]
     Io(#[from] IoError),
     #[error("Offset error")]

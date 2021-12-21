@@ -28,6 +28,21 @@ spec:
                   type: array
                   items:
                     type: integer
+                cleanupPolicy:
+                  type: object
+                  properties:
+                    segment:
+                      type: object
+                      properties:
+                        timeInSeconds:
+                          type: integer
+                          minimum: 10
+                storage:
+                  type: object
+                  properties:
+                    segmentSize:
+                      type: integer
+                      minimum: 1024    
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true
