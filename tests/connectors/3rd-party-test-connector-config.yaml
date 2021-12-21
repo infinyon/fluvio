@@ -1,7 +1,7 @@
 version: v1
 name: my-test-connector
 type: test-connector
-type: "https://raw.githubusercontent.com/simlay/fluvio-connectors/3rd-party-connector/rust-connectors/utils/test-connector/connector.yaml"
+type: "https://raw.githubusercontent.com/simlay/fluvio/simlay/3rd-party-connectors/tests/connectors/3rd-party-connector.yaml"
 topic: my-test-connector-topic
 create_topic: true
 direction: source
