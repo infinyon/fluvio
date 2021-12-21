@@ -1,19 +1,21 @@
+use std::env;
 //use structopt::StructOpt;
 use color_eyre::eyre::{Result, eyre};
 use structopt::StructOpt;
 
-use fluvio_cli::{Root, HelpOpt};
+use fluvio_cli::{Root, HelpOpt, channel::ImageTagStrategy};
 use std::env::current_exe;
 use std::ffi::OsString;
 use tracing::debug;
 use std::process::Stdio;
-use fluvio_cli::channel::{FluvioChannelConfig, FluvioChannelInfo};
+use fluvio_cli::channel::{FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion};
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
 use std::io::{self, Write};
 use cfg_if::cfg_if;
 
+const IS_FLUVIO_EXEC_LOOP : &str = "IS_FLUVIO_EXEC_LOOP";
 // Create custom channels
 // Support Version number release channels
 
@@ -25,12 +27,24 @@ use cfg_if::cfg_if;
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
 
+    let current_exe = current_exe()?;
+    debug!("Check if channel exec is in a loop");
+    if let Ok(channel_info_str) = env::var(IS_FLUVIO_EXEC_LOOP) {
+        // Expecting this string to be in the form
+        // "channel_name,/path/of/the/channel/binary/exec"
+        let channel : Vec<&str> = channel_info_str.split(",").collect();
+        if channel.len() == 2 {
+            eprintln!("Couldn't find Fluvio channel binary '{}' at '{}'", channel[0], channel[1]);
+        }  else {
+            eprintln!("Couldn't find Fluvio channel binary (Unexpected error formatting (raw output): {})", channel_info_str);
+        }
+        panic!("Exec loop detected");
+    }
+
     debug!("Check if running as fluvio frontend");
     // Verify if the current binary is running in the "official" location
     // If we're not in the fluvio directory then
     // assume dev mode (i.e., do not exec to other binaries)
-    let current_exe = current_exe()?;
-
     let is_frontend = if let Some(file) = current_exe.file_name() {
         let file_name = file.to_str().unwrap_or_default();
 
@@ -50,15 +64,19 @@ fn main() -> Result<()> {
         );
     };
 
-    // Pick a fluvio binary
-    //
-    //if is_frontend {
+    // We need to make sure we always have a stable interface for switching channels
+    // So we're going to handle the `fluvio version <channel stuff>` commands if we're not in development mode
+    if is_frontend {
+        // If the command run starts with "fluvio version" 
 
-    //}
+    }
+
+
+    // Pick a fluvio binary
 
     // open a config file
-    // if one doesn't exist, create it
-    // (TODO: Make that location configurable)
+    // if one doesn't exist, we'll eventually create it before exec
+    // (TODO: Make that location overridable (env var / optional flag))
     // initialize with stable, latest, dev channels
     let channel_config_path = FluvioChannelConfig::default_config_location();
     let _channel = if FluvioChannelConfig::exists(&channel_config_path) {
@@ -77,10 +95,10 @@ fn main() -> Result<()> {
 
     // //
 
-    // Check on channel
-    // But make sure we don't prevent any commands to change channel
+    // Check on channel via channel config file
+    // Handle commands for channels (`fluvio version <subcmd>`) here (but pass the plain `fluvio version` command)
 
-    let channel = if is_frontend && !root.skip_channel_check() {
+    let (channel_name, channel) = if is_frontend && !root.skip_channel_check() {
         // Look for channel config
         // TODO: Let this be configurable
         let channel_config_path = FluvioChannelConfig::default_config_location();
@@ -99,80 +117,61 @@ fn main() -> Result<()> {
         debug!("channel_config: {:#?}", maybe_channel_config);
 
         // Return the channel info for fluvio location
-        let channel_info = if let Some(channel_config) = maybe_channel_config {
+        // Write config file to disk if it doesn't already exist
+        let (channel, channel_info) = if let Some(channel_config) = maybe_channel_config {
             let channel = channel_config.current_channel();
 
-            channel_config
+            let channel_info = channel_config
                 .config()
                 .channel()
                 .get(&channel)
                 .ok_or_else(|| eyre!("Channel info not found"))?
-                .to_owned()
+                .to_owned();
+
+            (channel, channel_info)
         } else {
             // Write the channel config for the first time
-            let stable_info = FluvioChannelInfo::stable_channel();
 
             let mut default_config = FluvioChannelConfig::default();
 
-            default_config.insert_channel("stable".to_string(), stable_info.clone())?;
-            default_config.set_current_channel("stable".to_string())?;
-            default_config.save()?;
+            // If we know we've been called by the installer, then let's add that channel info
+            if let Ok(_) = env::var("FLUVIO_BOOTSTRAP") {
+                let initial_channel = env::var("CHANNEL_BOOTSTRAP")?;
 
-            stable_info
+                // parse a version from the channel name
+                let image_tag_strategy = match FluvioBinVersion::parse(&initial_channel)? {
+                    FluvioBinVersion::Stable => ImageTagStrategy::Version,
+                    FluvioBinVersion::Latest => ImageTagStrategy::VersionGit,
+                    FluvioBinVersion::Tag(_) => ImageTagStrategy::Version,
+                    FluvioBinVersion::Dev => ImageTagStrategy::Git,
+                };
+
+                // Create a new channel
+                let new_channel_info = FluvioChannelInfo::new_channel(&initial_channel, image_tag_strategy);
+
+                default_config.insert_channel(initial_channel.clone(), new_channel_info.clone())?;
+                default_config.set_current_channel(initial_channel.clone())?;
+                default_config.save()?;
+
+                (initial_channel, new_channel_info)
+
+
+            } else {
+
+                let stable_info = FluvioChannelInfo::stable_channel();
+                default_config.insert_channel("stable".to_string(), stable_info.clone())?;
+                default_config.set_current_channel("stable".to_string())?;
+                default_config.save()?;
+
+                ("stable".to_string(), stable_info)
+}
         };
 
-        channel_info
-        //// Run the channel binary
-        //if let Some(exe) = channel.current_exe() {
-        //    if exe != current_exe {
-        //        // If not, exec the correct binary
-        //        debug!("You're NOT using the configured current_channel binary");
-        //        // TODO:
-        //        // If we're CLIChannelName::Stable or CLIChannelName::Latest, then use that
-        //        // If we're CLIChannelName::Dev, do nothing
-        //        if channel.current_channel() == CliChannelName::Dev {
-        //            debug!("You're in Developer mode");
-        //            false
-        //        } else {
-        //            debug!("Will exec to binary @ {:?}", exe);
+        (channel, channel_info)
 
-        //            // Re-build the args list to pass onto exec'ed process
-        //            let mut args: Vec<OsString> = std::env::args_os().collect();
-        //            if !args.is_empty() {
-        //                args.remove(0);
-        //            }
-
-        //            // Handle pipes
-        //            let mut proc = std::process::Command::new(exe);
-        //            proc.args(args);
-        //            proc.stdin(Stdio::inherit());
-        //            proc.stdout(Stdio::inherit());
-        //            proc.stderr(Stdio::inherit());
-
-        //            cfg_if! {
-        //                if #[cfg(not(target_os = "windows"))] {
-        //                    let _err = proc.exec();
-        //                } else {
-        //                    // TODO: This needs to be sure to add .exe to filename
-        //                    // Handle unwrap()
-        //                    let output = proc.output()?;
-        //                    io::stdout().write_all(&output.stdout).unwrap();
-        //                    io::stderr().write_all(&output.stderr).unwrap();
-        //                }
-        //            }
-
-        //            true
-        //        }
-        //    } else {
-        //        debug!("You're using the configured current_channel binary");
-        //        false
-        //    }
-        //} else {
-        //    panic!("Default channel exe should be initialized")
-        //};
     } else {
         debug!("Fluvio bin not in standard install location. Assuming dev channel");
-        FluvioChannelInfo::dev_channel()
+        ("dev".to_string(), FluvioChannelInfo::dev_channel())
     };
 
     let exe = channel.get_binary_path();
@@ -184,6 +183,11 @@ fn main() -> Result<()> {
     if !args.is_empty() {
         args.remove(0);
     }
+
+    // Set the env var we check at the beginning to signal if we're in an exec loop
+    // Give channel name and binary location for error message in form: <channel_name>,<channel_path>
+    let channel_info = format!("{},{}",channel_name, channel.get_binary_path().display());
+    env::set_var(IS_FLUVIO_EXEC_LOOP, channel_info);
 
     // Handle pipes
     let mut proc = std::process::Command::new(exe);
@@ -237,3 +241,4 @@ fn print_help_hack() -> Result<()> {
     }
     Ok(())
 }
+
