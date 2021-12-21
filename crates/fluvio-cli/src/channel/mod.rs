@@ -211,13 +211,11 @@ impl FluvioChannelInfo {
     }
 
     pub fn new_channel(channel_name: &str, image_tag_strategy: ImageTagStrategy) -> Self {
-
         let extensions_dir_name = if channel_name == "stable" {
-            format!("extensions")
+            "extensions".to_string()
         } else {
-            format!("extensions-{}", channel_name)
+            "extensions-{}".to_string()
         };
-
 
         let (binary_location, extensions) = if let Some(home_dir) = home_dir() {
             let binary_location = PathBuf::from(format!(
@@ -230,7 +228,7 @@ impl FluvioChannelInfo {
                 "{}/{}/{}",
                 home_dir.display(),
                 CLI_CONFIG_PATH,
-                extensions_dir_name.clone()
+                extensions_dir_name
             ));
 
             (binary_location, extensions)
@@ -238,8 +236,7 @@ impl FluvioChannelInfo {
             // No home directory
             let binary_location =
                 PathBuf::from(format!("{}/bin/fluvio-{}", CLI_CONFIG_PATH, channel_name));
-            let extensions =
-                PathBuf::from(format!("{}/{}", CLI_CONFIG_PATH, extensions_dir_name));
+            let extensions = PathBuf::from(format!("{}/{}", CLI_CONFIG_PATH, extensions_dir_name));
 
             (binary_location, extensions)
         };
@@ -358,7 +355,11 @@ pub async fn install_channel_fluvio_bin(
         FluvioBinVersion::Stable => fetch_latest_version(&agent, &id, &target, false).await?,
         FluvioBinVersion::Latest => fetch_latest_version(&agent, &id, &target, true).await?,
         FluvioBinVersion::Tag(version) => version,
-        FluvioBinVersion::Dev => return Err(CliError::Other("Dev channel builds are not published".to_string())),
+        FluvioBinVersion::Dev => {
+            return Err(CliError::Other(
+                "Dev channel builds are not published".to_string(),
+            ))
+        }
     };
 
     let id = id.into_versioned(install_version.into());

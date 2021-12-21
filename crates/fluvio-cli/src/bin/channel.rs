@@ -15,7 +15,7 @@ use std::os::unix::prelude::CommandExt;
 use std::io::{self, Write};
 use cfg_if::cfg_if;
 
-const IS_FLUVIO_EXEC_LOOP : &str = "IS_FLUVIO_EXEC_LOOP";
+const IS_FLUVIO_EXEC_LOOP: &str = "IS_FLUVIO_EXEC_LOOP";
 // Create custom channels
 // Support Version number release channels
 
@@ -32,10 +32,13 @@ fn main() -> Result<()> {
     if let Ok(channel_info_str) = env::var(IS_FLUVIO_EXEC_LOOP) {
         // Expecting this string to be in the form
         // "channel_name,/path/of/the/channel/binary/exec"
-        let channel : Vec<&str> = channel_info_str.split(",").collect();
+        let channel: Vec<&str> = channel_info_str.split(',').collect();
         if channel.len() == 2 {
-            eprintln!("Couldn't find Fluvio channel binary '{}' at '{}'", channel[0], channel[1]);
-        }  else {
+            eprintln!(
+                "Couldn't find Fluvio channel binary '{}' at '{}'",
+                channel[0], channel[1]
+            );
+        } else {
             eprintln!("Couldn't find Fluvio channel binary (Unexpected error formatting (raw output): {})", channel_info_str);
         }
         panic!("Exec loop detected");
@@ -67,10 +70,8 @@ fn main() -> Result<()> {
     // We need to make sure we always have a stable interface for switching channels
     // So we're going to handle the `fluvio version <channel stuff>` commands if we're not in development mode
     if is_frontend {
-        // If the command run starts with "fluvio version" 
-
+        // If the command run starts with "fluvio version"
     }
-
 
     // Pick a fluvio binary
 
@@ -135,7 +136,7 @@ fn main() -> Result<()> {
             let mut default_config = FluvioChannelConfig::default();
 
             // If we know we've been called by the installer, then let's add that channel info
-            if let Ok(_) = env::var("FLUVIO_BOOTSTRAP") {
+            if env::var("FLUVIO_BOOTSTRAP").is_ok() {
                 let initial_channel = env::var("CHANNEL_BOOTSTRAP")?;
 
                 // parse a version from the channel name
@@ -147,28 +148,25 @@ fn main() -> Result<()> {
                 };
 
                 // Create a new channel
-                let new_channel_info = FluvioChannelInfo::new_channel(&initial_channel, image_tag_strategy);
+                let new_channel_info =
+                    FluvioChannelInfo::new_channel(&initial_channel, image_tag_strategy);
 
                 default_config.insert_channel(initial_channel.clone(), new_channel_info.clone())?;
                 default_config.set_current_channel(initial_channel.clone())?;
                 default_config.save()?;
 
                 (initial_channel, new_channel_info)
-
-
             } else {
-
                 let stable_info = FluvioChannelInfo::stable_channel();
                 default_config.insert_channel("stable".to_string(), stable_info.clone())?;
                 default_config.set_current_channel("stable".to_string())?;
                 default_config.save()?;
 
                 ("stable".to_string(), stable_info)
-}
+            }
         };
 
         (channel, channel_info)
-
     } else {
         debug!("Fluvio bin not in standard install location. Assuming dev channel");
         ("dev".to_string(), FluvioChannelInfo::dev_channel())
@@ -186,7 +184,7 @@ fn main() -> Result<()> {
 
     // Set the env var we check at the beginning to signal if we're in an exec loop
     // Give channel name and binary location for error message in form: <channel_name>,<channel_path>
-    let channel_info = format!("{},{}",channel_name, channel.get_binary_path().display());
+    let channel_info = format!("{},{}", channel_name, channel.get_binary_path().display());
     env::set_var(IS_FLUVIO_EXEC_LOOP, channel_info);
 
     // Handle pipes
@@ -241,4 +239,3 @@ fn print_help_hack() -> Result<()> {
     }
     Ok(())
 }
-
