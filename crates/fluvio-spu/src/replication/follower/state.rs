@@ -3,13 +3,14 @@ use std::fmt::Debug;
 use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
+use fluvio_storage::config::ReplicaConfig;
 use tracing::{debug, warn, instrument};
 use async_rwlock::{RwLock};
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
 use dataplane::Offset;
-use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
+use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 use crate::replication::leader::ReplicaOffsetRequest;
 use crate::core::{FileGlobalContext};
@@ -90,8 +91,11 @@ impl FollowersState<FileReplica> {
                     "creating new follower state"
                 );
 
+                let mut replica_config: ReplicaConfig = ctx.config().into();
+                replica_config.update_from_replica(&replica);
+
                 let replica_state =
-                    FollowerReplicaState::create(leader, replica.id, ctx.config().into()).await?;
+                    FollowerReplicaState::create(leader, replica.id, replica_config).await?;
 
                 entry.insert(replica_state.clone());
                 self.groups.check_new(ctx, leader).await;

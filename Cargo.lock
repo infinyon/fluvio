@@ -2050,6 +2050,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "derive_builder",
+ "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",

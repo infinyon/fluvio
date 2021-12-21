@@ -15,7 +15,7 @@ use dataplane::{record::RecordSet};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
+use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{SpuId};
 
 use crate::{
@@ -130,8 +130,9 @@ where
         ReplicationConfig: From<&'a C>,
         S::ReplicaConfig: From<&'a C>,
     {
-        let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
-
+        let mut replica_config: S::ReplicaConfig = config.into();
+        replica_config.update_from_replica(&replica);
+        let inner = SharableReplicaStorage::create(replica.id.clone(), replica_config).await?;
         let leader_replica = Self::new(replica, config.into(), status_update, inner);
         leader_replica.update_status().await;
         Ok(leader_replica)
@@ -694,7 +695,11 @@ mod test_leader {
     #[derive(Default)]
     struct MockConfig {}
 
-    impl ReplicaStorageConfig for MockConfig {}
+    impl ReplicaStorageConfig for MockConfig {
+        fn update_from_replica(&mut self, _replica: &Replica) {
+            todo!()
+        }
+    }
 
     #[derive(Default)]
     struct MockStorage {

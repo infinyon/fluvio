@@ -29,6 +29,7 @@ mod inner {
 
     use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey};
     use dataplane::record::RecordSet;
+    use fluvio_controlplane_metadata::partition::Replica;
     use fluvio_future::file_slice::AsyncFileSlice;
 
     #[derive(Debug, Clone, PartialEq)]
@@ -143,7 +144,10 @@ mod inner {
     */
 
     /// some storage configuration
-    pub trait ReplicaStorageConfig {}
+    pub trait ReplicaStorageConfig {
+        /// update values from replica config
+        fn update_from_replica(&mut self, replica: &Replica);
+    }
 
     #[async_trait]
     pub trait ReplicaStorage: Sized {

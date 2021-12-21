@@ -6,10 +6,9 @@ use dataplane::core::{Encoder, Decoder};
 use fluvio_types::SpuId;
 use crate::partition::ReplicaKey;
 use crate::core::{MetadataItem};
-use crate::spg::StorageConfig;
 use crate::store::MetadataStoreObject;
 use crate::partition::PartitionSpec;
-use crate::topic::CleanupPolicy;
+use crate::topic::{CleanupPolicy, TopicStorageConfig};
 use super::store::*;
 
 /// Metadata about Replica send from SC
@@ -20,7 +19,7 @@ pub struct Replica {
     pub replicas: Vec<SpuId>,
     pub is_being_deleted: bool,
     pub cleanup_policy: Option<CleanupPolicy>,
-    pub storage: StorageConfig,
+    pub storage: Option<TopicStorageConfig>,
 }
 
 impl Replica {

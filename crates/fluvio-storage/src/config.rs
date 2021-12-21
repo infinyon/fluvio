@@ -5,6 +5,8 @@ use std::sync::Arc;
 use std::sync::atomic::AtomicU32;
 
 use derive_builder::Builder;
+use fluvio_controlplane_metadata::partition::Replica;
+use fluvio_controlplane_metadata::topic::CleanupPolicy;
 use serde::Deserialize;
 
 use fluvio_types::defaults::{
@@ -56,7 +58,25 @@ impl fmt::Display for ReplicaConfig {
     }
 }
 
-impl ReplicaStorageConfig for ReplicaConfig {}
+impl ReplicaStorageConfig for ReplicaConfig {
+    fn update_from_replica(&mut self, replica: &Replica) {
+        if let Some(policy) = &replica.cleanup_policy {
+            match policy {
+                CleanupPolicy::Segment(segment) => {
+                    self.retention_seconds = segment.retention_secs();
+                }
+            }
+        }
+
+        if let Some(segment_size) = replica
+            .storage
+            .as_ref()
+            .and_then(|storage| storage.segment_size)
+        {
+            self.segment_max_bytes = segment_size;
+        }
+    }
+}
 
 fn default_base_dir() -> PathBuf {
     PathBuf::from(SPU_LOG_BASE_DIR)
