@@ -1,0 +1,8 @@
+version: v1
+name: my-test-connector
+type: test-connector
+type: "https://www.google.com"
+topic: my-test-connector-topic
+create_topic: true
+direction: source
+

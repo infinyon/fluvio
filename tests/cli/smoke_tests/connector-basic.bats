@@ -9,7 +9,7 @@ load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
-    CONNECTOR_CONFIG="$TEST_HELPER_DIR/test-connector-config.yml"
+    CONNECTOR_CONFIG="$TEST_HELPER_DIR/connectors/test-connector-config.yml"
     export CONNECTOR_CONFIG
     INVALID_CONFIG=$(mktemp)
     export INVALID_CONFIG

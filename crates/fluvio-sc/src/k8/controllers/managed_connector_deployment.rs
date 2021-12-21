@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
-use tracing::{debug, error, trace, instrument};
+use tracing::{debug, error, info, trace, instrument};
 use k8_client::ClientError;
 use k8_types::{
     LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
@@ -189,6 +189,15 @@ impl ManagedConnectorDeploymentController {
             debug!(?deployment_action, "applying deployment");
 
             self.deployments.wait_action(key, deployment_action).await?;
+        } else {
+            let resolution = ManagedConnectorStatusResolution::Invalid;
+            let connector_status = ManagedConnectorStatus {
+                resolution,
+                ..Default::default()
+            };
+            self.connectors
+                .update_status(key.to_string(), connector_status.clone())
+                .await?;
         }
 
         Ok(())
@@ -229,7 +238,7 @@ impl ManagedConnectorDeploymentController {
         let type_ = &mc_spec.type_;
         let image = if type_.starts_with("https://") {
             debug!(
-                "GOT A 3rd PARTY CONNECTOR!{:?} - is it in the allowed_prefixes? {:?}",
+                "Checking 3rd party connector {:?} in allowed_prefixes - {:?}",
                 type_, allowed_connector_prefix
             );
             let mut image = None;
@@ -240,7 +249,7 @@ impl ManagedConnectorDeploymentController {
                             image = Some(spec.image);
                         }
                         Err(e) => {
-                            error!("3rd party connector spec failed to retrieve {:?}", e);
+                            info!("3rd party connector spec failed to retrieve {:?}", e);
                         }
                     }
                     break;
@@ -249,7 +258,7 @@ impl ManagedConnectorDeploymentController {
             if let Some(image) = image {
                 image
             } else {
-                error!("None of the connector prefixes matched!");
+                info!("None of the connector prefixes matched!");
                 return None;
             }
         } else {
