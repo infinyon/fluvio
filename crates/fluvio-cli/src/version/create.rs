@@ -6,12 +6,16 @@ use crate::channel::{
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::debug;
+use dirs::home_dir;
+use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 #[derive(Debug, StructOpt, Clone, PartialEq)]
 pub struct CreateOpt {
     #[structopt(long)]
     config: Option<PathBuf>,
     channel: String,
+    binary_path: Option<PathBuf>,
+    extensions_path: Option<PathBuf>,
     image_tag_strategy: Option<ImageTagStrategy>,
     // Do I need this flag?
     //update: Option<bool>,
@@ -41,20 +45,51 @@ impl CreateOpt {
             FluvioChannelConfig::default()
         };
 
-        // We can configure the image tag strategy
+        // Configure where to save binaries
+        let home = if let Some(mut config_location) = home_dir() {
+            config_location.push(CLI_CONFIG_PATH);
+            config_location
+        } else {
+            debug!("Home directory not found. Using current dir with relative path");
+            PathBuf::from(".")
+        };
+
+        let binary_path = if let Some(binary_path) = self.binary_path {
+            binary_path
+        } else {
+            // Default to ~/.fluvio/bin/fluvio-<channel>
+            let mut p = home.clone();
+            p.push("bin");
+            p.push(format!("fluvio-{}", self.channel));
+            p
+        };
+
+        let extensions_path = if let Some(extensions_path) = self.extensions_path {
+            extensions_path
+        } else {
+            // Default to ~/.fluvio/bin/extensions-<channel>
+            let mut p = home.clone();
+            p.push("bin");
+            p.push(format!("extensions-{}", self.channel));
+            p
+        };
+
         let image_tag_strategy = if let Some(strategy) = self.image_tag_strategy {
             strategy
         } else {
             ImageTagStrategy::Version
         };
 
-        let new_channel_info = FluvioChannelInfo::new_channel(&self.channel, image_tag_strategy);
+        let mut new_channel_info = FluvioChannelInfo::default();
+        new_channel_info.set_binary_path(binary_path.clone())?;
+        new_channel_info.set_extensions_path(extensions_path)?;
+        new_channel_info.set_tag_strategy(image_tag_strategy)?;
 
-        config.insert_channel(self.channel.clone(), new_channel_info.clone())?;
+        config.insert_channel(self.channel.clone(), new_channel_info)?;
         config.save()?;
 
-        // We should also try to install the binary if it doesn't exist in the binary path
-        if !new_channel_info.binary_location.exists() {
+        // TODO: We should also try to install the binary if it doesn't exist in the binary path
+        if !binary_path.exists() {
             let version = FluvioBinVersion::parse(&self.channel)?;
 
             install_channel_fluvio_bin(self.channel, &config, version).await?;

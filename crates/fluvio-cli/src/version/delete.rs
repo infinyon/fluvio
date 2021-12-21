@@ -20,6 +20,7 @@ impl DeleteOpt {
 
         // Load in the config file
         // Parse with the CLI Config parser
+
         debug!("Looking for channel config");
 
         let cli_config_path = if let Some(path) = self.config {
@@ -31,13 +32,14 @@ impl DeleteOpt {
         };
 
         // Open file
+
         if let Ok(mut load_config) = FluvioChannelConfig::from_file(cli_config_path) {
             debug!("Loaded channel config");
             let _ = if let Ok(Some(_)) = load_config.remove_channel(self.channel.clone()) {
                 load_config.save()?;
                 println!("Channel {} deleted", self.channel);
 
-                debug!("TODO: Delete channel binaries and extensions");
+                // TODO: Delete channel binaries and extensions
             } else {
                 println!("Channel {} not found", self.channel);
             };

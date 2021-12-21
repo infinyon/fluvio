@@ -128,6 +128,7 @@ impl InstallOpt {
         install_println("🔑 Downloaded and verified package file");
 
         // Install the package to the ~/.fluvio/bin/ dir
+        // For non-windows, respect the channel
         let fluvio_dir = fluvio_extensions_dir()?;
         let package_filename = if target.to_string().contains("windows") {
             format!("{}.exe", id.name().as_str())
