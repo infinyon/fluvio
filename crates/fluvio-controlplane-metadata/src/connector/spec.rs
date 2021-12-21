@@ -69,19 +69,3 @@ impl Deref for SecretString {
         &self.0
     }
 }
-#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
-#[cfg_attr(
-    feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
-)]
-pub struct ThirdPartyConnectorSpec {
-    pub image: String,
-}
-
-impl ThirdPartyConnectorSpec {
-    pub async fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let body = surf::get(url).recv_string().await?;
-        Ok(serde_yaml::from_str(&body)?)
-    }
-}

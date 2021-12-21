@@ -16,7 +16,7 @@ use fluvio_stream_dispatcher::store::K8ChangeListener;
 use crate::stores::{
     StoreContext,
     connector::{
-        ManagedConnectorSpec, ThirdPartyConnectorSpec, ManagedConnectorStatus,
+        ManagedConnectorSpec, ManagedConnectorStatus,
         ManagedConnectorStatusResolution,
     },
     k8::K8MetaItem,
@@ -30,6 +30,7 @@ use crate::k8::objects::managed_connector_deployment::{
 use crate::k8::objects::spu_k8_config::ScK8Config;
 
 use crate::cli::TlsConfig;
+
 
 /// Update Statefulset and Service from SPG
 pub struct ManagedConnectorDeploymentController {
@@ -359,5 +360,17 @@ impl ManagedConnectorDeploymentController {
             selector: LabelSelector { match_labels },
             ..Default::default()
         })
+    }
+}
+
+#[derive(Default, Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ThirdPartyConnectorSpec {
+    pub image: String,
+}
+
+impl ThirdPartyConnectorSpec {
+    pub async fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        let body = surf::get(url).recv_string().await?;
+        Ok(serde_yaml::from_str(&body)?)
     }
 }
