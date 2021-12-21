@@ -24,6 +24,7 @@ use crate::stores::{
 use crate::k8::objects::managed_connector_deployment::{
     ManagedConnectorDeploymentSpec, K8DeploymentSpec,
 };
+use crate::k8::objects::spu_k8_config::ScK8Config;
 
 use crate::cli::TlsConfig;
 
@@ -31,8 +32,8 @@ use crate::cli::TlsConfig;
 pub struct ManagedConnectorDeploymentController {
     connectors: StoreContext<ManagedConnectorSpec>,
     deployments: StoreContext<ManagedConnectorDeploymentSpec>,
-    allowable_connector_prefixes: Vec<String>,
     tls_config: Option<TlsConfig>,
+    config_ctx: StoreContext<ScK8Config>,
 }
 
 impl ManagedConnectorDeploymentController {
@@ -40,13 +41,13 @@ impl ManagedConnectorDeploymentController {
         connectors: StoreContext<ManagedConnectorSpec>,
         deployments: StoreContext<ManagedConnectorDeploymentSpec>,
         tls_config: Option<TlsConfig>,
-        allowable_connector_prefixes: Vec<String>,
+        config_ctx: StoreContext<ScK8Config>
     ) {
         let controller = Self {
             connectors,
             deployments,
             tls_config,
-            allowable_connector_prefixes,
+            config_ctx,
         };
 
         spawn(controller.dispatch_loop());
@@ -163,8 +164,18 @@ impl ManagedConnectorDeploymentController {
     ) -> Result<(), ClientError> {
         let key = managed_connector.key();
 
+        let mut connector_prefixes = Vec::new();
+
+        if let Some(config) = self.config_ctx.store().value("fluvio").await {
+            let config = config.inner_owned().spec;
+            connector_prefixes = config.connector_prefixes;
+        }
         let k8_deployment_spec =
-            Self::generate_k8_deployment_spec(managed_connector.spec(), self.tls_config.as_ref(), &self.allowable_connector_prefixes).await;
+            Self::generate_k8_deployment_spec(
+                managed_connector.spec(),
+                self.tls_config.as_ref(),
+                &connector_prefixes,
+            ).await;
         trace!(?k8_deployment_spec);
         if let Some(k8_deployment_spec) = k8_deployment_spec {
 
@@ -217,11 +228,17 @@ impl ManagedConnectorDeploymentController {
         let image = if
             type_.starts_with("https://")
         {
+            debug!("GOT A 3rd PARTY CONNECTOR!{:?} - is it in the allowed_prefixes? {:?}", type_, allowed_connector_prefix);
             let mut image = None;
             for prefix in allowed_connector_prefix {
                 if type_.starts_with(prefix.as_str()) {
-                    if let Ok(spec) = ThirdPartyConnectorSpec::from_url(type_).await {
-                        image = Some(spec.image);
+                    match ThirdPartyConnectorSpec::from_url(type_).await {
+                        Ok(spec) => {
+                            image = Some(spec.image);
+                        }
+                        Err(e) => {
+                            error!("3rd party connector spec failed to retrieve {:?}", e);
+                        }
                     }
                     break;
                 }
@@ -229,6 +246,7 @@ impl ManagedConnectorDeploymentController {
             if let Some(image) = image {
                 image
             } else {
+                error!("None of the connector prefixes matched!");
                 return None;
             }
 

@@ -31,7 +31,6 @@ mod k8_operator {
         k8_client: SharedK8Client,
         global_ctx: SharedContext,
         tls: Option<TlsConfig>,
-        connector_prefixes: Vec<String>
     ) {
         let config = global_ctx.config();
 
@@ -92,14 +91,14 @@ mod k8_operator {
         });
 
         whitelist!(config, "k8_spu_service", {
-            SpuServiceController::start(config_ctx, spu_service_ctx, global_ctx.spgs().clone());
+            SpuServiceController::start(config_ctx.clone(), spu_service_ctx, global_ctx.spgs().clone());
         });
         whitelist!(config, "k8_managed_connector_delpoyment", {
             ManagedConnectorDeploymentController::start(
                 global_ctx.managed_connectors().clone(),
                 managed_connector_deployments_ctx,
                 tls,
-                connector_prefixes,
+                config_ctx,
             );
         });
     }

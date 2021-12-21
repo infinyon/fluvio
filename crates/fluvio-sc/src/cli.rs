@@ -65,9 +65,6 @@ pub struct ScOpt {
     )]
     auth_policy: Option<PathBuf>,
 
-    #[structopt(long = "connector-prefix")]
-    pub connector_prefixes: Vec<String>,
-
     /// only allow white list of controllers
     #[structopt(long)]
     white_list: Vec<String>,
@@ -86,7 +83,7 @@ impl ScOpt {
     #[allow(clippy::type_complexity)]
     fn get_sc_and_k8_config(
         mut self,
-    ) -> Result<(Config, K8Config, Option<(String, TlsConfig)>, Vec<String>), ScError> {
+    ) -> Result<(Config, K8Config, Option<(String, TlsConfig)>), ScError> {
         let k8_config = K8Config::load().expect("no k8 config founded");
 
         // if name space is specified, use one from k8 config
@@ -96,17 +93,15 @@ impl ScOpt {
             self.namespace = Some(k8_namespace);
         }
 
-        let (sc_config, tls_option, connector_prefixes) = self.as_sc_config()?;
+        let (sc_config, tls_option) = self.as_sc_config()?;
 
-        Ok((sc_config, k8_config, tls_option, connector_prefixes))
+        Ok((sc_config, k8_config, tls_option))
     }
 
     /// as sc configuration, 2nd part of tls configuration(proxy addr, tls config)
     #[allow(clippy::wrong_self_convention)]
-    fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>, Vec<String>), IoError> {
+    fn as_sc_config(self) -> Result<(Config, Option<(String, TlsConfig)>), IoError> {
         let mut config = ScConfig::default();
-        let connector_prefixes = self.connector_prefixes;
-        println!("CONNECTOR PREFIXES: {:?}", connector_prefixes);
 
         // apply our option
         if let Some(public_addr) = self.bind_public {
@@ -143,13 +138,13 @@ impl ScOpt {
                 )
             })?;
 
-            Ok(((config, policy), Some((proxy_addr, tls)), connector_prefixes))
+            Ok(((config, policy), Some((proxy_addr, tls))))
         } else {
-            Ok(((config, policy), None, connector_prefixes))
+            Ok(((config, policy), None))
         }
     }
 
-    pub fn parse_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>, Vec<String>) {
+    pub fn parse_cli_or_exit(self) -> (Config, K8Config, Option<(String, TlsConfig)>) {
         match self.get_sc_and_k8_config() {
             Err(err) => {
                 print_cli_err!(err);

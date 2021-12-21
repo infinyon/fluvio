@@ -81,9 +81,7 @@ pub struct ThirdPartyConnectorSpec {
 
 impl ThirdPartyConnectorSpec {
     pub async fn from_url(url: &String) -> Result<Self, Box<dyn std::error::Error>> {
-        Ok(reqwest::get(url)
-            .await?
-            .json::<Self>()
-            .await?)
+        let body = surf::get(url).recv_string().await?;
+        Ok(serde_yaml::from_str(&body)?)
     }
 }

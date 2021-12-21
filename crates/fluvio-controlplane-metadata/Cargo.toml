@@ -20,7 +20,8 @@ tracing = "0.1.19"
 serde = { version = "1.0.0", features = ['derive'], optional = true }
 async-trait = "0.1.21"
 thiserror = "1.0.20"
-reqwest = { version = "0.11", features = ["json"] }
+surf = "2.3.2"
+serde_yaml = "0.8"
 
 # Fluvio dependencies
 fluvio-future = { version = "0.3.0" }

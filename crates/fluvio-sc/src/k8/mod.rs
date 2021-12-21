@@ -27,7 +27,7 @@ pub fn main_k8_loop(opt: ScOpt) {
 
     // parse configuration (program exits on error)
     let is_local = opt.is_local();
-    let ((sc_config, auth_policy), k8_config, tls_option, connector_prefixes) = opt.parse_cli_or_exit();
+    let ((sc_config, auth_policy), k8_config, tls_option) = opt.parse_cli_or_exit();
 
     println!("Starting SC, platform: {}", &*crate::VERSION);
 
@@ -50,7 +50,6 @@ pub fn main_k8_loop(opt: ScOpt) {
                 k8_client,
                 ctx,
                 tls_option.clone().map(|(_, config)| config),
-                connector_prefixes,
             )
             .await;
         }

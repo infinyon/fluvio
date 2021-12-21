@@ -309,6 +309,9 @@ pub struct ClusterConfig {
 
     #[builder(setter(into), default)]
     spu_config: SpuConfig,
+
+    #[builder(setter(into), default)]
+    connector_prefixes: Vec<String>,
 }
 
 impl ClusterConfig {
@@ -747,6 +750,10 @@ impl ClusterInstaller {
             install_settings.push(("image.tag", Cow::Borrowed(tag)));
         }
 
+        if !self.config.connector_prefixes.is_empty() {
+            install_settings.push(("connectorPrefixes", Cow::Owned(self.config.connector_prefixes.join(" "))));
+        }
+
         // If configured with TLS, copy certs to server
         if let (TlsPolicy::Verified(server_tls), TlsPolicy::Verified(client_tls)) = (
             &self.config.server_tls_policy,
@@ -801,6 +808,19 @@ impl ClusterInstaller {
 
             let mut service_annotation = BTreeMap::new();
             service_annotation.insert("serviceAnnotations", ingress_address);
+            /*
+            let mut connector_prefixes  = Vec::new();
+            for i in &self.config.connector_prefixes {
+                connector_prefixes.push(format!("--connector-prefix={}", i));
+            }
+            let mut sc_args = BTreeMap::new();
+            sc_args.insert("scArgs", connector_prefixes);
+
+            debug!(?sc_args, "sc_args");
+            serde_yaml::to_writer(&np_addr_fd, &sc_args)
+                .map_err(|err| K8InstallError::Other(err.to_string()))?;
+            println!("SC_ARGS {:?}", sc_args);
+            */
 
             let mut helm_lb_config = BTreeMap::new();
             helm_lb_config.insert("loadBalancer", service_annotation);

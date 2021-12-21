@@ -41,8 +41,6 @@ spec:
             - /var/certs/tls/tls.key
             - --bind-non-tls-public
             - 0.0.0.0:9005
-            - --connector-prefix
-            - "https://github.com/simlay/"
             {{ if .Values.authorizationConfigMap }}
             - --authorization-policy
             - /etc/fluvio/authorization/policy.json
