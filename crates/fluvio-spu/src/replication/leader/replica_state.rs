@@ -696,9 +696,7 @@ mod test_leader {
     struct MockConfig {}
 
     impl ReplicaStorageConfig for MockConfig {
-        fn update_from_replica(&mut self, _replica: &Replica) {
-            todo!()
-        }
+        fn update_from_replica(&mut self, _replica: &Replica) {}
     }
 
     #[derive(Default)]
