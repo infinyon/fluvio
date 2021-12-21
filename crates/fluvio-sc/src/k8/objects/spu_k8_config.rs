@@ -76,11 +76,12 @@ impl ScK8Config {
 
         info!(?spu_pod_config, "spu pod config");
 
-        let connector_prefixes : Vec<String> = if let Some(prefix_string) = data.remove("connectorPrefixes") {
-            prefix_string.split(' ').map(|s| s.to_owned()).collect()
-        } else {
-            Vec::new()
-        };
+        let connector_prefixes: Vec<String> =
+            if let Some(prefix_string) = data.remove("connectorPrefixes") {
+                prefix_string.split(' ').map(|s| s.to_owned()).collect()
+            } else {
+                Vec::new()
+            };
 
         Ok(Self {
             image,

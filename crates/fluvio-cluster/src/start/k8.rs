@@ -751,7 +751,10 @@ impl ClusterInstaller {
         }
 
         if !self.config.connector_prefixes.is_empty() {
-            install_settings.push(("connectorPrefixes", Cow::Owned(self.config.connector_prefixes.join(" "))));
+            install_settings.push((
+                "connectorPrefixes",
+                Cow::Owned(self.config.connector_prefixes.join(" ")),
+            ));
         }
 
         // If configured with TLS, copy certs to server
