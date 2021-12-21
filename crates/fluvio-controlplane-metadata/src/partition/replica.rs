@@ -61,7 +61,6 @@ where
             is_being_deleted,
             cleanup_policy: spec.cleanup_policy,
             storage: spec.storage,
-            ..Default::default()
         }
     }
 }
