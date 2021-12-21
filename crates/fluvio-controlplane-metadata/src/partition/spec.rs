@@ -22,9 +22,9 @@ pub struct PartitionSpec {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
     #[fluvio(min_version = 4)]
-    cleanup_policy: Option<CleanupPolicy>,
+    pub cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
-    storage: Option<TopicStorageConfig>,
+    pub storage: Option<TopicStorageConfig>,
 }
 
 impl PartitionSpec {

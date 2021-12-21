@@ -52,11 +52,15 @@ where
         // consider either metadata ctx is deleted or status is deleted
         let is_being_deleted =
             inner.status.is_being_deleted || inner.ctx().item().is_being_deleted();
+
+        let spec = inner.spec;
         Self {
             id: inner.key,
-            leader: inner.spec.leader,
-            replicas: inner.spec.replicas,
+            leader: spec.leader,
+            replicas: spec.replicas,
             is_being_deleted,
+            cleanup_policy: spec.cleanup_policy,
+            storage: spec.storage,
             ..Default::default()
         }
     }

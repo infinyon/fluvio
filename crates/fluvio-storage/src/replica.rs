@@ -189,6 +189,7 @@ impl FileReplica {
             .join(replica_dir_name(topic, partition));
 
         info!("creating rep dir: {}", replica_dir.display());
+        debug!("replica config: {:?}", replica_config);
         create_dir_all(&replica_dir).await?; // ensure dir_name exits
 
         let mut rep_option = replica_config.clone();
