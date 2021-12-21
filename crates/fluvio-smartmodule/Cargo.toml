@@ -20,4 +20,4 @@ fluvio-smartmodule-derive = { version = "0.2.0", path = "../fluvio-smartmodule-d
 fluvio-spu-schema = { version = "0.9", path = "../fluvio-spu-schema" }
 
 [dev-dependencies]
-trybuild = { git = "https://github.com/sehz/trybuild", branch = "check_option" }
+trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }

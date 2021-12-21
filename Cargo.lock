@@ -1823,7 +1823,7 @@ dependencies = [
  "quote",
  "syn",
  "tracing",
- "trybuild 1.0.42 (git+https://github.com/infinyon/trybuild?branch=check_option)",
+ "trybuild",
 ]
 
 [[package]]
@@ -1942,7 +1942,7 @@ dependencies = [
  "fluvio-dataplane-protocol",
  "fluvio-smartmodule-derive",
  "fluvio-spu-schema",
- "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
+ "trybuild",
 ]
 
 [[package]]
@@ -2162,7 +2162,7 @@ dependencies = [
  "syn",
  "tokio",
  "tracing",
- "trybuild 1.0.42 (git+https://github.com/sehz/trybuild?branch=check_option)",
+ "trybuild",
 ]
 
 [[package]]
@@ -4988,19 +4988,6 @@ checksum = "59547bce71d9c38b83d9c0e92b6066c4253371f15005def0c30d9657f50c7642"
 name = "trybuild"
 version = "1.0.42"
 source = "git+https://github.com/infinyon/trybuild?branch=check_option#271081028a8b10104c5ab6eb1861e35fd23e156e"
-dependencies = [
- "glob",
- "lazy_static",
- "serde",
- "serde_json",
- "termcolor",
- "toml",
-]
-
-[[package]]
-name = "trybuild"
-version = "1.0.42"
-source = "git+https://github.com/sehz/trybuild?branch=check_option#271081028a8b10104c5ab6eb1861e35fd23e156e"
 dependencies = [
  "glob",
  "lazy_static",
