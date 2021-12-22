@@ -22,6 +22,7 @@ mod render;
 use std::env::current_exe;
 use crate::channel::{
     FluvioChannelConfig, is_fluvio_bin_in_std_dir, FluvioChannelInfo, ImageTagStrategy,
+    cli::current_channel,
 };
 
 pub(crate) use error::{Result, CliError};
@@ -67,6 +68,7 @@ mod root {
 
     use super::Result;
     use super::VERSION;
+    use super::current_channel;
 
     /// Fluvio Command Line Interface
     #[derive(StructOpt, Debug)]
@@ -227,7 +229,9 @@ mod root {
                     let current_exe = current_exe()?;
 
                     // TODO: We need a way to propagate the skip_channel_check
-                    if is_fluvio_bin_in_std_dir(&current_exe) && !root.skip_channel_check() {
+                    let cluster_cmd = if is_fluvio_bin_in_std_dir(&current_exe)
+                        && !root.skip_channel_check()
+                    {
                         //if is_fluvio_bin_in_std_dir(&current_exe) {
                         let channel_config_path = FluvioChannelConfig::default_config_location();
 
@@ -303,8 +307,6 @@ mod root {
                         };
 
                         modified_cluster_cmd
-                            .process(out, version, root.target)
-                            .await?;
                     } else {
                         debug!("Fluvio bin not in standard install location. Assuming dev channel");
 
@@ -323,14 +325,17 @@ mod root {
                         };
 
                         modified_cluster_cmd
-                            .process(out, version, root.target)
-                            .await?;
-                    }
+                    };
+
+                    println!("Current channel: {}", &current_channel());
+                    cluster_cmd.process(out, version, root.target).await?;
                 }
                 Self::Install(install) => {
+                    println!("Current channel: {}", &current_channel());
                     install.process().await?;
                 }
                 Self::Update(update) => {
+                    println!("Current channel: {}", &current_channel());
                     update.process().await?;
                 }
                 Self::Version(version) => {
