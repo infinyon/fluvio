@@ -22,7 +22,7 @@ pub fn get_log_directory() -> &'static str {
     "/tmp"
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct DefaultLogDirectory(String);
 
 impl Default for DefaultLogDirectory {
@@ -45,7 +45,7 @@ impl FromStr for DefaultLogDirectory {
     }
 }
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct SpuCliConfig {
     /// set spu storage size
     #[structopt(long, default_value = "10")]
@@ -64,7 +64,7 @@ impl SpuCliConfig {
     }
 }
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct K8Install {
     /// k8: use specific chart version
     #[structopt(long)]

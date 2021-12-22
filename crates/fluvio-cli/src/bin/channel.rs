@@ -1,9 +1,8 @@
 use std::env;
-//use structopt::StructOpt;
 use color_eyre::eyre::{Result, eyre};
 use structopt::StructOpt;
 
-use fluvio_cli::{Root, RootCmd, print_help_hack};
+use fluvio_cli::{Root, RootCmd};
 use std::env::current_exe;
 use std::ffi::OsString;
 use tracing::debug;
@@ -86,7 +85,10 @@ fn main() -> Result<()> {
     debug!("About to process args");
 
     // Read in args
-    print_help_hack()?;
+
+    // Don't handle help text if we're in frontend mode
+
+    //print_help_hack()?;
     let root: Root = Root::from_args();
 
     debug!("After args: {:#?}", &root);
@@ -174,7 +176,7 @@ fn main() -> Result<()> {
                 default_config.set_current_channel(STABLE_CHANNEL_NAME.to_string())?;
                 default_config.save()?;
 
-                ("stable".to_string(), stable_info)
+                (STABLE_CHANNEL_NAME.to_string(), stable_info)
             }
         };
 
