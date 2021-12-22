@@ -5,6 +5,7 @@ set -e
 set -u
 set -o pipefail
 
+# Note: The test prefix is: 'https://packages.fluvio.io/test'
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
 readonly FLUVIO_PREFIX="${FLUVIO_PREFIX:-'https://packages.fluvio.io/v1'}"
 readonly FLUVIO_TAG_STABLE="stable"
@@ -512,10 +513,7 @@ main() {
     say "⬇️  Downloaded Fluvio, installing..."
     ensure mkdir -p "${FLUVIO_BIN}"
 
-
-
     # Install as fluvio-${_version}
-
     if [[ "${_use_tag_file_name}" == "true" ]] ; then
 
         # Stable extensions go in main dir
@@ -536,12 +534,9 @@ main() {
         ensure mkdir -p "${FLUVIO_EXTENSIONS}-${_version}"
     fi
 
-
     ensure mv "${_temp_file}" "${_install_file}"
     ensure chmod +x "${_install_file}"
     say "✅ Successfully installed ${_install_file}"
-
-
 
     # Install Fluvio channel
     # Download Fluvio-channel to a temporary file

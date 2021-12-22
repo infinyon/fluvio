@@ -44,7 +44,6 @@ pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf> {
 
     let _base_dir = fluvio_base_dir()?;
 
-    // TODO: Check channel
     // Open and load channel config
     let current_channel_info =
         if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
