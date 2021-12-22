@@ -60,7 +60,7 @@ impl SwitchOpt {
             } else if &self.channel == "dev" {
                 FluvioChannelInfo::dev_channel()
             } else {
-                return Err(CliError::Other("Channel not found".to_string()));
+                return Err(CliError::Other("Channel not found in channel config. (Did you create it first?)".to_string()));
             };
 
             debug!(

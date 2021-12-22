@@ -94,7 +94,7 @@ fn main() -> Result<()> {
         match version_opt.cmd {
             Some(channel_cmd) => {
                 if let Err(e) = run_block_on(channel_cmd.process(root.opts.target)) {
-                    e.print()?;
+                    println!("{}", e.into_report());
                     std::process::exit(1);
                 }
                 std::process::exit(0);
@@ -205,7 +205,6 @@ fn main() -> Result<()> {
             let _err = proc.exec();
         } else {
             // TODO: This needs to be sure to add .exe to filename
-            // Handle unwrap()
             let output = proc.output()?;
             io::stdout().write_all(&output.stdout)?;
             io::stderr().write_all(&output.stderr)?;
