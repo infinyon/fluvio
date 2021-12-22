@@ -40,4 +40,4 @@ rbac:
 serviceAccount:
   name: fluvio
 podSecurityContext: {}
-connectorPrefixes: ""
+connectorPrefixes: nil
