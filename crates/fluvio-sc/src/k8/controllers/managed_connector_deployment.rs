@@ -366,23 +366,23 @@ impl ManagedConnectorDeploymentController {
 #[cfg(test)]
 mod third_party_connector_tests {
 
-#[fluvio_future::test]
+    #[fluvio_future::test]
     async fn test_authorized_prefix() {
         let image = ManagedConnectorDeploymentController::get_image("foo", &[]).await;
         assert_eq!(image, Some("infinyon/fluvio-connect-foo".to_string()));
     }
 
-#[fluvio_future::test]
+    #[fluvio_future::test]
     async fn test_unauthorized_prefix() {
         let image = ManagedConnectorDeploymentController::get_image(
             "https://google.com",
             &["https://yahoo.com".to_string()],
         )
-            .await;
+        .await;
         assert_eq!(image, None);
     }
 
-#[fluvio_future::test]
+    #[fluvio_future::test]
     async fn test_official_3rd_party_connector() {
         let image = ManagedConnectorDeploymentController::get_image("https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml", &["https://raw.githubusercontent.com/infinyon/fluvio-connectors".to_string()]).await;
         assert_eq!(
