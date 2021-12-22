@@ -101,6 +101,7 @@ impl SwitchOpt {
         new_config.save()?;
 
         debug!("channel config: {:?}", self.channel);
+        println!("Switched to Fluvio channel: {}", self.channel);
 
         Ok(())
     }

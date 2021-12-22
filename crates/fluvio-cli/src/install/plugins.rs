@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
-use crate::channel::{FluvioChannelConfig, FluvioChannelInfo, ImageTagStrategy};
+use crate::channel::{FluvioChannelConfig, ImageTagStrategy};
 
 use crate::{Result, CliError};
 use crate::install::{
@@ -77,7 +77,10 @@ impl InstallOpt {
             if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
                 channel_info
             } else {
-                FluvioChannelInfo::stable_channel()
+                return Err(CliError::Other(format!(
+                    "No channel info found for channel: {}",
+                    &channel.current_channel()
+                )));
             };
 
         let prerelease_flag =

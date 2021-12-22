@@ -255,6 +255,8 @@ mod root {
                             FluvioChannelInfo::stable_channel()
                         };
 
+                        println!("Current channel: {}", &channel.current_channel());
+
                         let modified_cluster_cmd = match current_channel_info
                             .get_image_tag_strategy()
                         {

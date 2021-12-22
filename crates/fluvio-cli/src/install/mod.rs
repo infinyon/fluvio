@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
-use crate::channel::{FluvioChannelConfig, FluvioChannelInfo};
+use crate::channel::{FluvioChannelConfig};
 use crate::{Result, CliError};
 
 pub mod update;
@@ -44,19 +44,33 @@ pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf> {
 
     let _base_dir = fluvio_base_dir()?;
 
-    // TODO: Check channel
     // Open and load channel config
     let current_channel_info =
         if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
-            channel_info
+            debug!(
+                "Got extensions info for channel: {}",
+                &channel.current_channel()
+            );
+            Some(channel_info)
         } else {
-            FluvioChannelInfo::stable_channel()
+            debug!(
+                "No extensions directory configured for channel: {}",
+                &channel.current_channel()
+            );
+            None
         };
 
-    if !current_channel_info.get_extensions_path().exists() {
-        std::fs::create_dir(&current_channel_info.get_extensions_path())?;
+    if let Some(info) = current_channel_info {
+        if !info.get_extensions_path().exists() {
+            std::fs::create_dir(&info.get_extensions_path())?;
+        }
+        Ok(info.get_extensions_path())
+    } else {
+        return Err(CliError::Other(format!(
+            "No extensions directory configured for channel: {}",
+            &channel.current_channel()
+        )));
     }
-    Ok(current_channel_info.get_extensions_path())
 }
 
 pub(crate) fn get_extensions() -> Result<Vec<PathBuf>> {
