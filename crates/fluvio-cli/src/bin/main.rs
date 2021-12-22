@@ -2,8 +2,6 @@ use structopt::StructOpt;
 use color_eyre::eyre::Result;
 use fluvio_cli::{Root, HelpOpt};
 use fluvio_future::task::run_block_on;
-// TODO: This needs to support more than the 3 main channels
-// Pass overrides for extension dir, image name/path, image pattern format
 
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);

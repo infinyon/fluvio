@@ -294,14 +294,14 @@ impl FluvioChannelInfo {
         let fluvio_bin_name;
         cfg_if! {
             if #[cfg(not(target_os = "windows"))] {
-                fluvio_bin_name = format!("fluvio")
+                fluvio_bin_name = "fluvio".to_string()
             } else {
-                fluvio_bin_name = format!("fluvio.exe")
+                fluvio_bin_name = "fluvio.exe".to_string()
             }
         }
         // fluvio binary is expected to be in same dir as the current binary
         if let Ok(mut exe) = std::env::current_exe() {
-            exe.set_file_name(fluvio_bin_name.clone());
+            exe.set_file_name(fluvio_bin_name);
 
             Self {
                 binary_location: exe,

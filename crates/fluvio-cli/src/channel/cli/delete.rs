@@ -35,13 +35,24 @@ impl DeleteOpt {
 
         if let Ok(mut load_config) = FluvioChannelConfig::from_file(cli_config_path) {
             debug!("Loaded channel config");
-            let _ = if let Ok(Some(_)) = load_config.remove_channel(self.channel.clone()) {
+            let _ = if let Ok(Some(channel_info)) = load_config.remove_channel(self.channel.clone())
+            {
                 load_config.save()?;
-                println!("Channel {} deleted", self.channel);
 
-                // TODO: Delete channel binaries and extensions
+                debug!(
+                    "Delete binary and extensions dir for channel \"{}\"",
+                    self.channel
+                );
+
+                debug!("Deleting: {}", channel_info.get_binary_path().display());
+                std::fs::remove_file(channel_info.get_binary_path())?;
+
+                debug!("Deleting: {}", channel_info.get_extensions_path().display());
+                std::fs::remove_dir_all(channel_info.get_extensions_path())?;
+
+                println!("Deleted release channel \"{}\"", self.channel);
             } else {
-                println!("Channel {} not found", self.channel);
+                println!("Release channel \"{}\" not found", self.channel);
             };
             Ok(())
         } else {
