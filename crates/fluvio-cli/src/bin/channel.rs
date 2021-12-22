@@ -17,14 +17,9 @@ use cfg_if::cfg_if;
 use fluvio_future::task::run_block_on;
 
 const IS_FLUVIO_EXEC_LOOP: &str = "IS_FLUVIO_EXEC_LOOP";
-// Create custom channels
-// Support Version number release channels
 
-// If possible, accept no args, or find a way to squash in the Fluvio ones that we'll forward
-// would like if `fluvio --help` was handled by the channel binary
-
-// OR act as a Fluvio frontend only if this binary is named `fluvio`
-
+// `fluvio-channel` is a Fluvio frontend to support release channels.
+// It is intended to be installed at `~/.fluvio/bin/fluvio`
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
 
@@ -78,15 +73,14 @@ fn main() -> Result<()> {
     let _channel = if FluvioChannelConfig::exists(&channel_config_path) {
         //println!("Config file exists @ {:#?}", &channel_config_path);
         FluvioChannelConfig::from_file(channel_config_path)?
-        //FluvioChannelConfig::default()
     } else {
         // Default to stable channel behavior
         FluvioChannelConfig::default()
     };
 
     debug!("About to process args");
-    //// Read in args
-    //// Handle what is `fluvio-channel` specific
+
+    // Read in args
     print_help_hack()?;
     let root: Root = Root::from_args();
 
@@ -114,8 +108,6 @@ fn main() -> Result<()> {
     // //
 
     // Check on channel via channel config file
-    // Handle commands for channels (`fluvio version <subcmd>`) here (but pass the plain `fluvio version` command)
-
     let (channel_name, channel) = if is_frontend && !root.skip_channel_check() {
         // Look for channel config
         // TODO: Let this be configurable
@@ -124,11 +116,8 @@ fn main() -> Result<()> {
         let maybe_channel_config = if FluvioChannelConfig::exists(&channel_config_path) {
             //println!("Config file exists @ {:#?}", &channel_config_path);
             Some(FluvioChannelConfig::from_file(channel_config_path)?)
-            //FluvioChannelConfig::default()
         } else {
             // If the channel config doesn't exist, we will create one and initialize with defaults
-            // Default to stable channel behavior
-            //FluvioChannelConfig::default()
             None
         };
 
@@ -218,8 +207,8 @@ fn main() -> Result<()> {
             // TODO: This needs to be sure to add .exe to filename
             // Handle unwrap()
             let output = proc.output()?;
-            io::stdout().write_all(&output.stdout).unwrap();
-            io::stderr().write_all(&output.stderr).unwrap();
+            io::stdout().write_all(&output.stdout)?;
+            io::stderr().write_all(&output.stderr)?;
         }
     }
 
