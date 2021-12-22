@@ -68,12 +68,6 @@ fn main() -> Result<()> {
         );
     };
 
-    // We need to make sure we always have a stable interface for switching channels
-    // So we're going to handle the `fluvio version <channel stuff>` commands if we're not in development mode
-    if is_frontend {
-        // If the command run starts with "fluvio version"
-    }
-
     // Pick a fluvio binary
 
     // open a config file
@@ -98,6 +92,8 @@ fn main() -> Result<()> {
 
     debug!("After args: {:#?}", &root);
 
+    // We need to make sure we always have a stable interface for switching channels
+    // So we're going to handle the `fluvio version <channel stuff>` commands if we're not in development mode
     if let RootCmd::Version(version_opt) = root.command.clone() {
         debug!("Found a version command");
 
@@ -109,17 +105,10 @@ fn main() -> Result<()> {
                 }
                 std::process::exit(0);
             }
-            None => debug!("Version command pass to fluvio binary"),
-        }
-
-        if version_opt.cmd.is_some() {
-            println!("Should handle this")
-        } else {
-            println!("Should pass this along to print version")
+            None => debug!("pass Version command w/o subcommands to fluvio binary"),
         }
     } else {
         debug!("Command was not version");
-        println!("This was not a version subcmd")
     }
 
     // //
