@@ -88,10 +88,9 @@ impl CreateOpt {
         config.insert_channel(self.channel.clone(), new_channel_info)?;
         config.save()?;
 
-        // TODO: We should also try to install the binary if it doesn't exist in the binary path
+        // We should also try to install the binary if it doesn't exist in the binary path
         if !binary_path.exists() {
             let version = FluvioBinVersion::parse(&self.channel)?;
-
             install_channel_fluvio_bin(self.channel, &config, version).await?;
         }
 
