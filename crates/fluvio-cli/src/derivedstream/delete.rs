@@ -3,7 +3,7 @@ use crate::Result;
 use fluvio::Fluvio;
 use fluvio::metadata::derivedstream::DerivedStreamSpec;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct DeleteDerivedStreamOpt {
     name: String,
 }

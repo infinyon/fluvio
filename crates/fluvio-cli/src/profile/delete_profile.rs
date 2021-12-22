@@ -6,7 +6,7 @@ use crate::Result;
 use crate::common::output::Terminal;
 use crate::common::{t_println, t_print_cli_err};
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct DeleteProfileOpt {
     #[structopt(value_name = "profile name")]
     pub profile_name: String,

@@ -99,7 +99,7 @@ pub struct K8Install {
     pub chart_values: Vec<PathBuf>,
 }
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct StartOpt {
     /// use local image
     #[structopt(long)]
@@ -191,7 +191,7 @@ impl StartOpt {
     }
 }
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct UpgradeOpt {
     #[structopt(flatten)]
     pub start: StartOpt,

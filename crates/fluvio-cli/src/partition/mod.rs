@@ -9,7 +9,7 @@ use crate::common::output::Terminal;
 use crate::common::FluvioExtensionMetadata;
 use self::list::ListPartitionOpt;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 #[structopt(name = "partition", about = "Partition operations")]
 pub enum PartitionCmd {
     /// List all of the Partitions in this cluster

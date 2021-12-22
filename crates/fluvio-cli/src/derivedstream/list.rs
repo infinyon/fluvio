@@ -10,7 +10,7 @@ use crate::common::OutputFormat;
 use crate::Result;
 
 /// List all existing SmartModules
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct ListDerivedStreamOpt {
     #[structopt(flatten)]
     output: OutputFormat,

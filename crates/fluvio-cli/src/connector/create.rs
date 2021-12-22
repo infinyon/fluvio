@@ -23,7 +23,7 @@ use super::ConnectorConfig;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Default, Clone)]
+#[derive(Debug, StructOpt, Default)]
 pub struct CreateManagedConnectorOpt {
     /// The name for the new Managed Connector
     #[structopt(short = "c", long = "config", value_name = "config")]

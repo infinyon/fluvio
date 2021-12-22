@@ -17,7 +17,7 @@ use crate::cli::common::output::Terminal;
 use crate::cli::common::OutputFormat;
 use crate::cli::spu::display::format_spu_response_output;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct ListSpusOpt {
     /// Whether to list only custom SPUs
     #[structopt(long)]

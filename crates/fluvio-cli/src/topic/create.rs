@@ -23,7 +23,7 @@ use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::{Result, CliError};
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct CreateTopicOpt {
     /// The name of the Topic to create
     #[structopt(value_name = "name")]

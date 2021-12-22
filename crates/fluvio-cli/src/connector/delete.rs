@@ -14,7 +14,7 @@ use crate::CliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct DeleteManagedConnectorOpt {
     /// The name of the connector to delete
     #[structopt(value_name = "name")]

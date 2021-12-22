@@ -52,7 +52,7 @@ const USER_TEMPLATE: &str = "user_template";
 /// By default, consume operates in "streaming" mode, where the command will remain
 /// active and wait for new messages, printing them as they arrive. You can use the
 /// '-d' flag to exit after consuming all available messages.
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct ConsumeOpt {
     /// Topic name
     #[structopt(value_name = "topic")]

@@ -13,7 +13,7 @@ use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
 use crate::CliError;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct ListManagedConnectorsOpt {
     #[structopt(flatten)]
     output: OutputFormat,

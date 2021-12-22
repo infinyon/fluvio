@@ -120,7 +120,7 @@ mod root {
         }
     }
 
-    #[derive(Debug, StructOpt, Clone)]
+    #[derive(Debug, StructOpt)]
     #[structopt(
         about = "Fluvio Command Line Interface",
         name = "fluvio",
@@ -325,11 +325,11 @@ mod root {
                         debug!("Fluvio bin not in standard install location. Assuming dev channel");
 
                         // If we are dealing with a cluster start or upgrade, then we care about channels
-                        if let ClusterCmd::Start(opts) = *cluster.clone() {
+                        if let ClusterCmd::Start(opts) = *cluster {
                             let mut new_start_opts = *opts;
                             new_start_opts.develop = true;
                             Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                        } else if let ClusterCmd::Upgrade(opts) = *cluster.clone() {
+                        } else if let ClusterCmd::Upgrade(opts) = *cluster {
                             let mut new_upgrade_opts = *opts;
                             new_upgrade_opts.start.develop = true;
                             Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
@@ -382,7 +382,7 @@ mod root {
     // For some reason this doc string is the one that gets used for the top-level help menu.
     // Please don't change it unless you want to update the top-level help menu "about".
     /// Fluvio command-line interface
-    #[derive(StructOpt, Debug, Clone)]
+    #[derive(StructOpt, Debug)]
     pub enum FluvioCmd {
         /// Read messages from a topic/partition
         #[structopt(name = "consume")]
@@ -478,13 +478,13 @@ mod root {
         }
     }
 
-    #[derive(Debug, StructOpt, Clone)]
+    #[derive(Debug, StructOpt)]
     pub struct CompletionOpt {
         #[structopt(long, default_value = "fluvio")]
         name: String,
     }
 
-    #[derive(Debug, StructOpt, Clone)]
+    #[derive(Debug, StructOpt)]
     pub enum CompletionCmd {
         /// Generate CLI completions for bash
         #[structopt(name = "bash")]

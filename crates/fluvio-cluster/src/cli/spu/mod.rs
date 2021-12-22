@@ -16,7 +16,7 @@ use list::ListSpusOpt;
 use register::RegisterCustomSpuOpt;
 use unregister::UnregisterCustomSpuOpt;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub enum SpuCmd {
     /// Register a new custom SPU with the cluster
     #[structopt(

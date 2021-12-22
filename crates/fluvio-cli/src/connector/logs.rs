@@ -11,7 +11,7 @@ use crate::CliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct LogsManagedConnectorOpt {
     /// The name of the connector to view the logs
     #[structopt(value_name = "name")]

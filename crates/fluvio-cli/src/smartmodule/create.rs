@@ -7,7 +7,7 @@ use flate2::{Compression, bufread::GzEncoder};
 use std::io::Read;
 
 /// Create a new SmartModule with a given name
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct CreateSmartModuleOpt {
     /// The name of the SmartModule to create
     name: String,

@@ -27,7 +27,7 @@ use common::target::ClusterTarget;
 use common::output::Terminal;
 
 /// Manage and view Fluvio clusters
-#[derive(StructOpt, Debug, Clone)]
+#[derive(StructOpt, Debug)]
 pub enum ClusterCmd {
     /// Install Fluvio cluster
     #[structopt(name = "start")]

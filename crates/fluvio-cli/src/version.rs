@@ -13,7 +13,7 @@ use crate::channel::cli::list::ListOpt;
 use crate::channel::cli::create::CreateOpt;
 use crate::channel::cli::delete::DeleteOpt;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct VersionOpt {
     #[structopt(subcommand)]
     pub cmd: Option<VersionCmd>,

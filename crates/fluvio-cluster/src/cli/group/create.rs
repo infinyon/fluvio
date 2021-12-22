@@ -16,7 +16,7 @@ use crate::cli::ClusterCliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Default, Clone)]
+#[derive(Debug, StructOpt, Default)]
 pub struct CreateManagedSpuGroupOpt {
     /// The name for the new SPU Group
     #[structopt(value_name = "name")]

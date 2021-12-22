@@ -4,7 +4,7 @@ use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 
 /// Delete an existing SmartModule with the given name
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct DeleteSmartModuleOpt {
     name: String,
 }

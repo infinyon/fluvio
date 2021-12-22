@@ -22,7 +22,7 @@ use crate::Result;
 ///
 /// If '--key-separator' is used, records are sent as key/value pairs, and
 /// the keys are used to determine which partition the records are sent to.
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct ProduceOpt {
     /// The name of the Topic to produce to
     #[structopt(value_name = "topic")]

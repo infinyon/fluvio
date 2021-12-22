@@ -14,7 +14,7 @@ use self::list::*;
 use self::describe::*;
 use self::delete::*;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub enum DerivedStreamCmd {
     Create(CreateDerivedStreamOpt),
     List(ListDerivedStreamOpt),

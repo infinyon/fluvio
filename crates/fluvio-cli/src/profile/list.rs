@@ -8,7 +8,7 @@ use fluvio::config::{ConfigFile, Config, TlsPolicy};
 use fluvio_extension_common::{Terminal, OutputFormat};
 use fluvio_extension_common::output::{TableOutputHandler, OutputType};
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct ListOpt {
     #[structopt(flatten)]
     output: OutputFormat,

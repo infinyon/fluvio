@@ -19,7 +19,7 @@ use delete::DeleteTableFormatOpt;
 use list::ListTableFormatsOpt;
 use crate::CliError;
 
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub enum TableFormatCmd {
     /// Create a new TableFormat display
     #[structopt(

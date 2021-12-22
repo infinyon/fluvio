@@ -8,7 +8,7 @@ use crate::cli::start::get_log_directory;
 
 type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 
-#[derive(StructOpt, Debug, Clone)]
+#[derive(StructOpt, Debug)]
 pub struct DiagnosticsOpt {}
 
 impl DiagnosticsOpt {

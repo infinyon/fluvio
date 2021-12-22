@@ -93,12 +93,12 @@ fn main() -> Result<()> {
 
     // We need to make sure we always have a stable interface for switching channels
     // So we're going to handle the `fluvio version <channel stuff>` commands if we're not in development mode
-    if let RootCmd::Version(version_opt) = root.command.clone() {
+    if let RootCmd::Version(version_opt) = &root.command {
         debug!("Found a version command");
 
-        match version_opt.cmd {
+        match &version_opt.cmd {
             Some(channel_cmd) => {
-                if let Err(e) = run_block_on(channel_cmd.process(root.opts.target)) {
+                if let Err(e) = run_block_on(channel_cmd.clone().process(root.opts.target)) {
                     println!("{}", e.into_report());
                     std::process::exit(1);
                 }
@@ -113,7 +113,7 @@ fn main() -> Result<()> {
     // //
 
     // Check on channel via channel config file
-    let (channel_name, channel) = if is_frontend && !root.skip_channel_check() {
+    let (channel_name, channel) = if is_frontend && !&root.skip_channel_check() {
         // Look for channel config
         // TODO: Let this be configurable
         let channel_config_path = FluvioChannelConfig::default_config_location();

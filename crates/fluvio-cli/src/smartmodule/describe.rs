@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use crate::Result;
 
 /// Print details about a given SmartModule
-#[derive(Debug, StructOpt, Clone)]
+#[derive(Debug, StructOpt)]
 pub struct DescribeSmartModuleOpt {
     _name: String,
 }
