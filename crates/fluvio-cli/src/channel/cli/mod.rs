@@ -11,6 +11,16 @@ pub fn current_channel() -> String {
 
     let cli_config_path = FluvioChannelConfig::default_config_location();
 
+    // Check if exe is in the standard fluvio home dir
+    // If it isn't, assume dev channel
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            if !cli_config_path.starts_with(dir) {
+                return "dev".to_string();
+            }
+        }
+    }
+
     // Open file
 
     let config = if let Ok(load_config) = FluvioChannelConfig::from_file(cli_config_path) {
