@@ -3,7 +3,7 @@ pub mod delete;
 pub mod list;
 pub mod switch;
 
-use crate::channel::FluvioChannelConfig;
+use crate::channel::{FluvioChannelConfig, DEV_CHANNEL_NAME};
 use tracing::debug;
 
 pub fn current_channel() -> String {
@@ -16,7 +16,7 @@ pub fn current_channel() -> String {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(dir) = exe.parent() {
             if !cli_config_path.starts_with(dir) {
-                return "dev".to_string();
+                return DEV_CHANNEL_NAME.to_string();
             }
         }
     }

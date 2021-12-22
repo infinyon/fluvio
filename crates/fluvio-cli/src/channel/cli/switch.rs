@@ -1,6 +1,7 @@
 use crate::{Result, CliError};
 use crate::channel::{
     FluvioChannelConfig, FluvioChannelInfo, install_channel_fluvio_bin, FluvioBinVersion,
+    DEV_CHANNEL_NAME, STABLE_CHANNEL_NAME, LATEST_CHANNEL_NAME,
 };
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -53,11 +54,11 @@ impl SwitchOpt {
 
             let mut new_config_channel = config;
 
-            let channel = if &self.channel == "stable" {
+            let channel = if self.channel == STABLE_CHANNEL_NAME {
                 FluvioChannelInfo::stable_channel()
-            } else if &self.channel == "latest" {
+            } else if self.channel == LATEST_CHANNEL_NAME {
                 FluvioChannelInfo::latest_channel()
-            } else if &self.channel == "dev" {
+            } else if self.channel == DEV_CHANNEL_NAME {
                 FluvioChannelInfo::dev_channel()
             } else {
                 return Err(CliError::Other(
@@ -75,7 +76,7 @@ impl SwitchOpt {
             new_config_channel.save()?;
 
             // Install the latest fluvio binary the first time we switch
-            if &self.channel == "stable"
+            if self.channel == STABLE_CHANNEL_NAME
                 && !FluvioChannelInfo::stable_channel()
                     .get_binary_path()
                     .exists()
@@ -85,7 +86,7 @@ impl SwitchOpt {
                 install_channel_fluvio_bin(self.channel.clone(), &new_config_channel, version)
                     .await?;
             }
-            if &self.channel == "latest"
+            if self.channel == LATEST_CHANNEL_NAME
                 && !FluvioChannelInfo::latest_channel()
                     .get_binary_path()
                     .exists()

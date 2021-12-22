@@ -20,6 +20,10 @@ use cfg_if::cfg_if;
 
 pub mod cli;
 
+pub const DEV_CHANNEL_NAME: &str = "dev";
+pub const STABLE_CHANNEL_NAME: &str = "stable";
+pub const LATEST_CHANNEL_NAME: &str = "latest";
+
 #[derive(Error, Debug)]
 pub enum ChannelConfigError {
     #[error(transparent)]

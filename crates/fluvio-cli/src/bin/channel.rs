@@ -8,7 +8,10 @@ use std::env::current_exe;
 use std::ffi::OsString;
 use tracing::debug;
 use std::process::Stdio;
-use fluvio_cli::channel::{FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, ImageTagStrategy};
+use fluvio_cli::channel::{
+    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, ImageTagStrategy, DEV_CHANNEL_NAME,
+    STABLE_CHANNEL_NAME,
+};
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
@@ -17,6 +20,8 @@ use cfg_if::cfg_if;
 use fluvio_future::task::run_block_on;
 
 const IS_FLUVIO_EXEC_LOOP: &str = "IS_FLUVIO_EXEC_LOOP";
+const FLUVIO_BOOTSTRAP: &str = "FLUVIO_BOOTSTRAP";
+const CHANNEL_BOOTSTRAP: &str = "CHANNEL_BOOTSTRAP";
 
 // `fluvio-channel` is a Fluvio frontend to support release channels.
 // It is intended to be installed at `~/.fluvio/bin/fluvio`
@@ -142,8 +147,8 @@ fn main() -> Result<()> {
             let mut default_config = FluvioChannelConfig::default();
 
             // If we know we've been called by the installer, then let's add that channel info
-            if env::var("FLUVIO_BOOTSTRAP").is_ok() {
-                let initial_channel = env::var("CHANNEL_BOOTSTRAP")?;
+            if env::var(FLUVIO_BOOTSTRAP).is_ok() {
+                let initial_channel = env::var(CHANNEL_BOOTSTRAP)?;
 
                 // parse a version from the channel name
                 let image_tag_strategy = match FluvioBinVersion::parse(&initial_channel)? {
@@ -164,8 +169,9 @@ fn main() -> Result<()> {
                 (initial_channel, new_channel_info)
             } else {
                 let stable_info = FluvioChannelInfo::stable_channel();
-                default_config.insert_channel("stable".to_string(), stable_info.clone())?;
-                default_config.set_current_channel("stable".to_string())?;
+                default_config
+                    .insert_channel(STABLE_CHANNEL_NAME.to_string(), stable_info.clone())?;
+                default_config.set_current_channel(STABLE_CHANNEL_NAME.to_string())?;
                 default_config.save()?;
 
                 ("stable".to_string(), stable_info)
@@ -175,7 +181,10 @@ fn main() -> Result<()> {
         (channel, channel_info)
     } else {
         debug!("Fluvio bin not in standard install location. Assuming dev channel");
-        ("dev".to_string(), FluvioChannelInfo::dev_channel())
+        (
+            DEV_CHANNEL_NAME.to_string(),
+            FluvioChannelInfo::dev_channel(),
+        )
     };
 
     // On windows, this path should end in `.exe`
