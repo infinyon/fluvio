@@ -18,11 +18,6 @@ name = "fluvio"
 path = "src/bin/main.rs"
 doc = false
 
-[[bin]]
-name = "fluvio-channel"
-path = "src/bin/channel.rs"
-doc = false
-
 [features]
 default = ["consumer", "k8s"]
 consumer = [

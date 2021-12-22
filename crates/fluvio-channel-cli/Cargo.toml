@@ -1,0 +1,28 @@
+[package]
+name = "fluvio-channel-cli"
+version = "0.0.0"
+edition = "2021"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio CLI frontend (with channels support)"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[[bin]]
+name = "fluvio-channel"
+path = "src/bin/main.rs"
+doc = false
+
+[features]
+default = ["fluvio-future"]
+
+[dependencies]
+color-eyre = { version = "0.5.5", default-features = false }
+structopt = { version = "0.3.16", default-features = false }
+tracing = "0.1.19"
+cfg-if = "1.0"
+
+fluvio = { path = "../fluvio", default-features = false }
+fluvio-cli = { path = "../fluvio-cli" }
+fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
+fluvio-types = { path = "../fluvio-types", optional = true }
