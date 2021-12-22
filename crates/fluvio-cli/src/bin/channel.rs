@@ -178,6 +178,7 @@ fn main() -> Result<()> {
         ("dev".to_string(), FluvioChannelInfo::dev_channel())
     };
 
+    // On windows, this path should end in `.exe`
     let exe = channel.get_binary_path();
 
     debug!("Will exec to binary @ {:?}", exe);
@@ -204,7 +205,6 @@ fn main() -> Result<()> {
         if #[cfg(not(target_os = "windows"))] {
             let _err = proc.exec();
         } else {
-            // TODO: This needs to be sure to add .exe to filename
             let output = proc.output()?;
             io::stdout().write_all(&output.stdout)?;
             io::stderr().write_all(&output.stderr)?;
