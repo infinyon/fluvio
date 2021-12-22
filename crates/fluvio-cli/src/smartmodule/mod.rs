@@ -14,7 +14,7 @@ use self::list::ListSmartModuleOpt;
 use self::describe::DescribeSmartModuleOpt;
 use self::delete::DeleteSmartModuleOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub enum SmartModuleCmd {
     Create(CreateSmartModuleOpt),
     List(ListSmartModuleOpt),

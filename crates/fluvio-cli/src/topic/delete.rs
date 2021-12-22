@@ -11,7 +11,7 @@ use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::Result;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct DeleteTopicOpt {
     /// The name of the Topic to delete
     #[structopt(value_name = "name")]

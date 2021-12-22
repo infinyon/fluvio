@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use crate::Result;
 
 /// Print details about a given DerivedStream
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct DescribeDerivedStreamOpt {
     _name: String,
 }

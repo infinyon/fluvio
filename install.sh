@@ -489,6 +489,8 @@ main() {
     if [[ "${VERSION}" == "stable" ]] || [[ "${VERSION}" == "latest" ]] ; then
         say "DEBUG: Using stable or latest"
         _use_tag_file_name="true"
+    else
+        _use_tag_file_name="false"
     fi
 
     # Download Fluvio to a temporary file
@@ -543,7 +545,7 @@ main() {
 
     # Install Fluvio channel
     # Download Fluvio-channel to a temporary file
-    _version=$(fetch_tag_version "${VERSION}" "${FLUVIO_FRONTEND_PACKAGE}")
+    _version=$(fetch_tag_version "stable" "${FLUVIO_FRONTEND_PACKAGE}")
     local _url="${FLUVIO_PREFIX}/packages/${FLUVIO_FRONTEND_PACKAGE}/${_version}/${_target}/fluvio-channel"
     local _install_file="${FLUVIO_BIN}/fluvio"
     say "⏳ Downloading Fluvio channel frontend ${_version} for ${_target}..."

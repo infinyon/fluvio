@@ -3,7 +3,7 @@ use std::env;
 use color_eyre::eyre::{Result, eyre};
 use structopt::StructOpt;
 
-use fluvio_cli::{Root, HelpOpt, channel::ImageTagStrategy};
+use fluvio_cli::{Root, RootCmd, HelpOpt, channel::ImageTagStrategy};
 use std::env::current_exe;
 use std::ffi::OsString;
 use tracing::debug;
@@ -14,6 +14,7 @@ use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
 use std::io::{self, Write};
 use cfg_if::cfg_if;
+use fluvio_future::task::run_block_on;
 
 const IS_FLUVIO_EXEC_LOOP: &str = "IS_FLUVIO_EXEC_LOOP";
 // Create custom channels
@@ -89,10 +90,37 @@ fn main() -> Result<()> {
         FluvioChannelConfig::default()
     };
 
+    debug!("About to process args");
     //// Read in args
     //// Handle what is `fluvio-channel` specific
     print_help_hack()?;
     let root: Root = Root::from_args();
+
+    debug!("After args: {:#?}", &root);
+
+    if let RootCmd::Version(version_opt) = root.command.clone() {
+        debug!("Found a version command");
+
+        match version_opt.cmd {
+            Some(channel_cmd) => {
+                if let Err(e) = run_block_on(channel_cmd.process(root.opts.target)) {
+                    e.print()?;
+                    std::process::exit(1);
+                }
+                std::process::exit(0);
+            }
+            None => debug!("Version command pass to fluvio binary"),
+        }
+
+        if version_opt.cmd.is_some() {
+            println!("Should handle this")
+        } else {
+            println!("Should pass this along to print version")
+        }
+    } else {
+        debug!("Command was not version");
+        println!("This was not a version subcmd")
+    }
 
     // //
 

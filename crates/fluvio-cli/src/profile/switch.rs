@@ -5,7 +5,7 @@ use crate::Result;
 use crate::common::output::Terminal;
 use crate::common::{t_println, t_print_cli_err};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct SwitchOpt {
     #[structopt(value_name = "profile name")]
     pub profile_name: String,

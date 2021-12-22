@@ -20,7 +20,7 @@ use crate::Result;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct ListTopicsOpt {
     /// Output
     #[structopt(flatten)]

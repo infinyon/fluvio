@@ -23,7 +23,7 @@ use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::{Result, CliError};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct CreateTopicOpt {
     /// The name of the Topic to create
     #[structopt(value_name = "name")]
@@ -158,7 +158,7 @@ impl CreateTopicOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct TopicConfigOpt {
     /// Retention time (round to seconds)
     /// Ex: '1h', '2d 10s', '7 days' (default)

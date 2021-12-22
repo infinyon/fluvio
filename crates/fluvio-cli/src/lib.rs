@@ -29,7 +29,7 @@ pub(crate) use error::{Result, CliError};
 use fluvio_extension_common as common;
 
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
-pub use root::{Root, HelpOpt};
+pub use root::{Root, HelpOpt, RootCmd};
 
 mod root {
 
@@ -72,9 +72,9 @@ mod root {
     #[derive(StructOpt, Debug)]
     pub struct Root {
         #[structopt(flatten)]
-        opts: RootOpt,
+        pub opts: RootOpt,
         #[structopt(subcommand)]
-        command: RootCmd,
+        pub command: RootCmd,
     }
 
     impl Root {
@@ -89,12 +89,12 @@ mod root {
     }
 
     #[derive(StructOpt, Debug)]
-    struct RootOpt {
+    pub struct RootOpt {
         #[structopt(flatten)]
-        target: ClusterTarget,
+        pub target: ClusterTarget,
 
         #[structopt(long)]
-        skip_channel_check: bool,
+        pub skip_channel_check: bool,
         // TODO: Include flag for overriding channel choice in config
     }
 
@@ -104,7 +104,7 @@ mod root {
         }
     }
 
-    #[derive(Debug, StructOpt)]
+    #[derive(Debug, StructOpt, Clone)]
     #[structopt(
         about = "Fluvio Command Line Interface",
         name = "fluvio",
@@ -116,7 +116,7 @@ mod root {
             AppSettings::DisableVersion,
         ]
     )]
-    enum RootCmd {
+    pub enum RootCmd {
         /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
         #[structopt(flatten)]
         #[cfg(feature = "consumer")]
@@ -366,7 +366,7 @@ mod root {
     // For some reason this doc string is the one that gets used for the top-level help menu.
     // Please don't change it unless you want to update the top-level help menu "about".
     /// Fluvio command-line interface
-    #[derive(StructOpt, Debug)]
+    #[derive(StructOpt, Debug, Clone)]
     pub enum FluvioCmd {
         /// Read messages from a topic/partition
         #[structopt(name = "consume")]
@@ -462,14 +462,14 @@ mod root {
         }
     }
 
-    #[derive(Debug, StructOpt)]
-    struct CompletionOpt {
+    #[derive(Debug, StructOpt, Clone)]
+    pub struct CompletionOpt {
         #[structopt(long, default_value = "fluvio")]
         name: String,
     }
 
-    #[derive(Debug, StructOpt)]
-    enum CompletionCmd {
+    #[derive(Debug, StructOpt, Clone)]
+    pub enum CompletionCmd {
         /// Generate CLI completions for bash
         #[structopt(name = "bash")]
         Bash(CompletionOpt),

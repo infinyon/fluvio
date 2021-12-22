@@ -14,7 +14,7 @@ use crate::CliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct DeleteTableFormatOpt {
     /// The name of the connector to delete
     name: String,

@@ -10,7 +10,7 @@ use crate::profile::sync::local::LocalOpt;
 #[cfg(feature = "k8s")]
 use crate::profile::sync::k8::K8Opt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 #[structopt(
     name = "sync",
     template = COMMAND_TEMPLATE,

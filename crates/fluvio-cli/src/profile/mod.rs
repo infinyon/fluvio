@@ -25,7 +25,7 @@ use crate::profile::sync::SyncCmd;
 use crate::profile::list::ListOpt;
 use crate::profile::rename::RenameOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct ProfileOpt {
     #[structopt(subcommand)]
     cmd: Option<ProfileCmd>,
@@ -42,7 +42,7 @@ impl ProfileOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 #[structopt(about = "Available Commands")]
 pub enum ProfileCmd {
     /// Print the name of the current context

@@ -18,7 +18,7 @@ use crate::CliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, StructOpt, Default, Clone)]
 pub struct CreateTableFormatOpt {
     /// The path to the TableFormat config
     #[structopt(short, long, parse(from_os_str))]

@@ -10,7 +10,7 @@ use crate::install::update::{
     check_update_required, prompt_required_update, check_update_available, prompt_available_update,
 };
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Clone)]
 pub struct InstallOpt {
     /// The ID of a package to install, e.g. "fluvio/fluvio-cloud".
     package: PackageId<MaybeVersion>,

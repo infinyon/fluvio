@@ -13,7 +13,7 @@ use crate::metadata::subcommand_metadata;
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Clone)]
 pub struct UpdateOpt {
     /// Update to the latest prerelease rather than the latest release
     #[structopt(long)]

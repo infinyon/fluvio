@@ -13,10 +13,10 @@ use crate::channel::cli::list::ListOpt;
 use crate::channel::cli::create::CreateOpt;
 use crate::channel::cli::delete::DeleteOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct VersionOpt {
     #[structopt(subcommand)]
-    cmd: Option<VersionCmd>,
+    pub cmd: Option<VersionCmd>,
 }
 
 impl VersionOpt {
@@ -28,7 +28,7 @@ impl VersionOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct CurrentOpt {}
 
 impl CurrentOpt {
@@ -114,7 +114,7 @@ impl CurrentOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub enum VersionCmd {
     #[structopt(name = "show", setting(structopt::clap::AppSettings::Hidden))]
     DisplayVersion(CurrentOpt),

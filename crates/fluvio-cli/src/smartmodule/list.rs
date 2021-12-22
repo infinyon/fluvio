@@ -7,7 +7,7 @@ use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
 /// List all existing SmartModules
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct ListSmartModuleOpt {
     #[structopt(flatten)]
     output: OutputFormat,

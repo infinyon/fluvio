@@ -13,7 +13,7 @@ use k8_types::InputObjectMeta;
 use crate::{Result, CliError};
 use crate::common::tls::TlsClientOpt;
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, StructOpt, Default, Clone)]
 pub struct K8Opt {
     /// kubernetes namespace,
     #[structopt(long, short, value_name = "namespace")]

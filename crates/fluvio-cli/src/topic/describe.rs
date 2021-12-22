@@ -19,7 +19,7 @@ use crate::common::OutputFormat;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct DescribeTopicsOpt {
     /// The name of the Topic to describe
     #[structopt(value_name = "name")]

@@ -3,7 +3,7 @@ use fluvio::config::ConfigFile;
 
 use crate::Result;
 
-#[derive(StructOpt, Debug)]
+#[derive(StructOpt, Debug, Clone)]
 pub struct RenameOpt {
     /// The name of the profile to rename
     pub from: String,

@@ -14,7 +14,7 @@ use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
 /// Option for Listing Partition
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct ListPartitionOpt {
     #[structopt(flatten)]
     output: OutputFormat,

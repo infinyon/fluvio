@@ -2,7 +2,7 @@ use structopt::StructOpt;
 use fluvio::config::ConfigFile;
 use crate::Result;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct CurrentOpt {}
 
 impl CurrentOpt {

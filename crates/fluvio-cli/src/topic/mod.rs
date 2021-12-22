@@ -18,7 +18,7 @@ use crate::common::COMMAND_TEMPLATE;
 use crate::common::output::Terminal;
 use crate::common::FluvioExtensionMetadata;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 #[structopt(name = "topic", about = "Topic operations")]
 pub enum TopicCmd {
     /// Create a Topic with the given name

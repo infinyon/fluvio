@@ -12,7 +12,7 @@ use crate::Result;
 use crate::error::CliError;
 
 /// Create a new SmartModule with a given name
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct CreateDerivedStreamOpt {
     /// The name for the new Managed Connector
     #[structopt(short = "c", long = "config", value_name = "config")]

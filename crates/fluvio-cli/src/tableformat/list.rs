@@ -13,7 +13,7 @@ use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
 use crate::CliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub struct ListTableFormatsOpt {
     #[structopt(flatten)]
     output: OutputFormat,

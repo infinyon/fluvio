@@ -23,7 +23,7 @@ use list::ListManagedConnectorsOpt;
 use logs::LogsManagedConnectorOpt;
 use crate::CliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 pub enum ManagedConnectorCmd {
     /// Create a new Managed Connector
     #[structopt(

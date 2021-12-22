@@ -214,7 +214,7 @@ impl FluvioChannelInfo {
         let extensions_dir_name = if channel_name == "stable" {
             "extensions".to_string()
         } else {
-            "extensions-{}".to_string()
+            format!("extensions-{}", channel_name)
         };
 
         let (binary_location, extensions) = if let Some(home_dir) = home_dir() {
