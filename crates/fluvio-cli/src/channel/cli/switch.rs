@@ -100,7 +100,8 @@ impl SwitchOpt {
         new_config.set_current_channel(self.channel.clone())?;
         new_config.save()?;
 
-        debug!("channel config: {:?}", self.channel);
+        debug!("channel config: {:?}", self.channel.clone());
+        println!("Switched to release channel \"{}\"", self.channel);
 
         Ok(())
     }
