@@ -223,23 +223,6 @@ fn main() -> Result<()> {
         }
     }
 
-    // If it doesn't exist do nothing, default channel is Stable
-
-    // If it does exist, look up the current channel
-    // Load the the Channel Info
-
-    // Fluvio Binary: ~/.fluvio/bin/fluvio (default)
-    // Extensions directory: ~/.fluvio/extensions (default)
-    // K8 image: infinyon/fluvio (default)
-    // Image tag format: {version (default), version-git, git}
-
-    // Fluvio binary resolution order:
-    // From channel config
-    // In PATH
-    // In default Fluvio directory ($HOME/.fluvio/bin)
-    // In current directory
-    // From FLUVIO_BIN env var
-
     Ok(())
 }
 
