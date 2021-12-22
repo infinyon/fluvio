@@ -51,16 +51,16 @@ function random_string() {
 # Give version as arg to control what version you download and install
 function setup_fluvio_cluster() {
     CLUSTER_VERSION=${1:-latest}
-    CONNECTOR_PREFIX="--connector-prefix https://raw.githubusercontent.com/infinyon/fluvio-connectors"
+
     echo "# Installing cluster @ VERSION: $CLUSTER_VERSION" >&3
     $FLUVIO_BIN version >&3
     curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=$CLUSTER_VERSION bash
     echo "# Starting cluster @ VERSION: $CLUSTER_VERSION" >&3
 
     if [ "$CLUSTER_VERSION" = "latest" ]; then
-        $FLUVIO_BIN cluster start --image-version latest $CONNECTOR_PREFIX
+        $FLUVIO_BIN cluster start --image-version latest
     else
-        $FLUVIO_BIN cluster start $CONNECTOR_PREFIX
+        $FLUVIO_BIN cluster start
     fi
 }
 
