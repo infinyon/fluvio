@@ -161,7 +161,7 @@ pub struct StartOpt {
 
     /// Connector Prefix
     #[structopt(long, name = "connector_prefix")]
-    pub connector_prefixes: Vec<String>,
+    pub connector_prefix: Vec<String>,
 }
 
 impl StartOpt {
