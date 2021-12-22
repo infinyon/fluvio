@@ -30,7 +30,7 @@ pub(crate) use error::{Result, CliError};
 use fluvio_extension_common as common;
 
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
-pub use root::{Root, HelpOpt, RootCmd};
+pub use root::{Root, HelpOpt, RootCmd, print_help_hack};
 
 mod root {
 
@@ -69,6 +69,20 @@ mod root {
     use super::Result;
     use super::VERSION;
     use super::current_channel;
+
+    pub fn print_help_hack() -> Result<()> {
+        let mut args = std::env::args();
+        if args.len() < 2 {
+            HelpOpt {}.process()?;
+            std::process::exit(0);
+        } else if let Some(first_arg) = args.nth(1) {
+            if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
+                HelpOpt {}.process()?;
+                std::process::exit(0);
+            }
+        }
+        Ok(())
+    }
 
     /// Fluvio Command Line Interface
     #[derive(StructOpt, Debug)]
@@ -311,8 +325,7 @@ mod root {
                         debug!("Fluvio bin not in standard install location. Assuming dev channel");
 
                         // If we are dealing with a cluster start or upgrade, then we care about channels
-                        let modified_cluster_cmd = if let ClusterCmd::Start(opts) = *cluster.clone()
-                        {
+                        if let ClusterCmd::Start(opts) = *cluster.clone() {
                             let mut new_start_opts = *opts;
                             new_start_opts.develop = true;
                             Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
@@ -322,9 +335,7 @@ mod root {
                             Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
                         } else {
                             cluster
-                        };
-
-                        modified_cluster_cmd
+                        }
                     };
 
                     println!("Current channel: {}", &current_channel());

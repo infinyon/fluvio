@@ -3,12 +3,12 @@ use std::env;
 use color_eyre::eyre::{Result, eyre};
 use structopt::StructOpt;
 
-use fluvio_cli::{Root, RootCmd, HelpOpt, channel::ImageTagStrategy};
+use fluvio_cli::{Root, RootCmd, print_help_hack};
 use std::env::current_exe;
 use std::ffi::OsString;
 use tracing::debug;
 use std::process::Stdio;
-use fluvio_cli::channel::{FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion};
+use fluvio_cli::channel::{FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, ImageTagStrategy};
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
@@ -211,19 +211,5 @@ fn main() -> Result<()> {
         }
     }
 
-    Ok(())
-}
-
-fn print_help_hack() -> Result<()> {
-    let mut args = std::env::args();
-    if args.len() < 2 {
-        HelpOpt {}.process()?;
-        std::process::exit(0);
-    } else if let Some(first_arg) = args.nth(1) {
-        if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
-            HelpOpt {}.process()?;
-            std::process::exit(0);
-        }
-    }
     Ok(())
 }

@@ -1,6 +1,6 @@
 use structopt::StructOpt;
 use color_eyre::eyre::Result;
-use fluvio_cli::{Root, HelpOpt};
+use fluvio_cli::{Root, print_help_hack};
 use fluvio_future::task::run_block_on;
 
 fn main() -> Result<()> {
@@ -18,19 +18,5 @@ fn main() -> Result<()> {
         std::process::exit(1);
     }
 
-    Ok(())
-}
-
-fn print_help_hack() -> Result<()> {
-    let mut args = std::env::args();
-    if args.len() < 2 {
-        HelpOpt {}.process()?;
-        std::process::exit(0);
-    } else if let Some(first_arg) = args.nth(1) {
-        if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
-            HelpOpt {}.process()?;
-            std::process::exit(0);
-        }
-    }
     Ok(())
 }
