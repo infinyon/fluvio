@@ -16,6 +16,7 @@ use toml;
 use thiserror::Error;
 use tracing::debug;
 use semver::Version;
+use cfg_if::cfg_if;
 
 pub mod cli;
 
@@ -217,12 +218,22 @@ impl FluvioChannelInfo {
             format!("extensions-{}", channel_name)
         };
 
+        // This is to handle windows binaries, which should end in `.exe`
+        let fluvio_bin_name;
+        cfg_if! {
+            if #[cfg(not(target_os = "windows"))] {
+                fluvio_bin_name = format!("fluvio-{}", channel_name)
+            } else {
+                fluvio_bin_name = format!("fluvio-{}.exe", channel_name)
+            }
+        }
+
         let (binary_location, extensions) = if let Some(home_dir) = home_dir() {
             let binary_location = PathBuf::from(format!(
-                "{}/{}/bin/fluvio-{}",
+                "{}/{}/bin/{}",
                 home_dir.display(),
                 CLI_CONFIG_PATH,
-                channel_name
+                fluvio_bin_name
             ));
             let extensions = PathBuf::from(format!(
                 "{}/{}/{}",
@@ -235,7 +246,7 @@ impl FluvioChannelInfo {
         } else {
             // No home directory
             let binary_location =
-                PathBuf::from(format!("{}/bin/fluvio-{}", CLI_CONFIG_PATH, channel_name));
+                PathBuf::from(format!("{}/bin/{}", CLI_CONFIG_PATH, fluvio_bin_name));
             let extensions = PathBuf::from(format!("{}/{}", CLI_CONFIG_PATH, extensions_dir_name));
 
             (binary_location, extensions)
@@ -280,10 +291,30 @@ impl FluvioChannelInfo {
     }
 
     pub fn dev_channel() -> Self {
-        Self {
-            binary_location: PathBuf::from("fluvio"),
-            extensions: PathBuf::from("extensions"),
-            image_tag_strategy: ImageTagStrategy::Git,
+        let fluvio_bin_name;
+        cfg_if! {
+            if #[cfg(not(target_os = "windows"))] {
+                fluvio_bin_name = format!("fluvio")
+            } else {
+                fluvio_bin_name = format!("fluvio.exe")
+            }
+        }
+        // fluvio binary is expected to be in same dir as the current binary
+        if let Ok(mut exe) = std::env::current_exe() {
+            exe.set_file_name(fluvio_bin_name.clone());
+
+            Self {
+                binary_location: exe,
+                extensions: PathBuf::from("extensions"),
+                image_tag_strategy: ImageTagStrategy::Git,
+            }
+        } else {
+            // Otherwise assume to be in same dir as current working directory
+            Self {
+                binary_location: PathBuf::from(fluvio_bin_name),
+                extensions: PathBuf::from("extensions"),
+                image_tag_strategy: ImageTagStrategy::Git,
+            }
         }
     }
 }
