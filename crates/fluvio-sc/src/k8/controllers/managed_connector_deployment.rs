@@ -15,10 +15,7 @@ use fluvio_stream_dispatcher::store::K8ChangeListener;
 
 use crate::stores::{
     StoreContext,
-    connector::{
-        ManagedConnectorSpec, ManagedConnectorStatus,
-        ManagedConnectorStatusResolution,
-    },
+    connector::{ManagedConnectorSpec, ManagedConnectorStatus, ManagedConnectorStatusResolution},
     k8::K8MetaItem,
     MetadataStoreObject,
     actions::WSAction,
@@ -30,7 +27,6 @@ use crate::k8::objects::managed_connector_deployment::{
 use crate::k8::objects::spu_k8_config::ScK8Config;
 
 use crate::cli::TlsConfig;
-
 
 /// Update Statefulset and Service from SPG
 pub struct ManagedConnectorDeploymentController {
@@ -237,34 +233,7 @@ impl ManagedConnectorDeploymentController {
             format!("--fluvio-topic={}", mc_spec.topic),
         ];
         let type_ = &mc_spec.type_;
-        let image = if type_.starts_with("https://") {
-            debug!(
-                "Checking 3rd party connector {:?} in allowed_prefixes - {:?}",
-                type_, allowed_connector_prefix
-            );
-            let mut image = None;
-            for prefix in allowed_connector_prefix {
-                if type_.starts_with(prefix.as_str()) {
-                    match ThirdPartyConnectorSpec::from_url(type_).await {
-                        Ok(spec) => {
-                            image = Some(spec.image);
-                        }
-                        Err(e) => {
-                            info!("3rd party connector spec failed to retrieve {:?}", e);
-                        }
-                    }
-                    break;
-                }
-            }
-            if let Some(image) = image {
-                image
-            } else {
-                info!("None of the connector prefixes matched!");
-                return None;
-            }
-        } else {
-            format!("infinyon/fluvio-connect-{}", type_)
-        };
+        let image = Self::get_image(type_, allowed_connector_prefix).await?;
 
         args.extend(parameters);
 
@@ -360,6 +329,66 @@ impl ManagedConnectorDeploymentController {
             selector: LabelSelector { match_labels },
             ..Default::default()
         })
+    }
+    pub async fn get_image(type_: &str, allowed_connector_prefix: &[String]) -> Option<String> {
+        let image = if type_.starts_with("https://") {
+            debug!(
+                "Checking 3rd party connector {:?} in allowed_prefixes - {:?}",
+                type_, allowed_connector_prefix
+            );
+            let mut image = None;
+            for prefix in allowed_connector_prefix {
+                if type_.starts_with(prefix.as_str()) {
+                    match ThirdPartyConnectorSpec::from_url(type_).await {
+                        Ok(spec) => {
+                            debug!("Retrieved third party metadata {:?}", spec);
+                            image = Some(spec.image);
+                        }
+                        Err(e) => {
+                            info!("3rd party connector spec failed to retrieve {:?}", e);
+                        }
+                    }
+                    break;
+                }
+            }
+            if let Some(image) = image {
+                image
+            } else {
+                debug!("None of the connector prefixes matched!");
+                return None;
+            }
+        } else {
+            format!("infinyon/fluvio-connect-{}", type_)
+        };
+        Some(image)
+    }
+}
+#[cfg(test)]
+mod third_party_connector_tests {
+
+#[fluvio_future::test]
+    async fn test_authorized_prefix() {
+        let image = ManagedConnectorDeploymentController::get_image("foo", &[]).await;
+        assert_eq!(image, Some("infinyon/fluvio-connect-foo".to_string()));
+    }
+
+#[fluvio_future::test]
+    async fn test_unauthorized_prefix() {
+        let image = ManagedConnectorDeploymentController::get_image(
+            "https://google.com",
+            &["https://yahoo.com".to_string()],
+        )
+            .await;
+        assert_eq!(image, None);
+    }
+
+#[fluvio_future::test]
+    async fn test_official_3rd_party_connector() {
+        let image = ManagedConnectorDeploymentController::get_image("https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml", &["https://raw.githubusercontent.com/infinyon/fluvio-connectors".to_string()]).await;
+        assert_eq!(
+            image,
+            Some("infinyon/fluvio-connect-test-connector".to_string())
+        );
     }
 }
 
