@@ -365,6 +365,7 @@ impl ManagedConnectorDeploymentController {
 }
 #[cfg(test)]
 mod third_party_connector_tests {
+    use super::*;
 
     #[fluvio_future::test]
     async fn test_authorized_prefix() {
