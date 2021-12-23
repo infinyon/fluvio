@@ -69,13 +69,20 @@ impl ClusterUninstaller {
 
         if self.config.uninstall_k8 {
             self.uninstall_k8().await?;
-        } else if self.config.uninstall_local {
+        }
+        if self.config.uninstall_local {
             self.uninstall_local().await?;
-        } else if self.config.uninstall_sys {
-            self.uninstall_sys().await?;
         }
 
-        self.cleanup().await;
+        if self.config.uninstall_k8 || self.config.uninstall_local {
+            self.cleanup().await;
+        }
+
+        if self.config.uninstall_sys {
+            self.uninstall_sys().await?;
+            // perform extra clean up just in case
+            self.cleanup().await;
+        }
 
         Ok(())
     }
