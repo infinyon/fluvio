@@ -106,17 +106,6 @@ impl ClusterUninstaller {
         Ok(())
     }
 
-    /// Uninstall fluvio system chart
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::ClusterUninstaller;
-    /// let uninstaller = ClusterUninstaller::new()
-    ///     .with_namespace("my-namespace")
-    ///     .build().unwrap();
-    /// uninstaller.uninstall_sys();
-    /// ```
     #[instrument(skip(self))]
     async fn uninstall_sys(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
@@ -134,17 +123,6 @@ impl ClusterUninstaller {
         Ok(())
     }
 
-    /// Uninstall local fluvio system chart
-    ///
-    /// # Example
-    ///
-    /// ```no_run
-    /// # use fluvio_cluster::ClusterUninstaller;
-    /// let uninstaller = ClusterUninstaller::new()
-    ///     .with_name("my-namespace")
-    ///     .build().unwrap();
-    /// uninstaller.uninstall_local();
-    /// ```
     async fn uninstall_local(&self) -> Result<(), ClusterError> {
         self.pb.println("Uninstalling fluvio local components");
         Command::new("pkill")
