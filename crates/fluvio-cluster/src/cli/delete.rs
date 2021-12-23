@@ -17,7 +17,7 @@ pub struct DeleteOpt {
     k8: bool,
 
     #[structopt(long, conflicts_with = "k8", conflicts_with = "sys")]
-    /// delete install system chart
+    /// delete system chart
     sys: bool,
 }
 
@@ -37,6 +37,10 @@ impl DeleteOpt {
             builder.uninstall_local(false);
             builder.uninstall_k8(true);
             builder.uninstall_sys(false);
+        } else {
+            builder.uninstall_local(true);
+            builder.uninstall_k8(true);
+            builder.uninstall_sys(true);
         }
 
         if let Some(namespace) = self.namespace {

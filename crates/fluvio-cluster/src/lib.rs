@@ -32,6 +32,7 @@ mod start;
 mod render;
 mod delete;
 mod error;
+mod progress;
 pub mod runtime;
 
 /// extensions

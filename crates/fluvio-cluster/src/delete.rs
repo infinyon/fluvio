@@ -8,6 +8,8 @@ use fluvio_command::CommandExt;
 
 use crate::helm::HelmClient;
 use crate::charts::{APP_CHART_NAME, SYS_CHART_NAME};
+use crate::progress::create_progress_indicator;
+use crate::render::ProgressRenderer;
 use crate::{DEFAULT_NAMESPACE};
 use crate::error::UninstallError;
 use crate::ClusterError;
@@ -53,13 +55,21 @@ pub struct ClusterUninstaller {
     config: ClusterUninstallConfig,
     /// Helm client for performing uninstalls
     helm_client: HelmClient,
+    pb: ProgressRenderer,
 }
 
 impl ClusterUninstaller {
     fn from_config(config: ClusterUninstallConfig) -> Result<Self, ClusterError> {
+        let pb = if std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
+
         Ok(ClusterUninstaller {
             config,
             helm_client: HelmClient::new().map_err(UninstallError::HelmError)?,
+            pb,
         })
     }
 
@@ -91,7 +101,7 @@ impl ClusterUninstaller {
     async fn uninstall_k8(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
 
-        info!("Removing fluvio cluster at k8");
+        self.pb.println("Uninstalling fluvio kubernetes components");
         let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
             .ignore_not_found();
@@ -117,6 +127,7 @@ impl ClusterUninstaller {
     async fn uninstall_sys(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
 
+        self.pb.println("Uninstalling fluvio sys chart");
         self.helm_client
             .uninstall(
                 UninstallArg::new(self.config.sys_chart_name.to_owned())
@@ -141,7 +152,7 @@ impl ClusterUninstaller {
     /// uninstaller.uninstall_local();
     /// ```
     async fn uninstall_local(&self) -> Result<(), ClusterError> {
-        info!("Removing local cluster");
+        self.pb.println("Uninstalling fluvio local components");
         Command::new("pkill")
             .arg("-f")
             .arg("fluvio cluster run")
@@ -181,6 +192,8 @@ impl ClusterUninstaller {
     ///
     /// Ignore any errors, cleanup should be idempotent
     async fn cleanup(&self) {
+        self.pb
+            .println("Cleaning up objects and secrets created during the installation process");
         let ns = &self.config.namespace;
 
         // delete objects if not removed already

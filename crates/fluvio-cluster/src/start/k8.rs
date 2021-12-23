@@ -38,11 +38,10 @@ use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterCh
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::check::render::render_check_progress_with_indicator;
 use crate::UserChartLocation;
+use crate::progress::{InstallProgressMessage, create_progress_indicator};
 
 use super::constants::*;
 use super::common::try_connect_to_sc;
-use super::progress::InstallProgressMessage;
-use super::progress::create_progress_indicator;
 
 const DEFAULT_REGISTRY: &str = "infinyon";
 const DEFAULT_GROUP_NAME: &str = "main";
