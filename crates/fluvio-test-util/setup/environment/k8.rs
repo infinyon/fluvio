@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use fluvio_cluster::{ClusterConfig, ClusterInstaller, ClusterUninstaller, StartStatus};
+use fluvio_cluster::{ClusterConfig, ClusterInstaller, ClusterUninstallConfig, StartStatus};
 
 use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
@@ -21,8 +21,12 @@ impl K8EnvironmentDriver {
 impl EnvironmentDriver for K8EnvironmentDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
-        let uninstaller = ClusterUninstaller::new().build().unwrap();
-        uninstaller.uninstall().await.unwrap();
+        let uninstaller = ClusterUninstallConfig::builder()
+            .build()
+            .expect("uninstall builder")
+            .uninstaller()
+            .expect("uninstaller");
+        uninstaller.uninstall().await.expect("uninstall");
     }
 
     async fn start_cluster(&self) -> StartStatus {

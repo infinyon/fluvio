@@ -29,7 +29,7 @@ use common::output::Terminal;
 /// Manage and view Fluvio clusters
 #[derive(StructOpt, Debug)]
 pub enum ClusterCmd {
-    /// Start a Fluvio cluster, locally or on Minikube
+    /// Install Fluvio cluster
     #[structopt(name = "start")]
     Start(Box<StartOpt>),
 
@@ -37,7 +37,7 @@ pub enum ClusterCmd {
     #[structopt(name = "upgrade")]
     Upgrade(Box<UpgradeOpt>),
 
-    /// Delete a Fluvio cluster from the local machine or Minikube
+    /// Uninstall a Fluvio cluster
     #[structopt(name = "delete")]
     Delete(DeleteOpt),
 

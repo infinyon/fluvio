@@ -24,8 +24,8 @@ use crate::charts::{ChartConfig};
 use crate::check::{CheckResults, SysChartCheck};
 use crate::check::render::render_check_progress_with_indicator;
 use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
+use crate::progress::{InstallProgressMessage, create_progress_indicator};
 
-use super::progress::{InstallProgressMessage, create_progress_indicator};
 use super::constants::*;
 use super::common::check_crd;
 
