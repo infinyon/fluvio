@@ -49,6 +49,7 @@ setup_file() {
 @test "Connectors deleted" {
     run kubectl get managedconnectors
     assert_failure
+}
 
 @test "SPU Groups deleted" {
     run kubectl get spugroups 
