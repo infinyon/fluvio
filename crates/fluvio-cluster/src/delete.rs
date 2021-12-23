@@ -75,8 +75,6 @@ impl ClusterUninstaller {
 
     #[instrument(skip(self))]
     pub async fn uninstall(&self) -> Result<(), ClusterError> {
-        info!("Removing fluvio cluster");
-
         if self.config.uninstall_k8 {
             self.uninstall_k8().await?;
         }
@@ -84,14 +82,10 @@ impl ClusterUninstaller {
             self.uninstall_local().await?;
         }
 
-        if self.config.uninstall_k8 || self.config.uninstall_local {
-            self.cleanup().await;
-        }
+        self.cleanup().await;
 
         if self.config.uninstall_sys {
             self.uninstall_sys().await?;
-            // perform extra clean up just in case
-            self.cleanup().await;
         }
 
         Ok(())

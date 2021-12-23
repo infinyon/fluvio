@@ -16,7 +16,7 @@ pub struct DeleteOpt {
     #[structopt(long, conflicts_with = "local", conflicts_with = "sys")]
     k8: bool,
 
-    #[structopt(long, conflicts_with = "k8", conflicts_with = "sys")]
+    #[structopt(long, conflicts_with = "k8", conflicts_with = "local")]
     /// delete system chart
     sys: bool,
 }
@@ -26,8 +26,8 @@ impl DeleteOpt {
         let mut builder = ClusterUninstallConfig::builder();
 
         if self.sys {
-            builder.uninstall_local(true);
-            builder.uninstall_k8(true);
+            builder.uninstall_local(false);
+            builder.uninstall_k8(false);
             builder.uninstall_sys(true);
         } else if self.local {
             builder.uninstall_local(true);
