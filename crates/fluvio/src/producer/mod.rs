@@ -1,21 +1,19 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
 #[cfg(feature = "smartengine")]
 use async_lock::RwLock;
-use async_lock::Mutex;
 
-use dataplane::batch::Batch;
 use dataplane::ReplicaKey;
 use dataplane::record::Record;
-use dataplane::produce::{DefaultProduceRequest, DefaultTopicRequest, DefaultPartitionRequest};
 
+use event_listener::Event;
 #[cfg(feature = "smartengine")]
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_types::PartitionId;
-use futures_util::future::join_all;
-use tracing::{instrument, error, trace};
+use fluvio_types::event::StickyEvent;
+use tracing::instrument;
 
 mod accumulator;
 mod config;
@@ -23,17 +21,20 @@ mod error;
 mod output;
 mod partitioning;
 mod record;
+mod partition_producer;
 
 pub use dataplane::record::{RecordKey, RecordData};
 
 use crate::FluvioError;
 use crate::spu::SpuPool;
-use crate::producer::accumulator::{RecordAccumulator, PushRecord, ProducerBatch};
+use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 
+use self::accumulator::BatchHandler;
 pub use self::config::{TopicProducerConfigBuilder, TopicProducerConfig};
 pub use self::error::ProducerError;
 pub use self::output::ProduceOutput;
+use self::partition_producer::PartitionProducer;
 pub use self::record::FutureRecordMetadata;
 
 use crate::error::Result;
@@ -50,147 +51,72 @@ pub struct TopicProducer {
     pub(crate) smartmodule_instance: Option<Arc<RwLock<Box<dyn SmartModuleInstance>>>>,
 }
 
-/// Struct that is responsible for sending produce requests to the SPU in a given partition.
-struct PartitionProducer {
-    replica: ReplicaKey,
-    spu_pool: Arc<SpuPool>,
-    batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
-    linger: Duration,
-}
-
-impl PartitionProducer {
-    fn new(
-        replica: ReplicaKey,
-        spu_pool: Arc<SpuPool>,
-        batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
-        linger: Duration,
-    ) -> Self {
-        Self {
-            replica,
-            spu_pool,
-            batches_lock,
-            linger,
-        }
-    }
-
-    fn shared(
-        replica: ReplicaKey,
-        spu_pool: Arc<SpuPool>,
-        batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
-        linger: Duration,
-    ) -> Arc<Self> {
-        Arc::new(PartitionProducer::new(replica, spu_pool, batches, linger))
-    }
-
-    /// Flush all the batches that are full or have reached the linger time.
-    /// If force is set to true, flush all batches regardless of linger time.
-    async fn flush(&self, force: bool) -> Result<()> {
-        let partition_spec = self
-            .spu_pool
-            .metadata
-            .partitions()
-            .lookup_by_key(&self.replica)
-            .await?
-            .ok_or_else(|| {
-                FluvioError::PartitionNotFound(
-                    self.replica.topic.to_string(),
-                    self.replica.partition,
-                )
-            })?
-            .spec;
-        let leader = partition_spec.leader;
-
-        let spu_socket = self
-            .spu_pool
-            .create_serial_socket_from_leader(leader)
-            .await?;
-
-        let mut batches_ready = vec![];
-        let mut batches = self.batches_lock.lock().await;
-        while !batches.is_empty() {
-            let ready = force
-                || batches.front().map_or(false, |batch| {
-                    batch.is_full() || batch.create_time().elapsed() >= self.linger
-                });
-            if ready {
-                if let Some(batch) = batches.pop_front() {
-                    batches_ready.push(batch);
-                }
-            } else {
-                break;
-            }
-        }
-
-        // Send each batch and notify base offset
-        for p_batch in batches_ready {
-            let mut request = DefaultProduceRequest::default();
-
-            let mut topic_request = DefaultTopicRequest {
-                name: self.replica.topic.to_string(),
-                ..Default::default()
-            };
-            let mut partition_request = DefaultPartitionRequest {
-                partition_index: self.replica.partition,
-                ..Default::default()
-            };
-
-            let batch_notifier = p_batch.notify;
-            let batch = p_batch.records;
-
-            let batch = Batch::from(batch);
-            partition_request.records.batches.push(batch);
-
-            topic_request.partitions.push(partition_request);
-            request.acks = 1;
-            request.timeout_ms = 1500;
-            request.topics.push(topic_request);
-            let response = spu_socket.send_receive(request).await?;
-
-            let base_offset = response.responses[0].partitions[0].base_offset;
-
-            if let Err(_e) = batch_notifier.send(base_offset).await {
-                trace!(
-                    "Failed to notify producer of successful produce because receiver was dropped"
-                );
-            }
-        }
-
-        Ok(())
-    }
-}
-
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
-    pool: Vec<Arc<PartitionProducer>>,
+    flush_events: Vec<(Arc<Event>, Arc<Event>)>,
+    end_events: Vec<Arc<StickyEvent>>,
 }
 
 impl ProducerPool {
     fn new(
         topic: String,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<HashMap<PartitionId, Arc<Mutex<VecDeque<ProducerBatch>>>>>,
+        batches: Arc<HashMap<PartitionId, BatchHandler>>,
         linger: Duration,
     ) -> Self {
-        let mut pool = vec![];
-        for (&partition_id, batch_list) in batches.iter() {
+        let mut end_events = vec![];
+        let mut flush_events = vec![];
+        for (&partition_id, (batch_events, batch_list)) in batches.iter() {
+            let end_event = StickyEvent::shared();
+            let flush_event = (Arc::new(Event::new()), Arc::new(Event::new()));
             let replica = ReplicaKey::new(topic.clone(), partition_id);
-            pool.push(PartitionProducer::shared(
+            PartitionProducer::start(
                 replica,
                 spu_pool.clone(),
                 batch_list.clone(),
+                batch_events.clone(),
                 linger,
-            ));
+                end_event.clone(),
+                flush_event.clone(),
+            );
+            end_events.push(end_event);
+            flush_events.push(flush_event);
         }
-        Self { pool }
+        Self {
+            end_events,
+            flush_events,
+        }
     }
 
     fn shared(
         topic: String,
         spu_pool: Arc<SpuPool>,
-        batches: Arc<HashMap<PartitionId, Arc<Mutex<VecDeque<ProducerBatch>>>>>,
+        batches: Arc<HashMap<PartitionId, BatchHandler>>,
         linger: Duration,
     ) -> Arc<Self> {
         Arc::new(ProducerPool::new(topic, spu_pool, batches, linger))
+    }
+
+    async fn flush_all_batches(&self) -> Result<()> {
+        for event in &self.flush_events {
+            let listener = event.1.listen();
+            event.0.notify(usize::MAX);
+            listener.await;
+        }
+
+        Ok(())
+    }
+
+    fn end(&self) {
+        for event in &self.end_events {
+            event.notify();
+        }
+    }
+}
+
+impl Drop for ProducerPool {
+    fn drop(&mut self) {
+        self.end();
     }
 }
 struct InnerTopicProducer {
@@ -199,24 +125,12 @@ struct InnerTopicProducer {
     partitioner: Box<dyn Partitioner + Send + Sync>,
     record_accumulator: RecordAccumulator,
     producer_pool: Arc<ProducerPool>,
-    linger: Duration,
 }
 
 impl InnerTopicProducer {
     /// Flush all the PartitionProducers and wait for them.
-    async fn flush(&self, force: bool) -> Result<()> {
-        let mut futures = vec![];
-
-        for producer in self.producer_pool.pool.iter() {
-            let future = producer.flush(force);
-            futures.push(future);
-        }
-
-        join_all(futures)
-            .await
-            .into_iter()
-            .collect::<Result<Vec<_>>>()?;
-
+    async fn flush(&self) -> Result<()> {
+        self.producer_pool.flush_all_batches().await?;
         Ok(())
     }
 
@@ -238,19 +152,6 @@ impl InnerTopicProducer {
             .record_accumulator
             .push_record(record, partition)
             .await?;
-        if push_record.is_full {
-            self.flush(false).await?;
-        }
-
-        if push_record.new_batch {
-            let linger = self.linger;
-            fluvio_future::task::spawn(async move {
-                fluvio_future::timer::sleep(linger).await;
-                if let Err(e) = self.flush(false).await {
-                    error!("Failed to flush producer: {:?}", e);
-                }
-            });
-        }
 
         Ok(push_record)
     }
@@ -365,7 +266,6 @@ impl TopicProducer {
                 partitioner,
                 producer_pool,
                 record_accumulator,
-                linger: config.linger,
             }),
             #[cfg(feature = "smartengine")]
             smartmodule_instance: Default::default(),
@@ -373,7 +273,7 @@ impl TopicProducer {
     }
 
     pub async fn flush(&self) -> Result<(), FluvioError> {
-        self.inner.flush(true).await
+        self.inner.flush().await
     }
 
     /// Sends a key/value record to this producer's Topic.

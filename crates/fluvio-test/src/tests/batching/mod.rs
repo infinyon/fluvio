@@ -62,77 +62,74 @@ pub async fn batching(
     println!("Found leader {}", leader);
 
     let consumer = test_driver.get_consumer(&topic_name, 0).await;
-
-    // Ensure record is sent after the linger time even if we dont call flush()
-    let config = TopicProducerConfigBuilder::default().linger_ms(100).build();
-
-    let producer: TopicProducer = test_driver
-        .create_producer_with_config(&topic_name, config)
-        .await;
-    println!("Created producer with linger time");
-
-    let mut stream = consumer
-        .stream(Offset::end())
-        .await
-        .expect("Failed to create consumer stream");
-    producer.send("key", "value").await.expect("Failed produce");
-    let record = stream
-        .next()
-        .await
-        .expect("Failed consume")
-        .expect("Record");
-    assert_eq!(record.value(), "value".as_bytes());
-
-    // Ensure record is sent when we call flush() (we make linger_time large to test that)
-    let config = TopicProducerConfigBuilder::default()
-        .linger_ms(600000)
-        .build();
-    let producer: TopicProducer = test_driver
-        .create_producer_with_config(&topic_name, config)
-        .await;
-    println!("Created producer with large linger time");
-
-    let mut stream = consumer
-        .stream(Offset::end())
-        .await
-        .expect("Failed to create consumer stream");
-    producer
-        .send("key", "value2")
-        .await
-        .expect("Failed produce");
-    producer.flush().await.expect("Failed flush");
-    let record = stream
-        .next()
-        .await
-        .expect("Failed consume")
-        .expect("Record");
-    assert_eq!(record.value(), "value2".as_bytes());
-
-    // Ensure record is sent when batch is full (we make batch_size smaller))
-    let config = TopicProducerConfigBuilder::default()
-        .linger_ms(600000)
-        .batch_size(17)
-        .build();
-    let producer: TopicProducer = test_driver
-        .create_producer_with_config(&topic_name, config)
-        .await;
-    println!("Created producer with small batch size");
-
     let mut stream = consumer
         .stream(Offset::end())
         .await
         .expect("Failed to create consumer stream");
 
-    // The size of this record is equal to batch_size so it will be sent without calling flush and before the linger time
-    producer
-        .send("key", "value3")
-        .await
-        .expect("Failed produce");
+    for _ in 0..100 {
+        // Ensure record is sent after the linger time even if we dont call flush()
 
-    let record = stream
-        .next()
-        .await
-        .expect("Failed consume")
-        .expect("Record");
-    assert_eq!(record.value(), "value3".as_bytes());
+        let config = TopicProducerConfigBuilder::default().linger_ms(100).build();
+
+        let producer: TopicProducer = test_driver
+            .create_producer_with_config(&topic_name, config)
+            .await;
+        println!("Created producer with linger time");
+
+        producer.send("key", "value").await.expect("Failed produce");
+        let record = stream
+            .next()
+            .await
+            .expect("Failed consume")
+            .expect("Record");
+        assert_eq!(record.value(), "value".as_bytes());
+
+        // Ensure record is sent when we call flush() (we make linger_time large to test that)
+
+        let config = TopicProducerConfigBuilder::default()
+            .linger_ms(600000)
+            .build();
+        let producer: TopicProducer = test_driver
+            .create_producer_with_config(&topic_name, config)
+            .await;
+        println!("Created producer with large linger time");
+
+        producer
+            .send("key", "value2")
+            .await
+            .expect("Failed produce");
+        producer.flush().await.expect("Failed flush");
+        let record = stream
+            .next()
+            .await
+            .expect("Failed consume")
+            .expect("Record");
+        assert_eq!(record.value(), "value2".as_bytes());
+
+        // Ensure record is sent when batch is full (we make batch_size smaller))
+
+        let config = TopicProducerConfigBuilder::default()
+            .linger_ms(600000)
+            .batch_size(17)
+            .build();
+        let producer: TopicProducer = test_driver
+            .create_producer_with_config(&topic_name, config)
+            .await;
+        println!("Created producer with small batch size");
+
+        // The size of this record is equal to batch_size so it will be sent without calling flush and before the linger time
+        producer
+            .send("key", "value3")
+            .await
+            .expect("Failed produce");
+
+        let record = stream
+            .next()
+            .await
+            .expect("Failed consume")
+            .expect("Record");
+        assert_eq!(record.value(), "value3".as_bytes());
+        drop(producer);
+    }
 }

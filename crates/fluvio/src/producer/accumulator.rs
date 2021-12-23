@@ -5,6 +5,7 @@ use std::time::Instant;
 use async_lock::Mutex;
 use async_channel::Sender;
 
+use event_listener::{Event, EventListener};
 use tracing::trace;
 
 use dataplane::Offset;
@@ -16,19 +17,59 @@ use crate::producer::record::{BatchMetadata, FutureRecordMetadata, PartialFuture
 use crate::producer::ProducerError;
 use crate::error::Result;
 
+pub(crate) struct BatchEvents {
+    batch_full: Event,
+    new_batch: Event,
+}
+
+impl BatchEvents {
+    fn new() -> Self {
+        let batch_full = Event::new();
+        let new_batch = Event::new();
+        Self {
+            batch_full,
+            new_batch,
+        }
+    }
+
+    pub fn shared() -> Arc<Self> {
+        Arc::new(Self::new())
+    }
+
+    pub fn listen_batch_full(&self) -> EventListener {
+        self.batch_full.listen()
+    }
+
+    pub fn listen_new_batch(&self) -> EventListener {
+        self.new_batch.listen()
+    }
+
+    pub fn notify_batch_full(&self) {
+        self.batch_full.notify(usize::MAX);
+    }
+
+    pub fn notify_new_batch(&self) {
+        self.new_batch.notify(usize::MAX);
+    }
+}
+
+pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<Mutex<VecDeque<ProducerBatch>>>);
 /// This struct acts as a queue that accumulates records into batches.
 /// It is used by the producer to buffer records before sending them to the SPU.
 /// The batches are separated by PartitionId
 pub(crate) struct RecordAccumulator {
     batch_size: usize,
-    batches: Arc<HashMap<PartitionId, Arc<Mutex<VecDeque<ProducerBatch>>>>>,
+    batches: Arc<HashMap<PartitionId, BatchHandler>>,
 }
 
 impl RecordAccumulator {
     pub(crate) fn new(batch_size: usize, partition_n: i32) -> Self {
         let mut batches = HashMap::default();
         for i in 0..partition_n {
-            batches.insert(i, Arc::new(Mutex::new(VecDeque::new())));
+            batches.insert(
+                i,
+                (BatchEvents::shared(), Arc::new(Mutex::new(VecDeque::new()))),
+            );
         }
         Self {
             batches: Arc::new(batches),
@@ -42,7 +83,7 @@ impl RecordAccumulator {
         record: Record,
         partition_id: PartitionId,
     ) -> Result<PushRecord, ProducerError> {
-        let batches_lock = self
+        let (batch_events, batches_lock) = self
             .batches
             .get(&partition_id)
             .ok_or(ProducerError::PartitionNotFound(partition_id))?;
@@ -50,11 +91,14 @@ impl RecordAccumulator {
         let mut batches = batches_lock.lock().await;
         if let Some(batch) = batches.back_mut() {
             if let Some(push_record) = batch.push_record(record.clone()) {
+                if batch.is_full() {
+                    batch_events.notify_batch_full();
+                }
                 return Ok(PushRecord::new(
                     push_record.into_future_record_metadata(partition_id),
-                    batch.is_full(),
-                    false,
                 ));
+            } else {
+                batch_events.notify_batch_full();
             }
         }
 
@@ -67,39 +111,35 @@ impl RecordAccumulator {
 
         match batch.push_record(record) {
             Some(push_record) => {
-                let batch_is_full = batch.is_full();
+                batch_events.notify_new_batch();
+
+                if batch.is_full() {
+                    batch_events.notify_batch_full();
+                }
 
                 batches.push_back(batch);
 
                 Ok(PushRecord::new(
                     push_record.into_future_record_metadata(partition_id),
-                    batch_is_full,
-                    true,
                 ))
             }
             None => Err(ProducerError::RecordTooLarge(self.batch_size)),
         }
     }
 
-    pub(crate) fn batches(&self) -> Arc<HashMap<PartitionId, Arc<Mutex<VecDeque<ProducerBatch>>>>> {
+    pub(crate) fn batches(&self) -> Arc<HashMap<PartitionId, BatchHandler>> {
         self.batches.clone()
     }
 }
 
 pub(crate) struct PushRecord {
     pub(crate) future: FutureRecordMetadata,
-    pub(crate) is_full: bool,
-    pub(crate) new_batch: bool,
 }
 
 impl PushRecord {
-    fn new(future: FutureRecordMetadata, is_full: bool, new_batch: bool) -> Self
+    fn new(future: FutureRecordMetadata) -> Self
 where {
-        Self {
-            future,
-            is_full,
-            new_batch,
-        }
+        Self { future }
     }
 }
 
