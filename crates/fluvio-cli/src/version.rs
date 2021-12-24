@@ -15,16 +15,16 @@ use crate::metadata::subcommand_metadata;
 #[derive(Debug, StructOpt)]
 pub struct VersionOpt {
     //#[structopt(subcommand)]
-    //pub cmd: Option<VersionCmd>,
+//pub cmd: Option<VersionCmd>,
 }
 
 impl VersionOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-    CurrentOpt {}.process(target).await
-    //    match self.cmd {
-    //        Some(cmd) => cmd.process(target).await,
-    //        None => CurrentOpt {}.process(target).await,
-    //    }
+        CurrentOpt {}.process(target).await
+        //    match self.cmd {
+        //        Some(cmd) => cmd.process(target).await,
+        //        None => CurrentOpt {}.process(target).await,
+        //    }
     }
 }
 

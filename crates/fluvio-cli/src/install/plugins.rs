@@ -59,15 +59,12 @@ impl InstallOpt {
             prompt_available_update(&latest_version);
         }
         Ok(())
-
     }
 
     async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
-
         // Needs: FLUVIO_CHANNEL_NAME, FLUVIO_EXTENSIONS_DIR?
         // TODO: Need to know if latest channel to set prerelease flag
         let prerelease_flag = false;
-
 
         let target = fluvio_index::package_target()?;
 

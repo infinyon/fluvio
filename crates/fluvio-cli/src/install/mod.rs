@@ -204,7 +204,6 @@ pub fn install_println<S: AsRef<str>>(string: S) {
     }
 }
 
-
 //pub async fn install_channel_fluvio_bin(
 //    channel_name: String,
 //    channel_config: &FluvioChannelConfig,

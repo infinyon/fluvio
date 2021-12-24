@@ -5,7 +5,6 @@ use fluvio_index::{PackageId, HttpAgent};
 use tracing::debug;
 use color_eyre::{Result, eyre::eyre};
 
-
 pub mod cli;
 
 pub async fn install_channel_fluvio_bin(

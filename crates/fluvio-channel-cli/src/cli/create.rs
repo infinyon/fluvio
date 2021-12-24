@@ -1,8 +1,10 @@
 use color_eyre::Result;
 use fluvio_channel::{
     //FluvioChannelConfig, FluvioChannelInfo, install_channel_fluvio_bin,
-    FluvioChannelConfig, FluvioChannelInfo,
-    FluvioBinVersion, ImageTagStrategy,
+    FluvioChannelConfig,
+    FluvioChannelInfo,
+    FluvioBinVersion,
+    ImageTagStrategy,
 };
 use std::path::PathBuf;
 use structopt::StructOpt;

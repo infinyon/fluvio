@@ -1,7 +1,7 @@
 use color_eyre::{Result, eyre::eyre};
 use fluvio_channel::{
-    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion,
-    DEV_CHANNEL_NAME, STABLE_CHANNEL_NAME, LATEST_CHANNEL_NAME,
+    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, DEV_CHANNEL_NAME,
+    STABLE_CHANNEL_NAME, LATEST_CHANNEL_NAME,
 };
 use crate::install_channel_fluvio_bin;
 

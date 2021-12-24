@@ -361,7 +361,6 @@ impl FluvioBinVersion {
     }
 }
 
-
 // Check if we're running Fluvio in the location our installer places binaries
 // This is used to decide whether to use channel config
 pub fn is_fluvio_bin_in_std_dir(fluvio_bin: &Path) -> bool {
