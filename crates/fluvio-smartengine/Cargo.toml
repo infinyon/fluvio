@@ -15,7 +15,7 @@ description = "The offical Fluvio SmartEngine"
 smartmodule = ["fluvio-controlplane-metadata", "flate2"]
 
 [dependencies]
-wasmtime = "0.31"
+wasmtime = "0.32"
 nix = "0.23"
 tracing = "0.1.27"
 anyhow = "1.0.38"
