@@ -26,15 +26,15 @@ pub struct CreateOpt {
 }
 
 impl CreateOpt {
-    pub async fn process(self) -> Result<()> {
+    pub async fn process(&self) -> Result<()> {
         // Load in the config file
         // Parse with the CLI Config parser
 
         debug!("Looking for channel config");
 
-        let cli_config_path = if let Some(path) = self.config {
+        let cli_config_path = if let Some(path) = &self.config {
             debug!("Using provided channel config path");
-            path
+            path.to_path_buf()
         } else {
             debug!("Using default channel config path");
             FluvioChannelConfig::default_config_location()
@@ -58,8 +58,8 @@ impl CreateOpt {
             PathBuf::from(".")
         };
 
-        let binary_path = if let Some(binary_path) = self.binary_path {
-            binary_path
+        let binary_path = if let Some(binary_path) = &self.binary_path {
+            binary_path.to_path_buf()
         } else {
             // Default to ~/.fluvio/bin/fluvio-<channel>
             let mut p = home.clone();
@@ -68,8 +68,8 @@ impl CreateOpt {
             p
         };
 
-        let extensions_path = if let Some(extensions_path) = self.extensions_path {
-            extensions_path
+        let extensions_path = if let Some(extensions_path) = &self.extensions_path {
+            extensions_path.to_path_buf()
         } else {
             // Default to ~/.fluvio/bin/extensions-<channel>
             let mut p = home.clone();
@@ -78,8 +78,8 @@ impl CreateOpt {
             p
         };
 
-        let image_tag_strategy = if let Some(strategy) = self.image_tag_strategy {
-            strategy
+        let image_tag_strategy = if let Some(strategy) = &self.image_tag_strategy {
+            strategy.to_owned()
         } else {
             ImageTagStrategy::Version
         };
@@ -95,7 +95,7 @@ impl CreateOpt {
         // We should also try to install the binary if it doesn't exist in the binary path
         if !binary_path.exists() {
             let version = FluvioBinVersion::parse(&self.channel)?;
-            install_channel_fluvio_bin(self.channel, &config, version).await?;
+            install_channel_fluvio_bin(self.channel.to_string(), &config, version).await?;
         }
 
         Ok(())

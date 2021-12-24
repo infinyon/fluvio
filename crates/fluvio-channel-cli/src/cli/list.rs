@@ -11,7 +11,7 @@ pub struct ListOpt {
 }
 
 impl ListOpt {
-    pub async fn process(self) -> Result<()> {
+    pub async fn process(&self) -> Result<()> {
         // Open config file
 
         // Load in the config file
@@ -19,9 +19,9 @@ impl ListOpt {
 
         debug!("Looking for channel config");
 
-        let cli_config_path = if let Some(path) = self.config {
+        let cli_config_path = if let Some(path) = &self.config {
             debug!("Using provided channel config path");
-            path
+            path.to_path_buf()
         } else {
             debug!("Using default channel config path");
             FluvioChannelConfig::default_config_location()
