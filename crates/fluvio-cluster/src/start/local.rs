@@ -389,13 +389,19 @@ impl LocalInstaller {
                 .println(&InstallProgressMessage::PreFlightCheck.msg());
             let mut progress = ClusterChecker::empty()
                 .with_local_checks()
-                .with_check(SysChartCheck::new(sys_config))
+                .with_check(SysChartCheck::new(
+                    sys_config,
+                    self.config.platform_version.clone(),
+                ))
                 .run_and_fix_with_progress();
             render_check_progress_with_indicator(&mut progress, &self.pb).await
         } else {
             ClusterChecker::empty()
                 .with_local_checks()
-                .with_check(SysChartCheck::new(sys_config))
+                .with_check(SysChartCheck::new(
+                    sys_config,
+                    self.config.platform_version.clone(),
+                ))
                 .run_wait_and_fix()
                 .await
         }

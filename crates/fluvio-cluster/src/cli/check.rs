@@ -1,3 +1,5 @@
+use fluvio::dataplane::versions::PlatformVersion;
+use semver::Version;
 use structopt::StructOpt;
 
 use crate::{ClusterChecker, ClusterError};
@@ -10,7 +12,7 @@ use crate::charts::ChartConfig;
 pub struct CheckOpt {}
 
 impl CheckOpt {
-    pub async fn process(self) -> Result<(), ClusterCliError> {
+    pub async fn process(self, platform_version: Version) -> Result<(), ClusterCliError> {
         use colored::*;
         println!("{}", "Running pre-startup checks...".bold());
         let sys_config: ChartConfig = ChartConfig::sys_builder()
@@ -18,7 +20,7 @@ impl CheckOpt {
             .map_err(ClusterError::InstallSys)?;
         let mut progress = ClusterChecker::empty()
             .with_preflight_checks()
-            .with_check(SysChartCheck::new(sys_config))
+            .with_check(SysChartCheck::new(sys_config, platform_version))
             .run_with_progress();
 
         let results = render_check_progress(&mut progress).await;

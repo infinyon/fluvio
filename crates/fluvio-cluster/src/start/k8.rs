@@ -612,7 +612,6 @@ impl ClusterInstaller {
 
         if self.config.install_sys {
             let mut sys_config: ChartConfig = ChartConfig::sys_builder()
-                .version(self.config.chart_version.clone())
                 .namespace(&self.config.namespace)
                 .build()
                 .unwrap();
@@ -621,7 +620,10 @@ impl ClusterInstaller {
                 sys_config.location = location.to_owned().into();
             }
 
-            checker = checker.with_check(SysChartCheck::new(sys_config));
+            checker = checker.with_check(SysChartCheck::new(
+                sys_config,
+                self.config.platform_version.clone(),
+            ));
         }
 
         if !self.config.upgrade {

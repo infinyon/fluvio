@@ -84,7 +84,7 @@ impl ClusterCmd {
                 uninstall.process().await?;
             }
             Self::Check(check) => {
-                check.process().await?;
+                check.process(platform_version).await?;
             }
             Self::SPU(spu) => {
                 let fluvio = target.connect().await?;

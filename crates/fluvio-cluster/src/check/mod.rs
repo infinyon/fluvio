@@ -171,6 +171,9 @@ pub enum RecoverableCheck {
     #[error("Missing Fluvio system charts.")]
     MissingSystemChart,
 
+    #[error("Fluvio system charts are not up to date.")]
+    UpgradeSystemChart,
+
     /// Minikube tunnel not found, this error is used in case of linux where we can try to bring tunnel up
     #[error("Minikube tunnel not found")]
     MinikubeTunnelNotFoundRetry,
@@ -181,6 +184,7 @@ impl CheckSuggestion for RecoverableCheck {
         let suggestion = match self {
             Self::MissingSystemChart => "Run 'fluvio cluster start --sys'",
             Self::MinikubeTunnelNotFoundRetry => "Run 'minikube tunnel'",
+            Self::UpgradeSystemChart => "Run 'fluvio cluster start --sys'",
         };
         Some(suggestion.to_string())
     }
@@ -262,14 +266,14 @@ impl CheckSuggestion for UnrecoverableCheck {
 #[async_trait]
 pub trait ClusterCheck: Debug + Send + Sync + 'static {
     /// perform check, if successful return success message, if fail, return fail message
-    async fn perform_check(&self) -> CheckResult;
+    async fn perform_check(&mut self) -> CheckResult;
 
     /// Attempt to fix a recoverable error.
     ///
     /// The default implementation is to fail with `FailedRecovery`. Concrete instances
     /// may override this implementation with functionality to actually attempt to fix
     /// errors.
-    async fn attempt_fix(&self, check: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    async fn attempt_fix(&mut self, check: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
         Err(UnrecoverableCheck::FailedRecovery(check))
     }
 }
@@ -280,7 +284,7 @@ pub(crate) struct LoadableConfig;
 #[async_trait]
 impl ClusterCheck for LoadableConfig {
     /// Checks that we can connect to Kubernetes via the active context
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let config = match K8Config::load() {
             Ok(config) => config,
             Err(K8ConfigError::NoCurrentContext) => {
@@ -317,7 +321,7 @@ pub(crate) struct K8Version;
 #[async_trait]
 impl ClusterCheck for K8Version {
     /// Check if required kubectl version is installed
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let kube_version = Command::new("kubectl")
             .arg("version")
             .arg("-o=json")
@@ -372,7 +376,7 @@ pub(crate) struct HelmVersion;
 #[async_trait]
 impl ClusterCheck for HelmVersion {
     /// Checks that the installed helm version is compatible with the installer requirements
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
         let required = DEFAULT_HELM_VERSION;
@@ -391,11 +395,17 @@ impl ClusterCheck for HelmVersion {
 #[derive(Debug)]
 pub(crate) struct SysChartCheck {
     config: ChartConfig,
+    platform_version: Version,
+    charts: usize,
 }
 
 impl SysChartCheck {
-    pub(crate) fn new(config: ChartConfig) -> Self {
-        Self { config }
+    pub(crate) fn new(config: ChartConfig, platform_version: Version) -> Self {
+        Self {
+            config,
+            charts: 0,
+            platform_version,
+        }
     }
 }
 
@@ -403,21 +413,51 @@ impl SysChartCheck {
 impl ClusterCheck for SysChartCheck {
     /// Check that the system chart is installed
     /// This uses whatever namespace it is being called
-    async fn perform_check(&self) -> CheckResult {
-        debug!("always perform sys chart upgrade");
+    async fn perform_check(&mut self) -> CheckResult {
+        debug!("performing sys chart check");
 
-        Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart))
+        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
+        // check installed system chart version
+        let sys_charts = helm
+            .get_installed_chart_by_name(SYS_CHART_NAME, None)
+            .map_err(CheckError::HelmError)?;
+        let charts = sys_charts.len();
+        debug!(charts = sys_charts.len(), "sys charts count");
+        self.charts = charts;
+        if sys_charts.is_empty() {
+            Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart))
+        } else if sys_charts.len() > 1 {
+            Ok(CheckStatus::fail(UnrecoverableCheck::MultipleSystemCharts))
+        } else {
+            let install_chart = sys_charts.get(0).unwrap();
+            debug!(app_version = %install_chart.app_version,"Sys Chart Version");
+            let sys_platform_version = Version::parse(&install_chart.app_version)?;
+            if sys_platform_version == self.platform_version {
+                Ok(CheckStatus::pass("Fluvio system charts are installed"))
+            } else {
+                Ok(CheckStatus::fail(RecoverableCheck::UpgradeSystemChart))
+            }
+        }
     }
 
-    async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    async fn attempt_fix(&mut self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
         // Use closure to catch errors
         let result = (|| -> Result<(), ChartInstallError> {
-            debug!(
-                "Fixing by installing Fluvio sys chart with config: {:#?}",
-                &self.config
-            );
             let sys_installer = ChartInstaller::from_config(self.config.clone())?;
-            sys_installer.install()?;
+
+            if self.charts == 0 {
+                debug!(
+                    "Fixing by installing Fluvio sys chart with config: {:#?}",
+                    &self.config
+                );
+                sys_installer.install()?;
+            } else {
+                debug!(
+                    "Fixing by updating Fluvio sys chart with config: {:#?}",
+                    &self.config
+                );
+                sys_installer.upgrade()?;
+            }
             Ok(())
         })();
         result.map_err(|e| {
@@ -434,7 +474,7 @@ pub(crate) struct AlreadyInstalled;
 #[async_trait]
 impl ClusterCheck for AlreadyInstalled {
     /// Checks that Fluvio is not already installed
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         let app_charts = helm
             .get_installed_chart_by_name(APP_CHART_NAME, None)
@@ -451,7 +491,7 @@ struct CreateServicePermission;
 
 #[async_trait]
 impl ClusterCheck for CreateServicePermission {
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         check_permission(RESOURCE_SERVICE)
     }
 }
@@ -461,7 +501,7 @@ struct CreateCrdPermission;
 
 #[async_trait]
 impl ClusterCheck for CreateCrdPermission {
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         check_permission(RESOURCE_CRD)
     }
 }
@@ -471,7 +511,7 @@ struct CreateServiceAccountPermission;
 
 #[async_trait]
 impl ClusterCheck for CreateServiceAccountPermission {
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         check_permission(RESOURCE_SERVICE_ACCOUNT)
     }
 }
@@ -481,7 +521,7 @@ pub(crate) struct LoadBalancer;
 
 #[async_trait]
 impl ClusterCheck for LoadBalancer {
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
         let context = match config {
             K8Config::Pod(_) => {
@@ -521,7 +561,7 @@ impl ClusterCheck for LoadBalancer {
     }
 
     /// Attempt to fix missing load balancer by running `minikube tunnel`
-    async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    async fn attempt_fix(&mut self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
         use std::process::Stdio;
 
         // Use closure to catch potential errors
@@ -658,9 +698,9 @@ impl ClusterChecker {
     /// ```
     ///
     /// [`run_with_progress`]: ClusterChecker::run_with_progress
-    pub async fn run_wait(&self) -> CheckResults {
+    pub async fn run_wait(&mut self) -> CheckResults {
         let mut check_results = vec![];
-        for check in &self.checks {
+        for check in &mut self.checks {
             let result = check.perform_check().await;
             check_results.push(result);
         }
@@ -670,11 +710,11 @@ impl ClusterChecker {
     /// Performs all checks sequentially, attempting to fix any problems along the way.
     ///
     /// This may appear to "hang" if there are many checks, or if fixes take a long time.
-    pub async fn run_wait_and_fix(&self) -> CheckResults {
+    pub async fn run_wait_and_fix(&mut self) -> CheckResults {
         // We want to collect all of the results of the checks
         let mut results: Vec<CheckResult> = vec![];
 
-        for check in &self.checks {
+        for check in &mut self.checks {
             // Perform one individual check
             match check.perform_check().await {
                 // If the check passed, add it to the results list
@@ -732,10 +772,10 @@ impl ClusterChecker {
     /// ```
     ///
     /// [`run_wait`]: ClusterChecker::run_wait
-    pub fn run_with_progress(self) -> Receiver<CheckResult> {
+    pub fn run_with_progress(mut self) -> Receiver<CheckResult> {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
-            for check in self.checks {
+            for check in &mut self.checks {
                 let check_result = check.perform_check().await;
 
                 // Nothing we can do if channel fails
@@ -759,10 +799,10 @@ impl ClusterChecker {
     /// the results at once, use [`run_wait`] instead.
     ///
     /// [`run_wait`]: ClusterChecker::run_wait
-    pub fn run_and_fix_with_progress(self) -> Receiver<CheckResult> {
+    pub fn run_and_fix_with_progress(mut self) -> Receiver<CheckResult> {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
-            for check in &self.checks {
+            for check in &mut self.checks {
                 // Perform one individual check
                 let check_result = check.perform_check().await;
                 let send_result = match check_result {
