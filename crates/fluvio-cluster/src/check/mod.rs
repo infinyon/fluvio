@@ -253,7 +253,7 @@ impl CheckSuggestion for UnrecoverableCheck {
 #[async_trait]
 pub trait ClusterCheck: Debug + Send + Sync + 'static {
     /// perform check, if successful return success message, if fail, return fail message
-    async fn perform_check(&self) -> CheckResult;
+    async fn perform_check(&mut self) -> CheckResult;
 
     /// Attempt to fix a recoverable error.
     ///
@@ -275,7 +275,7 @@ pub(crate) struct LoadableConfig;
 #[async_trait]
 impl ClusterCheck for LoadableConfig {
     /// Checks that we can connect to Kubernetes via the active context
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let config = match K8Config::load() {
             Ok(config) => config,
             Err(K8ConfigError::NoCurrentContext) => {
@@ -312,7 +312,7 @@ pub(crate) struct K8Version;
 #[async_trait]
 impl ClusterCheck for K8Version {
     /// Check if required kubectl version is installed
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let kube_version = Command::new("kubectl")
             .arg("version")
             .arg("-o=json")
@@ -367,7 +367,7 @@ pub(crate) struct HelmVersion;
 #[async_trait]
 impl ClusterCheck for HelmVersion {
     /// Checks that the installed helm version is compatible with the installer requirements
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         let helm_version = helm.get_helm_version().map_err(CheckError::HelmError)?;
         let required = DEFAULT_HELM_VERSION;
@@ -474,7 +474,7 @@ pub(crate) struct AlreadyInstalled;
 #[async_trait]
 impl ClusterCheck for AlreadyInstalled {
     /// Checks that Fluvio is not already installed
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         let helm = HelmClient::new().map_err(CheckError::HelmError)?;
         let app_charts = helm
             .get_installed_chart_by_name(APP_CHART_NAME, None)
@@ -491,7 +491,7 @@ struct CreateServicePermission;
 
 #[async_trait]
 impl ClusterCheck for CreateServicePermission {
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         check_permission(RESOURCE_SERVICE)
     }
 }
@@ -501,7 +501,7 @@ struct CreateCrdPermission;
 
 #[async_trait]
 impl ClusterCheck for CreateCrdPermission {
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         check_permission(RESOURCE_CRD)
     }
 }
@@ -511,7 +511,7 @@ struct CreateServiceAccountPermission;
 
 #[async_trait]
 impl ClusterCheck for CreateServiceAccountPermission {
-    async fn perform_check(&self) -> CheckResult {
+    async fn perform_check(&mut self) -> CheckResult {
         check_permission(RESOURCE_SERVICE_ACCOUNT)
     }
 }
@@ -660,7 +660,7 @@ impl ClusterChecker {
         // We want to collect all of the results of the checks
         let mut results: Vec<CheckResult> = vec![];
 
-        for check in &self.checks {
+        for check in &mut self.checks {
             // Perform one individual check
             match check.perform_check().await {
                 // If the check passed, add it to the results list
@@ -745,7 +745,7 @@ impl ClusterChecker {
     /// the results at once, use [`run_wait`] instead.
     ///
     /// [`run_wait`]: ClusterChecker::run_wait
-    pub fn run_and_fix_with_progress(self) -> Receiver<CheckResult> {
+    pub fn run_and_fix_with_progress(mut self) -> Receiver<CheckResult> {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
             let pb = if std::env::var("CI").is_ok() {
