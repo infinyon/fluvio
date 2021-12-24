@@ -608,19 +608,21 @@ impl ClusterInstaller {
             env::set_var(DISPATCHER_WAIT, "300");
         }
 
-        let mut sys_config: ChartConfig = ChartConfig::sys_builder()
-            .version(self.config.chart_version.clone())
-            .namespace(&self.config.namespace)
-            .build()
-            .unwrap();
+        let mut checker = ClusterChecker::empty().with_k8_checks();
 
-        if let Some(location) = &self.config.chart_location {
-            sys_config.location = location.to_owned().into();
+        if self.config.install_sys {
+            let mut sys_config: ChartConfig = ChartConfig::sys_builder()
+                .version(self.config.chart_version.clone())
+                .namespace(&self.config.namespace)
+                .build()
+                .unwrap();
+
+            if let Some(location) = &self.config.chart_location {
+                sys_config.location = location.to_owned().into();
+            }
+
+            checker = checker.with_check(SysChartCheck::new(sys_config));
         }
-
-        let mut checker = ClusterChecker::empty()
-            .with_k8_checks()
-            .with_check(SysChartCheck::new(sys_config));
 
         if !self.config.upgrade {
             checker = checker.with_check(AlreadyInstalled);

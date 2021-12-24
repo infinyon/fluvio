@@ -404,18 +404,9 @@ impl ClusterCheck for SysChartCheck {
     /// Check that the system chart is installed
     /// This uses whatever namespace it is being called
     async fn perform_check(&self) -> CheckResult {
-        debug!("performing sys chart check");
-        let helm = HelmClient::new().map_err(CheckError::HelmError)?;
-        // check installed system chart version
-        let sys_charts = helm
-            .get_installed_chart_by_name(SYS_CHART_NAME, None)
-            .map_err(CheckError::HelmError)?;
-        if sys_charts.is_empty() {
-            return Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart));
-        } else if sys_charts.len() > 1 {
-            return Ok(CheckStatus::fail(UnrecoverableCheck::MultipleSystemCharts));
-        }
-        Ok(CheckStatus::pass("Fluvio system charts are installed"))
+        debug!("always perform sys chart upgrade");
+
+        Ok(CheckStatus::fail(RecoverableCheck::MissingSystemChart))
     }
 
     async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
