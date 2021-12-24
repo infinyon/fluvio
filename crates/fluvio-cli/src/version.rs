@@ -1,6 +1,5 @@
 use sha2::{Digest, Sha256};
 use structopt::StructOpt;
-use crate::channel::cli::current_channel;
 
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
@@ -8,23 +7,24 @@ use fluvio_extension_common::target::ClusterTarget;
 use crate::Result;
 use crate::metadata::subcommand_metadata;
 
-use crate::channel::cli::switch::SwitchOpt;
-use crate::channel::cli::list::ListOpt;
-use crate::channel::cli::create::CreateOpt;
-use crate::channel::cli::delete::DeleteOpt;
+//use fluvio_channel::cli::switch::SwitchOpt;
+//use fluvio_channel::cli::list::ListOpt;
+//use fluvio_channel::cli::create::CreateOpt;
+//use fluvio_channel::cli::delete::DeleteOpt;
 
 #[derive(Debug, StructOpt)]
 pub struct VersionOpt {
-    #[structopt(subcommand)]
-    pub cmd: Option<VersionCmd>,
+    //#[structopt(subcommand)]
+    //pub cmd: Option<VersionCmd>,
 }
 
 impl VersionOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        match self.cmd {
-            Some(cmd) => cmd.process(target).await,
-            None => CurrentOpt {}.process(target).await,
-        }
+    CurrentOpt {}.process(target).await
+    //    match self.cmd {
+    //        Some(cmd) => cmd.process(target).await,
+    //        None => CurrentOpt {}.process(target).await,
+    //    }
     }
 }
 
@@ -33,7 +33,8 @@ pub struct CurrentOpt {}
 
 impl CurrentOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        self.print("Release Channel", &current_channel());
+        // IF FLUVIO_RELEASE_CHANNEL defined
+        //self.print("Release Channel", &current_channel());
 
         self.print("Fluvio CLI", crate::VERSION.trim());
 
@@ -114,31 +115,31 @@ impl CurrentOpt {
     }
 }
 
-#[derive(Debug, StructOpt, Clone)]
-pub enum VersionCmd {
-    #[structopt(name = "show", setting(structopt::clap::AppSettings::Hidden))]
-    DisplayVersion(CurrentOpt),
-    #[structopt(name = "switch")]
-    Switch(SwitchOpt),
-    #[structopt(name = "list")]
-    List(ListOpt),
-    #[structopt(name = "create")]
-    Create(CreateOpt),
-    #[structopt(name = "delete")]
-    Delete(DeleteOpt),
-}
-
-impl VersionCmd {
-    pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        match self {
-            VersionCmd::DisplayVersion(version) => version.process(target).await,
-            VersionCmd::Switch(switch) => switch.process().await,
-            VersionCmd::List(list) => list.process().await,
-            VersionCmd::Create(create) => create.process().await,
-            VersionCmd::Delete(delete) => delete.process().await,
-        }
-    }
-}
+//#[derive(Debug, StructOpt, Clone)]
+//pub enum VersionCmd {
+//    #[structopt(name = "show", setting(structopt::clap::AppSettings::Hidden))]
+//    DisplayVersion(CurrentOpt),
+//    #[structopt(name = "switch")]
+//    Switch(SwitchOpt),
+//    #[structopt(name = "list")]
+//    List(ListOpt),
+//    #[structopt(name = "create")]
+//    Create(CreateOpt),
+//    #[structopt(name = "delete")]
+//    Delete(DeleteOpt),
+//}
+//
+//impl VersionCmd {
+//    pub async fn process(self, target: ClusterTarget) -> Result<()> {
+//        match self {
+//            VersionCmd::DisplayVersion(version) => version.process(target).await,
+//            VersionCmd::Switch(switch) => switch.process().await,
+//            VersionCmd::List(list) => list.process().await,
+//            VersionCmd::Create(create) => create.process().await,
+//            VersionCmd::Delete(delete) => delete.process().await,
+//        }
+//    }
+//}
 
 /// Fetch OS information
 fn os_info() -> Option<String> {

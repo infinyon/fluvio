@@ -3,7 +3,7 @@ pub mod delete;
 pub mod list;
 pub mod switch;
 
-use crate::channel::{FluvioChannelConfig, DEV_CHANNEL_NAME};
+use fluvio_channel::{FluvioChannelConfig, DEV_CHANNEL_NAME};
 use tracing::debug;
 
 pub fn current_channel() -> String {

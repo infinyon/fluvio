@@ -1,8 +1,10 @@
-use crate::{Result, CliError};
-use crate::channel::{
-    FluvioChannelConfig, FluvioChannelInfo, install_channel_fluvio_bin, FluvioBinVersion,
+use color_eyre::{Result, eyre::eyre};
+use fluvio_channel::{
+    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion,
     DEV_CHANNEL_NAME, STABLE_CHANNEL_NAME, LATEST_CHANNEL_NAME,
 };
+use crate::install_channel_fluvio_bin;
+
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::debug;
@@ -61,7 +63,7 @@ impl SwitchOpt {
             } else if self.channel == DEV_CHANNEL_NAME {
                 FluvioChannelInfo::dev_channel()
             } else {
-                return Err(CliError::Other(
+                return Err(eyre!(
                     "Channel not found in channel config. (Did you create it first?)".to_string(),
                 ));
             };

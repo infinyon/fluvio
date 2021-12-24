@@ -1,5 +1,5 @@
-use crate::Result;
-use crate::channel::FluvioChannelConfig;
+use color_eyre::Result;
+use fluvio_channel::FluvioChannelConfig;
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::debug;

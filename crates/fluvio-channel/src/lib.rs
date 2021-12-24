@@ -2,9 +2,11 @@ use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all, read_to_string};
 use std::io::{ErrorKind, Error as IoError, Write};
-use crate::{Result, CliError};
-use crate::install::{install_bin, fetch_latest_version, fetch_package_file, install_println};
-use fluvio_index::{PackageId, HttpAgent};
+use color_eyre::Result;
+use color_eyre::eyre::eyre;
+//use crate::{Result, CliError};
+//use fluvio_cli::install::{install_bin, fetch_latest_version, fetch_package_file, install_println};
+//use fluvio_index::{PackageId, HttpAgent};
 use fluvio::FluvioError;
 use fluvio::config::ConfigError;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
@@ -13,13 +15,12 @@ use structopt::clap::arg_enum;
 use dirs::home_dir;
 use serde::{Serialize, Deserialize};
 use toml;
-use thiserror::Error;
 use tracing::debug;
 use semver::Version;
 use cfg_if::cfg_if;
+use thiserror::Error;
 
-pub mod cli;
-
+/// extensions
 pub const DEV_CHANNEL_NAME: &str = "dev";
 pub const STABLE_CHANNEL_NAME: &str = "stable";
 pub const LATEST_CHANNEL_NAME: &str = "latest";
@@ -33,8 +34,8 @@ pub enum ChannelConfigError {
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FluvioChannelConfig {
-    path: PathBuf,
-    config: ChannelConfig,
+    pub path: PathBuf,
+    pub config: ChannelConfig,
 }
 
 impl Default for FluvioChannelConfig {
@@ -163,8 +164,8 @@ impl FluvioChannelConfig {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct ChannelConfig {
-    current_channel: String,
-    channel: HashMap<String, FluvioChannelInfo>,
+    pub current_channel: String,
+    pub channel: HashMap<String, FluvioChannelInfo>,
 }
 
 impl ChannelConfig {
@@ -195,9 +196,9 @@ impl Default for ImageTagStrategy {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
 pub struct FluvioChannelInfo {
-    binary_location: PathBuf,
-    extensions: PathBuf,
-    image_tag_strategy: ImageTagStrategy,
+    pub binary_location: PathBuf,
+    pub extensions: PathBuf,
+    pub image_tag_strategy: ImageTagStrategy,
 }
 
 // TODO: Clean up all the duplication mess
@@ -353,90 +354,13 @@ impl FluvioBinVersion {
             let semver = if let Ok(semver) = Version::parse(version_str) {
                 semver
             } else {
-                return Err(CliError::Other("Unable to resolve version".to_string()));
+                return Err(eyre!("Unable to resolve version".to_string()));
             };
             Ok(Self::Tag(semver))
         }
     }
 }
 
-pub async fn install_channel_fluvio_bin(
-    channel_name: String,
-    channel_config: &FluvioChannelConfig,
-    version: FluvioBinVersion,
-) -> Result<()> {
-    let agent = HttpAgent::default();
-    let target = fluvio_index::package_target()?;
-    let id: PackageId = "fluvio/fluvio".parse()?;
-    debug!(%target, %id, "Fluvio CLI updating self:");
-
-    // Get the current channel name and info
-    let current_channel = channel_name;
-    let _channel_info = if let Some(info) = channel_config.get_channel(&current_channel) {
-        info
-    } else {
-        return Err(CliError::Other(
-            "Channel info not found in config".to_string(),
-        ));
-    };
-
-    // Find the latest version of this package
-    install_println(format!(
-        "🎣 Fetching '{}' channel binary for fluvio...",
-        current_channel
-    ));
-
-    let install_version = match version {
-        FluvioBinVersion::Stable => fetch_latest_version(&agent, &id, &target, false).await?,
-        FluvioBinVersion::Latest => fetch_latest_version(&agent, &id, &target, true).await?,
-        FluvioBinVersion::Tag(version) => version,
-        FluvioBinVersion::Dev => {
-            return Err(CliError::Other(
-                "Dev channel builds are not published".to_string(),
-            ))
-        }
-    };
-
-    let id = id.into_versioned(install_version.into());
-
-    // Download the package file from the package registry
-    install_println(format!(
-        "⏳ Downloading Fluvio CLI with latest version: {}...",
-        &id.version()
-    ));
-    let package_result = fetch_package_file(&agent, &id, &target).await;
-    let package_file = match package_result {
-        Ok(pf) => pf,
-        Err(CliError::PackageNotFound {
-            version, target, ..
-        }) => {
-            install_println(format!(
-                "❕ Fluvio is not published at version {} for {}, skipping self-update",
-                version, target
-            ));
-            return Ok(());
-        }
-        Err(other) => return Err(other),
-    };
-    install_println("🔑 Downloaded and verified package file");
-
-    // Install the update over the current executable
-    let fluvio_path = if let Some(c) = channel_config.config.channel.get(&current_channel) {
-        c.clone().binary_location
-    } else {
-        return Err(CliError::Other(
-            "Channel binary location not found".to_string(),
-        ));
-    };
-
-    install_bin(&fluvio_path, &package_file)?;
-    install_println(format!(
-        "✅ Successfully updated {}",
-        &fluvio_path.display(),
-    ));
-
-    Ok(())
-}
 
 // Check if we're running Fluvio in the location our installer places binaries
 // This is used to decide whether to use channel config

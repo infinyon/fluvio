@@ -1,31 +1,96 @@
 use std::env;
 use color_eyre::eyre::{Result, eyre};
 use structopt::StructOpt;
+use structopt::clap::AppSettings;
 
-use fluvio_cli::{Root, RootCmd};
+//use fluvio_cli::{Root, RootCmd};
 use std::env::current_exe;
 use std::ffi::OsString;
 use tracing::debug;
 use std::process::Stdio;
-use fluvio_cli::channel::{
-    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, ImageTagStrategy, DEV_CHANNEL_NAME,
+use fluvio_channel::{
+    FluvioChannelConfig, FluvioChannelInfo, FluvioBinVersion, DEV_CHANNEL_NAME,
     STABLE_CHANNEL_NAME,
 };
+use fluvio_channel::ImageTagStrategy;
 #[cfg(not(target_os = "windows"))]
 use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
 use std::io::{self, Write};
 use cfg_if::cfg_if;
-use fluvio_future::task::run_block_on;
+//use fluvio_cli::install::{fetch_latest_version, fetch_package_file, install_bin, install_println};
+
+//use fluvio_index::{PackageId, HttpAgent};
+
+use fluvio_channel_cli::cli::create::CreateOpt;
+use fluvio_channel_cli::cli::delete::DeleteOpt;
+use fluvio_channel_cli::cli::list::ListOpt;
+use fluvio_channel_cli::cli::switch::SwitchOpt;
 
 const IS_FLUVIO_EXEC_LOOP: &str = "IS_FLUVIO_EXEC_LOOP";
 const FLUVIO_BOOTSTRAP: &str = "FLUVIO_BOOTSTRAP";
 const CHANNEL_BOOTSTRAP: &str = "CHANNEL_BOOTSTRAP";
 
+#[derive(Debug, PartialEq, StructOpt)]
+struct RootOpt {
+    #[structopt(long)]
+    skip_channel_check: bool,
+}
+
+#[derive(Debug, PartialEq, StructOpt)]
+struct Root {
+    #[structopt(flatten)]
+    opt: RootOpt,
+    #[structopt(subcommand)]
+    command: RootCmd
+
+}
+
+#[derive(Debug, PartialEq, StructOpt)]
+struct ChannelOpt {
+    #[structopt(subcommand)]
+    cmd: Option<ChannelCmd>,
+}
+
+#[derive(Debug, PartialEq, StructOpt)]
+enum ChannelCmd {
+    Create(CreateOpt),
+    Delete(DeleteOpt),
+    List(ListOpt),
+    Switch(SwitchOpt),
+}
+
+impl ChannelCmd {
+    fn process(&self) -> Result<()> {
+        Ok(())
+    }
+}
+
+
+#[derive(Debug, PartialEq, StructOpt)]
+#[structopt(
+    max_term_width = 100,
+    global_settings = &[
+        AppSettings::VersionlessSubcommands,
+        AppSettings::DeriveDisplayOrder,
+        AppSettings::DisableVersion,
+    ]
+)]
+enum RootCmd {
+    Version(ChannelOpt),
+
+    // This should be the fluvio binary's subcommandsVersion
+    #[structopt(external_subcommand)]
+    Other(Vec<String>),
+}
+
 // `fluvio-channel` is a Fluvio frontend to support release channels.
 // It is intended to be installed at `~/.fluvio/bin/fluvio`
 fn main() -> Result<()> {
     fluvio_future::subscriber::init_tracer(None);
+
+    let root = Root::from_args();
+    println!("{:#?}", root);
 
     let current_exe = current_exe()?;
     debug!("Check if channel exec is in a loop");
@@ -67,6 +132,28 @@ fn main() -> Result<()> {
         );
     };
 
+
+    // Now process command line args
+    // Only if we use `version` subcommand with args
+    // Otherwise pass through to fluvio binary
+
+    if let RootCmd::Version(version_opt) = &root.command {
+        debug!("Found a version command");
+
+        match &version_opt.cmd {
+            Some(channel_cmd) => {
+                if let Err(e) = channel_cmd.process() {
+                    println!("{}", e);
+                    std::process::exit(1);
+                }
+                std::process::exit(0);
+            }
+            None => debug!("pass Version command w/o subcommands to fluvio binary"),
+        }
+    } else {
+        debug!("Command was not version");
+    }
+
     // Pick a fluvio binary
 
     // open a config file
@@ -93,29 +180,29 @@ fn main() -> Result<()> {
 
     debug!("After args: {:#?}", &root);
 
-    // We need to make sure we always have a stable interface for switching channels
-    // So we're going to handle the `fluvio version <channel stuff>` commands if we're not in development mode
-    if let RootCmd::Version(version_opt) = &root.command {
-        debug!("Found a version command");
+    //// We need to make sure we always have a stable interface for switching channels
+    //// So we're going to handle the `fluvio version <channel stuff>` commands if we're not in development mode
+    //if let RootCmd::Version(version_opt) = &root.command {
+    //    debug!("Found a version command");
 
-        match &version_opt.cmd {
-            Some(channel_cmd) => {
-                if let Err(e) = run_block_on(channel_cmd.clone().process(root.opts.target)) {
-                    println!("{}", e.into_report());
-                    std::process::exit(1);
-                }
-                std::process::exit(0);
-            }
-            None => debug!("pass Version command w/o subcommands to fluvio binary"),
-        }
-    } else {
-        debug!("Command was not version");
-    }
+    //    match &version_opt.cmd {
+    //        Some(channel_cmd) => {
+    //            if let Err(e) = run_block_on(channel_cmd.clone().process(root.opts.target)) {
+    //                println!("{}", e.into_report());
+    //                std::process::exit(1);
+    //            }
+    //            std::process::exit(0);
+    //        }
+    //        None => debug!("pass Version command w/o subcommands to fluvio binary"),
+    //    }
+    //} else {
+    //    debug!("Command was not version");
+    //}
 
     // //
 
     // Check on channel via channel config file
-    let (channel_name, channel) = if is_frontend && !&root.skip_channel_check() {
+    let (channel_name, channel) = if is_frontend && !&root.opt.skip_channel_check {
         // Look for channel config
         // TODO: Let this be configurable
         let channel_config_path = FluvioChannelConfig::default_config_location();

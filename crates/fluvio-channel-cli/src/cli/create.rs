@@ -1,13 +1,15 @@
-use crate::Result;
-use crate::channel::{
-    FluvioChannelConfig, FluvioChannelInfo, ImageTagStrategy, install_channel_fluvio_bin,
-    FluvioBinVersion,
+use color_eyre::Result;
+use fluvio_channel::{
+    //FluvioChannelConfig, FluvioChannelInfo, install_channel_fluvio_bin,
+    FluvioChannelConfig, FluvioChannelInfo,
+    FluvioBinVersion, ImageTagStrategy,
 };
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::debug;
 use dirs::home_dir;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
+use crate::install_channel_fluvio_bin;
 
 #[derive(Debug, StructOpt, Clone, PartialEq)]
 pub struct CreateOpt {

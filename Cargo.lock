@@ -1619,14 +1619,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-channel"
+version = "0.0.0"
+dependencies = [
+ "cfg-if",
+ "color-eyre",
+ "dirs 4.0.0",
+ "fluvio",
+ "fluvio-package-index",
+ "fluvio-types",
+ "semver 1.0.4",
+ "serde",
+ "structopt",
+ "thiserror",
+ "toml",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-channel-cli"
 version = "0.0.0"
 dependencies = [
  "cfg-if",
  "color-eyre",
+ "dirs 4.0.0",
  "fluvio",
+ "fluvio-channel",
  "fluvio-cli",
  "fluvio-future",
+ "fluvio-package-index",
  "fluvio-types",
  "structopt",
  "tracing",

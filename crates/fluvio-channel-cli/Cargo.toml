@@ -13,16 +13,23 @@ name = "fluvio-channel"
 path = "src/bin/main.rs"
 doc = false
 
+[lib]
+name = "fluvio_channel_cli"
+path = "src/lib.rs"
+
 [features]
-default = ["fluvio-future"]
+default = ["fluvio-future", "fluvio-types"]
 
 [dependencies]
 color-eyre = { version = "0.5.5", default-features = false }
 structopt = { version = "0.3.16", default-features = false }
 tracing = "0.1.19"
 cfg-if = "1.0"
+dirs = "4.0.0"
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-cli = { path = "../fluvio-cli" }
+fluvio-channel = { path = "../fluvio-channel" }
 fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
 fluvio-types = { path = "../fluvio-types", optional = true }
+fluvio-package-index = { path = "../fluvio-package-index" }

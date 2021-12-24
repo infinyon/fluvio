@@ -89,5 +89,6 @@ fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "nati
 fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
 indicatif = "0.16.2"
 
+# CLI channels
 [dev-dependencies]
 fluvio-future = { version = "0.3.0", features = ["fixture"] }

@@ -4,21 +4,23 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
-use crate::channel::{FluvioChannelConfig, FluvioChannelInfo};
 use crate::{Result, CliError};
+use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 pub mod update;
 pub mod plugins;
 
+pub const FLUVIO_DIR: &str = "FLUVIO_DIR";
+
 fn fluvio_base_dir() -> Result<PathBuf> {
-    if let Ok(dir) = std::env::var("FLUVIO_DIR") {
+    if let Ok(dir) = std::env::var(FLUVIO_DIR) {
         // Assume this is like `~/.fluvio
         let path = PathBuf::from(dir);
         return fluvio_base_dir_create(path);
     }
     let home =
         home::home_dir().ok_or_else(|| IoError::new(ErrorKind::NotFound, "Homedir not found"))?;
-    let path = home.join(".fluvio");
+    let path = home.join(CLI_CONFIG_PATH);
 
     fluvio_base_dir_create(path)
 }
@@ -32,30 +34,16 @@ fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf> {
 }
 
 pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf> {
-    // Check on channel
-    let channel_config_path = FluvioChannelConfig::default_config_location();
+    // Check if FLUVIO_EXTENSIONS_DIR exists for extensions location
 
-    let channel = if FluvioChannelConfig::exists(&channel_config_path) {
-        FluvioChannelConfig::from_file(channel_config_path)?
-    } else {
-        // Default to stable channel behavior
-        FluvioChannelConfig::default()
-    };
+    // else
+    let base_dir = fluvio_base_dir()?;
+    let path = base_dir.join("extensions");
 
-    let _base_dir = fluvio_base_dir()?;
-
-    // Open and load channel config
-    let current_channel_info =
-        if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
-            channel_info
-        } else {
-            FluvioChannelInfo::stable_channel()
-        };
-
-    if !current_channel_info.get_extensions_path().exists() {
-        std::fs::create_dir(&current_channel_info.get_extensions_path())?;
+    if !path.exists() {
+        std::fs::create_dir(&path)?;
     }
-    Ok(current_channel_info.get_extensions_path())
+    Ok(path)
 }
 
 pub(crate) fn get_extensions() -> Result<Vec<PathBuf>> {
@@ -172,9 +160,11 @@ pub fn install_bin<P: AsRef<Path>, B: AsRef<[u8]>>(bin_path: P, bytes: B) -> Res
         .ok_or_else(|| IoError::new(ErrorKind::NotFound, "parent directory not found"))?;
     std::fs::create_dir_all(&parent)?;
 
-    // Write bin to temporary file
+    // Create a temporary dir to write file to
     let tmp_dir = tempdir::TempDir::new_in(parent, "fluvio-tmp")?;
-    let tmp_path = tmp_dir.path().join("fluvio");
+
+    // Write bin to temporary file
+    let tmp_path = tmp_dir.path().join("fluvio-exe-tmp");
     let mut tmp_file = File::create(&tmp_path)?;
     tmp_file.write_all(bytes.as_ref())?;
 
@@ -213,3 +203,74 @@ pub fn install_println<S: AsRef<str>>(string: S) {
         println!("{}", string.as_ref());
     }
 }
+
+
+//pub async fn install_channel_fluvio_bin(
+//    channel_name: String,
+//    channel_config: &FluvioChannelConfig,
+//    version: FluvioBinVersion,
+//) -> Result<()> {
+//    let agent = HttpAgent::default();
+//    let target = fluvio_index::package_target()?;
+//    let id: PackageId = "fluvio/fluvio".parse()?;
+//    debug!(%target, %id, "Fluvio CLI updating self:");
+//
+//    // Get the current channel name and info
+//    let current_channel = channel_name;
+//    let _channel_info = if let Some(info) = channel_config.get_channel(&current_channel) {
+//        info
+//    } else {
+//        return Err(eyre!("Channel info not found in config".to_string(),));
+//    };
+//
+//    // Find the latest version of this package
+//    install_println(format!(
+//        "🎣 Fetching '{}' channel binary for fluvio...",
+//        current_channel
+//    ));
+//
+//    let install_version = match version {
+//        FluvioBinVersion::Stable => fetch_latest_version(&agent, &id, &target, false).await?,
+//        FluvioBinVersion::Latest => fetch_latest_version(&agent, &id, &target, true).await?,
+//        FluvioBinVersion::Tag(version) => version,
+//        FluvioBinVersion::Dev => {
+//            return Err(eyre!("Dev channel builds are not published".to_string(),))
+//        }
+//    };
+//
+//    let id = id.into_versioned(install_version.into());
+//
+//    // Download the package file from the package registry
+//    install_println(format!(
+//        "⏳ Downloading Fluvio CLI with latest version: {}...",
+//        &id.version()
+//    ));
+//    let package_result = fetch_package_file(&agent, &id, &target).await;
+//    let package_file = match package_result {
+//        Ok(pf) => pf,
+//        Err(_e) => {
+//            install_println(format!(
+//                "❕ Fluvio is not published at version {} for {}, skipping self-update",
+//                &id.version(),
+//                target
+//            ));
+//            return Ok(());
+//        }
+//    };
+//    install_println("🔑 Downloaded and verified package file");
+//
+//    // Install the update over the current executable
+//    let fluvio_path = if let Some(c) = channel_config.config().channel().get(&current_channel) {
+//        c.clone().binary_location
+//    } else {
+//        return Err(eyre!("Channel binary location not found".to_string(),));
+//    };
+//
+//    install_bin(&fluvio_path, &package_file)?;
+//    install_println(format!(
+//        "✅ Successfully updated {}",
+//        &fluvio_path.display(),
+//    ));
+//
+//    Ok(())
+//}

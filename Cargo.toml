@@ -8,6 +8,7 @@ members = [
     "examples/04-admin-watch",
     "crates/fluvio",
     "crates/fluvio-auth",
+    "crates/fluvio-channel",
     "crates/fluvio-channel-cli",
     "crates/fluvio-cli",
     "crates/fluvio-cluster",

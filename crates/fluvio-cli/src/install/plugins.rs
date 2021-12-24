@@ -1,6 +1,5 @@
 use structopt::StructOpt;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
-use crate::channel::{FluvioChannelConfig, FluvioChannelInfo, ImageTagStrategy};
 
 use crate::{Result, CliError};
 use crate::install::{
@@ -26,25 +25,15 @@ impl InstallOpt {
             None => HttpAgent::default(),
         };
 
-        // Check on channel
-        let channel_config_path = FluvioChannelConfig::default_config_location();
-
-        let channel_config = if FluvioChannelConfig::exists(&channel_config_path) {
-            FluvioChannelConfig::from_file(channel_config_path)?
-        } else {
-            // Default to stable channel behavior
-            FluvioChannelConfig::default()
-        };
-
         // Before any "install" type command, check if the CLI needs updating.
         // This may be the case if the index schema has updated.
         let require_update = check_update_required(&agent).await?;
         if require_update {
-            prompt_required_update(&agent, &channel_config).await?;
+            prompt_required_update(&agent).await?;
             return Ok(());
         }
 
-        let result = self.install_plugin(&agent, &channel_config).await;
+        let result = self.install_plugin(&agent).await;
         match result {
             Ok(_) => (),
             Err(crate::CliError::IndexError(fluvio_index::Error::MissingTarget(target))) => {
@@ -65,23 +54,20 @@ impl InstallOpt {
 
         // After any "install" command, check if the CLI has an available update,
         // i.e. one that is not required, but present.
-        let update_result = check_update_available(&agent, &channel_config).await;
+        let update_result = check_update_available(&agent, false).await;
         if let Ok(Some(latest_version)) = update_result {
             prompt_available_update(&latest_version);
         }
         Ok(())
+
     }
 
-    async fn install_plugin(&self, agent: &HttpAgent, channel: &FluvioChannelConfig) -> Result<()> {
-        let current_channel_info =
-            if let Some(channel_info) = channel.get_channel(&channel.current_channel()) {
-                channel_info
-            } else {
-                FluvioChannelInfo::stable_channel()
-            };
+    async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
 
-        let prerelease_flag =
-            current_channel_info.get_image_tag_strategy() == ImageTagStrategy::Git;
+        // Needs: FLUVIO_CHANNEL_NAME, FLUVIO_EXTENSIONS_DIR?
+        // TODO: Need to know if latest channel to set prerelease flag
+        let prerelease_flag = false;
+
 
         let target = fluvio_index::package_target()?;
 
