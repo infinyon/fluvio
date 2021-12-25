@@ -1,8 +1,6 @@
 use std::io::Error as IoError;
 use std::fmt::Debug;
-use std::time::Duration;
 use std::process::{Command};
-use std::fs::File;
 
 pub mod render;
 
@@ -13,23 +11,17 @@ use url::ParseError;
 use semver::Version;
 use serde_json::Error as JsonError;
 
-use fluvio_future::timer::sleep;
 use fluvio_future::task::spawn;
 use fluvio_helm::{HelmClient, HelmError};
 use k8_config::{ConfigError as K8ConfigError, K8Config};
-use k8_client::load_and_share;
-use k8_types::InputObjectMeta;
-use k8_types::core::service::ServiceSpec;
+
 use k8_client::ClientError as K8ClientError;
 
 use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
-use crate::{DEFAULT_NAMESPACE};
-
+use crate::progress::create_progress_indicator;
+use crate::render::ProgressRenderer;
 use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
 
-const DUMMY_LB_SERVICE: &str = "fluvio-dummy-service";
-const DELAY: u64 = 1000;
-const MINIKUBE_USERNAME: &str = "minikube";
 const KUBE_VERSION: &str = "1.7.0";
 const RESOURCE_SERVICE: &str = "service";
 const RESOURCE_CRD: &str = "customresourcedefinitions";
@@ -268,7 +260,11 @@ pub trait ClusterCheck: Debug + Send + Sync + 'static {
     /// The default implementation is to fail with `FailedRecovery`. Concrete instances
     /// may override this implementation with functionality to actually attempt to fix
     /// errors.
-    async fn attempt_fix(&self, check: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    async fn attempt_fix(
+        &self,
+        check: RecoverableCheck,
+        _render: &ProgressRenderer,
+    ) -> Result<(), UnrecoverableCheck> {
         Err(UnrecoverableCheck::FailedRecovery(check))
     }
 }
@@ -431,7 +427,11 @@ impl ClusterCheck for SysChartCheck {
         }
     }
 
-    async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
+    async fn attempt_fix(
+        &self,
+        error: RecoverableCheck,
+        render: &ProgressRenderer,
+    ) -> Result<(), UnrecoverableCheck> {
         // Use closure to catch errors
         let result = (|| -> Result<(), ChartInstallError> {
             let sys_installer = ChartInstaller::from_config(self.config.clone())?;
@@ -442,6 +442,7 @@ impl ClusterCheck for SysChartCheck {
                         "Fixing by installing Fluvio sys chart with config: {:#?}",
                         &self.config
                     );
+                    render.println("Installing Fluvio system charts...");
                     sys_installer.install()?;
                 }
                 RecoverableCheck::UpgradeSystemChart => {
@@ -449,6 +450,10 @@ impl ClusterCheck for SysChartCheck {
                         "Fixing by updating Fluvio sys chart with config: {:#?}",
                         &self.config
                     );
+                    render.println(format!(
+                        "Upgrading Fluvio system charts to: {}",
+                        self.platform_version
+                    ));
                     sys_installer.upgrade()?;
                 }
             }
@@ -508,77 +513,6 @@ struct CreateServiceAccountPermission;
 impl ClusterCheck for CreateServiceAccountPermission {
     async fn perform_check(&self) -> CheckResult {
         check_permission(RESOURCE_SERVICE_ACCOUNT)
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct LoadBalancer;
-
-#[async_trait]
-impl ClusterCheck for LoadBalancer {
-    async fn perform_check(&self) -> CheckResult {
-        let config = K8Config::load().map_err(CheckError::K8ConfigError)?;
-        let context = match config {
-            K8Config::Pod(_) => {
-                return Ok(CheckStatus::pass("Pod config found, ignoring the check"))
-            }
-            K8Config::KubeConfig(context) => context,
-        };
-
-        let cluster_context = match context.config.current_context() {
-            Some(context) => context,
-            None => {
-                return Ok(CheckStatus::fail(
-                    UnrecoverableCheck::NoActiveKubernetesContext,
-                ));
-            }
-        };
-
-        let username = &cluster_context.context.user;
-
-        // create dummy service
-        create_dummy_service()?;
-        let service_exists = wait_for_service_exist(DEFAULT_NAMESPACE).await?.is_some();
-        delete_service()?;
-
-        if !service_exists {
-            if username == MINIKUBE_USERNAME {
-                // In case of macos we need to run tunnel with elevated context of sudo
-                // hence handle both separately
-                return Ok(CheckStatus::fail(get_tunnel_error()));
-            }
-            return Ok(CheckStatus::fail(
-                UnrecoverableCheck::LoadBalancerServiceNotAvailable,
-            ));
-        }
-
-        Ok(CheckStatus::pass("Load balancer is up"))
-    }
-
-    /// Attempt to fix missing load balancer by running `minikube tunnel`
-    async fn attempt_fix(&self, error: RecoverableCheck) -> Result<(), UnrecoverableCheck> {
-        use std::process::Stdio;
-
-        // Use closure to catch potential errors
-        let result = (|| -> Result<(), std::io::Error> {
-            let log_file = File::create("/tmp/tunnel.out")?;
-            let error_file = log_file.try_clone()?;
-
-            // run minikube tunnel  > /tmp/tunnel.out 2> /tmp/tunnel.out
-            Command::new("minikube")
-                .arg("tunnel")
-                .stdout(Stdio::from(log_file))
-                .stderr(Stdio::from(error_file))
-                .spawn()?;
-            Ok(())
-        })();
-
-        if result.is_err() {
-            return Err(UnrecoverableCheck::FailedRecovery(error));
-        }
-
-        sleep(Duration::from_millis(DELAY)).await;
-        Ok(())
     }
 }
 
@@ -706,6 +640,12 @@ impl ClusterChecker {
     ///
     /// This may appear to "hang" if there are many checks, or if fixes take a long time.
     pub async fn run_wait_and_fix(&self) -> CheckResults {
+        let pb = if std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
+
         // We want to collect all of the results of the checks
         let mut results: Vec<CheckResult> = vec![];
 
@@ -717,7 +657,7 @@ impl ClusterChecker {
                 // If the check failed but is potentially auto-recoverable, try to recover it
                 Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(recoverable))) => {
                     let err = format!("{}", recoverable);
-                    match check.attempt_fix(recoverable).await {
+                    match check.attempt_fix(recoverable, &pb).await {
                         Ok(_) => {
                             results.push(Ok(CheckStatus::pass(format!("Fixed: {}", err))));
                         }
@@ -797,6 +737,12 @@ impl ClusterChecker {
     pub fn run_and_fix_with_progress(self) -> Receiver<CheckResult> {
         let (sender, receiver) = async_channel::bounded(100);
         spawn(async move {
+            let pb = if std::env::var("CI").is_ok() {
+                Default::default()
+            } else {
+                create_progress_indicator().into()
+            };
+
             for check in &self.checks {
                 // Perform one individual check
                 let check_result = check.perform_check().await;
@@ -806,7 +752,7 @@ impl ClusterChecker {
                     // If the check failed but is potentially auto-recoverable, try to recover it
                     Ok(CheckStatus::Fail(CheckFailed::AutoRecoverable(recoverable))) => {
                         let err = format!("{}", recoverable);
-                        match check.attempt_fix(recoverable).await {
+                        match check.attempt_fix(recoverable, &pb).await {
                             // If the fix worked, return a passed check
                             Ok(_) => {
                                 sender
@@ -840,62 +786,6 @@ impl ClusterChecker {
         });
         receiver
     }
-}
-
-fn create_dummy_service() -> Result<(), CheckError> {
-    Command::new("kubectl")
-        .arg("create")
-        .arg("service")
-        .arg("loadbalancer")
-        .arg(DUMMY_LB_SERVICE)
-        .arg("--tcp=5678:8080")
-        .output()
-        .map_err(|_| CheckError::ServiceCreateError)?;
-
-    Ok(())
-}
-
-fn delete_service() -> Result<(), CheckError> {
-    Command::new("kubectl")
-        .arg("delete")
-        .arg("service")
-        .arg(DUMMY_LB_SERVICE)
-        .output()
-        .map_err(|_| CheckError::ServiceDeleteError)?;
-    Ok(())
-}
-
-async fn wait_for_service_exist(ns: &str) -> Result<Option<String>, CheckError> {
-    use k8_client::meta_client::MetadataClient;
-    use k8_client::http::status::StatusCode;
-
-    let client = load_and_share()?;
-
-    let input = InputObjectMeta::named(DUMMY_LB_SERVICE, ns);
-
-    for _ in 0..10u16 {
-        match client.retrieve_item::<ServiceSpec, _>(&input).await {
-            Ok(svc) => {
-                // check if load balancer status exists
-                if let Some(addr) = svc.status.load_balancer.find_any_ip_or_host() {
-                    return Ok(Some(addr.to_owned()));
-                } else {
-                    sleep(Duration::from_millis(DELAY)).await;
-                }
-            }
-            Err(K8ClientError::Client(status)) if status == StatusCode::NOT_FOUND => {
-                sleep(Duration::from_millis(DELAY)).await;
-            }
-            Err(e) => return Err(CheckError::K8ClientError(e)),
-        };
-    }
-
-    Ok(None)
-}
-
-#[cfg(target_os = "macos")]
-fn get_tunnel_error() -> CheckFailed {
-    UnrecoverableCheck::MinikubeTunnelNotFound.into()
 }
 
 #[cfg(not(target_os = "macos"))]

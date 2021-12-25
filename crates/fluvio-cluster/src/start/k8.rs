@@ -632,7 +632,7 @@ impl ClusterInstaller {
 
         if self.config.render_checks {
             self.pb
-                .println(&InstallProgressMessage::PreFlightCheck.msg());
+                .println(InstallProgressMessage::PreFlightCheck.msg());
 
             let mut progress = checker.run_and_fix_with_progress();
             render_check_progress_with_indicator(&mut progress, &self.pb).await
@@ -686,7 +686,7 @@ impl ClusterInstaller {
             self.install_app().await?;
         } else {
             self.pb
-                .println(&InstallProgressMessage::AlreadyInstalled.msg())
+                .println(InstallProgressMessage::AlreadyInstalled.msg())
         }
 
         let namespace = &self.config.namespace;
@@ -701,7 +701,7 @@ impl ClusterInstaller {
         let address = format!("{}:{}", host_name, port);
 
         self.pb
-            .println(&InstallProgressMessage::FoundSC(address.clone()).msg());
+            .println(InstallProgressMessage::FoundSC(address.clone()).msg());
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
@@ -716,12 +716,12 @@ impl ClusterInstaller {
 
         if self.config.save_profile {
             self.update_profile(&address)?;
-            self.pb.println(&InstallProgressMessage::ProfileSet.msg());
+            self.pb.println(InstallProgressMessage::ProfileSet.msg());
         }
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-        self.pb.println(&InstallProgressMessage::Success.msg());
+        self.pb.println(InstallProgressMessage::Success.msg());
         self.pb.finish_and_clear();
 
         Ok(StartStatus {
@@ -740,7 +740,7 @@ impl ClusterInstaller {
         );
 
         self.pb
-            .println(&InstallProgressMessage::InstallingFluvio.msg());
+            .println(InstallProgressMessage::InstallingFluvio.msg());
 
         // Specify common installation settings to pass to helm
         let mut install_settings: Vec<(_, Cow<str>)> =
@@ -867,7 +867,7 @@ impl ClusterInstaller {
         installer.process(self.config.upgrade)?;
 
         self.pb
-            .println(&InstallProgressMessage::ChartInstalled.msg());
+            .println(InstallProgressMessage::ChartInstalled.msg());
         self.pb.set_message("");
 
         Ok(())
@@ -1026,8 +1026,7 @@ impl ClusterInstaller {
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
-                self.pb
-                    .println(&InstallProgressMessage::SpusConfirmed.msg());
+                self.pb.println(InstallProgressMessage::SpusConfirmed.msg());
 
                 return Ok(true);
             } else {
@@ -1181,11 +1180,11 @@ impl ClusterInstaller {
             admin.create(name, false, spu_spec).await?;
 
             self.pb.println(
-                &InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
+                InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
             );
         } else {
             self.pb
-                .println(&InstallProgressMessage::SpuGroupExists.msg());
+                .println(InstallProgressMessage::SpuGroupExists.msg());
         }
 
         // Wait for the SPU cluster to spin up
