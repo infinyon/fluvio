@@ -1,4 +1,3 @@
-
 use fluvio::dataplane::versions::PlatformVersion;
 use semver::Version;
 use structopt::StructOpt;
