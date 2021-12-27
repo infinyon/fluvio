@@ -516,6 +516,17 @@ impl ClusterCheck for CreateServiceAccountPermission {
     }
 }
 
+/// check if local cluster is running
+#[derive(Debug)]
+struct LocalClusterCheck;
+
+#[async_trait]
+impl ClusterCheck for LocalClusterCheck {
+    async fn perform_check(&self) -> CheckResult {
+        todo!()
+    }
+}
+
 /// Manages all cluster check operations
 ///
 /// A `ClusterChecker` can be configured with different sets of checks to run.
@@ -786,11 +797,6 @@ impl ClusterChecker {
         });
         receiver
     }
-}
-
-#[cfg(not(target_os = "macos"))]
-fn get_tunnel_error() -> CheckFailed {
-    RecoverableCheck::MinikubeTunnelNotFoundRetry.into()
 }
 
 fn check_permission(resource: &str) -> CheckResult {
