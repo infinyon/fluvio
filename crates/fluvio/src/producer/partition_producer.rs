@@ -6,7 +6,6 @@ use async_lock::Mutex;
 use dataplane::ReplicaKey;
 use dataplane::batch::Batch;
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
-use event_listener::Event;
 use fluvio_future::timer::sleep;
 use fluvio_types::event::StickyEvent;
 use tracing::{debug, info, instrument, error, trace};
@@ -15,6 +14,7 @@ use crate::error::{Result, FluvioError};
 use crate::spu::SpuPool;
 
 use super::accumulator::{ProducerBatch, BatchEvents};
+use super::event::EventHandler;
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
@@ -65,7 +65,7 @@ impl PartitionProducer {
         batch_events: Arc<BatchEvents>,
         linger: Duration,
         end_event: Arc<StickyEvent>,
-        flush_event: (Arc<Event>, Arc<Event>),
+        flush_event: (Arc<EventHandler>, Arc<EventHandler>),
     ) {
         let producer = PartitionProducer::shared(replica, spu_pool, batches, batch_events, linger);
         fluvio_future::task::spawn(async move {
@@ -73,40 +73,34 @@ impl PartitionProducer {
         });
     }
 
-    #[instrument(skip(self, end_event))]
-    async fn run(&self, end_event: Arc<StickyEvent>, flush_event: (Arc<Event>, Arc<Event>)) {
+    #[instrument(skip(self, end_event, flush_event))]
+    async fn run(
+        &self,
+        end_event: Arc<StickyEvent>,
+        flush_event: (Arc<EventHandler>, Arc<EventHandler>),
+    ) {
         use tokio::select;
 
         let mut linger_sleep = sleep(std::time::Duration::from_secs(1800));
-        let mut flush_event_listener = flush_event.0.listen();
-        let mut new_batch_listener = self.batch_events.listen_new_batch();
-        let mut batch_full_event_listener = self.batch_events.listen_batch_full();
 
         loop {
-            if end_event.is_set() {
-                info!("partition producer is terminated");
-                break;
-            }
-
             select! {
                 _ = end_event.listen() => {
                     info!("partition producer end event received");
                     break;
                 },
-                _ = &mut flush_event_listener => {
-                    flush_event_listener = flush_event.0.listen();
+                _ = flush_event.0.listen() => {
 
                     debug!("flush event received");
                     if let Err(e) = self.flush(true).await {
                         error!("Failed to flush producer: {:?}", e);
                         break;
                     }
-                    flush_event.1.notify(1);
+                    flush_event.1.notify().await;
                     linger_sleep = sleep(std::time::Duration::from_secs(1800));
 
                 }
-                _ = &mut batch_full_event_listener => {
-                    batch_full_event_listener = self.batch_events.listen_batch_full();
+                _ =  self.batch_events.listen_batch_full() => {
 
                     debug!("batch full event");
                     if let Err(e) = self.flush(false).await {
@@ -115,8 +109,7 @@ impl PartitionProducer {
                     }
                 }
 
-                _ = &mut new_batch_listener => {
-                    new_batch_listener = self.batch_events.listen_new_batch();
+                _ = self.batch_events.listen_new_batch() => {
 
                     debug!("new batch event");
                     linger_sleep = sleep(self.linger);

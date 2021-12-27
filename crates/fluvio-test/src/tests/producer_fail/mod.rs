@@ -73,11 +73,11 @@ pub async fn produce_batch(
 
     let result: Result<_, FluvioError> = (|| async move {
         let mut results = Vec::new();
-        for i in 0..5000 {
+        for i in 0..1000 {
             let result = producer.send(RecordKey::NULL, i.to_string()).await?;
             results.push(result);
         }
-        println!("Send 5000");
+        println!("Send 1000");
         let mut i = 0;
         for result in results.into_iter() {
             let record = result.wait().await.expect("result is not ok");
@@ -88,20 +88,14 @@ pub async fn produce_batch(
             i += 1;
         }
 
-        assert_eq!(i, 5000);
+        assert_eq!(i, 1000);
 
         cluster_manager.terminate_spu(leader).expect("terminate");
         println!("Terminate SPU");
 
-        let mut results = Vec::with_capacity(16000);
-        for i in 0..16_000 {
-            let result = producer.send(RecordKey::NULL, i.to_string()).await?;
-            results.push(result);
-        }
-        println!("Send 1000");
-
+        let result = producer.send(RecordKey::NULL, i.to_string()).await?;
         // This should fail because the SPU is terminated.
-        results.remove(0).wait().await?;
+        result.wait().await?;
         Ok(())
     })()
     .await;

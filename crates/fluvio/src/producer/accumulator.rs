@@ -5,7 +5,6 @@ use std::time::Instant;
 use async_lock::Mutex;
 use async_channel::Sender;
 
-use event_listener::{Event, EventListener};
 use tracing::trace;
 
 use dataplane::Offset;
@@ -17,43 +16,10 @@ use crate::producer::record::{BatchMetadata, FutureRecordMetadata, PartialFuture
 use crate::producer::ProducerError;
 use crate::error::Result;
 
-pub(crate) struct BatchEvents {
-    batch_full: Event,
-    new_batch: Event,
-}
-
-impl BatchEvents {
-    fn new() -> Self {
-        let batch_full = Event::new();
-        let new_batch = Event::new();
-        Self {
-            batch_full,
-            new_batch,
-        }
-    }
-
-    pub fn shared() -> Arc<Self> {
-        Arc::new(Self::new())
-    }
-
-    pub fn listen_batch_full(&self) -> EventListener {
-        self.batch_full.listen()
-    }
-
-    pub fn listen_new_batch(&self) -> EventListener {
-        self.new_batch.listen()
-    }
-
-    pub fn notify_batch_full(&self) {
-        self.batch_full.notify(usize::MAX);
-    }
-
-    pub fn notify_new_batch(&self) {
-        self.new_batch.notify(usize::MAX);
-    }
-}
+use super::event::EventHandler;
 
 pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<Mutex<VecDeque<ProducerBatch>>>);
+
 /// This struct acts as a queue that accumulates records into batches.
 /// It is used by the producer to buffer records before sending them to the SPU.
 /// The batches are separated by PartitionId
@@ -92,13 +58,13 @@ impl RecordAccumulator {
         if let Some(batch) = batches.back_mut() {
             if let Some(push_record) = batch.push_record(record.clone()) {
                 if batch.is_full() {
-                    batch_events.notify_batch_full();
+                    batch_events.notify_batch_full().await;
                 }
                 return Ok(PushRecord::new(
                     push_record.into_future_record_metadata(partition_id),
                 ));
             } else {
-                batch_events.notify_batch_full();
+                batch_events.notify_batch_full().await;
             }
         }
 
@@ -111,10 +77,10 @@ impl RecordAccumulator {
 
         match batch.push_record(record) {
             Some(push_record) => {
-                batch_events.notify_new_batch();
+                batch_events.notify_new_batch().await;
 
                 if batch.is_full() {
-                    batch_events.notify_batch_full();
+                    batch_events.notify_batch_full().await;
                 }
 
                 batches.push_back(batch);
@@ -197,5 +163,41 @@ impl ProducerBatch {
 
     pub(crate) fn is_full(&self) -> bool {
         self.is_full || self.write_limit <= self.current_size
+    }
+}
+
+pub(crate) struct BatchEvents {
+    batch_full: EventHandler,
+    new_batch: EventHandler,
+}
+
+impl BatchEvents {
+    fn new() -> Self {
+        let batch_full = EventHandler::new();
+        let new_batch = EventHandler::new();
+        Self {
+            batch_full,
+            new_batch,
+        }
+    }
+
+    pub fn shared() -> Arc<Self> {
+        Arc::new(Self::new())
+    }
+
+    pub async fn listen_batch_full(&self) {
+        self.batch_full.listen().await
+    }
+
+    pub async fn listen_new_batch(&self) {
+        self.new_batch.listen().await
+    }
+
+    pub async fn notify_batch_full(&self) {
+        self.batch_full.notify().await;
+    }
+
+    pub async fn notify_new_batch(&self) {
+        self.new_batch.notify().await;
     }
 }

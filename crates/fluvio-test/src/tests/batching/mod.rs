@@ -1,6 +1,8 @@
 use std::any::Any;
 use futures_lite::StreamExt;
 
+use tracing::debug;
+
 use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use structopt::StructOpt;
@@ -67,15 +69,15 @@ pub async fn batching(
         .await
         .expect("Failed to create consumer stream");
 
-    for _ in 0..100 {
+    for _ in 0..150 {
         // Ensure record is sent after the linger time even if we dont call flush()
 
-        let config = TopicProducerConfigBuilder::default().linger_ms(100).build();
+        let config = TopicProducerConfigBuilder::default().linger_ms(25).build();
 
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
             .await;
-        println!("Created producer with linger time");
+        debug!("Created producer with linger time");
 
         producer.send("key", "value").await.expect("Failed produce");
         let record = stream
@@ -93,7 +95,7 @@ pub async fn batching(
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
             .await;
-        println!("Created producer with large linger time");
+        debug!("Created producer with large linger time");
 
         producer
             .send("key", "value2")
@@ -116,7 +118,7 @@ pub async fn batching(
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
             .await;
-        println!("Created producer with small batch size");
+        debug!("Created producer with small batch size");
 
         // The size of this record is equal to batch_size so it will be sent without calling flush and before the linger time
         producer

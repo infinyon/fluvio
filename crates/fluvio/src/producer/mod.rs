@@ -8,7 +8,6 @@ use async_lock::RwLock;
 use dataplane::ReplicaKey;
 use dataplane::record::Record;
 
-use event_listener::Event;
 #[cfg(feature = "smartengine")]
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_types::PartitionId;
@@ -18,6 +17,7 @@ use tracing::instrument;
 mod accumulator;
 mod config;
 mod error;
+mod event;
 mod output;
 mod partitioning;
 mod record;
@@ -30,9 +30,10 @@ use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 
-use self::accumulator::BatchHandler;
+use self::accumulator::{BatchHandler};
 pub use self::config::{TopicProducerConfigBuilder, TopicProducerConfig};
 pub use self::error::ProducerError;
+use self::event::EventHandler;
 pub use self::output::ProduceOutput;
 use self::partition_producer::PartitionProducer;
 pub use self::record::FutureRecordMetadata;
@@ -53,7 +54,7 @@ pub struct TopicProducer {
 
 /// Pool of producers for a given topic. There is a producer per partition
 struct ProducerPool {
-    flush_events: Vec<(Arc<Event>, Arc<Event>)>,
+    flush_events: Vec<(Arc<EventHandler>, Arc<EventHandler>)>,
     end_events: Vec<Arc<StickyEvent>>,
 }
 
@@ -68,7 +69,7 @@ impl ProducerPool {
         let mut flush_events = vec![];
         for (&partition_id, (batch_events, batch_list)) in batches.iter() {
             let end_event = StickyEvent::shared();
-            let flush_event = (Arc::new(Event::new()), Arc::new(Event::new()));
+            let flush_event = (EventHandler::shared(), EventHandler::shared());
             let replica = ReplicaKey::new(topic.clone(), partition_id);
             PartitionProducer::start(
                 replica,
@@ -98,9 +99,9 @@ impl ProducerPool {
     }
 
     async fn flush_all_batches(&self) -> Result<()> {
-        for event in &self.flush_events {
-            let listener = event.1.listen();
-            event.0.notify(usize::MAX);
+        for (manual_flush_notifier, batch_flushed_event) in &self.flush_events {
+            let listener = batch_flushed_event.listen();
+            manual_flush_notifier.notify().await;
             listener.await;
         }
 
