@@ -90,14 +90,23 @@ pub async fn produce_batch(
 
         assert_eq!(i, 1000);
 
-        fluvio_future::timer::sleep(std::time::Duration::from_secs(5)).await;
+        fluvio_future::timer::sleep(std::time::Duration::from_secs(3)).await;
 
         cluster_manager.terminate_spu(leader).expect("terminate");
         println!("Terminate SPU");
 
-        let result = producer.send(RecordKey::NULL, i.to_string()).await?;
+        println!("Sending one record");
+
+        let _result = producer
+            .send(RecordKey::NULL, i.to_string())
+            .await
+            .expect("Failed send");
+
+        println!("flushing");
+
         // This should fail because the SPU is terminated.
-        result.wait().await?;
+        producer.flush().await?;
+
         Ok(())
     })()
     .await;

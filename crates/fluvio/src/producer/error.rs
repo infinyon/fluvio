@@ -15,4 +15,6 @@ pub enum ProducerError {
     GetRecordMetadata(#[from] Option<RecvError>),
     #[error("partition: {0} not found")]
     PartitionNotFound(PartitionId),
+    #[error("Error while flushing")]
+    Flush,
 }

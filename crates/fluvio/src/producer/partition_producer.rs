@@ -7,6 +7,7 @@ use dataplane::ReplicaKey;
 use dataplane::batch::Batch;
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
+use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
 use tracing::{debug, info, instrument, error, trace};
 
@@ -58,6 +59,7 @@ impl PartitionProducer {
         ))
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn start(
         replica: ReplicaKey,
         spu_pool: Arc<SpuPool>,
@@ -93,7 +95,8 @@ impl PartitionProducer {
 
                     debug!("flush event received");
                     if let Err(e) = self.flush(true).await {
-                        error!("Failed to flush producer: {:?}", e);
+                        error!("Failed to flush producer: {}", e);
+                        end_event.notify();
                         break;
                     }
                     flush_event.1.notify().await;
@@ -101,10 +104,10 @@ impl PartitionProducer {
 
                 }
                 _ =  self.batch_events.listen_batch_full() => {
-
                     debug!("batch full event");
                     if let Err(e) = self.flush(false).await {
-                        error!("Failed to flush producer: {:?}", e);
+                        error!("Failed to flush producer: {}", e);
+                        end_event.notify();
                         break;
                     }
                 }
@@ -120,6 +123,7 @@ impl PartitionProducer {
                     debug!("Flushing because linger time was reached");
                     if let Err(e) = self.flush(false).await {
                         error!("Failed to flush producer: {:?}", e);
+                        end_event.notify();
                         break;
                     }
                     linger_sleep = sleep(std::time::Duration::from_secs(1800));
@@ -129,9 +133,7 @@ impl PartitionProducer {
         info!("partition producer end");
     }
 
-    /// Flush all the batches that are full or have reached the linger time.
-    /// If force is set to true, flush all batches regardless of linger time.
-    pub(crate) async fn flush(&self, force: bool) -> Result<()> {
+    async fn current_leader(&self) -> Result<SpuId> {
         let partition_spec = self
             .spu_pool
             .metadata
@@ -145,7 +147,13 @@ impl PartitionProducer {
                 )
             })?
             .spec;
-        let leader = partition_spec.leader;
+        Ok(partition_spec.leader)
+    }
+
+    /// Flush all the batches that are full or have reached the linger time.
+    /// If force is set to true, flush all batches regardless of linger time.
+    pub(crate) async fn flush(&self, force: bool) -> Result<()> {
+        let leader = self.current_leader().await?;
 
         let spu_socket = self
             .spu_pool
@@ -169,32 +177,36 @@ impl PartitionProducer {
         }
 
         // Send each batch and notify base offset
+        let mut request = DefaultProduceRequest::default();
+
+        let mut topic_request = DefaultTopicRequest {
+            name: self.replica.topic.to_string(),
+            ..Default::default()
+        };
+        let mut partition_request = DefaultPartitionRequest {
+            partition_index: self.replica.partition,
+            ..Default::default()
+        };
+
+        let mut batch_notifiers = vec![];
+
         for p_batch in batches_ready {
-            let mut request = DefaultProduceRequest::default();
-
-            let mut topic_request = DefaultTopicRequest {
-                name: self.replica.topic.to_string(),
-                ..Default::default()
-            };
-            let mut partition_request = DefaultPartitionRequest {
-                partition_index: self.replica.partition,
-                ..Default::default()
-            };
-
-            let batch_notifier = p_batch.notify;
             let batch = p_batch.records;
 
             let batch = Batch::from(batch);
             partition_request.records.batches.push(batch);
+            batch_notifiers.push(p_batch.notify);
+        }
 
-            topic_request.partitions.push(partition_request);
-            request.acks = 1;
-            request.timeout_ms = 1500;
-            request.topics.push(topic_request);
-            let response = spu_socket.send_receive(request).await?;
+        topic_request.partitions.push(partition_request);
+        request.acks = 1;
+        request.timeout_ms = 1500;
+        request.topics.push(topic_request);
+        let response = spu_socket.send_receive(request).await?;
 
-            let base_offset = response.responses[0].partitions[0].base_offset;
-
+        for (batch_notifier, response) in batch_notifiers.into_iter().zip(response.responses.iter())
+        {
+            let base_offset = response.partitions[0].base_offset;
             if let Err(_e) = batch_notifier.send(base_offset).await {
                 trace!(
                     "Failed to notify producer of successful produce because receiver was dropped"

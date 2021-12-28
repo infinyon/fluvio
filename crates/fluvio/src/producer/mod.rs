@@ -71,6 +71,7 @@ impl ProducerPool {
             let end_event = StickyEvent::shared();
             let flush_event = (EventHandler::shared(), EventHandler::shared());
             let replica = ReplicaKey::new(topic.clone(), partition_id);
+
             PartitionProducer::start(
                 replica,
                 spu_pool.clone(),
@@ -98,11 +99,20 @@ impl ProducerPool {
         Arc::new(ProducerPool::new(topic, spu_pool, batches, linger))
     }
 
-    async fn flush_all_batches(&self) -> Result<()> {
-        for (manual_flush_notifier, batch_flushed_event) in &self.flush_events {
+    async fn flush_all_batches(&self) -> Result<(), ProducerError> {
+        use tokio::select;
+        for ((manual_flush_notifier, batch_flushed_event), end_event) in
+            self.flush_events.iter().zip(&self.end_events)
+        {
             let listener = batch_flushed_event.listen();
             manual_flush_notifier.notify().await;
-            listener.await;
+
+            select! {
+             _ = listener => {},
+             _ = end_event.listen() => {
+                 return Err(ProducerError::Flush);
+             },
+            }
         }
 
         Ok(())
