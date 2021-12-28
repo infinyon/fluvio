@@ -60,7 +60,9 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
         .await
         .expect("sending");
 
-    producer.flush().await.expect("flusing");
+    producer.flush().await.expect("flushing");
+
+    sleep(Duration::from_secs(ACK_WAIT)).await;
 
     let admin = test_driver.client().admin().await;
 
@@ -98,7 +100,8 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
         .send(RecordKey::NULL, "msg2")
         .await
         .expect("sending");
-    producer.flush().await.expect("flusing");
+
+    producer.flush().await.expect("flushing");
 
     let consumer = test_driver.get_consumer(&topic_name, 0).await;
     let mut stream = consumer

@@ -90,6 +90,8 @@ pub async fn produce_batch(
 
         assert_eq!(i, 1000);
 
+        fluvio_future::timer::sleep(std::time::Duration::from_secs(5)).await;
+
         cluster_manager.terminate_spu(leader).expect("terminate");
         println!("Terminate SPU");
 

@@ -20,6 +20,8 @@ use super::event::EventHandler;
 
 pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<Mutex<VecDeque<ProducerBatch>>>);
 
+const ENCODING_PROTOCOL_VERSION: i16 = 0;
+
 /// This struct acts as a queue that accumulates records into batches.
 /// It is used by the producer to buffer records before sending them to the SPU.
 /// The batches are separated by PartitionId
@@ -144,7 +146,7 @@ impl ProducerBatch {
     /// the RecordAccumulator can create more batches if needed.
     fn push_record(&mut self, record: Record) -> Option<PartialFutureRecordMetadata> {
         let relative_offset = self.records.len() as i64;
-        let record_size = record.write_size(0);
+        let record_size = record.write_size(ENCODING_PROTOCOL_VERSION);
 
         if self.current_size + record_size > self.write_limit {
             self.is_full = true;
@@ -199,5 +201,94 @@ impl BatchEvents {
 
     pub async fn notify_new_batch(&self) {
         self.new_batch.notify().await;
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use dataplane::record::Record;
+
+    #[test]
+    fn test_producer_batch_push_and_not_full() {
+        let record = Record::from(("key", "value"));
+        let size = record.write_size(ENCODING_PROTOCOL_VERSION);
+
+        // Producer batch that can store three instances of Record::from(("key", "value"))
+        let mut pb = ProducerBatch::new(size * 3 + 1);
+
+        assert!(pb.push_record(record.clone()).is_some());
+        assert!(pb.push_record(record.clone()).is_some());
+        assert!(pb.push_record(record.clone()).is_some());
+
+        assert!(!pb.is_full());
+
+        assert!(pb.push_record(record).is_none());
+    }
+
+    #[test]
+    fn test_producer_batch_push_and_full() {
+        let record = Record::from(("key", "value"));
+        let size = record.write_size(ENCODING_PROTOCOL_VERSION);
+
+        // Producer batch that can store three instances of Record::from(("key", "value"))
+        let mut pb = ProducerBatch::new(size * 3);
+
+        assert!(pb.push_record(record.clone()).is_some());
+        assert!(pb.push_record(record.clone()).is_some());
+        assert!(pb.push_record(record.clone()).is_some());
+
+        assert!(pb.is_full());
+
+        assert!(pb.push_record(record).is_none());
+    }
+
+    #[fluvio_future::test]
+    async fn test_record_accumulator() {
+        let record = Record::from(("key", "value"));
+        let size = record.write_size(ENCODING_PROTOCOL_VERSION);
+        let accumulator = RecordAccumulator::new(size * 3, 1);
+        let timeout = std::time::Duration::from_millis(200);
+
+        let batches = accumulator
+            .batches()
+            .get(&0)
+            .expect("failed to get batch info")
+            .0
+            .clone();
+
+        accumulator
+            .push_record(record.clone(), 0)
+            .await
+            .expect("failed push");
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_new_batch())
+                .await
+                .is_ok()
+        );
+
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_batch_full())
+                .await
+                .is_err()
+        );
+        accumulator
+            .push_record(record.clone(), 0)
+            .await
+            .expect("failed push");
+        accumulator
+            .push_record(record, 0)
+            .await
+            .expect("failed push");
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_batch_full())
+                .await
+                .is_ok()
+        );
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_new_batch())
+                .await
+                .is_err()
+        );
     }
 }
