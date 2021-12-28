@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
-const DEFAULT_LINGER_MS: u64 = 0;
+const DEFAULT_LINGER_MS: u64 = 250;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
 
 /// Builder for `TopicProducerConfig`

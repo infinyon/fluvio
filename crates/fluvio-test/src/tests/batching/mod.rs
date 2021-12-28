@@ -71,8 +71,7 @@ pub async fn batching(
 
     for _ in 0..150 {
         // Ensure record is sent after the linger time even if we dont call flush()
-
-        let config = TopicProducerConfigBuilder::default().linger_ms(25).build();
+        let config = TopicProducerConfigBuilder::default().linger_ms(0).build();
 
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
