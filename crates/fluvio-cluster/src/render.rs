@@ -16,10 +16,10 @@ pub enum ProgressRenderer {
 }
 
 impl ProgressRenderer {
-    pub fn println(&self, msg: &str) {
+    pub fn println(&self, msg: impl Into<Cow<'static, str>>) {
         match self {
-            ProgressRenderer::Std => eprintln!("{}", msg),
-            ProgressRenderer::Indicatiff(pb) => pb.println(msg),
+            ProgressRenderer::Std => eprintln!("{}", msg.into()),
+            ProgressRenderer::Indicatiff(pb) => pb.println(msg.into()),
         }
     }
 
