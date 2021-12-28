@@ -110,12 +110,6 @@ impl ProducerPool {
         for ((manual_flush_notifier, batch_flushed_event), error) in
             self.flush_events.iter().zip(self.errors.iter())
         {
-            {
-                let error_handle = error.read().await;
-                if let Some(error) = &*error_handle {
-                    return Err(error.clone().into());
-                }
-            }
             let listener = batch_flushed_event.listen();
             manual_flush_notifier.notify().await;
             listener.await;
@@ -128,6 +122,18 @@ impl ProducerPool {
         }
 
         Ok(())
+    }
+
+    async fn last_error(&self, partition_id: PartitionId) -> Option<ProducerError> {
+        let error = self.errors[partition_id as usize].read().await;
+        error.clone()
+    }
+
+    async fn clear_errors(&self) {
+        for error in self.errors.iter() {
+            let mut error_handle = error.write().await;
+            *error_handle = None;
+        }
     }
 
     fn end(&self) {
@@ -171,12 +177,20 @@ impl InnerTopicProducer {
         let value = record.value.as_ref();
         let partition = self.partitioner.partition(&partition_config, key, value);
 
+        if let Some(error) = self.producer_pool.last_error(partition).await {
+            return Err(error.into());
+        }
+
         let push_record = self
             .record_accumulator
             .push_record(record, partition)
             .await?;
 
         Ok(push_record)
+    }
+
+    async fn clear_errors(&self) {
+        self.producer_pool.clear_errors().await;
     }
 }
 
@@ -368,5 +382,11 @@ impl TopicProducer {
         }
 
         Ok(results)
+    }
+
+    /// Clear partition producers errors in order to make partition producers available.
+    /// This is needed once an error is present in order to send new records again.
+    pub async fn clear_errors(&self) {
+        self.inner.clear_errors().await;
     }
 }

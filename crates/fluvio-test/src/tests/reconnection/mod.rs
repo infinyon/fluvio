@@ -62,8 +62,6 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
 
     producer.flush().await.expect("flushing");
 
-    sleep(Duration::from_secs(ACK_WAIT)).await;
-
     let admin = test_driver.client().admin().await;
 
     let partitions = admin
@@ -93,6 +91,8 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
     leader_spu.start().expect("start");
 
     sleep(Duration::from_secs(ACK_WAIT)).await;
+
+    producer.clear_errors().await;
 
     println!("sending second record");
     // Use the same producer

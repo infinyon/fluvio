@@ -101,6 +101,7 @@ impl PartitionProducer {
                 },
                 _ = flush_event.0.listen() => {
 
+
                     debug!("flush event received");
                     if let Err(e) = self.flush(true).await {
                         error!("Failed to flush producer: {}", e);
@@ -111,6 +112,7 @@ impl PartitionProducer {
                     }
                     flush_event.1.notify().await;
                     linger_sleep = sleep(std::time::Duration::from_secs(1800));
+
 
                 }
                 _ =  self.batch_events.listen_batch_full() => {
@@ -132,12 +134,13 @@ impl PartitionProducer {
 
                 _ = &mut linger_sleep => {
                     debug!("Flushing because linger time was reached");
+                    linger_sleep = sleep(std::time::Duration::from_secs(1800));
+
                     if let Err(e) = self.flush(false).await {
                         error!("Failed to flush producer: {:?}", e);
                         self.set_error(e).await;
                         continue;
                     }
-                    linger_sleep = sleep(std::time::Duration::from_secs(1800));
                 }
             }
         }
