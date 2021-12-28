@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-#[cfg(feature = "smartengine")]
 use async_lock::RwLock;
 
 use dataplane::ReplicaKey;
@@ -56,6 +55,7 @@ pub struct TopicProducer {
 struct ProducerPool {
     flush_events: Vec<(Arc<EventHandler>, Arc<EventHandler>)>,
     end_events: Vec<Arc<StickyEvent>>,
+    errors: Vec<Arc<RwLock<Option<ProducerError>>>>,
 }
 
 impl ProducerPool {
@@ -67,10 +67,12 @@ impl ProducerPool {
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
+        let mut errors = vec![];
         for (&partition_id, (batch_events, batch_list)) in batches.iter() {
             let end_event = StickyEvent::shared();
             let flush_event = (EventHandler::shared(), EventHandler::shared());
             let replica = ReplicaKey::new(topic.clone(), partition_id);
+            let error = Arc::new(RwLock::new(None));
 
             PartitionProducer::start(
                 replica,
@@ -78,15 +80,18 @@ impl ProducerPool {
                 batch_list.clone(),
                 batch_events.clone(),
                 linger,
+                error.clone(),
                 end_event.clone(),
                 flush_event.clone(),
             );
+            errors.push(error);
             end_events.push(end_event);
             flush_events.push(flush_event);
         }
         Self {
             end_events,
             flush_events,
+            errors,
         }
     }
 
@@ -99,19 +104,24 @@ impl ProducerPool {
         Arc::new(ProducerPool::new(topic, spu_pool, batches, linger))
     }
 
-    async fn flush_all_batches(&self) -> Result<(), ProducerError> {
-        use tokio::select;
-        for ((manual_flush_notifier, batch_flushed_event), end_event) in
-            self.flush_events.iter().zip(&self.end_events)
+    async fn flush_all_batches(&self) -> Result<()> {
+        for ((manual_flush_notifier, batch_flushed_event), error) in
+            self.flush_events.iter().zip(self.errors.iter())
         {
+            {
+                let error_handle = error.read().await;
+                if let Some(error) = &*error_handle {
+                    return Err(error.clone().into());
+                }
+            }
             let listener = batch_flushed_event.listen();
             manual_flush_notifier.notify().await;
-
-            select! {
-             _ = listener => {},
-             _ = end_event.listen() => {
-                 return Err(ProducerError::Flush);
-             },
+            listener.await;
+            {
+                let error_handle = error.read().await;
+                if let Some(error) = &*error_handle {
+                    return Err(error.clone().into());
+                }
             }
         }
 

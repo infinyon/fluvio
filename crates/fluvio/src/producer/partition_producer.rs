@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::VecDeque;
 use std::time::Duration;
 
-use async_lock::Mutex;
+use async_lock::{Mutex, RwLock};
 use dataplane::ReplicaKey;
 use dataplane::batch::Batch;
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
@@ -14,6 +14,7 @@ use tracing::{debug, info, instrument, error, trace};
 use crate::error::{Result, FluvioError};
 use crate::spu::SpuPool;
 
+use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
@@ -24,6 +25,7 @@ pub(crate) struct PartitionProducer {
     batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
     batch_events: Arc<BatchEvents>,
     linger: Duration,
+    last_error: Arc<RwLock<Option<ProducerError>>>,
 }
 
 impl PartitionProducer {
@@ -33,6 +35,7 @@ impl PartitionProducer {
         batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         linger: Duration,
+        last_error: Arc<RwLock<Option<ProducerError>>>,
     ) -> Self {
         Self {
             replica,
@@ -40,6 +43,7 @@ impl PartitionProducer {
             batches_lock,
             batch_events,
             linger,
+            last_error,
         }
     }
 
@@ -49,6 +53,7 @@ impl PartitionProducer {
         batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         linger: Duration,
+        error: Arc<RwLock<Option<ProducerError>>>,
     ) -> Arc<Self> {
         Arc::new(PartitionProducer::new(
             replica,
@@ -56,6 +61,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             linger,
+            error,
         ))
     }
 
@@ -66,10 +72,12 @@ impl PartitionProducer {
         batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         linger: Duration,
+        error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
     ) {
-        let producer = PartitionProducer::shared(replica, spu_pool, batches, batch_events, linger);
+        let producer =
+            PartitionProducer::shared(replica, spu_pool, batches, batch_events, linger, error);
         fluvio_future::task::spawn(async move {
             producer.run(end_event, flush_event).await;
         });
@@ -96,8 +104,10 @@ impl PartitionProducer {
                     debug!("flush event received");
                     if let Err(e) = self.flush(true).await {
                         error!("Failed to flush producer: {}", e);
-                        end_event.notify();
-                        break;
+                        self.set_error(e).await;
+                        flush_event.1.notify().await;
+
+                        continue;
                     }
                     flush_event.1.notify().await;
                     linger_sleep = sleep(std::time::Duration::from_secs(1800));
@@ -107,8 +117,9 @@ impl PartitionProducer {
                     debug!("batch full event");
                     if let Err(e) = self.flush(false).await {
                         error!("Failed to flush producer: {}", e);
-                        end_event.notify();
-                        break;
+                        self.set_error(e).await;
+
+                        continue;
                     }
                 }
 
@@ -123,14 +134,19 @@ impl PartitionProducer {
                     debug!("Flushing because linger time was reached");
                     if let Err(e) = self.flush(false).await {
                         error!("Failed to flush producer: {:?}", e);
-                        end_event.notify();
-                        break;
+                        self.set_error(e).await;
+                        continue;
                     }
                     linger_sleep = sleep(std::time::Duration::from_secs(1800));
                 }
             }
         }
         info!("partition producer end");
+    }
+
+    async fn set_error(&self, error: FluvioError) {
+        let mut error_handle = self.last_error.write().await;
+        *error_handle = Some(ProducerError::Internal(error.to_string()));
     }
 
     async fn current_leader(&self) -> Result<SpuId> {
