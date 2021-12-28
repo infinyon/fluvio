@@ -30,7 +30,9 @@ use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::{Partitioner, PartitionerConfig};
 
 use self::accumulator::{BatchHandler};
-pub use self::config::{TopicProducerConfigBuilder, TopicProducerConfig};
+pub use self::config::{
+    TopicProducerConfigBuilder, TopicProducerConfig, TopicProducerConfigBuilderError,
+};
 pub use self::error::ProducerError;
 use self::event::EventHandler;
 pub use self::output::ProduceOutput;

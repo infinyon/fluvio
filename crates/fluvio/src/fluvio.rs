@@ -159,7 +159,7 @@ impl Fluvio {
     /// ```no_run
     /// # use fluvio::{Fluvio, FluvioError, RecordKey, TopicProducerConfigBuilder};
     /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
-    /// let config = TopicProducerConfigBuilder::default().linger_ms(500).build();
+    /// let config = TopicProducerConfigBuilder::default().batch_size(500).build()?;
     /// let producer = fluvio.topic_producer_with_config("my-topic", config).await?;
     /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
     /// # Ok(())

@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::time::Duration;
 use futures_lite::StreamExt;
 
 use tracing::debug;
@@ -71,7 +72,10 @@ pub async fn batching(
 
     for _ in 0..150 {
         // Ensure record is sent after the linger time even if we dont call flush()
-        let config = TopicProducerConfigBuilder::default().linger_ms(0).build();
+        let config = TopicProducerConfigBuilder::default()
+            .linger(Duration::from_millis(0))
+            .build()
+            .expect("failed to build config");
 
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
@@ -89,8 +93,9 @@ pub async fn batching(
         // Ensure record is sent when we call flush() (we make linger_time large to test that)
 
         let config = TopicProducerConfigBuilder::default()
-            .linger_ms(600000)
-            .build();
+            .linger(Duration::from_millis(600000))
+            .build()
+            .expect("failed to build config");
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
             .await;
@@ -111,9 +116,11 @@ pub async fn batching(
         // Ensure record is sent when batch is full (we make batch_size smaller))
 
         let config = TopicProducerConfigBuilder::default()
-            .linger_ms(600000)
+            .linger(Duration::from_millis(600000))
             .batch_size(17)
-            .build();
+            .build()
+            .expect("failed to build config");
+
         let producer: TopicProducer = test_driver
             .create_producer_with_config(&topic_name, config)
             .await;

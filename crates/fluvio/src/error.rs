@@ -7,6 +7,7 @@ use dataplane::smartmodule::SmartModuleRuntimeError;
 
 use crate::config::ConfigError;
 use crate::producer::ProducerError;
+use crate::producer::TopicProducerConfigBuilderError;
 
 pub type Result<T, Err = FluvioError> = std::result::Result<T, Err>;
 
@@ -51,6 +52,8 @@ To interact with this cluster, please install the matching CLI version using the
     SmartModuleRuntime(#[from] SmartModuleRuntimeError),
     #[error("Producer error: {0}")]
     Producer(#[from] ProducerError),
+    #[error("Error building producer config: {0}")]
+    TopicProducerConfigBuilder(#[from] TopicProducerConfigBuilderError),
     #[error("Unknown error: {0}")]
     Other(String),
 }

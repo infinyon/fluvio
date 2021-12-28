@@ -1,46 +1,22 @@
 use std::time::Duration;
 
+use derive_builder::Builder;
+
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
 const DEFAULT_LINGER_MS: u64 = 250;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_000;
 
-/// Builder for `TopicProducerConfig`
-#[derive(Default)]
-pub struct TopicProducerConfigBuilder {
-    batch_size: Option<usize>,
-    linger_ms: Option<u64>,
-    partitioner: Option<Box<dyn Partitioner + Send + Sync>>,
+fn default_batch_size() -> usize {
+    DEFAULT_BATCH_SIZE_BYTES
 }
 
-impl TopicProducerConfigBuilder {
-    /// Sets the batch size
-    pub fn batch_size(mut self, batch_size: usize) -> Self {
-        self.batch_size = Some(batch_size);
-        self
-    }
+fn default_linger_duration() -> Duration {
+    Duration::from_millis(DEFAULT_LINGER_MS)
+}
 
-    /// Sets the linger configuration in milliseconds
-    pub fn linger_ms(mut self, linger_ms: u64) -> Self {
-        self.linger_ms = Some(linger_ms);
-        self
-    }
-
-    pub fn partitioner(mut self, partitioner: Box<dyn Partitioner + Send + Sync>) -> Self {
-        self.partitioner = Some(partitioner);
-        self
-    }
-
-    /// Creates a `TopicProducerConfig` with the current configurations.
-    pub fn build(self) -> TopicProducerConfig {
-        TopicProducerConfig {
-            batch_size: self.batch_size.unwrap_or(DEFAULT_BATCH_SIZE_BYTES),
-            linger: Duration::from_millis(self.linger_ms.unwrap_or(DEFAULT_LINGER_MS)),
-            partitioner: self
-                .partitioner
-                .unwrap_or_else(|| Box::new(SiphashRoundRobinPartitioner::new())),
-        }
-    }
+fn default_partitioner() -> Box<dyn Partitioner + Send + Sync> {
+    Box::new(SiphashRoundRobinPartitioner::new())
 }
 /// Options used to adjust the behavior of the Producer.
 /// Create this struct with `TopicProducerConfigBuilder`.
@@ -50,9 +26,16 @@ impl TopicProducerConfigBuilder {
 /// # Ok(())
 /// # }
 /// ```
+///
+
+#[derive(Builder)]
+#[builder(pattern = "owned")]
 pub struct TopicProducerConfig {
+    #[builder(default = "default_batch_size()")]
     pub(crate) batch_size: usize,
+    #[builder(default = "default_linger_duration()")]
     pub(crate) linger: Duration,
+    #[builder(default = "default_partitioner()")]
     pub(crate) partitioner: Box<dyn Partitioner + Send + Sync>,
 }
 
