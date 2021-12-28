@@ -24,6 +24,14 @@ setup_file() {
 @test "Attempt to create test connector from an unauthorized source" {
     run timeout 15s "$FLUVIO_BIN" connector create --config "$UNAUTHORIZED_CONNECTOR_CONFIG"
     assert_success
-    fluvio connector list
-    assert_output --partial "test-connector-name  Invalid"
+    sleep 10
+    run fluvio connector list
+
+    assert_output --partial "my-invalid-third-party-connector  Invalid"
+}
+
+teardown_file() {
+    # Delete connector's topic
+    run timeout 15s "$FLUVIO_BIN" delete delete my-invalid-third-party-connector
+    run timeout 15s "$FLUVIO_BIN" delete delete my-third-party-connector
 }
