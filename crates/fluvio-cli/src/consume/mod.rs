@@ -109,6 +109,10 @@ pub struct ConsumeOpt {
     #[structopt(short = "T", long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
     pub tail: Option<Option<u32>>,
 
+    /// Consume records until end offset
+    #[structopt(long, value_name= "integer", conflicts_with_all = &["tail"])]
+    pub end_offset: Option<i64>,
+
     /// Maximum number of bytes to be retrieved
     #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
     pub max_bytes: Option<i32>,
@@ -352,6 +356,20 @@ impl ConsumeOpt {
             builder.disable_continuous(true);
         }
 
+        if let Some(end_offset) = self.end_offset {
+            if end_offset < 0 {
+                eprintln!("Argument end-offset must be greater than or equal to zero");
+            }
+            if let Some(offset) = self.offset {
+                let o = offset as i64;
+                if end_offset < o {
+                    eprintln!(
+                        "Argument end-offset must be greater than or equal to specified offset"
+                    );
+                }
+            }
+        }
+
         let consume_config = builder.build()?;
         debug!("consume config: {:#?}", consume_config);
 
@@ -374,6 +392,7 @@ impl ConsumeOpt {
         tableformat: Option<TableFormatSpec>,
     ) -> Result<()> {
         self.print_status();
+        let maybe_potential_offset: Option<i64> = self.end_offset;
         let mut stream = consumer.stream_with_config(offset, config).await?;
 
         let templates = match self.format.as_deref() {
@@ -456,6 +475,13 @@ impl ConsumeOpt {
                                 &mut maybe_table_model,
                                 &pb,
                             );
+
+                            if let Some(potential_offset) = maybe_potential_offset {
+                                if record.offset >= potential_offset {
+                                    eprintln!("End-offset has been reached; exiting");
+                                    break;
+                                }
+                            }
                         },
                         None => break,
                     },
@@ -502,6 +528,13 @@ impl ConsumeOpt {
                     &mut None,
                     &pb,
                 );
+
+                if let Some(potential_offset) = maybe_potential_offset {
+                    if record.offset >= potential_offset {
+                        eprintln!("End-offset has been reached; exiting");
+                        break;
+                    }
+                }
             }
         }
 
@@ -644,6 +677,16 @@ impl ConsumeOpt {
                 format!(
                     "Consuming records starting {} from the end of topic '{}'",
                     tail, &self.topic
+                )
+                .bold()
+            );
+        // If --end-offset=X
+        } else if let Some(end) = self.end_offset {
+            eprintln!(
+                "{}",
+                format!(
+                    "Consuming records starting from the end until record {} in topic '{}'",
+                    end, &self.topic
                 )
                 .bold()
             );

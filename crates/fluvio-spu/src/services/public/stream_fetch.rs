@@ -1,7 +1,5 @@
 use std::sync::Arc;
 use std::time::Instant;
-use std::io::ErrorKind;
-use std::io::Error as IoError;
 
 use fluvio_smartengine::SmartModuleInstance;
 use futures_util::StreamExt;
@@ -169,25 +167,35 @@ impl StreamFetchHandler {
         let handler = Self {
             ctx: ctx.clone(),
             isolation,
-            replica,
+            replica: replica.clone(),
             max_bytes,
-            sink,
+            sink: sink.clone(),
             end_event,
-            header,
+            header: header.clone(),
             consumer_offset_listener,
             stream_id,
             leader_state,
             max_fetch_bytes,
         };
 
-        handler.process(starting_offset, derivedstream_ctx).await
+        if let Err(err) = handler.process(starting_offset, derivedstream_ctx).await {
+            match err {
+                StreamFetchError::Fetch(error_code) => {
+                    send_back_error(&sink, &replica, &header, stream_id, error_code).await?;
+                    Ok(())
+                }
+                StreamFetchError::Socket(err) => Err(err),
+            }
+        } else {
+            Ok(())
+        }
     }
 
     async fn process(
         mut self,
         starting_offset: Offset,
         derivedstream_ctx: Option<SmartModuleContext>,
-    ) -> Result<(), SocketError> {
+    ) -> Result<(), StreamFetchError> {
         let (mut smartmodule_instance, mut right_consumer_stream) =
             if let Some(ctx) = derivedstream_ctx {
                 let SmartModuleContext {
@@ -201,10 +209,10 @@ impl StreamFetchHandler {
         let mut join_record = if let Some(join_stream) = right_consumer_stream.as_mut() {
             // we wait for at least one record
             join_stream.next().await.transpose().map_err(|err| {
-                IoError::new(
-                    ErrorKind::Other,
-                    format!("failed to get record from join stream {}", err),
-                )
+                StreamFetchError::Fetch(ErrorCode::Other(format!(
+                    "failed to get record from join stream {}",
+                    err
+                )))
             })?
         } else {
             None
@@ -245,12 +253,11 @@ impl StreamFetchHandler {
                     debug!("Updated right stream");
                     match record {
                         Some(rec) => {
-                            join_record = Some(rec.map_err(|err| {
-                                IoError::new(
-                                    ErrorKind::Other,
+                            join_record = Some(rec.map_err(|err|
+                               StreamFetchError::Fetch(ErrorCode::Other(
                                     format!("failed to get record from join stream {}", err),
-                                )
-                            })?);
+                                ))
+                            )?);
                         },
                         None => {
                             debug!("join stream has been closed, terminating");
@@ -366,8 +373,9 @@ impl StreamFetchHandler {
         starting_offset: Offset,
         smartmodule_instance: Option<&mut Box<dyn SmartModuleInstance>>,
         join_last_record: Option<&fluvio::consumer::Record>,
-    ) -> Result<(Offset, bool), SocketError> {
+    ) -> Result<(Offset, bool), StreamFetchError> {
         let now = Instant::now();
+
         let mut file_partition_response = FilePartitionResponse {
             partition_index: self.replica.partition,
             ..Default::default()
@@ -376,15 +384,28 @@ impl StreamFetchHandler {
         // Read records from the leader starting from `offset`
         // Returns with the HW/LEO of the latest records available in the leader
         // This describes the range of records that can be read in this request
-        let read_end_offset = self
+        let read_end_offset = match self
             .leader_state
             .read_records(
                 starting_offset,
                 self.max_fetch_bytes,
                 self.isolation.clone(),
-                &mut file_partition_response,
             )
-            .await;
+            .await
+        {
+            Ok(slice) => {
+                file_partition_response.high_watermark = slice.end.hw;
+                file_partition_response.log_start_offset = slice.start;
+                if let Some(file_slice) = slice.file_slice {
+                    file_partition_response.records = file_slice.into();
+                }
+                slice.end
+            }
+            Err(err) => {
+                debug!(%err,"error reading records from leader");
+                return Err(err.into());
+            }
+        };
 
         debug!(
             hw = read_end_offset.hw,
@@ -418,7 +439,10 @@ impl StreamFetchHandler {
                         join_last_record.map(|s| s.inner()),
                     )
                     .map_err(|err| {
-                        IoError::new(ErrorKind::Other, format!("SmartModule err {}", err))
+                        StreamFetchError::Fetch(ErrorCode::Other(format!(
+                            "SmartModule err {}",
+                            err
+                        )))
                     })?;
 
                 self.send_processed_response(
@@ -563,6 +587,23 @@ async fn send_back_error(
     }
 
     Ok(())
+}
+
+enum StreamFetchError {
+    Socket(SocketError),
+    Fetch(ErrorCode),
+}
+
+impl From<SocketError> for StreamFetchError {
+    fn from(err: SocketError) -> Self {
+        StreamFetchError::Socket(err)
+    }
+}
+
+impl From<ErrorCode> for StreamFetchError {
+    fn from(err: ErrorCode) -> Self {
+        StreamFetchError::Fetch(err)
+    }
 }
 
 pub mod publishers {

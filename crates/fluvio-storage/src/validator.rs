@@ -162,7 +162,7 @@ mod tests {
 
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
-    use crate::config::ConfigOption;
+    use crate::config::ReplicaConfig;
     use crate::records::FileRecords;
     use crate::validator::LogValidationError;
 
@@ -175,13 +175,14 @@ mod tests {
         let test_dir = temp_dir().join("validation_empty");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfig {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
-        };
+        }
+        .shared();
 
-        let log_records = MutFileRecords::create(BASE_OFFSET, &options)
+        let log_records = MutFileRecords::create(BASE_OFFSET, options)
             .await
             .expect("open");
         let log_path = log_records.get_path().to_owned();
@@ -198,13 +199,14 @@ mod tests {
         let test_dir = temp_dir().join("validation_success");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfig {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
-        };
+        }
+        .shared();
 
-        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, &options)
+        let mut msg_sink = MutFileRecords::create(BASE_OFFSET, options)
             .await
             .expect("create");
 
@@ -233,13 +235,14 @@ mod tests {
         let test_dir = temp_dir().join("validate_invalid_contents");
         ensure_new_dir(&test_dir).expect("new");
 
-        let options = ConfigOption {
+        let options = ReplicaConfig {
             base_dir: test_dir,
             segment_max_bytes: 1000,
             ..Default::default()
-        };
+        }
+        .shared();
 
-        let mut msg_sink = MutFileRecords::create(OFFSET, &options)
+        let mut msg_sink = MutFileRecords::create(OFFSET, options)
             .await
             .expect("record created");
 

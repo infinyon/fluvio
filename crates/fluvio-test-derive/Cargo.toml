@@ -23,7 +23,7 @@ rand = "0.8.4"
 
 
 [dev-dependencies]
-trybuild = { git = "https://github.com/sehz/trybuild", branch = "check_option" }
+trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
 fluvio = { path = "../fluvio" }
 tokio = { version = "1.4", features = ["macros"] }
 fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }

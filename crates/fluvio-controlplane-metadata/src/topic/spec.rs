@@ -11,6 +11,9 @@ use std::io::{Error, ErrorKind};
 use std::collections::BTreeMap;
 use std::ops::Deref;
 
+use fluvio_types::defaults::{
+    STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
+};
 use tracing::{trace, debug};
 use fluvio_types::{ReplicaMap, SpuId};
 use fluvio_types::{PartitionId, PartitionCount, ReplicationFactor, IgnoreRackAssignment};
@@ -111,6 +114,59 @@ impl TopicSpec {
     pub fn replicas(&self) -> &ReplicaSpec {
         &self.inner.replicas
     }
+
+    pub fn set_cleanup_policy(&mut self, policy: CleanupPolicy) {
+        self.inner.cleanup_policy = Some(policy);
+    }
+
+    pub fn get_clean_policy(&self) -> Option<&CleanupPolicy> {
+        self.inner.cleanup_policy.as_ref()
+    }
+
+    pub fn get_storage(&self) -> Option<&TopicStorageConfig> {
+        self.inner.storage.as_ref()
+    }
+
+    pub fn get_storage_mut(&mut self) -> Option<&mut TopicStorageConfig> {
+        self.inner.storage.as_mut()
+    }
+
+    pub fn set_storage(&mut self, storage: TopicStorageConfig) {
+        self.inner.storage = Some(storage);
+    }
+
+    /// get retention secs that can be displayed
+    pub fn retention_secs(&self) -> u32 {
+        self.get_clean_policy()
+            .map(|policy| policy.retention_secs())
+            .unwrap_or_else(|| STORAGE_RETENTION_SECONDS)
+    }
+
+    /// validate configuration, return string with errors
+    pub fn validate_config(&self) -> Option<String> {
+        if let Some(policy) = self.get_clean_policy() {
+            if policy.retention_secs() < STORAGE_RETENTION_SECONDS_MIN {
+                return Some(format!(
+                    "retention_secs {} is less than minimum {}",
+                    policy.retention_secs(),
+                    STORAGE_RETENTION_SECONDS_MIN
+                ));
+            }
+        }
+
+        if let Some(storage) = self.get_storage() {
+            if let Some(segment_size) = storage.segment_size {
+                if segment_size < SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN {
+                    return Some(format!(
+                        "segment_size {} is less than minimum {}",
+                        segment_size, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN
+                    ));
+                }
+            }
+        }
+
+        None
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Encoder, Decoder)]
@@ -123,6 +179,8 @@ pub(crate) struct TopicSpecInner {
     replicas: ReplicaSpec,
     #[fluvio(min_version = 3)]
     cleanup_policy: Option<CleanupPolicy>,
+    #[fluvio(min_version = 4)]
+    storage: Option<TopicStorageConfig>,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -384,7 +442,10 @@ pub struct TopicReplicaParam {
     pub partitions: PartitionCount,
     #[cfg_attr(feature = "use_serde", serde(default = "default_count"))]
     pub replication_factor: ReplicationFactor,
-    #[cfg_attr(feature = "use_serde", serde(skip_serializing_if = "bool::clone"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(skip_serializing_if = "bool::clone", default)
+    )]
     pub ignore_rack_assignment: IgnoreRackAssignment,
 }
 
@@ -640,6 +701,7 @@ pub struct PartitionMap {
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CleanupPolicy {
+    #[cfg_attr(feature = "use_serde", serde(rename = "segment"))]
     Segment(SegmentBasedPolicy),
 }
 
@@ -649,10 +711,38 @@ impl Default for CleanupPolicy {
     }
 }
 
+impl CleanupPolicy {
+    pub fn retention_secs(&self) -> u32 {
+        match self {
+            CleanupPolicy::Segment(policy) => policy.retention_secs(),
+        }
+    }
+}
+
 #[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
 pub struct SegmentBasedPolicy {
     pub time_in_seconds: u32,
+}
+
+impl SegmentBasedPolicy {
+    pub fn retention_secs(&self) -> u32 {
+        self.time_in_seconds
+    }
+}
+
+#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct TopicStorageConfig {
+    pub segment_size: Option<u32>, // segment size
 }
 
 #[cfg(test)]

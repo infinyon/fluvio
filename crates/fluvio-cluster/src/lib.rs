@@ -32,6 +32,7 @@ mod start;
 mod render;
 mod delete;
 mod error;
+mod progress;
 pub mod runtime;
 
 /// extensions
@@ -46,7 +47,7 @@ pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError}
 pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
 pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
-pub use delete::ClusterUninstaller;
+pub use delete::*;
 pub use fluvio::config as fluvio_config;
 
 pub(crate) const DEFAULT_NAMESPACE: &str = "default";

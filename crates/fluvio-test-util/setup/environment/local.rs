@@ -2,7 +2,7 @@ use async_trait::async_trait;
 
 use crate::tls::load_tls;
 use crate::test_meta::environment::{EnvironmentSetup, EnvDetail};
-use fluvio_cluster::{ClusterUninstaller, LocalConfig, LocalInstaller, StartStatus};
+use fluvio_cluster::{LocalConfig, LocalInstaller, StartStatus, ClusterUninstallConfig};
 
 use super::EnvironmentDriver;
 
@@ -54,8 +54,12 @@ impl LocalEnvDriver {
 impl EnvironmentDriver for LocalEnvDriver {
     /// remove cluster
     async fn remove_cluster(&self) {
-        let uninstaller = ClusterUninstaller::new().build().unwrap();
-        uninstaller.uninstall_local().await.unwrap();
+        let uninstaller = ClusterUninstallConfig::builder()
+            .build()
+            .expect("uninstall builder")
+            .uninstaller()
+            .expect("uninstaller");
+        uninstaller.uninstall().await.expect("uninstall");
     }
 
     async fn start_cluster(&self) -> StartStatus {

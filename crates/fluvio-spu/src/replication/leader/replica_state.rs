@@ -15,7 +15,7 @@ use dataplane::{record::RecordSet};
 use dataplane::{Offset, Isolation, ReplicaKey};
 use fluvio_controlplane_metadata::partition::{Replica};
 use fluvio_controlplane::LrsRequest;
-use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo};
+use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{SpuId};
 
 use crate::{
@@ -128,10 +128,11 @@ where
     ) -> Result<LeaderReplicaState<S>, StorageError>
     where
         ReplicationConfig: From<&'a C>,
-        S::Config: From<&'a C>,
+        S::ReplicaConfig: From<&'a C>,
     {
-        let inner = SharableReplicaStorage::create(replica.id.clone(), config.into()).await?;
-
+        let mut replica_config: S::ReplicaConfig = config.into();
+        replica_config.update_from_replica(&replica);
+        let inner = SharableReplicaStorage::create(replica.id.clone(), replica_config).await?;
         let leader_replica = Self::new(replica, config.into(), status_update, inner);
         leader_replica.update_status().await;
         Ok(leader_replica)
@@ -233,21 +234,28 @@ where
 
                 // if this follower's leo is less than leader's leo then send diff
                 if follower_info.leo < leader_offset.leo {
-                    let offset = self
-                        .read_records(
-                            follower_info.leo,
-                            max_bytes,
-                            Isolation::ReadUncommitted,
-                            &mut partition_response,
-                        )
-                        .await;
-                    debug!(
-                        hw = offset.hw,
-                        leo = offset.leo,
-                        replica = %self.id(),
-                        len = partition_response.records.len(),
-                        "read records"
-                    );
+                    match self
+                        .read_records(follower_info.leo, max_bytes, Isolation::ReadUncommitted)
+                        .await
+                    {
+                        Ok(slice) => {
+                            debug!(
+                                hw = slice.end.hw,
+                                leo = slice.end.leo,
+                                replica = %self.id(),
+                                "read records"
+                            );
+                            partition_response.hw = slice.end.hw;
+                            partition_response.leo = slice.end.leo;
+                            if let Some(file_slice) = slice.file_slice {
+                                partition_response.records = file_slice.into();
+                            }
+                        }
+                        Err(err) => {
+                            error!(%err, "error reading records");
+                            partition_response.error = err;
+                        }
+                    }
                 } else {
                     // only hw need to be updated
                     debug!(
@@ -301,15 +309,16 @@ where
         &self,
         records: &mut RecordSet,
         notifiers: &FollowerNotifier,
-    ) -> Result<(), StorageError> {
-        self.storage
+    ) -> Result<i64, StorageError> {
+        let base_offset = self
+            .storage
             .write_record_set(records, self.in_sync_replica == 1)
             .await?;
 
         self.notify_followers(notifiers).await;
         self.update_status().await;
 
-        Ok(())
+        Ok(base_offset)
     }
 
     async fn notify_followers(&self, notifier: &FollowerNotifier) {
@@ -670,8 +679,8 @@ mod test_leader {
     use async_trait::async_trait;
 
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
-    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo};
-    use dataplane::Offset;
+    use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo, ReplicaSlice};
+    use dataplane::{Offset, ErrorCode};
     use dataplane::fixture::{create_recordset};
 
     use crate::{
@@ -686,7 +695,9 @@ mod test_leader {
     #[derive(Default)]
     struct MockConfig {}
 
-    impl ReplicaStorageConfig for MockConfig {}
+    impl ReplicaStorageConfig for MockConfig {
+        fn update_from_replica(&mut self, _replica: &Replica) {}
+    }
 
     #[derive(Default)]
     struct MockStorage {
@@ -703,7 +714,7 @@ mod test_leader {
     impl ReplicaStorage for MockStorage {
         async fn create_or_load(
             _replica: &dataplane::ReplicaKey,
-            _config: Self::Config,
+            _config: Self::ReplicaConfig,
         ) -> Result<Self, fluvio_storage::StorageError> {
             Ok(MockStorage {
                 pos: OffsetInfo { leo: 0, hw: 0 },
@@ -718,17 +729,16 @@ mod test_leader {
             self.pos.leo
         }
 
-        async fn read_partition_slice<P>(
+        async fn read_partition_slice(
             &self,
             offset: Offset,
             _max_len: u32,
             _isolation: dataplane::Isolation,
-            _partition_response: &mut P,
-        ) -> OffsetInfo
-        where
-            P: fluvio_storage::SlicePartitionResponse + Send,
-        {
-            OffsetInfo { leo: offset, hw: 0 }
+        ) -> Result<ReplicaSlice, ErrorCode> {
+            Ok(ReplicaSlice {
+                end: OffsetInfo { leo: offset, hw: 0 },
+                ..Default::default()
+            })
         }
 
         // do dummy implementations of write
@@ -752,7 +762,7 @@ mod test_leader {
             Ok(true)
         }
 
-        type Config = MockConfig;
+        type ReplicaConfig = MockConfig;
 
         fn get_log_start_offset(&self) -> Offset {
             todo!()

@@ -7,6 +7,8 @@
 use fluvio_types::SpuId;
 use dataplane::core::{Encoder, Decoder};
 
+use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec};
+
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
 /// one of replica is leader which is duplicated in the leader field
@@ -19,11 +21,31 @@ use dataplane::core::{Encoder, Decoder};
 pub struct PartitionSpec {
     pub leader: SpuId,
     pub replicas: Vec<SpuId>,
+    #[fluvio(min_version = 4)]
+    pub cleanup_policy: Option<CleanupPolicy>,
+    #[fluvio(min_version = 4)]
+    pub storage: Option<TopicStorageConfig>,
 }
 
 impl PartitionSpec {
     pub fn new(leader: SpuId, replicas: Vec<SpuId>) -> Self {
-        Self { leader, replicas }
+        Self {
+            leader,
+            replicas,
+            ..Default::default()
+        }
+    }
+
+    /// Create new partition spec from replica mapping with topic spec. This assume first replica is leader
+    pub fn from_replicas(replicas: Vec<i32>, topic: &TopicSpec) -> Self {
+        let leader = if replicas.is_empty() { 0 } else { replicas[0] };
+
+        Self {
+            leader,
+            replicas,
+            cleanup_policy: topic.get_clean_policy().cloned(),
+            storage: topic.get_storage().cloned(),
+        }
     }
 
     pub fn has_spu(&self, spu: &SpuId) -> bool {
@@ -47,4 +69,10 @@ impl From<Vec<i32>> for PartitionSpec {
             Self::new(0, replicas)
         }
     }
+}
+
+/// Setting applied to a replica
+#[derive(Decoder, Encoder, Debug, PartialEq, Clone, Default)]
+pub struct PartitionConfig {
+    pub retention_time_seconds: Option<u32>,
 }

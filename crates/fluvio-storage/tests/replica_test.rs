@@ -10,7 +10,6 @@ use futures_lite::future::zip;
 use fluvio_future::timer::sleep;
 use fluvio_future::net::TcpListener;
 use dataplane::{
-    ErrorCode,
     fetch::{
         FetchPartition, FetchableTopic, DefaultFetchRequest, FileFetchResponse, FileFetchRequest,
         FilePartitionResponse, FileTopicResponse,
@@ -25,14 +24,15 @@ use dataplane::fixture::BatchProducer;
 use fluvio_socket::{FluvioSocket, SocketError};
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_storage::{StorageError, ReplicaStorage, FileReplica};
-use fluvio_storage::config::ConfigOption;
+use fluvio_storage::config::ReplicaConfig;
+use fluvio_storage::fixture::storage_config;
 
 const TEST_REP_DIR: &str = "testreplica-fetch";
 const START_OFFSET: Offset = 0;
 const TOPIC_NAME: &str = "testsimple";
 
-fn default_option() -> ConfigOption {
-    ConfigOption {
+fn default_option() -> ReplicaConfig {
+    ReplicaConfig {
         segment_max_bytes: 10000,
         base_dir: temp_dir().join(TEST_REP_DIR),
         index_max_interval_bytes: 1000,
@@ -62,9 +62,10 @@ async fn setup_replica() -> Result<FileReplica, StorageError> {
 
     ensure_clean_dir(&option.base_dir);
 
-    let mut replica = FileReplica::create_or_load(TOPIC_NAME, 0, START_OFFSET, option)
-        .await
-        .expect("test replica");
+    let mut replica =
+        FileReplica::create_or_load(TOPIC_NAME, 0, START_OFFSET, option, storage_config())
+            .await
+            .expect("test replica");
     replica
         .write_recordset(&mut create_records(2), false)
         .await
@@ -96,17 +97,20 @@ async fn handle_response(socket: &mut FluvioSocket, replica: &FileReplica) {
     let mut topic_response = FileTopicResponse::default();
     let mut part_response = FilePartitionResponse::default();
     // log contains 182 bytes total
-    replica
+    let slice = replica
         .read_partition_slice(
             fetch_offset,
             FileReplica::PREFER_MAX_LEN,
             dataplane::Isolation::ReadUncommitted,
-            &mut part_response,
         )
-        .await;
-    debug!("response: {:#?}", part_response);
-    assert_eq!(part_response.partition_index, 0);
-    assert_eq!(part_response.error_code, ErrorCode::None);
+        .await
+        .expect("read");
+    debug!("response: {:#?}", slice);
+
+    part_response.partition_index = 0;
+    if let Some(file_slice) = slice.file_slice {
+        part_response.records = file_slice.into();
+    }
 
     // assert_eq!(part)
     topic_response.partitions.push(part_response);

@@ -3,13 +3,14 @@ use std::fmt::Debug;
 use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
+use fluvio_storage::config::ReplicaConfig;
 use tracing::{debug, warn, instrument};
 use async_rwlock::{RwLock};
 
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaKey};
 use dataplane::record::RecordSet;
 use dataplane::Offset;
-use fluvio_storage::{FileReplica, StorageError, ReplicaStorage};
+use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, ReplicaStorageConfig};
 use fluvio_types::SpuId;
 use crate::replication::leader::ReplicaOffsetRequest;
 use crate::core::{FileGlobalContext};
@@ -90,8 +91,11 @@ impl FollowersState<FileReplica> {
                     "creating new follower state"
                 );
 
+                let mut replica_config: ReplicaConfig = ctx.config().into();
+                replica_config.update_from_replica(&replica);
+
                 let replica_state =
-                    FollowerReplicaState::create(leader, replica.id, ctx.config().into()).await?;
+                    FollowerReplicaState::create(leader, replica.id, replica_config).await?;
 
                 entry.insert(replica_state.clone());
                 self.groups.check_new(ctx, leader).await;
@@ -173,10 +177,10 @@ where
     pub async fn create(
         leader: SpuId,
         replica_key: ReplicaKey,
-        config: S::Config,
+        config: S::ReplicaConfig,
     ) -> Result<Self, StorageError>
     where
-        S::Config: Display,
+        S::ReplicaConfig: Display,
     {
         debug!(
             %replica_key,
@@ -275,7 +279,7 @@ mod follower_tests {
 
     use flv_util::fixture::ensure_clean_dir;
     use fluvio_types::SpuId;
-    use fluvio_storage::config::ConfigOption;
+    use fluvio_storage::config::ReplicaConfig;
 
     use super::*;
 
@@ -288,7 +292,7 @@ mod follower_tests {
         let test_path = "/tmp/follower_init";
         ensure_clean_dir(test_path);
 
-        let config = ConfigOption {
+        let config = ReplicaConfig {
             base_dir: PathBuf::from(test_path).join("spu-5002"),
             ..Default::default()
         };

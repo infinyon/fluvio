@@ -30,6 +30,14 @@ pub const SPU_LOG_INDEX_MAX_BYTES: u32 = 10485760;
 pub const SPU_LOG_INDEX_MAX_INTERVAL_BYTES: u32 = 4096;
 pub const SPU_LOG_SEGMENT_MAX_BYTES: u32 = 1073741824;
 
+pub const SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN: u32 = 1024; // crd
+pub const STORAGE_RETENTION_SECONDS: u32 = 7 * 24 * 3600;
+
+pub const STORAGE_RETENTION_SECONDS_MIN: u32 = 10; // crd
+pub const STORAGE_FLUSH_WRITE_COUNT: u32 = 1;
+pub const STORAGE_FLUSH_IDLE_MSEC: u32 = 0;
+pub const STORAGE_MAX_BATCH_SIZE: u32 = 1048588;
+
 // CLI config
 pub const CLI_PROFILES_DIR: &str = "profiles";
 pub const CLI_DEFAULT_PROFILE: &str = "default";

@@ -136,9 +136,14 @@ spec:
                       properties:
                         timeInSeconds:
                           type: integer
-                          minimum: 3600
-                
-      
+                          minimum: 10
+                storage:
+                  type: object
+                  properties:
+                    segmentSize:
+                      type: integer
+                      minimum: 1024               
+
       subresources:
           status: {}
       additionalPrinterColumns:
@@ -150,6 +155,10 @@ spec:
             type: integer
             description: Replication Count
             jsonPath: .spec.replica.managed.replicationFactor
+          - name: Retention(secs)
+            type: integer
+            description: Retention hours
+            jsonPath: .spec.cleanupPolicy.segment.timeInSeconds
           - name: Status
             type: string
             description: Topic Status

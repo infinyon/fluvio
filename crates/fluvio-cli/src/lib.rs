@@ -110,12 +110,8 @@ mod root {
         #[structopt(name = "profile")]
         Profile(ProfileOpt),
 
-        /// Install or uninstall Fluvio clusters
+        /// Install or uninstall Fluvio cluster
         ///
-        /// If you are not using Fluvio Cloud, you may wish to install your own Fluvio
-        /// cluster, running either directly on your computer (local), or hosted inside
-        /// of a Minikube kubernetes environment. These cluster commands will help you
-        /// to set up these types of installations.
         #[cfg(feature = "k8s")]
         #[structopt(name = "cluster")]
         Cluster(Box<ClusterCmd>),

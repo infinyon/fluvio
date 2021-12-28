@@ -1,6 +1,11 @@
 # Release Notes
 
 ## Platform Version 0.9.16 - UNRELEASED
+* Consume with end ([#1940](https://github.com/infinyon/fluvio/issues/1940))
+* Return base offset in partition produce response ([#2025](https://github.com/infinyon/fluvio/issues/2025))
+* Simple Topic Retention with time ([#2019](https://github.com/infinyon/fluvio/issues/2019))
+* Uninstall sys chart when cluster is deleted ([#2032](https://github.com/infinyon/fluvio/issues/2032))
+* Upgrade Wasmtime 0.32 ([#2038](https://github.com/infinyon/fluvio/pull/2038))
 
 ## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))

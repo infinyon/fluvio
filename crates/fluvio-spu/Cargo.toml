@@ -81,3 +81,4 @@ dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane
 ] }
 serde_json = "1"
 flate2 = "1.0.22"
+portpicker = "0.1.1"
