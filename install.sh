@@ -5,9 +5,15 @@ set -e
 set -u
 set -o pipefail
 
-# Note: The test prefix is: 'https://packages.fluvio.io/test'
+
+readonly TEST="${TEST:-false}"
+if [ "$TEST" = "true" ]; then
+    export FLUVIO_PREFIX="https://packages.fluvio.io/test"
+    echo "Sourcing packages from test repo: ${FLUVIO_PREFIX}"
+fi
+
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
-readonly FLUVIO_PREFIX="${FLUVIO_PREFIX:-'https://packages.fluvio.io/v1'}"
+readonly FLUVIO_PREFIX="${FLUVIO_PREFIX:-"https://packages.fluvio.io/v1"}"
 readonly FLUVIO_TAG_STABLE="stable"
 readonly FLUVIO_PACKAGE="fluvio/fluvio"
 readonly FLUVIO_FRONTEND_PACKAGE="fluvio/fluvio-channel"
@@ -488,7 +494,7 @@ main() {
     # Otherwise, use the value from ${_version}
 
     if [[ "${VERSION}" == "stable" ]] || [[ "${VERSION}" == "latest" ]] ; then
-        say "DEBUG: Using stable or latest"
+        #say "DEBUG: Using stable or latest"
         _use_tag_file_name="true"
     else
         _use_tag_file_name="false"
