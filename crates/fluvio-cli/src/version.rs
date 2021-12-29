@@ -6,25 +6,14 @@ use fluvio::config::ConfigFile;
 use fluvio_extension_common::target::ClusterTarget;
 use crate::Result;
 use crate::metadata::subcommand_metadata;
-
-//use fluvio_channel::cli::switch::SwitchOpt;
-//use fluvio_channel::cli::list::ListOpt;
-//use fluvio_channel::cli::create::CreateOpt;
-//use fluvio_channel::cli::delete::DeleteOpt;
+use crate::FLUVIO_RELEASE_CHANNEL;
 
 #[derive(Debug, StructOpt)]
-pub struct VersionOpt {
-    //#[structopt(subcommand)]
-//pub cmd: Option<VersionCmd>,
-}
+pub struct VersionOpt {}
 
 impl VersionOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
         CurrentOpt {}.process(target).await
-        //    match self.cmd {
-        //        Some(cmd) => cmd.process(target).await,
-        //        None => CurrentOpt {}.process(target).await,
-        //    }
     }
 }
 
@@ -34,7 +23,9 @@ pub struct CurrentOpt {}
 impl CurrentOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
         // IF FLUVIO_RELEASE_CHANNEL defined
-        //self.print("Release Channel", &current_channel());
+        if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+            self.print("Release Channel", &channel_name);
+        };
 
         self.print("Fluvio CLI", crate::VERSION.trim());
 
@@ -114,32 +105,6 @@ impl CurrentOpt {
         Some(formats)
     }
 }
-
-//#[derive(Debug, StructOpt, Clone)]
-//pub enum VersionCmd {
-//    #[structopt(name = "show", setting(structopt::clap::AppSettings::Hidden))]
-//    DisplayVersion(CurrentOpt),
-//    #[structopt(name = "switch")]
-//    Switch(SwitchOpt),
-//    #[structopt(name = "list")]
-//    List(ListOpt),
-//    #[structopt(name = "create")]
-//    Create(CreateOpt),
-//    #[structopt(name = "delete")]
-//    Delete(DeleteOpt),
-//}
-//
-//impl VersionCmd {
-//    pub async fn process(self, target: ClusterTarget) -> Result<()> {
-//        match self {
-//            VersionCmd::DisplayVersion(version) => version.process(target).await,
-//            VersionCmd::Switch(switch) => switch.process().await,
-//            VersionCmd::List(list) => list.process().await,
-//            VersionCmd::Create(create) => create.process().await,
-//            VersionCmd::Delete(delete) => delete.process().await,
-//        }
-//    }
-//}
 
 /// Fetch OS information
 fn os_info() -> Option<String> {

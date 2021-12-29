@@ -54,7 +54,6 @@ impl Root {
     }
 }
 
-
 #[derive(Debug, PartialEq, StructOpt)]
 struct ChannelOpt {
     #[structopt(subcommand)]
@@ -129,11 +128,9 @@ fn main() -> Result<()> {
     // If we're not in the fluvio directory then
     // assume dev mode (i.e., do not exec to other binaries)
     let is_frontend = if let Some(file) = current_exe.file_name() {
-        let env_var_set = if let Some(frontend) = std::env::var(FLUVIO_FRONTEND).ok() {
-            Some(bool::from_str(&frontend).unwrap_or(false))
-        } else {
-            None
-        };
+        let env_var_set = std::env::var(FLUVIO_FRONTEND)
+            .ok()
+            .map(|frontend| bool::from_str(&frontend).unwrap_or(false));
 
         if let Some(env_var) = env_var_set {
             if env_var {

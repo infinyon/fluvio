@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
-use crate::{Result, CliError};
+use crate::{Result, CliError, FLUVIO_EXTENSIONS_DIR};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 
 pub mod update;
@@ -35,15 +35,17 @@ fn fluvio_base_dir_create(path: PathBuf) -> Result<PathBuf> {
 
 pub(crate) fn fluvio_extensions_dir() -> Result<PathBuf> {
     // Check if FLUVIO_EXTENSIONS_DIR exists for extensions location
+    if let Ok(dir_path) = std::env::var(FLUVIO_EXTENSIONS_DIR) {
+        Ok(dir_path.into())
+    } else {
+        let base_dir = fluvio_base_dir()?;
+        let path = base_dir.join("extensions");
 
-    // else
-    let base_dir = fluvio_base_dir()?;
-    let path = base_dir.join("extensions");
-
-    if !path.exists() {
-        std::fs::create_dir(&path)?;
+        if !path.exists() {
+            std::fs::create_dir(&path)?;
+        }
+        Ok(path)
     }
-    Ok(path)
 }
 
 pub(crate) fn get_extensions() -> Result<Vec<PathBuf>> {

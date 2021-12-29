@@ -14,7 +14,6 @@ use structopt::StructOpt;
 use structopt::clap::arg_enum;
 use dirs::home_dir;
 use serde::{Serialize, Deserialize};
-use toml;
 use tracing::debug;
 use semver::Version;
 use cfg_if::cfg_if;
