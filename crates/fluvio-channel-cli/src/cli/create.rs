@@ -32,7 +32,7 @@ impl CreateOpt {
         if self.help {
             let _ = CreateOpt::clap().print_help();
             println!();
-            return Ok(())
+            return Ok(());
         }
         // Load in the config file
         // Parse with the CLI Config parser

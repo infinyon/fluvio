@@ -24,7 +24,7 @@ impl SwitchOpt {
         if self.help {
             let _ = SwitchOpt::clap().print_help();
             println!();
-            return Ok(())
+            return Ok(());
         }
 
         // Load in the config file

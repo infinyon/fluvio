@@ -21,7 +21,7 @@ impl DeleteOpt {
         if self.help {
             let _ = DeleteOpt::clap().print_help();
             println!();
-            return Ok(())
+            return Ok(());
         }
         // Open config file
 

@@ -21,6 +21,7 @@ use cfg_if::cfg_if;
 //use fluvio_cli::install::{fetch_latest_version, fetch_package_file, install_bin, install_println};
 
 //use fluvio_index::{PackageId, HttpAgent};
+use fluvio_cli::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
 use fluvio_channel_cli::cli::create::CreateOpt;
 use fluvio_channel_cli::cli::delete::DeleteOpt;
@@ -307,6 +308,14 @@ fn main() -> Result<()> {
             FluvioChannelInfo::dev_channel(),
         )
     };
+
+    // Set env vars
+    env::set_var(FLUVIO_RELEASE_CHANNEL, channel_name.clone());
+    env::set_var(FLUVIO_EXTENSIONS_DIR, channel.extensions.clone());
+    env::set_var(
+        FLUVIO_IMAGE_TAG_STRATEGY,
+        channel.image_tag_strategy.to_string(),
+    );
 
     // On windows, this path should end in `.exe`
     let exe = channel.get_binary_path();

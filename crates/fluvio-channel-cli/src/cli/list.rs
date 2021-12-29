@@ -15,11 +15,10 @@ pub struct ListOpt {
 
 impl ListOpt {
     pub async fn process(&self) -> Result<()> {
-
         if self.help {
             let _ = ListOpt::clap().print_help();
             println!();
-            return Ok(())
+            return Ok(());
         }
 
         // Open config file
