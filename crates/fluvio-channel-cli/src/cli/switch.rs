@@ -13,7 +13,7 @@ use tracing::debug;
 pub struct SwitchOpt {
     /// Name of release channel
     channel: Option<String>,
-    
+
     /// Path to alternate channel config
     #[structopt(long)]
     config: Option<PathBuf>,
