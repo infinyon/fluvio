@@ -28,13 +28,14 @@ use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
 use fluvio_command::CommandExt;
 
-use crate::check::{CheckResults, AlreadyInstalled, SysChartCheck};
+use crate::check::ClusterCheckError;
+use crate::check::{AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
 use crate::render::ProgressRenderer;
 use crate::start::common::check_crd;
 use crate::tls_config_to_cert_paths;
-use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
+use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, ClusterChecker};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::UserChartLocation;
 use crate::progress::{InstallProgressMessage, create_progress_indicator};
@@ -593,7 +594,7 @@ impl ClusterInstaller {
     ///
     /// [`system_chart`]: ./struct.ClusterInstaller.html#method.system_chart
     #[instrument(skip(self))]
-    pub async fn preflight_check(&self, fix: bool) -> Result<(), K8InstallError> {
+    pub async fn preflight_check(&self, fix: bool) -> Result<(), ClusterCheckError> {
         const DISPATCHER_WAIT: &str = "FLV_DISPATCHER_WAIT";
 
         // HACK. set FLV_DISPATCHER if not set
@@ -639,17 +640,11 @@ impl ClusterInstaller {
         fields(namespace = &*self.config.namespace),
     )]
     pub async fn install_fluvio(&self) -> Result<StartStatus, K8InstallError> {
-        let mut installed = false;
         if !self.config.skip_checks {
-            self.setup(true).await?;
+            self.preflight_check(true).await?;
         }
 
-        if !installed {
-            self.install_app().await?;
-        } else {
-            self.pb
-                .println(InstallProgressMessage::AlreadyInstalled.msg())
-        }
+        self.install_app().await?;
 
         let namespace = &self.config.namespace;
 

@@ -250,7 +250,7 @@ impl CheckSuggestion for UnrecoverableCheckStatus {
 
 /// Fluvio Cluster component
 #[derive(Debug, Hash, PartialEq, Eq)]
-pub(crate) enum FluvioClusterComponent {
+pub enum FluvioClusterComponent {
     Kubectl,
     Helm,
     Kubernetes,
@@ -307,7 +307,7 @@ impl ClusterCheck for LoadableConfig {
         };
 
         match context.config.current_cluster() {
-            Some(context) => Ok(CheckStatus::pass_with(
+            Some(_ctx) => Ok(CheckStatus::pass_with(
                 "Active Kubernetes context found",
                 FluvioClusterComponent::Kubernetes,
             )),
@@ -446,7 +446,7 @@ impl SysChartCheck {
 impl ClusterCheck for SysChartCheck {
     /// Check that the system chart is installed
     /// This uses whatever namespace it is being called
-    async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
+    async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
         debug!("performing sys chart check");
 
         let helm = HelmClient::new()?;
@@ -472,7 +472,7 @@ impl ClusterCheck for SysChartCheck {
             } else {
                 Ok(CheckStatus::AutoFixableError(Box::new(UpgradeSysChart {
                     config: self.config.clone(),
-                    platform_version: self.platform_version,
+                    platform_version: self.platform_version.clone(),
                 })))
             }
         }
@@ -539,7 +539,7 @@ pub(crate) struct AlreadyInstalled;
 #[async_trait]
 impl ClusterCheck for AlreadyInstalled {
     /// Checks that Fluvio is not already installed
-    async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
+    async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
         let helm = HelmClient::new()?;
         let app_charts = helm.get_installed_chart_by_name(APP_CHART_NAME, None)?;
         if !app_charts.is_empty() {
@@ -616,11 +616,11 @@ struct LocalClusterCheck;
 
 #[async_trait]
 impl ClusterCheck for LocalClusterCheck {
-    async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
+    async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
         println!("performing local cluster check");
         match Command::new("pgrep").arg("fluvio").output() {
             Ok(_) => Ok(CheckStatus::pass("No Local cluster exists")),
-            Err(err) => Ok(CheckStatus::Unrecoverable(
+            Err(_err) => Ok(CheckStatus::Unrecoverable(
                 UnrecoverableCheckStatus::ExistingLocalCluster,
             )),
         }
@@ -741,22 +741,28 @@ impl ClusterChecker {
             {
                 match check.perform_check(&pb).await? {
                     CheckStatus::AutoFixableError(fixable_error) => {
-                        match fixable_error.attempt_fix(pb).await {
-                            Ok(status) => {
-                                pb.println(format!("Fixed: {}", status));
-                                passed = true;
+                        if fix {
+                            match fixable_error.attempt_fix(pb).await {
+                                Ok(status) => {
+                                    pb.println(format!("Fixed: {}", status));
+                                    passed = true;
+                                }
+                                Err(err) => {
+                                    // If the fix failed, wrap the original failed check in Unrecoverable
+                                    pb.println(format!("Auto fix failed: {:#?}", err));
+                                    failed = true;
+                                }
                             }
-                            Err(err) => {
-                                // If the fix failed, wrap the original failed check in Unrecoverable
-                                pb.println(format!("Auto fix failed: {:#?}", err));
-                                failed = true;
-                            }
+                        } else {
+                            failed = true;
                         }
                     }
                     CheckStatus::Pass { status, component } => {
                         passed = true;
+                        let _ = status;
+                        let _ = component;
                     }
-                    CheckStatus::Unrecoverable(err) => {}
+                    CheckStatus::Unrecoverable(_err) => {}
                 }
             } else {
                 pb.println("skipping check because required components are not met");

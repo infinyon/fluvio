@@ -46,7 +46,7 @@ pub use start::local::{LocalInstaller, LocalConfig, LocalConfigBuilder};
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
-pub use check::{RecoverableCheck, UnrecoverableCheckStatus, CheckFailed, CheckSuggestion};
+pub use check::{RecoverableCheck, UnrecoverableCheckStatus, CheckSuggestion};
 pub use delete::*;
 pub use fluvio::config as fluvio_config;
 
@@ -60,8 +60,6 @@ mod common {
     use std::io::Error as IoError;
 
     use fluvio::config::{TlsPaths, TlsConfig};
-
-    use super::CheckStatuses;
 
     /// The result of a successful startup of a Fluvio cluster
     ///

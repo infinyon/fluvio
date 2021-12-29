@@ -3,6 +3,7 @@ use std::io::Error as IoError;
 use fluvio::FluvioError;
 use fluvio_extension_common::output::OutputError;
 use fluvio_extension_common::target::TargetError;
+use crate::check::ClusterCheckError;
 use crate::{LocalInstallError};
 use crate::ClusterError;
 
@@ -27,6 +28,8 @@ pub enum ClusterCliError {
     /// Another type of error
     #[error("Unknown error: {0}")]
     Other(String),
+    #[error(transparent)]
+    ClusterCheckError(#[from] ClusterCheckError),
 }
 
 impl ClusterCliError {

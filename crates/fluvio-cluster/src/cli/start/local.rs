@@ -3,8 +3,9 @@ use semver::Version;
 
 use fluvio::config::TlsPolicy;
 
+use crate::check::ClusterCheckError;
 use crate::cli::ClusterCliError;
-use crate::{LocalInstaller, ClusterError, LocalInstallError, StartStatus, LocalConfig};
+use crate::{LocalInstaller, LocalConfig, LocalInstallError};
 
 use super::StartOpt;
 
@@ -54,13 +55,13 @@ pub async fn process_local(
     Ok(())
 }
 
-pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
+pub async fn install_local(installer: &LocalInstaller) -> Result<(), LocalInstallError> {
     installer.install().await?;
     Ok(())
 }
 
-pub async fn setup_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
-    let check_results = installer.preflight_check().await;
-    render_results_next_steps(&check_results);
+pub async fn setup_local(installer: &LocalInstaller) -> Result<(), ClusterCheckError> {
+    installer.preflight_check(false).await?;
+
     Ok(())
 }

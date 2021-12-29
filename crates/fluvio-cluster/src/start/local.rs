@@ -17,12 +17,9 @@ use k8_types::{InputK8Obj, InputObjectMeta};
 use k8_client::SharedK8Client;
 
 use crate::render::{ProgressRenderedText, ProgressRenderer};
-use crate::{
-    ClusterChecker, ClusterError, K8InstallError, LocalInstallError, StartStatus, UserChartLocation,
-};
+use crate::{ClusterChecker, LocalInstallError, StartStatus, UserChartLocation};
 use crate::charts::{ChartConfig};
-use crate::check::{CheckResults, SysChartCheck};
-use crate::check::render::render_check_progress_with_indicator;
+use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
 use crate::progress::{InstallProgressMessage, create_progress_indicator};
 
@@ -239,7 +236,7 @@ impl LocalConfigBuilder {
     /// # }
     /// ```
     ///
-    pub fn build(&self) -> Result<LocalConfig, ClusterError> {
+    pub fn build(&self) -> Result<LocalConfig, LocalInstallError> {
         let config = self
             .build_impl()
             .map_err(|err| LocalInstallError::MissingRequiredConfig(err.to_string()))?;
@@ -374,7 +371,7 @@ impl LocalInstaller {
 
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
-    pub async fn preflight_check(&self, fix: bool) -> Result<(), LocalInstallError> {
+    pub async fn preflight_check(&self, fix: bool) -> Result<(), ClusterCheckError> {
         let mut sys_config: ChartConfig = ChartConfig::sys_builder()
             .version(self.config.chart_version.clone())
             .build()
@@ -399,37 +396,15 @@ impl LocalInstaller {
 
     /// Install fluvio locally
     #[instrument(skip(self))]
-    pub async fn install(&self) -> Result<StartStatus, ClusterError> {
-        let checks = match self.config.skip_checks {
-            true => None,
-            false => {
-                self.preflight_check(true).await?;
-
-                // If any check results encountered an error, bubble the error
-                if check_results.iter().any(|it| it.is_err()) {
-                    return Err(LocalInstallError::PrecheckErrored(check_results).into());
-                }
-
-                // If any checks successfully completed with a failure, return checks in status
-                let statuses: Vec<_> = check_results.into_iter().filter_map(|it| it.ok()).collect();
-
-                let any_failed = statuses
-                    .iter()
-                    .any(|it| matches!(it, crate::CheckStatus::Fail(_)));
-                if any_failed {
-                    return Err(LocalInstallError::FailedPrecheck(statuses).into());
-                }
-
-                Some(statuses)
-            }
+    pub async fn install(&self) -> Result<StartStatus, LocalInstallError> {
+        if !self.config.skip_checks {
+            self.preflight_check(true).await?;
         };
         use k8_client::load_and_share;
-        let client = load_and_share().map_err(K8InstallError::from)?;
+        let client = load_and_share()?;
 
         // before we do let's try make sure SPU are installed.
-        check_crd(client.clone())
-            .await
-            .map_err(K8InstallError::from)?;
+        check_crd(client.clone()).await?;
 
         debug!("using log dir: {}", self.config.log_dir.display());
         if !self.config.log_dir.exists() {
@@ -439,7 +414,7 @@ impl LocalInstaller {
         Command::new("sync")
             .inherit()
             .result()
-            .map_err(|e| ClusterError::InstallLocal(e.into()))?;
+            .map_err(|e| LocalInstallError::Other(format!("sync issue: {:#?}", e)))?;
 
         // set host name and port for SC
         // this should mirror K8
@@ -459,11 +434,7 @@ impl LocalInstaller {
 
         self.pb.println(InstallProgressMessage::Success.msg());
 
-        Ok(StartStatus {
-            address,
-            port,
-            checks,
-        })
+        Ok(StartStatus { address, port })
     }
 
     /// Launches an SC on the local machine
