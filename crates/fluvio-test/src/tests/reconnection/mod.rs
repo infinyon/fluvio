@@ -53,14 +53,14 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
     // first a create simple message
     let topic_name = test_case.environment.topic_name();
     let producer = test_driver.create_producer(&topic_name).await;
+    println!("sending first record");
 
     producer
         .send(RecordKey::NULL, "msg1")
         .await
         .expect("sending");
 
-    // this is hack now, because we don't have ack
-    sleep(Duration::from_secs(ACK_WAIT)).await;
+    producer.flush().await.expect("flushing");
 
     let admin = test_driver.client().admin().await;
 
@@ -92,13 +92,16 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
 
     sleep(Duration::from_secs(ACK_WAIT)).await;
 
+    producer.clear_errors().await;
+
+    println!("sending second record");
     // Use the same producer
     producer
         .send(RecordKey::NULL, "msg2")
         .await
         .expect("sending");
 
-    sleep(Duration::from_secs(ACK_WAIT)).await;
+    producer.flush().await.expect("flushing");
 
     let consumer = test_driver.get_consumer(&topic_name, 0).await;
     let mut stream = consumer

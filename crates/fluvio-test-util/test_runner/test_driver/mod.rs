@@ -6,6 +6,7 @@ use fluvio::{Fluvio, FluvioError};
 
 use fluvio::metadata::topic::TopicSpec;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
+use fluvio::TopicProducerConfig;
 
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
@@ -66,11 +67,18 @@ impl TestDriver {
         self.cluster.as_ref()
     }
 
-    // Wrapper to getting a producer. We keep track of the number of producers we create
-    pub async fn create_producer(&self, topic: &str) -> TopicProducer {
+    // Wrapper to getting a producer with config
+    pub async fn create_producer_with_config(
+        &self,
+        topic: &str,
+        config: TopicProducerConfig,
+    ) -> TopicProducer {
         debug!(topic, "creating producer");
         let fluvio_client = self.create_client().await.expect("cant' create client");
-        match fluvio_client.topic_producer(topic).await {
+        match fluvio_client
+            .topic_producer_with_config(topic, config)
+            .await
+        {
             Ok(client) => {
                 //self.producer_num += 1;
                 client
@@ -79,6 +87,12 @@ impl TestDriver {
                 panic!("could not create producer: {:#?}", err);
             }
         }
+    }
+
+    // Wrapper to getting a producer. We keep track of the number of producers we create
+    pub async fn create_producer(&self, topic: &str) -> TopicProducer {
+        self.create_producer_with_config(topic, Default::default())
+            .await
     }
 
     // Wrapper to producer send. We measure the latency and accumulation of message payloads sent.
@@ -107,7 +121,8 @@ impl TestDriver {
 
         //self.producer_bytes += message.len();
 
-        result
+        result?;
+        Ok(())
     }
 
     pub async fn get_consumer(&self, topic: &str, partition: i32) -> PartitionConsumer {

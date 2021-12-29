@@ -13,7 +13,7 @@ use fluvio_types::PartitionId;
 /// with no keys (represented by `None` values in the keys slice).
 ///
 /// See [`SiphashRoundRobinPartitioner`] for a reference implementation.
-pub(crate) trait Partitioner {
+pub trait Partitioner {
     fn partition(
         &self,
         config: &PartitionerConfig,
@@ -22,7 +22,7 @@ pub(crate) trait Partitioner {
     ) -> PartitionId;
 }
 
-pub(crate) struct PartitionerConfig {
+pub struct PartitionerConfig {
     pub(crate) partition_count: i32,
 }
 

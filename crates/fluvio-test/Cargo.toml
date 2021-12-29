@@ -36,7 +36,7 @@ crossbeam-channel = "0.5"
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }
 fluvio-types = { path = "../fluvio-types" }
-fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }
+fluvio-future = { version = "0.3.0", features = ["io", "task", "timer", "subscriber", "fixture"] }
 fluvio-command = { version = "0.2.0" }
 fluvio-cluster = { path = "../fluvio-cluster" }
 fluvio-controlplane-metadata = { features = ["k8"], path = "../fluvio-controlplane-metadata" }

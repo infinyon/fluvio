@@ -121,6 +121,28 @@ multiple-partition-test: test-setup
                 ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
+batch-failure-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+batch-failure-test: FLV_SOCKET_WAIT=25
+batch-failure-test: DEFAULT_SPU=1
+batch-failure-test: REPL=1
+batch-failure-test: test-setup
+	$(TEST_BIN) produce_batch  \
+                ${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
+
+batching-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+batching-test: DEFAULT_SPU=1
+batching-test: REPL=1
+batching-test: test-setup
+	$(TEST_BIN) batching  \
+                ${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
 
 reconnection-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 reconnection-test: DEFAULT_SPU=1

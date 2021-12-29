@@ -31,10 +31,14 @@ async fn main() {
 async fn produce_batch() -> Result<(), fluvio::FluvioError> {
     let producer = fluvio::producer("batch").await?;
 
-    let batch: Vec<_> = (0..10)
-        .map(|i| (i.to_string(), format!("This is record {}", i)))
-        .collect();
+    for i in 0..10 {
+        producer
+            .send(i.to_string(), format!("This is record {}", i))
+            .await?;
+    }
+    // Only flush after `.send`ing all records
+    // Be sure not to flush after every single send
+    producer.flush().await?;
 
-    producer.send_all(batch).await?;
     Ok(())
 }

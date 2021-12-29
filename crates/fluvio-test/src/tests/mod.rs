@@ -5,7 +5,9 @@ pub mod longevity;
 pub mod producer;
 pub mod consumer;
 pub mod election;
+pub mod producer_fail;
 pub mod reconnection;
+pub mod batching;
 
 use serde::{Serialize, Deserialize};
 use std::time::SystemTime;
