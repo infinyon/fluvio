@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::error;
 
-use fluvio::{Fluvio, TopicProducer, RecordKey};
+use fluvio::{Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
@@ -56,7 +56,17 @@ fn validate_key_separator(separator: String) -> std::result::Result<(), String> 
 
 impl ProduceOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        let producer = fluvio.topic_producer(&self.topic).await?;
+        let config = if self.interactive_mode() {
+            TopicProducerConfigBuilder::default()
+                .linger(std::time::Duration::from_millis(10))
+                .build()
+                .map_err(FluvioError::from)?
+        } else {
+            Default::default()
+        };
+        let producer = fluvio
+            .topic_producer_with_config(&self.topic, config)
+            .await?;
 
         if self.raw {
             // Read all input and send as one record
