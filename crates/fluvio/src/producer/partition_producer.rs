@@ -91,7 +91,7 @@ impl PartitionProducer {
     ) {
         use tokio::select;
 
-        let mut linger_sleep = sleep(std::time::Duration::from_secs(1800));
+        let mut linger_sleep = None;
 
         loop {
             select! {
@@ -101,18 +101,13 @@ impl PartitionProducer {
                 },
                 _ = flush_event.0.listen() => {
 
-
                     debug!("flush event received");
                     if let Err(e) = self.flush(true).await {
                         error!("Failed to flush producer: {}", e);
                         self.set_error(e).await;
-                        flush_event.1.notify().await;
-
-                        continue;
                     }
                     flush_event.1.notify().await;
-                    linger_sleep = sleep(std::time::Duration::from_secs(1800));
-
+                    linger_sleep = None;
 
                 }
                 _ =  self.batch_events.listen_batch_full() => {
@@ -120,27 +115,22 @@ impl PartitionProducer {
                     if let Err(e) = self.flush(false).await {
                         error!("Failed to flush producer: {}", e);
                         self.set_error(e).await;
-
-                        continue;
                     }
                 }
 
                 _ = self.batch_events.listen_new_batch() => {
-
                     debug!("new batch event");
-                    linger_sleep = sleep(self.linger);
+                    linger_sleep = Some(sleep(self.linger));
                 }
 
-
-                _ = &mut linger_sleep => {
+                _ = async { linger_sleep.as_mut().expect("unexpected failure").await }, if linger_sleep.is_some() => {
                     debug!("Flushing because linger time was reached");
-                    linger_sleep = sleep(std::time::Duration::from_secs(1800));
 
                     if let Err(e) = self.flush(false).await {
                         error!("Failed to flush producer: {:?}", e);
                         self.set_error(e).await;
-                        continue;
                     }
+                    linger_sleep = None;
                 }
             }
         }
