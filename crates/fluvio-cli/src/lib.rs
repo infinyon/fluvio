@@ -18,23 +18,13 @@ mod smartmodule;
 mod derivedstream;
 mod render;
 
-//use std::env::current_exe;
-//use fluvio_channel::{
-//    FluvioChannelConfig, is_fluvio_bin_in_std_dir, FluvioChannelInfo,
-//    cli::current_channel,
-//};
-
-// Environment vars for Channels
-pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";
-pub const FLUVIO_EXTENSIONS_DIR: &str = "FLUVIO_EXTENSIONS_DIR";
-pub const FLUVIO_IMAGE_TAG_STRATEGY: &str = "FLUVIO_IMAGE_TAG_STRATEGY";
-
 pub(crate) use error::{Result, CliError};
 
 use fluvio_extension_common as common;
 
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
 pub use root::{Root, HelpOpt, RootCmd, print_help_hack};
+pub use root::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
 mod root {
 
@@ -50,8 +40,11 @@ mod root {
 
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
-    //#[cfg(feature = "k8s")]
-    //use fluvio_channel::ImageTagStrategy;
+
+    // Environment vars for Channels
+    pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";
+    pub const FLUVIO_EXTENSIONS_DIR: &str = "FLUVIO_EXTENSIONS_DIR";
+    pub const FLUVIO_IMAGE_TAG_STRATEGY: &str = "FLUVIO_IMAGE_TAG_STRATEGY";
 
     use crate::derivedstream::DerivedStreamCmd;
     use crate::connector::ManagedConnectorCmd;
@@ -73,8 +66,6 @@ mod root {
     use crate::common::Terminal;
 
     use super::Result;
-    //use super::VERSION;
-    //use super::current_channel;
 
     pub fn print_help_hack() -> Result<()> {
         let mut args = std::env::args();
@@ -232,128 +223,21 @@ mod root {
                 Self::Cluster(cluster) => {
                     let version = semver::Version::parse(crate::VERSION).unwrap();
                     cluster.process(out, version, root.target).await?;
-                    //let version = semver::Version::parse(crate::VERSION).unwrap();
-
-                    //// This is a bit of a hack to contain Channels fully within fluvio-cli
-
-                    //// If dev, set the develop flag
-                    //// If latest, change the image version to <VERSION>-<GIT_HASH>
-
-                    //use crate::current_exe;
-                    //use crate::is_fluvio_bin_in_std_dir;
-                    //use crate::FluvioChannelConfig;
-                    //use crate::FluvioChannelInfo;
-
-                    //// Verify if the current binary is running in the "official" location
-                    //// If we're not in the fluvio directory then
-                    //// assume dev mode (i.e., do not exec to other binaries)
-                    //let current_exe = current_exe()?;
-
-                    //// TODO: We need a way to propagate the skip_channel_check
-                    //let cluster_cmd = if is_fluvio_bin_in_std_dir(&current_exe)
-                    //    && !root.skip_channel_check()
-                    //{
-                    //    //if is_fluvio_bin_in_std_dir(&current_exe) {
-                    //    let channel_config_path = FluvioChannelConfig::default_config_location();
-
-                    //    let channel = if FluvioChannelConfig::exists(&channel_config_path) {
-                    //        //println!("Config file exists @ {:#?}", &channel_config_path);
-                    //        FluvioChannelConfig::from_file(channel_config_path)?
-                    //        //FluvioChannelConfig::default()
-                    //    } else {
-                    //        // Default to stable channel behavior
-                    //        FluvioChannelConfig::default()
-                    //    };
-
-                    //    //println!("{:#?}", &channel);
-
-                    //    //println!("Current exe: {:?}", &current_exe);
-                    //    //println!("Config current exe: {:?}", &channel.current_exe());
-
-                    //    debug!("channel: {:#?}", channel);
-
-                    //    let current_channel_info = if let Some(channel_info) =
-                    //        channel.get_channel(&channel.current_channel())
-                    //    {
-                    //        channel_info
-                    //    } else {
-                    //        FluvioChannelInfo::stable_channel()
-                    //    };
-
-                    //    let modified_cluster_cmd = match current_channel_info
-                    //        .get_image_tag_strategy()
-                    //    {
-                    //        ImageTagStrategy::VersionGit => {
-                    //            // If we've specified an image version, use that
-                    //            // Otherwise, use the image version we push to dockerhub
-                    //            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
-
-                    //            if let ClusterCmd::Start(opts) = *cluster {
-                    //                if opts.k8_config.image_version.is_none() {
-                    //                    let mut new_start_opts = *opts;
-                    //                    new_start_opts.k8_config.image_version =
-                    //                        Some(image_version);
-                    //                    Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                    //                } else {
-                    //                    Box::new(ClusterCmd::Start(opts))
-                    //                }
-                    //            } else if let ClusterCmd::Upgrade(opts) = *cluster {
-                    //                if opts.start.k8_config.image_version.is_none() {
-                    //                    let mut new_upgrade_opts = *opts;
-                    //                    new_upgrade_opts.start.k8_config.image_version =
-                    //                        Some(image_version);
-                    //                    Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
-                    //                } else {
-                    //                    Box::new(ClusterCmd::Upgrade(opts))
-                    //                }
-                    //            } else {
-                    //                cluster
-                    //            }
-                    //        }
-                    //        ImageTagStrategy::Version => cluster,
-                    //        ImageTagStrategy::Git => {
-                    //            // If we are dealing with a cluster start or upgrade, then we care about channels
-                    //            if let ClusterCmd::Start(opts) = *cluster {
-                    //                let mut new_start_opts = *opts;
-                    //                new_start_opts.develop = true;
-                    //                Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                    //            } else if let ClusterCmd::Upgrade(opts) = *cluster {
-                    //                let mut new_upgrade_opts = *opts;
-                    //                new_upgrade_opts.start.develop = true;
-                    //                Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
-                    //            } else {
-                    //                cluster
-                    //            }
-                    //        }
-                    //    };
-
-                    //    modified_cluster_cmd
-                    //} else {
-                    //    debug!("Fluvio bin not in standard install location. Assuming dev channel");
-
-                    //    // If we are dealing with a cluster start or upgrade, then we care about channels
-                    //    if let ClusterCmd::Start(opts) = *cluster {
-                    //        let mut new_start_opts = *opts;
-                    //        new_start_opts.develop = true;
-                    //        Box::new(ClusterCmd::Start(Box::new(new_start_opts)))
-                    //    } else if let ClusterCmd::Upgrade(opts) = *cluster {
-                    //        let mut new_upgrade_opts = *opts;
-                    //        new_upgrade_opts.start.develop = true;
-                    //        Box::new(ClusterCmd::Upgrade(Box::new(new_upgrade_opts)))
-                    //    } else {
-                    //        cluster
-                    //    }
-                    //};
-
-                    ////println!("Current channel: {}", &current_channel());
-                    //cluster_cmd.process(out, version, root.target).await?;
                 }
                 Self::Install(install) => {
-                    //println!("Current channel: {}", &current_channel());
+                    // IF FLUVIO_RELEASE_CHANNEL defined
+                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+                        println!("Current channel: {}", &channel_name);
+                    };
+
                     install.process().await?;
                 }
                 Self::Update(update) => {
-                    //println!("Current channel: {}", &current_channel());
+                    // IF FLUVIO_RELEASE_CHANNEL defined
+                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+                        println!("Current channel: {}", &channel_name);
+                    };
+
                     update.process().await?;
                 }
                 Self::Version(version) => {
