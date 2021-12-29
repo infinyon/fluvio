@@ -405,7 +405,7 @@ jobs:
           ./k8-util/cluster/reset-k3d.sh
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke' }}
-        timeout-minutes: 2
+        timeout-minutes: 5
         run: |
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start smoke-test-tls-root
@@ -416,21 +416,21 @@ jobs:
       #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
       - name: Run election-test
         if: ${{ matrix.test == 'election' }}
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
           echo "election test done"
       - name: Run multiple-partition-test
         if: ${{ matrix.test == 'multiple-partition' }}
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
           echo "multiple partition test done"
       - name: Run reconnection-test
         if: ${{ matrix.test == 'reconnection' }}
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnection-test
@@ -444,7 +444,7 @@ jobs:
           echo "producer batching failure test done"
       - name: Run batch-test
         if: ${{ matrix.test == 'batch' }}
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           date
           make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start batching-test
@@ -808,6 +808,7 @@ jobs:
       - k8_cluster_test
       - k8_upgrade_test
       - k8_cli_smoke
+      - build_binaries
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -849,7 +850,6 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     needs:
       - docker_push
-      - build_binaries
     runs-on: ubuntu-latest
     permissions: write-all
     steps:
