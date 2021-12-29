@@ -16,6 +16,11 @@ pub struct InstallOpt {
     /// Used for testing. Specifies alternate package location, e.g. "test/"
     #[structopt(hidden = true, long)]
     prefix: Option<String>,
+    /// Install the latest prerelease rather than the latest release
+    ///
+    /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
+    #[structopt(long)]
+    develop: bool,
 }
 
 impl InstallOpt {
@@ -64,7 +69,7 @@ impl InstallOpt {
     async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
         // Needs: FLUVIO_CHANNEL_NAME, FLUVIO_EXTENSIONS_DIR?
         // TODO: Need to know if latest channel to set prerelease flag
-        let prerelease_flag = false;
+        let prerelease_flag = self.develop;
 
         let target = fluvio_index::package_target()?;
 

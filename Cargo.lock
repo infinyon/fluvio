@@ -1659,7 +1659,6 @@ version = "0.0.0"
 dependencies = [
  "async-h1",
  "atty",
- "cfg-if",
  "color-eyre",
  "colored",
  "content_inspector",
@@ -1699,7 +1698,6 @@ dependencies = [
  "sysinfo 0.20.5",
  "tempdir",
  "thiserror",
- "toml",
  "tracing",
  "tracing-futures",
  "tui",

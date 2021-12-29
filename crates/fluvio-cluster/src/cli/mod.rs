@@ -12,8 +12,8 @@ mod check;
 mod error;
 mod diagnostics;
 
-pub use start::StartOpt;
-pub use start::UpgradeOpt;
+use start::StartOpt;
+use start::UpgradeOpt;
 use delete::DeleteOpt;
 use check::CheckOpt;
 use group::SpuGroupCmd;

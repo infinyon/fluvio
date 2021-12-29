@@ -13,15 +13,6 @@ pub struct VersionOpt {}
 
 impl VersionOpt {
     pub async fn process(self, target: ClusterTarget) -> Result<()> {
-        CurrentOpt {}.process(target).await
-    }
-}
-
-#[derive(Debug, StructOpt, Clone)]
-pub struct CurrentOpt {}
-
-impl CurrentOpt {
-    pub async fn process(self, target: ClusterTarget) -> Result<()> {
         // IF FLUVIO_RELEASE_CHANNEL defined
         if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
             self.print("Release Channel", &channel_name);

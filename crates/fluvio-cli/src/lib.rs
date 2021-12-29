@@ -23,7 +23,7 @@ pub(crate) use error::{Result, CliError};
 use fluvio_extension_common as common;
 
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
-pub use root::{Root, HelpOpt, RootCmd, print_help_hack};
+pub use root::{Root, HelpOpt};
 pub use root::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
 mod root {
@@ -67,27 +67,13 @@ mod root {
 
     use super::Result;
 
-    pub fn print_help_hack() -> Result<()> {
-        let mut args = std::env::args();
-        if args.len() < 2 {
-            HelpOpt {}.process()?;
-            std::process::exit(0);
-        } else if let Some(first_arg) = args.nth(1) {
-            if vec!["-h", "--help", "help"].contains(&first_arg.as_str()) {
-                HelpOpt {}.process()?;
-                std::process::exit(0);
-            }
-        }
-        Ok(())
-    }
-
     /// Fluvio Command Line Interface
     #[derive(StructOpt, Debug)]
     pub struct Root {
         #[structopt(flatten)]
-        pub opts: RootOpt,
+        opts: RootOpt,
         #[structopt(subcommand)]
-        pub command: RootCmd,
+        command: RootCmd,
     }
 
     impl Root {
@@ -95,26 +81,12 @@ mod root {
             self.command.process(self.opts).await?;
             Ok(())
         }
-
-        pub fn skip_channel_check(&self) -> bool {
-            self.opts.skip_channel_check
-        }
     }
 
     #[derive(StructOpt, Debug)]
-    pub struct RootOpt {
+    struct RootOpt {
         #[structopt(flatten)]
         pub target: ClusterTarget,
-
-        #[structopt(long)]
-        pub skip_channel_check: bool,
-        // TODO: Include flag for overriding channel choice in config
-    }
-
-    impl RootOpt {
-        pub fn skip_channel_check(&self) -> bool {
-            self.skip_channel_check
-        }
     }
 
     #[derive(Debug, StructOpt)]
@@ -129,7 +101,7 @@ mod root {
             AppSettings::DisableVersion,
         ]
     )]
-    pub enum RootCmd {
+    enum RootCmd {
         /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
         #[structopt(flatten)]
         #[cfg(feature = "consumer")]
@@ -221,6 +193,11 @@ mod root {
                 }
                 #[cfg(feature = "k8s")]
                 Self::Cluster(cluster) => {
+                    // IF FLUVIO_RELEASE_CHANNEL defined
+                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+                        println!("Current channel: {}", &channel_name);
+                    };
+
                     let version = semver::Version::parse(crate::VERSION).unwrap();
                     cluster.process(out, version, root.target).await?;
                 }
@@ -370,13 +347,13 @@ mod root {
     }
 
     #[derive(Debug, StructOpt)]
-    pub struct CompletionOpt {
+    struct CompletionOpt {
         #[structopt(long, default_value = "fluvio")]
         name: String,
     }
 
     #[derive(Debug, StructOpt)]
-    pub enum CompletionCmd {
+    enum CompletionCmd {
         /// Generate CLI completions for bash
         #[structopt(name = "bash")]
         Bash(CompletionOpt),

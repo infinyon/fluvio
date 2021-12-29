@@ -96,7 +96,7 @@ enum RootCmd {
     Help,
     Version(ChannelOpt),
 
-    // This should be the fluvio binary's subcommandsVersion
+    // This should be the fluvio binary's subcommand
     #[structopt(external_subcommand)]
     Other(Vec<String>),
 }
