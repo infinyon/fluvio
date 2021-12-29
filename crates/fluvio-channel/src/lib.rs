@@ -16,10 +16,15 @@ use semver::Version;
 use cfg_if::cfg_if;
 use thiserror::Error;
 
-/// extensions
+// Default channels
 pub const DEV_CHANNEL_NAME: &str = "dev";
 pub const STABLE_CHANNEL_NAME: &str = "stable";
 pub const LATEST_CHANNEL_NAME: &str = "latest";
+
+// Environment vars for Channels
+pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";
+pub const FLUVIO_EXTENSIONS_DIR: &str = "FLUVIO_EXTENSIONS_DIR";
+pub const FLUVIO_IMAGE_TAG_STRATEGY: &str = "FLUVIO_IMAGE_TAG_STRATEGY";
 
 #[derive(Error, Debug)]
 pub enum ChannelConfigError {

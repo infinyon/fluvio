@@ -80,6 +80,7 @@ fluvio-package-index = { path = "../fluvio-package-index" }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["use_serde", "k8"] }
 k8-types = { version = "0.5.0", features = ["core"] }
+fluvio-channel = { path = "../fluvio-channel" }
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }

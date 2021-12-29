@@ -103,7 +103,7 @@ impl CreateOpt {
 
             // We should also try to install the binary if it doesn't exist in the binary path
             if !binary_path.exists() {
-                let version = FluvioBinVersion::parse(&channel_name)?;
+                let version = FluvioBinVersion::parse(channel_name)?;
                 install_channel_fluvio_bin(channel_name.to_string(), &config, version).await?;
             }
 

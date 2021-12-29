@@ -58,6 +58,8 @@ impl Root {
 struct ChannelOpt {
     #[structopt(subcommand)]
     cmd: Option<ChannelCmd>,
+    #[structopt(long, short)]
+    help: bool,
 }
 
 #[derive(Debug, PartialEq, StructOpt, Clone)]
@@ -170,7 +172,7 @@ fn main() -> Result<()> {
     // If we're in frontend mode, we want to pass the help text request
 
     let fluvio_channel_root = Root::from_args_safe();
-    println!("{:#?}", fluvio_channel_root);
+    //println!("{:#?}", fluvio_channel_root);
 
     let channel_cli = if let Ok(channel_cli) = fluvio_channel_root {
         match channel_cli.command {
@@ -181,7 +183,12 @@ fn main() -> Result<()> {
             }
             RootCmd::Version(ref channel_opt) => {
                 debug!("fluvio-channel Version");
-                if let Some(subcmd) = &channel_opt.cmd {
+
+                if channel_opt.help {
+                    let _ = ChannelOpt::clap().print_help();
+                    println!();
+                    std::process::exit(0);
+                } else if let Some(subcmd) = &channel_opt.cmd {
                     if let Err(e) = run_block_on(subcmd.process()) {
                         println!("{}", e);
                         std::process::exit(1);
@@ -189,7 +196,7 @@ fn main() -> Result<()> {
 
                     std::process::exit(0);
                 } else {
-                    // This command should forward to fluvio binary
+                    debug!("Version command should forward to Fluvio binary")
                 }
             }
             RootCmd::Other(ref cmd) => {

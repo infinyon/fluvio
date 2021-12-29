@@ -16,7 +16,7 @@ const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 pub struct UpdateOpt {
     /// Update to the latest prerelease rather than the latest release
     #[structopt(long)]
-    develop: bool,
+    pub develop: bool,
 
     /// (Optional) the name of one or more plugins to update
     plugins: Vec<PackageId>,

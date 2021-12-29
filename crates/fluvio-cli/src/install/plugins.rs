@@ -20,7 +20,7 @@ pub struct InstallOpt {
     ///
     /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
     #[structopt(long)]
-    develop: bool,
+    pub develop: bool,
 }
 
 impl InstallOpt {
@@ -67,10 +67,6 @@ impl InstallOpt {
     }
 
     async fn install_plugin(&self, agent: &HttpAgent) -> Result<()> {
-        // Needs: FLUVIO_CHANNEL_NAME, FLUVIO_EXTENSIONS_DIR?
-        // TODO: Need to know if latest channel to set prerelease flag
-        let prerelease_flag = self.develop;
-
         let target = fluvio_index::package_target()?;
 
         // If a version is given in the package ID, use it. Otherwise, use latest
@@ -86,7 +82,7 @@ impl InstallOpt {
             None => {
                 let id = &self.package;
                 install_println(format!("🎣 Fetching latest version for package: {}...", id));
-                let version = fetch_latest_version(agent, id, &target, prerelease_flag).await?;
+                let version = fetch_latest_version(agent, id, &target, self.develop).await?;
                 let id = id.clone().into_versioned(version.into());
                 install_println(format!(
                     "⏳ Downloading package with latest version: {}...",
