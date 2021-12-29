@@ -158,6 +158,10 @@ pub struct StartOpt {
     /// Service Type
     #[structopt(long)]
     pub service_type: Option<String>,
+
+    /// Connector Prefix
+    #[structopt(long, name = "connector_prefix")]
+    pub connector_prefix: Vec<String>,
 }
 
 impl StartOpt {

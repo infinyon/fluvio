@@ -34,6 +34,7 @@ pub struct ScK8Config {
     pub lb_service_annotations: HashMap<String, String>,
     pub service: Option<ServiceSpec>,
     pub spu_pod_config: PodConfig,
+    pub connector_prefixes: Vec<String>,
 }
 
 impl ScK8Config {
@@ -75,12 +76,20 @@ impl ScK8Config {
 
         info!(?spu_pod_config, "spu pod config");
 
+        let connector_prefixes: Vec<String> =
+            if let Some(prefix_string) = data.remove("connectorPrefixes") {
+                prefix_string.split(' ').map(|s| s.to_owned()).collect()
+            } else {
+                Vec::new()
+            };
+
         Ok(Self {
             image,
             pod_security_context,
             lb_service_annotations,
             service,
             spu_pod_config,
+            connector_prefixes,
         })
     }
 

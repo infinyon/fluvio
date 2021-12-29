@@ -730,7 +730,7 @@ jobs:
       - name: Install Rust ${{ matrix.rust }}
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable 
+          toolchain: stable
           profile: minimal
           override: true
       - uses: Swatinem/rust-cache@v1
@@ -776,7 +776,7 @@ jobs:
 
       - name: Start cluster
         run: |
-          ./fluvio cluster start --develop
+          ./fluvio cluster start --develop --connector-prefix "https://raw.githubusercontent.com/infinyon/fluvio-connectors"
 
       - name: Run CLI smoke tests
         run: make FLUVIO_BIN=./fluvio cli-smoke
