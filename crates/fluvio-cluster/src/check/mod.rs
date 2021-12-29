@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::io::Error as IoError;
 use std::fmt::Debug;
@@ -258,12 +259,17 @@ pub enum FluvioClusterComponent {
 
 #[async_trait]
 pub trait ClusterCheck: Debug + 'static + Send + Sync {
+
+    fn label(&self) ->&str;      // label
+
     /// list of components that must be installed before checking
     fn required_components(&self) -> Vec<FluvioClusterComponent>;
 
     /// perform check, if successful return success message, if fail, return
     async fn perform_check(&self, pb: &ProgressRenderer) -> Result<CheckStatus, ClusterCheckError>;
 }
+
+
 
 #[async_trait]
 pub trait ClusterAutoFix: Debug + 'static + Send + Sync {
@@ -319,6 +325,10 @@ impl ClusterCheck for LoadableConfig {
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
         vec![FluvioClusterComponent::Kubectl]
+    }
+
+    fn label(&self) ->&str {
+        "Kubernetes config"
     }
 }
 
@@ -382,6 +392,10 @@ impl ClusterCheck for K8Version {
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
         vec![FluvioClusterComponent::Kubectl]
     }
+
+    fn label(&self) ->&str {
+        "Kubernetes version"
+    }
 }
 
 #[derive(Debug)]
@@ -424,6 +438,10 @@ impl ClusterCheck for HelmVersion {
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
         vec![]
+    }
+
+    fn label(&self) ->&str {
+        "Helm"
     }
 }
 
@@ -484,6 +502,10 @@ impl ClusterCheck for SysChartCheck {
             FluvioClusterComponent::Kubectl,
             FluvioClusterComponent::Kubernetes,
         ]
+    }
+
+    fn label(&self) ->&str {
+        "Fluvio Sys Chart"
     }
 }
 
@@ -557,6 +579,10 @@ impl ClusterCheck for AlreadyInstalled {
             FluvioClusterComponent::Kubernetes,
         ]
     }
+
+    fn label(&self) ->&str {
+        "Fluvio installation"
+    }
 }
 
 #[derive(Debug)]
@@ -573,6 +599,10 @@ impl ClusterCheck for CreateServicePermission {
             FluvioClusterComponent::Kubectl,
             FluvioClusterComponent::Kubernetes,
         ]
+    }
+
+    fn label(&self) ->&str {
+        "Kubernetes Service Permission"
     }
 }
 
@@ -591,6 +621,10 @@ impl ClusterCheck for CreateCrdPermission {
             FluvioClusterComponent::Kubernetes,
         ]
     }
+
+    fn label(&self) ->&str {
+        "Kubernetes Crd Permission"
+    }
 }
 
 #[derive(Debug)]
@@ -607,6 +641,10 @@ impl ClusterCheck for CreateServiceAccountPermission {
             FluvioClusterComponent::Kubectl,
             FluvioClusterComponent::Kubernetes,
         ]
+    }
+
+    fn label(&self) ->&str {
+       "Kubernetes Service Account Permission"
     }
 }
 
@@ -628,6 +666,10 @@ impl ClusterCheck for LocalClusterCheck {
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
         vec![]
+    }
+
+    fn label(&self) ->&str {
+        "Fluvio Local Installation"
     }
 }
 
@@ -726,11 +768,16 @@ impl ClusterChecker {
 
     /// Performs check and fix is required
     ///
-    pub async fn run(&self, pb: &ProgressRenderer, fix: bool) -> Result<bool, ClusterCheckError> {
+    pub async fn run(self, pb: &ProgressRenderer, fix: bool) -> Result<bool, ClusterCheckError> {
+
+        // sort checks according to dependencies
         let mut components: HashSet<FluvioClusterComponent> = HashSet::new();
 
+        let mut sorted_checks = self.checks;
+        sorted_checks.sort_by(check_compare);
+
         let mut failed = false;
-        for check in &self.checks {
+        for check in sorted_checks {
             let mut passed = false;
             let required_components = check.required_components();
             if required_components
@@ -783,6 +830,11 @@ impl ClusterChecker {
 
         Ok(failed)
     }
+}
+
+fn check_compare(first: &Box<dyn ClusterCheck>,second: &Box<dyn ClusterCheck>) -> Ordering {
+    let dep1 = first.required_components();
+    let dep2 = second.required_components();
 }
 
 fn check_permission(resource: &str, _pb: &ProgressRenderer) -> CheckResult {
