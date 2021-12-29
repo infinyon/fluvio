@@ -11,10 +11,14 @@ use tracing::debug;
 
 #[derive(Debug, StructOpt, Clone, PartialEq)]
 pub struct SwitchOpt {
+    /// Name of release channel
     channel: Option<String>,
+    
+    /// Path to alternate channel config
     #[structopt(long)]
     config: Option<PathBuf>,
 
+    /// Display this help message
     #[structopt(short, long)]
     help: bool,
 }

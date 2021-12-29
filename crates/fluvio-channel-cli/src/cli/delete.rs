@@ -6,12 +6,15 @@ use tracing::debug;
 
 #[derive(Debug, StructOpt, Clone, PartialEq)]
 pub struct DeleteOpt {
+    /// Path to alternate channel config
     #[structopt(long)]
     config: Option<PathBuf>,
+    /// Name of release channel
     channel: Option<String>,
     // binary-path
     // extension-path
     // image_tag_strategy
+    /// Display this help message
     #[structopt(short, long)]
     help: bool,
 }

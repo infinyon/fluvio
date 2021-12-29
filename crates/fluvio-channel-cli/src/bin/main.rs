@@ -64,9 +64,13 @@ struct ChannelOpt {
 
 #[derive(Debug, PartialEq, StructOpt, Clone)]
 enum ChannelCmd {
+    /// Create a local Fluvio release channel
     Create(CreateOpt),
+    /// Delete a local Fluvio release channel
     Delete(DeleteOpt),
+    /// List local Fluvio release channels
     List(ListOpt),
+    /// Change the active Fluvio release channel
     Switch(SwitchOpt),
 }
 

@@ -6,9 +6,11 @@ use tracing::debug;
 
 #[derive(Debug, StructOpt, Clone, PartialEq)]
 pub struct ListOpt {
+    /// Path to alternate channel config
     #[structopt(long)]
     config: Option<PathBuf>,
 
+    /// Display this help message
     #[structopt(short, long)]
     help: bool,
 }
