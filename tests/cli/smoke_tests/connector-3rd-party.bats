@@ -25,7 +25,7 @@ setup_file() {
     run timeout 15s "$FLUVIO_BIN" connector create --config "$UNAUTHORIZED_CONNECTOR_CONFIG"
     assert_success
     sleep 10
-    run fluvio connector list
+    run $FLUVIO_BIN connector list
 
     assert_output --partial "my-invalid-third-party-connector  Invalid"
 }
