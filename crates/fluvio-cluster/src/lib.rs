@@ -76,8 +76,6 @@ mod common {
     pub struct StartStatus {
         pub(crate) address: String,
         pub(crate) port: u16,
-        #[allow(unused)]
-        pub(crate) checks: Option<CheckStatuses>,
     }
 
     impl StartStatus {

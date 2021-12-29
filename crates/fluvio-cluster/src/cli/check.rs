@@ -2,29 +2,33 @@ use fluvio::dataplane::versions::PlatformVersion;
 use semver::Version;
 use structopt::StructOpt;
 
-use crate::{ClusterChecker, ClusterError};
-use crate::cli::ClusterCliError;
-use crate::check::render::{render_check_progress, render_results_next_steps};
-use crate::check::SysChartCheck;
+use crate::progress::create_progress_indicator;
+use crate::{ClusterChecker};
+use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::charts::ChartConfig;
 
 #[derive(Debug, StructOpt)]
 pub struct CheckOpt {}
 
 impl CheckOpt {
-    pub async fn process(self, platform_version: Version) -> Result<(), ClusterCliError> {
+    pub async fn process(self, platform_version: Version) -> Result<(), ClusterCheckError> {
         use colored::*;
         println!("{}", "Running pre-startup checks...".bold());
         let sys_config: ChartConfig = ChartConfig::sys_builder()
             .build()
-            .map_err(ClusterError::InstallSys)?;
-        let mut progress = ClusterChecker::empty()
+            .map_err(|err| ClusterCheckError::Other(format!("chart config error: {:#?}", err)))?;
+
+        let pb = if std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_progress_indicator().into()
+        };
+        ClusterChecker::empty()
             .with_preflight_checks()
             .with_check(SysChartCheck::new(sys_config, platform_version))
-            .run_with_progress();
+            .run(&pb, false)
+            .await?;
 
-        let results = render_check_progress(&mut progress).await;
-        render_results_next_steps(&results);
         Ok(())
     }
 }

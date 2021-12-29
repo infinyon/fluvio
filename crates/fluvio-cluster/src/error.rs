@@ -8,7 +8,7 @@ use k8_client::{ClientError as K8ClientError};
 use fluvio_helm::HelmError;
 use fluvio_command::CommandError;
 
-use crate::check::{CheckResults, CheckStatuses};
+use crate::check::{CheckResults, CheckStatuses, ClusterCheckError};
 use crate::charts::ChartInstallError;
 use crate::runtime::local::LocalRuntimeError;
 
@@ -86,6 +86,8 @@ pub enum K8InstallError {
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),
+    #[error(transparent)]
+    ClusterCheckError(#[from] ClusterCheckError),
 }
 
 /// Errors that may occur while trying to install Fluvio locally
@@ -143,6 +145,8 @@ pub enum LocalInstallError {
     /// A different kind of error occurred.
     #[error("An unknown error occurred: {0}")]
     Other(String),
+    #[error(transparent)]
+    ClusterCheckError(#[from] ClusterCheckError),
 }
 
 /// Errors that may occur while trying to unintsall Fluvio

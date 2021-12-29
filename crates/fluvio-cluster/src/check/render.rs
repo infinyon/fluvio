@@ -3,12 +3,12 @@
 use futures_util::StreamExt;
 use async_channel::Receiver;
 use crate::{
-    CheckFailed, CheckResult, CheckResults, CheckStatus, CheckSuggestion,
+    CheckResult, CheckResults, CheckStatus, CheckSuggestion,
     render::{ProgressRenderedText, ProgressRenderer},
 };
 
 const ISSUE_URL: &str = "https://github.com/infinyon/fluvio/issues/new/choose";
-
+/*
 /// Renders individual checks as they occur over time
 pub async fn render_check_progress(progress: &mut Receiver<CheckResult>) -> CheckResults {
     let mut check_results = vec![];
@@ -165,7 +165,9 @@ pub fn render_results_next_steps<R: AsRef<[CheckResult]>>(check_results: R) {
     // Print a conclusion message based on warnings and failures
     render_next_steps(failures, warnings, installed);
 }
+*/
 
+/*
 impl ProgressRenderedText for CheckStatus {
     fn msg(&self) -> String {
         use colored::*;
@@ -238,3 +240,4 @@ impl ProgressRenderedText for CheckResult {
         }
     }
 }
+*/

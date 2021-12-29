@@ -28,7 +28,7 @@ use k8_types::core::service::{LoadBalancerType, ServiceSpec, TargetPort};
 use k8_types::core::node::{NodeSpec, NodeAddress};
 use fluvio_command::CommandExt;
 
-use crate::check::{CheckFailed, CheckResults, AlreadyInstalled, SysChartCheck};
+use crate::check::{CheckResults, AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
 use crate::render::ProgressRenderedText;
 use crate::render::ProgressRenderer;
@@ -36,7 +36,6 @@ use crate::start::common::check_crd;
 use crate::tls_config_to_cert_paths;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, CheckStatus, ClusterChecker, CheckStatuses};
 use crate::charts::{ChartConfig, ChartInstaller};
-use crate::check::render::render_check_progress_with_indicator;
 use crate::UserChartLocation;
 use crate::progress::{InstallProgressMessage, create_progress_indicator};
 
@@ -594,7 +593,7 @@ impl ClusterInstaller {
     ///
     /// [`system_chart`]: ./struct.ClusterInstaller.html#method.system_chart
     #[instrument(skip(self))]
-    pub async fn setup(&self) -> CheckResults {
+    pub async fn preflight_check(&self, fix: bool) -> Result<(), K8InstallError> {
         const DISPATCHER_WAIT: &str = "FLV_DISPATCHER_WAIT";
 
         // HACK. set FLV_DISPATCHER if not set
@@ -624,15 +623,12 @@ impl ClusterInstaller {
             checker = checker.with_check(AlreadyInstalled);
         }
 
-        if self.config.render_checks {
-            self.pb
-                .println(InstallProgressMessage::PreFlightCheck.msg());
+        self.pb
+            .println(InstallProgressMessage::PreFlightCheck.msg());
 
-            let mut progress = checker.run_and_fix_with_progress();
-            render_check_progress_with_indicator(&mut progress, &self.pb).await
-        } else {
-            checker.run_wait_and_fix().await
-        }
+        checker.run(&self.pb, fix).await?;
+
+        Ok(())
     }
 
     /// Installs Fluvio according to the installer's configuration
@@ -644,37 +640,9 @@ impl ClusterInstaller {
     )]
     pub async fn install_fluvio(&self) -> Result<StartStatus, K8InstallError> {
         let mut installed = false;
-        let checks = match self.config.skip_checks {
-            true => None,
-            // Check if env is ready for install and tries to fix anything it can
-            false => {
-                let check_results = self.setup().await;
-                if check_results.iter().any(|it| it.is_err()) {
-                    return Err(K8InstallError::PrecheckErrored(check_results));
-                }
-
-                let statuses: CheckStatuses =
-                    check_results.into_iter().filter_map(|it| it.ok()).collect();
-
-                let mut any_failed = false;
-                for status in &statuses {
-                    match status {
-                        CheckStatus::Fail(CheckFailed::AlreadyInstalled) => {
-                            debug!("Fluvio is already installed");
-                            installed = true;
-                        }
-                        CheckStatus::Fail(_) => any_failed = true,
-                        _ => (),
-                    }
-                }
-
-                // If any of the pre-checks was a straight-up failure, install should fail
-                if any_failed {
-                    return Err(K8InstallError::FailedPrecheck(statuses));
-                }
-                Some(statuses)
-            }
-        };
+        if !self.config.skip_checks {
+            self.setup(true).await?;
+        }
 
         if !installed {
             self.install_app().await?;
@@ -718,11 +686,7 @@ impl ClusterInstaller {
         self.pb.println(InstallProgressMessage::Success.msg());
         self.pb.finish_and_clear();
 
-        Ok(StartStatus {
-            address,
-            port,
-            checks,
-        })
+        Ok(StartStatus { address, port })
     }
 
     /// Install Fluvio Core chart on the configured cluster

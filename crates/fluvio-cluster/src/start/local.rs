@@ -374,7 +374,7 @@ impl LocalInstaller {
 
     /// Checks if all of the prerequisites for installing Fluvio locally are met
     /// and tries to auto-fix the issues observed
-    pub async fn setup(&self) -> CheckResults {
+    pub async fn preflight_check(&self, fix: bool) -> Result<(), LocalInstallError> {
         let mut sys_config: ChartConfig = ChartConfig::sys_builder()
             .version(self.config.chart_version.clone())
             .build()
@@ -384,27 +384,17 @@ impl LocalInstaller {
             sys_config.location = location.to_owned().into();
         }
 
-        if self.config.render_checks {
-            self.pb
-                .println(InstallProgressMessage::PreFlightCheck.msg());
-            let mut progress = ClusterChecker::empty()
-                .with_local_checks()
-                .with_check(SysChartCheck::new(
-                    sys_config,
-                    self.config.platform_version.clone(),
-                ))
-                .run_and_fix_with_progress();
-            render_check_progress_with_indicator(&mut progress, &self.pb).await
-        } else {
-            ClusterChecker::empty()
-                .with_local_checks()
-                .with_check(SysChartCheck::new(
-                    sys_config,
-                    self.config.platform_version.clone(),
-                ))
-                .run_wait_and_fix()
-                .await
-        }
+        self.pb
+            .println(InstallProgressMessage::PreFlightCheck.msg());
+        ClusterChecker::empty()
+            .with_local_checks()
+            .with_check(SysChartCheck::new(
+                sys_config,
+                self.config.platform_version.clone(),
+            ))
+            .run(&self.pb, fix)
+            .await?;
+        Ok(())
     }
 
     /// Install fluvio locally
@@ -413,8 +403,7 @@ impl LocalInstaller {
         let checks = match self.config.skip_checks {
             true => None,
             false => {
-                // Try to setup environment by running pre-checks and auto-fixes
-                let check_results = self.setup().await;
+                self.preflight_check(true).await?;
 
                 // If any check results encountered an error, bubble the error
                 if check_results.iter().any(|it| it.is_err()) {
