@@ -125,4 +125,6 @@ ${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
     tag "fluvio:$(cat VERSION)+$(git rev-parse HEAD)" --tag=latest --force
 ${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
     tag "fluvio-run:$(cat VERSION)+$(git rev-parse HEAD)" --allow-missing-targets --tag=latest --force
+${HOME}/.fluvio/extensions/fluvio-package ${FLUVIO_PUBLISH_TEST} \
+    tag "fluvio-channel:$(cat VERSION)+$(git rev-parse HEAD)" --allow-missing-targets --tag=latest --force
 """

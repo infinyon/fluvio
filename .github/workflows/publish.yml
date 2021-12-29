@@ -151,7 +151,6 @@ jobs:
         env:
           RUST_LOG: info
         run: cargo make bump-fluvio-latest
-      # TODO: Add bump for fluvio-channel-cli
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
