@@ -280,26 +280,9 @@ pub struct ClusterConfig {
     /// If set, skip spu liveness check
     #[builder(default = "false")]
     skip_spu_liveness_check: bool,
-    /// Whether to render pre-install checks to stdout as they are performed.
-    ///
-    /// Defaults to `false`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterConfig, ClusterConfigBuilder, ClusterError};
-    /// # fn example(builder: &mut ClusterConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = builder
-    ///     .render_checks(true)
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[builder(default = "false")]
-    render_checks: bool,
 
     /// Used to hide spinner animation for progress updates
-    #[builder(default = "false")]
+    #[builder(default = "true")]
     hide_spinner: bool,
 
     /// Use proxy address for communicating with kubernetes cluster

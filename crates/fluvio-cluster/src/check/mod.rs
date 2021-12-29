@@ -257,7 +257,7 @@ pub enum FluvioClusterComponent {
 }
 
 #[async_trait]
-pub trait ClusterCheck: Debug + 'static  + Send + Sync {
+pub trait ClusterCheck: Debug + 'static + Send + Sync {
     /// list of components that must be installed before checking
     fn required_components(&self) -> Vec<FluvioClusterComponent>;
 

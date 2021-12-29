@@ -162,23 +162,6 @@ pub struct LocalConfig {
     /// ```
     #[builder(default = "false")]
     skip_checks: bool,
-    /// Whether to render pre-install checks to stdout as they are performed.
-    ///
-    /// Defaults to `false`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// # use fluvio_cluster::{ClusterError, LocalConfigBuilder};
-    /// # fn example(builder: &mut LocalConfigBuilder) -> Result<(), ClusterError> {
-    /// let config = builder
-    ///     .render_checks(true)
-    ///     .build()?;
-    /// # Ok(())
-    /// # }
-    /// ```
-    #[builder(default = "false")]
-    render_checks: bool,
 
     /// Used to hide spinner animation for progress updates
     #[builder(default = "false")]

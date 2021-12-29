@@ -22,7 +22,7 @@ impl LocalEnvDriver {
     fn load_config(option: &EnvironmentSetup) -> LocalConfig {
         let version = semver::Version::parse(&*crate::VERSION).unwrap();
         let mut builder = LocalConfig::builder(version);
-        builder.spu_replicas(option.spu()).render_checks(true);
+        builder.spu_replicas(option.spu()).hide_spinner(false);
 
         // Make sure to use the test build of 'fluvio' for cluster components
         let test_exe = std::env::current_exe();

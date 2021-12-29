@@ -20,7 +20,6 @@ pub async fn process_local(
     let mut builder = LocalConfig::builder(platform_version);
     builder
         .log_dir(opt.log_dir.to_string())
-        .render_checks(true)
         .spu_replicas(opt.spu);
 
     if let Some(chart_location) = opt.k8_config.chart_location {

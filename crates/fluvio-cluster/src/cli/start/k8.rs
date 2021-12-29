@@ -29,7 +29,7 @@ pub async fn process_k8(
         .save_profile(!opt.skip_profile_creation)
         .tls(client, server)
         .chart_values(opt.k8_config.chart_values)
-        .render_checks(true)
+        .hide_spinner(false)
         .upgrade(upgrade)
         .proxy_addr(opt.proxy_addr)
         .spu_config(opt.spu_config.as_spu_config())

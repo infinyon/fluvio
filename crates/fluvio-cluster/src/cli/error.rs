@@ -30,6 +30,8 @@ pub enum ClusterCliError {
     Other(String),
     #[error(transparent)]
     ClusterCheckError(#[from] ClusterCheckError),
+    #[error(transparent)]
+    LocalInstallError(#[from] LocalInstallError),
 }
 
 impl ClusterCliError {
