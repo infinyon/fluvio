@@ -11,13 +11,22 @@ use tracing::debug;
 
 #[derive(Debug, StructOpt, Clone, PartialEq)]
 pub struct SwitchOpt {
-    channel: String,
+    channel: Option<String>,
     #[structopt(long)]
     config: Option<PathBuf>,
+
+    #[structopt(short, long)]
+    help: bool,
 }
 
 impl SwitchOpt {
     pub async fn process(&self) -> Result<()> {
+        if self.help {
+            let _ = SwitchOpt::clap().print_help();
+            println!();
+            return Ok(())
+        }
+
         // Load in the config file
         // Parse with the CLI Config parser
 
@@ -45,69 +54,77 @@ impl SwitchOpt {
 
         // See if the channel file exists, if not, write a default config
 
-        debug!("Looking for channel {} in config", &self.channel);
-        let mut new_config = if config.get_channel(&self.channel).is_some() {
-            //println!("Found");
-            debug!("Found channel info for {}", &self.channel);
-            config
-        } else {
-            debug!("channel not found, checking if one of default channels");
-            // We support 3 default channels. Only add them to config when we switch to them the first time
-
-            let mut new_config_channel = config;
-
-            let channel = if self.channel == STABLE_CHANNEL_NAME {
-                FluvioChannelInfo::stable_channel()
-            } else if self.channel == LATEST_CHANNEL_NAME {
-                FluvioChannelInfo::latest_channel()
-            } else if self.channel == DEV_CHANNEL_NAME {
-                FluvioChannelInfo::dev_channel()
+        if let Some(channel_name) = &self.channel {
+            debug!("Looking for channel {} in config", &channel_name);
+            let mut new_config = if config.get_channel(channel_name).is_some() {
+                //println!("Found");
+                debug!("Found channel info for {}", &channel_name);
+                config
             } else {
-                return Err(eyre!(
-                    "Channel not found in channel config. (Did you create it first?)".to_string(),
-                ));
+                debug!("channel not found, checking if one of default channels");
+                // We support 3 default channels. Only add them to config when we switch to them the first time
+
+                let mut new_config_channel = config;
+
+                let channel = if channel_name == STABLE_CHANNEL_NAME {
+                    FluvioChannelInfo::stable_channel()
+                } else if channel_name == LATEST_CHANNEL_NAME {
+                    FluvioChannelInfo::latest_channel()
+                } else if channel_name == DEV_CHANNEL_NAME {
+                    FluvioChannelInfo::dev_channel()
+                } else {
+                    return Err(eyre!(
+                        "Channel not found in channel config. (Did you create it first?)"
+                            .to_string(),
+                    ));
+                };
+
+                debug!(
+                    "Updating channel config with new channel {} config {:#?}",
+                    channel_name.clone(),
+                    &channel
+                );
+                new_config_channel.insert_channel(channel_name.clone(), channel)?;
+                new_config_channel.set_current_channel(channel_name.clone())?;
+                new_config_channel.save()?;
+
+                // Install the latest fluvio binary the first time we switch
+                if channel_name == STABLE_CHANNEL_NAME
+                    && !FluvioChannelInfo::stable_channel()
+                        .get_binary_path()
+                        .exists()
+                {
+                    debug!("Installing stable channel binary for first time");
+                    let version = FluvioBinVersion::parse(channel_name)?;
+                    install_channel_fluvio_bin(channel_name.clone(), &new_config_channel, version)
+                        .await?;
+                }
+                if channel_name == LATEST_CHANNEL_NAME
+                    && !FluvioChannelInfo::latest_channel()
+                        .get_binary_path()
+                        .exists()
+                {
+                    debug!("Installing latest channel binary for first time");
+                    let version = FluvioBinVersion::parse(channel_name)?;
+                    install_channel_fluvio_bin(channel_name.clone(), &new_config_channel, version)
+                        .await?;
+                }
+
+                new_config_channel
             };
 
-            debug!(
-                "Updating channel config with new channel {} config {:#?}",
-                self.channel.clone(),
-                &channel
-            );
-            new_config_channel.insert_channel(self.channel.clone(), channel)?;
-            new_config_channel.set_current_channel(self.channel.clone())?;
-            new_config_channel.save()?;
+            new_config.set_current_channel(channel_name.clone())?;
+            new_config.save()?;
 
-            // Install the latest fluvio binary the first time we switch
-            if self.channel == STABLE_CHANNEL_NAME
-                && !FluvioChannelInfo::stable_channel()
-                    .get_binary_path()
-                    .exists()
-            {
-                debug!("Installing stable channel binary for first time");
-                let version = FluvioBinVersion::parse(&self.channel)?;
-                install_channel_fluvio_bin(self.channel.clone(), &new_config_channel, version)
-                    .await?;
-            }
-            if self.channel == LATEST_CHANNEL_NAME
-                && !FluvioChannelInfo::latest_channel()
-                    .get_binary_path()
-                    .exists()
-            {
-                debug!("Installing latest channel binary for first time");
-                let version = FluvioBinVersion::parse(&self.channel)?;
-                install_channel_fluvio_bin(self.channel.clone(), &new_config_channel, version)
-                    .await?;
-            }
+            debug!("channel config: {:?}", channel_name.clone());
+            println!("Switched to release channel \"{}\"", channel_name);
 
-            new_config_channel
-        };
-
-        new_config.set_current_channel(self.channel.clone())?;
-        new_config.save()?;
-
-        debug!("channel config: {:?}", self.channel.clone());
-        println!("Switched to release channel \"{}\"", self.channel);
-
-        Ok(())
+            Ok(())
+        } else {
+            println!("No channel name provided");
+            let _ = SwitchOpt::clap().print_help();
+            println!();
+            Err(eyre!(""))
+        }
     }
 }

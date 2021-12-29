@@ -8,10 +8,20 @@ use tracing::debug;
 pub struct ListOpt {
     #[structopt(long)]
     config: Option<PathBuf>,
+
+    #[structopt(short, long)]
+    help: bool,
 }
 
 impl ListOpt {
     pub async fn process(&self) -> Result<()> {
+
+        if self.help {
+            let _ = ListOpt::clap().print_help();
+            println!();
+            return Ok(())
+        }
+
         // Open config file
 
         // Load in the config file

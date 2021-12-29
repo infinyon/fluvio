@@ -20,7 +20,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-pub fn print_help_hack() -> Result<()> {
+fn print_help_hack() -> Result<()> {
     let mut args = std::env::args();
     if args.len() < 2 {
         HelpOpt {}.process()?;

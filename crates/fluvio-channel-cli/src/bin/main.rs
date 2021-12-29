@@ -4,7 +4,6 @@ use color_eyre::eyre::{Result, eyre};
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
 
-use fluvio_cli::{Root as FluvioCliRoot};
 use fluvio_future::task::run_block_on;
 use std::env::current_exe;
 use std::ffi::OsString;
@@ -33,13 +32,13 @@ const FLUVIO_BOOTSTRAP: &str = "FLUVIO_BOOTSTRAP";
 const CHANNEL_BOOTSTRAP: &str = "CHANNEL_BOOTSTRAP";
 const FLUVIO_FRONTEND: &str = "FLUVIO_FRONTEND";
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, StructOpt, Default)]
 struct RootOpt {
     #[structopt(long)]
     skip_channel_check: bool,
 }
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, StructOpt, Default)]
 #[structopt(global_settings = &[AppSettings::DisableHelpSubcommand])]
 struct Root {
     #[structopt(flatten)]
@@ -99,6 +98,12 @@ enum RootCmd {
     // This should be the fluvio binary's subcommand
     #[structopt(external_subcommand)]
     Other(Vec<String>),
+}
+
+impl Default for RootCmd {
+    fn default() -> Self {
+        RootCmd::Other(Vec::new())
+    }
 }
 
 // `fluvio-channel` is a Fluvio frontend to support release channels.
@@ -169,15 +174,19 @@ fn main() -> Result<()> {
     let channel_cli = if let Ok(channel_cli) = fluvio_channel_root {
         match channel_cli.command {
             RootCmd::Help => {
+                debug!("fluvio-channel Help");
                 print_help(is_frontend)?;
                 std::process::exit(0);
             }
             RootCmd::Version(ref channel_opt) => {
+                debug!("fluvio-channel Version");
                 if let Some(subcmd) = &channel_opt.cmd {
                     if let Err(e) = run_block_on(subcmd.process()) {
                         println!("{}", e);
                         std::process::exit(1);
                     }
+
+                    std::process::exit(0);
                 } else {
                     // This command should forward to fluvio binary
                 }
@@ -188,8 +197,20 @@ fn main() -> Result<()> {
         };
         channel_cli
     } else {
-        print_help(is_frontend)?;
-        std::process::exit(0);
+        debug!("Not one of fluvio-channel's subcommands");
+
+        // Re-build the args list to pass onto exec'ed process
+        let mut args: Vec<String> = std::env::args().collect();
+        if !args.is_empty() {
+            args.remove(0);
+        }
+
+        //print_help(is_frontend)?;
+        //std::process::exit(0);
+        Root {
+            command: RootCmd::Other(args),
+            ..Default::default()
+        }
     };
 
     // Only if we use `version` subcommand with args
@@ -326,12 +347,13 @@ fn main() -> Result<()> {
 fn print_help(is_frontend: bool) -> Result<()> {
     if is_frontend {
         debug!("Print Fluvio's help");
-        let mut fluvio_help = FluvioCliRoot::clap();
-        fluvio_help.print_help()?;
+        //let mut fluvio_help = FluvioCliRoot::clap();
+        //fluvio_help.print_help()?;
     } else {
         debug!("Print Fluvio-channel's help");
         let mut fluvio_channel_help = Root::clap();
         fluvio_channel_help.print_help()?;
+        std::process::exit(0);
     }
 
     Ok(())
