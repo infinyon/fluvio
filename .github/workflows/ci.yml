@@ -426,7 +426,7 @@ jobs:
         timeout-minutes: 5
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
+          RUST_BACKTRACE=1 make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
           echo "multiple partition test done"
       - name: Run reconnection-test
         if: ${{ matrix.test == 'reconnection' }}

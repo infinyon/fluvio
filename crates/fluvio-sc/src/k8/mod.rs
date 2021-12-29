@@ -40,7 +40,7 @@ pub fn main_k8_loop(opt: ScOpt) {
         if let Err(err) =
             migration::MigrationController::migrate(k8_client.clone(), &namespace).await
         {
-            panic!("migration failed: {}", err);
+            panic!("migration failed: {:#?}", err);
         }
         let ctx = start_main_loop((sc_config.clone(), auth_policy), k8_client.clone()).await;
 
