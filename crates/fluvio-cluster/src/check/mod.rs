@@ -257,7 +257,7 @@ pub enum FluvioClusterComponent {
 }
 
 #[async_trait]
-pub trait ClusterCheck: Debug + 'static {
+pub trait ClusterCheck: Debug + 'static  + Send + Sync {
     /// list of components that must be installed before checking
     fn required_components(&self) -> Vec<FluvioClusterComponent>;
 
@@ -785,7 +785,7 @@ impl ClusterChecker {
     }
 }
 
-fn check_permission(resource: &str, pb: &ProgressRenderer) -> CheckResult {
+fn check_permission(resource: &str, _pb: &ProgressRenderer) -> CheckResult {
     let status = check_create_permission(resource)?;
     if !status {
         return Ok(CheckStatus::Unrecoverable(

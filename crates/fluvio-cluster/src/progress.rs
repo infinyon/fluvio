@@ -13,7 +13,6 @@ pub(crate) enum InstallProgressMessage {
     WaitingForSPU(usize, usize),
     SpuGroupLaunched(u16),
     SpuGroupExists,
-    AlreadyInstalled,
     InstallingFluvio,
     InstallingChart,
     UpgradingChart,
@@ -32,9 +31,6 @@ impl ProgressRenderedText for InstallProgressMessage {
         match self {
             InstallProgressMessage::PreFlightCheck => {
                 format!("{}", "📝 Running pre-flight checks".bold())
-            }
-            InstallProgressMessage::AlreadyInstalled => {
-                format!("✨ {}", "Fluvio already installed".bold())
             }
             InstallProgressMessage::ChartInstalled => {
                 format!("{:>6} {}", "✅", "Fluvio app chart has been installed")
