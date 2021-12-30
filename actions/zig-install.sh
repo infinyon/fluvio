@@ -11,12 +11,11 @@ if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
 fi
 
-if [[ "$MATRIX_OS" == "macos-latest" ]]; then
+if [[ "$MATRIX_OS" == "macos-11" ]]; then
     echo "installing zig on mac"
  #   brew update
     brew install zig && \
-    brew install llvm@11 && \
-    echo "FLUVIO_BUILD_LLD=/usr/local/opt/llvm@11/bin/lld" | tee -a $GITHUB_ENV
+    echo "FLUVIO_BUILD_LLD=/opt/homebrew/opt/llvm@13/bin/lld" | tee -a $GITHUB_ENV
 fi
 
 
