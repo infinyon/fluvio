@@ -6,8 +6,8 @@ echo "installing zig matrix.os=$MATRIX_OS"
 
 if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     echo "installing zig on ubuntu"
+    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
     sudo snap install --beta --classic zig && \    
-    wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add - && \
     sudo apt-get install python3-lldb-13 lld-13 && \
     echo "FLUVIO_BUILD_LLD=lld-11" | tee -a $GITHUB_ENV
 fi
