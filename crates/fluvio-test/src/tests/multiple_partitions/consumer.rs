@@ -12,23 +12,24 @@ pub async fn consumer_stream(test_driver: &TestDriver, option: MultiplePartition
         .await;
     let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 
-    let mut index: i32 = 0;
+    let mut index = 0;
 
     let mut set = HashSet::new();
+    let iterations = 10000;
 
     while let Some(Ok(record)) = stream.next().await {
         let value = String::from_utf8_lossy(record.value())
-            .parse::<i32>()
+            .parse::<usize>()
             .expect("Unable to parse");
         println!("Consuming {:<5}: was consumed: {:?}", index, value);
 
-        assert!((0..5000).contains(&value));
+        assert!((0..iterations).contains(&value));
 
         set.insert(value);
         index += 1;
-        if index == 5000 {
+        if index == iterations {
             break;
         }
     }
-    assert_eq!(set.len(), 5000)
+    assert_eq!(set.len(), iterations)
 }

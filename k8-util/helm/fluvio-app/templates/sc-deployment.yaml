@@ -49,7 +49,7 @@ spec:
             {{ end }}
           volumeMounts:
             - name: cacert
-              mountPath: /var/certs/ca  
+              mountPath: /var/certs/ca
               readOnly: true
             - name: tls
               mountPath: /var/certs/tls

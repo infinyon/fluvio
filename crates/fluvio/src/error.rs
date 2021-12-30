@@ -2,9 +2,14 @@ use std::io::Error as IoError;
 
 use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
-use crate::config::ConfigError;
 use semver::Version;
 use dataplane::smartmodule::SmartModuleRuntimeError;
+
+use crate::config::ConfigError;
+use crate::producer::ProducerError;
+use crate::producer::TopicProducerConfigBuilderError;
+
+pub type Result<T, Err = FluvioError> = std::result::Result<T, Err>;
 
 /// Possible errors that may arise when using Fluvio
 #[derive(thiserror::Error, Debug)]
@@ -45,6 +50,10 @@ To interact with this cluster, please install the matching CLI version using the
     ConsumerConfig(String),
     #[error("SmartModule runtime error {0}")]
     SmartModuleRuntime(#[from] SmartModuleRuntimeError),
+    #[error("Producer error: {0}")]
+    Producer(#[from] ProducerError),
+    #[error("Error building producer config: {0}")]
+    TopicProducerConfigBuilder(#[from] TopicProducerConfigBuilderError),
     #[error("Unknown error: {0}")]
     Other(String),
 }

@@ -12,6 +12,10 @@ In the event that a release needs to be un-released, please follow the [Release 
 
 This is a mostly **manual** workflow
 
+###  Create a tracking issue for Release
+
+Create a [new issue](https://github.com/infinyon/fluvio/issues/new?template=release_checklist.md) with the `release_checklist.md` template
+
 Prior to releasing, the release manager should check the following:
 
 Review Fluvio website:
@@ -68,7 +72,7 @@ After performing the release, the release manager should do the following in ord
 to prepare for the next release and announce the current release to the community:
 
 
-1. Update files in Fluvio repo, open PR and merge
+1. Update files in Fluvio repo, open PR (with the `?template=release_template.md` PR template) and merge
     - Update `VERSION` file for next release
       - [ ] Minor version bump the version in the `VERSION` file.
     - Update `CHANGELOG.md` file for next release
@@ -76,6 +80,7 @@ to prepare for the next release and announce the current release to the communit
       `CHANGELOG.md` at top of file (but under the `# Release Notes` header)
         - ```## Platform Version X.Y.Z - UNRELEASED```
       - [ ] For version just released, replace `UNRELEASED` date with current date (format as `YYYY-MM-dd`) in `CHANGELOG.md`.
+    - Create PR with the `?template=release_template.md` PR template and link the [previously created release tracking issue](#create-a-tracking-issue-for-release) to close.
 
 2. Announce the release on Discord (`#announcements` channel) and Twitter ([`@fluvio_io`](https://twitter.com/fluvio_io) user).
 

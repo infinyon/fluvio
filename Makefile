@@ -6,19 +6,19 @@ TARGET?=
 IMAGE_VERSION?=					# If set, this indicates that the image is pre-built and should not be built
 BUILD_PROFILE=$(if $(RELEASE),release,debug)
 CARGO_BUILDER=$(if $(findstring arm,$(TARGET)),cross,cargo) # If TARGET contains the substring "arm"
-FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
+FLUVIO_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(BUILD_PROFILE)/fluvio)
 RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
-CLIENT_LOG=warn
-SERVER_LOG=info
-TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
-DEFAULT_SPU=2
-REPL=2
-DEFAULT_ITERATION=1000
-SPU_DELAY=5
-SC_AUTH_CONFIG=./crates/fluvio-sc/test-data/auth_config
-EXTRA_ARG=
+CLIENT_LOG?=warn
+SERVER_LOG?=info
+TEST_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
+DEFAULT_SPU?=2
+REPL?=2
+DEFAULT_ITERATION?=1000
+SPU_DELAY?=5
+SC_AUTH_CONFIG?=./crates/fluvio-sc/test-data/auth_config
+EXTRA_ARG?=
 
 # Test env
 TEST_ENV_AUTH_POLICY=
@@ -121,6 +121,28 @@ multiple-partition-test: test-setup
                 ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
+batch-failure-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+batch-failure-test: FLV_SOCKET_WAIT=25
+batch-failure-test: DEFAULT_SPU=1
+batch-failure-test: REPL=1
+batch-failure-test: test-setup
+	$(TEST_BIN) produce_batch  \
+                ${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
+
+batching-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
+batching-test: DEFAULT_SPU=1
+batching-test: REPL=1
+batching-test: test-setup
+	$(TEST_BIN) batching  \
+                ${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
 
 reconnection-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 reconnection-test: DEFAULT_SPU=1

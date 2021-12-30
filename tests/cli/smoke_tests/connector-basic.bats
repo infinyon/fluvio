@@ -9,13 +9,13 @@ load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
-    CONNECTOR_CONFIG="$TEST_HELPER_DIR/test-connector-config.yml"
+    CONNECTOR_CONFIG="$TEST_HELPER_DIR/connectors/test-connector-config.yaml"
     export CONNECTOR_CONFIG
     INVALID_CONFIG=$(mktemp)
     export INVALID_CONFIG
-    CONNECTOR_NAME="my-test-mqtt"
+    CONNECTOR_NAME="my-test-connector"
     export CONNECTOR_NAME
-    CONNECTOR_TOPIC="my-mqtt"
+    CONNECTOR_TOPIC="my-test-topic"
     export CONNECTOR_TOPIC
 }
 

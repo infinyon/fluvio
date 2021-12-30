@@ -1,0 +1,6 @@
+version: v1
+name: my-third-party-connector
+type: "https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml"
+topic: my-test-connector-topic
+create_topic: true
+direction: source

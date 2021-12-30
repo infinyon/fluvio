@@ -1,38 +1,58 @@
 use structopt::StructOpt;
 
-use crate::ClusterUninstaller;
+use crate::delete::ClusterUninstallConfig;
 use crate::cli::ClusterCliError;
 
 #[derive(Debug, StructOpt)]
 pub struct DeleteOpt {
-    #[structopt(long, default_value = "default")]
-    namespace: String,
+    #[structopt(long, value_name = "Kubernetes namespace")]
+    namespace: Option<String>,
 
-    #[structopt(long, default_value = "fluvio")]
-    name: String,
-
-    /// Remove local spu/sc(custom) fluvio installation
-    #[structopt(long)]
+    /// Remove only local spu/sc(custom) fluvio installation
+    #[structopt(long, conflicts_with = "k8", conflicts_with = "sys")]
     local: bool,
 
-    #[structopt(long)]
-    /// Remove fluvio system chart
+    /// Remove only k8 fluvio installation
+    #[structopt(long, conflicts_with = "local", conflicts_with = "sys")]
+    k8: bool,
+
+    #[structopt(long, conflicts_with = "k8", conflicts_with = "local")]
+    /// delete system chart
     sys: bool,
 }
 
 impl DeleteOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
-        let uninstaller = ClusterUninstaller::new()
-            .with_namespace(&self.namespace)
-            .with_name(&self.name)
-            .build()?;
+        let mut builder = ClusterUninstallConfig::builder();
+
         if self.sys {
-            uninstaller.uninstall_sys().await?;
+            builder.uninstall_local(false);
+            builder.uninstall_k8(false);
+            builder.uninstall_sys(true);
         } else if self.local {
-            uninstaller.uninstall_local().await?;
+            builder.uninstall_local(true);
+            builder.uninstall_k8(false);
+            builder.uninstall_sys(false);
+        } else if self.k8 {
+            builder.uninstall_local(false);
+            builder.uninstall_k8(true);
+            builder.uninstall_sys(false);
         } else {
-            uninstaller.uninstall().await?;
+            builder.uninstall_local(true);
+            builder.uninstall_k8(true);
+            builder.uninstall_sys(true);
         }
+
+        if let Some(namespace) = self.namespace {
+            builder.namespace(namespace);
+        }
+
+        let uninstaller = builder
+            .build()
+            .map_err(|err| ClusterCliError::Other(format!("builder error: {:#?}", err)))?
+            .uninstaller()?;
+
+        uninstaller.uninstall().await?;
 
         Ok(())
     }

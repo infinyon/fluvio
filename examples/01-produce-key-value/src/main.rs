@@ -40,6 +40,7 @@ async fn produce_key_value() -> Result<(), fluvio::FluvioError> {
 
     println!("About to send");
     producer.send(key, value).await?;
+    producer.flush().await?;
     println!("[{}] {}", key, value);
     Ok(())
 }

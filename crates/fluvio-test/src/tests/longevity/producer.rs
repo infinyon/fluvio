@@ -47,6 +47,7 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
             .send_count(&producer, RecordKey::NULL, record_json)
             .await
             .expect("Producer Send failed");
+        producer.flush().await.expect("flush");
 
         records_sent += 1;
     }

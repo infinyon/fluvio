@@ -18,6 +18,7 @@ use crate::FluvioError;
 use crate::FluvioConfig;
 use crate::consumer::MultiplePartitionConsumer;
 use crate::consumer::PartitionSelectionStrategy;
+use crate::producer::TopicProducerConfig;
 use crate::spu::SpuPool;
 use crate::sockets::{ClientConfig, Versions, VersionedSerialSocket};
 use crate::sync::MetadataStores;
@@ -143,6 +144,32 @@ impl Fluvio {
         &self,
         topic: S,
     ) -> Result<TopicProducer, FluvioError> {
+        self.topic_producer_with_config(topic, Default::default())
+            .await
+    }
+
+    /// Creates a new `TopicProducer` for the given topic name
+    ///
+    /// Currently, producers are scoped to a specific Fluvio topic.
+    /// That means when you send events via a producer, you must specify
+    /// which partition each event should go to.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// # use fluvio::{Fluvio, FluvioError, RecordKey, TopicProducerConfigBuilder};
+    /// # async fn do_produce_to_topic(fluvio: &Fluvio) -> Result<(), FluvioError> {
+    /// let config = TopicProducerConfigBuilder::default().batch_size(500).build()?;
+    /// let producer = fluvio.topic_producer_with_config("my-topic", config).await?;
+    /// producer.send(RecordKey::NULL, "Hello, Fluvio!").await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn topic_producer_with_config<S: Into<String>>(
+        &self,
+        topic: S,
+        config: TopicProducerConfig,
+    ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
         debug!(topic = &*topic, "Creating producer");
 
@@ -151,7 +178,7 @@ impl Fluvio {
             return Err(FluvioError::TopicNotFound(topic));
         }
 
-        Ok(TopicProducer::new(topic, spu_pool))
+        Ok(TopicProducer::new(topic, spu_pool, config).await?)
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition

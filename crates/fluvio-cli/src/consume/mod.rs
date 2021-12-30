@@ -168,7 +168,7 @@ pub struct ConsumeOpt {
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
-    /// Eg. fluvio consume topic-name --filter filter.wasm -E foo=bar -E key=value -E one=1
+    /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
     #[structopt(short = "e", long= "extra-params", parse(try_from_str = parse_key_val), number_of_values = 1)]
     pub extra_params: Option<Vec<(String, String)>>,
 }

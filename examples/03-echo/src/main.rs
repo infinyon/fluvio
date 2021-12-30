@@ -145,6 +145,7 @@ async fn produce() -> Result<(), FluvioError> {
             .await?;
     }
     producer.send(RecordKey::NULL, "Done!").await?;
+    producer.flush().await?;
 
     Ok(())
 }

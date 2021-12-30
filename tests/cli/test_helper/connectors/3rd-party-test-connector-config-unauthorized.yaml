@@ -1,0 +1,7 @@
+version: v1
+name: my-invalid-third-party-connector
+type: "https://www.google.com"
+topic: my-test-connector-topic
+create_topic: true
+direction: source
+

@@ -258,7 +258,7 @@ impl std::error::Error for ConnectorConfigLoadErr {}
 
 impl ConnectorConfig {
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, ConnectorConfigLoadErr> {
-        let mut file = File::open(path.into()).unwrap();
+        let mut file = File::open(path.into()).expect("Failed to load connector config");
         let mut contents = String::new();
         file.read_to_string(&mut contents).unwrap();
         let connector_config: Self = serde_yaml::from_str(&contents).unwrap();

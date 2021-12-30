@@ -9,10 +9,11 @@ pub async fn producer(test_driver: TestDriver, option: MultiplePartitionTestCase
         .create_producer(&option.environment.topic_name())
         .await;
 
-    let iterations: u16 = 5000;
+    let iterations: u16 = 10000;
     println!("Producing {} records", iterations);
     for i in 0..iterations {
         let record = i.to_string();
         producer.send(RecordKey::NULL, record).await.unwrap();
     }
+    producer.flush().await.unwrap();
 }
