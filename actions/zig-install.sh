@@ -7,7 +7,7 @@ echo "installing zig matrix.os=$MATRIX_OS"
 if [[ "$MATRIX_OS" == "ubuntu-latest" ]]; then
     echo "installing zig on ubuntu"
     sudo snap install --beta --classic zig && \
-    sudo ./llvm.sh 13 && \
+    sudo . ${0%/*}/llvm.sh 13 && \
     echo "FLUVIO_BUILD_LLD=lld-13" | tee -a $GITHUB_ENV
 fi
 
