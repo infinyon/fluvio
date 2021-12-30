@@ -10,15 +10,15 @@ FLUVIO_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$(
 RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
-CLIENT_LOG=warn
-SERVER_LOG=info
+CLIENT_LOG?=warn
+SERVER_LOG?=info
 TEST_BIN=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
-DEFAULT_SPU=2
-REPL=2
-DEFAULT_ITERATION=1000
-SPU_DELAY=5
-SC_AUTH_CONFIG=./crates/fluvio-sc/test-data/auth_config
-EXTRA_ARG=
+DEFAULT_SPU?=2
+REPL?=2
+DEFAULT_ITERATION?=1000
+SPU_DELAY?=5
+SC_AUTH_CONFIG?=./crates/fluvio-sc/test-data/auth_config
+EXTRA_ARG?=
 
 # Test env
 TEST_ENV_AUTH_POLICY=

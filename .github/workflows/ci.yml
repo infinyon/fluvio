@@ -370,6 +370,10 @@ jobs:
     needs:
       - build_primary_binaries
       - config
+    env:
+      UNINSTALL:  noclean
+      EXTRA_ARG:  --cluster-start
+      RUST_LOG: fluvio=debug
     strategy:
       fail-fast: false
       matrix:
@@ -399,7 +403,7 @@ jobs:
       - name: Mark executable
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
-          echo "~/.bin" >> $GITHUB_PATH
+          echo "~/bin" >> $GITHUB_PATH
       - name: Print version
         run: fluvio version
       - name: Set up cluster
@@ -411,7 +415,7 @@ jobs:
         timeout-minutes: 5
         run: |
           date
-          make UNINSTALL=noclean EXTRA_ARG=--cluster-start smoke-test-tls-root
+          make smoke-test-tls-root
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
@@ -422,41 +426,42 @@ jobs:
         timeout-minutes: 5
         run: |
           date
-          make UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
+          make election-test
           echo "election test done"
       - name: Run multiple-partition-test
         if: ${{ matrix.test == 'multiple-partition' }}
         timeout-minutes: 5
         run: |
           date
-          RUST_BACKTRACE=1 make  UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
+          make  multiple-partition-test
           echo "multiple partition test done"
       - name: Run reconnection-test
         if: ${{ matrix.test == 'reconnection' }}
         timeout-minutes: 5
         run: |
           date
-          make UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnection-test
+          make reconnection-test
           echo "reconnection test done"
       - name: Run batch-test
         if: ${{ matrix.test == 'batch-failure' }}
         timeout-minutes: 5
         run: |
           date
-          make UNINSTALL=noclean EXTRA_ARG=--cluster-start batch-failure-test
+          make batch-failure-test
           echo "producer batching failure test done"
       - name: Run batch-test
         if: ${{ matrix.test == 'batch' }}
         timeout-minutes: 5
         run: |
           date
-          make UNINSTALL=noclean EXTRA_ARG=--cluster-start batching-test
+          make batching-test
           echo "producer batching test done"
       - name: Save logs
         if: failure()
         run: |
           date
           uname -a
+          helm list
           kubectl get spu
           kubectl get statefulset
           kubectl get topics
