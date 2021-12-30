@@ -43,7 +43,7 @@ Please follow [setup](https://www.rust-lang.org/tools/install) instructions to i
 ### Buildtime dependencies
 * make
 * zig
-* lld (v11)
+* lld (v13)
 * git
 
 ### Runtime dependencies
@@ -108,33 +108,31 @@ Make targets
 
 ### Build Pre-requisites
 
-Zig and LLD(version 11) is required to build the image.
+Zig and LLD(version 13) is required to build the image.
 
 For mac:
 
 ```
-brew install zig
-brew install llvm@11
-export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm\@11/11.1.0_3/bin/lld
+./actions/zig-install.sh macos-11
+export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm@13/bin/lld
 ```
 
-For ubuntu LTS 20.04 or greater:
+For ubuntu:
 
 ```
-sudo snap install zig --beta --classic
-sudo apt-get install -y lld-11
-export FLUVIO_BUILD_LLD=lld-11
+./actions/zig-install.sh ubuntu-latest
+export FLUVIO_BUILD_LLD=lld-13
 ```
 
-### Problem installing lld-11
+### Problem installing lld-13
 
-If you have problem installing `lld-11`, please see: https://apt.llvm.org.
+If you have problem installing `lld-13`, please see: https://apt.llvm.org.
 
 For ubuntu LTS 18.04:
 
 ```
 wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
-sudo apt-get install clang-11 lldb-11 lld-11
+sudo apt-get install python3-lldb-13 clang-13 lldb-13 lld-13
 ```
 
 ## Building the Fluvio docker image
