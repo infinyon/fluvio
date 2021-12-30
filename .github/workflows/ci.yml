@@ -613,7 +613,7 @@ jobs:
             make ${{ matrix.make-target }}
       - name: Print version
         run: |
-          ./fluvio version
+          fluvio version
           date
           uname -a
           helm list
@@ -624,7 +624,7 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          ./fluvio partition list
+          fluvio partition list
 
       - name: Save logs
         if: failure()
