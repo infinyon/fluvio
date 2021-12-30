@@ -398,7 +398,7 @@ jobs:
           path: ~/bin
       - name: Mark executable
         run: |
-          chmod +x ./bin/fluvio ./bin/fluvio-test ~/.fluvio/extensions/fluvio-run
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
           echo "~/.bin" >> $GITHUB_PATH
       - name: Print version
         run: fluvio version
