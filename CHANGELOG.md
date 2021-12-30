@@ -7,6 +7,7 @@
 * Uninstall sys chart when cluster is deleted ([#2032](https://github.com/infinyon/fluvio/issues/2032))
 * Upgrade Wasmtime 0.32 ([#2038](https://github.com/infinyon/fluvio/pull/2038))
 * Add auto-batching to Producer ([#2000](https://github.com/infinyon/fluvio/issues/2000))
+* Add support for 3rd party connectors ([#2027](https://github.com/infinyon/fluvio/pull/2027)
 
 ## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
