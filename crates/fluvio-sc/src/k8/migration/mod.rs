@@ -3,7 +3,7 @@ use std::sync::Arc;
 use k8_client::{ClientError, K8Client, meta_client::MetadataClient};
 use fluvio_controlplane_metadata::topic::{TopicSpec, TopicV1Wrapper};
 use k8_types::{UpdatedK8Obj};
-use tracing::{debug};
+use tracing::{debug, info};
 
 /// Migrate old version of CRD to new version
 
@@ -18,11 +18,12 @@ impl MigrationController {
 
     async fn migrate_crd(&self, ns: &str) -> Result<(), ClientError> {
         let old_topics = self.0.retrieve_items::<TopicV1Wrapper, _>(ns).await?;
+        info!(old_topic = old_topics.items.len(), "Old topics");
         for old_topic in old_topics.items {
             let old_spec_wrapper = old_topic.spec;
             let old_metadata = old_topic.metadata;
             if let Some(old_spec) = old_spec_wrapper.inner {
-                println!("migrating v1 topic: {}", old_metadata.name);
+                info!("migrating v1 topic: {}", old_metadata.name);
                 debug!("old topic: {:#?}", old_spec);
                 let new_spec: TopicSpec = old_spec.into();
                 debug!("new spec: {:#?}", new_spec);
