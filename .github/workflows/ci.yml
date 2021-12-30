@@ -72,7 +72,7 @@ jobs:
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
       - name: Set RELEASE mode
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+   #     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
@@ -381,7 +381,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1]
+        run: [r1,r2,r3]
         test: [smoke,election,multiple-partition,reconnection, batch-failure, batch]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
@@ -475,21 +475,21 @@ jobs:
         timeout-minutes: 5
         if: failure()
         with:
-          name: local-${{ matrix.run }}-sc-log
+          name: local-${{ matrix.run }}-${{ matrix.test }}-sc-log
           path: /tmp/flv_sc.log
       - name: Upload SPU 1 Log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: failure()
         with:
-          name: local-${{ matrix.run }}-spu1-logs
+          name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
           path: /tmp/spu_log_5001.log
       - name: Upload SPU 2 Log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: failure()
         with:
-          name: local-${{ matrix.run }}-spu1-logs
+          name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
           path: /tmp/spu_log_5002.log
 
   build_image:
