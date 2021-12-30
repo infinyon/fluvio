@@ -72,7 +72,7 @@ jobs:
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
       - name: Set RELEASE mode
-   #     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
         shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
