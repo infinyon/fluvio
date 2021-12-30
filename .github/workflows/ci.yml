@@ -140,11 +140,11 @@ jobs:
             rust: stable
             rust-target: x86_64-pc-windows-gnu
             binary: fluvio.exe
-          - os: macos-latest
+          - os: macos-11
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio
-          - os: macos-latest
+          - os: macos-11
             rust: stable
             rust-target: x86_64-apple-darwin
             binary: fluvio-run
