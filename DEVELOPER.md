@@ -113,15 +113,14 @@ Zig and LLD(version 13) is required to build the image.
 For mac:
 
 ```
-brew install zig
+./actions/zig-install.sh macos-11
 export FLUVIO_BUILD_LLD=/opt/homebrew/Cellar/llvm@13/bin/lld
 ```
 
-For ubuntu LTS 20.04 or greater:
+For ubuntu:
 
 ```
-sudo snap install zig --beta --classic
-sudo apt-get install -y python3-lldb-13 lld-13
+./actions/zig-install.sh ubuntu-latest
 export FLUVIO_BUILD_LLD=lld-13
 ```
 
