@@ -238,7 +238,7 @@ jobs:
 
       - name: Build fluvio-channel
         if: ${{ matrix.binary == 'fluvio-channel.exe' }}
-        run: make build-channel-minimal
+        run: make build-channel
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
