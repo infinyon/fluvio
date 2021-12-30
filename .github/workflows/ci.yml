@@ -374,6 +374,8 @@ jobs:
       UNINSTALL:  noclean
       EXTRA_ARG:  --cluster-start
       RUST_LOG: fluvio=debug
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
     strategy:
       fail-fast: false
       matrix:
