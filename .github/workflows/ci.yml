@@ -373,7 +373,7 @@ jobs:
     env:
       UNINSTALL:  noclean
       EXTRA_ARG:  --cluster-start
-      RUST_LOG: fluvio=debug
+      SERVER_LOG: fluvio=debug
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
     strategy:
@@ -470,13 +470,27 @@ jobs:
           kubectl get partitions
           ps -ef | grep fluvio
 
-      - name: Upload Logs
+      - name: Upload SC Logs
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: failure()
         with:
-          name: local-${{ matrix.run }}-logs
-          path: /tmp/*.log
+          name: local-${{ matrix.run }}-sc-log
+          path: /tmp/flv_sc.log
+      - name: Upload SPU 1 Log
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: failure()
+        with:
+          name: local-${{ matrix.run }}-spu1-logs
+          path: /tmp/spu_log_5001.log
+      - name: Upload SPU 2 Log
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: failure()
+        with:
+          name: local-${{ matrix.run }}-spu1-logs
+          path: /tmp/spu_log_5002.log
 
   build_image:
     name: Build Fluvio Docker image
