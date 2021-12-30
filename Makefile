@@ -65,7 +65,7 @@ build-channel: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio-channel $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-channel-minimal: install_rustup_target
-	$(CARGO_BUILDER) build --bin fluvio-channel $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features  --manifest-path ./crates/fluvio-channel-cli/Cargo.toml
+	$(CARGO_BUILDER) build --bin fluvio-channel $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG) --no-default-features --features fluvio-types --manifest-path ./crates/fluvio-channel-cli/Cargo.toml
 
 install_rustup_target:
 	./build-scripts/install_target.sh
