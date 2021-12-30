@@ -381,7 +381,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1,r2,r3]
+        run: [r1]
         test: [smoke,election,multiple-partition,reconnection, batch-failure, batch]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
