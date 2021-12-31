@@ -254,25 +254,27 @@ pub trait SmartModuleInstance: Send + Sync {
 }
 
 impl dyn SmartModuleInstance + '_ {
-    #[instrument(skip(self, iter, max_bytes, join_last_record))]
-    pub fn process_batch<Fut, OnBatchFn>(
+    #[instrument(skip(self, iter, max_bytes, join_last_record, on_batch))]
+    pub async fn process_batch<Fut, OnBatchFn>(
         &mut self,
         iter: &mut FileBatchIterator,
         max_bytes: usize,
         join_last_record: Option<&Record>,
+        on_batch: OnBatchFn
     ) -> Result<(i64, bool), Error>
     where
         Fut: Future<Output = Result<(i64, bool), Error>>,
-        OnBatchFn: Fn(Batch, Option<SmartStreamRuntimeError>) -> Fut,
+        OnBatchFn: Fn(Batch, Option<SmartModuleRuntimeError>) -> Fut,
     {
         let mut smartmodule_batch = Batch::<MemoryRecords>::default();
         smartmodule_batch.base_offset = -1; // indicate this is unitialized
         smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
 
-        let mut batch_bytes = 0;
+        let mut total_bytes = 0;
         let mut total_records = 0;
 
         loop {
+            let mut batch_bytes = 0;
             let file_batch = match iter.next() {
                 // we process entire batches.  entire batches are process as group
                 Some(Ok(batch_result)) => batch_result,
@@ -347,15 +349,15 @@ impl dyn SmartModuleInstance + '_ {
                         "old batch"
                     );
 
-                    let (records, _wait) = on_batch(smartstream_batch, maybe_error.take()).await?;
+                    let (records, _wait) = on_batch(smartmodule_batch, maybe_error.take()).await?;
                     total_records += records;
 
-                    smartstream_batch = Batch::<MemoryRecords>::default();
-                    smartstream_batch.base_offset = last_offset + 1;
-                    smartstream_batch.set_offset_delta(last_offset_delta as i32 + 1);
+                    smartmodule_batch = Batch::<MemoryRecords>::default();
+                    smartmodule_batch.base_offset = last_offset + 1;
+                    smartmodule_batch.set_offset_delta(last_offset_delta as i32 + 1);
 
                     debug!(
-                        ?smartstream_batch,
+                        ?smartmodule_batch,
                         "new batch"
                     );
                     batch_bytes = 0;
@@ -381,6 +383,7 @@ impl dyn SmartModuleInstance + '_ {
 
             // If we had a processing error, return current batch and error
             if maybe_error.is_some() {
+                total_bytes += batch_bytes;
                 return on_batch(smartmodule_batch, maybe_error).await;
             }
         }

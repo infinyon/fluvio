@@ -1198,7 +1198,7 @@ async fn test_stream_aggregate_fetch_single_batch_large_legacy() {
     legacy_test(
         "test_stream_aggregate_fetch_single_batch_legacy",
         FLUVIO_WASM_AGGREGATE,
-        SmartStreamKind::Aggregate {
+        SmartModuleKind::Aggregate {
             accumulator: Vec::from("A"),
         },
         test_stream_aggregate_fetch_single_batch,
@@ -1211,7 +1211,7 @@ async fn test_stream_aggregate_fetch_single_batch_large_adhoc() {
     adhoc_test(
         "test_stream_aggregate_fetch_single_batch_adhoc",
         FLUVIO_WASM_AGGREGATE,
-        SmartStreamKind::Aggregate {
+        SmartModuleKind::Aggregate {
             accumulator: Vec::from("A"),
         },
         test_stream_aggregate_fetch_single_batch_large,
@@ -1224,7 +1224,7 @@ async fn test_stream_aggregate_fetch_single_batch_large_predefined() {
     predefined_test(
         "test_stream_aggregate_fetch_single_batch_predefined",
         FLUVIO_WASM_AGGREGATE,
-        SmartStreamKind::Aggregate {
+        SmartModuleKind::Aggregate {
             accumulator: Vec::from("A"),
         },
         test_stream_aggregate_fetch_single_batch_large,
@@ -1235,12 +1235,13 @@ async fn test_stream_aggregate_fetch_single_batch_large_predefined() {
 async fn test_stream_aggregate_fetch_single_batch_large(
     ctx: Arc<GlobalContext<FileReplica>>,
     test_path: PathBuf,
-    wasm_payload: Option<SmartStreamPayload>,
-    smart_module: Option<SmartModuleInvocation>,
+    wasm_payload: Option<LegacySmartModulePayload>,
+    smartmodule: Option<SmartModuleInvocation>,
 ) {
     ensure_clean_dir(&test_path);
 
-    let addr = format!("127.0.0.1:{}", NEXT_PORT.fetch_add(1, Ordering::Relaxed));
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+    let addr = format!("127.0.0.1:{}", port);
 
     let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
 
@@ -1266,7 +1267,7 @@ async fn test_stream_aggregate_fetch_single_batch_large(
         max_bytes: 48,
         wasm_module: Vec::new(),
         wasm_payload,
-        smart_module,
+        smartmodule,
         ..Default::default()
     };
 
@@ -1275,7 +1276,7 @@ async fn test_stream_aggregate_fetch_single_batch_large(
     //
     // 1
     // 2
-    // 3
+    // 3 
     // 4
     // 5
     let mut records = BatchProducer::builder()

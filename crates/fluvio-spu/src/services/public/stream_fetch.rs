@@ -1,4 +1,6 @@
 use std::sync::Arc;
+use std::io::Error as IoError;
+use std::io::ErrorKind as IoErrorKind;
 use std::time::Instant;
 
 use futures_util::FutureExt;
@@ -186,6 +188,7 @@ impl StreamFetchHandler {
                     Ok(())
                 }
                 StreamFetchError::Socket(err) => Err(err),
+                StreamFetchError::SmartModule(err) => Ok(()),
             }
         } else {
             Ok(())
@@ -451,7 +454,7 @@ impl StreamFetchHandler {
                 )
                 .await
                 .map_err(|err| {
-                    IoError::new(ErrorKind::Other, format!("smartstream err {}", err))
+                    StreamFetchError::SmartModule(format!("smartmodule err {}", err))
                 })?,
             None => {
                 // If no SmartModule is provided, respond using raw file records
@@ -485,7 +488,7 @@ impl StreamFetchHandler {
         Ok(output)
     }
 
-    #[instrument(skip(self, file_partition_response, batch, smartmodule_error))]
+    #[instrument(skip(self, batch, smartmodule_error))]
     async fn send_processed_response(
         &self,
         file_partition_response_error_code: ErrorCode,
@@ -497,8 +500,8 @@ impl StreamFetchHandler {
     ) -> Result<(Offset, bool), SocketError> {
         type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
 
-        let error_code = match smartstream_error {
-            Some(error) => ErrorCode::SmartStreamError(SmartStreamError::Runtime(error)),
+        let error_code = match smartmodule_error {
+            Some(error) => ErrorCode::SmartModuleRuntimeError(error),
             None => file_partition_response_error_code,
         };
         trace!(?error_code, "SmartModule error code output:");
@@ -594,6 +597,7 @@ async fn send_back_error(
 enum StreamFetchError {
     Socket(SocketError),
     Fetch(ErrorCode),
+    SmartModule(String),
 }
 
 impl From<SocketError> for StreamFetchError {
