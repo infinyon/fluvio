@@ -1,5 +1,7 @@
 use fluvio_channel::{FluvioChannelConfig, FluvioBinVersion};
-use fluvio_cli::install::{install_println, fetch_latest_version, fetch_package_file, install_bin};
+use fluvio_cli_common::install::{
+    install_println, fetch_latest_version, fetch_package_file, install_bin,
+};
 use fluvio_index::{PackageId, HttpAgent};
 
 use tracing::debug;

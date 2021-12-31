@@ -18,10 +18,7 @@ use std::os::unix::prelude::CommandExt;
 #[cfg(target_os = "windows")]
 use std::io::{self, Write};
 use cfg_if::cfg_if;
-//use fluvio_cli::install::{fetch_latest_version, fetch_package_file, install_bin, install_println};
-
-//use fluvio_index::{PackageId, HttpAgent};
-use fluvio_cli::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
+use fluvio_cli_common::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
 use fluvio_channel_cli::cli::create::CreateOpt;
 use fluvio_channel_cli::cli::delete::DeleteOpt;

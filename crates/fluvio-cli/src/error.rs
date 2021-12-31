@@ -18,9 +18,17 @@ use crate::common::target::TargetError;
 
 pub type Result<T, E = CliError> = core::result::Result<T, E>;
 
+//impl From<fluvio_cli_common::error::CliError> for CliError {
+//    fn from(err: fluvio_cli_common::error::CliError) -> Self {
+//        Self::from(err)
+//    }
+//}
+
 #[derive(thiserror::Error, Debug)]
 #[allow(clippy::enum_variant_names)]
 pub enum CliError {
+    #[error(transparent)]
+    FluvioInstall(#[from] fluvio_cli_common::error::CliError),
     #[error(transparent)]
     IoError(#[from] IoError),
     #[error(transparent)]

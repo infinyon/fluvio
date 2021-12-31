@@ -5,10 +5,11 @@ use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
 use crate::{Result, CliError};
-use crate::install::{
+use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 };
 use crate::metadata::subcommand_metadata;
+use super::installer_error;
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
@@ -97,7 +98,7 @@ impl UpdateOpt {
         let package_result = fetch_package_file(agent, &id, &target).await;
         let package_file = match package_result {
             Ok(pf) => pf,
-            Err(CliError::PackageNotFound {
+            Err(fluvio_cli_common::error::CliError::PackageNotFound {
                 version, target, ..
             }) => {
                 install_println(format!(
@@ -106,7 +107,7 @@ impl UpdateOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(other),
+            Err(other) => return Err(installer_error(other)),
         };
         install_println("🔑 Downloaded and verified package file");
 

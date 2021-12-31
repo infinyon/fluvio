@@ -55,7 +55,7 @@ mod root {
     use crate::install::plugins::InstallOpt;
     use crate::metadata::{MetadataOpt, subcommand_metadata};
     use crate::version::VersionOpt;
-    use crate::install::fluvio_extensions_dir;
+    use fluvio_cli_common::install::fluvio_extensions_dir;
     use crate::smartmodule::SmartModuleCmd;
     use crate::common::target::ClusterTarget;
     use crate::common::COMMAND_TEMPLATE;

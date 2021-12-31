@@ -1,8 +1,9 @@
 use structopt::StructOpt;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
+use super::installer_error;
 
 use crate::{Result, CliError};
-use crate::install::{
+use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
 };
 use crate::install::update::{
@@ -96,7 +97,7 @@ impl InstallOpt {
         let package_result = fetch_package_file(agent, &id, &target).await;
         let package_file = match package_result {
             Ok(pf) => pf,
-            Err(CliError::PackageNotFound {
+            Err(fluvio_cli_common::error::CliError::PackageNotFound {
                 package,
                 version,
                 target,
@@ -107,7 +108,7 @@ impl InstallOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(other),
+            Err(other) => return Err(installer_error(other)),
         };
         install_println("🔑 Downloaded and verified package file");
 

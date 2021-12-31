@@ -28,7 +28,7 @@ cfg-if = "1.0"
 dirs = "4.0.0"
 
 fluvio = { path = "../fluvio", default-features = false }
-fluvio-cli = { path = "../fluvio-cli", default-features = false }
+fluvio-cli-common = { path = "../fluvio-cli-common", default-features = false }
 fluvio-channel = { path = "../fluvio-channel" }
 fluvio-future = { version = "0.3.0", features = ["task", "subscriber"], optional = true }
 fluvio-types = { path = "../fluvio-types", default-features = false, optional = true }

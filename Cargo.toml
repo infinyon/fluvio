@@ -11,6 +11,7 @@ members = [
     "crates/fluvio-channel",
     "crates/fluvio-channel-cli",
     "crates/fluvio-cli",
+    "crates/fluvio-cli-common",
     "crates/fluvio-cluster",
     "crates/fluvio-controlplane",
     "crates/fluvio-controlplane-metadata",

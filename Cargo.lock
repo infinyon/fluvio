@@ -1645,7 +1645,7 @@ dependencies = [
  "dirs 4.0.0",
  "fluvio",
  "fluvio-channel",
- "fluvio-cli",
+ "fluvio-cli-common",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-types",
@@ -1669,6 +1669,7 @@ dependencies = [
  "flate2",
  "fluvio",
  "fluvio-channel",
+ "fluvio-cli-common",
  "fluvio-cluster",
  "fluvio-command",
  "fluvio-controlplane-metadata",
@@ -1704,6 +1705,25 @@ dependencies = [
  "tui",
  "url",
  "which",
+]
+
+[[package]]
+name = "fluvio-cli-common"
+version = "0.0.0"
+dependencies = [
+ "async-h1",
+ "color-eyre",
+ "fluvio-future",
+ "fluvio-package-index",
+ "fluvio-types",
+ "hex",
+ "home",
+ "http-types",
+ "semver 1.0.4",
+ "sha2",
+ "tempdir",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
