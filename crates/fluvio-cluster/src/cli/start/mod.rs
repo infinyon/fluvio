@@ -194,7 +194,7 @@ impl StartOpt {
 #[derive(Debug, StructOpt)]
 pub struct UpgradeOpt {
     #[structopt(flatten)]
-    start: StartOpt,
+    pub start: StartOpt,
     /// Whether to skip upgrading the sys chart
     #[structopt(long)]
     skip_sys: bool,

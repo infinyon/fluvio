@@ -4,11 +4,13 @@ use tracing::{debug, instrument};
 
 use semver::Version;
 use fluvio_index::{PackageId, HttpAgent};
-use crate::{Result, CliError};
-use crate::install::{
+use crate::Result;
+use fluvio_cli_common::error::CliError as CommonCliError;
+use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 };
 use crate::metadata::subcommand_metadata;
+use super::error_convert;
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
@@ -16,7 +18,7 @@ const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 pub struct UpdateOpt {
     /// Update to the latest prerelease rather than the latest release
     #[structopt(long)]
-    develop: bool,
+    pub develop: bool,
 
     /// (Optional) the name of one or more plugins to update
     plugins: Vec<PackageId>,
@@ -94,7 +96,7 @@ impl UpdateOpt {
         let package_result = fetch_package_file(agent, &id, &target).await;
         let package_file = match package_result {
             Ok(pf) => pf,
-            Err(CliError::PackageNotFound {
+            Err(CommonCliError::PackageNotFound {
                 version, target, ..
             }) => {
                 install_println(format!(
@@ -103,7 +105,7 @@ impl UpdateOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(other),
+            Err(other) => return Err(error_convert(other)),
         };
         install_println("🔑 Downloaded and verified package file");
 

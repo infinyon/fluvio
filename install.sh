@@ -5,10 +5,18 @@ set -e
 set -u
 set -o pipefail
 
+
+readonly TEST="${TEST:-false}"
+if [ "$TEST" = "true" ]; then
+    export FLUVIO_PREFIX="https://packages.fluvio.io/test"
+    echo "Sourcing packages from test repo: ${FLUVIO_PREFIX}"
+fi
+
 readonly FLUVIO_BIN="${HOME}/.fluvio/bin"
-readonly FLUVIO_PREFIX="https://packages.fluvio.io/v1"
+readonly FLUVIO_PREFIX="${FLUVIO_PREFIX:-"https://packages.fluvio.io/v1"}"
 readonly FLUVIO_TAG_STABLE="stable"
 readonly FLUVIO_PACKAGE="fluvio/fluvio"
+readonly FLUVIO_FRONTEND_PACKAGE="fluvio/fluvio-channel"
 readonly FLUVIO_EXTENSIONS="${HOME}/.fluvio/extensions"
 
 # Ensure that this target is supported and matches the
@@ -75,7 +83,7 @@ download_fluvio_to_temp() {
     local _url="$1"; shift
 
     _dir="$(mktemp -d 2>/dev/null || ensure mktemp -d -t fluvio-download)"
-    _temp_file="${_dir}/fluvio"
+    _temp_file="${_dir}/fluvio-${_version}"
 
     downloader "${_url}" "${_temp_file}"
     _status=$?
@@ -467,30 +475,33 @@ main() {
     # the musl target release. The _target here is used in the URL to download
     _target=$(normalize_target ${_arch})
 
-    # If a VERSION env variable is set:
-    if [ -n "${VERSION:-""}" ]; then
 
-        # Try using VERSION as a tag name
-        set +e
-        _version=$(fetch_tag_version "${VERSION}")
-        _status=$?
-        set -e
+    VERSION="${VERSION:-stable}"
 
-    else
-        # If VERSION is not set, try fetching a version from the default tag "stable"
-        set +e
-        _version=$(fetch_tag_version)
-        _status=$?
-        set -e
-    fi
+
+    set +e
+    _version=$(fetch_tag_version "${VERSION}")
+    _status=$?
+    set -e
 
     # If we did not find a version via a tag, use VERSION as the version itself
     if [ $_status -ne 0 ]; then
         _version="${VERSION}"
     fi
 
+    # If we are using "stable" or "latest"
+    # Be sure to use those tags in the installed artifacts
+    # Otherwise, use the value from ${_version}
+
+    if [[ "${VERSION}" == "stable" ]] || [[ "${VERSION}" == "latest" ]] ; then
+        #say "DEBUG: Using stable or latest"
+        _use_tag_file_name="true"
+    else
+        _use_tag_file_name="false"
+    fi
+
     # Download Fluvio to a temporary file
-    local _url="https://packages.fluvio.io/v1/packages/fluvio/fluvio/${_version}/${_target}/fluvio"
+    local _url="${FLUVIO_PREFIX}/packages/${FLUVIO_PACKAGE}/${_version}/${_target}/fluvio"
     say "⏳ Downloading Fluvio ${_version} for ${_target}..."
     _temp_file=$(download_fluvio_to_temp "${_url}")
     _status=$?
@@ -507,11 +518,50 @@ main() {
     # After verification, install the file and make it executable
     say "⬇️  Downloaded Fluvio, installing..."
     ensure mkdir -p "${FLUVIO_BIN}"
-    ensure mkdir -p "${FLUVIO_EXTENSIONS}"
-    local _install_file="${FLUVIO_BIN}/fluvio"
+
+    # Install as fluvio-${_version}
+    if [[ "${_use_tag_file_name}" == "true" ]] ; then
+
+        # Stable extensions go in main dir
+        if [[ "${VERSION}" == "stable" ]] ; then
+            ensure mkdir -p "${FLUVIO_EXTENSIONS}"
+        fi
+
+        # Latest extensions go in latest dir
+        if [[ "${VERSION}" == "latest" ]] ; then
+            ensure mkdir -p "${FLUVIO_EXTENSIONS}-${VERSION}"
+        fi
+
+        local _install_file="${FLUVIO_BIN}/fluvio-${VERSION}"
+    else 
+        # If we installed a specific version, place extension in that dir
+        # Ex. fluvio-0.x.y
+        local _install_file="${FLUVIO_BIN}/fluvio-${_version}"
+        ensure mkdir -p "${FLUVIO_EXTENSIONS}-${_version}"
+    fi
+
     ensure mv "${_temp_file}" "${_install_file}"
     ensure chmod +x "${_install_file}"
-    say "✅ Successfully installed ~/.fluvio/bin/fluvio"
+    say "✅ Successfully installed ${_install_file}"
+
+    # Install Fluvio channel
+    # Download Fluvio-channel to a temporary file
+    _version=$(fetch_tag_version "stable" "${FLUVIO_FRONTEND_PACKAGE}")
+    local _url="${FLUVIO_PREFIX}/packages/${FLUVIO_FRONTEND_PACKAGE}/${_version}/${_target}/fluvio-channel"
+    local _install_file="${FLUVIO_BIN}/fluvio"
+    say "⏳ Downloading Fluvio channel frontend ${_version} for ${_target}..."
+    _temp_file=$(download_fluvio_to_temp "${_url}")
+    _status=$?
+    if [ $_status -ne 0 ]; then
+        err "❌ Failed to download Fluvio!"
+        err "    Error downloading from ${_url}"
+        abort_prompt_issue
+    fi
+
+    ensure mv "${_temp_file}" "${_install_file}"
+    ensure chmod +x "${_install_file}"
+    say "✅ Successfully installed ${_install_file}"
+
 
     # If a VERSION env variable is set, use it for fluvio-run:
     if [ -n "${VERSION:-""}" ]; then
@@ -521,11 +571,12 @@ main() {
     fi
 
     # Let fluvio know it is invoked from installer
+    # Also let fluvio know what channel is being installed
     say "☁️ Installing Fluvio Cloud..."
-    FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install fluvio-cloud
+    FLUVIO_BOOTSTRAP=true CHANNEL_BOOTSTRAP=${VERSION} "${FLUVIO_BIN}/fluvio" install fluvio-cloud
 
     say "☁️ Installing Fluvio Runner..."
-    FLUVIO_BOOTSTRAP=true "${FLUVIO_BIN}/fluvio" install "${_fluvio_run}"
+    FLUVIO_BOOTSTRAP=true CHANNEL_BOOTSTRAP=${VERSION} "${FLUVIO_BIN}/fluvio" install "${_fluvio_run}"
 
     say "🎉 Install complete!"
     remind_path

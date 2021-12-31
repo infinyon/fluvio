@@ -1619,6 +1619,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluvio-channel"
+version = "0.0.0"
+dependencies = [
+ "cfg-if",
+ "color-eyre",
+ "dirs 4.0.0",
+ "fluvio-types",
+ "semver 1.0.4",
+ "serde",
+ "structopt",
+ "thiserror",
+ "toml",
+ "tracing",
+]
+
+[[package]]
+name = "fluvio-channel-cli"
+version = "0.0.0"
+dependencies = [
+ "cfg-if",
+ "color-eyre",
+ "dirs 4.0.0",
+ "fluvio-channel",
+ "fluvio-cli-common",
+ "fluvio-future",
+ "fluvio-package-index",
+ "fluvio-types",
+ "structopt",
+ "tracing",
+]
+
+[[package]]
 name = "fluvio-cli"
 version = "0.0.0"
 dependencies = [
@@ -1633,6 +1665,8 @@ dependencies = [
  "eyre",
  "flate2",
  "fluvio",
+ "fluvio-channel",
+ "fluvio-cli-common",
  "fluvio-cluster",
  "fluvio-command",
  "fluvio-controlplane-metadata",
@@ -1664,10 +1698,27 @@ dependencies = [
  "tempdir",
  "thiserror",
  "tracing",
- "tracing-futures",
  "tui",
  "url",
  "which",
+]
+
+[[package]]
+name = "fluvio-cli-common"
+version = "0.0.0"
+dependencies = [
+ "async-h1",
+ "fluvio-future",
+ "fluvio-package-index",
+ "fluvio-types",
+ "hex",
+ "home",
+ "http-types",
+ "semver 1.0.4",
+ "sha2",
+ "tempdir",
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -1685,6 +1736,7 @@ dependencies = [
  "duct",
  "flate2",
  "fluvio",
+ "fluvio-channel",
  "fluvio-command",
  "fluvio-controlplane-metadata",
  "fluvio-extension-common",

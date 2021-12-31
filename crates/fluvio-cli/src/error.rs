@@ -75,6 +75,8 @@ pub enum CliError {
     DataPlaneError(#[from] ErrorCode),
     #[error("TableFormat not found: {0}")]
     TableFormatNotFound(String),
+    #[error(transparent)]
+    FluvioInstall(#[from] fluvio_cli_common::error::CliError),
 }
 
 #[derive(thiserror::Error, Debug)]

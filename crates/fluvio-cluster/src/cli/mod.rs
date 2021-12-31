@@ -1,7 +1,9 @@
 use std::sync::Arc;
+use std::str::FromStr;
 
 use structopt::StructOpt;
 use semver::Version;
+use tracing::debug;
 
 mod group;
 mod spu;
@@ -25,6 +27,9 @@ pub use self::error::ClusterCliError;
 use fluvio_extension_common as common;
 use common::target::ClusterTarget;
 use common::output::Terminal;
+use fluvio_channel::{ImageTagStrategy, FLUVIO_IMAGE_TAG_STRATEGY};
+
+pub(crate) const VERSION: &str = include_str!("../../../../VERSION");
 
 /// Manage and view Fluvio clusters
 #[derive(StructOpt, Debug)]
@@ -74,10 +79,42 @@ impl ClusterCmd {
         target: ClusterTarget,
     ) -> Result<(), ClusterCliError> {
         match self {
-            Self::Start(start) => {
+            Self::Start(mut start) => {
+                if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
+                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value)
+                        .unwrap_or(ImageTagStrategy::Version);
+                    match tag_strategy {
+                        ImageTagStrategy::Version => {
+                            debug!("Using image version: {}", VERSION);
+                        }
+                        ImageTagStrategy::VersionGit => {
+                            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
+                            debug!("Using image version: {:?}", &image_version);
+                            start.k8_config.image_version = Some(image_version);
+                        }
+                        ImageTagStrategy::Git => {
+                            debug!("Using developer image version: {}", env!("GIT_HASH"));
+                            start.develop = true
+                        }
+                    }
+                };
+
                 start.process(platform_version, false, false).await?;
             }
-            Self::Upgrade(upgrade) => {
+            Self::Upgrade(mut upgrade) => {
+                if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
+                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value)
+                        .unwrap_or(ImageTagStrategy::Version);
+                    match tag_strategy {
+                        ImageTagStrategy::Version => {}
+                        ImageTagStrategy::VersionGit => {
+                            let image_version = format!("{}-{}", VERSION, env!("GIT_HASH"));
+                            upgrade.start.k8_config.image_version = Some(image_version);
+                        }
+                        ImageTagStrategy::Git => upgrade.start.develop = true,
+                    }
+                };
+
                 upgrade.process(platform_version).await?;
             }
             Self::Delete(uninstall) => {

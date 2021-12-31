@@ -1,8 +1,10 @@
 use structopt::StructOpt;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
+use super::error_convert;
 
-use crate::{Result, CliError};
-use crate::install::{
+use crate::Result;
+use fluvio_cli_common::error::CliError as CommonCliError;
+use fluvio_cli_common::install::{
     fetch_latest_version, fetch_package_file, fluvio_extensions_dir, install_bin, install_println,
 };
 use crate::install::update::{
@@ -20,7 +22,7 @@ pub struct InstallOpt {
     ///
     /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
     #[structopt(long)]
-    develop: bool,
+    pub develop: bool,
 }
 
 impl InstallOpt {
@@ -96,7 +98,7 @@ impl InstallOpt {
         let package_result = fetch_package_file(agent, &id, &target).await;
         let package_file = match package_result {
             Ok(pf) => pf,
-            Err(CliError::PackageNotFound {
+            Err(CommonCliError::PackageNotFound {
                 package,
                 version,
                 target,
@@ -107,7 +109,7 @@ impl InstallOpt {
                 ));
                 return Ok(());
             }
-            Err(other) => return Err(other),
+            Err(other) => return Err(error_convert(other)),
         };
         install_println("🔑 Downloaded and verified package file");
 

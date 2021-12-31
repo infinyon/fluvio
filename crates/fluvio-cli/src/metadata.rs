@@ -49,7 +49,7 @@ pub struct SubcommandMetadata {
 pub fn subcommand_metadata() -> Result<Vec<SubcommandMetadata>> {
     let mut metadata = Vec::new();
 
-    let extensions = crate::install::get_extensions()?;
+    let extensions = fluvio_cli_common::install::get_extensions()?;
     for path in extensions {
         let result = Command::new(&path).arg("metadata").result();
         let output = match result {

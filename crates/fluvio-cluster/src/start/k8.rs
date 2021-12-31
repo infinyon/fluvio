@@ -367,16 +367,7 @@ impl ClusterConfigBuilder {
     ///
     /// - Use the git hash of HEAD as the image_tag
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
-        let output = Command::new("git")
-            .args(&["rev-parse", "HEAD"])
-            .result()
-            .map_err(K8InstallError::CommandError)?;
-        let git_hash = String::from_utf8(output.stdout).map_err(|e| {
-            K8InstallError::IoError(IoError::new(
-                ErrorKind::InvalidData,
-                format!("failed to get git hash: {}", e),
-            ))
-        })?;
+        let git_hash = env!("GIT_HASH");
         self.image_tag(git_hash.trim());
         Ok(self)
     }

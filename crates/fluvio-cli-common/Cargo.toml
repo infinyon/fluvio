@@ -1,0 +1,31 @@
+[package]
+name = "fluvio-cli-common"
+version = "0.0.0"
+edition = "2021"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+description = "Fluvio CLI common code"
+repository = "https://github.com/infinyon/fluvio"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "fluvio_cli_common"
+path = "src/lib.rs"
+
+[features]
+default = ["fluvio-future","fluvio-types"]
+
+[dependencies]
+tracing = "0.1.19"
+semver = "1.0.0"
+async-h1 = "2.1.2"
+http-types = "2.4.0"
+home = "0.5.3"
+sha2 = "0.9.1"
+hex = "0.4.2"
+tempdir = "0.3.7"
+thiserror = "1.0.20"
+
+fluvio-package-index = { path = "../fluvio-package-index" }
+fluvio-types = { path = "../fluvio-types", optional = true }
+fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }

@@ -4,7 +4,7 @@
 
 mod http;
 mod error;
-mod install;
+pub mod install;
 mod profile;
 mod version;
 mod metadata;
@@ -24,6 +24,7 @@ use fluvio_extension_common as common;
 
 pub(crate) const VERSION: &str = include_str!("../../../VERSION");
 pub use root::{Root, HelpOpt};
+pub use root::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
 mod root {
 
@@ -31,11 +32,13 @@ mod root {
     use std::path::PathBuf;
     use std::process::Command;
 
+    use fluvio_channel::LATEST_CHANNEL_NAME;
     use structopt::clap::{AppSettings, Shell, App, SubCommand};
     use structopt::StructOpt;
     use tracing::debug;
 
     use fluvio::Fluvio;
+    pub use fluvio_channel::{FLUVIO_RELEASE_CHANNEL, FLUVIO_EXTENSIONS_DIR, FLUVIO_IMAGE_TAG_STRATEGY};
 
     #[cfg(feature = "k8s")]
     use fluvio_cluster::cli::ClusterCmd;
@@ -52,7 +55,7 @@ mod root {
     use crate::install::plugins::InstallOpt;
     use crate::metadata::{MetadataOpt, subcommand_metadata};
     use crate::version::VersionOpt;
-    use crate::install::fluvio_extensions_dir;
+    use fluvio_cli_common::install::fluvio_extensions_dir;
     use crate::smartmodule::SmartModuleCmd;
     use crate::common::target::ClusterTarget;
     use crate::common::COMMAND_TEMPLATE;
@@ -80,7 +83,7 @@ mod root {
     #[derive(StructOpt, Debug)]
     struct RootOpt {
         #[structopt(flatten)]
-        target: ClusterTarget,
+        pub target: ClusterTarget,
     }
 
     #[derive(Debug, StructOpt)]
@@ -187,13 +190,33 @@ mod root {
                 }
                 #[cfg(feature = "k8s")]
                 Self::Cluster(cluster) => {
+                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+                        println!("Current channel: {}", &channel_name);
+                    };
+
                     let version = semver::Version::parse(crate::VERSION).unwrap();
                     cluster.process(out, version, root.target).await?;
                 }
-                Self::Install(install) => {
+                Self::Install(mut install) => {
+                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+                        println!("Current channel: {}", &channel_name);
+
+                        if channel_name == LATEST_CHANNEL_NAME {
+                            install.develop = true;
+                        }
+                    };
+
                     install.process().await?;
                 }
-                Self::Update(update) => {
+                Self::Update(mut update) => {
+                    if let Ok(channel_name) = std::env::var(FLUVIO_RELEASE_CHANNEL) {
+                        println!("Current channel: {}", &channel_name);
+
+                        if channel_name == LATEST_CHANNEL_NAME {
+                            update.develop = true;
+                        }
+                    };
+
                     update.process().await?;
                 }
                 Self::Version(version) => {

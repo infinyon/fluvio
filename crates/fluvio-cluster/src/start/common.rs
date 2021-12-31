@@ -9,7 +9,7 @@ use tracing::{debug, error, instrument, warn};
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_future::timer::sleep;
 
-/// maximum tiime for VERSION CHECK
+/// maximum time for VERSION CHECK
 static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_VERSION_LOOP").unwrap_or_default();
     var_value.parse().unwrap_or(60)
