@@ -1625,7 +1625,6 @@ dependencies = [
  "cfg-if",
  "color-eyre",
  "dirs 4.0.0",
- "fluvio-package-index",
  "fluvio-types",
  "semver 1.0.4",
  "serde",
@@ -1699,7 +1698,6 @@ dependencies = [
  "tempdir",
  "thiserror",
  "tracing",
- "tracing-futures",
  "tui",
  "url",
  "which",
@@ -1710,7 +1708,6 @@ name = "fluvio-cli-common"
 version = "0.0.0"
 dependencies = [
  "async-h1",
- "color-eyre",
  "fluvio-future",
  "fluvio-package-index",
  "fluvio-types",

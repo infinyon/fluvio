@@ -5,17 +5,8 @@ use tracing::{debug, instrument};
 use semver::Version;
 use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
 use crate::FLUVIO_EXTENSIONS_DIR;
-//use color_eyre::{Result, eyre::eyre};
 use fluvio_types::defaults::CLI_CONFIG_PATH;
-
-//use fluvio_cli::install::{install_println, fetch_latest_version, fetch_package_file, install_bin};
-
-//fetch_latest_version, fetch_package_file, install_bin, install_println, fluvio_extensions_dir,
 use crate::error::{Result, CliError};
-//use std::path::{Path, PathBuf};
-//use tracing::{debug, instrument};
-//use fluvio_index::{HttpAgent, PackageId, Target, WithVersion, PackageVersion};
-//use semver::Version;
 
 pub const FLUVIO_DIR: &str = "FLUVIO_DIR";
 

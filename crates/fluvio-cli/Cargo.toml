@@ -36,7 +36,6 @@ k8s = [
 
 [dependencies]
 tracing = "0.1.19"
-tracing-futures = "0.2.4"
 url = "2.1.1"
 semver = "1.0.0"
 structopt = { version = "0.3.16", default-features = false }

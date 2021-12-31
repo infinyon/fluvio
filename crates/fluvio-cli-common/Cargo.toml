@@ -18,14 +18,14 @@ default = ["fluvio-future","fluvio-types"]
 [dependencies]
 tracing = "0.1.19"
 semver = "1.0.0"
-fluvio-package-index = { path = "../fluvio-package-index" }
 async-h1 = "2.1.2"
 http-types = "2.4.0"
-fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
-color-eyre = { version = "0.5.5", default-features = false }
-fluvio-types = { path = "../fluvio-types", optional = true }
 home = "0.5.3"
 sha2 = "0.9.1"
 hex = "0.4.2"
 tempdir = "0.3.7"
 thiserror = "1.0.20"
+
+fluvio-package-index = { path = "../fluvio-package-index" }
+fluvio-types = { path = "../fluvio-types", optional = true }
+fluvio-future = { version = "0.3.0", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }

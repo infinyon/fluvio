@@ -26,5 +26,4 @@ toml = "0.5.5"
 serde = { version = "1.0.118", features = ["derive"] }
 color-eyre = { version = "0.5.5", default-features = false }
 
-fluvio-package-index = { path = "../fluvio-package-index" }
 fluvio-types = { path = "../fluvio-types", default-features = false, optional = true }
