@@ -655,8 +655,6 @@ jobs:
     name: Upgrade cluster test on (${{ matrix.run }})
     needs: build_image
     runs-on: ${{ matrix.os }}
-    env:
-      FLUVIO_BIN: ~/bin/fluvio
     strategy:
       fail-fast: false
       matrix:
@@ -681,9 +679,7 @@ jobs:
           path: /tmp
       - name: Mark xecutable
         run: |
-          chmod +x ~/bin/fluvio
-      - name: Print current version
-        run: ~/bin/fluvio version
+          chmod +x ~/bin/fluvio && ~/bin/fluvio version
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
         run: |
@@ -704,7 +700,7 @@ jobs:
           date
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
           export PATH=~/.fluvio/bin:$PATH
-          make upgrade-test
+          make FLUVIO_BIN=~/bin/fluvio upgrade-test
 
       - name: Save logs
         if: failure()
