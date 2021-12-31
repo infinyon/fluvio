@@ -732,8 +732,6 @@ jobs:
     needs: build_image
    # if: false
     runs-on: ${{ matrix.os }}
-    env:
-      FLUVIO_BIN: ~/bin/fluvio
     strategy:
       fail-fast: false
       matrix:
@@ -761,19 +759,18 @@ jobs:
           path: ~/bin
 
       - name: Print artifacts and mark executable
-        run: chmod +x ~/bin/fluvio && ~/bin/fluvio version
-
+        run: |
+          chmod +x ~/bin/fluvio && ~/bin/fluvio version
+          echo "~/bin" >> $GITHUB_PATH
       - name: Test ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} cluster
         run: |
-          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
+          make FLUVIO_BIN=~/bin/fluvio SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
 
   k8_cli_smoke:
     name: CLI smoke tests
     needs: build_image
     #if: ${{ false }}
     runs-on: ${{ matrix.os }}
-    env:
-      FLUVIO_BIN: ~/bin/fluvio
     strategy:
       fail-fast: false
       matrix:
@@ -833,7 +830,7 @@ jobs:
           fluvio cluster start --develop --connector-prefix "https://raw.githubusercontent.com/infinyon/fluvio-connectors"
 
       - name: Run CLI smoke tests
-        run: make cli-smoke
+        run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
