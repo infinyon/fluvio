@@ -124,6 +124,12 @@ jobs:
     needs:
       - build_primary_binaries
       - config
+    env:
+      UNINSTALL:  noclean
+      EXTRA_ARG:  --cluster-start
+      SERVER_LOG: fluvio=debug
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
     strategy:
       fail-fast: false
       matrix:
@@ -139,7 +145,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: fluvio-${{ matrix.rust-target }}
-          path: .
+          path: ~/bin
       - name: Download artifact - fluvio-run
         uses: actions/download-artifact@v2
         with:
@@ -150,9 +156,13 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
-          path: .
-      - name: Print artifacts and mark executable
-        run: chmod +x ./fluvio ./fluvio-test && ./fluvio version
+          path: ~/bin
+      - name: Mark executable
+        run: |
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
+          echo "~/bin" >> $GITHUB_PATH
+      - name: Print version
+        run: fluvio version
       - name: Set up Docker for Mac
         uses: docker-practice/actions-setup-docker@master
       - name: Install and start Kind
@@ -161,34 +171,34 @@ jobs:
           kind create cluster --config k8-util/cluster/kind.yaml 
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke' }}
-        timeout-minutes: 2
+        timeout-minutes: 5
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start smoke-test-tls-root
+          make  smoke-test-tls-root
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
           echo "smoke test done"
       - name: Run election-test
         if: ${{ matrix.test == 'election' }}
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start election-test
+          make election-test
           echo "election test done"
       - name: Run multiple-partition-test
         if: ${{ false }}
-        timeout-minutes: 3
+        timeout-minutes: 5
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start multiple-partition-test
+          make multiple-partition-test
           echo "multiple partition test done"
       - name: Run reconnection-test
         if: ${{ matrix.test == 'reconnection' }}
         timeout-minutes: 3
         run: |
           date
-          make  FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean EXTRA_ARG=--cluster-start reconnection-test
+          make reconnection-test
           echo "reconnection test done"
 
       - name: Save logs

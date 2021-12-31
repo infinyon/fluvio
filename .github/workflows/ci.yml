@@ -532,6 +532,11 @@ jobs:
     name: Kubernetes cluster test - ${{ matrix.make-target }} (${{ matrix.run }}) k8 (${{ matrix.k8 }})
     needs: build_image
     runs-on: ${{ matrix.os }}
+    env:
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
+      EXTRA_ARG:  --cluster-start
+      UNINSTALL:  noclean
     strategy:
       fail-fast: false
       matrix:
@@ -547,12 +552,12 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: fluvio-${{ matrix.rust-target }}
-          path: .
+          path: ~/bin
       - name: Download artifact - fluvio-test
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
-          path: .
+          path: ~/bin
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
@@ -560,8 +565,11 @@ jobs:
           path: /tmp
 
       - name: Print artifacts and mark executable
-        run: chmod +x ./fluvio ./fluvio-test && ./fluvio version && ./fluvio-test -h
-
+        run: |
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test
+          echo "~/bin" >> $GITHUB_PATH
+      - name: Print version
+        run:  fluvio version && fluvio-test -h
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image for K3d
         run: |
@@ -602,10 +610,10 @@ jobs:
         timeout-minutes: 10
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test EXTRA_ARG=--cluster-start UNINSTALL=noclean ${{ matrix.make-target }}
+            make ${{ matrix.make-target }}
       - name: Print version
         run: |
-          ./fluvio version
+          fluvio version
           date
           uname -a
           helm list
@@ -616,7 +624,7 @@ jobs:
           kubectl get pods
           kubectl get svc
           kubectl get spg
-          ./fluvio partition list
+          fluvio partition list
 
       - name: Save logs
         if: failure()
@@ -663,15 +671,15 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: fluvio-x86_64-unknown-linux-musl
-          path: .
+          path: ~/bin
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
           name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
           path: /tmp
-      - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio && ./fluvio version
-
+      - name: Mark xecutable
+        run: |
+          chmod +x ~/bin/fluvio && ~/bin/fluvio version
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image
         run: |
@@ -692,7 +700,7 @@ jobs:
           date
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
           export PATH=~/.fluvio/bin:$PATH
-          make FLUVIO_BIN=./fluvio upgrade-test
+          make FLUVIO_BIN=~/bin/fluvio upgrade-test
 
       - name: Save logs
         if: failure()
@@ -740,18 +748,19 @@ jobs:
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ~/.fluvio/bin/fluvio cluster start
-      - name: Download artifact - fluvio
+      - name: Download current fluvio
         uses: actions/download-artifact@v2
         with:
           name: fluvio-x86_64-unknown-linux-musl
-          path: .
+          path: ~/bin
 
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio && ./fluvio version
-
+        run: |
+          chmod +x ~/bin/fluvio && ~/bin/fluvio version
+          echo "~/bin" >> $GITHUB_PATH
       - name: Test ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} cluster
         run: |
-          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=./fluvio cli-platform-cross-version-test
+          make FLUVIO_BIN=~/bin/fluvio SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
 
   k8_cli_smoke:
     name: CLI smoke tests
@@ -787,7 +796,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: fluvio-x86_64-unknown-linux-musl
-          path: .
+          path: ~/bin
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
@@ -809,14 +818,15 @@ jobs:
         run: k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
 
       - name: Print artifacts and mark executable
-        run: ls -la . && chmod +x ./fluvio && ./fluvio version
-
+        run: |
+          chmod +x ~/bin/fluvio && ~/bin/fluvio version
+          echo "~/bin" >> $GITHUB_PATH
       - name: Start cluster
         run: |
-          ./fluvio cluster start --develop --connector-prefix "https://raw.githubusercontent.com/infinyon/fluvio-connectors"
+          fluvio cluster start --develop --connector-prefix "https://raw.githubusercontent.com/infinyon/fluvio-connectors"
 
       - name: Run CLI smoke tests
-        run: make FLUVIO_BIN=./fluvio cli-smoke
+        run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
