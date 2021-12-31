@@ -26,9 +26,6 @@ pub struct UpdateOpt {
 
 impl UpdateOpt {
     pub async fn process(self) -> Result<()> {
-        // Verify channel
-        // If latest, set the develop flag to true
-
         let agent = HttpAgent::default();
         let plugin_meta = subcommand_metadata()?;
 
