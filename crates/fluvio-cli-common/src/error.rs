@@ -1,7 +1,6 @@
 //use color_eyre::{Result, eyre::eyre};
 use std::{
-    convert::Infallible,
-    io::{Error as IoError, ErrorKind},
+    io::{Error as IoError},
 };
 
 use semver::Version;

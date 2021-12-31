@@ -4,8 +4,8 @@ use std::fs::{File, create_dir_all, read_to_string};
 use std::io::{ErrorKind, Error as IoError, Write};
 use color_eyre::Result;
 use color_eyre::eyre::eyre;
-use fluvio::FluvioError;
-use fluvio::config::ConfigError;
+//use fluvio::FluvioError;
+//use fluvio::config::ConfigError;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -25,6 +25,13 @@ pub const LATEST_CHANNEL_NAME: &str = "latest";
 pub const FLUVIO_RELEASE_CHANNEL: &str = "FLUVIO_RELEASE_CHANNEL";
 pub const FLUVIO_EXTENSIONS_DIR: &str = "FLUVIO_EXTENSIONS_DIR";
 pub const FLUVIO_IMAGE_TAG_STRATEGY: &str = "FLUVIO_IMAGE_TAG_STRATEGY";
+
+#[derive(Error, Debug)]
+pub enum FluvioChannelError {
+    #[error(transparent)]
+    ConfigError(#[from] ChannelConfigError),
+
+}
 
 #[derive(Error, Debug)]
 pub enum ChannelConfigError {
@@ -56,11 +63,11 @@ impl FluvioChannelConfig {
         }
     }
 
-    pub fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, FluvioError> {
+    pub fn from_file<T: AsRef<Path>>(path: T) -> Result<Self, ChannelConfigError> {
         let path_ref = path.as_ref();
-        let file_str: String = read_to_string(path_ref).map_err(ConfigError::ConfigFileError)?;
+        let file_str: String = read_to_string(path_ref).map_err(ChannelConfigError::ConfigFileError)?;
         let channel_config: ChannelConfig =
-            toml::from_str(&file_str).map_err(ConfigError::TomlError)?;
+            toml::from_str(&file_str).map_err(ChannelConfigError::TomlError)?;
 
         let config = FluvioChannelConfig {
             path: path_ref.to_path_buf(),
@@ -100,11 +107,11 @@ impl FluvioChannelConfig {
         Ok(info)
     }
 
-    pub fn save(&self) -> Result<(), FluvioError> {
-        create_dir_all(self.path.parent().unwrap()).map_err(ConfigError::ConfigFileError)?;
+    pub fn save(&self) -> Result<(), ChannelConfigError> {
+        create_dir_all(self.path.parent().unwrap()).map_err(ChannelConfigError::ConfigFileError)?;
         self.config
             .save_to(&self.path)
-            .map_err(ConfigError::ConfigFileError)?;
+            .map_err(ChannelConfigError::ConfigFileError)?;
         Ok(())
     }
 
