@@ -3,10 +3,12 @@ use std::collections::HashSet;
 use std::io::Error as IoError;
 use std::fmt::Debug;
 use std::process::{Command};
+use std::time::Duration;
 
 pub mod render;
 
 use colored::Colorize;
+use fluvio_future::timer::sleep;
 use tracing::{error, debug};
 use async_trait::async_trait;
 use url::ParseError;
@@ -403,7 +405,7 @@ pub(crate) struct HelmVersion;
 impl ClusterCheck for HelmVersion {
     /// Checks that the installed helm version is compatible with the installer requirements
     async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
-        pb.set_message("Checking helm version");
+        sleep(Duration::from_millis(5000)).await;
         let helm = match HelmClient::new() {
             Ok(client) => client,
             Err(err) => {
@@ -756,6 +758,12 @@ impl ClusterChecker {
     /// Performs check and fix is required
     ///
     pub async fn run(self, pb: &ProgressRenderer, fix: bool) -> Result<bool, ClusterCheckError> {
+        macro_rules! pad_format {
+            ( $e:expr ) => {
+                format!("{:>6}", $e)
+            };
+        }
+
         // sort checks according to dependencies
         let mut components: HashSet<FluvioClusterComponent> = HashSet::new();
 
@@ -772,6 +780,7 @@ impl ClusterChecker {
                 .count()
                 == required_components.len()
             {
+                pb.set_message(pad_format!(format!("Checking {}", check.label())));
                 match check.perform_check(pb).await? {
                     CheckStatus::AutoFixableError(fixable_error) => {
                         if fix {
@@ -790,8 +799,9 @@ impl ClusterChecker {
                             failed = true;
                         }
                     }
-                    CheckStatus::Pass(_status) => {
+                    CheckStatus::Pass(status) => {
                         passed = true;
+                        pb.println(pad_format!(format!("{} {}", "✅".bold(), status)));
                     }
                     CheckStatus::Unrecoverable(_err) => {}
                 }
