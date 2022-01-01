@@ -163,8 +163,7 @@ pub struct LocalConfig {
     #[builder(default = "false")]
     skip_checks: bool,
 
-    /// Used to hide spinner animation for progress updates
-    #[builder(default = "false")]
+    #[builder(default = "true")]
     hide_spinner: bool,
 }
 
@@ -344,11 +343,7 @@ impl LocalInstaller {
     /// ```
 
     pub fn from_config(config: LocalConfig) -> Self {
-        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
-            Default::default()
-        } else {
-            create_progress_indicator().into()
-        };
+        let pb = create_progress_indicator(config.hide_spinner);
         Self { config, pb }
     }
 

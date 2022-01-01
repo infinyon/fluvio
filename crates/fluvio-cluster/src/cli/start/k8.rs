@@ -29,7 +29,7 @@ pub async fn process_k8(
         .save_profile(!opt.skip_profile_creation)
         .tls(client, server)
         .chart_values(opt.k8_config.chart_values)
-        .hide_spinner(false)
+        .hide_spinner(true)
         .upgrade(upgrade)
         .proxy_addr(opt.proxy_addr)
         .spu_config(opt.spu_config.as_spu_config())
@@ -59,10 +59,6 @@ pub async fn process_k8(
 
     if let Some(service_type) = opt.service_type {
         builder.service_type(service_type);
-    }
-
-    if opt.hide_spinner {
-        builder.hide_spinner(true);
     }
 
     let config = builder.build()?;

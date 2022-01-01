@@ -20,7 +20,8 @@ pub async fn process_local(
     let mut builder = LocalConfig::builder(platform_version);
     builder
         .log_dir(opt.log_dir.to_string())
-        .spu_replicas(opt.spu);
+        .spu_replicas(opt.spu)
+        .hide_spinner(false);
 
     if let Some(chart_location) = opt.k8_config.chart_location {
         builder.local_chart(chart_location);
@@ -37,10 +38,6 @@ pub async fn process_local(
 
     if opt.skip_checks {
         builder.skip_checks(true);
-    }
-
-    if opt.hide_spinner {
-        builder.hide_spinner(true);
     }
 
     let config = builder.build()?;

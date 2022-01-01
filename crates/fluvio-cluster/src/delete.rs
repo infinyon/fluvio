@@ -36,6 +36,10 @@ pub struct ClusterUninstallConfig {
 
     #[builder(default = "SYS_CHART_NAME.to_string()")]
     sys_chart_name: String,
+
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "true")]
+    hide_spinner: bool,
 }
 
 impl ClusterUninstallConfig {
@@ -60,12 +64,7 @@ pub struct ClusterUninstaller {
 
 impl ClusterUninstaller {
     fn from_config(config: ClusterUninstallConfig) -> Result<Self, ClusterError> {
-        let pb = if std::env::var("CI").is_ok() {
-            Default::default()
-        } else {
-            create_progress_indicator().into()
-        };
-
+        let pb = create_progress_indicator(config.hide_spinner);
         Ok(ClusterUninstaller {
             config,
             helm_client: HelmClient::new().map_err(UninstallError::HelmError)?,

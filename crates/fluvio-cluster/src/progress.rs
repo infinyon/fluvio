@@ -1,6 +1,6 @@
 use indicatif::{ProgressBar, ProgressStyle};
 
-use crate::render::ProgressRenderedText;
+use crate::render::{ProgressRenderedText, ProgressRenderer};
 
 #[derive(Debug)]
 pub(crate) enum InstallProgressMessage {
@@ -88,7 +88,7 @@ impl ProgressRenderedText for InstallProgressMessage {
     }
 }
 
-pub(crate) fn create_progress_indicator() -> ProgressBar {
+fn create_spinning_indicator() -> ProgressBar {
     let pb = ProgressBar::new(1);
     pb.set_style(
         ProgressStyle::default_bar()
@@ -97,4 +97,12 @@ pub(crate) fn create_progress_indicator() -> ProgressBar {
     );
     pb.enable_steady_tick(100);
     pb
+}
+
+pub(crate) fn create_progress_indicator(hide_flag: bool) -> ProgressRenderer {
+    if hide_flag || std::env::var("CI").is_ok() {
+        Default::default()
+    } else {
+        create_spinning_indicator().into()
+    }
 }

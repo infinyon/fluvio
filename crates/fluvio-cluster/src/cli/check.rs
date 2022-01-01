@@ -17,11 +17,7 @@ impl CheckOpt {
             .build()
             .map_err(|err| ClusterCheckError::Other(format!("chart config error: {:#?}", err)))?;
 
-        let pb = if std::env::var("CI").is_ok() {
-            Default::default()
-        } else {
-            create_progress_indicator().into()
-        };
+        let pb = create_progress_indicator(true);
         ClusterChecker::empty()
             .with_preflight_checks()
             .with_check(SysChartCheck::new(sys_config, platform_version))

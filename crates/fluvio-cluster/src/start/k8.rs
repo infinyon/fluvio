@@ -555,11 +555,8 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {
-        let pb = if config.hide_spinner || std::env::var("CI").is_ok() {
-            Default::default()
-        } else {
-            create_progress_indicator().into()
-        };
+        let pb = create_progress_indicator(config.hide_spinner);
+
         Ok(Self {
             config,
             kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
