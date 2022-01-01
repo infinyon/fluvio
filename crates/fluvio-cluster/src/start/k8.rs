@@ -31,6 +31,7 @@ use fluvio_command::CommandExt;
 use crate::check::ClusterCheckError;
 use crate::check::{AlreadyInstalled, SysChartCheck};
 use crate::error::K8InstallError;
+use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderedText;
 use crate::render::ProgressRenderer;
 use crate::start::common::check_crd;
@@ -38,7 +39,7 @@ use crate::tls_config_to_cert_paths;
 use crate::{ClusterError, StartStatus, DEFAULT_NAMESPACE, ClusterChecker};
 use crate::charts::{ChartConfig, ChartInstaller};
 use crate::UserChartLocation;
-use crate::progress::{InstallProgressMessage, create_progress_indicator};
+use crate::progress::{InstallProgressMessage};
 
 use super::constants::*;
 use super::common::try_connect_to_sc;
@@ -539,7 +540,7 @@ pub struct ClusterInstaller {
     config: ClusterConfig,
     /// Shared Kubernetes client for install
     kube_client: SharedK8Client,
-    pb: ProgressRenderer,
+    pb_factory: ProgressBarFactory,
 }
 
 impl ClusterInstaller {
@@ -555,12 +556,10 @@ impl ClusterInstaller {
     /// # }
     /// ```
     pub fn from_config(config: ClusterConfig) -> Result<Self, ClusterError> {
-        let pb = create_progress_indicator(config.hide_spinner);
-
         Ok(Self {
-            config,
             kube_client: load_and_share().map_err(K8InstallError::K8ClientError)?,
-            pb,
+            pb_factory: ProgressBarFactory::new(config.hide_spinner),
+            config,
         })
     }
 
@@ -604,10 +603,10 @@ impl ClusterInstaller {
             checker = checker.with_check(AlreadyInstalled);
         }
 
-        self.pb
+        self.pb_factory
             .println(InstallProgressMessage::PreFlightCheck.msg());
 
-        checker.run(&self.pb, fix).await?;
+        checker.run(&self.pb_factory, fix).await?;
 
         Ok(())
     }
@@ -637,29 +636,30 @@ impl ClusterInstaller {
 
         let address = format!("{}:{}", host_name, port);
 
-        self.pb
-            .println(InstallProgressMessage::FoundSC(address.clone()).msg());
+        let pb = self.pb_factory.create();
+
+        pb.println(InstallProgressMessage::FoundSC(address.clone()).msg());
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
-        self.pb
-            .set_message(InstallProgressMessage::ConnectingSC.msg());
+        pb.set_message(InstallProgressMessage::ConnectingSC.msg());
 
         let fluvio = match try_connect_to_sc(&cluster_config, &self.config.platform_version).await {
             Some(fluvio) => fluvio,
             None => return Err(K8InstallError::SCServiceTimeout),
         };
-        self.pb.set_message("");
+        pb.set_message("");
 
         if self.config.save_profile {
             self.update_profile(&address)?;
-            self.pb.println(InstallProgressMessage::ProfileSet.msg());
+            self.pb_factory
+                .println(InstallProgressMessage::ProfileSet.msg());
         }
 
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-        self.pb.println(InstallProgressMessage::Success.msg());
-        self.pb.finish_and_clear();
+        pb.println(InstallProgressMessage::Success.msg());
+        pb.finish_and_clear();
 
         Ok(StartStatus { address, port })
     }
@@ -672,7 +672,7 @@ impl ClusterInstaller {
             &self.config
         );
 
-        self.pb
+        self.pb_factory
             .println(InstallProgressMessage::InstallingFluvio.msg());
 
         // Specify common installation settings to pass to helm
@@ -781,12 +781,12 @@ impl ClusterInstaller {
 
         debug!("Using helm install settings: {:#?}", &install_settings);
 
+        let pb = self.pb_factory.create();
+
         if self.config.upgrade {
-            self.pb
-                .set_message(InstallProgressMessage::UpgradingChart.msg());
+            pb.set_message(InstallProgressMessage::UpgradingChart.msg());
         } else {
-            self.pb
-                .set_message(InstallProgressMessage::InstallingChart.msg());
+            pb.set_message(InstallProgressMessage::InstallingChart.msg());
         }
 
         chart_values.append(&mut self.config.chart_values.clone());
@@ -806,9 +806,8 @@ impl ClusterInstaller {
         let installer = ChartInstaller::from_config(config)?;
         installer.process(self.config.upgrade)?;
 
-        self.pb
-            .println(InstallProgressMessage::ChartInstalled.msg());
-        self.pb.set_message("");
+        pb.println(InstallProgressMessage::ChartInstalled.msg());
+        pb.finish_and_clear();
 
         Ok(())
     }
@@ -949,7 +948,11 @@ impl ClusterInstaller {
 
     /// Wait until all SPUs are ready and have ingress
     #[instrument(skip(self, admin))]
-    async fn wait_for_spu(&self, admin: &FluvioAdmin) -> Result<bool, K8InstallError> {
+    async fn wait_for_spu(
+        &self,
+        admin: &FluvioAdmin,
+        pb: &ProgressRenderer,
+    ) -> Result<bool, K8InstallError> {
         let expected_spu = self.config.spu_replicas as usize;
         debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
@@ -966,7 +969,8 @@ impl ClusterInstaller {
                 .count();
 
             if self.config.spu_replicas as usize == ready_spu {
-                self.pb.println(InstallProgressMessage::SpusConfirmed.msg());
+                self.pb_factory
+                    .println(InstallProgressMessage::SpusConfirmed.msg());
 
                 return Ok(true);
             } else {
@@ -976,7 +980,7 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                self.pb.set_message(
+                pb.set_message(
                     InstallProgressMessage::WaitingForSPU(ready_spu, expected_spu).msg(),
                 );
                 sleep(Duration::from_secs(10)).await;
@@ -1065,8 +1069,8 @@ impl ClusterInstaller {
 
     /// Updates the Fluvio configuration with the newly installed cluster info.
     fn update_profile(&self, external_addr: &str) -> Result<(), K8InstallError> {
-        self.pb
-            .set_message(format!("Creating K8 profile for: {}", external_addr));
+        let pb = self.pb_factory.create();
+        pb.set_message(format!("Creating K8 profile for: {}", external_addr));
 
         let profile_name = self.compute_profile_name()?;
         let mut config_file = ConfigFile::load_default_or_new()?;
@@ -1075,7 +1079,7 @@ impl ClusterInstaller {
             external_addr,
             &self.config.client_tls_policy,
         )?;
-        self.pb.set_message("");
+        pb.finish_and_clear();
         Ok(())
     }
 
@@ -1102,11 +1106,12 @@ impl ClusterInstaller {
     /// Provisions a SPU group for the given cluster according to internal config
     #[instrument(skip(self, fluvio))]
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<(), K8InstallError> {
+        let pb = self.pb_factory.create();
         let name = self.config.group_name.clone();
         let admin = fluvio.admin().await;
         let lists = admin.list::<SpuGroupSpec, _>([]).await?;
         if lists.is_empty() {
-            self.pb.set_message(format!(
+            pb.set_message(format!(
                 "Trying to create managed {} spus",
                 self.config.spu_replicas
             ));
@@ -1119,19 +1124,18 @@ impl ClusterInstaller {
 
             admin.create(name, false, spu_spec).await?;
 
-            self.pb.println(
+            pb.println(
                 InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
             );
         } else {
-            self.pb
-                .println(InstallProgressMessage::SpuGroupExists.msg());
+            pb.println(InstallProgressMessage::SpuGroupExists.msg());
         }
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
-            self.wait_for_spu(&admin).await?;
+            self.wait_for_spu(&admin, &pb).await?;
         }
-        self.pb.set_message("");
+        pb.finish_and_clear();
 
         Ok(())
     }

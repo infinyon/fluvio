@@ -1,7 +1,7 @@
 use semver::Version;
 use structopt::StructOpt;
 
-use crate::progress::create_progress_indicator;
+use crate::progress::ProgressBarFactory;
 use crate::{ClusterChecker};
 use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::charts::ChartConfig;
@@ -17,7 +17,7 @@ impl CheckOpt {
             .build()
             .map_err(|err| ClusterCheckError::Other(format!("chart config error: {:#?}", err)))?;
 
-        let pb = create_progress_indicator(true);
+        let pb = ProgressBarFactory::new(false);
         ClusterChecker::empty()
             .with_preflight_checks()
             .with_check(SysChartCheck::new(sys_config, platform_version))

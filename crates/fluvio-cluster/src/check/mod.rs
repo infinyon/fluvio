@@ -20,6 +20,7 @@ use k8_config::{ConfigError as K8ConfigError, K8Config};
 use k8_client::ClientError as K8ClientError;
 
 use crate::charts::{DEFAULT_HELM_VERSION, APP_CHART_NAME};
+use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
 use crate::charts::{ChartConfig, ChartInstaller, ChartInstallError, SYS_CHART_NAME};
 
@@ -128,7 +129,10 @@ pub enum CheckStatus {
     /// This check has passed and has the given success message
     Pass(CheckSucceeded),
     /// This check has failed but can be recovered
-    AutoFixableError(Box<dyn ClusterAutoFix>),
+    AutoFixableError {
+        message: String,
+        fixer: Box<dyn ClusterAutoFix>,
+    },
     /// check that cannot be recovered
     Unrecoverable(UnrecoverableCheckStatus),
 }
@@ -278,8 +282,7 @@ pub(crate) struct ActiveKubernetesCluster;
 #[async_trait]
 impl ClusterCheck for ActiveKubernetesCluster {
     /// Checks that we can connect to Kubernetes via the active context
-    async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
-        pb.set_message("Checking for Active Kubernetes config");
+    async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
         let config = match K8Config::load() {
             Ok(config) => config,
             Err(K8ConfigError::NoCurrentContext) => {
@@ -308,7 +311,10 @@ impl ClusterCheck for ActiveKubernetesCluster {
         };
 
         match context.config.current_cluster() {
-            Some(_ctx) => Ok(CheckStatus::pass("Active Kubernetes context found")),
+            Some(cluster) => Ok(CheckStatus::pass(format!(
+                "Kubectl active cluster {} at: {} found",
+                context.config.current_context, cluster.cluster.server
+            ))),
             None => Ok(CheckStatus::Unrecoverable(
                 UnrecoverableCheckStatus::NoActiveKubernetesContext,
             )),
@@ -334,8 +340,7 @@ pub(crate) struct K8Version;
 #[async_trait]
 impl ClusterCheck for K8Version {
     /// Check if required kubectl version is installed
-    async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
-        pb.set_message("Checking Kubernetes Version");
+    async fn perform_check(&self, _: &ProgressRenderer) -> CheckResult {
         let kube_version = Command::new("kubectl")
             .arg("version")
             .arg("-o=json")
@@ -379,7 +384,7 @@ impl ClusterCheck for K8Version {
             ))
         } else {
             Ok(CheckStatus::pass(format!(
-                "Kubernetes server version: {} is supported",
+                "Supported Kubernetes server {} found",
                 server_version
             )))
         }
@@ -404,8 +409,7 @@ pub(crate) struct HelmVersion;
 #[async_trait]
 impl ClusterCheck for HelmVersion {
     /// Checks that the installed helm version is compatible with the installer requirements
-    async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
-        sleep(Duration::from_millis(5000)).await;
+    async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
         let helm = match HelmClient::new() {
             Ok(client) => client,
             Err(err) => {
@@ -431,7 +435,7 @@ impl ClusterCheck for HelmVersion {
             ));
         }
         Ok(CheckStatus::pass(format!(
-            "Supported helm version: {} is installed",
+            "Supported helm version {} is installed",
             helm_version
         )))
     }
@@ -474,9 +478,16 @@ impl ClusterCheck for SysChartCheck {
             .map_err(ClusterCheckError::HelmError)?;
         debug!(charts = sys_charts.len(), "sys charts count");
         if sys_charts.is_empty() {
-            Ok(CheckStatus::AutoFixableError(Box::new(InstallSysChart(
-                self.config.clone(),
-            ))))
+            Ok(CheckStatus::AutoFixableError {
+                message: format!(
+                    "System chart not installed, installing version {}",
+                    self.platform_version
+                ),
+                fixer: Box::new(InstallSysChart {
+                    config: self.config.clone(),
+                    platform_version: self.platform_version.clone(),
+                }),
+            })
         } else if sys_charts.len() > 1 {
             Ok(CheckStatus::Unrecoverable(
                 UnrecoverableCheckStatus::MultipleSystemCharts,
@@ -484,14 +495,20 @@ impl ClusterCheck for SysChartCheck {
         } else {
             let install_chart = sys_charts.get(0).unwrap();
             debug!(app_version = %install_chart.app_version,"Sys Chart Version");
-            let sys_platform_version = Version::parse(&install_chart.app_version)?;
-            if sys_platform_version == self.platform_version {
+            let existing_platform_version = Version::parse(&install_chart.app_version)?;
+            if existing_platform_version == self.platform_version {
                 Ok(CheckStatus::pass("Fluvio system charts are installed"))
             } else {
-                Ok(CheckStatus::AutoFixableError(Box::new(UpgradeSysChart {
-                    config: self.config.clone(),
-                    platform_version: self.platform_version.clone(),
-                })))
+                Ok(CheckStatus::AutoFixableError {
+                    message: format!(
+                        "System chart version {} installed, upgrading to version {}",
+                        existing_platform_version, self.platform_version
+                    ),
+                    fixer: Box::new(UpgradeSysChart {
+                        config: self.config.clone(),
+                        platform_version: self.platform_version.clone(),
+                    }),
+                })
             }
         }
     }
@@ -513,20 +530,25 @@ impl ClusterCheck for SysChartCheck {
 }
 
 #[derive(Debug)]
-pub(crate) struct InstallSysChart(ChartConfig);
+pub(crate) struct InstallSysChart {
+    config: ChartConfig,
+    platform_version: Version,
+}
 
 #[async_trait]
 impl ClusterAutoFix for InstallSysChart {
-    async fn attempt_fix(&self, render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
+    async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
         debug!(
             "Fixing by installing Fluvio sys chart with config: {:#?}",
-            &self.0
+            &self.config
         );
-        render.set_message("Installing Fluvio system charts...");
-        let sys_installer = ChartInstaller::from_config(self.0.clone())?;
+        let sys_installer = ChartInstaller::from_config(self.config.clone())?;
         sys_installer.install()?;
 
-        Ok("Fluvio Sys chart is installed".to_owned())
+        Ok(format!(
+            "Fluvio Sys chart {} is installed",
+            self.platform_version
+        ))
     }
 }
 
@@ -648,7 +670,6 @@ struct LocalClusterCheck;
 #[async_trait]
 impl ClusterCheck for LocalClusterCheck {
     async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
-        println!("performing local cluster check");
         match Command::new("pgrep").arg("fluvio").output() {
             Ok(_) => Ok(CheckStatus::pass("No Local cluster exists")),
             Err(_err) => Ok(CheckStatus::Unrecoverable(
@@ -757,10 +778,14 @@ impl ClusterChecker {
 
     /// Performs check and fix is required
     ///
-    pub async fn run(self, pb: &ProgressRenderer, fix: bool) -> Result<bool, ClusterCheckError> {
+    pub async fn run(
+        self,
+        pb_factory: &ProgressBarFactory,
+        fix_recoverable: bool,
+    ) -> Result<bool, ClusterCheckError> {
         macro_rules! pad_format {
             ( $e:expr ) => {
-                format!("{:>6}", $e)
+                format!("{:>5} {}", "", $e)
             };
         }
 
@@ -772,26 +797,38 @@ impl ClusterChecker {
 
         let mut failed = false;
         for check in sorted_checks {
+            let pb = pb_factory.create();
             let mut passed = false;
             let required_components = check.required_components();
+            let component = check.component();
             if required_components
                 .iter()
                 .filter(|component| components.contains(component))
                 .count()
                 == required_components.len()
             {
-                pb.set_message(pad_format!(format!("Checking {}", check.label())));
-                match check.perform_check(pb).await? {
-                    CheckStatus::AutoFixableError(fixable_error) => {
-                        if fix {
-                            match fixable_error.attempt_fix(pb).await {
+                pb.set_message(pad_format!(format!(
+                    "{} Checking {}",
+                    "💙".bold(),
+                    check.label()
+                )));
+                sleep(Duration::from_millis(5000)).await; // dummy delay for debugging
+                match check.perform_check(&pb).await? {
+                    CheckStatus::AutoFixableError { message, fixer } => {
+                        if fix_recoverable {
+                            pb.set_message(pad_format!(format!("{} {}", "🟡️".bold(), message)));
+                            match fixer.attempt_fix(&pb).await {
                                 Ok(status) => {
-                                    pb.println(format!("Fixed: {}", status));
+                                    pb.println(pad_format!(format!(
+                                        "{} Fixed: {}",
+                                        "✅".bold(),
+                                        status
+                                    )));
                                     passed = true;
                                 }
                                 Err(err) => {
                                     // If the fix failed, wrap the original failed check in Unrecoverable
-                                    pb.println(format!("Auto fix failed: {:#?}", err));
+                                    pb.println(pad_format!(format!("Auto fix failed: {:#?}", err)));
                                     failed = true;
                                 }
                             }
@@ -811,15 +848,17 @@ impl ClusterChecker {
             }
 
             if passed {
-                if let Some(component) = check.component() {
+                if let Some(component) = component {
                     debug!(?component, "component registered");
                     components.insert(component);
                 }
             }
+
+            pb.finish_and_clear();
         }
 
         if !failed {
-            pb.println(format!("🎉 {}", "All checks passed!".bold()));
+            pb_factory.println(format!("🎉 {}", "All checks passed!".bold()));
         }
 
         Ok(failed)

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::render::{ProgressRenderedText, ProgressRenderer};
@@ -99,10 +101,31 @@ fn create_spinning_indicator() -> ProgressBar {
     pb
 }
 
-pub(crate) fn create_progress_indicator(hide_flag: bool) -> ProgressRenderer {
-    if hide_flag || std::env::var("CI").is_ok() {
-        Default::default()
-    } else {
-        create_spinning_indicator().into()
+#[derive(Debug)]
+pub struct ProgressBarFactory {
+    hide: bool,
+    plain: ProgressRenderer,
+}
+
+impl ProgressBarFactory {
+    pub fn new(hide: bool) -> Self {
+        Self {
+            hide,
+            plain: Default::default(),
+        }
+    }
+
+    /// create new progress bar
+    pub fn create(&self) -> ProgressRenderer {
+        if self.hide || std::env::var("CI").is_ok() {
+            Default::default()
+        } else {
+            create_spinning_indicator().into()
+        }
+    }
+
+    /// simple print
+    pub fn println(&self, msg: impl Into<Cow<'static, str>>) {
+        self.plain.println(msg);
     }
 }
