@@ -94,18 +94,18 @@ pub enum ClusterCheckError {
 pub enum ClusterAutoFixError {
     /// There was a problem with the helm client during pre-check
     #[error("Helm client error")]
-    HelmError(#[from] HelmError),
+    Helm(#[from] HelmError),
 
     /// There was a problem fetching kubernetes configuration
     #[error("Kubernetes config error")]
-    K8ConfigError(#[from] K8ConfigError),
+    K8Config(#[from] K8ConfigError),
 
     /// Could not connect to K8 client
     #[error("Kubernetes client error")]
-    K8ClientError(#[from] K8ClientError),
+    K8Client(#[from] K8ClientError),
 
     #[error("Chart Install error")]
-    ChartInstallError(#[from] ChartInstallError),
+    ChartInstall(#[from] ChartInstallError),
 }
 
 /// Allows checks to suggest further action
@@ -124,10 +124,7 @@ pub type CheckStatuses = Vec<CheckStatus>;
 #[derive(Debug)]
 pub enum CheckStatus {
     /// This check has passed and has the given success message
-    Pass {
-        status: CheckSucceeded,
-        component: Option<FluvioClusterComponent>,
-    },
+    Pass(CheckSucceeded),
     /// This check has failed but can be recovered
     AutoFixableError(Box<dyn ClusterAutoFix>),
     /// check that cannot be recovered
@@ -137,18 +134,7 @@ pub enum CheckStatus {
 impl CheckStatus {
     /// Creates a passing check status with a success message
     pub(crate) fn pass<S: Into<String>>(msg: S) -> Self {
-        Self::Pass {
-            status: msg.into(),
-            component: None,
-        }
-    }
-
-    /// Creates a passing check status with a success message
-    pub(crate) fn pass_with<S: Into<String>>(msg: S, component: FluvioClusterComponent) -> Self {
-        Self::Pass {
-            status: msg.into(),
-            component: Some(component),
-        }
+        Self::Pass(msg.into())
     }
 }
 
@@ -252,24 +238,30 @@ impl CheckSuggestion for UnrecoverableCheckStatus {
 /// Fluvio Cluster component
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub enum FluvioClusterComponent {
-    Kubectl,
     Helm,
     Kubernetes,
+    K8Version,
+    SysChart,
 }
 
 #[async_trait]
 pub trait ClusterCheck: Debug + 'static + Send + Sync {
+    /// Returns label that can be used
+    fn label(&self) -> &str;
 
-    fn label(&self) ->&str;      // label
+    /// can register as component that other checker can depend on
+    fn component(&self) -> Option<FluvioClusterComponent> {
+        None
+    }
 
     /// list of components that must be installed before checking
-    fn required_components(&self) -> Vec<FluvioClusterComponent>;
+    fn required_components(&self) -> Vec<FluvioClusterComponent> {
+        vec![]
+    }
 
     /// perform check, if successful return success message, if fail, return
     async fn perform_check(&self, pb: &ProgressRenderer) -> Result<CheckStatus, ClusterCheckError>;
 }
-
-
 
 #[async_trait]
 pub trait ClusterAutoFix: Debug + 'static + Send + Sync {
@@ -277,11 +269,12 @@ pub trait ClusterAutoFix: Debug + 'static + Send + Sync {
     async fn attempt_fix(&self, render: &ProgressRenderer) -> Result<String, ClusterAutoFixError>;
 }
 
+/// Check for loading
 #[derive(Debug)]
-pub(crate) struct LoadableConfig;
+pub(crate) struct ActiveKubernetesCluster;
 
 #[async_trait]
-impl ClusterCheck for LoadableConfig {
+impl ClusterCheck for ActiveKubernetesCluster {
     /// Checks that we can connect to Kubernetes via the active context
     async fn perform_check(&self, pb: &ProgressRenderer) -> CheckResult {
         pb.set_message("Checking for Active Kubernetes config");
@@ -313,10 +306,7 @@ impl ClusterCheck for LoadableConfig {
         };
 
         match context.config.current_cluster() {
-            Some(_ctx) => Ok(CheckStatus::pass_with(
-                "Active Kubernetes context found",
-                FluvioClusterComponent::Kubernetes,
-            )),
+            Some(_ctx) => Ok(CheckStatus::pass("Active Kubernetes context found")),
             None => Ok(CheckStatus::Unrecoverable(
                 UnrecoverableCheckStatus::NoActiveKubernetesContext,
             )),
@@ -324,10 +314,14 @@ impl ClusterCheck for LoadableConfig {
     }
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
-        vec![FluvioClusterComponent::Kubectl]
+        vec![]
     }
 
-    fn label(&self) ->&str {
+    fn component(&self) -> Option<FluvioClusterComponent> {
+        Some(FluvioClusterComponent::Kubernetes)
+    }
+
+    fn label(&self) -> &str {
         "Kubernetes config"
     }
 }
@@ -390,10 +384,14 @@ impl ClusterCheck for K8Version {
     }
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
-        vec![FluvioClusterComponent::Kubectl]
+        vec![FluvioClusterComponent::Kubernetes]
     }
 
-    fn label(&self) ->&str {
+    fn component(&self) -> Option<FluvioClusterComponent> {
+        Some(FluvioClusterComponent::K8Version)
+    }
+
+    fn label(&self) -> &str {
         "Kubernetes version"
     }
 }
@@ -430,17 +428,17 @@ impl ClusterCheck for HelmVersion {
                 },
             ));
         }
-        Ok(CheckStatus::pass_with(
-            format!("Supported helm version: {} is installed", helm_version),
-            FluvioClusterComponent::Helm,
-        ))
+        Ok(CheckStatus::pass(format!(
+            "Supported helm version: {} is installed",
+            helm_version
+        )))
     }
 
-    fn required_components(&self) -> Vec<FluvioClusterComponent> {
-        vec![]
+    fn component(&self) -> Option<FluvioClusterComponent> {
+        Some(FluvioClusterComponent::Helm)
     }
 
-    fn label(&self) ->&str {
+    fn label(&self) -> &str {
         "Helm"
     }
 }
@@ -499,12 +497,15 @@ impl ClusterCheck for SysChartCheck {
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
         vec![
             FluvioClusterComponent::Helm,
-            FluvioClusterComponent::Kubectl,
             FluvioClusterComponent::Kubernetes,
         ]
     }
 
-    fn label(&self) ->&str {
+    fn component(&self) -> Option<FluvioClusterComponent> {
+        Some(FluvioClusterComponent::SysChart)
+    }
+
+    fn label(&self) -> &str {
         "Fluvio Sys Chart"
     }
 }
@@ -575,12 +576,11 @@ impl ClusterCheck for AlreadyInstalled {
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
         vec![
             FluvioClusterComponent::Helm,
-            FluvioClusterComponent::Kubectl,
             FluvioClusterComponent::Kubernetes,
         ]
     }
 
-    fn label(&self) ->&str {
+    fn label(&self) -> &str {
         "Fluvio installation"
     }
 }
@@ -595,13 +595,10 @@ impl ClusterCheck for CreateServicePermission {
     }
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
-        vec![
-            FluvioClusterComponent::Kubectl,
-            FluvioClusterComponent::Kubernetes,
-        ]
+        vec![FluvioClusterComponent::Kubernetes]
     }
 
-    fn label(&self) ->&str {
+    fn label(&self) -> &str {
         "Kubernetes Service Permission"
     }
 }
@@ -616,13 +613,10 @@ impl ClusterCheck for CreateCrdPermission {
     }
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
-        vec![
-            FluvioClusterComponent::Kubectl,
-            FluvioClusterComponent::Kubernetes,
-        ]
+        vec![FluvioClusterComponent::Kubernetes]
     }
 
-    fn label(&self) ->&str {
+    fn label(&self) -> &str {
         "Kubernetes Crd Permission"
     }
 }
@@ -637,14 +631,11 @@ impl ClusterCheck for CreateServiceAccountPermission {
     }
 
     fn required_components(&self) -> Vec<FluvioClusterComponent> {
-        vec![
-            FluvioClusterComponent::Kubectl,
-            FluvioClusterComponent::Kubernetes,
-        ]
+        vec![FluvioClusterComponent::Kubernetes]
     }
 
-    fn label(&self) ->&str {
-       "Kubernetes Service Account Permission"
+    fn label(&self) -> &str {
+        "Kubernetes Service Account Permission"
     }
 }
 
@@ -664,11 +655,7 @@ impl ClusterCheck for LocalClusterCheck {
         }
     }
 
-    fn required_components(&self) -> Vec<FluvioClusterComponent> {
-        vec![]
-    }
-
-    fn label(&self) ->&str {
+    fn label(&self) -> &str {
         "Fluvio Local Installation"
     }
 }
@@ -721,7 +708,7 @@ impl ClusterChecker {
     /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_preflight_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
-            Box::new(LoadableConfig),
+            Box::new(ActiveKubernetesCluster),
             Box::new(K8Version),
             Box::new(HelmVersion),
             Box::new(CreateServicePermission),
@@ -742,7 +729,7 @@ impl ClusterChecker {
     /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_k8_checks(mut self) -> Self {
         let checks: Vec<Box<(dyn ClusterCheck)>> =
-            vec![Box::new(LoadableConfig), Box::new(HelmVersion)];
+            vec![Box::new(ActiveKubernetesCluster), Box::new(HelmVersion)];
         self.checks.extend(checks);
         self
     }
@@ -759,7 +746,7 @@ impl ClusterChecker {
         let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
             Box::new(HelmVersion),
             Box::new(K8Version),
-            Box::new(LoadableConfig),
+            Box::new(ActiveKubernetesCluster),
             Box::new(LocalClusterCheck),
         ];
         self.checks.extend(checks);
@@ -769,7 +756,6 @@ impl ClusterChecker {
     /// Performs check and fix is required
     ///
     pub async fn run(self, pb: &ProgressRenderer, fix: bool) -> Result<bool, ClusterCheckError> {
-
         // sort checks according to dependencies
         let mut components: HashSet<FluvioClusterComponent> = HashSet::new();
 
@@ -786,7 +772,7 @@ impl ClusterChecker {
                 .count()
                 == required_components.len()
             {
-                match check.perform_check(&pb).await? {
+                match check.perform_check(pb).await? {
                     CheckStatus::AutoFixableError(fixable_error) => {
                         if fix {
                             match fixable_error.attempt_fix(pb).await {
@@ -804,10 +790,8 @@ impl ClusterChecker {
                             failed = true;
                         }
                     }
-                    CheckStatus::Pass { status, component } => {
+                    CheckStatus::Pass(_status) => {
                         passed = true;
-                        let _ = status;
-                        let _ = component;
                     }
                     CheckStatus::Unrecoverable(_err) => {}
                 }
@@ -817,8 +801,8 @@ impl ClusterChecker {
             }
 
             if passed {
-                for component in required_components.into_iter() {
-                    debug!(?component, "required component installed");
+                if let Some(component) = check.component() {
+                    debug!(?component, "component registered");
                     components.insert(component);
                 }
             }
@@ -832,9 +816,34 @@ impl ClusterChecker {
     }
 }
 
-fn check_compare(first: &Box<dyn ClusterCheck>,second: &Box<dyn ClusterCheck>) -> Ordering {
-    let dep1 = first.required_components();
-    let dep2 = second.required_components();
+#[allow(clippy::borrowed_box)]
+fn check_compare(first: &Box<dyn ClusterCheck>, second: &Box<dyn ClusterCheck>) -> Ordering {
+    //  println!("dep1: {:#?}",dep1_set);
+    //  println!("dep2: {:#?}",dep2_set);
+    // check if any of dep1 is less than dep2
+    if let Some(reg) = second.component() {
+        //   println!("second component: {:#?}",reg);
+        for dep1 in first.required_components() {
+            //     println!("checking dep1: {:#?}",dep1);
+            // if first is depends on second, then seconds should be listed first
+            if dep1 == reg {
+                return Ordering::Greater;
+            }
+        }
+    }
+
+    if let Some(reg) = first.component() {
+        // println!("second component: {:#?}",reg);
+        for dep2 in second.required_components() {
+            //   println!("checking second: {:#?}",dep2);
+            // if seconds is depends on first, then first should be listed first
+            if dep2 == reg {
+                return Ordering::Less;
+            }
+        }
+    }
+
+    Ordering::Equal
 }
 
 fn check_permission(resource: &str, _pb: &ProgressRenderer) -> CheckResult {
@@ -860,4 +869,18 @@ fn check_create_permission(resource: &str) -> Result<bool, ClusterCheckError> {
     let res = String::from_utf8(check_command.stdout)
         .map_err(|_| ClusterCheckError::FetchPermissionError)?;
     Ok(res.trim() == "yes")
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_check_dep() {
+        let k8: Box<dyn ClusterCheck> = Box::new(super::ActiveKubernetesCluster);
+        let perm: Box<dyn ClusterCheck> = Box::new(super::CreateCrdPermission);
+        // since per depends on k8, k8 should be less
+        assert_eq!(check_compare(&k8, &perm), Ordering::Less);
+    }
 }
