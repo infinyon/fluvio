@@ -774,8 +774,11 @@ impl ClusterChecker {
     /// - [`run_with_progress`](ClusterChecker::run_with_progress)
     /// - [`run_and_fix_with_progress`](ClusterChecker::run_and_fix_with_progress)
     pub fn with_k8_checks(mut self) -> Self {
-        let checks: Vec<Box<(dyn ClusterCheck)>> =
-            vec![Box::new(ActiveKubernetesCluster), Box::new(HelmVersion)];
+        let checks: Vec<Box<(dyn ClusterCheck)>> = vec![
+            Box::new(ActiveKubernetesCluster),
+            Box::new(HelmVersion),
+            Box::new(K8Version),
+        ];
         self.checks.extend(checks);
         self
     }

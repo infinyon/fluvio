@@ -9,15 +9,10 @@ pub(crate) enum InstallProgressMessage {
     PreFlightCheck,
     LaunchingSC,
     ScLaunched,
-    ConnectingSC,
 
     StartSPU(u16, u16),
     WaitingForSPU(usize, usize),
     SpuGroupLaunched(u16),
-    InstallingChart,
-    UpgradingChart,
-    ChartInstalled,
-    FoundSC(String),
     ConfirmingSpus,
     SpusConfirmed,
     ProfileSet,
@@ -32,26 +27,13 @@ impl ProgressRenderedText for InstallProgressMessage {
             InstallProgressMessage::PreFlightCheck => {
                 format!("{}", "📝 Running pre-flight checks".bold())
             }
-            InstallProgressMessage::ChartInstalled => {
-                format!("{:>6} {}", "✅", "Fluvio app chart has been installed")
-            }
+
             InstallProgressMessage::LaunchingSC => {
                 format!("🖥️  {}", "Starting SC server".bold())
             }
-            InstallProgressMessage::FoundSC(address) => {
-                format!("🔎 {} {}", "Found SC service addr:".bold(), address.bold())
-            }
+
             InstallProgressMessage::ScLaunched => {
                 format!("✅ {}", "SC Launched".bold())
-            }
-            InstallProgressMessage::InstallingChart => {
-                format!("{:>6} {}", "📊", "Installing Fluvio chart")
-            }
-            InstallProgressMessage::UpgradingChart => {
-                format!("{:>6} {}", "📊", "Upgrading Fluvio chart")
-            }
-            InstallProgressMessage::ConnectingSC => {
-                format!("🔗 {}", "Trying to connect to SC".bold())
             }
 
             InstallProgressMessage::WaitingForSPU(spu_num, total) => {
