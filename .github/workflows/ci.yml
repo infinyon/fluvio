@@ -452,7 +452,7 @@ jobs:
         timeout-minutes: 5
         run: |
           date
-          make smoke-test-tls-root
+          RUST_LOG=debug make smoke-test-tls-root
           date
           kubectl get partitions
           kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
