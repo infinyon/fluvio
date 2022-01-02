@@ -90,6 +90,9 @@ pub enum ClusterCheckError {
     /// Other misc
     #[error("Other failure: {0}")]
     Other(String),
+
+    #[error("Preflight check failed")]
+    PreCheckFlightFailure,
 }
 
 /// An error occurred during the checking process
@@ -671,10 +674,28 @@ struct LocalClusterCheck;
 impl ClusterCheck for LocalClusterCheck {
     async fn perform_check(&self, _pb: &ProgressRenderer) -> CheckResult {
         match Command::new("pgrep").arg("fluvio").output() {
-            Ok(_) => Ok(CheckStatus::pass("No Local cluster exists")),
-            Err(_err) => Ok(CheckStatus::Unrecoverable(
-                UnrecoverableCheckStatus::ExistingLocalCluster,
-            )),
+            Ok(output) => {
+                if let Some(code) = output.status.code() {
+                    if code == 1 {
+                        return Ok(CheckStatus::pass("Fluvio is not running"));
+                    } else if code == 0 {
+                        Ok(CheckStatus::Unrecoverable(
+                            UnrecoverableCheckStatus::ExistingLocalCluster,
+                        ))
+                    } else {
+                        Err(ClusterCheckError::Other(format!(
+                            "pgrep returned unexpected code: {}",
+                            code
+                        )))
+                    }
+                } else {
+                    Err(ClusterCheckError::Other(format!("pgrep returned no code")))
+                }
+            }
+            Err(err) => Err(ClusterCheckError::Other(format!(
+                "unabel to check local cluster: {:#?}",
+                err
+            ))),
         }
     }
 
@@ -812,7 +833,7 @@ impl ClusterChecker {
                     "💙".bold(),
                     check.label()
                 )));
-                sleep(Duration::from_millis(5000)).await; // dummy delay for debugging
+                sleep(Duration::from_millis(100)).await; // dummy delay for debugging
                 match check.perform_check(&pb).await? {
                     CheckStatus::AutoFixableError { message, fixer } => {
                         if fix_recoverable {
@@ -840,7 +861,15 @@ impl ClusterChecker {
                         passed = true;
                         pb.println(pad_format!(format!("{} {}", "✅".bold(), status)));
                     }
-                    CheckStatus::Unrecoverable(_err) => {}
+                    CheckStatus::Unrecoverable(err) => {
+                        debug!("failed: {}", err);
+                        pb.println(pad_format!(format!(
+                            "{} Failed {}",
+                            "❌",
+                            err.to_string().red()
+                        )));
+                        failed = true;
+                    }
                 }
             } else {
                 pb.println("skipping check because required components are not met");
@@ -857,11 +886,13 @@ impl ClusterChecker {
             pb.finish_and_clear();
         }
 
-        if !failed {
+        if failed {
+            pb_factory.println(format!("💔 {}", "Some pre-flight check failed!".bold()));
+            Err(ClusterCheckError::PreCheckFlightFailure)
+        } else {
             pb_factory.println(format!("🎉 {}", "All checks passed!".bold()));
+            Ok(true)
         }
-
-        Ok(failed)
     }
 }
 
