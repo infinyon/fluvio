@@ -1,4 +1,7 @@
-use std::{env, time::Duration};
+use std::{
+    env,
+    time::{Duration, SystemTime},
+};
 
 use fluvio_controlplane_metadata::spu::SpuSpec;
 use k8_client::{SharedK8Client, ClientError};
@@ -9,10 +12,12 @@ use tracing::{debug, error, instrument, warn};
 use fluvio::{Fluvio, FluvioConfig};
 use fluvio_future::timer::sleep;
 
+use crate::render::ProgressRenderer;
+
 /// maximum time for VERSION CHECK
 static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_VERSION_LOOP").unwrap_or_default();
-    var_value.parse().unwrap_or(15)
+    var_value.parse().unwrap_or(120)
 });
 
 /// try connection to SC
@@ -20,6 +25,7 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
 pub async fn try_connect_to_sc(
     config: &FluvioConfig,
     platform_version: &Version,
+    pb: &ProgressRenderer,
 ) -> Option<Fluvio> {
     async fn try_connect_sc(
         fluvio_config: &FluvioConfig,
@@ -28,7 +34,7 @@ pub async fn try_connect_to_sc(
         use tokio::select;
 
         select! {
-            _ = &mut sleep(Duration::from_secs(3)) => {
+            _ = &mut sleep(Duration::from_secs(10)) => {
                 debug!("timer expired");
                 None
             },
@@ -56,17 +62,24 @@ pub async fn try_connect_to_sc(
         }
     }
 
+    let time = SystemTime::now();
     for attempt in 0..*MAX_SC_LOOP {
         debug!(
             "Trying to connect to sc at: {}, attempt: {}",
             config.endpoint, attempt
         );
+        let elapsed = time.elapsed().unwrap();
+        pb.set_message(format!(
+            "🖥️  Trying to connect to SC: {} {} seconds elapsed",
+            config.endpoint,
+            elapsed.as_secs()
+        ));
         if let Some(fluvio) = try_connect_sc(config, platform_version).await {
             debug!("Connection to sc suceed!");
             return Some(fluvio);
         } else if attempt < *MAX_SC_LOOP - 1 {
             debug!("Connection failed.  sleeping 10 seconds");
-            sleep(Duration::from_secs(10)).await;
+            sleep(Duration::from_secs(1)).await;
         }
     }
 

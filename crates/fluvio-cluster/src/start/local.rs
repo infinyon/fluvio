@@ -464,7 +464,7 @@ impl LocalInstaller {
             FluvioConfig::new(&(*LOCAL_SC_ADDRESS)).with_tls(self.config.client_tls_policy.clone());
 
         if let Some(fluvio) =
-            try_connect_to_sc(&cluster_config, &self.config.platform_version).await
+            try_connect_to_sc(&cluster_config, &self.config.platform_version, pb).await
         {
             Ok(fluvio)
         } else {

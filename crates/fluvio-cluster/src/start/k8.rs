@@ -638,14 +638,14 @@ impl ClusterInstaller {
 
         let address = format!("{}:{}", host_name, port);
 
-        pb.set_message(format!("🖥️  Trying to connect to SC: {}",address));
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
 
-        let fluvio = match try_connect_to_sc(&cluster_config, &self.config.platform_version).await {
-            Some(fluvio) => fluvio,
-            None => return Err(K8InstallError::SCServiceTimeout),
-        };
+        let fluvio =
+            match try_connect_to_sc(&cluster_config, &self.config.platform_version, &pb).await {
+                Some(fluvio) => fluvio,
+                None => return Err(K8InstallError::SCServiceTimeout),
+            };
         pb.println(format!("✅ Connected to SC: {}", address));
         pb.finish_and_clear();
         drop(pb);
@@ -674,9 +674,15 @@ impl ClusterInstaller {
         let pb = self.pb_factory.create();
 
         if self.config.upgrade {
-            pb.set_message( format!("📊 Upgrading Fluvio app chart to {}", self.config.platform_version));
+            pb.set_message(format!(
+                "📊 Upgrading Fluvio app chart to {}",
+                self.config.platform_version
+            ));
         } else {
-            pb.set_message( format!("📊 Installing Fluvio app chart: {}", self.config.platform_version));
+            pb.set_message(format!(
+                "📊 Installing Fluvio app chart: {}",
+                self.config.platform_version
+            ));
         }
 
         // Specify common installation settings to pass to helm
@@ -803,9 +809,15 @@ impl ClusterInstaller {
         installer.process(self.config.upgrade)?;
 
         if self.config.upgrade {
-            pb.println( format!("✅ Upgrading Fluvio app chart: {}", self.config.platform_version));
+            pb.println(format!(
+                "✅ Upgrading Fluvio app chart: {}",
+                self.config.platform_version
+            ));
         } else {
-            pb.println( format!("✅ Installed Fluvio app chart: {}", self.config.platform_version));
+            pb.println(format!(
+                "✅ Installed Fluvio app chart: {}",
+                self.config.platform_version
+            ));
         }
 
         pb.finish_and_clear();
