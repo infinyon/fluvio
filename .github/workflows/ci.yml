@@ -452,6 +452,8 @@ jobs:
         timeout-minutes: 5
         run: |
           date
+          pgrep fluvio
+          ps -ef | grep fluvio
           RUST_LOG=debug make smoke-test-tls-root
           date
           kubectl get partitions
