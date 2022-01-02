@@ -265,7 +265,6 @@ else
 clean_cluster:
 	echo "clean up previous installation"
 	$(FLUVIO_BIN) cluster delete
-	$(FLUVIO_BIN) cluster delete --local
 endif
 
 test-setup:	build-test-ci clean_cluster
