@@ -11,10 +11,6 @@ pub(crate) enum InstallProgressMessage {
     ScLaunched,
 
     StartSPU(u16, u16),
-    WaitingForSPU(usize, usize),
-    SpuGroupLaunched(u16),
-    ConfirmingSpus,
-    SpusConfirmed,
     ProfileSet,
     Success,
 }
@@ -36,22 +32,10 @@ impl ProgressRenderedText for InstallProgressMessage {
                 format!("✅ {}", "SC Launched".bold())
             }
 
-            InstallProgressMessage::WaitingForSPU(spu_num, total) => {
-                format!("{:>6} ({}/{})", "🤖 Waiting for SPU:", spu_num, total)
-            }
-
             InstallProgressMessage::StartSPU(spu_num, total) => {
                 format!("{} ({}/{})", "🤖 Starting SPU:", spu_num, total)
             }
-            InstallProgressMessage::SpuGroupLaunched(spu_num) => {
-                format!("🤖 {} ({})", "SPU group launched".bold(), spu_num)
-            }
-            InstallProgressMessage::ConfirmingSpus => {
-                format!("💙 {}", "Confirming SPUs".bold())
-            }
-            InstallProgressMessage::SpusConfirmed => {
-                format!("{:>6} {}", "✅", "All SPUs confirmed")
-            }
+
             InstallProgressMessage::ProfileSet => {
                 format!("👤 {}", "Profile set".bold())
             }

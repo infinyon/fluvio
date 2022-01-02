@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 use std::fs::create_dir_all;
 use std::process::{Command};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use colored::Colorize;
 use semver::Version;
@@ -554,11 +554,18 @@ impl LocalInstaller {
         let admin = client.admin().await;
 
         let pb = self.pb_factory.create();
-        pb.set_message(InstallProgressMessage::ConfirmingSpus.msg());
+        let time = SystemTime::now();
         // wait for list of spu
         for _ in 0..*MAX_SC_NETWORK_LOOP {
             let spus = admin.list::<SpuSpec, _>(vec![]).await?;
             let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
+            let elapsed = time.elapsed().unwrap();
+            pb.set_message(format!(
+                "🖥️ {}/{} SPU confirmed, {} seconds elapsed",
+                ready_spu,
+                spu,
+                elapsed.as_secs()
+            ));
             if ready_spu == spu as usize {
                 sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
                 return Ok(());

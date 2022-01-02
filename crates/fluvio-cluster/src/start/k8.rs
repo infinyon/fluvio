@@ -6,6 +6,7 @@ use std::borrow::Cow;
 use std::process::Command;
 use std::time::Duration;
 use std::env;
+use std::time::SystemTime;
 
 use derive_builder::Builder;
 use fluvio::FluvioAdmin;
@@ -352,6 +353,7 @@ impl ClusterConfigBuilder {
     /// - Use the git hash of HEAD as the image_tag
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
         let git_hash = env!("GIT_HASH");
+        debug!(git_hash, "using development git hash");
         self.image_tag(git_hash.trim());
         Ok(self)
     }
@@ -654,11 +656,10 @@ impl ClusterInstaller {
             self.update_profile(&address)?;
         }
 
-        let pb = self.pb_factory.create();
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
-        pb.println(InstallProgressMessage::Success.msg());
-        pb.finish_and_clear();
+        self.pb_factory
+            .println(InstallProgressMessage::Success.msg());
 
         Ok(StartStatus { address, port })
     }
@@ -966,6 +967,7 @@ impl ClusterInstaller {
         admin: &FluvioAdmin,
         pb: &ProgressRenderer,
     ) -> Result<bool, K8InstallError> {
+        let time = SystemTime::now();
         let expected_spu = self.config.spu_replicas as usize;
         debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
         for i in 0..*MAX_SC_NETWORK_LOOP {
@@ -981,10 +983,15 @@ impl ClusterInstaller {
                 .filter(|spu_obj| spu_obj.status.is_online())
                 .count();
 
-            if self.config.spu_replicas as usize == ready_spu {
-                self.pb_factory
-                    .println(InstallProgressMessage::SpusConfirmed.msg());
+            let elapsed = time.elapsed().unwrap();
+            pb.set_message(format!(
+                "🖥️ {}/{} SPU confirmed, {} seconds elapsed",
+                ready_spu,
+                expected_spu,
+                elapsed.as_secs()
+            ));
 
+            if self.config.spu_replicas as usize == ready_spu {
                 return Ok(true);
             } else {
                 debug!(
@@ -993,10 +1000,8 @@ impl ClusterInstaller {
                     attempt = i,
                     "Not all SPUs are ready. Waiting",
                 );
-                pb.set_message(
-                    InstallProgressMessage::WaitingForSPU(ready_spu, expected_spu).msg(),
-                );
-                sleep(Duration::from_secs(10)).await;
+
+                sleep(Duration::from_secs(1)).await;
             }
         }
 
@@ -1121,13 +1126,14 @@ impl ClusterInstaller {
     #[instrument(skip(self, fluvio))]
     async fn create_managed_spu_group(&self, fluvio: &Fluvio) -> Result<(), K8InstallError> {
         let pb = self.pb_factory.create();
-        let name = self.config.group_name.clone();
+        let spg_name = self.config.group_name.clone();
+        pb.set_message(format!("📝 Checking for existing SPU Group: {}", spg_name));
         let admin = fluvio.admin().await;
         let lists = admin.list::<SpuGroupSpec, _>([]).await?;
         if lists.is_empty() {
             pb.set_message(format!(
-                "Trying to create managed {} spus",
-                self.config.spu_replicas
+                "🤖 Creatng SPU Group: {} with replicas: {}",
+                spg_name, self.config.spu_replicas
             ));
 
             let spu_spec = SpuGroupSpec {
@@ -1136,19 +1142,22 @@ impl ClusterInstaller {
                 spu_config: self.config.spu_config.clone(),
             };
 
-            admin.create(name, false, spu_spec).await?;
-
-            pb.println(
-                InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
-            );
+            admin.create(spg_name.clone(), false, spu_spec).await?;
+            pb.set_message(format!("🤖 Spu Group {} started", spg_name));
         } else {
-            pb.println("SPU Group Exists,skipping");
+            pb.set_message("SPU Group Exists,skipping");
         }
 
         // Wait for the SPU cluster to spin up
         if !self.config.skip_spu_liveness_check {
             self.wait_for_spu(&admin, &pb).await?;
         }
+
+        pb.println(format!(
+            "✅ SPU group {} launched with {} replicas",
+            spg_name, self.config.spu_replicas
+        ));
+
         pb.finish_and_clear();
 
         Ok(())
