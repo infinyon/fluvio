@@ -627,6 +627,8 @@ impl ClusterInstaller {
 
         let namespace = &self.config.namespace;
 
+        let pb = self.pb_factory.create();
+        pb.set_message("🔎 Discovering Fluvio SC");
         // before we do let's try make sure SPU are installed.
         check_crd(self.kube_client.clone())
             .await
@@ -636,26 +638,23 @@ impl ClusterInstaller {
 
         let address = format!("{}:{}", host_name, port);
 
-        let pb = self.pb_factory.create();
-
-        pb.println(InstallProgressMessage::FoundSC(address.clone()).msg());
+        pb.set_message(format!("🖥️  Trying to connect to SC: {}",address));
         let cluster_config =
             FluvioConfig::new(address.clone()).with_tls(self.config.client_tls_policy.clone());
-
-        pb.set_message(InstallProgressMessage::ConnectingSC.msg());
 
         let fluvio = match try_connect_to_sc(&cluster_config, &self.config.platform_version).await {
             Some(fluvio) => fluvio,
             None => return Err(K8InstallError::SCServiceTimeout),
         };
-        pb.set_message("");
+        pb.println(format!("✅ Connected to SC: {}", address));
+        pb.finish_and_clear();
+        drop(pb);
 
         if self.config.save_profile {
             self.update_profile(&address)?;
-            self.pb_factory
-                .println(InstallProgressMessage::ProfileSet.msg());
         }
 
+        let pb = self.pb_factory.create();
         // Create a managed SPU cluster
         self.create_managed_spu_group(&fluvio).await?;
         pb.println(InstallProgressMessage::Success.msg());
@@ -675,9 +674,9 @@ impl ClusterInstaller {
         let pb = self.pb_factory.create();
 
         if self.config.upgrade {
-            pb.set_message(InstallProgressMessage::UpgradingChart.msg());
+            pb.set_message( format!("📊 Upgrading Fluvio app chart to {}", self.config.platform_version));
         } else {
-            pb.set_message(InstallProgressMessage::InstallingChart.msg());
+            pb.set_message( format!("📊 Installing Fluvio app chart: {}", self.config.platform_version));
         }
 
         // Specify common installation settings to pass to helm
@@ -803,7 +802,12 @@ impl ClusterInstaller {
         let installer = ChartInstaller::from_config(config)?;
         installer.process(self.config.upgrade)?;
 
-        pb.println(InstallProgressMessage::ChartInstalled.msg());
+        if self.config.upgrade {
+            pb.println( format!("✅ Upgrading Fluvio app chart: {}", self.config.platform_version));
+        } else {
+            pb.println( format!("✅ Installed Fluvio app chart: {}", self.config.platform_version));
+        }
+
         pb.finish_and_clear();
 
         Ok(())
@@ -1076,6 +1080,7 @@ impl ClusterInstaller {
             external_addr,
             &self.config.client_tls_policy,
         )?;
+        pb.println(InstallProgressMessage::ProfileSet.msg());
         pb.finish_and_clear();
         Ok(())
     }

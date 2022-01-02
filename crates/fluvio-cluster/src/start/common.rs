@@ -12,7 +12,7 @@ use fluvio_future::timer::sleep;
 /// maximum time for VERSION CHECK
 static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
     let var_value = env::var("FLV_CLUSTER_MAX_SC_VERSION_LOOP").unwrap_or_default();
-    var_value.parse().unwrap_or(60)
+    var_value.parse().unwrap_or(15)
 });
 
 /// try connection to SC
@@ -28,7 +28,7 @@ pub async fn try_connect_to_sc(
         use tokio::select;
 
         select! {
-            _ = &mut sleep(Duration::from_secs(10)) => {
+            _ = &mut sleep(Duration::from_secs(3)) => {
                 debug!("timer expired");
                 None
             },
