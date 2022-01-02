@@ -672,8 +672,13 @@ impl ClusterInstaller {
             &self.config
         );
 
-        self.pb_factory
-            .println(InstallProgressMessage::InstallingFluvio.msg());
+        let pb = self.pb_factory.create();
+
+        if self.config.upgrade {
+            pb.set_message(InstallProgressMessage::UpgradingChart.msg());
+        } else {
+            pb.set_message(InstallProgressMessage::InstallingChart.msg());
+        }
 
         // Specify common installation settings to pass to helm
         let mut install_settings: Vec<(_, Cow<str>)> =
@@ -780,14 +785,6 @@ impl ClusterInstaller {
             .collect();
 
         debug!("Using helm install settings: {:#?}", &install_settings);
-
-        let pb = self.pb_factory.create();
-
-        if self.config.upgrade {
-            pb.set_message(InstallProgressMessage::UpgradingChart.msg());
-        } else {
-            pb.set_message(InstallProgressMessage::InstallingChart.msg());
-        }
 
         chart_values.append(&mut self.config.chart_values.clone());
 
@@ -1128,7 +1125,7 @@ impl ClusterInstaller {
                 InstallProgressMessage::SpuGroupLaunched(self.config.spu_replicas as u16).msg(),
             );
         } else {
-            pb.println(InstallProgressMessage::SpuGroupExists.msg());
+            pb.println("SPU Group Exists,skipping");
         }
 
         // Wait for the SPU cluster to spin up

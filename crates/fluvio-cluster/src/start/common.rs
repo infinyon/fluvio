@@ -83,7 +83,7 @@ pub async fn check_crd(client: SharedK8Client) -> Result<(), ClientError> {
         // check if spu is installed
         if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
             debug!("problem retrieving fluvio crd {}", err);
-            sleep(Duration::from_secs(10)).await;
+            sleep(Duration::from_secs(1)).await;
         } else {
             debug!("fluvio crd installed");
             return Ok(());

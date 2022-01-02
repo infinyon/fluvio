@@ -677,7 +677,7 @@ impl ClusterCheck for LocalClusterCheck {
             Ok(output) => {
                 if let Some(code) = output.status.code() {
                     if code == 1 {
-                        return Ok(CheckStatus::pass("Fluvio is not running"));
+                        return Ok(CheckStatus::pass("Local Fluvio is not installed"));
                     } else if code == 0 {
                         Ok(CheckStatus::Unrecoverable(
                             UnrecoverableCheckStatus::ExistingLocalCluster,
@@ -689,7 +689,9 @@ impl ClusterCheck for LocalClusterCheck {
                         )))
                     }
                 } else {
-                    Err(ClusterCheckError::Other(format!("pgrep returned no code")))
+                    Err(ClusterCheckError::Other(
+                        "pgrep returned no code".to_string(),
+                    ))
                 }
             }
             Err(err) => Err(ClusterCheckError::Other(format!(
@@ -806,7 +808,7 @@ impl ClusterChecker {
     ) -> Result<bool, ClusterCheckError> {
         macro_rules! pad_format {
             ( $e:expr ) => {
-                format!("{:>5} {}", "", $e)
+                format!("{:>3} {}", "", $e)
             };
         }
 
@@ -830,7 +832,7 @@ impl ClusterChecker {
             {
                 pb.set_message(pad_format!(format!(
                     "{} Checking {}",
-                    "💙".bold(),
+                    "📝".bold(),
                     check.label()
                 )));
                 sleep(Duration::from_millis(100)).await; // dummy delay for debugging
@@ -849,7 +851,13 @@ impl ClusterChecker {
                                 }
                                 Err(err) => {
                                     // If the fix failed, wrap the original failed check in Unrecoverable
-                                    pb.println(pad_format!(format!("Auto fix failed: {:#?}", err)));
+                                    pb.println(pad_format!(format!(
+                                        "{} Auto fix for {} failed {:#?}",
+                                        "❌",
+                                        check.label().italic(),
+                                        err
+                                    )));
+
                                     failed = true;
                                 }
                             }
@@ -864,15 +872,19 @@ impl ClusterChecker {
                     CheckStatus::Unrecoverable(err) => {
                         debug!("failed: {}", err);
                         pb.println(pad_format!(format!(
-                            "{} Failed {}",
+                            "{} Check {} failed {}",
                             "❌",
+                            check.label().italic(),
                             err.to_string().red()
                         )));
                         failed = true;
                     }
                 }
             } else {
-                pb.println("skipping check because required components are not met");
+                pb.println(pad_format!(format!(
+                    "❌ skipping check: {} because required components are not met",
+                    check.label()
+                )));
                 failed = true;
             }
 
