@@ -676,7 +676,7 @@ impl ClusterCheck for LocalClusterCheck {
         match Command::new("pgrep").arg("fluvio-run").output() {
             Ok(output) => {
                 if let Some(code) = output.status.code() {
-                    debug!(code,"pgrep fluvio exit code");
+                    debug!(code, "pgrep fluvio exit code");
                     if code == 1 {
                         return Ok(CheckStatus::pass("Local Fluvio is not installed"));
                     } else if code == 0 {
