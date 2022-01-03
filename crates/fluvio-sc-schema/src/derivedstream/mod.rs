@@ -22,12 +22,6 @@ mod convert {
         type ListFilter = NameFilter;
         type WatchResponseType = Self;
         type ListType = Metadata<Self>;
-
-        fn convert_from<C: fluvio_controlplane_metadata::core::MetadataItem>(
-            obj: &fluvio_controlplane_metadata::store::MetadataStoreObject<Self, C>,
-        ) -> Self::ListType {
-            obj.clone().into()
-        }
     }
 
     impl CreatableAdminSpec for DerivedStreamSpec {

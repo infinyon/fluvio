@@ -78,6 +78,7 @@ mod fetch {
     use std::io::{Error, ErrorKind};
 
     use fluvio_controlplane_metadata::core::Spec;
+    use fluvio_controlplane_metadata::store::k8::K8MetaItem;
     use fluvio_protocol::{Decoder, Encoder};
     use fluvio_sc_schema::AdminSpec;
     use fluvio_stream_dispatcher::store::StoreContext;
@@ -85,7 +86,7 @@ mod fetch {
 
     use fluvio_sc_schema::objects::{ListResponse, NameFilter};
     use fluvio_auth::{AuthContext, TypeAction};
-    use fluvio_controlplane_metadata::store::{KeyFilter};
+    use fluvio_controlplane_metadata::store::{KeyFilter, MetadataStoreObject};
     use fluvio_controlplane_metadata::extended::SpecExt;
 
     use crate::services::auth::AuthServiceContext;
@@ -101,6 +102,7 @@ mod fetch {
         S: AdminSpec + SpecExt,
         <S as Spec>::Status: Encoder + Decoder,
         <S as Spec>::IndexKey: AsRef<str>,
+        <S as AdminSpec>::ListType: From<MetadataStoreObject<S, K8MetaItem>>,
     {
         debug!(ty = %S::LABEL,"fetching");
 
