@@ -93,14 +93,17 @@ impl ClusterUninstaller {
     async fn uninstall_k8(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
 
-        self.pb_factory
-            .println("Uninstalling fluvio kubernetes components");
+        let pb = self.pb_factory.create();
+        pb.set_message("Uninstalling fluvio kubernetes components");
         let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
             .ignore_not_found();
         self.helm_client
             .uninstall(uninstall)
             .map_err(UninstallError::HelmError)?;
+
+        pb.println("Uninstalled fluvio kubernetes components");
+        pb.finish_and_clear();
 
         Ok(())
     }
@@ -120,7 +123,7 @@ impl ClusterUninstaller {
             .map_err(UninstallError::HelmError)?;
         debug!("fluvio sys chart has been uninstalled");
 
-        pb.set_message("Fluvio System has been uninstalled");
+        pb.set_message("Fluvio System chart has been uninstalled");
         pb.finish_and_clear();
 
         Ok(())
@@ -128,7 +131,8 @@ impl ClusterUninstaller {
 
     async fn uninstall_local(&self) -> Result<(), ClusterError> {
         let pb = self.pb_factory.create();
-        pb.println("Uninstalling fluvio local components");
+
+        pb.set_message("Uninstalling fluvio local components");
         Command::new("pkill")
             .arg("-f")
             .arg("fluvio cluster run")
@@ -161,6 +165,9 @@ impl ClusterUninstaller {
             }
         }
 
+        pb.println("Uninstalled fluvio local components");
+        pb.finish_and_clear();
+
         Ok(())
     }
 
@@ -169,7 +176,7 @@ impl ClusterUninstaller {
     /// Ignore any errors, cleanup should be idempotent
     async fn cleanup(&self) {
         let pb = self.pb_factory.create();
-        pb.println("Cleaning up objects and secrets created during the installation process");
+        pb.set_message("Cleaning up objects and secrets created during the installation process");
         let ns = &self.config.namespace;
 
         // delete objects if not removed already
@@ -189,6 +196,9 @@ impl ClusterUninstaller {
         // delete secrets
         let _ = self.remove_secrets("fluvio-ca");
         let _ = self.remove_secrets("fluvio-tls");
+
+        pb.println("Objects and secrets have been cleaned up");
+        pb.finish_and_clear();
     }
 
     /// Remove objects of specified type, namespace
