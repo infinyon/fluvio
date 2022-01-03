@@ -278,9 +278,6 @@ pub struct ClusterConfig {
     /// Use NodePort instead of load balancer for SC and SPU
     #[builder(setter(into), default = "DEFAULT_SERVICE_TYPE.to_string()")]
     service_type: String,
-    /// If set, skip spu liveness check
-    #[builder(default = "false")]
-    skip_spu_liveness_check: bool,
 
     /// Used to hide spinner animation for progress updates
     #[builder(default = "true")]
@@ -351,12 +348,13 @@ impl ClusterConfigBuilder {
     ///
     /// - Use the git hash of HEAD as the image_tag
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
+        // look at git version instead of compiling git version which may not be same as image version
         let git_version_output = Command::new("git")
-        .args(&["rev-parse", "HEAD"])
-        .output()
-        .expect("should run 'git rev-parse HEAD' to get git hash");
+            .args(&["rev-parse", "HEAD"])
+            .output()
+            .expect("should run 'git rev-parse HEAD' to get git hash");
         let git_hash = String::from_utf8(git_version_output.stdout)
-        .expect("should read 'git' stdout to find hash");
+            .expect("should read 'git' stdout to find hash");
         println!("using development git hash: {}", git_hash);
         self.image_tag(git_hash.trim());
         Ok(self)
@@ -974,6 +972,7 @@ impl ClusterInstaller {
         let time = SystemTime::now();
         let expected_spu = self.config.spu_replicas as usize;
         debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
+
         for i in 0..*MAX_SC_NETWORK_LOOP {
             debug!("retrieving spu specs");
 
@@ -1150,11 +1149,13 @@ impl ClusterInstaller {
             pb.set_message(format!("🤖 Spu Group {} started", spg_name));
         } else {
             pb.set_message("SPU Group Exists,skipping");
+            // wait 5 seconds, this is hack to wait for spu to be terminated
+            // in order to fix properly, we need to wait for SPU to converged to new version
+            sleep(Duration::from_secs(5)).await;
         }
 
         // Wait for the SPU cluster to spin up
         self.wait_for_spu(&admin, &pb).await?;
-        
 
         pb.println(format!(
             "✅ SPU group {} launched with {} replicas",
