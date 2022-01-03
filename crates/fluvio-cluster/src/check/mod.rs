@@ -563,17 +563,13 @@ pub(crate) struct UpgradeSysChart {
 
 #[async_trait]
 impl ClusterAutoFix for UpgradeSysChart {
-    async fn attempt_fix(&self, render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
+    async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
         debug!(
             "Fixing by updating Fluvio sys chart with config: {:#?}",
             &self.config
         );
 
         let sys_installer = ChartInstaller::from_config(self.config.clone())?;
-        render.println(format!(
-            "Upgrading Fluvio system charts to: {}",
-            self.platform_version
-        ));
         sys_installer.upgrade()?;
 
         Ok(format!(

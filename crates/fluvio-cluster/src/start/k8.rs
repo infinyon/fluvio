@@ -351,7 +351,12 @@ impl ClusterConfigBuilder {
     ///
     /// - Use the git hash of HEAD as the image_tag
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
-        let git_hash = env!("GIT_HASH");
+        let git_version_output = Command::new("git")
+        .args(&["rev-parse", "HEAD"])
+        .output()
+        .expect("should run 'git rev-parse HEAD' to get git hash");
+        let git_hash = String::from_utf8(git_version_output.stdout)
+        .expect("should read 'git' stdout to find hash");
         println!("using development git hash: {}", git_hash);
         self.image_tag(git_hash.trim());
         Ok(self)

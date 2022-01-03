@@ -127,8 +127,8 @@ pub struct StartOpt {
     pub log_dir: DefaultLogDirectory,
 
     #[structopt(long)]
-    /// installing sys
-    sys: bool,
+    /// installing/upgrade sys only
+    sys_only: bool,
 
     /// install local spu/sc(custom)
     #[structopt(long)]
@@ -171,15 +171,11 @@ impl StartOpt {
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
-        if self.sys {
+        if self.sys_only {
             process_sys(&self, upgrade)?;
         } else if self.local {
             process_local(self, platform_version).await?;
         } else {
-            // if upgrade and not skip sys, invoke sys
-            if upgrade && !skip_sys {
-                process_sys(&self, upgrade)?;
-            }
             process_k8(self, platform_version, upgrade, skip_sys).await?;
         }
 
