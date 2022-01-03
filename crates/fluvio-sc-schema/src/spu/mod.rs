@@ -2,9 +2,10 @@ pub use fluvio_controlplane_metadata::spu::{SpuSpec};
 
 use crate::objects::ListRequest;
 use crate::objects::ListResponse;
+use crate::objects::Metadata;
 use crate::{
     AdminSpec, NameFilter,
-    objects::{ObjectFrom, ObjectTryFrom, Metadata, WatchResponse, WatchRequest},
+    objects::{ObjectFrom, ObjectTryFrom, WatchResponse, WatchRequest},
 };
 
 impl AdminSpec for SpuSpec {

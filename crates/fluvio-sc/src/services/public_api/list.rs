@@ -98,6 +98,7 @@ mod fetch {
         object_ctx: &StoreContext<S>,
     ) -> Result<ListResponse<S>, Error>
     where
+        AC: AuthContext,
         S: AdminSpec + SpecExt,
         <S as Spec>::Status: Encoder + Decoder,
         <S as Spec>::IndexKey: AsRef<str>,
@@ -119,14 +120,13 @@ mod fetch {
             return Err(Error::new(ErrorKind::Interrupted, "authorization io error"));
         }
 
-        let objects: Vec<<S as AdminSpec>::ListType> = object_ctx
-            .store()
-            .read()
-            .await
+        let reader = object_ctx.store().read().await;
+        let objects: Vec<<S as AdminSpec>::ListType> = reader
             .values()
             .filter_map(|value| {
                 if filters.filter(value.key().as_ref()) {
-                    Some(value.inner().clone().into())
+                    let list_obj: <S as AdminSpec>::ListType = AdminSpec::convert_from(value);
+                    Some(list_obj)
                 } else {
                     None
                 }
