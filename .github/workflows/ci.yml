@@ -806,6 +806,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        run: [r1]
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust ${{ matrix.rust }}
@@ -861,7 +862,32 @@ jobs:
           fluvio cluster start --develop --connector-prefix "https://raw.githubusercontent.com/infinyon/fluvio-connectors"
 
       - name: Run CLI smoke tests
+        timeout-minutes: 5
         run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
+      - name: Save logs
+        if: failure()
+        run: |
+          date
+          uname -a
+          helm list
+          kubectl get crd
+          kubectl get spu
+          kubectl get partitions
+          kubectl get statefulset
+          kubectl get pvc
+          kubectl get pods
+          kubectl get svc
+          kubectl get spg
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
+          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+      - name: Upload logs
+        timeout-minutes: 5
+        if: failure()
+        uses: actions/upload-artifact@v2
+        with:
+          name: k8_${{ matrix.run }}_log
+          path: /tmp/k8_*.log
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
