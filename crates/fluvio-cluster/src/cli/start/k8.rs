@@ -34,7 +34,7 @@ pub async fn process_k8(
         .proxy_addr(opt.proxy_addr)
         .spu_config(opt.spu_config.as_spu_config())
         .connector_prefixes(opt.connector_prefix)
-        .with_if(skip_sys, |b| b.install_sys(false))
+        .install_sys(!skip_sys)
         .with_if(opt.skip_checks, |b| b.skip_checks(true));
 
     if let Some(chart_location) = opt.k8_config.chart_location {

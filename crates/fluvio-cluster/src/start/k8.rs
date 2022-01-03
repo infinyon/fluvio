@@ -250,8 +250,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[allow(dead_code)]
-    #[builder(default = "true")]
+    #[builder(default = "false")]
     install_sys: bool,
 
     #[builder(default = "false")]
@@ -353,7 +352,7 @@ impl ClusterConfigBuilder {
     /// - Use the git hash of HEAD as the image_tag
     pub fn development(&mut self) -> Result<&mut Self, ClusterError> {
         let git_hash = env!("GIT_HASH");
-        debug!(git_hash, "using development git hash");
+        println!("using development git hash: {}", git_hash);
         self.image_tag(git_hash.trim());
         Ok(self)
     }

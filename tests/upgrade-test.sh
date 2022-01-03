@@ -135,7 +135,6 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Installed CLI version ${DEV_VERSION}"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
         echo "Upgrading cluster to ${DEV_VERSION}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
     else
@@ -144,7 +143,6 @@ function validate_upgrade_cluster_to_prerelease() {
         # This should use the binary that the Makefile set
 
         echo "Using Fluvio binary located @ ${FLUVIO_BIN_ABS_PATH}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --sys
         $FLUVIO_BIN_ABS_PATH cluster upgrade --develop
     fi
     popd
