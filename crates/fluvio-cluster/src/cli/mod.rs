@@ -99,7 +99,7 @@ impl ClusterCmd {
                     }
                 };
 
-                start.process(platform_version, false, false).await?;
+                start.process(platform_version, false).await?;
             }
             Self::Upgrade(mut upgrade) => {
                 if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {

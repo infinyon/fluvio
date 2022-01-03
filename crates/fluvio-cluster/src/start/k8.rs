@@ -250,7 +250,7 @@ pub struct ClusterConfig {
     /// # Ok(())
     /// # }
     /// ```
-    #[builder(default = "false")]
+    #[builder(default = "true")]
     install_sys: bool,
 
     #[builder(default = "false")]

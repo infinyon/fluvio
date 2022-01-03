@@ -165,7 +165,6 @@ impl StartOpt {
         self,
         platform_version: Version,
         upgrade: bool,
-        skip_sys: bool, // only applies to upgrade
     ) -> Result<(), ClusterCliError> {
         use crate::cli::start::local::process_local;
         use crate::cli::start::sys::process_sys;
@@ -176,7 +175,7 @@ impl StartOpt {
         } else if self.local {
             process_local(self, platform_version).await?;
         } else {
-            process_k8(self, platform_version, upgrade, skip_sys).await?;
+            process_k8(self, platform_version, upgrade).await?;
         }
 
         Ok(())
@@ -187,16 +186,11 @@ impl StartOpt {
 pub struct UpgradeOpt {
     #[structopt(flatten)]
     pub start: StartOpt,
-    /// Whether to skip upgrading the sys chart
-    #[structopt(long)]
-    skip_sys: bool,
 }
 
 impl UpgradeOpt {
     pub async fn process(self, platform_version: Version) -> Result<(), ClusterCliError> {
-        self.start
-            .process(platform_version, true, self.skip_sys)
-            .await?;
+        self.start.process(platform_version, true).await?;
         Ok(())
     }
 }

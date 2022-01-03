@@ -11,7 +11,6 @@ pub async fn process_k8(
     opt: StartOpt,
     platform_version: Version,
     upgrade: bool,
-    skip_sys: bool,
 ) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
@@ -34,7 +33,6 @@ pub async fn process_k8(
         .proxy_addr(opt.proxy_addr)
         .spu_config(opt.spu_config.as_spu_config())
         .connector_prefixes(opt.connector_prefix)
-        .install_sys(!skip_sys)
         .with_if(opt.skip_checks, |b| b.skip_checks(true));
 
     if let Some(chart_location) = opt.k8_config.chart_location {
