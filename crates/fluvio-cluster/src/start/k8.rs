@@ -1149,9 +1149,9 @@ impl ClusterInstaller {
             pb.set_message(format!("🤖 Spu Group {} started", spg_name));
         } else {
             pb.set_message("SPU Group Exists,skipping");
-            // wait 5 seconds, this is hack to wait for spu to be terminated
+            // wait few seconds, this is hack to wait for spu to be terminated
             // in order to fix properly, we need to wait for SPU to converged to new version
-            sleep(Duration::from_secs(5)).await;
+            sleep(Duration::from_secs(10)).await;
         }
 
         // Wait for the SPU cluster to spin up
