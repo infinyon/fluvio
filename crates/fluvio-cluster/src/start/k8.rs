@@ -1153,9 +1153,8 @@ impl ClusterInstaller {
         }
 
         // Wait for the SPU cluster to spin up
-        if !self.config.skip_spu_liveness_check {
-            self.wait_for_spu(&admin, &pb).await?;
-        }
+        self.wait_for_spu(&admin, &pb).await?;
+        
 
         pb.println(format!(
             "✅ SPU group {} launched with {} replicas",
