@@ -8,7 +8,7 @@ use fluvio_command::CommandExt;
 
 use crate::helm::HelmClient;
 use crate::charts::{APP_CHART_NAME, SYS_CHART_NAME};
-use crate::progress::create_progress_indicator;
+use crate::progress::ProgressBarFactory;
 use crate::render::ProgressRenderer;
 use crate::{DEFAULT_NAMESPACE};
 use crate::error::UninstallError;
@@ -36,6 +36,10 @@ pub struct ClusterUninstallConfig {
 
     #[builder(default = "SYS_CHART_NAME.to_string()")]
     sys_chart_name: String,
+
+    /// Used to hide spinner animation for progress updates
+    #[builder(default = "true")]
+    hide_spinner: bool,
 }
 
 impl ClusterUninstallConfig {
@@ -55,21 +59,15 @@ pub struct ClusterUninstaller {
     config: ClusterUninstallConfig,
     /// Helm client for performing uninstalls
     helm_client: HelmClient,
-    pb: ProgressRenderer,
+    pb_factory: ProgressBarFactory,
 }
 
 impl ClusterUninstaller {
     fn from_config(config: ClusterUninstallConfig) -> Result<Self, ClusterError> {
-        let pb = if std::env::var("CI").is_ok() {
-            Default::default()
-        } else {
-            create_progress_indicator().into()
-        };
-
         Ok(ClusterUninstaller {
-            config,
             helm_client: HelmClient::new().map_err(UninstallError::HelmError)?,
-            pb,
+            pb_factory: ProgressBarFactory::new(config.hide_spinner),
+            config,
         })
     }
 
@@ -95,13 +93,17 @@ impl ClusterUninstaller {
     async fn uninstall_k8(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
 
-        self.pb.println("Uninstalling fluvio kubernetes components");
+        let pb = self.pb_factory.create();
+        pb.set_message("Uninstalling fluvio kubernetes components");
         let uninstall = UninstallArg::new(self.config.app_chart_name.to_owned())
             .namespace(self.config.namespace.to_owned())
             .ignore_not_found();
         self.helm_client
             .uninstall(uninstall)
             .map_err(UninstallError::HelmError)?;
+
+        pb.println("Uninstalled fluvio kubernetes components");
+        pb.finish_and_clear();
 
         Ok(())
     }
@@ -110,7 +112,8 @@ impl ClusterUninstaller {
     async fn uninstall_sys(&self) -> Result<(), ClusterError> {
         use fluvio_helm::UninstallArg;
 
-        self.pb.println("Uninstalling fluvio sys chart");
+        let pb = self.pb_factory.create();
+        pb.set_message("Uninstalling Fluvio sys chart");
         self.helm_client
             .uninstall(
                 UninstallArg::new(self.config.sys_chart_name.to_owned())
@@ -120,11 +123,16 @@ impl ClusterUninstaller {
             .map_err(UninstallError::HelmError)?;
         debug!("fluvio sys chart has been uninstalled");
 
+        pb.set_message("Fluvio System chart has been uninstalled");
+        pb.finish_and_clear();
+
         Ok(())
     }
 
     async fn uninstall_local(&self) -> Result<(), ClusterError> {
-        self.pb.println("Uninstalling fluvio local components");
+        let pb = self.pb_factory.create();
+
+        pb.set_message("Uninstalling fluvio local components");
         Command::new("pkill")
             .arg("-f")
             .arg("fluvio cluster run")
@@ -157,6 +165,9 @@ impl ClusterUninstaller {
             }
         }
 
+        pb.println("Uninstalled fluvio local components");
+        pb.finish_and_clear();
+
         Ok(())
     }
 
@@ -164,26 +175,30 @@ impl ClusterUninstaller {
     ///
     /// Ignore any errors, cleanup should be idempotent
     async fn cleanup(&self) {
-        self.pb
-            .println("Cleaning up objects and secrets created during the installation process");
+        let pb = self.pb_factory.create();
+        pb.set_message("Cleaning up objects and secrets created during the installation process");
         let ns = &self.config.namespace;
 
         // delete objects if not removed already
-        let _ = self.remove_custom_objects("spugroups", ns, None, false);
-        let _ = self.remove_custom_objects("spus", ns, None, false);
-        let _ = self.remove_custom_objects("topics", ns, None, false);
+        let _ = self.remove_custom_objects("spugroups", ns, None, false, &pb);
+        let _ = self.remove_custom_objects("spus", ns, None, false, &pb);
+        let _ = self.remove_custom_objects("topics", ns, None, false, &pb);
         let _ = self.remove_finalizers_for_partitions(ns).await;
-        let _ = self.remove_custom_objects("partitions", ns, None, true);
-        let _ = self.remove_custom_objects("statefulset", ns, None, false);
-        let _ = self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"), false);
-        let _ = self.remove_custom_objects("tables", ns, None, false);
-        let _ = self.remove_custom_objects("managedconnectors", ns, None, false);
-        let _ = self.remove_custom_objects("derivedstreams", ns, None, false);
-        let _ = self.remove_custom_objects("smartmodules", ns, None, false);
+        let _ = self.remove_custom_objects("partitions", ns, None, true, &pb);
+        let _ = self.remove_custom_objects("statefulset", ns, None, false, &pb);
+        let _ =
+            self.remove_custom_objects("persistentvolumeclaims", ns, Some("app=spu"), false, &pb);
+        let _ = self.remove_custom_objects("tables", ns, None, false, &pb);
+        let _ = self.remove_custom_objects("managedconnectors", ns, None, false, &pb);
+        let _ = self.remove_custom_objects("derivedstreams", ns, None, false, &pb);
+        let _ = self.remove_custom_objects("smartmodules", ns, None, false, &pb);
 
         // delete secrets
         let _ = self.remove_secrets("fluvio-ca");
         let _ = self.remove_secrets("fluvio-tls");
+
+        pb.println("Objects and secrets have been cleaned up");
+        pb.finish_and_clear();
     }
 
     /// Remove objects of specified type, namespace
@@ -193,7 +208,9 @@ impl ClusterUninstaller {
         namespace: &str,
         selector: Option<&str>,
         force: bool,
+        pb: &ProgressRenderer,
     ) -> Result<(), UninstallError> {
+        pb.set_message(format!("Removing {} objects", object_type));
         let mut cmd = Command::new("kubectl");
         cmd.arg("delete");
         cmd.arg(object_type);

@@ -727,7 +727,7 @@ jobs:
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
 
       - name: Run upgrade test with CI artifacts
-        timeout-minutes: 3
+        timeout-minutes: 5
         env:
           TEST_DATA_BYTES: 10000
           FLV_DISPATCHER_WAIT: 300

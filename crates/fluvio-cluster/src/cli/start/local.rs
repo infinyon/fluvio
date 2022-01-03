@@ -3,11 +3,11 @@ use semver::Version;
 
 use fluvio::config::TlsPolicy;
 
+use crate::check::ClusterCheckError;
 use crate::cli::ClusterCliError;
-use crate::{LocalInstaller, ClusterError, LocalInstallError, StartStatus, LocalConfig};
+use crate::{LocalInstaller, LocalConfig, LocalInstallError};
 
 use super::StartOpt;
-use crate::check::render::{render_statuses_next_steps, render_results_next_steps};
 
 /// Attempts to start a local Fluvio cluster
 ///
@@ -20,8 +20,8 @@ pub async fn process_local(
     let mut builder = LocalConfig::builder(platform_version);
     builder
         .log_dir(opt.log_dir.to_string())
-        .render_checks(true)
-        .spu_replicas(opt.spu);
+        .spu_replicas(opt.spu)
+        .hide_spinner(false);
 
     if let Some(chart_location) = opt.k8_config.chart_location {
         builder.local_chart(chart_location);
@@ -40,10 +40,6 @@ pub async fn process_local(
         builder.skip_checks(true);
     }
 
-    if opt.hide_spinner {
-        builder.hide_spinner(true);
-    }
-
     let config = builder.build()?;
     let installer = LocalInstaller::from_config(config);
     if opt.setup {
@@ -55,26 +51,13 @@ pub async fn process_local(
     Ok(())
 }
 
-pub async fn install_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
-    match installer.install().await {
-        // Successfully performed startup
-        Ok(StartStatus { checks, .. }) => {
-            if checks.is_none() {
-                println!("Skipped pre-start checks");
-            }
-        }
-        // Aborted startup because pre-checks failed
-        Err(ClusterError::InstallLocal(LocalInstallError::FailedPrecheck(check_statuses))) => {
-            render_statuses_next_steps(&check_statuses);
-        }
-        // Another type of error occurred during checking or startup
-        Err(other) => return Err(other.into()),
-    }
+pub async fn install_local(installer: &LocalInstaller) -> Result<(), LocalInstallError> {
+    installer.install().await?;
     Ok(())
 }
 
-pub async fn setup_local(installer: &LocalInstaller) -> Result<(), ClusterCliError> {
-    let check_results = installer.setup().await;
-    render_results_next_steps(&check_results);
+pub async fn setup_local(installer: &LocalInstaller) -> Result<(), ClusterCheckError> {
+    installer.preflight_check(false).await?;
+
     Ok(())
 }

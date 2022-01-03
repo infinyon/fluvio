@@ -46,7 +46,7 @@ pub use start::local::{LocalInstaller, LocalConfig, LocalConfigBuilder};
 pub use error::{ClusterError, K8InstallError, LocalInstallError, UninstallError};
 pub use helm::HelmError;
 pub use check::{ClusterChecker, CheckStatus, CheckStatuses, CheckResult, CheckResults};
-pub use check::{RecoverableCheck, UnrecoverableCheck, CheckFailed, CheckSuggestion};
+pub use check::{RecoverableCheck, UnrecoverableCheckStatus, CheckSuggestion};
 pub use delete::*;
 pub use fluvio::config as fluvio_config;
 
@@ -61,8 +61,6 @@ mod common {
 
     use fluvio::config::{TlsPaths, TlsConfig};
 
-    use super::CheckStatuses;
-
     /// The result of a successful startup of a Fluvio cluster
     ///
     /// A `StartStatus` carries additional information about the startup
@@ -76,8 +74,6 @@ mod common {
     pub struct StartStatus {
         pub(crate) address: String,
         pub(crate) port: u16,
-        #[allow(unused)]
-        pub(crate) checks: Option<CheckStatuses>,
     }
 
     impl StartStatus {

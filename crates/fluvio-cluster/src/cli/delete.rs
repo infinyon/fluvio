@@ -24,6 +24,7 @@ pub struct DeleteOpt {
 impl DeleteOpt {
     pub async fn process(self) -> Result<(), ClusterCliError> {
         let mut builder = ClusterUninstallConfig::builder();
+        builder.hide_spinner(false);
 
         if self.sys {
             builder.uninstall_local(false);

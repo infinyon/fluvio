@@ -127,8 +127,8 @@ pub struct StartOpt {
     pub log_dir: DefaultLogDirectory,
 
     #[structopt(long)]
-    /// installing sys
-    sys: bool,
+    /// installing/upgrade sys only
+    sys_only: bool,
 
     /// install local spu/sc(custom)
     #[structopt(long)]
@@ -146,10 +146,6 @@ pub struct StartOpt {
     /// Tries to setup necessary environment for cluster startup
     #[structopt(long)]
     pub setup: bool,
-
-    /// Used to hide spinner animation for progress updates
-    #[structopt(long)]
-    pub hide_spinner: bool,
 
     /// Proxy address
     #[structopt(long)]
@@ -169,22 +165,17 @@ impl StartOpt {
         self,
         platform_version: Version,
         upgrade: bool,
-        skip_sys: bool, // only applies to upgrade
     ) -> Result<(), ClusterCliError> {
         use crate::cli::start::local::process_local;
         use crate::cli::start::sys::process_sys;
         use crate::cli::start::k8::process_k8;
 
-        if self.sys {
+        if self.sys_only {
             process_sys(&self, upgrade)?;
         } else if self.local {
             process_local(self, platform_version).await?;
         } else {
-            // if upgrade and not skip sys, invoke sys
-            if upgrade && !skip_sys {
-                process_sys(&self, upgrade)?;
-            }
-            process_k8(self, platform_version, upgrade, skip_sys).await?;
+            process_k8(self, platform_version, upgrade).await?;
         }
 
         Ok(())
@@ -195,16 +186,11 @@ impl StartOpt {
 pub struct UpgradeOpt {
     #[structopt(flatten)]
     pub start: StartOpt,
-    /// Whether to skip upgrading the sys chart
-    #[structopt(long)]
-    skip_sys: bool,
 }
 
 impl UpgradeOpt {
     pub async fn process(self, platform_version: Version) -> Result<(), ClusterCliError> {
-        self.start
-            .process(platform_version, true, self.skip_sys)
-            .await?;
+        self.start.process(platform_version, true).await?;
         Ok(())
     }
 }

@@ -3,18 +3,14 @@ use fluvio::config::TlsPolicy;
 use semver::Version;
 use tracing::debug;
 
-use crate::{ClusterInstaller, K8InstallError, StartStatus, ClusterConfig, ClusterError};
+use crate::{ClusterInstaller, K8InstallError, ClusterConfig, ClusterError};
 use crate::cli::ClusterCliError;
 use crate::cli::start::StartOpt;
-use crate::check::render::{
-    render_statuses_next_steps, render_check_results, render_results_next_steps,
-};
 
 pub async fn process_k8(
     opt: StartOpt,
     platform_version: Version,
     upgrade: bool,
-    skip_sys: bool,
 ) -> Result<(), ClusterCliError> {
     let (client, server): (TlsPolicy, TlsPolicy) = opt.tls.try_into()?;
 
@@ -32,12 +28,11 @@ pub async fn process_k8(
         .save_profile(!opt.skip_profile_creation)
         .tls(client, server)
         .chart_values(opt.k8_config.chart_values)
-        .render_checks(true)
+        .hide_spinner(false)
         .upgrade(upgrade)
         .proxy_addr(opt.proxy_addr)
         .spu_config(opt.spu_config.as_spu_config())
         .connector_prefixes(opt.connector_prefix)
-        .with_if(skip_sys, |b| b.install_sys(false))
         .with_if(opt.skip_checks, |b| b.skip_checks(true));
 
     if let Some(chart_location) = opt.k8_config.chart_location {
@@ -64,10 +59,6 @@ pub async fn process_k8(
         builder.service_type(service_type);
     }
 
-    if opt.hide_spinner {
-        builder.hide_spinner(true);
-    }
-
     let config = builder.build()?;
 
     debug!("cluster config: {:#?}", config);
@@ -84,32 +75,11 @@ pub async fn process_k8(
 }
 
 pub async fn start_k8(installer: &ClusterInstaller) -> Result<(), K8InstallError> {
-    match installer.install_fluvio().await {
-        // Successfully performed startup without pre-checks
-        Ok(StartStatus { checks: None, .. }) => {
-            println!("Skipped pre-start checks");
-            println!("Successfully installed Fluvio!");
-        }
-        // Successfully performed startup with pre-checks
-        Ok(StartStatus { checks, .. }) => {
-            if checks.is_none() {
-                println!("Skipped pre-start checks");
-            }
-        }
-        // Aborted startup because pre-checks failed
-        Err(K8InstallError::FailedPrecheck(check_statuses)) => {
-            render_statuses_next_steps(&check_statuses);
-        }
-        // Another type of error occurred during checking or startup
-        Err(other) => return Err(other),
-    }
-
+    installer.install_fluvio().await?;
     Ok(())
 }
 
 pub async fn setup_k8(installer: &ClusterInstaller) -> Result<(), ClusterCliError> {
-    let check_results = installer.setup().await;
-    render_check_results(&check_results);
-    render_results_next_steps(&check_results);
+    installer.preflight_check(false).await?;
     Ok(())
 }
