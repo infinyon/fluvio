@@ -9,7 +9,9 @@
 * Add auto-batching to Producer ([#2000](https://github.com/infinyon/fluvio/issues/2000))
 * Add support for 3rd party connectors ([#2027](https://github.com/infinyon/fluvio/pull/2027))
 * Introduce channels into CLI ([#2021](https://github.com/infinyon/fluvio/issues/2021))
-* Upgrade to Zig 0.9 and LLVM 13 ([#2046](https://github.com/infinyon/fluvio/pull/2046))  
+* Upgrade to Zig 0.9 and LLVM 13 ([#2046](https://github.com/infinyon/fluvio/pull/2046))
+* Add API to converting to list type from metadata ([#2052](https://github.com/infinyon/fluvio/pull/2052)) 
+* Check if local cluster exists during installation ([#2052](https://github.com/infinyon/fluvio/issues/2041))   
 
 ## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
