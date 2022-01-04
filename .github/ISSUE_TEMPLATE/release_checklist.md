@@ -1,3 +1,12 @@
+---
+name: New Release Checklist
+about: Process to follow for running the Fluvio release
+title: "[Release Checklist]:"
+labels: tracking 
+assignees: ''
+
+---
+
 # Release Checklist
 
 The following checklist covers all the steps for running release.

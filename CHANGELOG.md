@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.16 - UNRELEASED
+## Platform Version 0.9.17 - UNRELEASED
+
+## Platform Version 0.9.16 - 2022-01-03
 * Consume with end ([#1940](https://github.com/infinyon/fluvio/issues/1940))
 * Return base offset in partition produce response ([#2025](https://github.com/infinyon/fluvio/issues/2025))
 * Simple Topic Retention with time ([#2019](https://github.com/infinyon/fluvio/issues/2019))
