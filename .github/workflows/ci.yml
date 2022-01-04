@@ -1013,6 +1013,7 @@ jobs:
     name: CD_Dev installer check
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Set the expected fluvio version
         run: |
           if [[ -z "${{ env.USE_VERSION }}" ]]; then
@@ -1046,6 +1047,7 @@ jobs:
     name: CD_Release installer check
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - name: Set the expected fluvio version
         run: |
           if [[ -z "${{ env.USE_VERSION }}" ]]; then
