@@ -1010,6 +1010,7 @@ jobs:
   # Delete below before merge
 
   cd_dev_installer_checks:
+    name: CD_Dev installer check
     steps:
       - name: Set the expected fluvio version
         run: |
@@ -1041,6 +1042,7 @@ jobs:
             fi
 
   cd_release_installer_checks:
+    name: CD_Release installer check
     steps:
       - name: Set the expected fluvio version
         run: |
