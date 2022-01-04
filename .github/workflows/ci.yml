@@ -1012,6 +1012,10 @@ jobs:
   cd_dev_installer_checks:
     name: CD_Dev installer check
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        version: [latest]
     steps:
       - uses: actions/checkout@v2
       - name: Set the expected fluvio version
@@ -1046,6 +1050,10 @@ jobs:
   cd_release_installer_checks:
     name: CD_Release installer check
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        version: [none, stable, semver]
     steps:
       - uses: actions/checkout@v2
       - name: Set the expected fluvio version
