@@ -407,8 +407,6 @@ jobs:
       - config
     env:
       UNINSTALL:  noclean
-      EXTRA_ARG:  --cluster-start
-      SERVER_LOG: fluvio=debug
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
     strategy:
@@ -447,6 +445,9 @@ jobs:
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
+      - name: Start fluvio cluster
+        run: |
+          fluvio cluster start --local --develop --spu 2 --rust-log fluvio=debug
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke' }}
         timeout-minutes: 5
