@@ -26,6 +26,7 @@ env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
   K3D_VERSION: v4.4.8
+  BATS_VERSION: 1.2.1
   TLS_ARG: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
 
 jobs:
@@ -457,7 +458,7 @@ jobs:
         timeout-minutes: 5
         run: |
           if [[ {{ matrix.test == 'smoke-test-tls'}} == true ]]; then
-            fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug $${{ env.TLS_ARGS }}
+            fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
           else
             fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
           fi
@@ -786,7 +787,7 @@ jobs:
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
-          bats-version: 1.2.1
+          bats-version: ${{ env.BATS_VERSION }}
       - name: Install K3d
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
@@ -833,7 +834,7 @@ jobs:
       - name: Setup BATS
         uses: mig4/setup-bats@v1
         with:
-          bats-version: 1.2.1
+          bats-version: ${{ env.BATS_VERSION }}
       - name: Install K3d
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
