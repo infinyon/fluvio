@@ -418,7 +418,7 @@ jobs:
         test:
           [
             smoke-test,
-            smoke-test-tls
+            smoke-test-tls,
             election,
             multiple-partition,
             reconnection,
