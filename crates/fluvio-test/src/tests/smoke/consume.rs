@@ -175,6 +175,8 @@ pub async fn validate_consume_message_api(
                 .await
                 .expect("partitions");
 
+            println!("partitions: {:?}", partitions);
+
             assert_eq!(partitions.len(), 1);
 
             let test_topic = &partitions[0];
@@ -182,8 +184,6 @@ pub async fn validate_consume_message_api(
             let leader = &status.leader;
 
             assert_eq!(leader.leo, base_offset + producer_iteration as i64);
-            println!("status: {:#?}", status);
-
             assert_eq!(status.replicas.len() as u16, replication - 1);
 
             for i in 0..replication - 1 {
