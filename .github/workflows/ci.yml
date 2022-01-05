@@ -670,7 +670,7 @@ jobs:
         timeout-minutes: 5
         run: |
           make smoke-test-k8-tls-policy-setup
-          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }} --authorization-config-map authorization
       - name: Run ${{ matrix.test }}
         timeout-minutes: 10
         run: |
