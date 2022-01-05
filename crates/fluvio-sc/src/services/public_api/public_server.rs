@@ -12,6 +12,7 @@ use std::fmt::Debug;
 use std::io::Error as IoError;
 
 use fluvio_service::ConnectInfo;
+use tracing::debug;
 use tracing::instrument;
 use async_trait::async_trait;
 
@@ -63,6 +64,8 @@ where
                 let io_error: IoError = err.into();
                 io_error
             })?;
+
+        debug!(?auth_context);
         let service_context = Arc::new(AuthServiceContext::new(
             ctx.global_ctx.clone(),
             auth_context,

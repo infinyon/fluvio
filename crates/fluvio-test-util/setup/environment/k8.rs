@@ -45,7 +45,8 @@ impl EnvironmentDriver for K8EnvironmentDriver {
             .proxy_addr(self.option.proxy_addr.clone())
             .spu_replicas(self.option.spu())
             .skip_checks(self.option.skip_checks())
-            .save_profile(true);
+            .save_profile(true)
+            .hide_spinner(false);
 
         if self.option.tls {
             let (client, server) = load_tls(&self.option.tls_user());

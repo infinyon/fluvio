@@ -72,7 +72,6 @@ install_rustup_target:
 #
 
 smoke-test: test-setup
-	# Set ENV
 	$(TEST_ENV_AUTH_POLICY) \
 	$(TEST_ENV_FLV_SPU_DELAY) \
 		$(TEST_BIN) smoke \

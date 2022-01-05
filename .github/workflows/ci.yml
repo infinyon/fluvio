@@ -28,6 +28,8 @@ env:
   K3D_VERSION: v4.4.8
   BATS_VERSION: 1.2.1
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
+  AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
+  X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
 
 jobs:
   # this job set up dynamic configuration shared among jobs
@@ -461,7 +463,11 @@ jobs:
       - name: Start fluvio cluster TLS
         if: ${{ matrix.test == 'smoke-test-tls' }}
         timeout-minutes: 5
-        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
+        # note that Local config doesn't not support auth and scopes in the argument for now
+        run: >
+          AUTH_POLICY=${{ env.AUTH_FILE }}
+          X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
+          fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke-test' }}
         timeout-minutes: 5
@@ -586,7 +592,7 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test: [smoke-test-k8, smoke-test-k8-tls-root]
+        test: [smoke-test-k8-tls-root,smoke-test-k8-tls,smoke-test-k8]
         k8: [k3d, minikube]
         spu: [2]
     steps:
@@ -658,7 +664,7 @@ jobs:
         timeout-minutes: 10
         run: |
           date
-          make ${{ matrix.make-target }}
+          make ${{ matrix.test }}
       - name: Print version
         run: |
           fluvio version
