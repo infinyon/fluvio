@@ -578,13 +578,12 @@ jobs:
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
 
   k8_cluster_test:
-    name: Kubernetes cluster test - ${{ matrix.make-target }} (${{ matrix.run }}) k8 (${{ matrix.k8 }})
+    name: Kubernetes cluster test - ${{ matrix.test }} (${{ matrix.run }}) on k8 (${{ matrix.k8 }})
     needs: build_image
     runs-on: ${{ matrix.os }}
     env:
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
-      EXTRA_ARG: --cluster-start
       UNINSTALL: noclean
     strategy:
       fail-fast: false
