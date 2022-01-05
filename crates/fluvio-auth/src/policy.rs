@@ -19,7 +19,7 @@ pub enum InstanceAction {
 }
 
 #[async_trait]
-pub trait AuthContext {
+pub trait AuthContext: Debug {
     /// check if any allow type specific action can be allowed
     async fn allow_type_action(
         &self,

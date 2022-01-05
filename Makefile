@@ -201,13 +201,17 @@ smoke-test-k8-tls-policy-setup:
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization $(EXTRA_ARG)
 smoke-test-k8-tls-policy: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
-smoke-test-k8-tls-policy: build_k8_image smoke-test-k8-tls-policy-setup smoke-test
+smoke-test-k8-tls-policy: build_k8_image smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )
 test-permission-k8:	SC_PORT=$(shell kubectl get svc fluvio-sc-public -o json | jq '.spec.ports[0].nodePort' )
 test-permission-k8:	test-permission-user1
 
-smoke-test-k8-tls-root: smoke-test-k8-tls-policy test-permission-k8
+# run auth policy without setup, UNCLEAN must not be set
+smoke-test-k8-tls-root-unclean: smoke-test-k8-tls-policy test-permission-k8
+
+# run auth policy with setup
+smoke-test-k8-tls-root: smoke-test-k8-tls-policy-setup smoke-test-k8-tls-policy  test-permission-k8
 
 
 ifeq (${CI},true)
