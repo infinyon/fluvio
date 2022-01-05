@@ -27,7 +27,7 @@ env:
   VERBOSE: ${{ github.events.input.verbose }}
   K3D_VERSION: v4.4.8
   BATS_VERSION: 1.2.1
-  TLS_ARG: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
+  TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
 
 jobs:
   # this job set up dynamic configuration shared among jobs
