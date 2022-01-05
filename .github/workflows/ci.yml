@@ -417,7 +417,7 @@ jobs:
         spu: [2]
         test:
           [
-            smoke,
+            smoke-test,
             smoke-test-tls
             election,
             multiple-partition,
@@ -463,12 +463,12 @@ jobs:
         timeout-minutes: 5
         run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
       - name: Run smoke-test
-        if: ${{ matrix.test == 'smoke' }}
+        if: ${{ matrix.test == 'smoke-test' }}
         timeout-minutes: 5
         run: |
           make smoke-test-local
       - name: Run smoke-test-tls
-        if: ${{ matrix.test == 'smoke-tls' }}
+        if: ${{ matrix.test == 'smoke-test-tls' }}
         timeout-minutes: 5
         run: |
           make smoke-test-tls-root
