@@ -427,7 +427,6 @@ jobs:
             batch-failure,
             batch,
           ]
-      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
       - uses: actions/checkout@v2
