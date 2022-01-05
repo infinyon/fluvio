@@ -454,6 +454,9 @@ impl LocalInstaller {
             rust_log: self.config.rust_log.clone(),
         };
 
+        println!("tls: {:#?}", sc_process.tls_policy);
+        println!("tls: {:#?}", self.config.client_tls_policy);
+
         sc_process.start()?;
 
         // wait little bit to spin up SC

@@ -26,16 +26,16 @@ env:
   CARGO_TERM_COLOR: always
   VERBOSE: ${{ github.events.input.verbose }}
   K3D_VERSION: v4.4.8
+  TLS_ARG: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
 
 jobs:
-
   # this job set up dynamic configuration shared among jobs
   config:
     name: Set up Config
     runs-on: ubuntu-latest
     env:
       ENABLE_CHECK: true
-      TEST_RUNS: "[r1]"   # default runs
+      TEST_RUNS: "[r1]" # default runs
     outputs:
       check: ${{ steps.check.outputs.check }}
       runs: ${{ steps.runs.outputs.runs }}
@@ -45,8 +45,6 @@ jobs:
       #- name: Set Staging runs
       ##  if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
       #  run: echo "TEST_RUNS='[r1,r2,r3,r4,r5]'" | tee -a $GITHUB_ENV
-
-
 
   # build binaries for linux x86_64/aarch64 musl which is primary OS for testing clusters
   build_primary_binaries:
@@ -181,7 +179,7 @@ jobs:
             rust: stable
             rust-target: aarch64-apple-darwin
             binary: fluvio-channel
-          
+
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -406,7 +404,7 @@ jobs:
       - build_primary_binaries
       - config
     env:
-      UNINSTALL:  noclean
+      UNINSTALL: noclean
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
     strategy:
@@ -415,8 +413,18 @@ jobs:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        test: [smoke,election,multiple-partition,reconnection, batch-failure, batch]
-     #   run: ${{ fromJson(needs.config.outputs.runs )}}
+        spu: [2]
+        test:
+          [
+            smoke,
+            smoke-test-tls
+            election,
+            multiple-partition,
+            reconnection,
+            batch-failure,
+            batch,
+          ]
+      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
       - uses: actions/checkout@v2
@@ -446,18 +454,28 @@ jobs:
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Start fluvio cluster
+        timeout-minutes: 5
         run: |
-          fluvio cluster start --local --develop --spu 2 --rust-log fluvio=debug
+          if [[ {{ matrix.test == 'smoke-test-tls'}} == true ]]; then
+            fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug $${{ env.TLS_ARGS }}
+          else
+            fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
+          fi
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke' }}
         timeout-minutes: 5
         run: |
           date
-          make smoke-test-tls-root
+          make smoke-test-local
+      - name: Run smoke-test-tls
+        if: ${{ matrix.test == 'smoke-tls' }}
+        timeout-minutes: 5
+        run: |
           date
-          kubectl get partitions
-          kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
-          echo "smoke test done"
+          make smoke-test-tls-root
+      #      kubectl get partitions
+      #      kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
+      #      echo "smoke test done"
       #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
       - name: Run election-test
         if: ${{ matrix.test == 'election' }}
@@ -571,16 +589,17 @@ jobs:
     env:
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
-      EXTRA_ARG:  --cluster-start
-      UNINSTALL:  noclean
+      EXTRA_ARG: --cluster-start
+      UNINSTALL: noclean
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
         run: [r1]
-        make-target: [smoke-test-k8-tls-root,smoke-test-k8-tls,smoke-test-k8]
-        k8: [k3d,minikube]
+        test: [smoke-test-k8, smoke-test-k8-tls-root]
+        k8: [k3d, minikube]
+        spu: [2]
     steps:
       - uses: actions/checkout@v2
       # Download artifacts
@@ -605,7 +624,7 @@ jobs:
           chmod +x ~/bin/fluvio ~/bin/fluvio-test
           echo "~/bin" >> $GITHUB_PATH
       - name: Print version
-        run:  fluvio version && fluvio-test -h
+        run: fluvio version && fluvio-test -h
       # Retag image to remove arch from tag
       - name: Load Fluvio Docker Image for K3d
         run: |
@@ -642,11 +661,15 @@ jobs:
         run: |
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
-      - name: Run ${{ matrix.make-target }}
+      - name: Start fluvio cluster
+        timeout-minutes: 5
+        run: |
+          fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
+      - name: Run ${{ matrix.test }}
         timeout-minutes: 10
         run: |
-            date
-            make ${{ matrix.make-target }}
+          date
+          make ${{ matrix.make-target }}
       - name: Print version
         run: |
           fluvio version
@@ -762,7 +785,7 @@ jobs:
   k8_cli_backward_compat:
     name: Latest CLI vs Stable Cluster
     needs: build_image
-   # if: false
+    # if: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
