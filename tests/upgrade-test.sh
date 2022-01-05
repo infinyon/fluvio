@@ -62,7 +62,7 @@ function validate_cluster_stable() {
     unset VERSION
 
     curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.output 
-    STABLE_VERSION=$(cat /tmp/installer.output | grep "Downloading Fluvio" | awk '{print $5}')
+    STABLE_VERSION=$(cat /tmp/installer.output | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
@@ -130,7 +130,7 @@ function validate_upgrade_cluster_to_prerelease() {
         echo "Download the latest published dev CLI"
 
         # Split this up into version (and commit too?)
-        DEV_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | awk '{print $5}' | sed 's/[+]/-/')
+        DEV_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}' | sed 's/[+]/-/')
         TARGET_VERSION=${DEV_VERSION::-41}
         echo "Installed CLI version ${DEV_VERSION}"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
