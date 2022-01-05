@@ -55,7 +55,7 @@ jobs:
 
       - name: Verify installer output
         run: |
-            INSTALLER_VERSION=$(cat /tmp/installer.version | grep "Downloading Fluvio" | awk '{print $5}')
+            INSTALLER_VERSION=$(cat /tmp/installer.version | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
             if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
               echo "✅ Installer version check passed: $EXPECTED_VERSION";
             else
