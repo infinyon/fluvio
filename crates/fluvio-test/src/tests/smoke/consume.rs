@@ -167,7 +167,7 @@ pub async fn validate_consume_message_api(
         if replication > 1 {
             println!("waiting 5 seconds to verify replication status...");
             // wait 5 seconds to get status and ensure replication is done
-            sleep(Duration::from_secs(5)).await;
+            sleep(Duration::from_secs(30)).await;
 
             let admin = test_driver.client().admin().await;
             let partitions = admin
@@ -175,7 +175,7 @@ pub async fn validate_consume_message_api(
                 .await
                 .expect("partitions");
 
-            println!("partitions: {:?}", partitions);
+            println!("partitions: {:#?}", partitions);
 
             assert_eq!(partitions.len(), 1);
 
