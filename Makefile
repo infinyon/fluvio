@@ -19,34 +19,13 @@ DEFAULT_ITERATION?=1000
 SPU_DELAY?=5
 SC_AUTH_CONFIG?=./crates/fluvio-sc/test-data/auth_config
 EXTRA_ARG?=
+BUILD_FLAGS = $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
-# Test env
-TEST_ENV_AUTH_POLICY=
-TEST_ENV_FLV_SPU_DELAY=
-
-# Test args
-TEST_ARG_SPU=--spu ${DEFAULT_SPU}
-TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
-TEST_ARG_REPLICATION=-r ${REPL}
-TEST_ARG_DEVELOP=$(if $(IMAGE_VERSION),--image-version ${IMAGE_VERSION}, --develop)
-TEST_ARG_SKIP_CHECKS=
-TEST_ARG_EXTRA=
-TEST_ARG_CONSUMER_WAIT=
-TEST_ARG_PRODUCER_ITERATION=--producer-iteration=${DEFAULT_ITERATION}
-TEST_ARG_CONNECTOR_CONFIG=
 
 export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
 
 
-# install all tools required
-install_tools_mac:
-	brew install yq
-	brew install helm
-
-helm_pkg:	
-	make -C k8-util/helm package
-
-
+# Build targets
 build-cli: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
@@ -67,20 +46,65 @@ build-channel: install_rustup_target
 install_rustup_target:
 	./build-scripts/install_target.sh
 
+
+
+build_k8_image: K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
+
+# In CI mode, do not build k8 image
+ifeq (${CI},true)
+build_k8_image:
+else ifeq (${IMAGE_VERSION},true)
+build_k8_image:
+else
+# When not in CI (i.e. development), build image before testing
+build_k8_image: fluvio_image
+endif
+
+
+# Build docker image for Fluvio.
+ifndef TARGET
+ifeq ($(ARCH),arm64)
+fluvio_image: TARGET= aarch64-unknown-linux-musl
+else
+fluvio_image: TARGET=x86_64-unknown-linux-musl
+endif
+endif
+fluvio_image: fluvio_run_bin
+	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
+	k8-util/docker/build.sh $(TARGET) $(GIT_COMMIT) "./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
+
 #
 # List of smoke test steps.  This is used by CI
 #
+
+
+# Test env
+TEST_ENV_AUTH_POLICY=
+TEST_ENV_FLV_SPU_DELAY=
+
+# Test args
+TEST_ARG_SPU=--spu ${DEFAULT_SPU}
+TEST_ARG_LOG=--client-log ${CLIENT_LOG} --server-log ${SERVER_LOG}
+TEST_ARG_REPLICATION=-r ${REPL}
+TEST_ARG_DEVELOP=$(if $(IMAGE_VERSION),--image-version ${IMAGE_VERSION}, --develop)
+TEST_ARG_SKIP_CHECKS=
+TEST_ARG_EXTRA=
+TEST_ARG_CONSUMER_WAIT=
+TEST_ARG_PRODUCER_ITERATION=--producer-iteration=${DEFAULT_ITERATION}
+TEST_ARG_CONNECTOR_CONFIG=
+TEST_ARG_COMMON = ${TEST_ARG_SPU} \
+                ${TEST_ARG_LOG} \
+                ${TEST_ARG_REPLICATION} \
+                ${TEST_ARG_DEVELOP} \
+                ${TEST_ARG_EXTRA}
+
 
 smoke-test: test-setup
 	# Set ENV
 	$(TEST_ENV_AUTH_POLICY) \
 	$(TEST_ENV_FLV_SPU_DELAY) \
 		$(TEST_BIN) smoke \
-			${TEST_ARG_SPU} \
-			${TEST_ARG_LOG} \
-			${TEST_ARG_REPLICATION} \
-			${TEST_ARG_DEVELOP} \
-			${TEST_ARG_EXTRA} \
+			${TEST_ARG_COMMON} \
 			-- \
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION} \
@@ -107,55 +131,31 @@ smoke-test-tls-root: smoke-test-tls-policy test-permission-user1
 # election test only runs on local
 election-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)	
 election-test: test-setup
-	$(TEST_BIN) election  \
-		${TEST_ARG_SPU} \
-		${TEST_ARG_LOG} \
-		${TEST_ARG_REPLICATION} \
-		${TEST_ARG_DEVELOP} \
-		${TEST_ARG_EXTRA}
+	$(TEST_BIN) election  ${TEST_ARG_COMMON}
 
 multiple-partition-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 multiple-partition-test: test-setup
 	$(TEST_BIN) multiple_partition --partition 10 \
-		${TEST_ARG_SPU} \
-                ${TEST_ARG_LOG} \
-                ${TEST_ARG_REPLICATION} \
-                ${TEST_ARG_DEVELOP} \
-                ${TEST_ARG_EXTRA}
+		
 
 batch-failure-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 batch-failure-test: FLV_SOCKET_WAIT=25
 batch-failure-test: DEFAULT_SPU=1
 batch-failure-test: REPL=1
 batch-failure-test: test-setup
-	$(TEST_BIN) produce_batch  \
-                ${TEST_ARG_SPU} \
-                ${TEST_ARG_LOG} \
-                ${TEST_ARG_REPLICATION} \
-                ${TEST_ARG_DEVELOP} \
-                ${TEST_ARG_EXTRA}
+	$(TEST_BIN) produce_batch  ${TEST_ARG_COMMON}
 
 batching-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 batching-test: DEFAULT_SPU=1
 batching-test: REPL=1
 batching-test: test-setup
-	$(TEST_BIN) batching  \
-                ${TEST_ARG_SPU} \
-                ${TEST_ARG_LOG} \
-                ${TEST_ARG_REPLICATION} \
-                ${TEST_ARG_DEVELOP} \
-                ${TEST_ARG_EXTRA}
+	$(TEST_BIN) batching  ${TEST_ARG_COMMON}
 
 reconnection-test: TEST_ARG_EXTRA=--local $(EXTRA_ARG)
 reconnection-test: DEFAULT_SPU=1
 reconnection-test: REPL=1
 reconnection-test: test-setup
-	$(TEST_BIN) reconnection  \
-                ${TEST_ARG_SPU} \
-                ${TEST_ARG_LOG} \
-                ${TEST_ARG_REPLICATION} \
-                ${TEST_ARG_DEVELOP} \
-                ${TEST_ARG_EXTRA}
+	$(TEST_BIN) reconnection  ${TEST_ARG_COMMON}
 
 # test rbac with user1 who doesn't have topic creation permission
 # assumes cluster is set
@@ -170,18 +170,6 @@ test-permission-user1:
 		--client-key tls/certs/client-user1.key \
 		 topic create test3 2> /tmp/topic.err
 	grep -q permission /tmp/topic.err
-
-
-k8-setup:	ensure_fluvio_bin
-	$(FLUVIO_BIN) cluster start --setup --develop
-
-
-ifeq (${CI},true)
-ensure_fluvio_bin:
-else
-# When not in CI (i.e. development), need build cli
-ensure_fluvio_bin: build-cli
-endif
 
 
 
@@ -278,6 +266,7 @@ test-setup:	build-test-ci clean_cluster
 #  Various Lint tools
 #
 
+
 install-fmt:
 	rustup component add rustfmt --toolchain $(RUSTV)
 
@@ -300,14 +289,14 @@ build_smartmodules:
 	make -C crates/fluvio-smartmodule/examples build
 
 run-all-unit-test: install_rustup_target
-	cargo test --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG)
-	cargo test -p fluvio-smartmodule $(RELEASE_FLAG) $(TARGET_FLAG)
-	cargo test -p fluvio-storage $(RELEASE_FLAG) $(TARGET_FLAG)
+	cargo test --lib --all-features $(BUILD_FLAGS)
+	cargo test -p fluvio-smartmodule $(BUILD_FLAGS)
+	cargo test -p fluvio-storage $(BUILD_FLAGS)
 	make test-all -C crates/fluvio-protocol
 
 run-integration-test: build_smartmodules install_rustup_target
-	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-spu -- --ignored --test-threads=1
-	cargo test  --lib --all-features $(RELEASE_FLAG) $(TARGET_FLAG) -p fluvio-socket -- --ignored --test-threads=1
+	cargo test  --lib --all-features $(BUILD_FLAGS) -p fluvio-spu -- --ignored --test-threads=1
+	cargo test  --lib --all-features $(BUILD_FLAGS) -p fluvio-socket -- --ignored --test-threads=1
 
 
 run-k8-test:	install_rustup_target k8-setup build_k8_image
@@ -315,39 +304,13 @@ run-k8-test:	install_rustup_target k8-setup build_k8_image
 
 
 run-all-doc-test: install_rustup_target 
-	cargo test --all-features --doc  $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc  $(BUILD_FLAGS)
 
 run-client-doc-test: install_rustup_target 
-	cargo test --all-features --doc -p fluvio-cli $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
-	cargo test --all-features --doc -p fluvio-cluster $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
-	cargo test --all-features --doc -p fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo test --all-features --doc -p fluvio-cli $(BUILD_FLAGS)
+	cargo test --all-features --doc -p fluvio-cluster $(BUILD_FLAGS) 
+	cargo test --all-features --doc -p fluvio $(BUILD_FLAGS)
 
-
-
-build_k8_image: K8_CLUSTER?=$(shell ./k8-util/cluster/cluster-type.sh)
-
-# In CI mode, do not build k8 image
-ifeq (${CI},true)
-build_k8_image:
-else ifeq (${IMAGE_VERSION},true)
-build_k8_image:
-else
-# When not in CI (i.e. development), build image before testing
-build_k8_image: fluvio_image
-endif
-
-
-# Build docker image for Fluvio.
-ifndef TARGET
-ifeq ($(ARCH),arm64)
-fluvio_image: TARGET= aarch64-unknown-linux-musl
-else
-fluvio_image: TARGET=x86_64-unknown-linux-musl
-endif
-endif
-fluvio_image: fluvio_run_bin
-	echo "Building Fluvio $(TARGET) image with tag: $(GIT_COMMIT) k8 type: $(K8_CLUSTER)"
-	k8-util/docker/build.sh $(TARGET) $(GIT_COMMIT) "./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-run" $(K8_CLUSTER)
 
 
 
@@ -361,6 +324,15 @@ upgrade: build-cli build_k8_image
 	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
 
 
+# misc stuff
+
+# install all tools required
+install_tools_mac:
+	brew install yq
+	brew install helm
+
+helm_pkg:	
+	make -C k8-util/helm package
 
 clean:
 	cargo clean
