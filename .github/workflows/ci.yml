@@ -259,7 +259,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, integration, crate_version]
+        check: [fmt, clippy, doc, test, crate_version]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -289,13 +289,40 @@ jobs:
       - name: Unit Test
         if: ${{ matrix.check == 'test' }}
         run: make run-all-unit-test
-      - name: Integration test
-        if: ${{ matrix.check == 'integration' }}
-        run: make run-integration-test
       - name: Crate version check
         if: ${{ matrix.check == 'crate_version' }}
         run: |
           ./release-scripts/test-crate-version.sh
+
+  # Run integration test. This always run on release mode
+  check_integration:
+    name: Rust integration test (${{ matrix.rust-target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [stable]
+        rust-target: [x86_64-unknown-linux-gnu]
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+      RELEASE: true
+      RELEASE_NAME: release
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.rust-target }}-check-integration
+      - name: Integration test
+        run: make run-integration-test
+
 
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
@@ -904,6 +931,7 @@ jobs:
       - check
       - check_wasm
       - check_windows
+      - check_integration
       - build_image
       - local_cluster_test
       - k8_cluster_test
