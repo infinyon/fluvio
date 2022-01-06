@@ -89,6 +89,7 @@ mod inner {
     use fluvio_types::{SpuId};
     use fluvio_storage::FileReplica;
     use fluvio_controlplane_metadata::spu::SpuSpec;
+    use tracing::info;
 
     use crate::{replication::leader::UpdateOffsetRequest, core::SharedSpuConfig};
     use crate::services::internal::FetchStreamRequest;
@@ -337,7 +338,7 @@ mod inner {
                             leader_endpoint, err
                         );
                         let wait = backoff.wait();
-                        debug!(
+                        info!(
                             seconds = wait.as_secs(),
                             "sleeping seconds to connect to leader"
                         );

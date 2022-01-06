@@ -427,7 +427,6 @@ jobs:
             batch-failure,
             batch,
           ]
-      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
       - uses: actions/checkout@v2
@@ -468,6 +467,8 @@ jobs:
           AUTH_POLICY=${{ env.AUTH_FILE }}
           X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
           fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
+      - name: sleep
+        run: sleep 15
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke-test' }}
         timeout-minutes: 5
@@ -665,7 +666,6 @@ jobs:
         timeout-minutes: 5
         run: |
           fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
-          sleep 10
       - name: Start fluvio cluster TLS with root
         if: ${{ matrix.test == 'smoke-test-k8-tls-root-unclean' }}
         timeout-minutes: 5
@@ -676,6 +676,7 @@ jobs:
         timeout-minutes: 10
         run: |
           date
+          sleep 15
           make ${{ matrix.test }}
       - name: Print version
         run: |

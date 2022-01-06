@@ -165,15 +165,23 @@ pub async fn validate_consume_message_api(
     } else {
         let replication = test_case.environment.replication;
         if replication > 1 {
-            println!("waiting 5 seconds to verify replication status...");
+            let wait_value = std::env::var("FLV_SHORT_RECONCILLATION").unwrap_or_default();
+            let wait_delay_sec: u64 = wait_value.parse().unwrap_or(30);
+
+            println!(
+                "waiting {} seconds to verify replication status...",
+                wait_delay_sec
+            );
             // wait 5 seconds to get status and ensure replication is done
-            sleep(Duration::from_secs(5)).await;
+            sleep(Duration::from_secs(wait_delay_sec)).await;
 
             let admin = test_driver.client().admin().await;
             let partitions = admin
                 .list::<PartitionSpec, _>(vec![])
                 .await
                 .expect("partitions");
+
+            println!("partitions: {:#?}", partitions);
 
             assert_eq!(partitions.len(), 1);
 
@@ -182,8 +190,6 @@ pub async fn validate_consume_message_api(
             let leader = &status.leader;
 
             assert_eq!(leader.leo, base_offset + producer_iteration as i64);
-            println!("status: {:#?}", status);
-
             assert_eq!(status.replicas.len() as u16, replication - 1);
 
             for i in 0..replication - 1 {
