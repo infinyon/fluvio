@@ -676,6 +676,7 @@ jobs:
         timeout-minutes: 10
         run: |
           date
+          sleep 15
           make ${{ matrix.test }}
       - name: Print version
         run: |
