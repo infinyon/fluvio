@@ -337,18 +337,30 @@ impl ManagedConnectorDeploymentController {
                 type_, allowed_connector_prefix
             );
             let mut image = None;
-            for prefix in allowed_connector_prefix {
-                if type_.starts_with(prefix.as_str()) {
-                    match ThirdPartyConnectorSpec::from_url(type_).await {
-                        Ok(spec) => {
-                            debug!("Retrieved third party metadata {:?}", spec);
-                            image = Some(spec.image);
-                        }
-                        Err(e) => {
-                            info!("3rd party connector spec failed to retrieve {:?}", e);
-                        }
+            if allowed_connector_prefix.is_empty() {
+                match ThirdPartyConnectorSpec::from_url(type_).await {
+                    Ok(spec) => {
+                        debug!("Retrieved third party metadata {:?}", spec);
+                        image = Some(spec.image);
                     }
-                    break;
+                    Err(e) => {
+                        info!("3rd party connector spec failed to retrieve {:?}", e);
+                    }
+                }
+            } else {
+                for prefix in allowed_connector_prefix {
+                    if type_.starts_with(prefix.as_str()) {
+                        match ThirdPartyConnectorSpec::from_url(type_).await {
+                            Ok(spec) => {
+                                debug!("Retrieved third party metadata {:?}", spec);
+                                image = Some(spec.image);
+                            }
+                            Err(e) => {
+                                info!("3rd party connector spec failed to retrieve {:?}", e);
+                            }
+                        }
+                        break;
+                    }
                 }
             }
             if let Some(image) = image {
