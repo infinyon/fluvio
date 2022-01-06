@@ -16,6 +16,7 @@
 # If USE_LATEST is set, cluster will upgrade as if in CI mode, but without the pausing
 
 set -E
+#set -ex
 
 # On Mac, use 'greadlink' instead of 'readlink'
 if [[ "$(uname)" == "Darwin" ]]; then
@@ -66,7 +67,11 @@ function validate_cluster_stable() {
 
     local STABLE_FLUVIO=${HOME}/.fluvio/bin/fluvio
 
-    echo "Installing stable fluvio"
+    # This is more for ensuring local dev will pass this test if you've changed your channel
+    echo "Switch to \"stable\" channel CLI"
+    $STABLE_FLUVIO version switch stable 
+
+    echo "Installing stable fluvio cluster"
     $STABLE_FLUVIO cluster start 
     ci_check;
 
@@ -127,15 +132,18 @@ function validate_upgrade_cluster_to_prerelease() {
     pushd ..
     if [[ ! -z "$USE_LATEST" ]];
     then
-        echo "Download the latest published dev CLI"
-
-        # Split this up into version (and commit too?)
-        DEV_VERSION=$(curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}' | sed 's/[+]/-/')
-        TARGET_VERSION=${DEV_VERSION::-41}
-        echo "Installed CLI version ${DEV_VERSION}"
+        # Use the "latest" fluvio channel
+        echo "Switch to \"latest\" channel CLI"
         FLUVIO_BIN_ABS_PATH=${HOME}/.fluvio/bin/fluvio
+        $FLUVIO_BIN_ABS_PATH version switch latest
+        DEV_VERSION=$($FLUVIO_BIN_ABS_PATH update | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $8}' | sed 's/[+]/-/')
+
+        # This is slicing the DEV_VERSION string that is expected to look like this (including the ...):
+        # ex. 0.9.17-f7e196f3c3c5cefd0339afb85543073a12db9c5d...
+        TARGET_VERSION=${DEV_VERSION::-44}
+        echo "Installed CLI version ${DEV_VERSION}"
         echo "Upgrading cluster to ${DEV_VERSION}"
-        $FLUVIO_BIN_ABS_PATH cluster upgrade --image-version latest
+        $FLUVIO_BIN_ABS_PATH cluster upgrade
         echo "Wait for SPU to be upgraded. sleeping 1 minute"
     else
         echo "Test local image v${PRERELEASE}"
