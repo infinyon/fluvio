@@ -22,9 +22,6 @@ EXTRA_ARG?=
 BUILD_FLAGS = $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 
-export PATH := $(shell pwd)/target/$(BUILD_PROFILE):${PATH}
-
-
 # Build targets
 build-cli: install_rustup_target
 	$(CARGO_BUILDER) build --bin fluvio $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
@@ -98,7 +95,18 @@ TEST_ARG_COMMON = ${TEST_ARG_SPU} \
                 ${TEST_ARG_DEVELOP} \
                 ${TEST_ARG_EXTRA}
 
+ifeq ($(UNINSTALL),noclean)
+clean_cluster:
+	echo "no clean"
+else
+clean_cluster:
+	echo "clean up previous installation"
+	$(FLUVIO_BIN) cluster delete
+endif
 
+test-setup:	build-test-ci clean_cluster
+
+# To run a smoke test locally: make smoke-test-local EXTRA_ARG=--cluster-start
 smoke-test: test-setup
 	# Set ENV
 	$(TEST_ENV_AUTH_POLICY) \
@@ -250,16 +258,6 @@ build-test-ci: build-test build-cli build-cluster
 endif
 
 
-ifeq ($(UNINSTALL),noclean)
-clean_cluster:
-	echo "no clean"
-else
-clean_cluster:
-	echo "clean up previous installation"
-	$(FLUVIO_BIN) cluster delete
-endif
-
-test-setup:	build-test-ci clean_cluster
 
 
 #
@@ -313,23 +311,12 @@ run-client-doc-test: install_rustup_target
 
 
 
-
 fluvio_run_bin: install_rustup_target
 	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET)
 
 
-# upgrade existing cluster
-upgrade: build-cli build_k8_image
-	$(FLUVIO_BIN) cluster upgrade --sys
-	$(FLUVIO_BIN) cluster upgrade --rust-log $(SERVER_LOG) --develop
-
 
 # misc stuff
-
-# install all tools required
-install_tools_mac:
-	brew install yq
-	brew install helm
 
 helm_pkg:	
 	make -C k8-util/helm package
