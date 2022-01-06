@@ -536,7 +536,7 @@ jobs:
         run: |
           make batching-test
       - name: Save logs
-        if: failure()
+        if: ${{ !success() }}
         run: |
           date
           uname -a
@@ -550,21 +550,21 @@ jobs:
       - name: Upload SC Logs
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         with:
           name: local-${{ matrix.run }}-${{ matrix.test }}-sc-log
           path: /tmp/flv_sc.log
       - name: Upload SPU 1 Log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         with:
           name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
           path: /tmp/spu_log_5001.log
       - name: Upload SPU 2 Log
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         with:
           name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
           path: /tmp/spu_log_5002.log
@@ -721,7 +721,7 @@ jobs:
           fluvio partition list
 
       - name: Save logs
-        if: failure()
+        if: ${{ !success() }}
         run: |
           date
           uname -a
@@ -739,7 +739,7 @@ jobs:
           ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
           name: k8_${{ matrix.run }}_log
@@ -797,7 +797,7 @@ jobs:
           make FLUVIO_BIN=~/bin/fluvio upgrade-test
 
       - name: Save logs
-        if: failure()
+        if: ${{ !success() }}
         run: |
           helm list
           kubectl get statefulset
@@ -811,7 +811,7 @@ jobs:
           ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
           name: k8_${{ matrix.run }}_log

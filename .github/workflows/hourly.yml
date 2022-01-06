@@ -115,7 +115,7 @@ jobs:
       #    retention-days: 5
 
       - name: Save logs
-        if: failure()
+        if: ${{ !success() }}
         run: |
           date
           uname -a
@@ -132,7 +132,7 @@ jobs:
           ./dev-tools/sc-pod-log.sh > /tmp/k8_longevity_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
           name: k8_longevity_log
