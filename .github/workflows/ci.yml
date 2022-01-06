@@ -930,6 +930,7 @@ jobs:
       - check
       - check_wasm
       - check_windows
+      - check_integration
       - build_image
       - local_cluster_test
       - k8_cluster_test
