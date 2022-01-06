@@ -467,6 +467,8 @@ jobs:
           AUTH_POLICY=${{ env.AUTH_FILE }}
           X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
           fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
+      - name: sleep
+        run: sleep 15
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke-test' }}
         timeout-minutes: 5
