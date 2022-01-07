@@ -1141,17 +1141,17 @@ jobs:
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
           echo "~/bin" >> $GITHUB_PATH
-      #- name: Print version
-      #  run: fluvio version
-      #- name: Set up cluster
-      #  run: |
-      #    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-      #    ./k8-util/cluster/reset-k3d.sh
-      #- name: Start fluvio cluster
-      #  timeout-minutes: 5
-      #  run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
-      #- name: sleep
-      #  run: sleep 15
+      - name: Print version
+        run: fluvio version
+      - name: Set up cluster
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Start fluvio cluster
+        timeout-minutes: 5
+        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
+      - name: sleep
+        run: sleep 15
       - name: Run Fluvio Test Self Check - Panic 
         timeout-minutes: 5
         run: |
@@ -1234,17 +1234,17 @@ jobs:
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
           echo "~/bin" >> $GITHUB_PATH
-      #- name: Print version
-      #  run: fluvio version
-      #- name: Set up cluster
-      #  run: |
-      #    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-      #    ./k8-util/cluster/reset-k3d.sh
-      #- name: Start fluvio cluster
-      #  timeout-minutes: 5
-      #  run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
-      #- name: sleep
-      #  run: sleep 15
+      - name: Print version
+        run: fluvio version
+      - name: Set up cluster
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Start fluvio cluster
+        timeout-minutes: 5
+        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
+      - name: sleep
+        run: sleep 15
       - name: Run Fluvio Test Self Check
         timeout-minutes: 5
         run: |
@@ -1327,17 +1327,17 @@ jobs:
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
           echo "~/bin" >> $GITHUB_PATH
-      #- name: Print version
-      #  run: fluvio version
-      #- name: Set up cluster
-      #  run: |
-      #    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-      #    ./k8-util/cluster/reset-k3d.sh
-      #- name: Start fluvio cluster
-      #  timeout-minutes: 5
-      #  run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
-      #- name: sleep
-      #  run: sleep 15
+      - name: Print version
+        run: fluvio version
+      - name: Set up cluster
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Start fluvio cluster
+        timeout-minutes: 5
+        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
+      - name: sleep
+        run: sleep 15
       - name: Run Fluvio Test Self Check
         timeout-minutes: 5
         run: |
