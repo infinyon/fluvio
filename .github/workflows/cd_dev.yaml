@@ -86,7 +86,7 @@ jobs:
             fluvio version
             fluvio topic create ${{ env.TOPIC }}
             # wait for topic to be created
-            sleep 10
+            sleep ${{ env.SLEEP }}
             date +"%Y-%m-%dT%H:%M:%S%z"
             echo foo | fluvio produce ${{ env.TOPIC }}
             fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
