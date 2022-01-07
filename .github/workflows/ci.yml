@@ -1077,7 +1077,12 @@ jobs:
         run: [r1, r2, r3, r4, r5]
     steps:
       - name:
-        run: kill -SIGINT $$
+        run: |
+          trap '' SIGINT
+          kill -SIGINT $$
+          trap - SIGINT
+          exit 1
+
 
   shell_job_sigterm_test:
     name: SIGTERM Test if this job reports as cancelled 
@@ -1089,7 +1094,11 @@ jobs:
         run: [r1, r2, r3, r4, r5]
     steps:
       - name:
-        run: kill -SIGTERM $$
+        run: |
+          trap '' SIGTERM
+          kill -SIGTERM $$
+          trap - SIGTERM
+          exit 1
 
   fluvio_test_panic:
     name: fluvio-test panic
@@ -1144,10 +1153,19 @@ jobs:
       #  run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
       #- name: sleep
       #  run: sleep 15
+      - name: Run Fluvio Test Self Check - Panic 
+        timeout-minutes: 5
+        run: |
+          trap '' SIGTERM
+          ~/bin/fluvio-test self_check -- --force-panic  
+          trap - SIGTERM
+          
       - name: Run Fluvio Test Self Check 
         timeout-minutes: 5
         run: |
-          ~/bin/fluvio-test self_check -- --force-panic  
+          trap '' SIGTERM
+          ~/bin/fluvio-test self_check  
+          trap - SIGTERM
       - name: Save logs
         if: ${{ !success() }}
         run: |
