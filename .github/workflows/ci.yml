@@ -96,19 +96,19 @@ jobs:
           key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
 
       - name: Build fluvio
-        if: ${{ matrix.binary == 'fluvio' }}
+        if: matrix.binary == 'fluvio'
         run: make build-cli
 
       - name: Build fluvio-run
-        if: ${{ matrix.binary == 'fluvio-run' }}
+        if: matrix.binary == 'fluvio-run'
         run: make build-cluster
 
       - name: Build fluvio-test
-        if: ${{ matrix.binary == 'fluvio-test' }}
+        if: matrix.binary == 'fluvio-test'
         run: make build-test
 
       - name: Build fluvio-channel
-        if: ${{ matrix.binary == 'fluvio-channel' }}
+        if: matrix.binary == 'fluvio-channel'
         run: make build-channel
 
       # Upload artifacts
@@ -218,27 +218,27 @@ jobs:
           key: ${{ matrix.os }}-${{ matrix.rust-target }}-${{ matrix.binary }}
 
       - name: Build fluvio
-        if: ${{ matrix.binary == 'fluvio' }}
+        if: matrix.binary == 'fluvio'
         run: make build-cli
 
       - name: Install mingw gcc
-        if: ${{ matrix.rust-target  == 'x86_64-pc-windows-gnu' }}
+        if: matrix.rust-target  == 'x86_64-pc-windows-gnu'
         run: sudo apt-get install gcc-mingw-w64-x86-64
 
       - name: Build fluvio
-        if: ${{ matrix.binary == 'fluvio.exe' }}
+        if: matrix.binary == 'fluvio.exe'
         run: make build-cli-minimal
 
       - name: Build fluvio-run
-        if: ${{ matrix.binary == 'fluvio-run' }}
+        if: matrix.binary == 'fluvio-run'
         run: make build-cluster
 
       - name: Build fluvio-channel
-        if: ${{ matrix.binary == 'fluvio-channel' }}
+        if: matrix.binary == 'fluvio-channel'
         run: make build-channel
 
       - name: Build fluvio-channel
-        if: ${{ matrix.binary == 'fluvio-channel.exe' }}
+        if: matrix.binary == 'fluvio-channel.exe'
         run: make build-channel
 
       # Upload artifacts
@@ -252,7 +252,7 @@ jobs:
   check:
     name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }})
     needs: config
-    if: ${{ needs.config.outputs.check == 'true' }}
+    if: needs.config.outputs.check == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -281,16 +281,16 @@ jobs:
         if: matrix.check == 'fmt'
         run: make check-fmt
       - name: Clippy
-        if: ${{ matrix.check == 'clippy' }}
+        if: matrix.check == 'clippy'
         run: make check-clippy
       - name: Doc Test
-        if: ${{ matrix.check == 'doc' }}
+        if: matrix.check == 'doc'
         run: make run-all-doc-test
       - name: Unit Test
-        if: ${{ matrix.check == 'test' }}
+        if: matrix.check == 'test'
         run: make run-all-unit-test
       - name: Crate version check
-        if: ${{ matrix.check == 'crate_version' }}
+        if: matrix.check == 'crate_version'
         run: |
           ./release-scripts/test-crate-version.sh
 
@@ -327,7 +327,7 @@ jobs:
   check_wasm:
     name: Build WASM crates (${{ matrix.wasm-crate }})
     needs: config
-    if: ${{ needs.config.outputs.check == 'true' }}
+    if: needs.config.outputs.check == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -360,7 +360,7 @@ jobs:
   check_crate_feature_flags:
     name: Check ${{matrix.features}} for (${{ matrix.wasm-crate }})
     needs: config
-    if: ${{ needs.config.outputs.check == 'true' }}
+    if: needs.config.outputs.check == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -396,7 +396,7 @@ jobs:
   check_windows:
     name: Check Windows for crates (${{ matrix.crate }})
     needs: config
-    if: ${{ needs.config.outputs.check == 'true' }}
+    if: needs.config.outputs.check == 'true'
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -484,10 +484,10 @@ jobs:
           ./k8-util/cluster/reset-k3d.sh
       - name: Start fluvio cluster
         timeout-minutes: 5
-        if: ${{ matrix.test != 'smoke-test-tls' }}
+        if: matrix.test != 'smoke-test-tls'
         run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
       - name: Start fluvio cluster TLS
-        if: ${{ matrix.test == 'smoke-test-tls' }}
+        if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 5
         # note that Local config doesn't not support auth and scopes in the argument for now
         run: >
@@ -497,12 +497,12 @@ jobs:
       - name: sleep
         run: sleep 15
       - name: Run smoke-test
-        if: ${{ matrix.test == 'smoke-test' }}
+        if: matrix.test == 'smoke-test'
         timeout-minutes: 5
         run: |
           make smoke-test-local
       - name: Run smoke-test-tls
-        if: ${{ matrix.test == 'smoke-test-tls' }}
+        if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 5
         run: |
           make smoke-test-tls-root
@@ -511,27 +511,27 @@ jobs:
       #      echo "smoke test done"
       #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
       - name: Run election-test
-        if: ${{ matrix.test == 'election' }}
+        if: matrix.test == 'election'
         timeout-minutes: 5
         run: |
           make election-test
       - name: Run multiple-partition-test
-        if: ${{ matrix.test == 'multiple-partition' }}
+        if: matrix.test == 'multiple-partition'
         timeout-minutes: 5
         run: |
           make  multiple-partition-test
       - name: Run reconnection-test
-        if: ${{ matrix.test == 'reconnection' }}
+        if: matrix.test == 'reconnection'
         timeout-minutes: 5
         run: |
           make reconnection-test
       - name: Run batch-test
-        if: ${{ matrix.test == 'batch-failure' }}
+        if: matrix.test == 'batch-failure'
         timeout-minutes: 5
         run: |
           make batch-failure-test
       - name: Run batch-test
-        if: ${{ matrix.test == 'batch' }}
+        if: matrix.test == 'batch'
         timeout-minutes: 5
         run: |
           make batching-test
@@ -662,16 +662,16 @@ jobs:
       - name: Export Docker Image to tarball
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
       - name: Install K3d
-        if: ${{ matrix.k8 == 'k3d' }}
+        if: matrix.k8 == 'k3d'
         run: |
           curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
           ./k8-util/cluster/reset-k3d.sh
       - name: Load image to K3d
-        if: ${{ matrix.k8 == 'k3d' }}
+        if: matrix.k8 == 'k3d'
         run: |
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
       - name: Install Minikube and import image
-        if: ${{ matrix.k8 == 'minikube' }}
+        if: matrix.k8 == 'minikube'
         uses: manusa/actions-setup-minikube@v2.4.2
         with:
           minikube version: "v1.22.0"
@@ -679,22 +679,22 @@ jobs:
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
       - name: Load image to minikube
-        if: ${{ matrix.k8 == 'minikube' }}
+        if: matrix.k8 == 'minikube'
         run: |
           eval $(minikube -p minikube docker-env)
           docker image load --input /tmp/infinyon-fluvio.tar
       - name: Start fluvio cluster
-        if: ${{ matrix.test == 'smoke-test-k8' }}
+        if: matrix.test == 'smoke-test-k8'
         timeout-minutes: 5
         run: |
           fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
       - name: Start fluvio cluster TLS
-        if: ${{ matrix.test == 'smoke-test-k8-tls' }}
+        if: matrix.test == 'smoke-test-k8-tls'
         timeout-minutes: 5
         run: |
           fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }}
       - name: Start fluvio cluster TLS with root
-        if: ${{ matrix.test == 'smoke-test-k8-tls-root-unclean' }}
+        if: matrix.test == 'smoke-test-k8-tls-root-unclean'
         timeout-minutes: 5
         run: |
           make smoke-test-k8-tls-policy-setup
