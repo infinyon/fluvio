@@ -77,7 +77,7 @@ jobs:
             else
               export PROXY=""
           fi
-          fluvio cluster start --spu-storage-size 1 --image-version latest $PROXY
+          fluvio cluster start --spu-storage-size 1 --image-version latest $PROXY --rust-log fluvio=debug
           sleep {{ env.SLEEP }}
       - name: Run E2E Test
         timeout-minutes: 2
