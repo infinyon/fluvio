@@ -77,7 +77,7 @@ jobs:
             else
               export PROXY=""
           fi
-          fluvio cluster start --rust-log fluvio=debug --spu-storage-size 1 --image-version latest $PROXY
+          fluvio cluster start  --spu-storage-size 1 --image-version latest $PROXY
         #  sleep 10
       - name: Run E2E Test
         timeout-minutes: 2
@@ -85,6 +85,7 @@ jobs:
             date +"%Y-%m-%dT%H:%M:%S%z"
             fluvio version
             fluvio topic create ${{ env.TOPIC }}
+            sleep 10
             date +"%Y-%m-%dT%H:%M:%S%z"
             echo foo | fluvio produce ${{ env.TOPIC }}
             fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
