@@ -97,11 +97,7 @@ fn run_test(
             // nix uses pid 0 to refer to the group process, so reap the child processes
             let pid = Pid::from_raw(0);
 
-            // Only send SIGTERM outside of CI (where CI env var is unset), because it might cause job to report as cancelled
-            if env::var("CI").is_err() {
-                kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
-            }
-
+            kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             exit(1);
         }
     }

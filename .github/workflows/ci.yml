@@ -1100,7 +1100,7 @@ jobs:
           trap - SIGTERM
           exit 1
 
-  fluvio_test_panic:
+  fluvio_test_panic_fail:
     name: fluvio-test panic
     runs-on: ${{ matrix.os }}
     needs:
@@ -1159,12 +1159,98 @@ jobs:
           trap '' SIGTERM
           ~/bin/fluvio-test self_check -- --force-panic  
           trap - SIGTERM
-          
-      - name: Run Fluvio Test Self Check 
+      - name: Save logs
+        if: ${{ !success() }}
+        run: |
+          date
+          uname -a
+          helm list
+          kubectl get spu
+          kubectl get statefulset
+          kubectl get topics
+          kubectl get partitions
+          ps -ef | grep fluvio
+
+      - name: Upload SC Logs
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: local-${{ matrix.run }}-${{ matrix.test }}-sc-log
+          path: /tmp/flv_sc.log
+      - name: Upload SPU 1 Log
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
+          path: /tmp/spu_log_5001.log
+      - name: Upload SPU 2 Log
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
+          path: /tmp/spu_log_5002.log
+
+  fluvio_test_panic_pass:
+    name: fluvio-test panic
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build_primary_binaries
+      - config
+    env:
+      UNINSTALL: noclean
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+        run: [r1, r2, r3, r4, r5]
+        spu: [2]
+        test:
+          [
+            self_test,
+          ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/.fluvio/extensions
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Mark executable
+        run: |
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
+          echo "~/bin" >> $GITHUB_PATH
+      #- name: Print version
+      #  run: fluvio version
+      #- name: Set up cluster
+      #  run: |
+      #    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+      #    ./k8-util/cluster/reset-k3d.sh
+      #- name: Start fluvio cluster
+      #  timeout-minutes: 5
+      #  run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
+      #- name: sleep
+      #  run: sleep 15
+      - name: Run Fluvio Test Self Check - Panic 
         timeout-minutes: 5
         run: |
           trap '' SIGTERM
-          ~/bin/fluvio-test self_check  
+          ~/bin/fluvio-test self_check
           trap - SIGTERM
       - name: Save logs
         if: ${{ !success() }}
