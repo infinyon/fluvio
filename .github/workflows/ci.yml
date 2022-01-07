@@ -1067,17 +1067,28 @@ jobs:
       - name: Done
         run: echo "Done!"
 
-  shell_job_test:
-    name: Test if this job reports as cancelled 
+  shell_job_sigint_test:
+    name: SIGINT Test if this job reports as cancelled 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest]
+        run: [r1, r2, r3, r4, r5]
     steps:
       - name:
-        run: exit 143
+        run: killall -SIGINT $$
 
-  # TODO: Change signal to SIGINT, add job that always fails and use fluvio test binary after starting cluster
+  shell_job_sigterm_test:
+    name: SIGTERM Test if this job reports as cancelled 
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        run: [r1, r2, r3, r4, r5]
+    steps:
+      - name:
+        run: killall -SIGTERM $$
+
   fluvio_test_panic:
     name: fluvio-test panic
     runs-on: ${{ matrix.os }}
@@ -1093,7 +1104,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1]
+        run: [r1, r2, r3, r4, r5]
         spu: [2]
         test:
           [
@@ -1134,7 +1145,7 @@ jobs:
       - name: Run Fluvio Test Self Check 
         timeout-minutes: 5
         run: |
-          ./fluvio-test self_check -- --force-panic  
+          ~/bin/fluvio-test self_check -- --force-panic  
       - name: Save logs
         if: ${{ !success() }}
         run: |
