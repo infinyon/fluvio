@@ -36,8 +36,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-       # os: [ubuntu-latest,macos-11]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest,macos-11]
         cluster_type: [local,k8]
         run: [r1]
     env:
