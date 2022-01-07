@@ -1155,8 +1155,12 @@ jobs:
       - name: Run Fluvio Test Self Check - Panic 
         timeout-minutes: 5
         run: |
-          trap "echo Test fail signal caught; exit 1" SIGHUP
           ~/bin/fluvio-test self_check -- --force-panic  
+
+          if test -f "CI_FLUVIO_TEST_FAIL"; then
+            echo "fluvio-test failed";
+            exit 1;
+          fi
       - name: Save logs
         if: ${{ !success() }}
         run: |
@@ -1247,8 +1251,12 @@ jobs:
       - name: Run Fluvio Test Self Check
         timeout-minutes: 5
         run: |
-          trap "echo Test fail signal caught; exit 1" SIGHUP
           ~/bin/fluvio-test self_check
+
+          if test -f "CI_FLUVIO_TEST_FAIL"; then
+            echo "fluvio-test failed";
+            exit 1;
+          fi
       - name: Save logs
         if: ${{ !success() }}
         run: |
@@ -1339,8 +1347,12 @@ jobs:
       - name: Run Fluvio Test Self Check
         timeout-minutes: 5
         run: |
-          trap "echo Test fail signal caught; exit 1" SIGHUP
           FORCE_TEST_PANIC=true make fluvio-test-self-check
+
+          if test -f "CI_FLUVIO_TEST_FAIL"; then
+            echo "fluvio-test failed";
+            exit 1;
+          fi
       - name: Save logs
         if: ${{ !success() }}
         run: |

@@ -100,7 +100,8 @@ fn run_test(
             // CI uses a different signal so it doesn't report as cancelled.
             // Also, we rely on CI to clean up its runner environment
             if env::var("CI").is_ok() {
-                kill(pid, Signal::SIGHUP).expect("Unable to kill test process");
+                // Create a file for CI to look for, bc signals causing issues
+                let _ = std::fs::File::create("CI_FLUVIO_TEST_FAIL").unwrap();
             } else {
                 kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             }
