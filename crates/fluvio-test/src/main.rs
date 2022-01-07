@@ -100,7 +100,7 @@ fn run_test(
             // CI uses a different signal so it doesn't report as cancelled.
             // Also, we rely on CI to clean up its runner environment
             if env::var("CI").is_ok() {
-                kill(pid, Signal::SIGUSR1).expect("Unable to kill test process");
+                kill(pid, Signal::SIGHUP).expect("Unable to kill test process");
             } else {
                 kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             }
