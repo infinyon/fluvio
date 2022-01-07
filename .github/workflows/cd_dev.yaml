@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -86,20 +86,29 @@ jobs:
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
 
-      - name: Debug failure for Mac
-        if: failure()
-        run: |
-          docker port `docker ps -aqf "name=fluvio-control-plane"`
+
       - name: Debug failure
         if: failure()
         run: |
+          helm list
           kubectl get pods
           kubectl get pvc
           kubectl get svc
           kubectl get topics
           kubectl get partitions
           kubectl get spu
-
+      - name: Save Logs for k8
+        if: failure() && ${{ matrix.cluster_type == 'k8' }}
+        run: |
+          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
+          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+      - name: Upload logs
+        timeout-minutes: 5
+        if: failure() && ${{ matrix.cluster_type == 'k8' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: cd_failure_${{ matrix.run }}_${{ matrix.cluster_type }}
+          path: /tmp/k8_*.log
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: failure()
