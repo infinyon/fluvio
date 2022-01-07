@@ -97,7 +97,7 @@ fn run_test(
             // nix uses pid 0 to refer to the group process, so reap the child processes
             let pid = Pid::from_raw(0);
 
-            kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
+            kill(pid, Signal::SIGINT).expect("Unable to kill test process");
             exit(1);
         }
     }
