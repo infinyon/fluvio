@@ -198,4 +198,4 @@ fluvio-test-self-check:
 else
 fluvio-test-self-check: build-test
 endif
-	$(TEST_BIN) self-check -- $(FORCE_TEST_PANIC_FLAG)
+	$(TEST_BIN) self_check -- $(FORCE_TEST_PANIC_FLAG)
