@@ -88,7 +88,7 @@ impl TestOption for SmokeTestOption {
 pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let smoke_test_case: SmokeTestCase = test_case.into();
 
-    assert!( 1 == 5, "intention smoke test failure");
+    assert!(1 == 5, "intention smoke test failure");
 
     // If connector tests requested
     let maybe_connector = if let Some(ref connector_config) =
