@@ -38,6 +38,7 @@ jobs:
       matrix:
         os: [ubuntu-latest,macos-11]
         cluster_type: [local,k8]
+        run: [r1,r2,r3,r4,r5]
     env:
       SLEEP: 10
       TOPIC: foobar
