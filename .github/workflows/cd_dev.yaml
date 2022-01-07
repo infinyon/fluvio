@@ -5,7 +5,7 @@ permissions:
   contents: read
 
 concurrency: 
-  group: 'cd_dev'
+  group: cd_dev
   cancel-in-progress: true
 
 on:
@@ -77,6 +77,7 @@ jobs:
               export PROXY=""
           fi
           fluvio cluster start --spu-storage-size 1 --image-version latest $PROXY
+          sleep 30
       - name: Run E2E Test
         timeout-minutes: 2
         run: |
@@ -99,13 +100,13 @@ jobs:
           kubectl get partitions
           kubectl get spu
       - name: Save Logs for k8
-        if: failure() && ${{ matrix.cluster_type == 'k8' }}
+        if: $${{ failure() && matrix.cluster_type == 'k8' }}
         run: |
           kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
           ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
-        if: failure() && ${{ matrix.cluster_type == 'k8' }}
+        if: $${{ failure() && matrix.cluster_type == 'k8' }}
         uses: actions/upload-artifact@v2
         with:
           name: cd_failure_${{ matrix.run }}_${{ matrix.cluster_type }}
