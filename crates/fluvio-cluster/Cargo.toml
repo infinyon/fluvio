@@ -43,7 +43,7 @@ remoteprocess = "0.4.2"
 which = "4.1.0"
 directories = "4.0.0"
 tempfile = "3.2"
-include_dir = "0.6.1"
+include_dir = "0.7.2"
 tempdir = "0.3.7"
 duct = "0.13"
 chrono = "0.4"
@@ -71,7 +71,7 @@ k8-client = { version = "5.4.0" }
 k8-metadata-client = { version = "3.2.0" }
 k8-types = { version = "0.5.0", features = ["app"] }
 fluvio-types = { path = "../fluvio-types" }
-fluvio-channel = { path  = "../fluvio-channel" }
+fluvio-channel = { path = "../fluvio-channel" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.7", features = ["task", "fixture"] }
