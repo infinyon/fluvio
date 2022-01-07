@@ -190,3 +190,7 @@ else
 build-test-ci: build-test build-cli build-cluster
 endif
 
+
+FORCE_TEST_PANIC_FLAG=$(if $(FORCE_TEST_PANIC),--force-panic)
+fluvio-test-self-check: build-test
+	$(TEST_BIN) self-check -- $(FORCE_TEST_PANIC_FLAG)
