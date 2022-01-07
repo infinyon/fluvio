@@ -101,13 +101,13 @@ jobs:
           kubectl get partitions
           kubectl get spu
       - name: Save Logs for k8
-        if: job.status == 'failure' && matrix.cluster_type == 'k8'
+        if: failure()
         run: |
           kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
           ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
-        if: job.status == 'failure' && matrix.cluster_type == 'k8'
+        if: failure()
         uses: actions/upload-artifact@v2
         with:
           name: cd_failure_${{ matrix.run }}_${{ matrix.cluster_type }}
