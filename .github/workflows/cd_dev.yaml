@@ -85,6 +85,7 @@ jobs:
             date +"%Y-%m-%dT%H:%M:%S%z"
             fluvio version
             fluvio topic create ${{ env.TOPIC }}
+            # wait for topic to be created
             sleep 10
             date +"%Y-%m-%dT%H:%M:%S%z"
             echo foo | fluvio produce ${{ env.TOPIC }}
