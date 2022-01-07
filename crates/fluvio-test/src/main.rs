@@ -97,7 +97,13 @@ fn run_test(
             // nix uses pid 0 to refer to the group process, so reap the child processes
             let pid = Pid::from_raw(0);
 
-            kill(pid, Signal::SIGINT).expect("Unable to kill test process");
+            // CI uses a different signal so it doesn't report as cancelled.
+            // Also, we rely on CI to clean up its runner environment
+            if env::var("CI").is_ok() {
+                kill(pid, Signal::SIGUSR1).expect("Unable to kill test process");
+            } else {
+                kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
+            }
             exit(1);
         }
     }
