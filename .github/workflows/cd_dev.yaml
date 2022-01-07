@@ -82,8 +82,10 @@ jobs:
       - name: Run E2E Test
         timeout-minutes: 2
         run: |
+            date
             fluvio version
             fluvio topic create ${{ env.TOPIC }}
+            date
             echo foo | fluvio produce ${{ env.TOPIC }}
             fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
             # Delete the topic afterword but this looks to not work right now.
