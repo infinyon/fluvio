@@ -278,7 +278,7 @@ jobs:
         with:
           key: ${{ matrix.rust-target }}-${{ matrix.check }}
       - name: Fmt
-        if: ${{ matrix.check == 'fmt' }}
+        if: matrix.check == 'fmt'
         run: make check-fmt
       - name: Clippy
         if: ${{ matrix.check == 'clippy' }}
