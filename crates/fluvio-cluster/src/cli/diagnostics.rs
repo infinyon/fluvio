@@ -1,8 +1,12 @@
 use std::path::Path;
+use std::fs::{copy, write};
+
 use structopt::StructOpt;
-use fluvio::config::ConfigFile;
 use duct::cmd;
 use which::which;
+
+use fluvio::config::ConfigFile;
+
 use crate::cli::ClusterCliError;
 use crate::cli::start::get_log_directory;
 
@@ -49,6 +53,7 @@ impl DiagnosticsOpt {
             }
         }
         let _ = self.copy_fluvio_specs(temp_path).await;
+        self.basic_diagnostics(temp_path)?;
 
         let time = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
         let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.tar.gz", time));
@@ -78,10 +83,10 @@ impl DiagnosticsOpt {
         for entry in logs_dir.flat_map(|it| it.ok()) {
             let to = dest_dir.join(entry.file_name());
             if entry.file_name() == "flv_sc.log" {
-                std::fs::copy(entry.path(), &to)?;
+                copy(entry.path(), &to)?;
             }
             if entry.file_name().to_string_lossy().starts_with("spu_log") {
-                std::fs::copy(entry.path(), &to)?;
+                copy(entry.path(), &to)?;
             }
         }
         Ok(())
@@ -113,7 +118,7 @@ impl DiagnosticsOpt {
             };
 
             let dest_path = dest_dir.join(format!("pod-{}.log", pod));
-            std::fs::write(dest_path, log)?;
+            write(dest_path, log)?;
         }
 
         Ok(())
@@ -185,6 +190,21 @@ impl DiagnosticsOpt {
         let spgs = admin.list::<SpuGroupSpec, _>([]).await?;
         let spgs = serde_yaml::to_string(&spgs).unwrap();
         write(&spgs, "spgs")?;
+
+        Ok(())
+    }
+
+    /// write helm and other basic stuff
+    fn basic_diagnostics(&self, dest_dir: &Path) -> Result<()> {
+        let path = dest_dir.join("helm-list.txt");
+        match cmd!("helm", "list").read() {
+            Ok(output) => {
+                write(path, output)?;
+            }
+            Err(err) => {
+                write(path, format!("Failed to collect helm list: {:#?}", err))?;
+            }
+        }
 
         Ok(())
     }
