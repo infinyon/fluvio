@@ -500,7 +500,7 @@ jobs:
         if: matrix.test == 'smoke-test'
         timeout-minutes: 5
         run: |
-            fluvio-test  smoke  --develop --local --producer-iteration=1000 --spu 2  -r 2 
+            fluvio-test  smoke  --develop --local --spu 2  -r 2 -- --producer-iteration=1000
       - name: Run smoke-test-tls
         if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 5
