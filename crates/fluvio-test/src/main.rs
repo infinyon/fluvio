@@ -72,6 +72,7 @@ fn main() {
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
     cluster_cleanup(option.environment);
     println!("{}", test_result);
+    std::process::exit(1);
 }
 
 fn run_test(
