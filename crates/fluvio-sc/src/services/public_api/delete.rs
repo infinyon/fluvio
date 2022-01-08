@@ -5,7 +5,7 @@
 //! and send K8 a delete message.
 //!
 use dataplane::ErrorCode;
-use tracing::{debug, instrument, trace};
+use tracing::{instrument, trace, info};
 use std::io::Error;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
@@ -23,7 +23,7 @@ pub async fn handle_delete_request<AC: AuthContext>(
 ) -> Result<ResponseMessage<Status>, Error> {
     let (header, del_req) = request.get_header_request();
 
-    debug!("del request: {:#?}", del_req);
+    info!(?del_req, "del request");
 
     let status = match del_req {
         ObjectApiDeleteRequest::Topic(req) => {
