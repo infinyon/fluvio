@@ -1699,6 +1699,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
+ "sysinfo 0.22.5",
  "tar",
  "tempdir",
  "tempfile",

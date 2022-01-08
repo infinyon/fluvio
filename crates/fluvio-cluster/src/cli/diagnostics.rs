@@ -1,8 +1,11 @@
+use std::io::{BufWriter, Write};
 use std::path::Path;
-use std::fs::{copy, write};
+use std::fs::{copy, write, File};
 
 use structopt::StructOpt;
+use serde::Serialize;
 use duct::cmd;
+use sysinfo::{System, SystemExt, NetworkExt, ProcessExt};
 use which::which;
 
 use fluvio::config::ConfigFile;
@@ -156,7 +159,7 @@ impl DiagnosticsOpt {
             };
 
             let dest = dest.join(format!("{}-{}.yaml", ty, obj));
-            std::fs::write(dest, meta)?;
+            write(dest, meta)?;
         }
         Ok(())
     }
@@ -171,7 +174,7 @@ impl DiagnosticsOpt {
 
         let write = |yaml, name| -> Result<()> {
             let path = dest.join(format!("admin-spec-{}.yml", name));
-            std::fs::write(path, yaml)?;
+            write(path, yaml)?;
             Ok(())
         };
 
@@ -206,6 +209,92 @@ impl DiagnosticsOpt {
             }
         }
 
+        let sys_path = dest_dir.join("system-info.txt");
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        let sys_file = File::create(dest_dir.join("system-info.txt"))?;
+        let info = SystemInfo::load();
+        let sys_string = serde_yaml::to_string(&info).unwrap();
+        println!("{}",sys_string);
+        /*
+        // Display system information:
+        sys_buf.write_all(format!("System name:             {:?}", sys.name()).as_bytes())?;  
+        sys_buf.write_all(format!("System kernel version:   {:?}", sys.kernel_version()).as_bytes())?;
+        sys_buf.write_all(format!("System OS version:       {:?}", sys.os_version()).as_bytes())?;
+        sys_buf.write_all(format!("System host name:        {:?}", sys.host_name()).as_bytes())?;
+        sys_buf.write_all(format!("NB processors: {}", sys.processors().len()).as_bytes())?;
+        
+        // RAM and swap information:
+        sys_buf.write_all(format!("total memory: {} KB", sys.total_memory()).as_bytes())?;
+        sys_buf.write_all(format!("used memory : {} KB", sys.used_memory()).as_bytes())?;
+        sys_buf.write_all(format!("total swap  : {} KB", sys.total_swap()).as_bytes())?;
+        sys_buf.write_all(format!("used swap   : {} KB", sys.used_swap()).as_bytes())?;
+       
+       
+        sys_buf.write_all("=> disks:".as_bytes())?;
+        for disk in sys.disks() {
+            sys_buf.write_all(format!("{:#?}\n", disk).as_bytes())?;
+        }
+        sys_buf.write_all("=> networks:".as_bytes())?;
+        for (interface_name, data) in sys.networks() {
+            sys_buf.write_all(
+                format!(
+                    "{}: {}/{} B",
+                    interface_name,
+                    data.received(),
+                    data.transmitted()
+                )
+                .as_bytes(),
+            )?;
+        }
+
+        sys_buf.write_all("=> components:".as_bytes())?;
+        for component in sys.components() {
+            sys_buf.write_all(format!("{:?}", component).as_bytes())?;
+        }
+
+       
+        // Display processes ID, name na disk usage:
+        for (pid, process) in sys.processes() {
+            sys_buf.write_all(format!("[{}] {} {:?}", pid, process.name(), process.disk_usage()).as_bytes())?;
+        }
+
+        */
+      //  sys_buf.flush()?;
+
         Ok(())
+    }
+}
+
+#[derive(Serialize)]
+struct SystemInfo {
+    name: String,
+    kernel_version: String,
+    os_version: String,
+    host_name: String,
+    processors: usize,
+    total_memory: u64,
+    total_swap: u64,
+    used_swap: u64
+}
+
+impl SystemInfo {
+
+    fn load() -> Self {
+
+        let mut sys = System::new_all();
+        sys.refresh_all();
+
+        Self {
+            name: sys.name().unwrap_or_default(),
+            kernel_version: sys.kernel_version().unwrap_or_default(),
+            os_version: sys.os_version().unwrap_or_default(),
+            host_name: sys.host_name().unwrap_or_default(),
+            processors: sys.processors().len(),
+            total_memory: sys.total_memory(),
+            total_swap: sys.total_swap(),
+            used_swap: sys.used_swap(),
+        }
     }
 }
