@@ -47,16 +47,21 @@ impl TestOption for SelfCheckTestOption {
 pub fn self_check(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let self_test_case: SelfCheckTestCase = test_case.into();
 
-    println!("Starting Fluvio Test Self-Check");
-
     // If the CI env var is exists, we're in CI
     if env::var("CI").is_ok() {
         println!("Running in CI")
     }
 
-    if self_test_case.option.force_panic {
-        panic!("Intentionally panicking");
-    }
+    println!("Starting Fluvio Test Self-Check");
 
-    println!("Finishing Self-Check successfully");
+    let another_process = async_process!(async {
+        // Sleep for a moment to help (visually) validate global test timer
+        std::thread::sleep(std::time::Duration::from_secs(3));
+
+        if self_test_case.option.force_panic {
+            panic!("Intentionally panicking inside another process");
+        }
+    });
+
+    another_process.join().unwrap();
 }

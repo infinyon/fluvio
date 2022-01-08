@@ -20,6 +20,8 @@ use nix::sys::signal::{kill, Signal};
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
 
+const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
+
 fn main() {
     let option = BaseCli::from_args();
     //println!("{:?}", option);
@@ -60,14 +62,9 @@ fn main() {
         let mut panic_timer = panic_timer.clone();
         panic_timer.stop();
 
-        let test_result = TestResult {
-            success: false,
-            duration: panic_timer.duration(),
-            ..Default::default()
-        };
         //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
         eprintln!("Test panicked: {:#?}", panic_info);
-        eprintln!("{}", test_result);
+        //eprintln!("{}", test_result);
     }));
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
@@ -92,7 +89,14 @@ fn run_test(
 
     // If we've panicked from the test, we need to terminate all the child processes too to stop the test
     match test_result {
-        Ok(r) => r.unwrap(),
+        Ok(r) => {
+            let mut res = r.unwrap();
+            if std::path::Path::new(CI_FAIL_FLAG).exists() {
+                std::fs::remove_file(CI_FAIL_FLAG).unwrap();
+                res.success = false;
+            }
+            res
+        }
         Err(_) => {
             // nix uses pid 0 to refer to the group process, so reap the child processes
             let pid = Pid::from_raw(0);
@@ -100,8 +104,11 @@ fn run_test(
             // CI uses a different signal so it doesn't report as cancelled.
             // Also, we rely on CI to clean up its runner environment
             if env::var("CI").is_ok() {
-                // Create a file for CI to look for, bc signals causing issues
-                let _ = std::fs::File::create("CI_FLUVIO_TEST_FAIL").unwrap();
+                // Create a file for CI to look for, bc using signals causes issues
+                // Since we don't need to clean our environment, terminating child proc less important
+                if !std::path::Path::new(CI_FAIL_FLAG).exists() {
+                    let _ = std::fs::File::create(CI_FAIL_FLAG).unwrap();
+                }
             } else {
                 kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             }
