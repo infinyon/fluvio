@@ -118,7 +118,7 @@ jobs:
         if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: all 
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
@@ -165,7 +165,7 @@ jobs:
         if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: all 
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}

@@ -1,5 +1,7 @@
 use std::process::{self, exit};
 use std::env;
+use std::path::Path;
+use std::fs::{remove_file, File};
 use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
@@ -69,7 +71,7 @@ fn main() {
         };
 
         //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
-        println!("Test panicked: {:#?}", panic_info);
+        println!("{:#?}", panic_info);
 
         if env::var("CI").is_err() {
             println!("{}", test_result);
@@ -121,8 +123,8 @@ fn run_test(
     let test_result = match test_result {
         Ok(r) => {
             let mut res = r.unwrap();
-            if std::path::Path::new(CI_FAIL_FLAG).exists() {
-                std::fs::remove_file(CI_FAIL_FLAG).unwrap();
+            if Path::new(CI_FAIL_FLAG).exists() {
+                remove_file(CI_FAIL_FLAG).unwrap();
                 res.success = false;
             }
             res
@@ -131,18 +133,17 @@ fn run_test(
             // nix uses pid 0 to refer to the group process, so reap the child processes
             let pid = Pid::from_raw(0);
 
-            // CI uses a different signal so it doesn't report as cancelled.
-            // Also, we rely on CI to clean up its runner environment
+            // CI uses SIGTERM to report if jobs are cancelled
+            // so we need to report failure a little differently
             if env::var("CI").is_ok() {
                 // Create a file for CI to look for, bc using signals causes issues
                 // Since we don't need to clean our environment, terminating child proc less important
-                if !std::path::Path::new(CI_FAIL_FLAG).exists() {
-                    let _ = std::fs::File::create(CI_FAIL_FLAG).unwrap();
+                if !Path::new(CI_FAIL_FLAG).exists() {
+                    let _ = File::create(CI_FAIL_FLAG).unwrap();
                 }
             } else {
                 kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             }
-            //exit(1);
             TestResult::default()
         }
     };
