@@ -183,7 +183,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     let pid = nix::unistd::Pid::from_raw(test_process.clone());
                     match nix::sys::wait::waitpid(pid, None) {
                         Ok(status) => {
-                            tracing::debug!("[main] Test exited with status {:?}", status);
+                         //   tracing::debug!("[main] Test exited with status {:?}", status);
+                            println!("[main] Test exited with status {:?}", status);
 
                             // Send something through the channel to signal test completion
                             test_end.send(()).unwrap();
