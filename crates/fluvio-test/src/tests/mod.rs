@@ -1,3 +1,4 @@
+pub mod self_test;
 pub mod smoke;
 pub mod concurrent;
 pub mod multiple_partitions;

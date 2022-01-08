@@ -202,7 +202,7 @@ jobs:
           echo "reconnection test done"
 
       - name: Save logs
-        if: failure()
+        if: ${{ !success() }}
         run: |
           date
           uname -a
@@ -215,7 +215,7 @@ jobs:
       - name: Upload Logs
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         with:
           name: local-${{ matrix.run }}-logs
           path: /tmp/*.log
@@ -338,7 +338,7 @@ jobs:
           kubectl get spg
 
       - name: Save logs
-        if: failure()
+        if: ${{ !success() }}
         run: |
           date
           uname -a
@@ -357,7 +357,7 @@ jobs:
           ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
       - name: Upload logs
         timeout-minutes: 5
-        if: failure()
+        if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
           name: k8_${{ matrix.run }}_log

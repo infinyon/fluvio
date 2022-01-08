@@ -91,9 +91,8 @@ jobs:
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
 
-
       - name: Debug failure
-        if: failure()
+        if: ${{ !success() }}
         run: |
           helm list
           kubectl get pods
@@ -116,12 +115,13 @@ jobs:
           path: /tmp/k8_*.log
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
-        if: failure()
+        if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
 
   # Perform upgrade test from previous stable version to latest
@@ -150,7 +150,7 @@ jobs:
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
       - name: Save logs
-        if: failure()
+        if: ${{ !success() }}
         run: |
           helm list
           kubectl get statefulset
@@ -162,12 +162,13 @@ jobs:
           kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
-        if: failure()
+        if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
   # Verify latest version of CLI
   installer_check:
