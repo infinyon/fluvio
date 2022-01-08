@@ -1,4 +1,4 @@
-use std::process::exit;
+use std::process::{self, exit};
 use std::env;
 use structopt::StructOpt;
 use fluvio::Fluvio;
@@ -62,14 +62,44 @@ fn main() {
         let mut panic_timer = panic_timer.clone();
         panic_timer.stop();
 
+        let test_result = TestResult {
+            success: false,
+            duration: panic_timer.duration(),
+            ..Default::default()
+        };
+
         //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
-        eprintln!("Test panicked: {:#?}", panic_info);
-        //eprintln!("{}", test_result);
+        println!("Test panicked: {:#?}", panic_info);
+
+        if env::var("CI").is_err() {
+            println!("{}", test_result);
+        }
     }));
 
+    let parent_process_id: u32 = std::process::id();
+
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
-    cluster_cleanup(option.environment);
-    println!("{}", test_result);
+
+    // If parent process, we want to
+    // * set the exit code
+    // * print test results
+    // * cleanup cluster
+    if process::id() == parent_process_id {
+        cluster_cleanup(option.environment);
+        print_results(parent_process_id, test_result.clone());
+
+        if test_result.success {
+            exit(0)
+        } else {
+            exit(1)
+        }
+    }
+}
+
+fn print_results(parent_process_id: u32, results: TestResult) {
+    if process::id() == parent_process_id {
+        println!("{}", results)
+    }
 }
 
 fn run_test(
@@ -88,7 +118,7 @@ fn run_test(
     }));
 
     // If we've panicked from the test, we need to terminate all the child processes too to stop the test
-    match test_result {
+    let test_result = match test_result {
         Ok(r) => {
             let mut res = r.unwrap();
             if std::path::Path::new(CI_FAIL_FLAG).exists() {
@@ -112,9 +142,12 @@ fn run_test(
             } else {
                 kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             }
-            exit(1);
+            //exit(1);
+            TestResult::default()
         }
-    }
+    };
+
+    test_result
 }
 
 fn cluster_cleanup(option: EnvironmentSetup) {
