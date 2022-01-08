@@ -618,7 +618,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1]
+        run: [r1,r2,r3,r4,r5,r6]
         test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
         k8: [k3d, minikube]
         spu: [2]
@@ -648,7 +648,7 @@ jobs:
       - name: Print version
         run: fluvio version && fluvio-test -h
       # Retag image to remove arch from tag
-      - name: Load Fluvio Docker Image for K3d
+      - name: Load Fluvio Docker Image
         run: |
           ls -la /tmp
           docker image load --input /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
@@ -672,9 +672,9 @@ jobs:
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
       - name: Install Minikube and import image
         if: matrix.k8 == 'minikube'
-        uses: manusa/actions-setup-minikube@v2.4.2
+        uses: manusa/actions-setup-minikube@v2.4.3
         with:
-          minikube version: "v1.22.0"
+          minikube version: "v1.24.0"
           kubernetes version: "v1.21.2"
           github token: ${{ secrets.GITHUB_TOKEN }}
           driver: docker
