@@ -54,8 +54,8 @@ fn main() {
         exit(-1);
     }
 
-    //let panic_timer = TestTimer::start();
-    /*
+    let panic_timer = TestTimer::start();
+    
     std::panic::set_hook(Box::new(move |panic_info| {
         let mut panic_timer = panic_timer.clone();
         panic_timer.stop();
@@ -69,7 +69,7 @@ fn main() {
         eprintln!("Test panicked: {:#?}", panic_info);
         eprintln!("{}", test_result);
     }));
-    */
+    
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
     cluster_cleanup(option.environment);
