@@ -19,7 +19,6 @@ cli = [
     "prettytable-rs",
     "tar",
     "flate2",
-    "chrono",
     "sysinfo",
     "fluvio-extension-common/target",
     "fluvio-sc-schema/use_serde",
