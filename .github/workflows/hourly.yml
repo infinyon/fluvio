@@ -88,7 +88,7 @@ jobs:
 
       - name: Print partition list
         run: |
-          ~/.fluvio/bin/fluvio partition list
+          fluvio partition list
           sleep 15
 
       - name: Run longevity test
@@ -118,7 +118,7 @@ jobs:
       #    path: longevity-data.tar
       #    retention-days: 5
       - name: Run diagnostics
-     #   if: ${{ !success() }}
+        if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
