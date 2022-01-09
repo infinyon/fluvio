@@ -1,6 +1,5 @@
-use std::io::{BufWriter, Write};
 use std::path::Path;
-use std::fs::{copy, write, File};
+use std::fs::{copy, write};
 
 use structopt::StructOpt;
 use serde::Serialize;
@@ -214,7 +213,6 @@ impl DiagnosticsOpt {
     }
 
     fn write_system_info(&self, dest: &Path) -> Result<()> {
-
         let write = |yaml, name| -> Result<()> {
             let path = dest.join(format!("system-{}.yml", name));
             write(path, yaml)?;
@@ -228,57 +226,23 @@ impl DiagnosticsOpt {
 
         let info = SystemInfo::load(&sys);
         let sys_string = serde_yaml::to_string(&info).unwrap();
-        println!("{}",sys_string);
+        // println!("{}", sys_string);
         write(&sys_string, "info")?;
 
         let disks = DiskInfo::load(&sys);
         let disk_string = serde_yaml::to_string(&disks).unwrap();
-        println!("{}",disk_string);
-        /*
-        // Display system information:
-        sys_buf.write_all(format!("System name:             {:?}", sys.name()).as_bytes())?;  
-        sys_buf.write_all(format!("System kernel version:   {:?}", sys.kernel_version()).as_bytes())?;
-        sys_buf.write_all(format!("System OS version:       {:?}", sys.os_version()).as_bytes())?;
-        sys_buf.write_all(format!("System host name:        {:?}", sys.host_name()).as_bytes())?;
-        sys_buf.write_all(format!("NB processors: {}", sys.processors().len()).as_bytes())?;
-        
-        // RAM and swap information:
-        sys_buf.write_all(format!("total memory: {} KB", sys.total_memory()).as_bytes())?;
-        sys_buf.write_all(format!("used memory : {} KB", sys.used_memory()).as_bytes())?;
-        sys_buf.write_all(format!("total swap  : {} KB", sys.total_swap()).as_bytes())?;
-        sys_buf.write_all(format!("used swap   : {} KB", sys.used_swap()).as_bytes())?;
-       
-       
-        sys_buf.write_all("=> disks:".as_bytes())?;
-        for disk in sys.disks() {
-            sys_buf.write_all(format!("{:#?}\n", disk).as_bytes())?;
-        }
-        sys_buf.write_all("=> networks:".as_bytes())?;
-        for (interface_name, data) in sys.networks() {
-            sys_buf.write_all(
-                format!(
-                    "{}: {}/{} B",
-                    interface_name,
-                    data.received(),
-                    data.transmitted()
-                )
-                .as_bytes(),
-            )?;
-        }
+        //println!("{}", disk_string);
+        write(&disk_string, "disk")?;
 
-        sys_buf.write_all("=> components:".as_bytes())?;
-        for component in sys.components() {
-            sys_buf.write_all(format!("{:?}", component).as_bytes())?;
-        }
+        let networks = NetworkInfo::load(&sys);
+        let network_string = serde_yaml::to_string(&networks).unwrap();
+        write(&network_string, "networks")?;
+        //println!("{}", network_string);
 
-       
-        // Display processes ID, name na disk usage:
-        for (pid, process) in sys.processes() {
-            sys_buf.write_all(format!("[{}] {} {:?}", pid, process.name(), process.disk_usage()).as_bytes())?;
-        }
-
-        */
-      //  sys_buf.flush()?;
+        let processes = ProcessInfo::load(&sys);
+        let process_string = serde_yaml::to_string(&processes).unwrap();
+        write(&process_string, "processes")?;
+        // println!("{}",process_string);
 
         Ok(())
     }
@@ -293,14 +257,11 @@ struct SystemInfo {
     processors: usize,
     total_memory: u64,
     total_swap: u64,
-    used_swap: u64
+    used_swap: u64,
 }
 
 impl SystemInfo {
-
     fn load(sys: &System) -> Self {
-
-
         Self {
             name: sys.name().unwrap_or_default(),
             kernel_version: sys.kernel_version().unwrap_or_default(),
@@ -320,30 +281,69 @@ struct DiskInfo {
     mount_point: String,
     space: u64,
     available: u64,
-    file_system: String
+    file_system: String,
 }
 
 impl DiskInfo {
     fn load(sys: &System) -> Vec<DiskInfo> {
-
         let mut disks = Vec::new();
 
         for disk in sys.disks() {
             disks.push(DiskInfo {
-                name: format!("{:#?}",disk.name()),
-                mount_point: format!("{:#?}",disk.mount_point()),
+                name: format!("{:?}", disk.name()),
+                mount_point: format!("{:?}", disk.mount_point()),
                 space: disk.total_space(),
                 available: disk.available_space(),
-                file_system: format!("{:#?}",disk.file_system())
+                file_system: format!("{:?}", disk.file_system()),
             });
         }
 
         disks
-
     }
-
 }
 
+#[derive(Serialize)]
+struct NetworkInfo {
+    name: String,
+    received: u64,
+    transmitted: u64,
+}
 
+impl NetworkInfo {
+    fn load(sys: &System) -> Vec<NetworkInfo> {
+        let mut networks = Vec::new();
 
+        for network in sys.networks() {
+            networks.push(NetworkInfo {
+                name: network.0.to_string(),
+                received: network.1.received(),
+                transmitted: network.1.transmitted(),
+            });
+        }
 
+        networks
+    }
+}
+
+#[derive(Serialize)]
+struct ProcessInfo {
+    pid: u32,
+    name: String,
+    disk_usage: String,
+}
+
+impl ProcessInfo {
+    fn load(sys: &System) -> Vec<ProcessInfo> {
+        let mut processes = Vec::new();
+
+        for (pid, process) in sys.processes() {
+            processes.push(ProcessInfo {
+                pid: *pid as u32,
+                name: process.name().to_string(),
+                disk_usage: format!("{:?}", process.disk_usage()),
+            });
+        }
+
+        processes
+    }
+}
