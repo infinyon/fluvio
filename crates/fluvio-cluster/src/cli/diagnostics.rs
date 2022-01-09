@@ -5,7 +5,7 @@ use std::fs::{copy, write, File};
 use structopt::StructOpt;
 use serde::Serialize;
 use duct::cmd;
-use sysinfo::{System, SystemExt, NetworkExt, ProcessExt};
+use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt};
 use which::which;
 
 use fluvio::config::ConfigFile;
@@ -56,7 +56,8 @@ impl DiagnosticsOpt {
             }
         }
         let _ = self.copy_fluvio_specs(temp_path).await;
-        self.basic_diagnostics(temp_path)?;
+        self.write_helm(temp_path)?;
+        self.write_system_info(temp_path)?;
 
         let time = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
         let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.tar.gz", time));
@@ -198,7 +199,7 @@ impl DiagnosticsOpt {
     }
 
     /// write helm and other basic stuff
-    fn basic_diagnostics(&self, dest_dir: &Path) -> Result<()> {
+    fn write_helm(&self, dest_dir: &Path) -> Result<()> {
         let path = dest_dir.join("helm-list.txt");
         match cmd!("helm", "list").read() {
             Ok(output) => {
@@ -209,14 +210,30 @@ impl DiagnosticsOpt {
             }
         }
 
-        let sys_path = dest_dir.join("system-info.txt");
+        Ok(())
+    }
+
+    fn write_system_info(&self, dest: &Path) -> Result<()> {
+
+        let write = |yaml, name| -> Result<()> {
+            let path = dest.join(format!("system-{}.yml", name));
+            write(path, yaml)?;
+            Ok(())
+        };
+
         let mut sys = System::new_all();
+
+        // First we update all information of our `System` struct.
         sys.refresh_all();
 
-        let sys_file = File::create(dest_dir.join("system-info.txt"))?;
-        let info = SystemInfo::load();
+        let info = SystemInfo::load(&sys);
         let sys_string = serde_yaml::to_string(&info).unwrap();
         println!("{}",sys_string);
+        write(&sys_string, "info")?;
+
+        let disks = DiskInfo::load(&sys);
+        let disk_string = serde_yaml::to_string(&disks).unwrap();
+        println!("{}",disk_string);
         /*
         // Display system information:
         sys_buf.write_all(format!("System name:             {:?}", sys.name()).as_bytes())?;  
@@ -281,10 +298,8 @@ struct SystemInfo {
 
 impl SystemInfo {
 
-    fn load() -> Self {
+    fn load(sys: &System) -> Self {
 
-        let mut sys = System::new_all();
-        sys.refresh_all();
 
         Self {
             name: sys.name().unwrap_or_default(),
@@ -298,3 +313,37 @@ impl SystemInfo {
         }
     }
 }
+
+#[derive(Serialize)]
+struct DiskInfo {
+    name: String,
+    mount_point: String,
+    space: u64,
+    available: u64,
+    file_system: String
+}
+
+impl DiskInfo {
+    fn load(sys: &System) -> Vec<DiskInfo> {
+
+        let mut disks = Vec::new();
+
+        for disk in sys.disks() {
+            disks.push(DiskInfo {
+                name: format!("{:#?}",disk.name()),
+                mount_point: format!("{:#?}",disk.mount_point()),
+                space: disk.total_space(),
+                available: disk.available_space(),
+                file_system: format!("{:#?}",disk.file_system())
+            });
+        }
+
+        disks
+
+    }
+
+}
+
+
+
+
