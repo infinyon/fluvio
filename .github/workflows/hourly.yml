@@ -63,6 +63,7 @@ jobs:
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
           echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Start Fluvio Cluster
+        run: |
           fluvio version
           fluvio cluster start
 
