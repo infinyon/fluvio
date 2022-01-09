@@ -201,7 +201,7 @@ jobs:
           make reconnection-test
           echo "reconnection test done"
       - name: Run diagnostics
-        if: ${{ !success() }}
+    #    if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
@@ -317,7 +317,7 @@ jobs:
             date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  DEFAULT_SPU=1 REPL=1 UNINSTALL=noclean smoke-test-k8
       - name: Run diagnostics
-        if: ${{ !success() }}
+    #    if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics

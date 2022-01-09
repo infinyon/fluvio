@@ -11,8 +11,8 @@ concurrency:
 on:
 #  push:
 #    branches: [master]
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: [Publish]
     branches: [master]
@@ -92,7 +92,7 @@ jobs:
             # fluvio topic delete "${{ env.TOPIC }}"
 
       - name: Run diagnostics
-        if: ${{ !success() }}
+    #    if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
@@ -139,7 +139,7 @@ jobs:
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
       - name: Run diagnostics
-        if: ${{ !success() }}
+    #    if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics

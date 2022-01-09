@@ -6,8 +6,8 @@ permissions:
 on:
   schedule:
     - cron: '0 * * * *'
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 jobs:
   longevity:
@@ -114,7 +114,7 @@ jobs:
       #    path: longevity-data.tar
       #    retention-days: 5
       - name: Run diagnostics
-        if: ${{ !success() }}
+     #   if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
