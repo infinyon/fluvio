@@ -536,38 +536,16 @@ jobs:
         run: |
           make batching-test
       - name: Save logs
-        if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get spu
-          kubectl get statefulset
-          kubectl get topics
-          kubectl get partitions
-          ps -ef | grep fluvio
-
+       # if: ${{ !success() }}
+        run: fluvio cluster diagnostics
       - name: Upload SC Logs
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: ${{ !success() }}
+   #     if: ${{ !success() }}
         with:
-          name: local-${{ matrix.run }}-${{ matrix.test }}-sc-log
-          path: /tmp/flv_sc.log
-      - name: Upload SPU 1 Log
-        uses: actions/upload-artifact@v2
-        timeout-minutes: 5
-        if: ${{ !success() }}
-        with:
-          name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
-          path: /tmp/spu_log_5001.log
-      - name: Upload SPU 2 Log
-        uses: actions/upload-artifact@v2
-        timeout-minutes: 5
-        if: ${{ !success() }}
-        with:
-          name: local-${{ matrix.run }}-${{ matrix.test }}-spu1-logs
-          path: /tmp/spu_log_5002.log
+          name: local-${{ matrix.run }}-${{ matrix.test }}-sc-diag
+          path: diagnostics*.gz
+      
 
   build_image:
     name: Build Fluvio Docker image
