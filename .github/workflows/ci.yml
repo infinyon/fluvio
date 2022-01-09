@@ -536,7 +536,7 @@ jobs:
         run: |
           make batching-test
       - name: Run diagnostics
-      #  if: ${{ !success() }}
+        if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
@@ -685,7 +685,7 @@ jobs:
           sleep 15
           make ${{ matrix.test }}
       - name: Run diagnostics
-      #  if: ${{ !success() }}
+        if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
@@ -748,7 +748,7 @@ jobs:
           make FLUVIO_BIN=~/bin/fluvio upgrade-test
 
       - name: Run diagnostics
-     #   if: ${{ !success() }}
+        if: ${{ !success() }}
         timeout-minutes: 5
         run: ~/bin/fluvio cluster diagnostics
       - name: Upload logs
@@ -864,7 +864,7 @@ jobs:
       - name: Run CLI smoke tests
         run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
       - name: Run diagnostics
-    #    if: ${{ !success() }}
+        if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics

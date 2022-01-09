@@ -126,8 +126,6 @@ jobs:
       - config
     env:
       UNINSTALL:  noclean
-      EXTRA_ARG:  --cluster-start
-      SERVER_LOG: fluvio=debug
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
     strategy:
@@ -136,7 +134,17 @@ jobs:
         os: [macos-11]
         rust-target: [x86_64-apple-darwin]
         run: [r1]
-        test: [smoke,election,multiple-partition,reconnection]
+        spu: [2]
+        test:
+          [
+            smoke-test,
+            smoke-test-tls,
+            election,
+            multiple-partition,
+            reconnection,
+            batch-failure,
+            batch,
+          ]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
@@ -168,7 +176,19 @@ jobs:
       - name: Install and start Kind
         run: |
           brew install kind
-          kind create cluster --config k8-util/cluster/kind.yaml 
+          kind create cluster --config k8-util/cluster/kind.yaml
+      - name: Start fluvio cluster
+        timeout-minutes: 5
+        if: matrix.test != 'smoke-test-tls'
+        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug
+      - name: Start fluvio cluster TLS
+        if: matrix.test == 'smoke-test-tls'
+        timeout-minutes: 5
+        # note that Local config doesn't not support auth and scopes in the argument for now
+        run: >
+          AUTH_POLICY=${{ env.AUTH_FILE }}
+          X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
+          fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug ${{ env.TLS_ARGS }} 
       - name: Run smoke-test
         if: ${{ matrix.test == 'smoke' }}
         timeout-minutes: 5
