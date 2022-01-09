@@ -143,27 +143,14 @@ jobs:
           ~/.fluvio/bin/fluvio version
 
       # TODO: Verify platform version
-
-      - name: Save logs
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_release_upgrade_spu0.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_release_upgrade_sc.log || true
-      - name: Upload logs
+        timeout-minutes: 5
+        run: ~/.fluvio/bin/fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: ${{ !success() }}
-        uses: actions/upload-artifact@v2
         with:
-          name: k8_release_upgrade_log
-          path: /tmp/k8_*.log
+          name: upgrade-prev-stable-diagnostics
+          path: diagnostics*.gz

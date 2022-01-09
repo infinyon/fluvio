@@ -536,14 +536,15 @@ jobs:
         run: |
           make batching-test
       - name: Run diagnostics
-       # if: ${{ !success() }}
+        if: ${{ !success() }}
+        timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-   #     if: ${{ !success() }}
+        if: ${{ !success() }}
         with:
-          name: local-${{ matrix.run }}-${{ matrix.test }}-sc-diag
+          name: local-${{ matrix.run }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
       
 
@@ -683,45 +684,17 @@ jobs:
           date
           sleep 15
           make ${{ matrix.test }}
-      - name: Print version
-        run: |
-          fluvio version
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          fluvio partition list
-
-      - name: Save logs
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
-      - name: Upload logs
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
         timeout-minutes: 5
         if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
-          path: /tmp/k8_*.log
+          name: k8_${{ matrix.run }}-${{ matrix.test }}-log
+          path: diagnostics*.gz
 
   k8_upgrade_test:
     name: Upgrade cluster test on (${{ matrix.run }})
@@ -774,26 +747,17 @@ jobs:
           export PATH=~/.fluvio/bin:$PATH
           make FLUVIO_BIN=~/bin/fluvio upgrade-test
 
-      - name: Save logs
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          helm list
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spu
-          kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
+        timeout-minutes: 5
+        run: ~/bin/fluvio cluster diagnostics
       - name: Upload logs
         timeout-minutes: 5
         if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
-          path: /tmp/k8_*.log
+          name: k8_upgrade_${{ matrix.run }}_log
+          path: diagnostics*.gz
 
   k8_cli_backward_compat:
     name: Latest CLI vs Stable Cluster
@@ -899,6 +863,17 @@ jobs:
 
       - name: Run CLI smoke tests
         run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: k8-cli-smoke_log
+          path: diagnostics*.gz
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release

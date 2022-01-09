@@ -200,25 +200,18 @@ jobs:
           date
           make reconnection-test
           echo "reconnection test done"
-
-      - name: Save logs
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          kubectl get spu
-          kubectl get statefulset
-          kubectl get topics
-          kubectl get partitions
-          ps -ef | grep fluvio
-
-      - name: Upload Logs
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
-          name: local-${{ matrix.run }}-logs
-          path: /tmp/*.log
+          name: local-${{ matrix.run }}-${{ matrix.test }}-diag
+          path: diagnostics*.gz
+
 
  # same as in ci.yaml except no aa64
   build_image:
@@ -323,42 +316,14 @@ jobs:
         run: |
             date
             make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  DEFAULT_SPU=1 REPL=1 UNINSTALL=noclean smoke-test-k8
-      - name: Print version
-        run: |
-          ./fluvio version
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-
-      - name: Save logs
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl describe pod  `(kubectl get pod -l app=fluvio-sc  -o jsonpath="{.items[0].metadata.name}")`
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
-      - name: Upload logs
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
         timeout-minutes: 5
         if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
-          path: /tmp/k8_*.log
+          name: k8_${{ matrix.run }}-${{ matrix.test }}-log
+          path: diagnostics*.gz
