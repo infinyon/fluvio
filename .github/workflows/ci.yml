@@ -535,10 +535,10 @@ jobs:
         timeout-minutes: 5
         run: |
           make batching-test
-      - name: Save logs
+      - name: Run diagnostics
        # if: ${{ !success() }}
         run: fluvio cluster diagnostics
-      - name: Upload SC Logs
+      - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
    #     if: ${{ !success() }}
