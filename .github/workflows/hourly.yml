@@ -61,7 +61,10 @@ jobs:
       - name: Install Fluvio CLI and start cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-          ~/.fluvio/bin/fluvio cluster start --image-version=latest
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Start Fluvio Cluster
+          fluvio version
+          fluvio cluster start
 
       # Disabled for now bc data load is unstable in CI
       #- name: Look for longevity data
@@ -116,7 +119,7 @@ jobs:
       - name: Run diagnostics
      #   if: ${{ !success() }}
         timeout-minutes: 5
-        run: ~/.fluvio/bin/fluvio cluster diagnostics
+        run: fluvio cluster diagnostics
       - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
