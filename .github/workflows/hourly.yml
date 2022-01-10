@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 jobs:
   longevity:
-    name: Longevity test 
+    name: Hourly Longevity test 
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
     strategy:
@@ -61,7 +61,11 @@ jobs:
       - name: Install Fluvio CLI and start cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-          ~/.fluvio/bin/fluvio cluster start --image-version=latest
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Start Fluvio Cluster
+        run: |
+          fluvio version
+          fluvio cluster start
 
       # Disabled for now bc data load is unstable in CI
       #- name: Look for longevity data
@@ -84,7 +88,7 @@ jobs:
 
       - name: Print partition list
         run: |
-          ~/.fluvio/bin/fluvio partition list
+          fluvio partition list
           sleep 15
 
       - name: Run longevity test
@@ -113,27 +117,15 @@ jobs:
       #    name: 'longevity-data' 
       #    path: longevity-data.tar
       #    retention-days: 5
-
-      - name: Save logs
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_longevity_spu0.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_longevity_sc.log || true
-      - name: Upload logs
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: ${{ !success() }}
-        uses: actions/upload-artifact@v2
         with:
-          name: k8_longevity_log
-          path: /tmp/k8_*.log
+          name: hourly-longevity-diag
+          path: diagnostics*.gz
+      

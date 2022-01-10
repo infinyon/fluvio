@@ -1,8 +1,14 @@
 use std::path::Path;
+use std::fs::{copy, write};
+
 use structopt::StructOpt;
-use fluvio::config::ConfigFile;
+use serde::Serialize;
 use duct::cmd;
+use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt};
 use which::which;
+
+use fluvio::config::ConfigFile;
+
 use crate::cli::ClusterCliError;
 use crate::cli::start::get_log_directory;
 
@@ -49,6 +55,8 @@ impl DiagnosticsOpt {
             }
         }
         let _ = self.copy_fluvio_specs(temp_path).await;
+        self.write_helm(temp_path)?;
+        self.write_system_info(temp_path)?;
 
         let time = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
         let diagnostic_path = std::env::current_dir()?.join(format!("diagnostics-{}.tar.gz", time));
@@ -78,10 +86,10 @@ impl DiagnosticsOpt {
         for entry in logs_dir.flat_map(|it| it.ok()) {
             let to = dest_dir.join(entry.file_name());
             if entry.file_name() == "flv_sc.log" {
-                std::fs::copy(entry.path(), &to)?;
+                copy(entry.path(), &to)?;
             }
             if entry.file_name().to_string_lossy().starts_with("spu_log") {
-                std::fs::copy(entry.path(), &to)?;
+                copy(entry.path(), &to)?;
             }
         }
         Ok(())
@@ -113,7 +121,7 @@ impl DiagnosticsOpt {
             };
 
             let dest_path = dest_dir.join(format!("pod-{}.log", pod));
-            std::fs::write(dest_path, log)?;
+            write(dest_path, log)?;
         }
 
         Ok(())
@@ -151,7 +159,7 @@ impl DiagnosticsOpt {
             };
 
             let dest = dest.join(format!("{}-{}.yaml", ty, obj));
-            std::fs::write(dest, meta)?;
+            write(dest, meta)?;
         }
         Ok(())
     }
@@ -166,7 +174,7 @@ impl DiagnosticsOpt {
 
         let write = |yaml, name| -> Result<()> {
             let path = dest.join(format!("admin-spec-{}.yml", name));
-            std::fs::write(path, yaml)?;
+            write(path, yaml)?;
             Ok(())
         };
 
@@ -187,5 +195,155 @@ impl DiagnosticsOpt {
         write(&spgs, "spgs")?;
 
         Ok(())
+    }
+
+    /// write helm and other basic stuff
+    fn write_helm(&self, dest_dir: &Path) -> Result<()> {
+        let path = dest_dir.join("helm-list.txt");
+        match cmd!("helm", "list").read() {
+            Ok(output) => {
+                write(path, output)?;
+            }
+            Err(err) => {
+                write(path, format!("Failed to collect helm list: {:#?}", err))?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn write_system_info(&self, dest: &Path) -> Result<()> {
+        let write = |yaml, name| -> Result<()> {
+            let path = dest.join(format!("system-{}.yml", name));
+            write(path, yaml)?;
+            Ok(())
+        };
+
+        let mut sys = System::new_all();
+
+        // First we update all information of our `System` struct.
+        sys.refresh_all();
+
+        let info = SystemInfo::load(&sys);
+        let sys_string = serde_yaml::to_string(&info).unwrap();
+        // println!("{}", sys_string);
+        write(&sys_string, "info")?;
+
+        let disks = DiskInfo::load(&sys);
+        let disk_string = serde_yaml::to_string(&disks).unwrap();
+        //println!("{}", disk_string);
+        write(&disk_string, "disk")?;
+
+        let networks = NetworkInfo::load(&sys);
+        let network_string = serde_yaml::to_string(&networks).unwrap();
+        write(&network_string, "networks")?;
+        //println!("{}", network_string);
+
+        let processes = ProcessInfo::load(&sys);
+        let process_string = serde_yaml::to_string(&processes).unwrap();
+        write(&process_string, "processes")?;
+        // println!("{}",process_string);
+
+        Ok(())
+    }
+}
+
+#[derive(Serialize)]
+struct SystemInfo {
+    name: String,
+    kernel_version: String,
+    os_version: String,
+    host_name: String,
+    processors: usize,
+    total_memory: u64,
+    total_swap: u64,
+    used_swap: u64,
+}
+
+impl SystemInfo {
+    fn load(sys: &System) -> Self {
+        Self {
+            name: sys.name().unwrap_or_default(),
+            kernel_version: sys.kernel_version().unwrap_or_default(),
+            os_version: sys.os_version().unwrap_or_default(),
+            host_name: sys.host_name().unwrap_or_default(),
+            processors: sys.processors().len(),
+            total_memory: sys.total_memory(),
+            total_swap: sys.total_swap(),
+            used_swap: sys.used_swap(),
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct DiskInfo {
+    name: String,
+    mount_point: String,
+    space: u64,
+    available: u64,
+    file_system: String,
+}
+
+impl DiskInfo {
+    fn load(sys: &System) -> Vec<DiskInfo> {
+        let mut disks = Vec::new();
+
+        for disk in sys.disks() {
+            disks.push(DiskInfo {
+                name: format!("{:?}", disk.name()),
+                mount_point: format!("{:?}", disk.mount_point()),
+                space: disk.total_space(),
+                available: disk.available_space(),
+                file_system: format!("{:?}", disk.file_system()),
+            });
+        }
+
+        disks
+    }
+}
+
+#[derive(Serialize)]
+struct NetworkInfo {
+    name: String,
+    received: u64,
+    transmitted: u64,
+}
+
+impl NetworkInfo {
+    fn load(sys: &System) -> Vec<NetworkInfo> {
+        let mut networks = Vec::new();
+
+        for network in sys.networks() {
+            networks.push(NetworkInfo {
+                name: network.0.to_string(),
+                received: network.1.received(),
+                transmitted: network.1.transmitted(),
+            });
+        }
+
+        networks
+    }
+}
+
+#[derive(Serialize)]
+struct ProcessInfo {
+    pid: u32,
+    name: String,
+    disk_usage: String,
+}
+
+impl ProcessInfo {
+    fn load(sys: &System) -> Vec<ProcessInfo> {
+        let mut processes = Vec::new();
+
+        for (pid, process) in sys.processes() {
+            processes.push(ProcessInfo {
+                pid: *pid as u32,
+                name: process.name().to_string(),
+                disk_usage: format!("{:?}", process.disk_usage()),
+            });
+        }
+
+        processes
     }
 }

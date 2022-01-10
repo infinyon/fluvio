@@ -91,28 +91,17 @@ jobs:
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
 
-      - name: Debug failure
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          helm list
-          kubectl get pods
-          kubectl get pvc
-          kubectl get svc
-          kubectl get topics
-          kubectl get partitions
-          kubectl get spu
-      - name: Save Logs for k8
-        if: failure()
-        run: |
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
-      - name: Upload logs
         timeout-minutes: 5
-        if: failure()
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
         uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
         with:
           name: cd_failure_${{ matrix.run }}_${{ matrix.cluster_type }}
-          path: /tmp/k8_*.log
+          path: diagnostics*.gz
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: ${{ !success() }}
@@ -149,17 +138,17 @@ jobs:
         run: |
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
-      - name: Save logs
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          helm list
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spu
-          kubectl get spg
-          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+        timeout-minutes: 5
+        run: ~/.fluvio/bin/fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: cluster-upgrade-diag
+          path: diagnostics*.gz
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
         if: ${{ !success() }}

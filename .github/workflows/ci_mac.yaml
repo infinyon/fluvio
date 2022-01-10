@@ -126,8 +126,6 @@ jobs:
       - config
     env:
       UNINSTALL:  noclean
-      EXTRA_ARG:  --cluster-start
-      SERVER_LOG: fluvio=debug
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
     strategy:
@@ -136,7 +134,7 @@ jobs:
         os: [macos-11]
         rust-target: [x86_64-apple-darwin]
         run: [r1]
-        test: [smoke,election,multiple-partition,reconnection]
+        spu: [1]
      #   run: ${{ fromJson(needs.config.outputs.runs )}}
 
     steps:
@@ -157,10 +155,12 @@ jobs:
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
-      - name: Mark executable
+      - name: Set up Fluvio binaries
         run: |
           chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
           echo "~/bin" >> $GITHUB_PATH
+          echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+          echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
       - name: Print version
         run: fluvio version
       - name: Set up Docker for Mac
@@ -168,57 +168,27 @@ jobs:
       - name: Install and start Kind
         run: |
           brew install kind
-          kind create cluster --config k8-util/cluster/kind.yaml 
+          kind create cluster --config k8-util/cluster/kind.yaml
+      - name: Start fluvio cluster
+        timeout-minutes: 5
+        run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log fluvio=debug 
       - name: Run smoke-test
-        if: ${{ matrix.test == 'smoke' }}
         timeout-minutes: 5
         run: |
           date
-          make  smoke-test-tls-root
-          date
-          kubectl get partitions
-          kubectl get partitions  -o=jsonpath='{.items[0].status.leader.leo}' | grep 100
-          echo "smoke test done"
-      - name: Run election-test
-        if: ${{ matrix.test == 'election' }}
-        timeout-minutes: 5
-        run: |
-          date
-          make election-test
-          echo "election test done"
-      - name: Run multiple-partition-test
-        if: ${{ false }}
-        timeout-minutes: 5
-        run: |
-          date
-          make multiple-partition-test
-          echo "multiple partition test done"
-      - name: Run reconnection-test
-        if: ${{ matrix.test == 'reconnection' }}
-        timeout-minutes: 3
-        run: |
-          date
-          make reconnection-test
-          echo "reconnection test done"
-
-      - name: Save logs
+          make  smoke-test-local
+      - name: Run diagnostics
         if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          kubectl get spu
-          kubectl get statefulset
-          kubectl get topics
-          kubectl get partitions
-          ps -ef | grep fluvio
-
-      - name: Upload Logs
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
-          name: local-${{ matrix.run }}-logs
-          path: /tmp/*.log
+          name: local-${{ matrix.run }}-${{ matrix.test }}-diag
+          path: diagnostics*.gz
+
 
  # same as in ci.yaml except no aa64
   build_image:
@@ -260,6 +230,12 @@ jobs:
     name: Kubernetes cluster test run (${{ matrix.run }}) k8 (${{ matrix.k8 }})
     needs: build_image
     runs-on: ${{ matrix.os }}
+    env:
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
+      UNINSTALL: noclean
+      DEFAULT_SPU:  1
+      REPL:  1
     strategy:
       fail-fast: false
       matrix:
@@ -268,6 +244,7 @@ jobs:
         k8-target: [x86_64-unknown-linux-musl]
         run: [r1]
         k8: [kind]
+        spu: [1]
     steps:
       - uses: actions/checkout@v2
       # Download artifacts
@@ -275,21 +252,24 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: fluvio-${{ matrix.rust-target }}
-          path: .
+          path: ~/bin
       - name: Download artifact - fluvio-test
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
-          path: .
+          path: ~/bin
       - name: Download Docker Image as Artifact
         uses: actions/download-artifact@v2
         with:
           name: infinyon-fluvio-${{ matrix.k8-target }}.tar
           path: /tmp
 
-      - name: Print artifacts and mark executable
-        run: chmod +x ./fluvio ./fluvio-test && ./fluvio version && ./fluvio-test -h
-
+      - name: Set up Fluvio binaries
+        run: |
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test
+          echo "~/bin" >> $GITHUB_PATH
+          echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+          echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
       - name: Set up Docker for Mac
         uses: docker-practice/actions-setup-docker@master
       # Retag image to remove arch from tag
@@ -316,49 +296,21 @@ jobs:
         if: ${{ matrix.k8 == 'kind' }}
         timeout-minutes: 3
         run: |
-          ./fluvio cluster start  --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
+          fluvio cluster start  --develop --spu-storage-size 1 --proxy-addr  127.0.0.1
       # run a simpler configuration to run in a constraint mac
       - name: Run smoke-test-k8
         timeout-minutes: 3
         run: |
             date
-            make FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test  DEFAULT_SPU=1 REPL=1 UNINSTALL=noclean smoke-test-k8
-      - name: Print version
-        run: |
-          ./fluvio version
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-
-      - name: Save logs
-        if: ${{ !success() }}
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl describe pod  `(kubectl get pod -l app=fluvio-sc  -o jsonpath="{.items[0].metadata.name}")`
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_${{ matrix.run }}_spu0.log || true
-          kubectl logs fluvio-spg-main-1  > /tmp/k8_${{ matrix.run }}_spu1.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_${{ matrix.run }}_sc.log || true
-      - name: Upload logs
+            make smoke-test-k8
+      - name: Run diagnostics
+   #     if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
         timeout-minutes: 5
         if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
-          name: k8_${{ matrix.run }}_log
-          path: /tmp/k8_*.log
+          name: k8_${{ matrix.run }}-${{ matrix.test }}-log
+          path: diagnostics*.gz
