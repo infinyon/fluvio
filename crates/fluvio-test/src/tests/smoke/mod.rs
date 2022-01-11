@@ -16,6 +16,8 @@ use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 
+use fluvio_cli::tableformat::TableFormatConfig;
+use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 use fluvio::metadata::{
     topic::{TopicSpec, TopicReplicaParam, ReplicaSpec},
     connector::{ManagedConnectorSpec, SecretString},
@@ -62,6 +64,8 @@ pub struct SmokeTestOption {
     pub consumer_wait: bool,
     #[structopt(long)]
     pub connector_config: Option<PathBuf>,
+    #[structopt(long)]
+    pub table_format_config: Option<PathBuf>,
     #[structopt(long)]
     pub skip_consumer_validate: bool,
 }
@@ -187,6 +191,44 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         None
     };
 
+    // TableFormat test
+    let maybe_table_format =
+        if let Some(ref table_format_config) = smoke_test_case.option.table_format_config {
+            let table_format_process = async_process!(async {
+                let config = TableFormatConfig::from_file(table_format_config)
+                    .expect("TableFormat config load failed");
+                let table_format_spec: TableFormatSpec = config.into();
+                let name = table_format_spec.name.clone();
+
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+
+                let admin = test_driver.client().admin().await;
+
+                admin
+                    .create(name.clone(), false, table_format_spec)
+                    .await
+                    .expect("TableFormat create failed");
+                println!("tableformat \"{}\" created", &name);
+
+                // Wait a moment then delete
+                sleep(Duration::from_secs(5)).await;
+
+                admin
+                    .delete::<TableFormatSpec, _>(name.clone())
+                    .await
+                    .expect("TableFormat delete failed");
+                println!("tableformat \"{}\" deleted", &name);
+            });
+
+            Some(table_format_process)
+            // Create a managed connector
+        } else {
+            None
+        };
+
     // We're going to handle the `--consumer-wait` flag in this process
     let producer_wait = async_process!(async {
         let mut test_driver_consumer_wait = test_driver.clone();
@@ -226,6 +268,10 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     if let Some(connector_wait) = maybe_connector {
         let _ = connector_wait.join();
+    };
+
+    if let Some(table_format_wait) = maybe_table_format {
+        let _ = table_format_wait.join();
     };
 }
 
