@@ -1,6 +1,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 
+use tracing::instrument;
 use tracing::{debug, trace};
 use dataplane::ReplicaKey;
 use fluvio_spu_schema::server::fetch_offset::FetchOffsetsRequest;
@@ -300,11 +301,12 @@ impl Offset {
     }
 }
 
+#[instrument(skip(client))]
 pub(crate) async fn fetch_offsets(
     client: &mut VersionedSerialSocket,
     replica: &ReplicaKey,
 ) -> Result<FetchOffsetPartitionResponse, FluvioError> {
-    debug!("fetching offset for replica: {}", replica);
+    debug!(%replica, "fetching offset for replica", );
 
     let response = client
         .send_receive(FetchOffsetsRequest::new(
@@ -314,14 +316,14 @@ pub(crate) async fn fetch_offsets(
         .await?;
 
     trace!(
-        "receive fetch response replica: {}, {:#?}",
-        replica,
-        response
+        ?response,
+        %replica,
+        "received fetch response replica",
     );
 
     match response.find_partition(replica) {
         Some(partition_response) => {
-            debug!("replica: {}, fetch offset: {}", replica, partition_response);
+            debug!(%replica, %partition_response, "partition response",);
             Ok(partition_response)
         }
         None => Err(IoError::new(

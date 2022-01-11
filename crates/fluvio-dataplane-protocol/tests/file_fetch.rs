@@ -44,7 +44,7 @@ fn create_batches(records: u16) -> Batch {
 async fn setup_batch_file() -> Result<(), IoError> {
     let test_file_path = temp_dir().join("batch_fetch");
     ensure_clean_file(&test_file_path);
-    debug!("creating test file: {:#?}", test_file_path);
+    debug!(?test_file_path, "creating test file");
     let mut file = file_util::create(&test_file_path).await?;
     let batch = create_batches(2);
     let bytes = batch.as_bytes(0)?;
@@ -67,10 +67,10 @@ async fn test_server(addr: &str) -> Result<(), SocketError> {
         .await
         .expect("next value");
     let request = fetch_request?;
-    debug!("received fetch request: {:#?}", request);
+    debug!(?request, "received fetch request");
 
     let test_file_path = temp_dir().join("batch_fetch");
-    debug!("opening file test file: {:#?}", test_file_path);
+    debug!(?test_file_path, "opening file test file");
     let file = file_util::open(&test_file_path).await?;
 
     let mut response = FileFetchResponse::default();
@@ -85,8 +85,8 @@ async fn test_server(addr: &str) -> Result<(), SocketError> {
     let resp_msg = ResponseMessage::new(10, response);
 
     debug!(
-        "response message write size: {}",
-        resp_msg.write_size(FileFetchRequest::DEFAULT_API_VERSION)
+        write_size = resp_msg.write_size(FileFetchRequest::DEFAULT_API_VERSION),
+        "response message write size",
     );
 
     socket
@@ -106,7 +106,7 @@ async fn setup_client(addr: &str) -> Result<(), SocketError> {
     let req_msg: RequestMessage<DefaultFetchRequest> = RequestMessage::default();
     let res_msg = socket.send(&req_msg).await?;
 
-    debug!("output: {:#?}", res_msg);
+    debug!(?res_msg, "output response");
     let topic_responses = res_msg.response.topics;
     assert_eq!(topic_responses.len(), 1);
     let part_responses = &topic_responses[0].partitions;

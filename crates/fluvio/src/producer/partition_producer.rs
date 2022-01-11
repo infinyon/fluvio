@@ -102,9 +102,9 @@ impl PartitionProducer {
                 _ = flush_event.0.listen() => {
 
                     debug!("flush event received");
-                    if let Err(e) = self.flush(true).await {
-                        error!("Failed to flush producer: {}", e);
-                        self.set_error(e).await;
+                    if let Err(err) = self.flush(true).await {
+                        error!(%err, "Failed to flush producer");
+                        self.set_error(err).await;
                     }
                     flush_event.1.notify().await;
                     linger_sleep = None;
@@ -112,9 +112,9 @@ impl PartitionProducer {
                 }
                 _ =  self.batch_events.listen_batch_full() => {
                     debug!("batch full event");
-                    if let Err(e) = self.flush(false).await {
-                        error!("Failed to flush producer: {}", e);
-                        self.set_error(e).await;
+                    if let Err(err) = self.flush(false).await {
+                        error!(%err, "Failed to flush producer");
+                        self.set_error(err).await;
                     }
                 }
 
@@ -126,9 +126,9 @@ impl PartitionProducer {
                 _ = async { linger_sleep.as_mut().expect("unexpected failure").await }, if linger_sleep.is_some() => {
                     debug!("Flushing because linger time was reached");
 
-                    if let Err(e) = self.flush(false).await {
-                        error!("Failed to flush producer: {:?}", e);
-                        self.set_error(e).await;
+                    if let Err(err) = self.flush(false).await {
+                        error!(%err, "Failed to flush producer:");
+                        self.set_error(err).await;
                     }
                     linger_sleep = None;
                 }
@@ -161,6 +161,7 @@ impl PartitionProducer {
 
     /// Flush all the batches that are full or have reached the linger time.
     /// If force is set to true, flush all batches regardless of linger time.
+    #[instrument(skip(self))]
     pub(crate) async fn flush(&self, force: bool) -> Result<()> {
         let leader = self.current_leader().await?;
 

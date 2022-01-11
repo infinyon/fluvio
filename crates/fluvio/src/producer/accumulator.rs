@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_channel::Sender;
 
-use tracing::trace;
+use tracing::{trace, instrument};
 
 use dataplane::Offset;
 use dataplane::record::Record;
@@ -47,6 +47,7 @@ impl RecordAccumulator {
     }
 
     /// Add a record to the accumulator.
+    #[instrument(skip(self, record))]
     pub(crate) async fn push_record(
         &self,
         record: Record,
@@ -196,11 +197,15 @@ impl BatchEvents {
         self.new_batch.listen().await
     }
 
+    #[instrument(skip(self))]
     pub async fn notify_batch_full(&self) {
+        trace!("Notifying batch full event");
         self.batch_full.notify().await;
     }
 
+    #[instrument(skip(self))]
     pub async fn notify_new_batch(&self) {
+        trace!("Notifying new batch event");
         self.new_batch.notify().await;
     }
 }

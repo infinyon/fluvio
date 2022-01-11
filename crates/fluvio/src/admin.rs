@@ -155,7 +155,7 @@ impl FluvioAdmin {
 
         let create_request: ObjectApiCreateRequest = (common_request, spec).into();
 
-        debug!("sending create request: {:#?}", create_request);
+        debug!(?create_request, "sending create request");
 
         self.send_receive(create_request).await?.as_result()?;
 
@@ -174,7 +174,7 @@ impl FluvioAdmin {
         let delete_request = DeleteRequest::new(key.into());
         let delete_request: ObjectApiDeleteRequest = delete_request.into();
 
-        debug!("sending delete request: {:#?}", delete_request);
+        debug!(?delete_request, "sending delete request");
 
         self.send_receive(delete_request).await?.as_result()?;
         Ok(())
@@ -195,8 +195,9 @@ impl FluvioAdmin {
         let list_request = ListRequest::new(filters.into());
 
         let list_request: ObjectApiListRequest = list_request.into();
+        debug!(?list_request, "sending list request");
         let response = self.send_receive(list_request).await?;
-        trace!("list response: {:#?}", response);
+        trace!(?response, "list response:");
         response
             .try_into()
             .map_err(|err| IoError::new(ErrorKind::Other, format!("can't convert: {}", err)).into())

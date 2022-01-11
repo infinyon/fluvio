@@ -69,14 +69,14 @@ where
     ) -> Result<(), IoError> {
         let len = self.write_size(version) as i32;
         tracing::debug!(
-            "encoding file write response: {} version: {}, len: {}",
-            std::any::type_name::<P>(),
+            response=?std::any::type_name::<P>(),
             version,
-            len
+            len,
+            "encoding file write response",
         );
         len.encode(dest, version)?;
 
-        trace!("encoding response correlation  id: {}", self.correlation_id);
+        trace!(correlation_id = self.correlation_id, "encoding response");
         self.correlation_id.encode(dest, version)?;
 
         trace!("encoding response");
@@ -99,7 +99,7 @@ where
     ) -> Result<(), IoError> {
         trace!("file encoding request message");
         let len = self.write_size(version) as i32;
-        trace!("file encoding request len: {}", len);
+        trace!(len, "file encoding request len");
         len.encode(dest, version)?;
 
         trace!("file encoding header");

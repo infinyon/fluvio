@@ -57,7 +57,7 @@ mod output {
         list_smartmodules: Vec<Metadata<SmartModuleSpec>>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
-        debug!("smart modules: {:#?}", list_smartmodules);
+        debug!(?list_smartmodules, "smart modules list");
 
         if !list_smartmodules.is_empty() {
             let smartmodules = ListSmartModules(list_smartmodules);

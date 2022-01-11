@@ -58,7 +58,7 @@ impl NamedProp {
                 if version >= #min && version <= #max {
                     #field_stream
                 } else {
-                    tracing::trace!("Field: <{}> is skipped because version: {} is outside min: {}, max: {}",stringify!(#field_name),version,#min,#max);
+                    tracing::trace!(field=stringify!(#field_name), %version, "Field skipped because version is outside min: {}, max: {}",#min,#max);
                 }
             }
         } else {
@@ -66,7 +66,7 @@ impl NamedProp {
                 if version >= #min {
                     #field_stream
                 } else {
-                    tracing::trace!("Field: <{}> is skipped because version: {} is less than min: {}",stringify!(#field_name),version,#min);
+                    tracing::trace!(field=stringify!(#field_name), %version,"Field skipped because version is less than min: {}",#min);
                 }
             }
         }
@@ -97,7 +97,7 @@ impl UnnamedProp {
                 if version >= #min && version <= #max {
                     #field_stream
                 } else {
-                    tracing::trace!("Field from tuple struct:is skipped because version: {} is outside min: {}, max: {}",version,#min,#max);
+                    tracing::trace!(version, "Field from tuple struct:is skipped because version is outside min: {}, max: {}",#min,#max);
                 }
             }
         } else {
@@ -105,7 +105,7 @@ impl UnnamedProp {
                 if version >= #min {
                     #field_stream
                 } else {
-                    tracing::trace!("Field from tuple struct: is skipped because version: {} is less than min: {}",version,#min);
+                    tracing::trace!(version, "Field from tuple struct: is skipped because version is less than min: {}",#min);
                 }
             }
         }

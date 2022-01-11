@@ -23,7 +23,7 @@ pub(crate) fn generate_decode_trait_impls(input: &DeriveItem) -> TokenStream {
             quote! {
                 impl #impl_generics fluvio_protocol::Decoder for #ident #ty_generics #where_clause {
                     fn decode<T>(&mut self, src: &mut T,version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::Buf {
-                        tracing::trace!("decoding struct: {}",stringify!(#ident));
+                        tracing::trace!(struct_ident=stringify!(#ident), "decoding struct");
                         #field_tokens
                         Ok(())
                     }
@@ -77,23 +77,23 @@ pub(crate) fn generate_struct_named_fields(
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
             quote! {
-                tracing::trace!("start decoding varint field <{}>", stringify!(#fname));
+                tracing::trace!(field=stringify!(#fname), "start decoding varint field");
                 let result = self.#fname.decode_varint(src);
                 if result.is_ok() {
-                    tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#fname),&self.#fname);
+                    tracing::trace!(field=stringify!(#fname), decoded_value=?self.#fname, "decoding ok varint");
                 } else {
-                    tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::trace!(field=stringify!(#fname), err=%result.as_ref().unwrap_err(), "decoding varint error");
                     return result;
                 }
             }
         } else {
             let base = quote! {
-                tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#fname));
+                tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#fname), "start decoding struct:");
                 let result = self.#fname.decode(src,version);
                 if result.is_ok() {
-                    tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                    tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#fname), decoded_value=?self.#fname, "decoding struct field");
                 } else {
-                    tracing::trace!("error decoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::trace!(err=%result.as_ref().unwrap_err(), field=stringify!(#fname), "error decoding");
                     return result;
                 }
             };
@@ -114,23 +114,23 @@ pub(crate) fn generate_struct_unnamed_fields(
         let field_idx = syn::Index::from(idx);
         if prop.attrs.varint {
             quote! {
-                tracing::trace!("start decoding varint field <{}>", stringify!(#idx));
+                tracing::trace!(idx=stringify!(#idx), "start decoding varint field");
                 let result = self.#field_idx.decode_varint(src);
                 if result.is_ok() {
-                    tracing::trace!("decoding ok varint <{}> => {:?}",stringify!(#idx),&self.#field_idx);
+                    tracing::trace!(idx=stringify!(#idx), decoded_value=%self.#field_idx, "decoding ok varint");
                 } else {
-                    tracing::trace!("decoding varint error <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                    tracing::trace!(err=%result.as_ref().unwrap_err(), idx=stringify!(#idx), "decoding varint error");
                     return result;
                 }
             }
         } else {
             let base = quote! {
-                tracing::trace!("start decoding struct: <{}> field: <{}>",stringify!(#struct_ident),stringify!(#idx));
+                tracing::trace!(struct_ident=stringify!(#struct_ident),idx=stringify!(#idx), "start decoding struct");
                 let result = self.#field_idx.decode(src,version);
                 if result.is_ok() {
-                    tracing::trace!("decoding struct: <{}> field: <{}> => {:#?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                    tracing::trace!(struct_ident=stringify!(#struct_ident),idx=stringify!(#idx),decoded_value=%self.#field_idx ,"decoding struct");
                 } else {
-                    tracing::trace!("error decoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                    tracing::trace!(err=%result.as_ref().unwrap_err(), idx=%stringify!(#idx), "error decoding");
                     return result;
                 }
             };
@@ -238,7 +238,7 @@ fn generate_decode_enum_impl(
     let output = quote! {
         let mut typ: #int_type = 0;
         typ.decode(src, version)?;
-        tracing::trace!("decoded type: {}", typ);
+        tracing::trace!(typ, "decoded type");
 
         match typ {
             #(#arm_branches),*

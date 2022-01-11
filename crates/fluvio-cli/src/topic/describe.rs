@@ -33,7 +33,7 @@ impl DescribeTopicsOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let topic = self.topic;
         let output_type = self.output.format;
-        debug!("describe topic: {}, {}", topic, output_type);
+        debug!(%topic, %output_type,"describe topic");
 
         let admin = fluvio.admin().await;
         let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;

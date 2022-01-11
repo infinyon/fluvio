@@ -21,7 +21,7 @@ static MAX_SC_LOOP: Lazy<u8> = Lazy::new(|| {
 });
 
 /// try connection to SC
-#[instrument]
+#[instrument(skip(config, pb))]
 pub async fn try_connect_to_sc(
     config: &FluvioConfig,
     platform_version: &Version,
@@ -45,15 +45,15 @@ pub async fn try_connect_to_sc(
                     Ok(fluvio) => {
                         let current_version = fluvio.platform_version();
                         if current_version == expected_version {
-                            debug!("Got updated SC Version{}", &expected_version);
+                            debug!(%expected_version, "Got updated SC Version");
                             Some(fluvio)
                         } else {
-                            warn!("Current Version {} is not same as expected: {}",current_version,expected_version);
+                            warn!(%current_version, %expected_version, "Current Version is not same as expected");
                             None
                         }
                     }
                     Err(err) => {
-                        debug!("couldn't connect: {:#?}", err);
+                        debug!(?err, "couldn't connect");
                         None
                     }
                 }
@@ -65,8 +65,9 @@ pub async fn try_connect_to_sc(
     let time = SystemTime::now();
     for attempt in 0..*MAX_SC_LOOP {
         debug!(
-            "Trying to connect to sc at: {}, attempt: {}",
-            config.endpoint, attempt
+            endpoint=%config.endpoint,
+            attempt,
+            "Trying to connect to sc",
         );
         let elapsed = time.elapsed().unwrap();
         pb.set_message(format!(
@@ -75,7 +76,7 @@ pub async fn try_connect_to_sc(
             elapsed.as_secs()
         ));
         if let Some(fluvio) = try_connect_sc(config, platform_version).await {
-            debug!("Connection to sc suceed!");
+            debug!("Connection to sc suceeded!");
             return Some(fluvio);
         } else if attempt < *MAX_SC_LOOP - 1 {
             debug!("Connection failed.  sleeping 10 seconds");
@@ -83,7 +84,7 @@ pub async fn try_connect_to_sc(
         }
     }
 
-    error!("fail to connect to sc at: {}", config.endpoint);
+    error!(endpoint = %config.endpoint, "fail to connect to sc", );
     None
 }
 
@@ -92,10 +93,10 @@ pub async fn check_crd(client: SharedK8Client) -> Result<(), ClientError> {
     use k8_metadata_client::MetadataClient;
 
     for i in 0..100 {
-        debug!("checking fluvio crd attempt: {}", i);
+        debug!(attempt = i, "checking fluvio crd attempt",);
         // check if spu is installed
         if let Err(err) = client.retrieve_items::<SpuSpec, _>("default").await {
-            debug!("problem retrieving fluvio crd {}", err);
+            debug!(%err, "problem retrieving fluvio crd");
             sleep(Duration::from_secs(1)).await;
         } else {
             debug!("fluvio crd installed");

@@ -2,6 +2,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
+use tracing::instrument;
 use tracing::{debug};
 use tokio::sync::OnceCell;
 
@@ -49,6 +50,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument]
     pub async fn connect() -> Result<Self, FluvioError> {
         let config_file = ConfigFile::load_default_or_new()?;
         let cluster_config = config_file.config().current_cluster()?;
@@ -69,11 +71,13 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(config))]
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
         Self::connect_with_connector(connector, config).await
     }
 
+    #[instrument(skip(connector, config))]
     pub async fn connect_with_connector(
         connector: DomainConnector,
         config: &FluvioConfig,
@@ -112,6 +116,7 @@ impl Fluvio {
     }
 
     /// lazy get spu pool
+    #[instrument(skip(self))]
     async fn spu_pool(&self) -> Result<Arc<SpuPool>, FluvioError> {
         self.spu_pool
             .get_or_try_init(|| async {
@@ -140,6 +145,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(self, topic))]
     pub async fn topic_producer<S: Into<String>>(
         &self,
         topic: S,
@@ -165,13 +171,14 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(self, config, topic))]
     pub async fn topic_producer_with_config<S: Into<String>>(
         &self,
         topic: S,
         config: TopicProducerConfig,
     ) -> Result<TopicProducer, FluvioError> {
         let topic = topic.into();
-        debug!(topic = &*topic, "Creating producer");
+        debug!(%topic, "Creating producer");
 
         let spu_pool = self.spu_pool().await?;
         if !spu_pool.topic_exists(&topic).await? {
@@ -187,13 +194,14 @@ impl Fluvio {
     /// all of the events in all of the partitions, use `consumer` instead.
     ///
     ///
+    #[instrument(skip(self, topic, partition))]
     pub async fn partition_consumer<S: Into<String>>(
         &self,
         topic: S,
         partition: i32,
     ) -> Result<PartitionConsumer, FluvioError> {
         let topic = topic.into();
-        debug!(topic = &*topic, "Creating consumer");
+        debug!(%topic, partition, "Creating consumer");
         Ok(PartitionConsumer::new(
             topic,
             partition,
@@ -221,6 +229,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(self, strategy))]
     pub async fn consumer(
         &self,
         strategy: PartitionSelectionStrategy,
@@ -242,6 +251,7 @@ impl Fluvio {
     /// # Ok(())
     /// # }
     /// ```
+    #[instrument(skip(self))]
     pub async fn admin(&self) -> FluvioAdmin {
         let socket = self.create_serial_client().await;
         let metadata = self.metadata.clone();
@@ -254,11 +264,13 @@ impl Fluvio {
     /// the cluster components were compiled, and is a [`semver`] value.
     ///
     /// [`semver`]: https://semver.org/
+    #[instrument(skip(self))]
     pub fn platform_version(&self) -> &semver::Version {
         self.versions.platform_version()
     }
 
     /// create serial connection
+    #[instrument(skip(self))]
     async fn create_serial_client(&self) -> VersionedSerialSocket {
         VersionedSerialSocket::new(
             self.socket.clone(),

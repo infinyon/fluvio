@@ -542,8 +542,8 @@ pub(crate) struct InstallSysChart {
 impl ClusterAutoFix for InstallSysChart {
     async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
         debug!(
-            "Fixing by installing Fluvio sys chart with config: {:#?}",
-            &self.config
+            config = ?self.config,
+            "Fixing by installing Fluvio sys chart with config",
         );
         let sys_installer = ChartInstaller::from_config(self.config.clone())?;
         sys_installer.install()?;
@@ -565,8 +565,8 @@ pub(crate) struct UpgradeSysChart {
 impl ClusterAutoFix for UpgradeSysChart {
     async fn attempt_fix(&self, _render: &ProgressRenderer) -> Result<String, ClusterAutoFixError> {
         debug!(
-            "Fixing by updating Fluvio sys chart with config: {:#?}",
-            &self.config
+            config = ?self.config,
+            "Fixing by updating Fluvio sys chart with config",
         );
 
         let sys_installer = ChartInstaller::from_config(self.config.clone())?;
@@ -870,7 +870,7 @@ impl ClusterChecker {
                         pb.println(pad_format!(format!("{} {}", "✅".bold(), status)));
                     }
                     CheckStatus::Unrecoverable(err) => {
-                        debug!("failed: {}", err);
+                        debug!(%err, "unrecoverable rror");
                         pb.println(pad_format!(format!(
                             "{} Check {} failed {}",
                             "❌",

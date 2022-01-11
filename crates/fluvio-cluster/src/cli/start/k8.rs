@@ -61,7 +61,7 @@ pub async fn process_k8(
 
     let config = builder.build()?;
 
-    debug!("cluster config: {:#?}", config);
+    debug!(?config, "cluster config");
     let installer = ClusterInstaller::from_config(config)?;
     if opt.setup {
         setup_k8(&installer).await?;

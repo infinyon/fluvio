@@ -84,9 +84,9 @@ where
     async fn dispatch_loop(mut self) {
         info!("started");
         loop {
-            if let Err(err) = self.inner_loop().await {
+            if let Err(_err) = self.inner_loop().await {
                 // in case of error, log and sleep for a while
-                error!("error with inner loop: {:#?}", err);
+                error!("error with inner loop");
                 debug!("sleeping 10 seconds try again");
                 sleep(Duration::from_secs(10)).await;
             }

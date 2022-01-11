@@ -47,7 +47,7 @@ where
         let mut len: i32 = 0;
         len.decode(src, version)?;
 
-        trace!("decoding Vec len:{}", len);
+        trace!(len, "decoding Vec len",);
 
         if len < 1 {
             trace!("negative length, skipping");

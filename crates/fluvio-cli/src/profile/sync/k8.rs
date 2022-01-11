@@ -136,7 +136,7 @@ pub async fn discover_fluvio_addr(namespace: Option<&str>) -> Result<Option<Stri
         },
     };
 
-    debug!("fluvio svc: {:#?}", svc);
+    debug!(?svc, "fluvio svc");
 
     let ingress_addr = svc
         .status

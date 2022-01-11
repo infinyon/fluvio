@@ -52,14 +52,14 @@ impl DeleteOpt {
                     load_config.save()?;
 
                     debug!(
-                        "Delete binary and extensions dir for channel \"{}\"",
-                        channel_name
+                        %channel_name,
+                        "Delete binary and extensions dir for channel",
                     );
 
-                    debug!("Deleting: {}", channel_info.get_binary_path().display());
+                    debug!(name = %channel_info.get_binary_path().display(), "Deleting:");
                     std::fs::remove_file(channel_info.get_binary_path())?;
 
-                    debug!("Deleting: {}", channel_info.get_extensions_path().display());
+                    debug!(name = %channel_info.get_extensions_path().display(), "Deleting");
                     std::fs::remove_dir_all(channel_info.get_extensions_path())?;
 
                     println!("Deleted release channel \"{}\"", channel_name);

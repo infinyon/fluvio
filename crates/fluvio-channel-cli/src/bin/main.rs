@@ -154,11 +154,11 @@ fn main() -> Result<()> {
 
             if ["fluvio", "fluvio.exe"].contains(&file_name) {
                 // Check on the name this binary was called. If it is `fluvio` be in transparent frontend-mode
-                debug!("Binary is named `{}` - Frontend mode", file_name);
+                debug!(%file_name, "Binary is named - Frontend mode");
                 true
             } else {
                 // If development-mode, use the `--help` output from `fluvio-channel`
-                debug!("Binary is named `{}` - Development mode", file_name);
+                debug!(%file_name, "Binary is named - Development mode");
                 false
             }
         }
@@ -201,7 +201,7 @@ fn main() -> Result<()> {
                 }
             }
             RootCmd::Other(ref cmd) => {
-                debug!("Passing command args to fluvio binary: {:#?}", cmd)
+                debug!(?cmd, "Passing command args to fluvio binary")
             }
         };
         channel_cli
@@ -256,7 +256,7 @@ fn main() -> Result<()> {
             None
         };
 
-        debug!("channel_config: {:#?}", maybe_channel_config);
+        debug!(?maybe_channel_config, "channel_config",);
 
         // Return the channel info for fluvio location
         // Write config file to disk if it doesn't already exist
@@ -328,7 +328,7 @@ fn main() -> Result<()> {
     // On windows, this path should end in `.exe`
     let exe = channel.get_binary_path();
 
-    debug!("Will exec to binary @ {:?}", exe);
+    debug!(?exe, "Will exec to binary @ {:?}", exe);
 
     // Re-build the args list to pass onto exec'ed process
     let mut args: Vec<OsString> = std::env::args_os().collect();

@@ -55,10 +55,9 @@ impl SpuTarget for LocalSpuProcess {
             .arg(format!("0.0.0.0:{}", self.spec.private_endpoint.port))
             .arg("--log-base-dir")
             .arg(&self.data_dir);
-        debug!("Invoking command: \"{}\"", cmd.display());
-        info!("SPU<{}> cmd: {:#?}", self.id, cmd);
-        info!("SPU log generated at {}", self.log_dir);
-        info!(cmd = %cmd.display(),"Invoking command");
+        debug!(cmd = %cmd.display(), "Invoking command");
+        info!(spu = self.id, cmd = %cmd.display(), "Invoking command");
+        info!(log_dir=%self.log_dir, "SPU log output dir");
         cmd.stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
             .spawn()

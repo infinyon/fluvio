@@ -54,7 +54,7 @@ pub trait ApiMessage: Sized + Default {
     }
 
     fn decode_from_file<P: AsRef<Path>>(file_name: P) -> Result<Self, IoError> {
-        debug!("decoding from file: {:#?}", file_name.as_ref());
+        debug!(file_name = ?file_name.as_ref(), "decoding from file");
         let mut f = File::open(file_name)?;
         let mut buffer: [u8; 1000] = [0; 1000];
 
@@ -65,7 +65,7 @@ pub trait ApiMessage: Sized + Default {
 
         let mut size: i32 = 0;
         size.decode(&mut src, 0)?;
-        trace!("decoded request size: {} bytes", size);
+        trace!(size, "decoded request size in bytes");
 
         if src.remaining() < size as usize {
             return Err(IoError::new(

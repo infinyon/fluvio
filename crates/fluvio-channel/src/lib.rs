@@ -72,7 +72,7 @@ impl FluvioChannelConfig {
             config: channel_config,
         };
 
-        debug!("Config from file: {:#?}", &config);
+        debug!(?config, "Config from file",);
 
         Ok(config)
     }
@@ -334,7 +334,7 @@ impl ChannelConfig {
     // save to file
     pub fn save_to<T: AsRef<Path>>(&self, path: T) -> Result<(), IoError> {
         let path_ref = path.as_ref();
-        debug!("saving config: {:#?} to: {:#?}", self, path_ref);
+        debug!(config=?self, path=?path_ref, "saving config to path");
         let toml =
             toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{}", err)))?;
 

@@ -248,10 +248,10 @@ impl Decoder for RecordSet {
     where
         T: Buf,
     {
-        trace!("raw buffer len: {}", src.remaining());
+        trace!(len=%src.remaining(), "raw buffer len");
         let mut len: i32 = 0;
         len.decode(src, version)?;
-        trace!("Record sets decoded content len: {}", len);
+        trace!(%len, "Record sets decoded content len");
 
         if src.remaining() < len as usize {
             return Err(Error::new(
@@ -269,9 +269,9 @@ impl Decoder for RecordSet {
         let mut count = 0;
         while buf.remaining() > 0 {
             trace!(
-                "decoding batches: {}, remaining bytes: {}",
-                count,
-                buf.remaining()
+                batches_count=%count,
+                remaining=%buf.remaining(),
+                "decoding batches, remaining bytes",
             );
             let mut batch = Batch::default();
             match batch.decode(&mut buf, version) {
@@ -288,7 +288,7 @@ impl Decoder for RecordSet {
                         return Ok(());
                     }
                     _ => {
-                        warn!("problem decoding batch: {}", err);
+                        warn!(%err, "problem decoding batch");
                         return Ok(());
                     }
                 },
@@ -321,7 +321,7 @@ impl Encoder for RecordSet {
         }
 
         let length: i32 = out.len() as i32;
-        trace!("Record Set encode len: {}", length);
+        trace!(length, "Record Set encode len");
         length.encode(dest, version)?;
 
         dest.put_slice(&out);
@@ -456,7 +456,7 @@ where
         self.value.encode(&mut out, version)?;
         self.headers.encode_varint(&mut out)?;
         let len: i64 = out.len() as i64;
-        trace!("record encode as {} bytes", len);
+        trace!(len, "record encode as bytes");
         len.encode_varint(dest)?;
         dest.put_slice(&out);
         Ok(())
@@ -475,7 +475,7 @@ where
         let mut len: i64 = 0;
         len.decode_varint(src)?;
 
-        trace!("record contains: {} bytes", len);
+        trace!(len, "record contains: {} bytes", len);
 
         if (src.remaining() as i64) < len {
             return Err(Error::new(
@@ -484,7 +484,7 @@ where
             ));
         }
         self.preamble.decode(src, version)?;
-        trace!("offset delta: {}", self.preamble.offset_delta);
+        trace!(offset_delta=%self.preamble.offset_delta, "offset delta");
         self.key.decode(src, version)?;
         self.value.decode(src, version)?;
         self.headers.decode_varint(src)?;
@@ -770,7 +770,7 @@ mod file {
         ) -> Result<(), IoError> {
             // write total len
             let len: i32 = self.len() as i32;
-            trace!("KfFileRecordSet encoding file slice len: {}", len);
+            trace!(len, "KfFileRecordSet encoding file slice len");
             len.encode(dest, version)?;
             let bytes = dest.split_to(dest.len()).freeze();
             data.push(StoreValue::Bytes(bytes));

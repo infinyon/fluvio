@@ -68,7 +68,7 @@ impl ConfigFile {
             Ok(config_file) => Ok(config_file),
             Err(err) => {
                 // if doesn't exist, we create new profile
-                debug!("profile can't be loaded, creating new one: {}", err);
+                debug!(%err, "profile can't be loaded, creating new one");
                 ConfigFile::default_config()
             }
         }
@@ -217,7 +217,7 @@ impl Config {
     // save to file
     fn save_to<T: AsRef<Path>>(&self, path: T) -> Result<(), IoError> {
         let path_ref = path.as_ref();
-        debug!("saving config: {:#?} to: {:#?}", self, path_ref);
+        debug!(config = ?self, path = ?path_ref, "saving config in path");
         let toml =
             toml::to_vec(self).map_err(|err| IoError::new(ErrorKind::Other, format!("{}", err)))?;
 

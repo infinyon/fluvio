@@ -33,7 +33,7 @@ where
         let mut partitions = vec![];
         for (idx, replicas) in self.status.replica_map.iter() {
             let replica_key = ReplicaKey::new(self.key(), *idx);
-            debug!("Topic: {} creating partition: {}", self.key(), replica_key);
+            debug!(topic=%self.key, replica_key=%replica_key, "Creating partition");
             let partition_spec = PartitionSpec::from_replicas(replicas.clone(), &self.spec);
             if !partition_store.contains_key(&replica_key).await {
                 partitions.push(

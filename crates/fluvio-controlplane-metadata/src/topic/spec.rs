@@ -353,7 +353,7 @@ impl Decoder for ReplicaSpec {
     {
         let mut typ: u8 = 0;
         typ.decode(src, version)?;
-        trace!("decoded type: {}", typ);
+        trace!(typ, "decoded type");
 
         match typ {
             // Assigned Replicas

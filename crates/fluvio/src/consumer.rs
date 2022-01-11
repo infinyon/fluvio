@@ -310,7 +310,7 @@ where
             if let Some(Ok(response)) = stream.next().await {
                 let stream_id = response.stream_id;
 
-                trace!("first stream response: {:#?}", response);
+                trace!(?response, stream_id, "first stream response detailed",);
                 debug!(
                     stream_id,
                     last_offset = ?response.partition.next_offset_for_fetch(),
@@ -345,7 +345,7 @@ where
                             debug!(?request, "Sending offset update request:");
                             let response = serial_socket.send_receive(request).await;
                             if let Err(err) = response {
-                                error!("error sending offset: {:#?}", err);
+                                error!(%err, "error sending offset");
                                 break;
                             }
                         }
@@ -368,9 +368,9 @@ where
                         }
                         response
                     })
-                    .map_err(|e| {
-                        error!(?e, "error in stream");
-                        ErrorCode::Other(e.to_string())
+                    .map_err(|err| {
+                        error!(%err, "error in stream");
+                        ErrorCode::Other(err.to_string())
                     })
                 });
                 Either::Left(

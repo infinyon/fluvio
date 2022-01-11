@@ -59,10 +59,10 @@ impl SwitchOpt {
         // See if the channel file exists, if not, write a default config
 
         if let Some(channel_name) = &self.channel {
-            debug!("Looking for channel {} in config", &channel_name);
+            debug!(%channel_name, "Looking for channel in config");
             let mut new_config = if config.get_channel(channel_name).is_some() {
                 //println!("Found");
-                debug!("Found channel info for {}", &channel_name);
+                debug!(%channel_name, "Found channel info");
                 config
             } else {
                 debug!("channel not found, checking if one of default channels");
@@ -84,9 +84,9 @@ impl SwitchOpt {
                 };
 
                 debug!(
-                    "Updating channel config with new channel {} config {:#?}",
-                    channel_name.clone(),
-                    &channel
+                    %channel_name,
+                    config = ?channel,
+                    "Updating channel config with new channel config",
                 );
                 new_config_channel.insert_channel(channel_name.clone(), channel)?;
                 new_config_channel.set_current_channel(channel_name.clone())?;
@@ -120,7 +120,7 @@ impl SwitchOpt {
             new_config.set_current_channel(channel_name.clone())?;
             new_config.save()?;
 
-            debug!("channel config: {:?}", channel_name.clone());
+            debug!(config = ?channel_name, "channel config");
             println!("Switched to release channel \"{}\"", channel_name);
 
             Ok(())

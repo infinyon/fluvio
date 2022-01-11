@@ -167,7 +167,7 @@ mod file {
             if version >= 11 {
                 self.next_filter_offset.encode(src, version)?;
             } else {
-                tracing::trace!("v: {} is less than last fetched version 11", version);
+                trace!(%version, "version is less than last fetched version 11");
             }
             self.log_start_offset.encode(src, version)?;
             self.aborted.encode(src, version)?;
@@ -184,13 +184,13 @@ mod file {
             version: Version,
         ) -> Result<(), IoError> {
             trace!("file encoding FileFetchResponse");
-            trace!("encoding throttle_time_ms {}", self.throttle_time_ms);
+            trace!(throttle_time_ms=%self.throttle_time_ms, "encoding throttle_time_ms");
             self.throttle_time_ms.encode(src, version)?;
-            trace!("encoding error code {:#?}", self.error_code);
+            trace!(error_code=?self.error_code, "encoding error code");
             self.error_code.encode(src, version)?;
-            trace!("encoding session code {}", self.session_id);
+            trace!(session_id=%self.session_id, "encoding session code");
             self.session_id.encode(src, version)?;
-            trace!("encoding topics len: {}", self.topics.len());
+            trace!(len = self.topics.len(), "encoding topics len");
             self.topics.file_encode(src, data, version)?;
             Ok(())
         }

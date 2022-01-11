@@ -81,11 +81,11 @@ mod states {
                         trace!("revalidating invalid");
                         match spec.validate(objects).await {
                             Ok(()) => Some(Self::Provisioned),
-                            Err(e) => {
-                                trace!("invalid: {:#?}", e);
-                                let new_error = e.to_string();
+                            Err(err) => {
+                                trace!(?err, "invalid:");
+                                let new_error = err.to_string();
                                 if old_error != &new_error {
-                                    Some(Self::InvalidConfig(e.to_string()))
+                                    Some(Self::InvalidConfig(err.to_string()))
                                 } else {
                                     trace!("same error as before");
                                     None

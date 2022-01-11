@@ -13,7 +13,6 @@ name = "fluvio_controlplane"
 path = "src/lib.rs"
 
 [dependencies]
-log = "0.4.8"
 tracing = "0.1.19"
 
 # Fluvio dependencies

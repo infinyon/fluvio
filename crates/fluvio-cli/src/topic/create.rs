@@ -94,7 +94,7 @@ impl CreateTopicOpt {
         let dry_run = self.dry_run;
         let (name, topic_spec) = self.validate()?;
 
-        debug!("creating topic: {} spec: {:#?}", name, topic_spec);
+        debug!(topic_name=%name, spec = ?topic_spec, "creating topic");
         let admin = fluvio.admin().await;
         admin.create(name.clone(), dry_run, topic_spec).await?;
         println!("topic \"{}\" created", name);

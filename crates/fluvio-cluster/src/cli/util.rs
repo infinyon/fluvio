@@ -16,7 +16,7 @@ pub fn get_binary(bin_name: &str) -> Result<Command, IoError> {
     bin_dir.push(bin_name);
     bin_dir.set_extension(std::env::consts::EXE_EXTENSION);
 
-    debug!("try to get binary: {:#?}", bin_dir);
+    debug!(?bin_dir, "try to get binary");
     if !bin_dir.exists() {
         Err(IoError::new(
             ErrorKind::NotFound,

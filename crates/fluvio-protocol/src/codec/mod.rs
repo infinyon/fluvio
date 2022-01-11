@@ -37,32 +37,28 @@ impl Decoder for FluvioCodec {
             let mut src = Cursor::new(&*bytes);
             let mut packet_len: i32 = 0;
             packet_len.decode(&mut src, 0)?;
-            trace!(
-                "Decoder: received buffer: {}, message size: {}",
-                len,
-                packet_len
-            );
+            trace!(len, packet_len, "Decoder: received buffer",);
             if (packet_len + 4) as usize <= bytes.len() {
                 trace!(
-                    "Decoder: all packets are in buffer len: {}, excess {}",
-                    packet_len + 4,
-                    bytes.len() - (packet_len + 4) as usize
+                    packet_plus_4 = packet_len + 4,
+                    excess = bytes.len() - (packet_len + 4) as usize,
+                    "Decoder: all packets are in buffer",
                 );
                 let mut buf = bytes.split_to((packet_len + 4) as usize);
                 let message = buf.split_off(4); // truncate length
                 Ok(Some(message))
             } else {
                 trace!(
-                    "Decoder buffer len: {} is less than packet+4: {}, waiting",
                     len,
-                    packet_len + 4
+                    packet_plus_4 = packet_len + 4,
+                    "Decoder buffer len is less than packet+4:, waiting",
                 );
                 Ok(None)
             }
         } else {
             trace!(
-                "Decoder received raw bytes len: {} less than 4 not enough for size",
-                len
+                len,
+                "Decoder received raw bytes less than 4 not enough for size",
             );
             Ok(None)
         }
@@ -202,7 +198,7 @@ mod test {
                 debug!("client :received first value from server");
                 let mut bytes = value.expect("bytes");
                 let bytes_len = bytes.len();
-                debug!("client: received bytes len: {}", bytes_len);
+                debug!(bytes_len, "client: received bytes len");
                 let mut decoded_value = T::default();
                 decoded_value
                     .decode(&mut bytes, 0)

@@ -106,6 +106,7 @@ impl Drop for SpuPool {
 
 impl SpuPool {
     /// start synchronize based on pool
+    #[instrument(skip(config, metadata))]
     pub fn start(config: Arc<ClientConfig>, metadata: MetadataStores) -> Result<Self, SocketError> {
         debug!("starting spu pool");
         Ok(Self {
@@ -119,6 +120,8 @@ impl SpuPool {
     #[instrument(skip(self))]
     async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
+
+        debug!(spu = %spu.spec, "connecting to spu");
 
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
 

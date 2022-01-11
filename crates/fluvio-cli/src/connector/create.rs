@@ -36,12 +36,12 @@ impl CreateManagedConnectorOpt {
         let spec: ManagedConnectorSpec = config.clone().into();
         let name = spec.name.clone();
 
-        debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
+        debug!(%name, ?spec,"creating managed_connector with spec");
 
         let admin = fluvio.admin().await;
         if config.create_topic {
             let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            debug!("topic spec: {:?}", replica_spec);
+            debug!(?replica_spec, "topic spec",);
             match admin
                 .create::<TopicSpec>(config.topic, false, replica_spec.into())
                 .await

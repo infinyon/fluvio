@@ -161,10 +161,10 @@ where
             })
             .collect();
         debug!(
-            "{} computing replica msg for spu y: {}, msg: {}",
-            self,
-            target_spu,
-            msgs.len()
+            partition_local_store=%self,
+            %target_spu,
+            msg_len=msgs.len(),
+            "computing replica msg for spu",
         );
         msgs
     }

@@ -156,16 +156,16 @@ where
     {
         let len = self.write_size(version);
         trace!(
-            "encoding kf request: {} version: {}, len: {}",
-            std::any::type_name::<R>(),
+            kf_request=%std::any::type_name::<R>(),
             version,
-            len
+            len,
+            "encoding kf request",
         );
 
-        trace!("encoding request header: {:#?}", &self.header);
+        trace!(header=?self.header, "encoding request header");
         self.header.encode(out, version)?;
 
-        trace!("encoding request: {:#?}", &self.request);
+        trace!(request=?self.request, "encoding request");
         self.request.encode(out, self.header.api_version())?;
         Ok(())
     }

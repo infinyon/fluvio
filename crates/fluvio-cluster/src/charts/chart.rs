@@ -121,7 +121,7 @@ pub struct ChartInstaller {
 impl ChartInstaller {
     /// Create a new `SysInstaller` using the given config
     pub fn from_config(config: ChartConfig) -> Result<Self, ChartInstallError> {
-        debug!("using config: {:#?}", config);
+        debug!(?config, "using config");
         let helm_client = HelmClient::new()?;
         Ok(Self {
             config,

@@ -66,7 +66,7 @@ mod output {
         list_managed_connectors: Vec<Metadata<ManagedConnectorSpec>>,
         output_type: OutputType,
     ) -> Result<(), CliError> {
-        debug!("managed connectors: {:#?}", list_managed_connectors);
+        debug!(?list_managed_connectors, "managed connectors list",);
 
         if !list_managed_connectors.is_empty() {
             let connectors = ListManagedConnectors(list_managed_connectors);

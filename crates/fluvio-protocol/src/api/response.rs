@@ -5,8 +5,7 @@ use std::io::ErrorKind;
 use std::io::Read;
 use std::path::Path;
 
-use tracing::debug;
-use tracing::trace;
+use tracing::{debug, trace};
 
 use bytes::{Buf, BufMut};
 use crate::api::RequestHeader;
@@ -42,7 +41,7 @@ where
     {
         let mut correlation_id: i32 = 0;
         correlation_id.decode(src, version)?;
-        trace!("decoded correlation id: {}", correlation_id);
+        trace!(correlation_id, "decoded correlation id");
 
         let response = P::decode_from(src, version)?;
         Ok(ResponseMessage {
@@ -55,7 +54,7 @@ where
         file_name: H,
         version: Version,
     ) -> Result<Self, IoError> {
-        debug!("decoding from file: {:#?}", file_name.as_ref());
+        debug!(file_name=?file_name.as_ref(), "decoding from file");
         let mut f = File::open(file_name)?;
         let mut buffer: [u8; 1000] = [0; 1000];
 
@@ -68,7 +67,7 @@ where
         // of the ResponseMessage
         let mut size: i32 = 0;
         size.decode(&mut src, version)?;
-        trace!("decoded response size: {} bytes", size);
+        trace!(size, "decoded response size");
 
         if src.remaining() < size as usize {
             return Err(IoError::new(
@@ -94,10 +93,10 @@ where
     {
         let len = self.write_size(version);
         trace!(
-            "encoding kf response: {} version: {}, len: {}",
-            std::any::type_name::<P>(),
+            kf_response=%std::any::type_name::<P>(),
             version,
-            len
+            len,
+            "encoding kf response",
         );
         self.correlation_id.encode(out, version)?;
         self.response.encode(out, version)?;

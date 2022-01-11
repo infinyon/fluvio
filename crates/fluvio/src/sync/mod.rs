@@ -90,7 +90,9 @@ mod context {
                 .await
         }
 
-        #[instrument(skip(self, search))]
+        #[instrument(skip(self, search), fields(
+            Store = %S::LABEL            )
+)]
         async fn lookup_and_wait<'a, F>(
             &'a self,
             search: F,
@@ -117,7 +119,7 @@ mod context {
                 _ = listener.listen() => {
                     // this should be full sync
                     let changes = listener.sync_changes().await;
-                    trace!("{} received changes: {:#?}",S::LABEL,changes);
+                    trace!(spec=%S::LABEL, ?changes, "received changes");
 
                     Ok(search(self.store().read().await))
                 },
@@ -184,7 +186,7 @@ mod context {
                         listener.listen().await;
                         let changes = listener.sync_changes().await;
                         if let Err(e) = sender.send(changes).await {
-                            tracing::error!("Failed to send Metadata update: {:?}", e);
+                            tracing::error!(err = %e, "Failed to send Metadata update");
                             break;
                         }
                     }

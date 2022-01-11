@@ -392,7 +392,7 @@ impl LocalInstaller {
         check_crd(client.clone()).await?;
         pb.set_message("CRD Checked");
 
-        debug!("using log dir: {}", self.config.log_dir.display());
+        debug!(log_dir=%self.config.log_dir.display(), "using log dir");
         pb.set_message("Creating log directory");
         if !self.config.log_dir.exists() {
             create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
@@ -570,7 +570,13 @@ impl LocalInstaller {
                 sleep(Duration::from_millis(1)).await; // give destructor time to clean up properly
                 return Ok(());
             } else {
-                debug!("{} out of {} SPUs up, waiting 10 sec", ready_spu, spu);
+                debug!(
+                    ready_spu,
+                    total_spu = spu,
+                    "{} out of {} SPUs up, waiting 10 sec",
+                    ready_spu,
+                    spu
+                );
                 sleep(Duration::from_secs(10)).await;
             }
         }

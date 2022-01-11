@@ -351,7 +351,7 @@ impl ConsumeOpt {
         }
 
         let consume_config = builder.build()?;
-        debug!("consume config: {:#?}", consume_config);
+        debug!(?consume_config, "consume config:",);
 
         self.consume_records_stream(consumer, offset, consume_config, tableformat)
             .await?;

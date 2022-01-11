@@ -212,7 +212,7 @@ cfg_if::cfg_if! {
                     }
                     TlsPolicy::Verified(TlsConfig::Files(tls)) => {
                         info!(
-                            domain = &*tls.domain,
+                            domain = %tls.domain,
                             "Using verified TLS with certificates from paths"
                         );
 
@@ -239,7 +239,7 @@ cfg_if::cfg_if! {
                     }
                     TlsPolicy::Verified(TlsConfig::Inline(tls)) => {
                         info!(
-                            domain = &*tls.domain,
+                            domain = %tls.domain,
                             "Using verified TLS with inline certificates"
                         );
                         let builder = TlsConnector::builder()

@@ -95,12 +95,12 @@ where
     ) {
         use tokio::select;
 
-        debug!("{} starting dispatch loop", S::LABEL);
+        debug!(spec = S::LABEL, "starting dispatch loop");
 
         loop {
             // check if shutdown is set
             if self.shutdown.is_set() {
-                debug!("{} shutdown exiting", S::LABEL);
+                debug!(spec = S::LABEL, "shutdown exiting");
                 break;
             }
 
@@ -118,17 +118,17 @@ where
                             match update_result {
                                 Ok(update) => {
                                     if let Err(err) = self.sync_metadata(update.inner()).await {
-                                        error!("Processing updates: {}", err);
+                                        error!(%err, "failed sync metadata updates");
                                     }
                                 },
                                 Err(err) => {
-                                    error!("Decoding metadata update response, skipping: {}", err);
+                                    error!(%err, "Decoding metadata update response, skipping",);
                                 }
                             }
 
                         },
                         Some(Err(err)) => {
-                            error!("Receiving response, ending: {}", err);
+                            error!(%err, "Receiving response, ending");
                             break;
                         },
                         None => {
@@ -140,7 +140,7 @@ where
             }
         }
 
-        debug!("{} terminated", S::LABEL);
+        debug!(spec = %S::LABEL, "terminated", );
     }
 
     // process updates from sc

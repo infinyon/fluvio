@@ -21,13 +21,13 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
             quote! {
                 impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
                     fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
-                        tracing::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
+                        tracing::trace!(struct_ident=stringify!(#ident), %version, "encoding struct");
                         #encoded_field_tokens
                         Ok(())
                     }
 
                     fn write_size(&self, version: fluvio_protocol::Version) -> usize {
-                        tracing::trace!("write size for struct: {} version {}",stringify!(#ident),version);
+                        tracing::trace!(struct_ident=stringify!(#ident), %version, "write size for struct");
                         let mut len: usize = 0;
                         #size_field_tokens
                         len
@@ -43,13 +43,13 @@ pub(crate) fn generate_encode_trait_impls(input: &DeriveItem) -> TokenStream {
             quote! {
                 impl #impl_generics fluvio_protocol::Encoder for #ident #ty_generics #where_clause {
                     fn encode<T>(&self, dest: &mut T, version: fluvio_protocol::Version) -> Result<(),std::io::Error> where T: fluvio_protocol::bytes::BufMut {
-                        tracing::trace!("encoding struct: {} version: {}",stringify!(#ident),version);
+                        tracing::trace!(enum_ident=stringify!(#ident), %version, "encoding enum");
                         #encoded_variant_tokens
                         Ok(())
                     }
 
                     fn write_size(&self, version: fluvio_protocol::Version) -> usize {
-                        tracing::trace!("write size for struct: {} version {}",stringify!(#ident),version);
+                        tracing::trace!(enum_ident=stringify!(#ident), %version, "write size for enum:");
                         #size_variant_tokens
                     }
                 }
@@ -74,19 +74,19 @@ fn parse_struct_named_props_encoding(props: &[NamedProp], struct_ident: &Ident) 
         let fname = format_ident!("{}", prop.field_name);
         if prop.attrs.varint {
             quote! {
-                tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#fname), field_value=?self.#fname, "encoding varint struct field");
                 let result = self.#fname.encode_varint(dest);
                 if result.is_err() {
-                    tracing::error!("error varint encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::error!(err=%result.as_ref().unwrap_err(), field=stringify!(#fname), "error varint encoding");
                     return result;
                 }
             }
         } else {
             let base = quote! {
-                tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#fname),&self.#fname);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#fname),field_value=?self.#fname, "encoding struct");
                 let result = self.#fname.encode(dest,version);
                 if result.is_err() {
-                    tracing::error!("Error Encoding <{}> ==> {}",stringify!(#fname),result.as_ref().unwrap_err());
+                    tracing::error!(err=%result.as_ref().unwrap_err(), field=stringify!(#fname), "Error Encoding field");
                     return result;
                 }
             };
@@ -105,19 +105,19 @@ fn parse_struct_unnamed_props_encoding(props: &[UnnamedProp], struct_ident: &Ide
         let field_idx = syn::Index::from(idx);
         if prop.attrs.varint {
             quote! {
-                tracing::trace!("encoding varint struct: <{}> field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), idx=stringify!(#idx), field_value=?self.#field_idx,  "encoding varint struct unnamed field");
                 let result = self.#field_idx.encode_varint(dest);
                 if result.is_err() {
-                    tracing::error!("error varint encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                    tracing::error!(idx=stringify!(#idx), err=%result.as_ref().unwrap_err(), "error varint encoding");
                     return result;
                 }
             }
         } else {
             let base = quote! {
-                tracing::trace!("encoding struct: <{}>, field <{}> => {:?}",stringify!(#struct_ident),stringify!(#idx),&self.#field_idx);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), idx=stringify!(#idx), field_value=?self.#field_idx, "encoding struct unnamed field");
                 let result = self.#field_idx.encode(dest,version);
                 if result.is_err() {
-                    tracing::error!("Error Encoding <{}> ==> {}",stringify!(#idx),result.as_ref().unwrap_err());
+                    tracing::error!(dx=stringify!(#idx), err=%result.as_ref().unwrap_err(), "Error Encoding");
                     return result;
                 }
             };
@@ -148,13 +148,13 @@ fn parse_struct_named_props_size(props: &[NamedProp], struct_ident: &Ident) -> T
         if prop.attrs.varint {
             quote! {
                 let write_size = self.#fname.var_write_size();
-                tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#fname),write_size);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#fname), write_size, "varint write size");
                 len += write_size;
             }
         } else {
             let base = quote! {
                 let write_size = self.#fname.write_size(version);
-                tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#fname),write_size);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#fname), write_size, "struct write size");
                 len += write_size;
             };
             prop.version_check_token_stream(base)
@@ -171,13 +171,13 @@ fn parse_struct_unnamed_props_size(props: &[UnnamedProp], struct_ident: &Ident) 
         if prop.attrs.varint {
             quote! {
                 let write_size = self.#field_idx.var_write_size();
-                tracing::trace!("varint write size: <{}>, field: <{}> is: {}",stringify!(#struct_ident),stringify!(#idx),write_size);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#idx), write_size, "varint write size");
                 len += write_size;
             }
         } else {
             let base = quote! {
                 let write_size = self.#field_idx.write_size(version);
-                tracing::trace!("write size: <{}> field: <{}> => {}",stringify!(#struct_ident),stringify!(#idx),write_size);
+                tracing::trace!(struct_ident=stringify!(#struct_ident), field=stringify!(#idx), write_size, "struct write size");
                 len += write_size;
             };
             prop.version_check_token_stream(base)

@@ -670,8 +670,8 @@ impl ClusterInstaller {
     #[instrument(skip(self))]
     async fn install_app(&self) -> Result<(), K8InstallError> {
         debug!(
-            "Installing fluvio with the following configuration: {:#?}",
-            &self.config
+            config = ?self.config,
+            "Installing fluvio with config"
         );
 
         let pb = self.pb_factory.create();
@@ -735,14 +735,14 @@ impl ClusterInstaller {
 
                 let nodes = kube_client.retrieve_items::<NodeSpec, _>("").await?;
 
-                debug!("Results from Node query: {:#?}", &nodes);
+                debug!(?nodes, "Results from Node query");
 
                 let mut node_addr: Vec<NodeAddress> = Vec::new();
                 for n in nodes.items.into_iter().map(|x| x.status.addresses) {
                     node_addr.extend(n)
                 }
 
-                debug!("Node Addresses: {:#?}", node_addr);
+                debug!(?node_addr, "Node Addresses");
 
                 node_addr
                     .into_iter()
@@ -792,7 +792,7 @@ impl ClusterInstaller {
             .map(|(k, v)| (k.to_owned(), v.to_string()))
             .collect();
 
-        debug!("Using helm install settings: {:#?}", &install_settings);
+        debug!(?install_settings, "Using helm install settings");
 
         chart_values.append(&mut self.config.chart_values.clone());
 
@@ -971,10 +971,10 @@ impl ClusterInstaller {
     ) -> Result<bool, K8InstallError> {
         let time = SystemTime::now();
         let expected_spu = self.config.spu_replicas as usize;
-        debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
+        debug!(max_loop = %*MAX_SC_NETWORK_LOOP, "waiting for SPU");
 
         for i in 0..*MAX_SC_NETWORK_LOOP {
-            debug!("retrieving spu specs");
+            debug!(attempt = i, "retrieving spu specs");
 
             let spu = admin.list::<SpuSpec, _>([]).await?;
 
@@ -1028,7 +1028,7 @@ impl ClusterInstaller {
         let server_key = server_paths.key.to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "server_key must be a valid path")
         })?;
-        debug!("Using server TLS from paths: {:?}", server_paths);
+        debug!(?server_paths, "Using server TLS from paths");
 
         let client_cert = client_paths.cert.to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "client_cert must be a valid path")
@@ -1036,7 +1036,7 @@ impl ClusterInstaller {
         let client_key = client_paths.key.to_str().ok_or_else(|| {
             IoError::new(ErrorKind::InvalidInput, "client_key must be a valid path")
         })?;
-        debug!("Using client TLS from paths: {:?}", client_paths);
+        debug!(?client_paths, "Using client TLS from paths");
 
         // Try uninstalling secrets first to prevent duplication error
         Command::new("kubectl")

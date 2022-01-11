@@ -166,7 +166,7 @@ mod custom_metadata {
         {
             let mut typ = "".to_owned();
             typ.decode(src, version)?;
-            trace!("decoded type: {}", typ);
+            trace!(%typ, "decoded type");
 
             match typ.as_ref() {
                 "Name" => {

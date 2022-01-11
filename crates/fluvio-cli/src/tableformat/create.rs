@@ -32,8 +32,8 @@ impl CreateTableFormatOpt {
         let name = tableformat_spec.name.clone();
 
         debug!(
-            "creating tableformat: {} spec: {:#?}",
-            &name, tableformat_spec
+            %name, spec = ?tableformat_spec,
+            "creating tableformat"
         );
 
         let admin = fluvio.admin().await;

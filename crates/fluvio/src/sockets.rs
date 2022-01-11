@@ -61,7 +61,7 @@ impl VersionedSocket {
         let response: ApiVersionsResponse = (socket.send(&req_msg).await?).response;
         let versions = Versions::new(response);
 
-        debug!("versions: {:#?}", versions);
+        debug!(?versions, "versions from response",);
 
         Ok(Self {
             socket,

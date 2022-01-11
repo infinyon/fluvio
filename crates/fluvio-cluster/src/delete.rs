@@ -154,10 +154,10 @@ impl ClusterUninstaller {
         match &*DEFAULT_DATA_DIR {
             Some(data_dir) => match remove_dir_all(data_dir) {
                 Ok(_) => {
-                    debug!("Removed data dir: {}", data_dir.display());
+                    debug!(data_dir = %data_dir.display(), "Removed data dir");
                 }
                 Err(err) => {
-                    warn!("fluvio dir can't be removed: {}", err);
+                    warn!(?err, "fluvio dir can't be removed",);
                 }
             },
             None => {
@@ -221,12 +221,14 @@ impl ClusterUninstaller {
         }
         if let Some(label) = selector {
             info!(
-                "deleting label '{}' object {} in: {}",
-                label, object_type, namespace
+                %label, %object_type, %namespace,
+                "deleting labeled {} in namespace", object_type
             );
             cmd.arg("--selector").arg(label);
         } else {
-            info!("deleting all {} in: {}", object_type, namespace);
+            info!(
+                %object_type, %namespace,
+                "deleting all objects with {} in namespace", object_type);
             cmd.arg("--all");
         }
         cmd.result()?;

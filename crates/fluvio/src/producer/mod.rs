@@ -11,7 +11,7 @@ use dataplane::record::Record;
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_types::PartitionId;
 use fluvio_types::event::StickyEvent;
-use tracing::instrument;
+use tracing::{instrument, info};
 
 mod accumulator;
 mod config;
@@ -106,6 +106,7 @@ impl ProducerPool {
         Arc::new(ProducerPool::new(topic, spu_pool, batches, linger))
     }
 
+    #[instrument(skip(self))]
     async fn flush_all_batches(&self) -> Result<()> {
         for ((manual_flush_notifier, batch_flushed_event), error) in
             self.flush_events.iter().zip(self.errors.iter())
@@ -123,13 +124,15 @@ impl ProducerPool {
 
         Ok(())
     }
-
+    #[instrument(skip(self))]
     async fn last_error(&self, partition_id: PartitionId) -> Option<ProducerError> {
         let error = self.errors[partition_id as usize].read().await;
         error.clone()
     }
 
+    #[instrument(skip(self))]
     async fn clear_errors(&self) {
+        info!("clearing errors in all partitions producers");
         for error in self.errors.iter() {
             let mut error_handle = error.write().await;
             *error_handle = None;
@@ -158,11 +161,19 @@ struct InnerTopicProducer {
 
 impl InnerTopicProducer {
     /// Flush all the PartitionProducers and wait for them.
+    #[instrument(
+        skip(self),
+        fields(topic = %self.topic),
+    )]
     async fn flush(&self) -> Result<()> {
         self.producer_pool.flush_all_batches().await?;
         Ok(())
     }
 
+    #[instrument(
+        skip(self, record),
+        fields(topic = %self.topic),
+    )]
     async fn push_record(self: Arc<Self>, record: Record) -> Result<PushRecord> {
         let topics = self.spu_pool.metadata.topics();
         let topic_spec = topics
@@ -309,6 +320,10 @@ impl TopicProducer {
         })
     }
 
+    #[instrument(
+        skip(self),
+        fields(topic = %self.inner.topic),
+    )]
     pub async fn flush(&self) -> Result<(), FluvioError> {
         self.inner.flush().await
     }
@@ -348,6 +363,7 @@ impl TopicProducer {
                 if let Some(
                     smartmodule_instance_ref
                 ) = &self.smartmodule_instance {
+                    trace!("applying smartmodule in records of the producer");
                     let mut smartengine = smartmodule_instance_ref.write().await;
                     let output = smartengine.process(SmartModuleInput::try_from(entries)?).map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
                     entries = output.successes;

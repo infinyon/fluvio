@@ -42,7 +42,7 @@ pub struct CreateManagedSpuGroupOpt {
 impl CreateManagedSpuGroupOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), ClusterCliError> {
         let (name, spec) = self.validate();
-        debug!("creating spg: {}, spec: {:#?}", name, spec);
+        debug!(spg=%name, spec=?spec, "creating spg");
 
         let admin = fluvio.admin().await;
         admin.create(name, false, spec).await?;
