@@ -22,6 +22,7 @@ TEST_ARG_EXTRA=
 TEST_ARG_CONSUMER_WAIT=
 TEST_ARG_PRODUCER_ITERATION=--producer-iteration=${DEFAULT_ITERATION}
 TEST_ARG_CONNECTOR_CONFIG=
+TEST_ARG_TABLE_FORMAT_CONFIG=
 TEST_ARG_COMMON = ${TEST_ARG_SPU} \
                 ${TEST_ARG_LOG} \
                 ${TEST_ARG_REPLICATION} \
@@ -49,7 +50,8 @@ smoke-test: test-setup
 			-- \
 			${TEST_ARG_CONSUMER_WAIT} \
 			${TEST_ARG_PRODUCER_ITERATION} \
-			${TEST_ARG_CONNECTOR_CONFIG}
+			${TEST_ARG_CONNECTOR_CONFIG} \
+			${TEST_ARG_TABLE_FORMAT_CONFIG}
 
 smoke-test-local: TEST_ARG_EXTRA=--local  $(EXTRA_ARG)
 smoke-test-local: smoke-test
@@ -118,10 +120,12 @@ test-permission-user1:
 
 smoke-test-k8: TEST_ARG_EXTRA=$(EXTRA_ARG)
 smoke-test-k8: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
+smoke-test-k8: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8: build_k8_image smoke-test 
 
 smoke-test-k8-tls: TEST_ARG_EXTRA=--tls $(EXTRA_ARG)
 smoke-test-k8-tls: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
+smoke-test-k8-tls: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8-tls: build_k8_image smoke-test
 
 smoke-test-k8-tls-policy-setup:
@@ -130,6 +134,7 @@ smoke-test-k8-tls-policy-setup:
 smoke-test-k8-tls-policy: TEST_ENV_FLV_SPU_DELAY=FLV_SPU_DELAY=$(SPU_DELAY)
 smoke-test-k8-tls-policy: TEST_ARG_EXTRA=--tls --authorization-config-map authorization $(EXTRA_ARG)
 smoke-test-k8-tls-policy: TEST_ARG_CONNECTOR_CONFIG=--connector-config ./tests/test-connector-config.yaml
+smoke-test-k8-tls-policy: TEST_ARG_TABLE_FORMAT_CONFIG=--table-format-config ./tests/test-table-format-config.yaml
 smoke-test-k8-tls-policy: build_k8_image smoke-test
 
 test-permission-k8:	SC_HOST=$(shell kubectl get node -o json | jq '.items[].status.addresses[0].address' | tr -d '"' )

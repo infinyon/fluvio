@@ -13,7 +13,7 @@ mod consume;
 mod produce;
 mod partition;
 mod connector;
-mod tableformat;
+pub mod tableformat;
 mod smartmodule;
 mod derivedstream;
 mod render;

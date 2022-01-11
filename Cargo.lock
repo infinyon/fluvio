@@ -2164,6 +2164,7 @@ dependencies = [
  "crc",
  "crossbeam-channel",
  "fluvio",
+ "fluvio-cli",
  "fluvio-cluster",
  "fluvio-command",
  "fluvio-controlplane-metadata",
