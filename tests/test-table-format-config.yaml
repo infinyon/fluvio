@@ -1,4 +1,4 @@
-name: smoke-test- 
+name: smoke-test 
 inputFormat: "JSON"
 columns:
   - keyPath: "key1"
