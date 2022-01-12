@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.17 - UNRELEASED
+## Platform Version 0.9.18 - UNRELEASED
+
+## Platform Version 0.9.17 - 2022-01-12
 * Change default values of TopicProducerConfig ([#2069](https://github.com/infinyon/fluvio/issues/2069))
 * Enhance CLI Diagnostics with system info  ([#2069](https://github.com/infinyon/fluvio/pull/2092))
 * Don't HTML escape output from CLI consumer using `--format` ([#1628](https://github.com/infinyon/fluvio/issues/1628))
@@ -17,6 +19,9 @@
 * Upgrade to Zig 0.9 and LLVM 13 ([#2046](https://github.com/infinyon/fluvio/pull/2046))
 * Add API to converting to list type from metadata ([#2052](https://github.com/infinyon/fluvio/pull/2052)) 
 * Check if the local cluster exists during installation ([#2041](https://github.com/infinyon/fluvio/issues/2041))   
+
+> Note:
+> For existing CLI users, we recommended for existing CLI users to follow [the instructions to re-install their CLI](https://www.fluvio.io/download/). This is a requirement in order to use Fluvio CLI Channels.
 
 ## Platform Version 0.9.15 - 2021-12-10
 * Migrate Rust crates to edition 2021 ([#1798](https://github.com/infinyon/fluvio/issues/1798))
