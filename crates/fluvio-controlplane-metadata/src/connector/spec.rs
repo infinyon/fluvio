@@ -18,12 +18,26 @@ pub struct ManagedConnectorSpec {
 
     pub version: Option<String>,
 
-    #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
-    pub type_: String, // syslog, github star, slack
+    pub metadata: ManagedConnectorMetadata,
 
     pub topic: String,
     pub parameters: BTreeMap<String, String>,
     pub secrets: BTreeMap<String, SecretString>,
+}
+
+#[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub struct ManagedConnectorMetadata {
+    pub image: String,
+    pub author: String,
+    pub license: String,
+}
+
+struct ManagedConnectorMetadataRestrictions {
 }
 
 #[derive(Encoder, Decoder, Default, PartialEq, Clone)]

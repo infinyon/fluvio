@@ -32,18 +32,20 @@ pub struct CreateManagedConnectorOpt {
 
 impl CreateManagedConnectorOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
-        let config = ConnectorConfig::from_file(&self.config)?;
-        let spec: ManagedConnectorSpec = config.clone().into();
+        let config = ConnectorConfig::from_file(&self.config).await?;
+        let topic = config.topic.clone();
+        let create_topic = config.create_topic.clone();
+        let spec = config.to_managed_connector_spec().await?;
         let name = spec.name.clone();
 
         debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
 
         let admin = fluvio.admin().await;
-        if config.create_topic {
+        if create_topic {
             let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
             debug!("topic spec: {:?}", replica_spec);
             match admin
-                .create::<TopicSpec>(config.topic, false, replica_spec.into())
+                .create::<TopicSpec>(topic, false, replica_spec.into())
                 .await
             {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {

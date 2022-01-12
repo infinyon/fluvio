@@ -232,16 +232,16 @@ impl ManagedConnectorDeploymentController {
             "--".to_string(),
             format!("--fluvio-topic={}", mc_spec.topic),
         ];
-        let type_ = &mc_spec.type_;
-        let image = Self::get_image(type_, allowed_connector_prefix).await?;
+        let metadata = &mc_spec.metadata;
+        let image = &metadata.image;
 
         args.extend(parameters);
 
         let (image, image_pull_policy) = match mc_spec.version.as_deref() {
-            Some("dev") => (image, ImagePullPolicy::Never),
-            Some("latest") | None => (format!("{}:latest", image), ImagePullPolicy::Always),
+            Some("dev") => (image.clone(), ImagePullPolicy::Never),
+            Some("latest") | None => (format!("{}:latest", *image), ImagePullPolicy::Always),
             Some(version) => (
-                format!("{}:{}", image, version),
+                format!("{}:{}", *image, version),
                 ImagePullPolicy::IfNotPresent,
             ),
         };
@@ -329,90 +329,5 @@ impl ManagedConnectorDeploymentController {
             selector: LabelSelector { match_labels },
             ..Default::default()
         })
-    }
-    pub async fn get_image(type_: &str, allowed_connector_prefix: &[String]) -> Option<String> {
-        let image = if type_.starts_with("https://") {
-            debug!(
-                "Checking 3rd party connector {:?} in allowed_prefixes - {:?}",
-                type_, allowed_connector_prefix
-            );
-            let mut image = None;
-            if allowed_connector_prefix.is_empty() {
-                match ThirdPartyConnectorSpec::from_url(type_).await {
-                    Ok(spec) => {
-                        debug!("Retrieved third party metadata {:?}", spec);
-                        image = Some(spec.image);
-                    }
-                    Err(e) => {
-                        info!("3rd party connector spec failed to retrieve {:?}", e);
-                    }
-                }
-            } else {
-                for prefix in allowed_connector_prefix {
-                    if type_.starts_with(prefix.as_str()) {
-                        match ThirdPartyConnectorSpec::from_url(type_).await {
-                            Ok(spec) => {
-                                debug!("Retrieved third party metadata {:?}", spec);
-                                image = Some(spec.image);
-                            }
-                            Err(e) => {
-                                info!("3rd party connector spec failed to retrieve {:?}", e);
-                            }
-                        }
-                        break;
-                    }
-                }
-            }
-            if let Some(image) = image {
-                image
-            } else {
-                debug!("None of the connector prefixes matched!");
-                return None;
-            }
-        } else {
-            format!("infinyon/fluvio-connect-{}", type_)
-        };
-        Some(image)
-    }
-}
-#[cfg(test)]
-mod third_party_connector_tests {
-    use super::*;
-
-    #[fluvio_future::test]
-    async fn test_authorized_prefix() {
-        let image = ManagedConnectorDeploymentController::get_image("foo", &[]).await;
-        assert_eq!(image, Some("infinyon/fluvio-connect-foo".to_string()));
-    }
-
-    #[fluvio_future::test]
-    async fn test_unauthorized_prefix() {
-        let image = ManagedConnectorDeploymentController::get_image(
-            "https://google.com",
-            &["https://yahoo.com".to_string()],
-        )
-        .await;
-        assert_eq!(image, None);
-    }
-
-    #[fluvio_future::test]
-    async fn test_official_3rd_party_connector() {
-        let image = ManagedConnectorDeploymentController::get_image("https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml", &["https://raw.githubusercontent.com/infinyon/fluvio-connectors".to_string()]).await;
-        assert_eq!(
-            image,
-            Some("infinyon/fluvio-connect-test-connector".to_string())
-        );
-    }
-}
-
-#[derive(Default, Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ThirdPartyConnectorSpec {
-    pub image: String,
-}
-
-impl ThirdPartyConnectorSpec {
-    pub async fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let body = surf::get(url).recv_string().await?;
-        Ok(serde_yaml::from_str(&body)?)
     }
 }

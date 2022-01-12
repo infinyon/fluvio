@@ -31,10 +31,9 @@ spec:
                   type: string
                   minimum: 2
                   maximum: 100
-                type:
-                  type: string
-                  minimum: 2
-                  maximum: 100
+                metadata:
+                  type: object
+                  x-kubernetes-preserve-unknown-fields: true
                 connectorVersion:
                   type: string
                   minimum: 2

@@ -270,7 +270,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
         ManagedConnectorSpec {
             name: config.name,
-            type_: config.type_,
+            metadata: todo!(),
             topic: config.topic,
             parameters: config.parameters,
             secrets: config.secrets,

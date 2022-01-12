@@ -6,7 +6,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use super::super::{ManagedConnectorStatus, SecretString};
+use super::super::{ManagedConnectorStatus, ManagedConnectorMetadata, SecretString};
 use crate::k8_types::{Spec, Crd, DefaultHeader};
 use std::collections::BTreeMap;
 
@@ -39,11 +39,17 @@ impl Spec for K8ManagedConnectorSpec {
 pub struct K8ManagedConnectorSpec {
     pub name: String,
     pub version: Option<String>,
-    #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
-    pub type_: String, // syslog, github star, slack
+    pub metadata: K8ManagedConnectorMetadata, // syslog, github star, slack
     pub topic: String,
     pub parameters: BTreeMap<String, String>,
     pub secrets: BTreeMap<String, SecretString>,
+}
+#[derive(Deserialize, Serialize, Default, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase", default)]
+pub struct K8ManagedConnectorMetadata {
+    pub image: String,
+    pub author: String,
+    pub license: String,
 }
 mod convert {
 
@@ -55,7 +61,7 @@ mod convert {
         fn from(spec: K8ManagedConnectorSpec) -> Self {
             Self {
                 name: spec.name,
-                type_: spec.type_,
+                metadata: spec.metadata.into(),
                 topic: spec.topic,
                 parameters: spec.parameters,
                 secrets: spec.secrets,
@@ -68,7 +74,7 @@ mod convert {
         fn from(spec: ManagedConnectorSpec) -> Self {
             Self {
                 name: spec.name,
-                type_: spec.type_,
+                metadata: spec.metadata.into(),
                 topic: spec.topic,
                 parameters: spec.parameters,
                 secrets: spec.secrets,
@@ -76,4 +82,23 @@ mod convert {
             }
         }
     }
+    impl From<ManagedConnectorMetadata> for K8ManagedConnectorMetadata {
+        fn from(spec: ManagedConnectorMetadata) -> Self {
+            Self {
+                image: spec.image,
+                author: spec.author,
+                license: spec.license,
+            }
+        }
+    }
+    impl From<K8ManagedConnectorMetadata> for ManagedConnectorMetadata {
+        fn from(spec: K8ManagedConnectorMetadata) -> Self {
+            Self {
+                image: spec.image,
+                author: spec.author,
+                license: spec.license,
+            }
+        }
+    }
+
 }
