@@ -4,7 +4,8 @@ permissions:
   contents: read
 
 on:
-
+  pull_request:
+    branches: [master]
   workflow_run:
     workflows: ["Release"]
     types:
@@ -83,17 +84,28 @@ jobs:
         run: |
           ./k8-util/cluster/reset-k3d.sh
       - name: Install Fluvio
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Pre-Start - local cluster
         if: matrix.cluster_type == 'local'
         run: echo "IF_LOCAL=--local" | tee -a $GITHUB_ENV
       - name: Pre-Start - Kubernetes cluster
         if: matrix.cluster_type == 'k8s'
         run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
- 
       - name: Start cluster
-        run: ~/.fluvio/bin/fluvio cluster start ${IF_LOCAL} 
+        run: fluvio cluster start ${IF_LOCAL} 
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: start_cluster_${{ matrix.cluster_type }}
+          path: diagnostics*.gz
       # TODO: Verify platform version
 
   upgrade_prev_stable:
