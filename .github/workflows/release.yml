@@ -347,27 +347,8 @@ jobs:
         run: |
           ${HOME}/.fluvio/bin/fluvio package bump dynamic "${{ env.VERSION }}"
           ${HOME}/.fluvio/bin/fluvio package tag "fluvio:${{ env.VERSION }}" --tag=stable --force
-
-      - uses: actions/checkout@v2
-
-      # Enable this when we are confident in the workflow
-      - name: Bump stable branch
-        run: |
-          git fetch
-          CURRENT_STABLE=$(git rev-parse origin/stable)
-
-          echo "sha from repo: $CURRENT_STABLE"
-          echo "expected sha: ${{ env.TARGET_SHA }}"
-
-          if [[ "$CURRENT_STABLE" = "${{ env.TARGET_SHA }}" ]]; then
-            echo "Stable branch is up to date"
-          else
-            # FIXME: Needs more testing in Github Actions context
-            echo "TODO: Stable branch will be updated"
-            #git checkout stable
-            #git rebase origin/master
-            #git push origin stable
-          fi
+          ${HOME}/.fluvio/bin/fluvio package tag "fluvio-channel:${{ env.VERSION }}" --tag=stable --force
+          ${HOME}/.fluvio/bin/fluvio package tag "fluvio-run:${{ env.VERSION }}" --tag=stable --force
 
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
