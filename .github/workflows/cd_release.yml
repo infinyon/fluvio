@@ -97,6 +97,7 @@ jobs:
         timeout-minutes: 1
         run: |
           ls -la ~/.fluvio/bin
+          ls -la /tmp
           fluvio version
           fluvio cluster start ${IF_LOCAL}
       - name: Run diagnostics
