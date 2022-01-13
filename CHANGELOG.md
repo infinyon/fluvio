@@ -1,6 +1,6 @@
 # Release Notes
 
-## Platform Version 0.10.0 - UNRELEASED
+## Platform Version 0.9.18 - UNRELEASED
 
 ## Platform Version 0.9.17 - 2022-01-12
 * Change default values of TopicProducerConfig ([#2069](https://github.com/infinyon/fluvio/issues/2069))
