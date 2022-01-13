@@ -101,6 +101,7 @@ jobs:
           fluvio version
           ~/.fluvio/bin/fluvio-stable version
           ls -la ~/.fluvio/extensions
+          ~/.fluvio/extensions/fluvio-run sc --version
           fluvio cluster start ${IF_LOCAL}
       - name: Run diagnostics
         if: failure()
