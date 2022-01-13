@@ -39,7 +39,7 @@ impl RunCmd {
             }
             Self::Metadata(meta) => {
                 meta.process()?;
-            },
+            }
             Self::Version(opt) => {
                 opt.process()?;
             }
@@ -73,7 +73,8 @@ pub struct VersionOpt {}
 
 impl VersionOpt {
     pub fn process(self) -> Result<()> {
-       
+        println!("Git Commit: {}", env!("GIT_HASH"));
+        println!("Platform Version: {}", VERSION);
 
         Ok(())
     }
