@@ -95,7 +95,9 @@ jobs:
         run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
       - name: Start cluster
         timeout-minutes: 3
-        run: fluvio cluster start ${IF_LOCAL}
+        run: 
+          fluvio version
+          fluvio cluster start ${IF_LOCAL}
       - name: Run diagnostics
         if: failure()
         timeout-minutes: 5
