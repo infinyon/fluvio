@@ -82,14 +82,15 @@ impl DiagnosticsOpt {
 
     fn copy_local_logs(&self, dest_dir: &Path) -> Result<()> {
         let logs_dir = std::fs::read_dir(get_log_directory())?;
-
+        println!("reading local logs from {:?}", logs_dir);
         for entry in logs_dir.flat_map(|it| it.ok()) {
             let to = dest_dir.join(entry.file_name());
-            if entry.file_name() == "flv_sc.log" {
+            let file_name = entry.file_name();
+            if file_name == "flv_sc.log" || file_name.to_string_lossy().starts_with("spu_log") {
+                println!("copying log file: {:?}", entry.path());
                 copy(entry.path(), &to)?;
-            }
-            if entry.file_name().to_string_lossy().starts_with("spu_log") {
-                copy(entry.path(), &to)?;
+            } else {
+                println!("skipping {:?}", file_name);
             }
         }
         Ok(())
