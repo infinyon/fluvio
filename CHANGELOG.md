@@ -1,7 +1,8 @@
 # Release Notes
 
 ## Platform Version 0.9.18 - UNRELEASED
-
+* Show Platform version for fluvio run ([#2104](https://github.com/infinyon/fluvio/issues/2104))
+  
 ## Platform Version 0.9.17 - 2022-01-12
 * Change default values of TopicProducerConfig ([#2069](https://github.com/infinyon/fluvio/issues/2069))
 * Enhance CLI Diagnostics with system info  ([#2069](https://github.com/infinyon/fluvio/pull/2092))
