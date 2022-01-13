@@ -94,22 +94,14 @@ jobs:
         if: matrix.cluster_type == 'k8s'
         run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
       - name: Start cluster
-        timeout-minutes: 1
+        timeout-minutes: 3
         run: |
-          ls -la ~/.fluvio/bin
-          ls -la /tmp
           fluvio version
-          ~/.fluvio/bin/fluvio-stable version
-          ls -la ~/.fluvio/extensions
-          ~/.fluvio/extensions/fluvio-run sc --version
           fluvio cluster start ${IF_LOCAL}
       - name: Run diagnostics
         if: failure()
         timeout-minutes: 5
         run: |
-          ls -l /tmp
-          ps -ef | grep fluvio
-          cat /tmp/flv_sc.log
           fluvio cluster diagnostics
       - name: Upload diagnostics
         uses: actions/upload-artifact@v2
