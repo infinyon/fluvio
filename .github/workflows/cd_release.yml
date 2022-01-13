@@ -94,15 +94,16 @@ jobs:
         if: matrix.cluster_type == 'k8s'
         run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
       - name: Start cluster
-        timeout-minutes: 3
+        timeout-minutes: 1
         run: |
+          ls -la ~/.fluvio/bin
           fluvio version
           fluvio cluster start ${IF_LOCAL}
       - name: Run diagnostics
         if: failure()
         timeout-minutes: 5
         run: |
-          ls /tmp
+          ls -l /tmp
           ps -ef | grep fluvio
           cat /tmp/flv_sc.log
           fluvio cluster diagnostics
