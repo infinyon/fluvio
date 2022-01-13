@@ -85,12 +85,12 @@ impl DiagnosticsOpt {
         println!("reading local logs from {:?}", logs_dir);
         for entry in logs_dir.flat_map(|it| it.ok()) {
             let to = dest_dir.join(entry.file_name());
-            if entry.file_name() == "flv_sc.log" {
-                copy(entry.path(), &to)?;
-            } else if entry.file_name().to_string_lossy().starts_with("spu_log") {
+            let file_name = entry.file_name();
+            if file_name == "flv_sc.log" || file_name.to_string_lossy().starts_with("spu_log") {
+                println!("copying log file: {:?}", entry.path());
                 copy(entry.path(), &to)?;
             } else {
-                println!("skipping {:?}", entry.file_name());
+                println!("skipping {:?}", file_name);
             }
         }
         Ok(())
