@@ -85,7 +85,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         return Status::new(
             name.to_string(),
             ErrorCode::TopicInvalidName,
-            Some(format!("Invalid topic name: '{}'. Topic name can contain only lowercase alphanumeric characters or '-'.", name)),
+            Some(format!("Invalid topic name: '{}'. Topic name can contain only lowercase alphanumeric characters or '-'.", name.to_string())),
         );
     }
 
