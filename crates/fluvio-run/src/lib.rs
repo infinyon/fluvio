@@ -22,6 +22,10 @@ pub enum RunCmd {
     /// Return plugin metadata as JSON
     #[structopt(name = "metadata")]
     Metadata(MetadataOpt),
+
+    /// Print version information
+    #[structopt(name = "version")]
+    Version(VersionOpt),
 }
 
 impl RunCmd {
@@ -35,6 +39,9 @@ impl RunCmd {
             }
             Self::Metadata(meta) => {
                 meta.process()?;
+            }
+            Self::Version(opt) => {
+                opt.process()?;
             }
         }
         Ok(())
@@ -58,5 +65,17 @@ impl MetadataOpt {
             description: "Run Fluvio cluster components (SC and SPU)".into(),
             version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }
+    }
+}
+
+#[derive(Debug, StructOpt)]
+pub struct VersionOpt {}
+
+impl VersionOpt {
+    pub fn process(self) -> Result<()> {
+        println!("Git Commit: {}", env!("GIT_HASH"));
+        println!("Platform Version: {}", VERSION);
+
+        Ok(())
     }
 }
