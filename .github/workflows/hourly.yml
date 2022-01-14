@@ -71,7 +71,6 @@ jobs:
         if: matrix.binary == 'fluvio-test'
         run: make build-test
 
-
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
         uses: actions/upload-artifact@v2
@@ -89,6 +88,7 @@ jobs:
       fail-fast: false 
       matrix:
         os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
         run: [r1,r2,r3,r4,r5,r6]
         binary: [dev]
     env:
