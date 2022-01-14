@@ -1,4 +1,4 @@
-name: Hourly tests
+name: Hourly tests2
 
 permissions:
   contents: read
