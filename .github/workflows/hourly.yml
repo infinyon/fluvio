@@ -16,7 +16,7 @@ on:
 jobs:
 
   build_binaries:
-    name: Test buiild ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    name: Test buiild for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
