@@ -32,8 +32,7 @@ jobs:
 
       - name: Unpack fluvio-test
         run: |
-          unzip "/tmp/release/${{ env.TEST_BINARY }}.zip"
-          chmod +x /tmp/release/fluvio-test
+          cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
       
       ## DEBUG: Don't forget to remove this
