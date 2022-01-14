@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 jobs:
 
-  build_test_binaries:
+  build_binaries:
     name: Test buiild ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -82,7 +82,7 @@ jobs:
     name: Hourly Longevity test 
     runs-on: ${{ matrix.os }}
     needs:
-      - build_test_binaries
+      - build_binaries
     timeout-minutes: 60
     strategy:
       fail-fast: false 
