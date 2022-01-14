@@ -44,7 +44,7 @@ jobs:
           echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
 
       - name: Install Rust ${{ matrix.rust }}
-        if: github.event = 'pull_request'
+        if: github.event == 'pull_request'
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
