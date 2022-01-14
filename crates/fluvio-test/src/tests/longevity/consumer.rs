@@ -37,7 +37,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
 
                 _ = &mut test_timer => {
 
-                    println!("Consumer stopped. Time's up!\nRecords received: {records_recvd}");
+                    println!("Consumer {consumer_id} stopped. Time's up!\nRecords received: {records_recvd}");
                     break 'consumer_loop
                 }
 
@@ -66,6 +66,8 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
                         }
 
                         assert!(test_record.validate_crc());
+
+                    //    let elapsed_time = now.elapsed().unwrap().as_secs();
 
                     } else {
                         let elapsed_time = now.elapsed().unwrap().as_secs();

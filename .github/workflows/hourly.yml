@@ -16,6 +16,7 @@ on:
 jobs:
 
   build_test_binaries:
+    if: github.event_name == 'push' 
     name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
@@ -23,7 +24,6 @@ jobs:
         rust-target:
           - x86_64-unknown-linux-musl
         rust: [stable]
-        binary: [fluvio-test]
         os: [ubuntu-latest]
     env:
       RUST_BACKTRACE: full
@@ -36,43 +36,43 @@ jobs:
 
       # If this job is being run by Bors (it was pushed to staging),
       # then build and run in release mode
-      - name: Set RELEASE mode
-    #    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+      - name: Set build RELEASE mode
         shell: bash
         run: |
           echo "RELEASE=true" | tee -a $GITHUB_ENV
           echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
           echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
 
-      - name: Print env
-        run: |
-          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
       - name: Install Rust ${{ matrix.rust }}
+        if: github.event_name == 'push'
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
       - name: Install zig
+        if: github.event_name == 'push'
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
+        if: github.event_name == 'push'
         with:
           key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
 
       - name: Build fluvio
-        if: matrix.binary == 'fluvio'
+        if: github.event_name == 'push' && matrix.binary == 'fluvio'
         run: make build-cli
 
       - name: Build fluvio-run
-        if: matrix.binary == 'fluvio-run'
+        if: github.event_name == 'push' && matrix.binary == 'fluvio-run'
         run: make build-cluster
 
       - name: Build fluvio-test
-        if: matrix.binary == 'fluvio-test'
+        if: github.event_name == 'push' && matrix.binary == 'fluvio-test'
         run: make build-test
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
+        if: github.event_name == 'push'
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
@@ -100,28 +100,28 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Login GH CLI
-        if: matrix.binary == 'release'
+        if: github.event_name != 'push'
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-        if: matrix.binary == 'release'
+        if: github.event_name != 'push'
         run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
       - name: Unpack fluvio-test
-        if: matrix.binary == 'release'
+        if: github.event_name == 'push'
         run: |
           cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
 
       - name: Download artifact - fluvio-test
-        if: matrix.binary == 'dev'
+        if: github.event_name == 'push'
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
 
       - name: Set up Fluvio binaries
-        if: matrix.binary == 'dev'
+        if: github.event_name == 'push'
         run: |
           chmod +x ~/bin/fluvio-test
           echo "~/bin" >> $GITHUB_PATH
