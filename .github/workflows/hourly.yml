@@ -22,7 +22,7 @@ jobs:
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
-      RUN_TIME: 60
+      RUN_TIME: 500
       PRODUCER: 10
     steps:
       - uses: actions/checkout@v2
