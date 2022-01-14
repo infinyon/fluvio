@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 jobs:
 
-  build_primary_binaries:
+  build_binaries:
     name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
