@@ -6,8 +6,8 @@ permissions:
 on:
   schedule:
     - cron: '0 * * * *'
-#  pull_request:
-#    branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 jobs:
   longevity:
@@ -20,6 +20,7 @@ jobs:
         os: [ubuntu-latest]
     env:
       K3D_VERSION: v4.4.8
+      TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
     steps:
       - uses: actions/checkout@v2
 
@@ -27,17 +28,14 @@ jobs:
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-        run: gh release download dev -R infinyon/fluvio -D /tmp
+        run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
       - name: Unpack fluvio-test
         run: |
-          unzip "/tmp/fluvio-test-x86_64-unknown-linux-musl.zip" -d "/tmp/fluvio-test-x86_64-unknown-linux-musl"
-          chmod +x /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test
-          cp /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test .
-
-      - name: Print artifacts and mark executable
-        run: chmod +x ./fluvio-test
-
+          unzip "/tmp/${{ env.TEST_BINARY }}.zip"
+          chmod +x /tmp/release/fluvio-test
+          echo "/tmp/release" >> $GITHUB_PATH
+      
       ## DEBUG: Don't forget to remove this
       ## TODO: Figure out how to add this to the hourly test
       #- name: Delete Artifact by Name
@@ -92,7 +90,7 @@ jobs:
           sleep 15
 
       - name: Run longevity test
-        run: make TEST_BIN=./fluvio-test longevity-test
+        run: make TEST_BIN=/tmp/release/fluvio-test longevity-test
           
       ## If the test passed, then copy the data from cluster to store into artifacts
       #- name: Export data from the cluster for caching
