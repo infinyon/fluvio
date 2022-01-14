@@ -8,8 +8,8 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  schedule:
-    - cron: '0 * * * *'
+ # schedule:
+ #   - cron: '0 * * * *'
   pull_request:
     branches: [master]
   workflow_dispatch:
