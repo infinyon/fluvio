@@ -22,6 +22,8 @@ jobs:
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
+      RUN_TIME: 60
+      PRODUCER: 10
     steps:
       - uses: actions/checkout@v2
 
@@ -90,7 +92,7 @@ jobs:
           sleep 15
 
       - name: Run longevity test
-        run: make TEST_BIN=/tmp/release/fluvio-test longevity-test
+        run: fluvio-test longevity -- --runtime-seconds=${{ env.RUN_TIME }} --producers ${{ env.PRODUCER }} --consumers ${{ env.PRODUCER }}
           
       ## If the test passed, then copy the data from cluster to store into artifacts
       #- name: Export data from the cluster for caching
