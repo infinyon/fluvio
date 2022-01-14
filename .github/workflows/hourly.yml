@@ -16,7 +16,6 @@ on:
 jobs:
 
   build_test_binaries:
-    if: github.event_name == 'push' 
     name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
