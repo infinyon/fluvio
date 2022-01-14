@@ -68,7 +68,8 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
                         assert!(test_record.validate_crc());
 
                     } else {
-                        panic!("{}",format!("Stream ended unexpectedly, consumer: {consumer_id}, records received: {records_recvd}"));
+                        let elapsed_time = now.elapsed().unwrap().as_secs();
+                        panic!("{}",format!("Stream ended unexpectedly, consumer: {consumer_id}, records received: {records_recvd}, seconds: {elapsed_time}"));
                     }
                 }
         }
