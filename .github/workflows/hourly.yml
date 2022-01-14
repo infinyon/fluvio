@@ -67,9 +67,6 @@ jobs:
         if: matrix.binary == 'fluvio-test'
         run: make build-test
 
-      - name: Build fluvio-channel
-        if: matrix.binary == 'fluvio-channel'
-        run: make build-channel
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
