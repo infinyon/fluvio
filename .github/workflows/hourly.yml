@@ -51,7 +51,7 @@ jobs:
           profile: minimal
           override: true
       - name: Install zig
-        if: github.ref != 'refs/heads/master'
+    #    if: github.ref != 'refs/heads/master'
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
         if: github.ref == 'refs/heads/master'
@@ -59,15 +59,15 @@ jobs:
           key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
 
       - name: Build fluvio
-        if: github.ref != 'refs/heads/master' && matrix.binary == 'fluvio'
+    #    if: github.ref != 'refs/heads/master' && matrix.binary == 'fluvio'
         run: make build-cli
 
       - name: Build fluvio-run
-        if: github.ref != 'refs/heads/master' && matrix.binary == 'fluvio-run'
+     #   if: github.ref != 'refs/heads/master' && matrix.binary == 'fluvio-run'
         run: make build-cluster
 
       - name: Build fluvio-test
-        if: github.ref != 'refs/heads/master' && matrix.binary == 'fluvio-test'
+   #     if: github.ref != 'refs/heads/master' && matrix.binary == 'fluvio-test'
         run: make build-test
 
       # Upload artifacts
@@ -101,28 +101,28 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Login GH CLI
-        if: github.event_name != 'push'
+        if: github.ref == 'refs/heads/master'
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-        if: github.event_name != 'push'
+        if: github.ref == 'refs/heads/master'
         run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
-      - name: Unpack fluvio-test
-        if: github.event_name == 'push'
+      - name: Unpack fluvio-test from dev release
+        if: github.ref == 'refs/heads/master'
         run: |
           cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
 
-      - name: Download artifact - fluvio-test
-        if: github.event_name == 'push'
+      - name: Download build artifact - fluvio-test
+        if: github.ref != 'refs/heads/master'
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
 
-      - name: Set up Fluvio binaries
-        if: github.event_name == 'push'
+      - name: Set up Fluvio binaries from build
+        if: github.ref != 'refs/heads/master'
         run: |
           chmod +x ~/bin/fluvio-test
           echo "~/bin" >> $GITHUB_PATH
