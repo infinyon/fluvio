@@ -18,6 +18,7 @@ jobs:
       fail-fast: false 
       matrix:
         os: [ubuntu-latest]
+        run: [r1,r2,r3,r4,r5,r6]
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
@@ -123,6 +124,6 @@ jobs:
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
-          name: hourly-longevity-diag
+          name: hourly-longevity-${{ matrix-run }}.diag
           path: diagnostics*.gz
       
