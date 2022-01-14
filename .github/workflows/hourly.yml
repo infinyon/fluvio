@@ -10,15 +10,86 @@ on:
     branches: [master]
   workflow_dispatch:
 jobs:
+
+  build_primary_binaries:
+    name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust-target:
+          - x86_64-unknown-linux-musl
+        rust: [stable]
+        binary: [fluvio-test]
+        os: [ubuntu-latest]
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
+      RELEASE_NAME: debug
+    steps:
+      - uses: actions/checkout@v2
+
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode
+      - name: Set RELEASE mode
+    #    if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
+        shell: bash
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
+
+      - name: Print env
+        run: |
+          echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
+
+      - name: Build fluvio
+        if: matrix.binary == 'fluvio'
+        run: make build-cli
+
+      - name: Build fluvio-run
+        if: matrix.binary == 'fluvio-run'
+        run: make build-cluster
+
+      - name: Build fluvio-test
+        if: matrix.binary == 'fluvio-test'
+        run: make build-test
+
+      - name: Build fluvio-channel
+        if: matrix.binary == 'fluvio-channel'
+        run: make build-channel
+
+      # Upload artifacts
+      - name: Upload artifact - ${{ matrix.binary }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+
   longevity:
     name: Hourly Longevity test 
     runs-on: ${{ matrix.os }}
+    needs:
+      - build_primary_binaries
     timeout-minutes: 60
     strategy:
       fail-fast: false 
       matrix:
         os: [ubuntu-latest]
         run: [r1,r2,r3,r4,r5,r6]
+        binary: [dev]
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
@@ -28,16 +99,32 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Login GH CLI
+        if: matrix.binary == 'release'
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
+        if: matrix.binary == 'release'
         run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
       - name: Unpack fluvio-test
+        if: matrix.binary == 'release'
         run: |
           cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
-      
+
+      - name: Download artifact - fluvio-test
+        if: matrix.binary == 'dev'
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/bin
+
+      - name: Set up Fluvio binaries
+        if: matrix.binary == 'dev'
+        run: |
+          chmod +x ~/bin/fluvio-test
+          echo "~/bin" >> $GITHUB_PATH
+
       ## DEBUG: Don't forget to remove this
       ## TODO: Figure out how to add this to the hourly test
       #- name: Delete Artifact by Name
