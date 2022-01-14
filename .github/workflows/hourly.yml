@@ -124,6 +124,6 @@ jobs:
         timeout-minutes: 5
         if: ${{ !success() }}
         with:
-          name: hourly-longevity-${{ matrix-run }}.diag
+          name: hourly-longevity-${{ matrix.run }}.diag
           path: diagnostics*.gz
       
