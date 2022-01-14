@@ -3,6 +3,10 @@ name: Hourly tests
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.head_ref || 'ci_hourly_longevity' }}
+  cancel-in-progress: true
+
 on:
   schedule:
     - cron: '0 * * * *'
