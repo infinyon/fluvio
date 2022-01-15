@@ -17,6 +17,7 @@ jobs:
 
   build_long_binaries:
     name: Test buiild for ${{ matrix.binary }}  on (${{ matrix.os }})
+    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -44,35 +45,31 @@ jobs:
           echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
 
       - name: Install Rust ${{ matrix.rust }}
-        if: ${{ github.ref != 'refs/heads/master' }}
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
           profile: minimal
           override: true
       - name: Install zig
-        if: ${{ github.event == 'pull_request' }}
         run: ./actions/zig-install.sh ${{ matrix.os }}
       - uses: Swatinem/rust-cache@v1
-        if: github.event == 'pull_request'
         with:
           key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
 
       - name: Build fluvio
-        if: github.event == 'pull_request' && matrix.binary == 'fluvio'
+        if: matrix.binary == 'fluvio'
         run: make build-cli
 
       - name: Build fluvio-run
-        if: github.event == 'pull_request' && matrix.binary == 'fluvio-run'
+        if: matrix.binary == 'fluvio-run'
         run: make build-cluster
 
       - name: Build fluvio-test
-        if: github.event == 'pull_request' && matrix.binary == 'fluvio-test'
+        if: matrix.binary == 'fluvio-test'
         run: make build-test
 
       # Upload artifacts
       - name: Upload artifact - ${{ matrix.binary }}
-        if: github.event == 'pull_request'
         uses: actions/upload-artifact@v2
         with:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
@@ -82,8 +79,8 @@ jobs:
   longevity:
     name: Hourly Longevity test 
     runs-on: ${{ matrix.os }}
-    needs:
-      - build_long_binaries
+#    needs:
+#      - build_long_binaries
     timeout-minutes: 60
     strategy:
       fail-fast: false 
@@ -101,28 +98,28 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Login GH CLI
-        if: github.ref == 'refs/heads/master'
+     #   if: ${{ false }}
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-        if: github.ref == 'refs/heads/master'
+      #   if: ${{ false }}
         run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
       - name: Unpack fluvio-test from dev release
-        if: github.ref == 'refs/heads/master'
+       #   if: ${{ false }}
         run: |
           cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
 
       - name: Download build artifact - fluvio-test
-        if: github.event == 'pull_request'
+        if: ${{ false }}
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
 
       - name: Set up Fluvio binaries from build
-        if: github.event == 'pull_request'
+        if: ${{ false }}
         run: |
           chmod +x ~/bin/fluvio-test
           echo "~/bin" >> $GITHUB_PATH
