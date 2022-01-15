@@ -8,10 +8,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
- # schedule:
- #   - cron: '0 * * * *'
-  pull_request:
-    branches: [master]
+  schedule:
+    - cron: '0 * * * *'
+#  pull_request:
+#    branches: [master]
   workflow_dispatch:
 jobs:
 
@@ -92,7 +92,7 @@ jobs:
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
-      RUN_TIME: 500
+      RUN_TIME: 1800
       PRODUCER: 10
     steps:
       - uses: actions/checkout@v2
