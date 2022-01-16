@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::stream::{Stream, select_all};
-use tracing::{debug, error, trace, instrument};
+use tracing::{debug, error, trace, instrument, info};
 use once_cell::sync::Lazy;
 use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
@@ -378,6 +378,7 @@ where
                         .chain(publish_stream::EndPublishSt::new(update_stream, publisher)),
                 )
             } else {
+                info!("stream ended");
                 Either::Right(empty())
             }
         };
