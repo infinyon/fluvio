@@ -54,14 +54,17 @@ pub fn self_check(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     println!("Starting Fluvio Test Self-Check");
 
-    let another_process = async_process!(async {
-        // Sleep for a moment to help (visually) validate global test timer
-        std::thread::sleep(std::time::Duration::from_secs(3));
+    let another_process = async_process!(
+        async {
+            // Sleep for a moment to help (visually) validate global test timer
+            std::thread::sleep(std::time::Duration::from_secs(3));
 
-        if self_test_case.option.force_panic {
-            panic!("Intentionally panicking inside another process");
-        }
-    });
+            if self_test_case.option.force_panic {
+                panic!("Intentionally panicking inside another process");
+            }
+        },
+        "sleep"
+    );
 
     another_process.join().unwrap();
 }

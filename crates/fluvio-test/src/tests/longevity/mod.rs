@@ -88,13 +88,16 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let mut consumer_wait = Vec::new();
     for i in 0..option.option.consumers {
         println!("Starting Consumer #{}", i);
-        let consumer = async_process!(async {
-            test_driver
-                .connect()
-                .await
-                .expect("Connecting to cluster failed");
-            consumer::consumer_stream(test_driver.clone(), option.clone(), i).await
-        });
+        let consumer = async_process!(
+            async {
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                consumer::consumer_stream(test_driver.clone(), option.clone(), i).await
+            },
+            format!("consumer-{}", i)
+        );
 
         consumer_wait.push(consumer);
     }
@@ -102,13 +105,16 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let mut producer_wait = Vec::new();
     for i in 0..option.option.producers {
         println!("Starting Producer #{}", i);
-        let producer = async_process!(async {
-            test_driver
-                .connect()
-                .await
-                .expect("Connecting to cluster failed");
-            producer::producer(test_driver, option, i).await
-        });
+        let producer = async_process!(
+            async {
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                producer::producer(test_driver, option, i).await
+            },
+            format!("producer-{}", i)
+        );
 
         producer_wait.push(producer);
     }

@@ -268,30 +268,33 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let mut consumer_wait = Vec::new();
     for n in 0..consumers {
         println!("Starting Consumer #{}", n);
-        let consumer = async_process!(async {
-            test_driver
-                .connect()
-                .await
-                .expect("Connecting to cluster failed");
+        let consumer = async_process!(
+            async {
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
 
-            if is_multi {
-                let consumer = test_driver
-                    .get_all_partitions_consumer(&test_case.environment.topic_name())
-                    .await;
-                let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
-                    get_multi_stream(consumer, offset, test_case.clone()).await;
+                if is_multi {
+                    let consumer = test_driver
+                        .get_all_partitions_consumer(&test_case.environment.topic_name())
+                        .await;
+                    let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
+                        get_multi_stream(consumer, offset, test_case.clone()).await;
 
-                consume_work(Box::pin(stream), n.into(), test_case).await
-            } else {
-                let consumer = test_driver
-                    .get_consumer(&test_case.environment.topic_name(), partition)
-                    .await;
-                let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
-                    get_single_stream(consumer, offset, test_case.clone()).await;
+                    consume_work(Box::pin(stream), n.into(), test_case).await
+                } else {
+                    let consumer = test_driver
+                        .get_consumer(&test_case.environment.topic_name(), partition)
+                        .await;
+                    let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
+                        get_single_stream(consumer, offset, test_case.clone()).await;
 
-                consume_work(stream, n.into(), test_case).await
-            }
-        });
+                    consume_work(stream, n.into(), test_case).await
+                }
+            },
+            format!("consumer-{}", n)
+        );
 
         consumer_wait.push(consumer);
     }

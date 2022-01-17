@@ -3,11 +3,12 @@
 // User responsible for running .join()
 #[macro_export]
 macro_rules! async_process {
-    ($child:expr) => {{
+    ($child:expr,$msg:expr) => {{
         let child_process = match fork::fork() {
             Ok(fork::Fork::Parent(child_pid)) => child_pid,
             Ok(fork::Fork::Child) => {
                 fluvio_future::task::run_block_on($child);
+                println!("finished child process: {}", $msg);
                 std::process::exit(0);
             }
             Err(_) => panic!("Fork failed"),

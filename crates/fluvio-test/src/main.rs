@@ -155,9 +155,12 @@ fn cluster_cleanup(option: EnvironmentSetup) {
     if option.cluster_delete() {
         let mut setup = TestCluster::new(option);
 
-        let cluster_cleanup_wait = async_process!(async {
-            setup.remove_cluster().await;
-        });
+        let cluster_cleanup_wait = async_process!(
+            async {
+                setup.remove_cluster().await;
+            },
+            "cluster_cleanup"
+        );
         let _ = cluster_cleanup_wait
             .join()
             .expect("Cluster cleanup wait failed");
@@ -166,28 +169,31 @@ fn cluster_cleanup(option: EnvironmentSetup) {
 
 // FIXME: Need to confirm SPU options count match cluster. Offer self-correcting behavior
 fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
-    let cluster_setup_wait = async_process!(async {
-        if option.remove_cluster_before() {
-            println!("Deleting existing cluster before starting test");
-            let mut setup = TestCluster::new(option.clone());
-            setup.remove_cluster().await;
-        }
+    let cluster_setup_wait = async_process!(
+        async {
+            if option.remove_cluster_before() {
+                println!("Deleting existing cluster before starting test");
+                let mut setup = TestCluster::new(option.clone());
+                setup.remove_cluster().await;
+            }
 
-        if option.cluster_start() || option.remove_cluster_before() {
-            println!("Starting cluster and testing connection");
-            let mut test_cluster = TestCluster::new(option.clone());
+            if option.cluster_start() || option.remove_cluster_before() {
+                println!("Starting cluster and testing connection");
+                let mut test_cluster = TestCluster::new(option.clone());
 
-            test_cluster
-                .start()
-                .await
-                .expect("Unable to connect to fresh test cluster");
-        } else {
-            println!("Testing connection to Fluvio cluster in profile");
-            Fluvio::connect()
-                .await
-                .expect("Unable to connect to Fluvio test cluster via profile");
-        }
-    });
+                test_cluster
+                    .start()
+                    .await
+                    .expect("Unable to connect to fresh test cluster");
+            } else {
+                println!("Testing connection to Fluvio cluster in profile");
+                Fluvio::connect()
+                    .await
+                    .expect("Unable to connect to Fluvio test cluster via profile");
+            }
+        },
+        "cluster setup"
+    );
 
     let _ = cluster_setup_wait
         .join()

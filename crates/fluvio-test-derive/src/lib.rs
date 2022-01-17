@@ -161,7 +161,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                     // Disconnect test driver to cluster before starting test
                     test_driver_setup.disconnect();
-                });
+                },"topic setup");
 
                 let _ = topic_setup_wait.join().expect("Topic setup wait failed");
 
@@ -176,6 +176,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     Ok(fork::Fork::Parent(child_pid)) => child_pid,
                     Ok(fork::Fork::Child) => {
                         #user_test_fn_iden(test_driver, test_case);
+                        println!("finished test");
                         std::process::exit(0);
                     }
                     Err(_) => panic!("Test fork failed"),
@@ -185,7 +186,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     let pid = nix::unistd::Pid::from_raw(test_process.clone());
                     match nix::sys::wait::waitpid(pid, None) {
                         Ok(status) => {
-                            tracing::debug!("[main] Test exited with status {:?}", status);
+                            println!("[main] Test exited with status {:?}", status);
 
                             // Send something through the channel to signal test completion
                             test_end.send(()).unwrap();
