@@ -205,7 +205,7 @@ jobs:
       #    path: longevity-data.tar
       #    retention-days: 5
       - name: Run diagnostics
-        if: ${{ !success() }}
+        if: failure()
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
