@@ -87,12 +87,12 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1,r2,r3,r4,r5,r6]
+        run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
         binary: [dev]
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
-      RUN_TIME: 60
+      RUN_TIME: 600
       PRODUCER: 10
     steps:
       - uses: actions/checkout@v2
