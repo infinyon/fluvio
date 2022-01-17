@@ -1,7 +1,4 @@
 use std::process::{self, exit};
-use std::env;
-use std::path::Path;
-use std::fs::{remove_file, File};
 use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
@@ -22,7 +19,7 @@ use nix::sys::signal::{kill, Signal};
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
 
-const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
+//const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
 
 fn main() {
     let option = BaseCli::from_args();
@@ -59,7 +56,9 @@ fn main() {
         exit(-1);
     }
 
-    let panic_timer = TestTimer::start();
+    let _panic_timer = TestTimer::start();
+
+    /*
     std::panic::set_hook(Box::new(move |panic_info| {
         let mut panic_timer = panic_timer.clone();
         panic_timer.stop();
@@ -77,8 +76,11 @@ fn main() {
             println!("{}", test_result);
         }
     }));
+    */
 
     let parent_process_id: u32 = std::process::id();
+
+    println!("Root process id: {}", parent_process_id);
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 
@@ -121,20 +123,17 @@ fn run_test(
 
     // If we've panicked from the test, we need to terminate all the child processes too to stop the test
     let test_result = match test_result {
-        Ok(r) => {
-            let mut res = r.unwrap();
-            if Path::new(CI_FAIL_FLAG).exists() {
-                remove_file(CI_FAIL_FLAG).unwrap();
-                res.success = false;
-            }
-            res
-        }
+        Ok(res) => res.unwrap(),
         Err(_) => {
+            println!("Error from Test");
+            println!("Root process id: {}", std::process::id());
+            kill(Pid::from_raw(0), Signal::SIGINT).expect("Unable to kill test process");
             // nix uses pid 0 to refer to the group process, so reap the child processes
-            let pid = Pid::from_raw(0);
-
+            let _pid = Pid::from_raw(0);
+            //std::process::exit(1);
             // CI uses SIGTERM to report if jobs are cancelled
             // so we need to report failure a little differently
+            /*
             if env::var("CI").is_ok() {
                 // Create a file for CI to look for, bc using signals causes issues
                 // Since we don't need to clean our environment, terminating child proc less important
@@ -144,6 +143,7 @@ fn run_test(
             } else {
                 kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             }
+            */
             TestResult::default()
         }
     };
