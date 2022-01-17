@@ -29,9 +29,11 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
     let mut test_timer = sleep(option.option.runtime_seconds + consumer_buffer_time);
     let mut records_recvd = 0;
 
+    let start_consume = SystemTime::now();
+
     'consumer_loop: loop {
         // Take a timestamp before record consumed
-        let now = SystemTime::now();
+        // let now = SystemTime::now();
 
         select! {
 
@@ -70,7 +72,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
                         });
 
                         if let Err(err) = result {
-                            let elapsed_time = now.elapsed().unwrap().as_secs();
+                            let elapsed_time = start_consume.elapsed().unwrap().as_secs();
                             println!(
                                     "[consumer-{consumer_id}] record: {records_recvd} offset: {}, elapsed: {elapsed_time}  seconds",
                                     record_raw.offset(),
@@ -83,7 +85,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
                     //    let elapsed_time = now.elapsed().unwrap().as_secs();
 
                     } else {
-                        let elapsed_time = now.elapsed().unwrap().as_secs();
+                        let elapsed_time = start_consume.elapsed().unwrap().as_secs();
                         panic!("{}",format!("Stream ended unexpectedly, consumer: {consumer_id}, records received: {records_recvd}, seconds: {elapsed_time}"));
                     }
                 }
