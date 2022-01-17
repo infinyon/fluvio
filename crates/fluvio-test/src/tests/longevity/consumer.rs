@@ -71,6 +71,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
                             assert!(test_record.validate_crc());
                         });
 
+                        /* 
                         if let Err(err) = result {
                             let elapsed_time = start_consume.elapsed().unwrap().as_secs();
                             println!(
@@ -79,7 +80,8 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
                                 );
 
                             panic!("Consumer {consumer_id} failed to consume record: {:?}", err);
-                        }
+                        }*/
+                        panic!("fake test");
 
 
                     //    let elapsed_time = now.elapsed().unwrap().as_secs();
