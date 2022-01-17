@@ -87,7 +87,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
+        run: [r1,r2,r3,r4,r5]
         binary: [dev]
     env:
       K3D_VERSION: v4.4.8
