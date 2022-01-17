@@ -1,6 +1,6 @@
 use std::fmt;
 
-use tracing::{instrument};
+use tracing::{debug, instrument};
 
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestMessage;
@@ -93,6 +93,8 @@ impl FluvioSocket {
         addr: &str,
         connector: &dyn TcpDomainConnector,
     ) -> Result<Self, SocketError> {
+        debug!("connecting to addr at: {}", addr);
+
         let (write, read, fd) = connector.connect(addr).await?;
         Ok(Self::from_stream(write, read, fd))
     }

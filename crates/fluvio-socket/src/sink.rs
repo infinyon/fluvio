@@ -105,7 +105,6 @@ mod file {
 
     use fluvio_protocol::store::{FileWrite, StoreValue};
     use fluvio_future::zero_copy::ZeroCopy;
-    use tracing::error;
 
     use super::*;
 
@@ -155,13 +154,9 @@ mod file {
                                 f_slice.len()
                             );
                             let writer = ZeroCopy::raw(self.fd);
-                            if let Err(err) = writer.copy_slice(&f_slice).await {
-                                error!("error copying file slice: {:#?}", f_slice);
-                                return Err(SocketError::Io(IoError::new(
-                                    ErrorKind::Other,
-                                    format!("zero copy failed: {}", err),
-                                )));
-                            };
+                            writer.copy_slice(&f_slice).await.map_err(|err| {
+                                IoError::new(ErrorKind::Other, format!("zero copy failed: {}", err))
+                            })?;
                             trace!("finish writing file slice");
                         }
                     }
