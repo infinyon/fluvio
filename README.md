@@ -1,7 +1,7 @@
 <div align="center">
 <h1>Fluvio</h1>
 <a href="https://fluvio.io" target="_blank">
- <strong>The programmable streaming platform for data in motion</strong>
+ <strong>The programmable data streaming platform</strong>
  </a>
 <br>
 <br>
@@ -11,25 +11,16 @@
 <a href="https://github.com/infinyon/fluvio/actions/workflows/ci.yml">
 <img src="https://github.com/infinyon/fluvio/workflows/CI/badge.svg" alt="CI Status" />
 </a>
-<!-- CI Tier2 status -->
-<a href="https://github.com/infinyon/fluvio/actions/workflows/ci_tier2.yaml">
-<img src="https://github.com/infinyon/fluvio/workflows/CI_Platform_Tier2/badge.svg" alt="Tier2 Status" />
-</a>
+
 <!-- CD status -->
 <a href="https://github.com/infinyon/fluvio/actions/workflows/cd_dev.yaml">
 <img src="https://github.com/infinyon/fluvio/workflows/CD_Dev/badge.svg" alt="CD Status" />
 </a>
-<!-- Publish status -->
-<a href="https://github.com/infinyon/fluvio/actions/workflows/publish.yml">
-<img src="https://github.com/infinyon/fluvio/workflows/Publish/badge.svg" alt="Publish CI Status" />
-</a>
-<!-- Release status -->
-<a href="https://github.com/infinyon/fluvio/actions/workflows/release.yml">
-<img src="https://github.com/infinyon/fluvio/workflows/Release/badge.svg" alt="Release CI Status" />
-</a>
+
 <a href="https://crates.io/crates/fluvio">
 <img src="https://img.shields.io/crates/v/fluvio?style=flat" alt="Crates.io version" />
 </a>
+
 <!-- docs.rs docs -->
 <a href="https://docs.rs/fluvio">
 <img src="https://docs.rs/fluvio/badge.svg" alt="Fluvio documentation" />
@@ -50,9 +41,8 @@
 <br>
 </div>
 
-
-Fluvio is a high-performance distributed streaming platform that's written
-in Rust, built to make it easy to develop real-time applications.
+Fluvio is a high-performance distributed data streaming platform that's written
+in Rust, built to make it easy to run real-time applications.
 
 ## Quick Links
 
