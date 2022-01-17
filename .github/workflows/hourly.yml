@@ -17,7 +17,7 @@ jobs:
 
   build_long_binaries:
     name: Test buiild for ${{ matrix.binary }}  on (${{ matrix.os }})
-    if: ${{ false }}
+#    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -79,8 +79,8 @@ jobs:
   longevity:
     name: Hourly Longevity test 
     runs-on: ${{ matrix.os }}
-#    needs:
-#      - build_long_binaries
+    needs:
+      - build_long_binaries
     timeout-minutes: 60
     strategy:
       fail-fast: false 
@@ -92,34 +92,34 @@ jobs:
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
-      RUN_TIME: 1500
+      RUN_TIME: 60
       PRODUCER: 10
     steps:
       - uses: actions/checkout@v2
 
       - name: Login GH CLI
-     #   if: ${{ false }}
+        if: ${{ false }}
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-      #   if: ${{ false }}
+        if: ${{ false }}
         run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
       - name: Unpack fluvio-test from dev release
-       #   if: ${{ false }}
+        if: ${{ false }}
         run: |
           cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
 
       - name: Download build artifact - fluvio-test
-        if: ${{ false }}
+   #     if: ${{ false }}
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
 
       - name: Set up Fluvio binaries from build
-        if: ${{ false }}
+    #    if: ${{ false }}
         run: |
           chmod +x ~/bin/fluvio-test
           echo "~/bin" >> $GITHUB_PATH
@@ -178,6 +178,7 @@ jobs:
           sleep 15
 
       - name: Run longevity test
+        timeout-minutes: 60
         run: fluvio-test longevity -- --runtime-seconds=${{ env.RUN_TIME }} --producers ${{ env.PRODUCER }} --consumers ${{ env.PRODUCER }}
           
       ## If the test passed, then copy the data from cluster to store into artifacts
