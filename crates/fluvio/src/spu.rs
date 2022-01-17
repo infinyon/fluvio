@@ -120,8 +120,6 @@ impl SpuPool {
     async fn connect_to_leader(&self, leader: SpuId) -> Result<SpuSocket, FluvioError> {
         let spu = self.metadata.spus().look_up_by_id(leader).await?;
 
-        debug!("connecting to spu: {}", spu.spec);
-
         let mut client_config = self.config.with_prefix_sni_domain(spu.key());
 
         let spu_addr = match spu.spec.public_endpoint_local {
@@ -133,7 +131,7 @@ impl SpuPool {
             _ => spu.spec.public_endpoint.addr(),
         };
 
-        debug!("spu addr: {}", spu_addr);
+        debug!(leader = spu.spec.id,addr = %spu_addr,"try connecting to spu");
         client_config.set_addr(spu_addr);
         let versioned_socket = client_config.connect().await?;
         let (socket, config, versions) = versioned_socket.split();

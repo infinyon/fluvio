@@ -144,6 +144,8 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
+                println!("Using Timeout {} secs",test_case.environment.timeout().as_secs());
+
                 // Setup topics before starting test
                 // Doing setup in another process to avoid async in parent process
                 // Otherwise there is .await blocking in child processes if tests fork() too
@@ -195,6 +197,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // All of this is to handle test timeout
                 let mut sel = crossbeam_channel::Select::new();
                 let test_thread_done = sel.recv(&test_end_listener);
+
                 let thread_selector = sel.select_timeout(test_case.environment.timeout());
 
                 match thread_selector {

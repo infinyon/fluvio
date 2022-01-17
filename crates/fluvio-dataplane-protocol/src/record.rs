@@ -278,7 +278,13 @@ impl Decoder for RecordSet {
                 Ok(_) => self.batches.push(batch),
                 Err(err) => match err.kind() {
                     ErrorKind::UnexpectedEof => {
-                        warn!("not enough bytes for batch: {}", buf.remaining());
+                        warn!(
+                            len,
+                            remaining = buf.remaining(),
+                            version,
+                            count,
+                            "not enough bytes for decoding batch from recordset"
+                        );
                         return Ok(());
                     }
                     _ => {
