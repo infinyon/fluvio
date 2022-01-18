@@ -28,3 +28,26 @@ macro_rules! async_process {
         child_waitpid_joinhandle
     }};
 }
+
+#[macro_export]
+macro_rules! fork_and_wait {
+    ($child:expr) => {{
+        let child_process = match fork::fork() {
+            Ok(fork::Fork::Parent(child_pid)) => child_pid,
+            Ok(fork::Fork::Child) => {
+                $child;
+                std::process::exit(0);
+            }
+            Err(_) => panic!("Fork failed"),
+        };
+
+        let pid = nix::unistd::Pid::from_raw(child_process);
+        match nix::sys::wait::waitpid(pid, None) {
+            Ok(status) => {
+                println!("[fork] Child exited with status {:?}", status);
+                status
+            }
+            Err(err) => panic!("[fork] waitpid() failed: {}", err),
+        }
+    }};
+}

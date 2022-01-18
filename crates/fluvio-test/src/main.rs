@@ -13,7 +13,7 @@ use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
-use fluvio_test_util::async_process;
+use fluvio_test_util::{async_process, fork_and_wait};
 //use tracing::debug;
 
 //use nix::unistd::Pid;
@@ -86,6 +86,24 @@ fn main() {
 
     println!("Root process id: {}", parent_process_id);
 
+    let _setup_status = fork_and_wait! {
+        fluvio_future::task::run_block_on(async {
+            let test_case = TestCase::new(option.environment.clone(), test_opt.clone());
+            let test_cluster_opts = TestCluster::new(option.environment.clone());
+            let mut setup_driver = TestDriver::new(Some(test_cluster_opts));
+            // Connect test driver to cluster before starting test
+            setup_driver.connect().await.expect("Unable to connect to cluster");
+
+            // Create topic before starting test
+            setup_driver.create_topic(&test_case.environment)
+                .await
+                .expect("Unable to create default topic");
+
+            // Disconnect test driver to cluster before starting test
+            setup_driver.disconnect();
+        })
+    };
+
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 
     println!("{}", test_result);
@@ -115,13 +133,10 @@ fn run_test(
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
 ) -> TestResult {
+    let _start = SystemTime::now();
+    let test_case = TestCase::new(environment.clone(), test_opt);
     let test_cluster_opts = TestCluster::new(environment.clone());
     let test_driver = TestDriver::new(Some(test_cluster_opts));
-
-    let test_case = TestCase::new(environment, test_opt);
-
-    let _start = SystemTime::now();
-
     let child_pid = match fork::fork() {
         Ok(fork::Fork::Parent(child_pid)) => child_pid,
         Ok(fork::Fork::Child) => {
