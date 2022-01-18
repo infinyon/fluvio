@@ -144,12 +144,13 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
-                println!("Using Timeout {} secs",test_case.environment.timeout().as_secs());
+             //   println!("Using Timeout {} secs",test_case.environment.timeout().as_secs());
 
                 // Setup topics before starting test
                 // Doing setup in another process to avoid async in parent process
                 // Otherwise there is .await blocking in child processes if tests fork() too
-                let topic_setup_wait = async_process!(async {
+                /*
+                fluvio_future::task::run_block_on(async {
                     let mut test_driver_setup = test_driver.clone();
                     // Connect test driver to cluster before starting test
                     test_driver_setup.connect().await.expect("Unable to connect to cluster");
@@ -161,69 +162,75 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                     // Disconnect test driver to cluster before starting test
                     test_driver_setup.disconnect();
-                },"topic setup");
+                });
+                */
 
-                let _ = topic_setup_wait.join().expect("Topic setup wait failed");
+                println!("starting test in fork");
 
-                 // Start a test timer for the user's test now that setup is done
-                let mut test_timer = TestTimer::start();
-                let (test_end, test_end_listener) = crossbeam_channel::unbounded();
-
-                // Run the test in its own process
-                // We're not using the `async_process` macro here
-                // Only bc we are sending something to a channel in waiting thread
-                let test_process = match fork::fork() {
+                #user_test_fn_iden(test_driver, test_case);
+                /*
+                let child_process = match fork::fork {
                     Ok(fork::Fork::Parent(child_pid)) => child_pid,
                     Ok(fork::Fork::Child) => {
-                        #user_test_fn_iden(test_driver, test_case);
-                        println!("finished test");
-                        std::process::exit(0);
+                        use std::panic::AssertUnwindSafe;
+                        use std::process::exit;
+
+                        println!("forked test process");
+                        /*
+                        let status = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                            #user_test_fn_iden(test_driver, test_case);
+                        }));
+                        */
+
+                       // #user_test_fn_iden(test_driver, test_case);
+
+                        /*
+
+                        match status {
+                            Ok(_) => {
+                                println!("test passed");
+                                true
+                            }
+                            Err(e) => {
+                                println!("test failed");
+                                println!("{:?}", e);
+                                false
+                            }
+                        }
+                        */
                     }
-                    Err(_) => panic!("Test fork failed"),
+                    Err(err) =>  {
+                        tracing::error!("Failed to fork test process: {}", err);
+                        return Err(TestResult {
+                            success: false,
+                            duration: std::time::Duration::new(0, 0),
+                            ..std::default::Default::default()
+                        })
+                    }
                 };
 
-                let test_wait = std::thread::spawn( move || {
-                    let pid = nix::unistd::Pid::from_raw(test_process.clone());
-                    match nix::sys::wait::waitpid(pid, None) {
-                        Ok(status) => {
-                            println!("[main] Test exited with status {:?}", status);
+                let pid = nix::unistd::Pid::from_raw(child_process);
+                */
 
-                            // Send something through the channel to signal test completion
-                            test_end.send(()).unwrap();
-                        }
-                        Err(err) => panic!("[main] Test failed: {}", err),
+                /*
+                let status = match nix::sys::wait::waitpid(pid, None) {
+                    Ok(status) => {
+                        tracing::debug!("[fork] Child exited with status {:?}", status);
+                        status
                     }
-                });
+                    Err(err) => panic!("[fork] waitpid() failed: {}", err),
+                };
+                */
 
-                // All of this is to handle test timeout
-                let mut sel = crossbeam_channel::Select::new();
-                let test_thread_done = sel.recv(&test_end_listener);
 
-                let thread_selector = sel.select_timeout(test_case.environment.timeout());
+                println!("finished test");
 
-                match thread_selector {
-                    Err(_) => {
-                        // Need to catch this panic to kill test parent process + all child processes
-                        panic!("Test timeout met: {:?}", test_case.environment.timeout());
-                    },
-                    Ok(thread_selector) => match thread_selector.index() {
-                        i if i == test_thread_done => {
-                            // This is needed to let crossbeam select channel know we selected an operation, or it'll panic
-                            let _ = thread_selector.recv(&test_end_listener);
+                 Ok(TestResult {
+                    success: true,
+                    duration: std::time::Duration::new(0, 0),
+                    ..std::default::Default::default()
+                })
 
-                            // Stop the test timer before reporting
-                            test_timer.stop();
-
-                            Ok(TestResult {
-                                success: true,
-                                duration: test_timer.duration(),
-                                ..std::default::Default::default()
-                            })
-
-                        }
-                        _ => unreachable!()
-                    }
-                }
             } else {
                 println!("Test skipped...");
 

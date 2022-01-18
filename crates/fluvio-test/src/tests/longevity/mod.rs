@@ -73,7 +73,7 @@ impl TestOption for LongevityTestOption {
 }
 
 #[fluvio_test(topic = "longevity")]
-pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
+pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
     let option: LongevityTestCase = test_case.into();
 
     println!("Starting Longevity Test");
@@ -90,10 +90,12 @@ pub fn longevity(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         println!("Starting Consumer #{}", i);
         let consumer = async_process!(
             async {
+                println!("try connectiong");
                 test_driver
                     .connect()
                     .await
                     .expect("Connecting to cluster failed");
+                println!("connected");
                 consumer::consumer_stream(test_driver.clone(), option.clone(), i).await
             },
             format!("consumer-{}", i)

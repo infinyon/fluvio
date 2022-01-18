@@ -8,8 +8,13 @@ use std::any::Any;
 use std::fmt;
 use std::path::PathBuf;
 use std::time::Duration;
+use std::fs::File;
+use std::io::Read;
+use std::collections::BTreeMap;
 
 use structopt::StructOpt;
+use tracing::debug;
+use serde::{Deserialize};
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
@@ -23,12 +28,6 @@ use fluvio::metadata::{
     connector::{ManagedConnectorSpec, SecretString},
 };
 use fluvio_future::timer::sleep;
-
-use tracing::debug;
-use std::fs::File;
-use std::io::Read;
-use std::collections::BTreeMap;
-use serde::{Deserialize};
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {

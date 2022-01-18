@@ -1,7 +1,9 @@
-use std::env;
 use std::process::{self, exit};
 use std::time::SystemTime;
+
+use nix::sys::wait::WaitStatus;
 use structopt::StructOpt;
+
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
 use fluvio_test_util::test_meta::test_result::TestResult;
@@ -14,8 +16,8 @@ use fluvio_test_util::test_meta::test_timer::TestTimer;
 use fluvio_test_util::async_process;
 //use tracing::debug;
 
-use nix::unistd::Pid;
-use nix::sys::signal::{kill, Signal};
+//use nix::unistd::Pid;
+//use nix::sys::signal::{kill, Signal};
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -97,10 +99,8 @@ fn main() {
 
     if test_result.success {
         exit(0)
-    } else if env::var("CI").is_ok() {
-        exit(-1)
     } else {
-        kill(Pid::from_raw(0), Signal::SIGINT).expect("Unable to kill test process");
+        exit(-1)
     }
 }
 
@@ -120,45 +120,44 @@ fn run_test(
 
     let test_case = TestCase::new(environment, test_opt);
 
-    let start = SystemTime::now();
+    let _start = SystemTime::now();
 
-    // Run the test, but catch the panic so we can fail the test if event if we've got multiple processes running
-    let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
-        (test_meta.test_fn)(test_driver, test_case)
-    }));
-
-    // If we've panicked from the test, we need to terminate all the child processes too to stop the test
-    let test_result = match test_result {
-        Ok(res) => res.unwrap(),
-        Err(err) => {
-            println!("Error from Test: {:?}", err);
-            println!("Root process id: {}", std::process::id());
-            // kill(Pid::from_raw(0), Signal::SIGINT).expect("Unable to kill test process");
-            // nix uses pid 0 to refer to the group process, so reap the child processes
-            let _pid = Pid::from_raw(0);
-            //std::process::exit(1);
-            // CI uses SIGTERM to report if jobs are cancelled
-            // so we need to report failure a little differently
-            /*
-            if env::var("CI").is_ok() {
-                // Create a file for CI to look for, bc using signals causes issues
-                // Since we don't need to clean our environment, terminating child proc less important
-                if !Path::new(CI_FAIL_FLAG).exists() {
-                    let _ = File::create(CI_FAIL_FLAG).unwrap();
+    let child_pid = match fork::fork() {
+        Ok(fork::Fork::Parent(child_pid)) => child_pid,
+        Ok(fork::Fork::Child) => {
+            //  fluvio_future::task::run_block_on($child);
+            //  println!("finished child process: {}", $msg);
+            match (test_meta.test_fn)(test_driver, test_case) {
+                Ok(_) => {
+                    println!("Test passed");
+                    exit(0)
                 }
-            } else {
-                kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
-            }
-            */
-            TestResult {
-                success: false,
-                duration: start.elapsed().unwrap(),
-                ..Default::default()
+                Err(e) => {
+                    println!("Test failed: {}", e);
+                    exit(-1)
+                }
             }
         }
+        Err(_) => panic!("Fork failed"),
     };
 
-    test_result
+    let pid = nix::unistd::Pid::from_raw(child_pid);
+
+    let status = match nix::sys::wait::waitpid(pid, None) {
+        Ok(status) => {
+            tracing::debug!("[fork] Child exited with status {:?}", status);
+            status
+        }
+        Err(err) => panic!("[fork] waitpid() failed: {}", err),
+    };
+
+    println!("test status: {:?}", status);
+
+    TestResult {
+        success: false,
+        duration: std::time::Duration::new(0, 0),
+        ..std::default::Default::default()
+    }
 }
 
 fn cluster_cleanup(option: EnvironmentSetup) {
