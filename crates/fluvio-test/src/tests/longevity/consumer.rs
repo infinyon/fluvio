@@ -45,9 +45,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
 
                 stream_next = stream.next() => {
 
-
-                    #[allow(clippy::eq_op)]
-                    if 1 == 1 {
+                    if consumer_id == 1 {
                         panic!("fake test");
                     }
 
