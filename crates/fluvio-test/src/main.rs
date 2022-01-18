@@ -156,7 +156,7 @@ fn run_test(
                     cluster_cleanup(environment);
                     println!("{}", test_result);
                     println!("trying to kill all");
-                    kill(Pid::from_raw(0), Signal::SIGKILL).expect("Unable to kill test process");
+                  //  kill(Pid::from_raw(0), Signal::SIGKILL).expect("Unable to kill test process");
                 }
             };
             0
