@@ -1,4 +1,6 @@
+use std::env;
 use std::process::{self, exit};
+use std::time::SystemTime;
 use structopt::StructOpt;
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
@@ -84,19 +86,21 @@ fn main() {
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 
+    println!("{}", test_result);
     // If parent process, we want to
     // * set the exit code
     // * print test results
     // * cleanup cluster
-    if process::id() == parent_process_id {
-        cluster_cleanup(option.environment);
-        print_results(parent_process_id, test_result.clone());
 
-        if test_result.success {
-            exit(0)
-        } else {
-            exit(1)
-        }
+    cluster_cleanup(option.environment);
+    print_results(parent_process_id, test_result.clone());
+
+    if test_result.success {
+        exit(0)
+    } else if env::var("CI").is_ok() {
+        exit(-1)
+    } else {
+        kill(Pid::from_raw(0), Signal::SIGINT).expect("Unable to kill test process");
     }
 }
 
@@ -116,6 +120,8 @@ fn run_test(
 
     let test_case = TestCase::new(environment, test_opt);
 
+    let start = SystemTime::now();
+
     // Run the test, but catch the panic so we can fail the test if event if we've got multiple processes running
     let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
         (test_meta.test_fn)(test_driver, test_case)
@@ -124,10 +130,10 @@ fn run_test(
     // If we've panicked from the test, we need to terminate all the child processes too to stop the test
     let test_result = match test_result {
         Ok(res) => res.unwrap(),
-        Err(_) => {
-            println!("Error from Test");
+        Err(err) => {
+            println!("Error from Test: {:?}", err);
             println!("Root process id: {}", std::process::id());
-            kill(Pid::from_raw(0), Signal::SIGINT).expect("Unable to kill test process");
+            // kill(Pid::from_raw(0), Signal::SIGINT).expect("Unable to kill test process");
             // nix uses pid 0 to refer to the group process, so reap the child processes
             let _pid = Pid::from_raw(0);
             //std::process::exit(1);
@@ -144,7 +150,11 @@ fn run_test(
                 kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
             }
             */
-            TestResult::default()
+            TestResult {
+                success: false,
+                duration: start.elapsed().unwrap(),
+                ..Default::default()
+            }
         }
     };
 
