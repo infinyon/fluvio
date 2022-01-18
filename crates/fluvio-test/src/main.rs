@@ -1,7 +1,7 @@
+use std::panic::AssertUnwindSafe;
 use std::process::{self, exit};
 use std::time::SystemTime;
 
-use nix::sys::wait::WaitStatus;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
@@ -9,15 +9,14 @@ use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
-use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
 use fluvio_test_util::{async_process, fork_and_wait};
 //use tracing::debug;
 
-//use nix::unistd::Pid;
-//use nix::sys::signal::{kill, Signal};
+use nix::unistd::Pid;
+use nix::sys::signal::{kill, Signal};
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -133,44 +132,55 @@ fn run_test(
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
 ) -> TestResult {
-    let _start = SystemTime::now();
+    let start = SystemTime::now();
     let test_case = TestCase::new(environment.clone(), test_opt);
     let test_cluster_opts = TestCluster::new(environment.clone());
     let test_driver = TestDriver::new(Some(test_cluster_opts));
     let child_pid = match fork::fork() {
         Ok(fork::Fork::Parent(child_pid)) => child_pid,
         Ok(fork::Fork::Child) => {
-            //  fluvio_future::task::run_block_on($child);
-            //  println!("finished child process: {}", $msg);
-            match (test_meta.test_fn)(test_driver, test_case) {
+            let status = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                (test_meta.test_fn)(test_driver, test_case)
+            }));
+            match status {
                 Ok(_) => {
-                    println!("Test passed");
-                    exit(0)
+                    println!("test passed");
                 }
                 Err(e) => {
-                    println!("Test failed: {}", e);
-                    exit(-1)
+                    println!("test failed: {:?}", e);
+                    let test_result = TestResult {
+                        success: false,
+                        duration: start.elapsed().unwrap(),
+                        ..std::default::Default::default()
+                    };
+                    cluster_cleanup(environment);
+                    println!("{}", test_result);
+                    println!("trying to kill all");
+                    kill(Pid::from_raw(0), Signal::SIGKILL).expect("Unable to kill test process");
                 }
-            }
+            };
+            0
         }
         Err(_) => panic!("Fork failed"),
     };
 
-    let pid = nix::unistd::Pid::from_raw(child_pid);
+    let child_pid = nix::unistd::Pid::from_raw(child_pid);
+    println!("waiting for child process: {}", child_pid);
 
-    let status = match nix::sys::wait::waitpid(pid, None) {
+    let status = match nix::sys::wait::waitpid(child_pid, None) {
         Ok(status) => {
-            tracing::debug!("[fork] Child exited with status {:?}", status);
+            print!("test process exit with {:?}", status);
+            //  kill(child_pid, Signal::SIGINT).expect("Unable to kill test process");
             status
         }
-        Err(err) => panic!("[fork] waitpid() failed: {}", err),
+        Err(err) => panic!("waitpid() failed: {}", err),
     };
 
     println!("test status: {:?}", status);
 
     TestResult {
         success: false,
-        duration: std::time::Duration::new(0, 0),
+        duration: start.elapsed().unwrap(),
         ..std::default::Default::default()
     }
 }

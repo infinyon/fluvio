@@ -167,65 +167,10 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
 
                 println!("starting test in fork");
 
+                use std::panic::AssertUnwindSafe;
                 #user_test_fn_iden(test_driver, test_case);
-                /*
-                let child_process = match fork::fork {
-                    Ok(fork::Fork::Parent(child_pid)) => child_pid,
-                    Ok(fork::Fork::Child) => {
-                        use std::panic::AssertUnwindSafe;
-                        use std::process::exit;
 
-                        println!("forked test process");
-                        /*
-                        let status = std::panic::catch_unwind(AssertUnwindSafe(|| {
-                            #user_test_fn_iden(test_driver, test_case);
-                        }));
-                        */
-
-                       // #user_test_fn_iden(test_driver, test_case);
-
-                        /*
-
-                        match status {
-                            Ok(_) => {
-                                println!("test passed");
-                                true
-                            }
-                            Err(e) => {
-                                println!("test failed");
-                                println!("{:?}", e);
-                                false
-                            }
-                        }
-                        */
-                    }
-                    Err(err) =>  {
-                        tracing::error!("Failed to fork test process: {}", err);
-                        return Err(TestResult {
-                            success: false,
-                            duration: std::time::Duration::new(0, 0),
-                            ..std::default::Default::default()
-                        })
-                    }
-                };
-
-                let pid = nix::unistd::Pid::from_raw(child_process);
-                */
-
-                /*
-                let status = match nix::sys::wait::waitpid(pid, None) {
-                    Ok(status) => {
-                        tracing::debug!("[fork] Child exited with status {:?}", status);
-                        status
-                    }
-                    Err(err) => panic!("[fork] waitpid() failed: {}", err),
-                };
-                */
-
-
-                println!("finished test");
-
-                 Ok(TestResult {
+                Ok(TestResult {
                     success: true,
                     duration: std::time::Duration::new(0, 0),
                     ..std::default::Default::default()
