@@ -1,8 +1,10 @@
+use std::collections::HashMap;
 use std::panic::AssertUnwindSafe;
 use std::process::{self, exit};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::SystemTime;
+use std::thread;
+use std::time::{SystemTime, Duration};
 
 use structopt::StructOpt;
 
@@ -16,11 +18,10 @@ use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
 use fluvio_test_util::test_meta::test_timer::TestTimer;
 use fluvio_test_util::{async_process, fork_and_wait};
 
-
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
-use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal};
+use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
 
 //const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
 
@@ -60,9 +61,9 @@ fn main() {
     }
 
     let _panic_timer = TestTimer::start();
-    let root_pid = get_current_pid().expect("Unable to get current pid");
+    
 
-    /* 
+    /*
     std::panic::set_hook(Box::new(move |panic_info| {
         println!("panic hook triggered");
 
@@ -70,20 +71,19 @@ fn main() {
         println!("current test pid: {}", current_pid);
         let sys = System::new();
         let processes = sys.processes();
-        // get this process 
+        // get this process
         let current_process = processes.get(&current_pid).expect("Unable to get current process");
         let g_id = current_process.gid;
         for (pid, process) in sys.processes() {
             if pid != &current_pid && pid != &root_pid && process.gid == g_id {
                 println!("pid {} name {}", pid, process.name());
                 process.kill();
-            }   
+            }
         }
-        
+
         process::exit(1);
     }));
     */
-
 
     let _setup_status = fork_and_wait! {
         fluvio_future::task::run_block_on(async {
@@ -121,8 +121,6 @@ fn main() {
     }
 }
 
-
-
 fn run_test(
     environment: EnvironmentSetup,
     test_opt: Box<dyn TestOption>,
@@ -133,10 +131,9 @@ fn run_test(
     let test_cluster_opts = TestCluster::new(environment.clone());
     let test_driver = TestDriver::new(Some(test_cluster_opts));
 
-
     let term = Arc::new(AtomicBool::new(false));
-    signal_hook::flag::register(signal_hook::consts::SIGUSR1, Arc::clone(&term)).expect("fail to register signal hook");
-    
+    signal_hook::flag::register(signal_hook::consts::SIGUSR1, Arc::clone(&term))
+        .expect("fail to register signal hook");
 
     println!("supported signals: {:?}", System::SUPPORTED_SIGNALS);
     let root_pid = get_current_pid().expect("Unable to get current pid");
@@ -146,10 +143,9 @@ fn run_test(
         panic!("Unable to refresh root");
     }
     let root_process = sys.process(root_pid).expect("Unable to get root process");
-    let child_pid = match fork::fork() {
+    let _child_pid = match fork::fork() {
         Ok(fork::Fork::Parent(child_pid)) => child_pid,
         Ok(fork::Fork::Child) => {
-            
             let status = std::panic::catch_unwind(AssertUnwindSafe(|| {
                 (test_meta.test_fn)(test_driver, test_case)
             }));
@@ -157,9 +153,9 @@ fn run_test(
                 Ok(_) => {
                     println!("test passed");
                 }
-                Err(e) => {
-                    println!("test panic: {:?}", e);
-                    /* 
+                Err(_e) => {
+                    //println!("test panic: {:?}", e);
+                    /*
                     let test_result = TestResult {
                         success: false,
                         duration: start.elapsed().unwrap(),
@@ -167,23 +163,23 @@ fn run_test(
                     };
                     cluster_cleanup(environment);
                     println!("{}", test_result);
-                   
+
                     */
 
-                   // let current_pid = get_current_pid().expect("Unable to get current pid");
-                   // println!("current test pid: {}", current_pid);
-                    
+                    // let current_pid = get_current_pid().expect("Unable to get current pid");
+                    // println!("current test pid: {}", current_pid);
+                    println!("test failed, signalling parent");
                     root_process.kill_with(Signal::User1);
-                    /* 
+                    /*
                     let g_id = current_process.gid;
                     for (pid, process) in sys.processes() {
                         if pid != &current_pid && pid != &root_pid && process.gid == g_id {
                             println!("pid {} name {}", pid, process.name());
                             process.kill();
-                        }   
+                        }
                     }
                     */
-                    
+
                     process::exit(1);
                 }
             };
@@ -192,29 +188,45 @@ fn run_test(
         Err(_) => panic!("Fork failed"),
     };
 
+    println!("running waiting for signal");
     while !term.load(Ordering::Relaxed) {
-        // Do some time-limited stuff here
-        // (if this could block forever, then there's no guarantee the signal will have any
-        // effect).
+        thread::sleep(Duration::from_millis(10));
     }
 
     println!("USER signal!");
     let mut sys2 = System::new();
     sys2.refresh_processes();
     let g_id = root_process.gid;
-    for (pid, process) in sys2.processes() {
-        if pid != &root_pid && process.gid == g_id {
-            if let Some(parent ) = process.parent() {
-                if parent == root_pid {
-                    println!("pid {} name {}", pid, process.name());
-                    process.kill();
+
+    let proceses = sys2.processes();
+
+    fn is_root(process: &Process, r_id: Pid, processes: &HashMap<Pid, Process>) -> bool {
+        if let Some(parent_id) = process.parent() {
+            if parent_id == r_id {
+                true
+            } else {
+                if let Some(parent_process) = processes.get(&parent_id) {
+                    is_root(parent_process, r_id, processes)
+                } else {
+                    false
                 }
             }
-            //process.kill();
-        }   
+        } else {
+            false
+        }
     }
-    
 
+    for (pid, process) in proceses {
+        if pid != &root_pid && process.gid == g_id {
+            if is_root(process, root_pid, proceses) {
+                println!("killing pid {} name {}", pid, process.name());
+                process.kill();
+            }
+          
+        }
+    }
+
+    /*
     let child_pid = nix::unistd::Pid::from_raw(child_pid);
     println!("waiting for child process: {}", child_pid);
 
@@ -226,9 +238,9 @@ fn run_test(
         }
         Err(err) => panic!("waitpid() failed: {}", err),
     };
+    */
 
-    println!("test status: {:?}", status);
-    
+    //println!("test status: {:?}", status);
 
     TestResult {
         success: false,
