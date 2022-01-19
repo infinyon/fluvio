@@ -8,7 +8,7 @@ macro_rules! async_process {
             Ok(fork::Fork::Parent(child_pid)) => child_pid,
             Ok(fork::Fork::Child) => {
                 fluvio_future::task::run_block_on($child);
-                println!("finished child process: {}", $msg);
+                tracing::debug!("finished child process: {}", $msg);
                 std::process::exit(0);
             }
             Err(_) => panic!("Fork failed"),
@@ -44,7 +44,7 @@ macro_rules! fork_and_wait {
         let pid = nix::unistd::Pid::from_raw(child_process);
         match nix::sys::wait::waitpid(pid, None) {
             Ok(status) => {
-                println!("[fork] Child exited with status {:?}", status);
+                tracing::debug!("[fork] Child exited with status {:?}", status);
                 status
             }
             Err(err) => panic!("[fork] waitpid() failed: {}", err),

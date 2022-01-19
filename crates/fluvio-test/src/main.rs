@@ -59,8 +59,6 @@ fn main() {
         exit(-1);
     }
 
-    
-
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 
     println!("{}", test_result);
@@ -107,41 +105,20 @@ fn run_test(
     let _child_pid = match fork::fork() {
         Ok(fork::Fork::Parent(child_pid)) => child_pid,
         Ok(fork::Fork::Child) => {
+            println!("starting test in child process");
+            // put panic handler, this shows proper stack trace in the console unlike hook
             let status = std::panic::catch_unwind(AssertUnwindSafe(|| {
                 (test_meta.test_fn)(test_driver, test_case)
             }));
             match status {
                 Ok(_) => {
-                    println!("test passed");
+                    println!("test passed, signalling success to parent");
                     root_process.kill_with(Signal::User1);
                     process::exit(0)
                 }
-                Err(_e) => {
-                    //println!("test panic: {:?}", e);
-                    /*
-                    let test_result = TestResult {
-                        success: false,
-                        duration: start.elapsed().unwrap(),
-                        ..std::default::Default::default()
-                    };
-                    cluster_cleanup(environment);
-                    println!("{}", test_result);
-
-                    */
-
-                    // let current_pid = get_current_pid().expect("Unable to get current pid");
-                    // println!("current test pid: {}", current_pid);
-                    println!("test failed, signalling parent");
+                Err(err) => {
+                    println!("test failed {:#?}, signalling parent", err);
                     root_process.kill_with(Signal::User2);
-                    /*
-                    let g_id = current_process.gid;
-                    for (pid, process) in sys.processes() {
-                        if pid != &current_pid && pid != &root_pid && process.gid == g_id {
-                            println!("pid {} name {}", pid, process.name());
-                            process.kill();
-                        }
-                    }
-                    */
                     process::exit(1);
                 }
             };
@@ -184,7 +161,7 @@ fn run_test(
 
         for (pid, process) in proceses {
             if pid != &root_pid && process.gid == g_id && is_root(process, root_pid, proceses) {
-                println!("killing pid {} name {}", pid, process.name());
+                println!("killing child test pid {} name {}", pid, process.name());
                 process.kill();
             }
         }

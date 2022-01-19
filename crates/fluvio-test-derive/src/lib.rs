@@ -164,8 +164,6 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                     })
                 };
 
-                println!("starting test in fork");
-
                 #user_test_fn_iden(test_driver, test_case);
 
                 Ok(TestResult {
