@@ -1,6 +1,5 @@
 use std::collections::{HashMap, VecDeque};
 use std::sync::Arc;
-use std::time::Instant;
 
 use async_lock::Mutex;
 use async_channel::Sender;
@@ -17,6 +16,8 @@ use crate::producer::ProducerError;
 use crate::error::Result;
 
 use super::event::EventHandler;
+
+use instant::Instant;
 
 pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<Mutex<VecDeque<ProducerBatch>>>);
 
