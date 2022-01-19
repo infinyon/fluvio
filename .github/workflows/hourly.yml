@@ -4,7 +4,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.head_ref || 'ci_hourly_longevity' }}
+  group: houly-${{ github.ref }}
   cancel-in-progress: true
 
 on:
