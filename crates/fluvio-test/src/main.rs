@@ -15,8 +15,7 @@ use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-use fluvio_test_util::test_meta::test_timer::TestTimer;
-use fluvio_test_util::{async_process, fork_and_wait};
+use fluvio_test_util::{async_process};
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
@@ -60,47 +59,7 @@ fn main() {
         exit(-1);
     }
 
-    let _panic_timer = TestTimer::start();
-
-    /*
-    std::panic::set_hook(Box::new(move |panic_info| {
-        println!("panic hook triggered");
-
-        let current_pid = get_current_pid().expect("Unable to get current pid");
-        println!("current test pid: {}", current_pid);
-        let sys = System::new();
-        let processes = sys.processes();
-        // get this process
-        let current_process = processes.get(&current_pid).expect("Unable to get current process");
-        let g_id = current_process.gid;
-        for (pid, process) in sys.processes() {
-            if pid != &current_pid && pid != &root_pid && process.gid == g_id {
-                println!("pid {} name {}", pid, process.name());
-                process.kill();
-            }
-        }
-
-        process::exit(1);
-    }));
-    */
-
-    let _setup_status = fork_and_wait! {
-        fluvio_future::task::run_block_on(async {
-            let test_case = TestCase::new(option.environment.clone(), test_opt.clone());
-            let test_cluster_opts = TestCluster::new(option.environment.clone());
-            let mut setup_driver = TestDriver::new(Some(test_cluster_opts));
-            // Connect test driver to cluster before starting test
-            setup_driver.connect().await.expect("Unable to connect to cluster");
-
-            // Create topic before starting test
-            setup_driver.create_topic(&test_case.environment)
-                .await
-                .expect("Unable to create default topic");
-
-            // Disconnect test driver to cluster before starting test
-            setup_driver.disconnect();
-        })
-    };
+    
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 

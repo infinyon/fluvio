@@ -134,7 +134,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use fluvio_test_util::test_meta::test_timer::TestTimer;
             use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-            use fluvio_test_util::async_process;
+            use fluvio_test_util::{async_process,fork_and_wait};
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
 
@@ -144,30 +144,28 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Test-level environment customizations from macro attrs
                 FluvioTestMeta::customize_test(&test_reqs, &mut test_case);
 
-             //   println!("Using Timeout {} secs",test_case.environment.timeout().as_secs());
-
                 // Setup topics before starting test
                 // Doing setup in another process to avoid async in parent process
                 // Otherwise there is .await blocking in child processes if tests fork() too
-                /*
-                fluvio_future::task::run_block_on(async {
-                    let mut test_driver_setup = test_driver.clone();
-                    // Connect test driver to cluster before starting test
-                    test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-                    // Create topic before starting test
-                    test_driver_setup.create_topic(&test_case.environment)
-                        .await
-                        .expect("Unable to create default topic");
+                let _setup_status = fork_and_wait! {
+                    fluvio_future::task::run_block_on(async {
+                        let mut test_driver_setup = test_driver.clone();
+                        // Connect test driver to cluster before starting test
+                        test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-                    // Disconnect test driver to cluster before starting test
-                    test_driver_setup.disconnect();
-                });
-                */
+                        // Create topic before starting test
+                        test_driver_setup.create_topic(&test_case.environment)
+                            .await
+                            .expect("Unable to create default topic");
+
+                        // Disconnect test driver to cluster before starting test
+                        test_driver_setup.disconnect();
+                    })
+                };
 
                 println!("starting test in fork");
 
-                use std::panic::AssertUnwindSafe;
                 #user_test_fn_iden(test_driver, test_case);
 
                 Ok(TestResult {

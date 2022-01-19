@@ -45,10 +45,11 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
 
                 stream_next = stream.next() => {
 
-
+                    /* 
                     if consumer_id == 1 {
                         panic!("fake test");
                     }
+                    */
 
 
 
@@ -88,9 +89,6 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
 
                             panic!("Consumer {consumer_id} failed to consume record: {:?}", err);
                         }
-
-
-
 
 
                     //    let elapsed_time = now.elapsed().unwrap().as_secs();
