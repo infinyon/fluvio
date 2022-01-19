@@ -409,12 +409,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
-name = "bencher"
-version = "0.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7dfdb4953a096c551ce9ace855a604d702e6e62d77fac690575ae347571717f5"
-
-[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1699,7 +1693,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "structopt",
- "sysinfo 0.22.5",
+ "sysinfo 0.23.0",
  "tar",
  "tempdir",
  "tempfile",
@@ -2159,7 +2153,6 @@ name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
  "async-trait",
- "bencher",
  "bytes 1.1.0",
  "crc",
  "crossbeam-channel",
@@ -2183,11 +2176,11 @@ dependencies = [
  "prettytable-rs",
  "rand 0.8.4",
  "serde",
- "serde_bytes",
  "serde_json",
  "serde_yaml",
+ "signal-hook",
  "structopt",
- "syn",
+ "sysinfo 0.23.0",
  "tokio",
  "tracing",
 ]
@@ -4261,15 +4254,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_bytes"
-version = "0.11.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "16ae07dd2f88a366f15bd0632ba725227018c69a1c8550a927324f8eb8368bb9"
-dependencies = [
- "serde",
-]
-
-[[package]]
 name = "serde_derive"
 version = "1.0.133"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4664,6 +4648,21 @@ name = "sysinfo"
 version = "0.22.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f1bfab07306a27332451a662ca9c8156e3a9986f82660ba9c8e744fe8455d43"
+dependencies = [
+ "cfg-if",
+ "core-foundation-sys",
+ "libc",
+ "ntapi",
+ "once_cell",
+ "rayon",
+ "winapi",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.23.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e757000a4bed2b1be9be65a3f418b9696adf30bb419214c73997422de73a591"
 dependencies = [
  "cfg-if",
  "core-foundation-sys",

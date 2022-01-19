@@ -4,7 +4,7 @@ use std::fs::{copy, write};
 use structopt::StructOpt;
 use serde::Serialize;
 use duct::cmd;
-use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt};
+use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt, PidExt};
 use which::which;
 
 use fluvio::config::ConfigFile;
@@ -339,7 +339,7 @@ impl ProcessInfo {
 
         for (pid, process) in sys.processes() {
             processes.push(ProcessInfo {
-                pid: *pid as u32,
+                pid: pid.as_u32(),
                 name: process.name().to_string(),
                 disk_usage: format!("{:?}", process.disk_usage()),
             });
