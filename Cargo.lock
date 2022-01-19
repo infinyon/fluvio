@@ -1521,6 +1521,7 @@ dependencies = [
  "fluvio-types",
  "fluvio_ws_stream_wasm",
  "futures-util",
+ "instant",
  "once_cell",
  "pin-project-lite",
  "semver 1.0.4",
