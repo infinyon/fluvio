@@ -2170,6 +2170,7 @@ dependencies = [
  "futures",
  "futures-lite",
  "hdrhistogram",
+ "indicatif",
  "inventory",
  "md-5",
  "nix",

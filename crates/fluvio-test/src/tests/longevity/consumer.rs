@@ -32,9 +32,6 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
     let start_consume = SystemTime::now();
 
     'consumer_loop: loop {
-        // Take a timestamp before record consumed
-        // let now = SystemTime::now();
-
         select! {
 
                 _ = &mut test_timer => {
@@ -50,8 +47,6 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
                         panic!("fake test");
                     }
                     */
-
-
 
                     if let Some(Ok(record_raw)) = stream_next {
                         records_recvd += 1;

@@ -6,6 +6,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::{SystemTime, Duration};
 
+use indicatif::{ProgressBar, ProgressStyle};
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
@@ -21,12 +22,14 @@ use fluvio_test_util::{async_process};
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
 use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
+use tracing::debug;
 
 //const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
 
 fn main() {
     let option = BaseCli::from_args();
-    //println!("{:?}", option);
+
+    debug!("{:?}", option);
 
     let test_name = option.environment.test_name.clone();
 
@@ -61,12 +64,6 @@ fn main() {
 
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 
-    println!("{}", test_result);
-    // If parent process, we want to
-    // * set the exit code
-    // * print test results
-    // * cleanup cluster
-
     cluster_cleanup(option.environment);
     println!("{}", test_result);
 
@@ -84,7 +81,7 @@ fn run_test(
 ) -> TestResult {
     let start = SystemTime::now();
     let test_case = TestCase::new(environment.clone(), test_opt);
-    let test_cluster_opts = TestCluster::new(environment);
+    let test_cluster_opts = TestCluster::new(environment.clone());
     let test_driver = TestDriver::new(Some(test_cluster_opts));
 
     let ok_signal = Arc::new(AtomicBool::new(false));
@@ -94,9 +91,9 @@ fn run_test(
     signal_hook::flag::register(signal_hook::consts::SIGUSR2, Arc::clone(&fail_signal))
         .expect("fail to register fail signal hook");
 
-    println!("supported signals: {:?}", System::SUPPORTED_SIGNALS);
+    // println!("supported signals: {:?}", System::SUPPORTED_SIGNALS);
     let root_pid = get_current_pid().expect("Unable to get current pid");
-    println!("current root pid: {}", root_pid);
+    debug!(?root_pid, "current root pid");
     let mut sys = System::new();
     if !sys.refresh_process(root_pid) {
         panic!("Unable to refresh root");
@@ -126,56 +123,88 @@ fn run_test(
         Err(_) => panic!("Fork failed"),
     };
 
-    println!("running waiting for signal");
-    while !ok_signal.load(Ordering::Relaxed) && !fail_signal.load(Ordering::Relaxed) {
-        println!("sleeping");
-        thread::sleep(Duration::from_millis(1000));
+    debug!("running waiting for signal");
+
+    const TICK: Duration = Duration::from_millis(100);
+    let timeout = environment.timeout();
+    let mut message_spinner = create_spinning_indicator();
+    let mut timed_out = false;
+
+    loop {
+        if ok_signal.load(Ordering::Relaxed) || fail_signal.load(Ordering::Relaxed) {
+            debug!("signal received");
+            break;
+        }
+
+        let elapsed = start.elapsed().expect("Unable to get elapsed time");
+        if elapsed > timeout {
+            timed_out = true;
+            break;
+        }
+        thread::sleep(TICK);
+        if let Some(pb) = &mut message_spinner {
+            pb.set_message(format!("waiting for test {} seconds", elapsed.as_secs()));
+        }
     }
 
     let ok = ok_signal.load(Ordering::Relaxed);
     let fail = fail_signal.load(Ordering::Relaxed);
 
-    println!("OK: {ok} FAIL: {fail}");
+    debug!(ok, fail, "signal status");
 
-    if fail {
+    if timed_out {
+        println!("Test timed out after {} seconds", timeout.as_secs());
+        kill_child_processes(root_process);
+        TestResult {
+            success: true,
+            duration: start.elapsed().unwrap(),
+            ..std::default::Default::default()
+        }
+    } else if ok {
+        println!("Test passed, killing child processes");
+        TestResult {
+            success: true,
+            duration: start.elapsed().unwrap(),
+            ..std::default::Default::default()
+        }
+    } else {
         println!("test failed, killing all child processes");
-        let mut sys2 = System::new();
-        sys2.refresh_processes();
-        let g_id = root_process.gid;
-
-        let proceses = sys2.processes();
-
-        fn is_root(process: &Process, r_id: Pid, processes: &HashMap<Pid, Process>) -> bool {
-            if let Some(parent_id) = process.parent() {
-                if parent_id == r_id {
-                    true
-                } else if let Some(parent_process) = processes.get(&parent_id) {
-                    is_root(parent_process, r_id, processes)
-                } else {
-                    false
-                }
-            } else {
-                false
-            }
-        }
-
-        for (pid, process) in proceses {
-            if pid != &root_pid && process.gid == g_id && is_root(process, root_pid, proceses) {
-                println!("killing child test pid {} name {}", pid, process.name());
-                process.kill();
-            }
-        }
-
+        kill_child_processes(root_process);
         TestResult {
             success: false,
             duration: start.elapsed().unwrap(),
             ..std::default::Default::default()
         }
-    } else {
-        TestResult {
-            success: true,
-            duration: start.elapsed().unwrap(),
-            ..std::default::Default::default()
+    }
+}
+
+/// kill all children of the root processes
+fn kill_child_processes(root_process: &Process) {
+    let root_pid = root_process.pid();
+    let mut sys2 = System::new();
+    sys2.refresh_processes();
+    let g_id = root_process.gid;
+
+    let proceses = sys2.processes();
+
+    fn is_root(process: &Process, r_id: Pid, processes: &HashMap<Pid, Process>) -> bool {
+        if let Some(parent_id) = process.parent() {
+            if parent_id == r_id {
+                true
+            } else if let Some(parent_process) = processes.get(&parent_id) {
+                is_root(parent_process, r_id, processes)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    for (pid, process) in proceses {
+        if pid != &root_pid && process.gid == g_id && is_root(process, root_pid, proceses) {
+            println!("killing child test pid {} name {}", pid, process.name());
+            process.kill();
         }
     }
 }
@@ -229,6 +258,21 @@ fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
         .expect("Cluster setup wait failed");
 
     Ok(())
+}
+
+fn create_spinning_indicator() -> Option<ProgressBar> {
+    if std::env::var("CI").is_ok() {
+        None
+    } else {
+        let pb = ProgressBar::new(1);
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("{msg} {spinner}")
+                .tick_chars("/-\\|"),
+        );
+        pb.enable_steady_tick(100);
+        Some(pb)
+    }
 }
 
 #[cfg(test)]

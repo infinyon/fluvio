@@ -31,6 +31,7 @@ nix = "0.23"
 crossbeam-channel = "0.5"
 sysinfo = { version = "0.23.0" }
 signal-hook = "0.3.13"
+indicatif = "0.16.2"
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }
