@@ -8,10 +8,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  schedule:
-    - cron: '0 * * * *'
-#  pull_request:
-#    branches: [master]
+#  schedule:
+#    - cron: '0 * * * *'
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 jobs:
 
@@ -205,7 +205,9 @@ jobs:
       - name: Run diagnostics
         if: failure()
         timeout-minutes: 5
-        run: fluvio cluster diagnostics
+        run: |
+          fluvio cluster diagnostics
+          kubectl top pods
       - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
