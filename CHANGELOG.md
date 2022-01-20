@@ -3,6 +3,7 @@
 ## Platform Version 0.9.18 - UNRELEASED
 * Show Platform version for fluvio run ([#2104](https://github.com/infinyon/fluvio/issues/2104))
 * Fix batching producer for WASM platforms ([#2120](https://github.com/infinyon/fluvio/issues/2120))
+* Make Test runner more reliable ([#2069](https://github.com/infinyon/fluvio/issues/2110))
   
 ## Platform Version 0.9.17 - 2022-01-12
 * Change default values of TopicProducerConfig ([#2069](https://github.com/infinyon/fluvio/issues/2069))
