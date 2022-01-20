@@ -4,20 +4,20 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.head_ref || 'ci_hourly_longevity' }}
+  group: hourly-${{ github.ref }}
   cancel-in-progress: true
 
 on:
-  schedule:
-    - cron: '0 * * * *'
-#  pull_request:
-#    branches: [master]
+#  schedule:
+#    - cron: '0 * * * *'
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 jobs:
 
   build_long_binaries:
     name: Test buiild for ${{ matrix.binary }}  on (${{ matrix.os }})
-    if: ${{ false }}
+#    if: ${{ false }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -79,15 +79,15 @@ jobs:
   longevity:
     name: Hourly Longevity test 
     runs-on: ${{ matrix.os }}
-#    needs:
-#      - build_long_binaries
+    needs:
+      - build_long_binaries
     timeout-minutes: 60
     strategy:
-      fail-fast: false 
+      fail-fast: true 
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1,r2,r3,r4,r5]
+        run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
         binary: [dev]
     env:
       K3D_VERSION: v4.4.8
@@ -98,28 +98,28 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Login GH CLI
-  #      if: ${{ false }}
+        if: ${{ false }}
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-  #      if: ${{ false }}
+        if: ${{ false }}
         run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
       - name: Unpack fluvio-test from dev release
-  #      if: ${{ false }}
+        if: ${{ false }}
         run: |
           cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
           echo "/tmp/release" >> $GITHUB_PATH
 
       - name: Download build artifact - fluvio-test
-        if: ${{ false }}
+   #     if: ${{ false }}
         uses: actions/download-artifact@v2
         with:
           name: fluvio-test-${{ matrix.rust-target }}
           path: ~/bin
 
       - name: Set up Fluvio binaries from build
-        if: ${{ false }}
+    #    if: ${{ false }}
         run: |
           chmod +x ~/bin/fluvio-test
           echo "~/bin" >> $GITHUB_PATH
@@ -172,14 +172,12 @@ jobs:
       #      echo "Longevity data does not exist"
       #    fi
 
-      - name: Print partition list
-        run: |
-          fluvio partition list
-          sleep 15
 
       - name: Run longevity test
-        timeout-minutes: 60
-        run: fluvio-test longevity -- --runtime-seconds=${{ env.RUN_TIME }} --producers ${{ env.PRODUCER }} --consumers ${{ env.PRODUCER }}
+        timeout-minutes: 35
+        run: |
+          sleep 10
+          fluvio-test longevity -- --runtime-seconds=${{ env.RUN_TIME }} --producers ${{ env.PRODUCER }} --consumers ${{ env.PRODUCER }}
           
       ## If the test passed, then copy the data from cluster to store into artifacts
       #- name: Export data from the cluster for caching
@@ -205,13 +203,13 @@ jobs:
       #    path: longevity-data.tar
       #    retention-days: 5
       - name: Run diagnostics
-        if: ${{ !success() }}
+        if: failure()
         timeout-minutes: 5
         run: fluvio cluster diagnostics
       - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: ${{ !success() }}
+        if: failure()
         with:
           name: hourly-longevity-${{ matrix.run }}.diag
           path: diagnostics*.gz

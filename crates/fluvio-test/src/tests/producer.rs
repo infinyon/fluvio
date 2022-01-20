@@ -200,37 +200,40 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     for n in 0..producers {
         println!("Starting Producer #{}", n);
 
-        let producer = async_process!(async {
-            // We want to ensure that we handle the case of an odd split in work
-            let workload_size = if n + 1 == producers {
-                if is_even_split {
-                    even_split
+        let producer = async_process!(
+            async {
+                // We want to ensure that we handle the case of an odd split in work
+                let workload_size = if n + 1 == producers {
+                    if is_even_split {
+                        even_split
+                    } else {
+                        odd_split
+                    }
                 } else {
-                    odd_split
-                }
-            } else {
-                even_split
-            };
+                    even_split
+                };
 
-            // This is used to print non-overlapping record tags
-            let start_record_tag = even_split * n;
+                // This is used to print non-overlapping record tags
+                let start_record_tag = even_split * n;
 
-            test_driver
-                .connect()
-                .await
-                .expect("Connecting to cluster failed");
-
-            producer_work(
                 test_driver
-                    .create_producer(&test_case.environment.topic_name())
-                    .await,
-                n,
-                workload_size,
-                start_record_tag,
-                test_case,
-            )
-            .await
-        });
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+
+                producer_work(
+                    test_driver
+                        .create_producer(&test_case.environment.topic_name())
+                        .await,
+                    n,
+                    workload_size,
+                    start_record_tag,
+                    test_case,
+                )
+                .await
+            },
+            format!("producer-{}", n)
+        );
 
         producer_wait.push(producer);
     }

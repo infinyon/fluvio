@@ -1,32 +1,35 @@
-use std::process::{self, exit};
-use std::env;
-use std::path::Path;
-use std::fs::{remove_file, File};
+use std::collections::HashMap;
+use std::panic::AssertUnwindSafe;
+use std::process::{exit, self};
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::thread;
+use std::time::{SystemTime, Duration};
+
+use indicatif::{ProgressBar, ProgressStyle};
 use structopt::StructOpt;
+
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
 use fluvio_test_util::test_meta::test_result::TestResult;
 use fluvio_test_util::test_meta::environment::{EnvDetail, EnvironmentSetup};
 use fluvio_test_util::setup::TestCluster;
-use std::panic::{self, AssertUnwindSafe};
 use fluvio_test_util::test_runner::test_driver::{TestDriver};
 use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-use fluvio_test_util::test_meta::test_timer::TestTimer;
-use fluvio_test_util::async_process;
-//use tracing::debug;
-
-use nix::unistd::Pid;
-use nix::sys::signal::{kill, Signal};
+use fluvio_test_util::{async_process};
 
 // This is important for `inventory` crate
 #[allow(unused_imports)]
 use fluvio_test::tests as _;
+use sysinfo::{System, SystemExt, get_current_pid, ProcessExt, Signal, Process, Pid};
+use tracing::debug;
 
-const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
+//const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
 
 fn main() {
     let option = BaseCli::from_args();
-    //println!("{:?}", option);
+
+    debug!("{:?}", option);
 
     let test_name = option.environment.test_name.clone();
 
@@ -59,48 +62,15 @@ fn main() {
         exit(-1);
     }
 
-    let panic_timer = TestTimer::start();
-    std::panic::set_hook(Box::new(move |panic_info| {
-        let mut panic_timer = panic_timer.clone();
-        panic_timer.stop();
-
-        let test_result = TestResult {
-            success: false,
-            duration: panic_timer.duration(),
-            ..Default::default()
-        };
-
-        //run_block_on(async { cluster_cleanup(panic_options.clone()).await });
-        println!("{:#?}", panic_info);
-
-        if env::var("CI").is_err() {
-            println!("{}", test_result);
-        }
-    }));
-
-    let parent_process_id: u32 = std::process::id();
-
     let test_result = run_test(option.environment.clone(), test_opt, test_meta);
 
-    // If parent process, we want to
-    // * set the exit code
-    // * print test results
-    // * cleanup cluster
-    if process::id() == parent_process_id {
-        cluster_cleanup(option.environment);
-        print_results(parent_process_id, test_result.clone());
+    cluster_cleanup(option.environment);
+    println!("{}", test_result);
 
-        if test_result.success {
-            exit(0)
-        } else {
-            exit(1)
-        }
-    }
-}
-
-fn print_results(parent_process_id: u32, results: TestResult) {
-    if process::id() == parent_process_id {
-        println!("{}", results)
+    if test_result.success {
+        exit(0)
+    } else {
+        exit(-1)
     }
 }
 
@@ -109,55 +79,146 @@ fn run_test(
     test_opt: Box<dyn TestOption>,
     test_meta: &FluvioTestMeta,
 ) -> TestResult {
+    let start = SystemTime::now();
+    let test_case = TestCase::new(environment.clone(), test_opt);
     let test_cluster_opts = TestCluster::new(environment.clone());
     let test_driver = TestDriver::new(Some(test_cluster_opts));
 
-    let test_case = TestCase::new(environment, test_opt);
+    let ok_signal = Arc::new(AtomicBool::new(false));
+    let fail_signal = Arc::new(AtomicBool::new(false));
+    signal_hook::flag::register(signal_hook::consts::SIGUSR1, Arc::clone(&ok_signal))
+        .expect("fail to register ok signal hook");
+    signal_hook::flag::register(signal_hook::consts::SIGUSR2, Arc::clone(&fail_signal))
+        .expect("fail to register fail signal hook");
 
-    // Run the test, but catch the panic so we can fail the test if event if we've got multiple processes running
-    let test_result = panic::catch_unwind(AssertUnwindSafe(move || {
-        (test_meta.test_fn)(test_driver, test_case)
-    }));
-
-    // If we've panicked from the test, we need to terminate all the child processes too to stop the test
-    let test_result = match test_result {
-        Ok(r) => {
-            let mut res = r.unwrap();
-            if Path::new(CI_FAIL_FLAG).exists() {
-                remove_file(CI_FAIL_FLAG).unwrap();
-                res.success = false;
-            }
-            res
-        }
-        Err(_) => {
-            // nix uses pid 0 to refer to the group process, so reap the child processes
-            let pid = Pid::from_raw(0);
-
-            // CI uses SIGTERM to report if jobs are cancelled
-            // so we need to report failure a little differently
-            if env::var("CI").is_ok() {
-                // Create a file for CI to look for, bc using signals causes issues
-                // Since we don't need to clean our environment, terminating child proc less important
-                if !Path::new(CI_FAIL_FLAG).exists() {
-                    let _ = File::create(CI_FAIL_FLAG).unwrap();
+    // println!("supported signals: {:?}", System::SUPPORTED_SIGNALS);
+    let root_pid = get_current_pid().expect("Unable to get current pid");
+    debug!(?root_pid, "current root pid");
+    let mut sys = System::new();
+    if !sys.refresh_process(root_pid) {
+        panic!("Unable to refresh root");
+    }
+    let root_process = sys.process(root_pid).expect("Unable to get root process");
+    let _child_pid = match fork::fork() {
+        Ok(fork::Fork::Parent(child_pid)) => child_pid,
+        Ok(fork::Fork::Child) => {
+            println!("starting test in child process");
+            // put panic handler, this shows proper stack trace in the console unlike hook
+            let status = std::panic::catch_unwind(AssertUnwindSafe(|| {
+                (test_meta.test_fn)(test_driver, test_case)
+            }));
+            match status {
+                Ok(_) => {
+                    println!("test passed, signalling success to parent");
+                    root_process.kill_with(Signal::User1);
+                    process::exit(0)
                 }
-            } else {
-                kill(pid, Signal::SIGTERM).expect("Unable to kill test process");
-            }
-            TestResult::default()
+                Err(err) => {
+                    println!("test failed {:#?}, signalling parent", err);
+                    root_process.kill_with(Signal::User2);
+                    process::exit(1);
+                }
+            };
         }
+        Err(_) => panic!("Fork failed"),
     };
 
-    test_result
+    debug!("running waiting for signal");
+
+    const TICK: Duration = Duration::from_millis(100);
+    let timeout = environment.timeout();
+    let mut message_spinner = create_spinning_indicator();
+    let mut timed_out = false;
+
+    loop {
+        if ok_signal.load(Ordering::Relaxed) || fail_signal.load(Ordering::Relaxed) {
+            debug!("signal received");
+            break;
+        }
+
+        let elapsed = start.elapsed().expect("Unable to get elapsed time");
+        if elapsed > timeout {
+            timed_out = true;
+            break;
+        }
+        thread::sleep(TICK);
+        if let Some(pb) = &mut message_spinner {
+            pb.set_message(format!("waiting for test {} seconds", elapsed.as_secs()));
+        }
+    }
+
+    let ok = ok_signal.load(Ordering::Relaxed);
+    let fail = fail_signal.load(Ordering::Relaxed);
+
+    debug!(ok, fail, "signal status");
+
+    if timed_out {
+        println!("Test timed out after {} seconds", timeout.as_secs());
+        kill_child_processes(root_process);
+        TestResult {
+            success: true,
+            duration: start.elapsed().unwrap(),
+            ..std::default::Default::default()
+        }
+    } else if ok {
+        println!("Test passed");
+        TestResult {
+            success: true,
+            duration: start.elapsed().unwrap(),
+            ..std::default::Default::default()
+        }
+    } else {
+        println!("test failed, killing all child processes");
+        kill_child_processes(root_process);
+        TestResult {
+            success: false,
+            duration: start.elapsed().unwrap(),
+            ..std::default::Default::default()
+        }
+    }
+}
+
+/// kill all children of the root processes
+fn kill_child_processes(root_process: &Process) {
+    let root_pid = root_process.pid();
+    let mut sys2 = System::new();
+    sys2.refresh_processes();
+    let g_id = root_process.gid;
+
+    let proceses = sys2.processes();
+
+    fn is_root(process: &Process, r_id: Pid, processes: &HashMap<Pid, Process>) -> bool {
+        if let Some(parent_id) = process.parent() {
+            if parent_id == r_id {
+                true
+            } else if let Some(parent_process) = processes.get(&parent_id) {
+                is_root(parent_process, r_id, processes)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    for (pid, process) in proceses {
+        if pid != &root_pid && process.gid == g_id && is_root(process, root_pid, proceses) {
+            println!("killing child test pid {} name {}", pid, process.name());
+            process.kill();
+        }
+    }
 }
 
 fn cluster_cleanup(option: EnvironmentSetup) {
     if option.cluster_delete() {
         let mut setup = TestCluster::new(option);
 
-        let cluster_cleanup_wait = async_process!(async {
-            setup.remove_cluster().await;
-        });
+        let cluster_cleanup_wait = async_process!(
+            async {
+                setup.remove_cluster().await;
+            },
+            "cluster_cleanup"
+        );
         let _ = cluster_cleanup_wait
             .join()
             .expect("Cluster cleanup wait failed");
@@ -166,34 +227,52 @@ fn cluster_cleanup(option: EnvironmentSetup) {
 
 // FIXME: Need to confirm SPU options count match cluster. Offer self-correcting behavior
 fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
-    let cluster_setup_wait = async_process!(async {
-        if option.remove_cluster_before() {
-            println!("Deleting existing cluster before starting test");
-            let mut setup = TestCluster::new(option.clone());
-            setup.remove_cluster().await;
-        }
+    let cluster_setup_wait = async_process!(
+        async {
+            if option.remove_cluster_before() {
+                println!("Deleting existing cluster before starting test");
+                let mut setup = TestCluster::new(option.clone());
+                setup.remove_cluster().await;
+            }
 
-        if option.cluster_start() || option.remove_cluster_before() {
-            println!("Starting cluster and testing connection");
-            let mut test_cluster = TestCluster::new(option.clone());
+            if option.cluster_start() || option.remove_cluster_before() {
+                println!("Starting cluster and testing connection");
+                let mut test_cluster = TestCluster::new(option.clone());
 
-            test_cluster
-                .start()
-                .await
-                .expect("Unable to connect to fresh test cluster");
-        } else {
-            println!("Testing connection to Fluvio cluster in profile");
-            Fluvio::connect()
-                .await
-                .expect("Unable to connect to Fluvio test cluster via profile");
-        }
-    });
+                test_cluster
+                    .start()
+                    .await
+                    .expect("Unable to connect to fresh test cluster");
+            } else {
+                println!("Testing connection to Fluvio cluster in profile");
+                Fluvio::connect()
+                    .await
+                    .expect("Unable to connect to Fluvio test cluster via profile");
+            }
+        },
+        "cluster setup"
+    );
 
     let _ = cluster_setup_wait
         .join()
         .expect("Cluster setup wait failed");
 
     Ok(())
+}
+
+fn create_spinning_indicator() -> Option<ProgressBar> {
+    if std::env::var("CI").is_ok() {
+        None
+    } else {
+        let pb = ProgressBar::new(1);
+        pb.set_style(
+            ProgressStyle::default_bar()
+                .template("{msg} {spinner}")
+                .tick_chars("/-\\|"),
+        );
+        pb.enable_steady_tick(100);
+        Some(pb)
+    }
 }
 
 #[cfg(test)]

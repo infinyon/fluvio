@@ -56,7 +56,7 @@ duct = { version = "0.13", default-features = false, optional = true }
 prettytable-rs = { version = "0.8.0", default-features = false, optional = true }
 flate2 = { version = "1", default-features = false, optional = true }
 tar = { version = "0.4", default-features = false, optional = true }
-sysinfo = { version = "0.22.5", default-features = false, optional = true }
+sysinfo = { version = "0.23.0", default-features = false, optional = true }
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio", default-features = false }

@@ -16,22 +16,22 @@ futures-lite = "1.11.0"
 futures = "0.3"
 structopt = "0.3.5"
 async-trait = "0.1.21"
-syn = { version = "1.0", features = ["full"]}
 rand = "0.8"
 md-5 = "0.10"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.8"
-serde_bytes = "0.11.5"
 inventory = "0.1"
 tokio = { version = "1.4", features = ["macros"] }
-bencher = "0.1"
 prettytable-rs = "0.8"
 hdrhistogram = "7.3.0"
 crc = "2.0"
 fork = "0.1"
 nix = "0.23"
 crossbeam-channel = "0.5"
+sysinfo = { version = "0.23.0" }
+signal-hook = "0.3.13"
+indicatif = "0.16.2"
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }

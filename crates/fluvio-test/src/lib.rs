@@ -23,3 +23,15 @@ pub fn get_binary(bin_name: &str) -> Result<Command, IoError> {
         Ok(Command::new(bin_dir.into_os_string()))
     }
 }
+
+/*
+#[cfg(test)]
+mod test {
+
+    #[test]
+    fn test() {
+        assert!(1 == 0);
+    }
+}
+
+*/
