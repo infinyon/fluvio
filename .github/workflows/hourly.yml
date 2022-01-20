@@ -87,7 +87,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1,r2,r3,r4,r5]
+        run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
         binary: [dev]
     env:
       K3D_VERSION: v4.4.8
@@ -209,7 +209,7 @@ jobs:
       - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-        if: ${{ !success() }}
+        if: failure()
         with:
           name: hourly-longevity-${{ matrix.run }}.diag
           path: diagnostics*.gz

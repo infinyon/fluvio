@@ -161,7 +161,7 @@ fn run_test(
             ..std::default::Default::default()
         }
     } else if ok {
-        println!("Test passed, killing child processes");
+        println!("Test passed");
         TestResult {
             success: true,
             duration: start.elapsed().unwrap(),
