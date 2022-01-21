@@ -113,9 +113,6 @@ pub(crate) mod built_info {
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
 
-/// The maximum VERSION of the Fluvio Platform that this client is compatible with.
-const MAXIMUM_PLATFORM_VERSION: &str = "0.10.0";
-
 /// Creates a producer that sends records to the named topic
 ///
 /// This is a shortcut function that uses the current profile
