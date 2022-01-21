@@ -35,7 +35,7 @@ spec:
                   type: string
                   minimum: 2
                   maximum: 100
-                connectorVersion:
+                version:
                   type: string
                   minimum: 2
                   maximum: 100
