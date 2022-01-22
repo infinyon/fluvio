@@ -5,6 +5,7 @@ use std::{
 };
 
 use fluvio::config::TlsPolicy;
+use fluvio_command::{CommandExt};
 
 use super::{FluvioLocalProcess, LocalRuntimeError};
 
@@ -37,6 +38,7 @@ impl ScProcess {
         binary
             .stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
+            .log()
             .spawn()?;
 
         Ok(())
