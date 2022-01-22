@@ -274,20 +274,11 @@ impl Fluvio {
 fn check_platform_compatible(cluster_version: &Version) -> Result<(), FluvioError> {
     let client_minimum_version = Version::parse(crate::MINIMUM_PLATFORM_VERSION)
         .expect("MINIMUM_PLATFORM_VERSION must be semver");
-    let client_maximum_version = Version::parse(crate::MAXIMUM_PLATFORM_VERSION)
-        .expect("MAXIMUM_PLATFORM_VERSION must be semver");
 
     if *cluster_version < client_minimum_version {
         return Err(FluvioError::MinimumPlatformVersion {
             cluster_version: cluster_version.clone(),
             client_minimum_version,
-        });
-    }
-
-    if *cluster_version >= client_maximum_version {
-        return Err(FluvioError::MaximumPlatformVersion {
-            cluster_version: cluster_version.clone(),
-            client_maximum_version,
         });
     }
 
