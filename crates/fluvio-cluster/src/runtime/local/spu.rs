@@ -58,6 +58,7 @@ impl SpuTarget for LocalSpuProcess {
         debug!("Invoking command: \"{}\"", cmd.display());
         info!("SPU<{}> cmd: {:#?}", self.id, cmd);
         info!("SPU log generated at {}", self.log_dir);
+        info!(cmd = %cmd.display(),"Invoking command");
         cmd.stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
             .spawn()

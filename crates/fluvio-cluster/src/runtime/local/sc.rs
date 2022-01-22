@@ -5,7 +5,8 @@ use std::{
 };
 
 use fluvio::config::TlsPolicy;
-use fluvio_command::{CommandExt};
+use fluvio_command::CommandExt;
+use tracing::{info};
 
 use super::{FluvioLocalProcess, LocalRuntimeError};
 
@@ -35,10 +36,10 @@ impl ScProcess {
         }
         binary.env("RUST_LOG", &self.rust_log);
 
+        info!(cmd = %binary.display(),"Invoking command");
         binary
             .stdout(Stdio::from(outputs))
             .stderr(Stdio::from(errors))
-            .log()
             .spawn()?;
 
         Ok(())
