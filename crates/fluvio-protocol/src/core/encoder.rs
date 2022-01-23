@@ -26,7 +26,8 @@ pub trait Encoder {
         T: BufMut;
 
     fn as_bytes(&self, version: Version) -> Result<Bytes, Error> {
-        let mut out = vec![];
+        let len = self.write_size(version);
+        let mut out = Vec::with_capacity(len);
         self.encode(&mut out, version)?;
         let mut buf = BytesMut::with_capacity(out.len());
         buf.put_slice(&out);

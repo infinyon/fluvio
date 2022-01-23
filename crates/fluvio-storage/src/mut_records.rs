@@ -139,7 +139,15 @@ impl MutFileRecords {
         }
 
         self.item_last_offset_delta = item.get_last_offset_delta();
-        let mut buffer: Vec<u8> = vec![];
+        let len = item.write_size(0);
+        /* 
+        info!(
+            "writing batch of size {} at offset {}",
+            len,
+            self.get_pos()
+        );
+        */
+        let mut buffer: Vec<u8> = Vec::with_capacity(len);
         item.encode(&mut buffer, 0)?;
         let mf_sink = self.f_sink.clone();
         let mut f_sink = mf_sink.lock().await;
