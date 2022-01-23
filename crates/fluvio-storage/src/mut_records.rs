@@ -140,7 +140,7 @@ impl MutFileRecords {
 
         self.item_last_offset_delta = item.get_last_offset_delta();
         let len = item.write_size(0);
-        /* 
+        /*
         info!(
             "writing batch of size {} at offset {}",
             len,
