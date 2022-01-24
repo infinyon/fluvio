@@ -82,6 +82,12 @@ jobs:
         run: |
             date +"%Y-%m-%dT%H:%M:%S%z"
             fluvio version
+            if [[ $(fluvio version | grep "Release Channel" | awk '{print $4}') == "latest" ]]; then
+              echo "latest";
+            else
+              echo "Unexpected CLI channel";
+              exit 1;
+            fi 
             fluvio topic create ${{ env.TOPIC }}
             # wait for topic to be created
             sleep ${{ env.SLEEP }}

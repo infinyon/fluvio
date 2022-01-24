@@ -66,6 +66,15 @@ jobs:
             exit 1;
           fi
 
+      - name: Verify CLI Channel
+        run: |
+          if [[ $(~/.fluvio/bin/fluvio version | grep "Release Channel" | awk '{print $4}') == "$EXPECTED_VERSION" ]]; then
+            echo "$EXPECTED_VERSION";
+          else
+            echo "Unexpected CLI channel: $(~/.fluvio/bin/fluvio version | grep "Release Channel" | awk '{print $4}')";
+            exit 1;
+          fi 
+
   start_cluster:
     name: Start cluster test
     needs: installer_check

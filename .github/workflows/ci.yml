@@ -789,6 +789,12 @@ jobs:
       - name: Install stable CLI and start Fluvio cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          if [[ $(~/.fluvio/bin/fluvio version | grep "Release Channel" | awk '{print $4}') == "stable" ]]; then
+            echo "stable";
+          else
+            echo "Unexpected CLI channel: $(~/.fluvio/bin/fluvio version | grep "Release Channel" | awk '{print $4}')";
+            exit 1;
+          fi 
           ~/.fluvio/bin/fluvio cluster start
       - name: Download current fluvio
         uses: actions/download-artifact@v2
