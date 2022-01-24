@@ -146,7 +146,10 @@ where
                                             ErrorCode::Other(format!("msg slice: {:#?}", err))
                                         })?,
                                 )),
-                                None => Err(ErrorCode::OffsetOutOfRange),
+                                None => Err(ErrorCode::Other(format!(
+                                    "max offset position: {} not found",
+                                    max_offset
+                                ))),
                             }
                         }
                     }

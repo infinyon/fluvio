@@ -149,10 +149,16 @@ impl SharedSegments {
             if let Some(slice) = segment.records_slice(start_offset, max_offset).await? {
                 Ok(slice)
             } else {
-                Err(ErrorCode::OffsetOutOfRange)
+                Err(ErrorCode::Other(format!(
+                    "slice not found in start_offset: {}, segment: {:#?} ",
+                    start_offset, segment
+                )))
             }
         } else {
-            Err(ErrorCode::OffsetOutOfRange)
+            Err(ErrorCode::Other(format!(
+                "Segment not found for start_offset: {}",
+                start_offset
+            )))
         }
     }
 
