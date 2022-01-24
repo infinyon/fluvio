@@ -289,7 +289,10 @@ impl FileReplica {
                 trace!("start offset is same as end offset, skipping");
                 return Ok(slice);
             } else if start_offset > leo {
-                return Err(ErrorCode::OffsetOutOfRange);
+                return Err(ErrorCode::Other(format!(
+                    "start offset: {} is greater than leo: {}",
+                    start_offset, leo
+                )));
             } else if let Some(slice) = self
                 .active_segment
                 .records_slice(start_offset, max_offset)
@@ -297,7 +300,7 @@ impl FileReplica {
             {
                 slice
             } else {
-                return Err(ErrorCode::OffsetOutOfRange);
+                return Err(ErrorCode::Other("no records found in replica".to_string()));
             }
         } else {
             debug!(start_offset, active_base_offset, "not in active sgments");
