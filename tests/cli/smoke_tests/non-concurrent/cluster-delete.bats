@@ -48,40 +48,40 @@ setup_file() {
 
 @test "Connectors deleted" {
     run kubectl get managedconnectors
-    assert_output 'error: the server doesn'\''t have a resource type "managedconnectors"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v1, Resource=managedconnectors": the server could not find the requested resource (get managedconnectors.fluvio.infinyon.com)'
 }
 
 @test "SPU Groups deleted" {
     run kubectl get spugroups 
-    assert_output 'error: the server doesn'\''t have a resource type "spugroups"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v1, Resource=spugroups": the server could not find the requested resource (get spugroups.fluvio.infinyon.com)'
 }
 
 @test "Topics deleted" {
     run kubectl get topics 
-    assert_output 'error: the server doesn'\''t have a resource type "topics"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v2, Resource=topics": the server could not find the requested resource (get topics.fluvio.infinyon.com)'
 }
 
 @test "SmartModules deleted" {
     run kubectl get smartmodules
-    assert_output 'error: the server doesn'\''t have a resource type "smartmodules"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v1, Resource=smartmodules": the server could not find the requested resource (get smartmodules.fluvio.infinyon.com)'
 }
 
 @test "Partitions deleted" {
     run kubectl get partitions 
-    assert_output 'error: the server doesn'\''t have a resource type "partitions"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v1, Resource=partitions": the server could not find the requested resource (get partitions.fluvio.infinyon.com)'
 }
 
 @test "DerivedStreams deleted" {
     run kubectl get derivedstreams 
-    assert_output 'error: the server doesn'\''t have a resource type "derivedstreams"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v1, Resource=derivedstreams": the server could not find the requested resource (get derivedstreams.fluvio.infinyon.com)'
 }
 
 @test "SPUs deleted" {
     run kubectl get spus 
-    assert_output 'error: the server doesn'\''t have a resource type "spus"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v1, Resource=spus": the server could not find the requested resource (get spus.fluvio.infinyon.com)'
 }
 
 @test "TableFormats deleted" {
     run kubectl get tableformats
-    assert_output 'error: the server doesn'\''t have a resource type "tableformats"'
+    assert_output 'Error from server (NotFound): Unable to list "fluvio.infinyon.com/v1, Resource=tableformats": the server could not find the requested resource (get tableformats.fluvio.infinyon.com)'
 }
