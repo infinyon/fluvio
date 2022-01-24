@@ -48,41 +48,40 @@ setup_file() {
 
 @test "Connectors deleted" {
     run kubectl get managedconnectors
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "managedconnectors"'
 }
 
 @test "SPU Groups deleted" {
     run kubectl get spugroups 
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "spugroups"'
 }
 
 @test "Topics deleted" {
     run kubectl get topics 
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "topics"'
 }
 
 @test "SmartModules deleted" {
     run kubectl get smartmodules
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "smartmodules"'
 }
 
 @test "Partitions deleted" {
     run kubectl get partitions 
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "partitions"'
 }
 
 @test "DerivedStreams deleted" {
     run kubectl get derivedstreams 
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "derivedstreams"'
 }
 
 @test "SPUs deleted" {
     run kubectl get spus 
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "spus"'
 }
 
 @test "TableFormats deleted" {
-    #skip "table-format deletion isn't working: https://github.com/infinyon/fluvio/issues/2004"
     run kubectl get tableformats
-    assert_output 'No resources found in default namespace.'
+    assert_output 'error: the server doesn'\''t have a resource type "tableformats"'
 }
