@@ -1027,3 +1027,26 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
+
+  # Delete. This job will most likely fail due to secrets
+  release_check:
+    name: Release success check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Get status of latest RELEASE_CHECK run
+        id: release_check
+        run: |
+          gh api /repos/{owner}/{repo}/actions/workflows/release.yml/runs | jq .workflow_runs[0] > /tmp/release_latest.txt  
+          echo "Latest Release run: $(cat /tmp/release_latest.txt | jq .html_url | tr -d '"')"
+          RELEASE_CHECK=$(cat /tmp/release_latest.txt | jq .conclusion | tr -d '"')
+          if [[ "$RELEASE_CHECK" = "success" ]]
+          then
+            echo ✅ Most recent RELEASE_CHECK run passed
+            exit 0;
+          else
+            echo ❌ Most recent RELEASE_CHECK run failed
+            exit 1;
+          fi
