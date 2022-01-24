@@ -67,6 +67,8 @@ pub struct SmokeTestOption {
     pub table_format_config: Option<PathBuf>,
     #[structopt(long)]
     pub skip_consumer_validate: bool,
+    #[structopt(long)]
+    pub skip_test_connector: bool,
 }
 
 impl TestOption for SmokeTestOption {
@@ -92,7 +94,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let smoke_test_case: SmokeTestCase = test_case.into();
 
     // If connector tests requested
-    let maybe_connector =
+    let maybe_connector = if !smoke_test_case.option.skip_test_connector {
         if let Some(ref connector_config) = smoke_test_case.option.connector_config {
             let connector_process = async_process!(
                 async {
@@ -194,7 +196,11 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
             // Wait a few seconds to allow the connector a chance to deploy and store data
         } else {
             None
-        };
+        }
+    } else {
+        println!("Skipping test-connector tests, by request");
+        None
+    };
 
     // TableFormat test
     let maybe_table_format =
