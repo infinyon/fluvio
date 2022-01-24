@@ -491,7 +491,7 @@ jobs:
         if: matrix.test != 'smoke-test-tls'
         run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
         env:
-          SKIP_TEST_CONNECTOR=true
+          SKIP_TEST_CONNECTOR: true
       - name: Start fluvio cluster TLS
         if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 5
@@ -501,7 +501,7 @@ jobs:
           X509_AUTH_SCOPES=${{ env.X509_SCOPE_FILE }}
           fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
         env:
-          SKIP_TEST_CONNECTOR=true
+          SKIP_TEST_CONNECTOR: true
       - name: sleep
         run: sleep 15
       - name: Run smoke-test
@@ -519,7 +519,7 @@ jobs:
       #      echo "smoke test done"
       #    make  RUST_LOG=fluvio_test=debug,fluvio_test=debug,fluvio_socket=trace,fluvio::consumer=debug,fluvio::producer=debug DEFAULT_ITERATION=10 DEFAULT_SPU=1 REPL=1 FLUVIO_BIN=./fluvio TEST_BIN=./fluvio-test UNINSTALL=noclean smoke-test-local
         env:
-          SKIP_TEST_CONNECTOR=true
+          SKIP_TEST_CONNECTOR: true
       - name: Run election-test
         if: matrix.test == 'election'
         timeout-minutes: 5
