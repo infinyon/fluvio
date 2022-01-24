@@ -22,6 +22,7 @@ use super::SpuServerApiKey;
 use super::fetch_offset::FetchOffsetsRequest;
 use super::stream_fetch::FileStreamFetchRequest;
 use super::update_offset::UpdateOffsetsRequest;
+use super::diagnostics::DiagnosticsRequest;
 
 #[allow(clippy::large_enum_variant)]
 /// Request to Spu Server
@@ -29,13 +30,12 @@ use super::update_offset::UpdateOffsetsRequest;
 pub enum SpuServerRequest {
     /// list of versions supported
     ApiVersionsRequest(RequestMessage<ApiVersionsRequest>),
-
-    // Kafka compatible requests
     ProduceRequest(RequestMessage<DefaultProduceRequest>),
     FileFetchRequest(RequestMessage<FileFetchRequest>),
     FetchOffsetsRequest(RequestMessage<FetchOffsetsRequest>),
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
+    DiagnosticsRequest(RequestMessage<DiagnosticsRequest>),
 }
 
 impl fmt::Display for SpuServerRequest {
