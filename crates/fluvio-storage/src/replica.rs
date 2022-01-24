@@ -326,7 +326,11 @@ impl FileReplica {
     #[instrument(skip(self, item))]
     async fn write_batch(&mut self, item: &mut Batch) -> Result<(), StorageError> {
         if !(self.active_segment.write_batch(item).await?) {
-            debug!("segment has no room, rolling over previous segment");
+            info!(
+                partition = self.partition,
+                path = %self.option.base_dir.display(),
+                base_offset = self.active_segment.get_base_offset(),
+                "rolling over active segment");
             self.active_segment.roll_over().await?;
             let last_offset = self.active_segment.get_end_offset();
             let new_segment = MutableSegment::create(last_offset, self.option.clone()).await?;

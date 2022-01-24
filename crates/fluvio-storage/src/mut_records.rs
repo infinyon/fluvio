@@ -139,13 +139,16 @@ impl MutFileRecords {
         }
 
         self.item_last_offset_delta = item.get_last_offset_delta();
-        let mut buffer: Vec<u8> = vec![];
+        let len = item.write_size(0);
+
+        debug!(len, pos = self.get_pos(), "writing batch of size",);
+
+        let mut buffer: Vec<u8> = Vec::with_capacity(len);
         item.encode(&mut buffer, 0)?;
         let mf_sink = self.f_sink.clone();
         let mut f_sink = mf_sink.lock().await;
 
         if f_sink.can_be_appended(buffer.len() as u64) {
-            debug!(buffer_len = buffer.len(), "writing bytes");
             f_sink.write_all(&buffer).await?;
             self.cached_len = f_sink.get_current_len();
             drop(f_sink); // unlock because flush may reaqire the lock
