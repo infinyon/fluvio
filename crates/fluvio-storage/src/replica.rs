@@ -300,7 +300,10 @@ impl FileReplica {
             {
                 slice
             } else {
-                return Err(ErrorCode::Other("no records found in replica".to_string()));
+                return Err(ErrorCode::Other(format!(
+                    "no records found in active replica, start: {}, max: {:#?}, active: {:#?}",
+                    start_offset, max_offset, self.active_segment
+                )));
             }
         } else {
             debug!(start_offset, active_base_offset, "not in active sgments");
