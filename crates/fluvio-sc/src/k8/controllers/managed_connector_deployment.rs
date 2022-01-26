@@ -8,6 +8,7 @@ use k8_types::{
         ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
         VolumeSpec, SecretVolumeSpec, PodSecurityContext,
     },
+    Env,
 };
 
 use fluvio_future::{task::spawn, timer::sleep};
@@ -288,6 +289,12 @@ impl ManagedConnectorDeploymentController {
                 });
             }
         }
+        let secrets = &mc_spec.secrets;
+        let env: Vec<Env> = secrets
+            .keys()
+            .zip(secrets.values())
+            .flat_map(|(key, value)| [Env::key_value(key, &(**value).to_string())])
+            .collect::<Vec<_>>();
 
         debug!(
             "Starting connector for image: {:?} with arguments {:?}",
@@ -307,9 +314,7 @@ impl ManagedConnectorDeploymentController {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image),
                     image_pull_policy: Some(image_pull_policy),
-                    /*
-                    env, // TODO
-                    */
+                    env,
                     volume_mounts,
                     args,
                     ..Default::default()
