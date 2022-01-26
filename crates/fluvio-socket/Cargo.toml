@@ -31,7 +31,7 @@ pin-project = "1.0.1"
 thiserror = "1.0.20"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.3.2", features = ["net", "task"] }
+fluvio-future = { version = "0.3.13", features = ["net", "task"] }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = [
     "derive",
     "api",

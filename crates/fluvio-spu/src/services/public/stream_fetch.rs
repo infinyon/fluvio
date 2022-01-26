@@ -411,7 +411,7 @@ impl StreamFetchHandler {
             hw = read_end_offset.hw,
             leo = read_end_offset.leo,
             slice_start = file_partition_response.records.position(),
-            slice_end = file_partition_response.records.len(),
+            slice_len = file_partition_response.records.len(),
             read_records_ms = %now.elapsed().as_millis(),
             "Starting send_back_records",
         );
