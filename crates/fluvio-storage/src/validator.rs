@@ -7,10 +7,12 @@ use tracing::{debug, warn, trace};
 
 use dataplane::Offset;
 
+use crate::OffsetPosition;
 use crate::batch::FileBatchStream;
 use crate::batch::SequentialMmap;
 use crate::batch::StorageBytesIterator;
 use crate::batch_header::FileEmptyRecords;
+use crate::index::Index;
 use crate::util::log_path_get_offset;
 use crate::util::OffsetError;
 
@@ -32,6 +34,13 @@ pub enum LogValidationError {
     ExistingBatch,
     #[error("Empty file: {0}")]
     Empty(i64),
+
+    #[error("Invalid Index: {offset} pos: {pos} offset: {index_position}")]
+    InvalidIndex {
+        offset: Offset,
+        pos: u32,
+        index_position: u32,
+    },
 }
 
 /// Validation Log file
@@ -46,11 +55,15 @@ pub struct LogValidatorResult {
 
 impl LogValidatorResult {
     /// open validator on the log file path
-    pub async fn validate<P, R, S>(path: P) -> Result<Self, LogValidationError>
+    pub async fn validate<P, R, S, I>(
+        path: P,
+        index: Option<&I>,
+    ) -> Result<Self, LogValidationError>
     where
         P: AsRef<Path>,
         R: BatchRecords + Default + std::fmt::Debug,
         S: StorageBytesIterator,
+        I: Index,
     {
         let file_path = path.as_ref();
 
@@ -76,6 +89,23 @@ impl LogValidatorResult {
 
         while let Some(batch_pos) = batch_stream.next().await {
             let batch_base_offset = batch_pos.get_batch().get_base_offset();
+
+            let delta = batch_base_offset - val.base_offset;
+
+            // if index exits, ensure it matches
+            if let Some(index) = index {
+                if let Some(idx) = index.find_offset(delta as u32) {
+                    if idx.position() != batch_pos.get_pos() {
+                        return Err(LogValidationError::InvalidIndex {
+                            offset: batch_base_offset,
+                            pos: batch_pos.get_pos(),
+                            index_position: idx.position(),
+                        });
+                    }
+                } else {
+                    return Err(LogValidationError::OffsetNotOrdered);
+                }
+            }
             let header = batch_pos.get_batch().get_header();
             let offset_delta = header.last_offset_delta;
 
@@ -136,11 +166,13 @@ impl LogValidatorResult {
 
 /// validate the file and find last offset
 /// if file is not valid then return error
-pub async fn validate<P>(path: P) -> Result<Offset, LogValidationError>
+pub async fn validate<P, I>(path: P, index: Option<&I>) -> Result<Offset, LogValidationError>
 where
     P: AsRef<Path>,
+    I: Index,
 {
-    match LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap>(path).await {
+    match LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, I>(path, index).await
+    {
         Ok(val) => Ok(val.next_offset()),
         Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
         Err(err) => Err(err),
@@ -160,6 +192,7 @@ mod tests {
     use fluvio_future::fs::BoundedFileOption;
     use dataplane::Offset;
 
+    use crate::LogIndex;
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
     use crate::config::ReplicaConfig;
@@ -188,7 +221,9 @@ mod tests {
         let log_path = log_records.get_path().to_owned();
         drop(log_records);
 
-        let next_offset = validate(&log_path).await.expect("validate");
+        let next_offset = validate::<_, LogIndex>(&log_path, None)
+            .await
+            .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET);
     }
 
@@ -224,7 +259,9 @@ mod tests {
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
-        let next_offset = validate(&log_path).await.expect("validate");
+        let next_offset = validate::<_, LogIndex>(&log_path, None)
+            .await
+            .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET + 5);
     }
 
@@ -265,7 +302,7 @@ mod tests {
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
-        match validate(&test_file).await {
+        match validate::<_, LogIndex>(&test_file, None).await {
             Err(err) => match err {
                 LogValidationError::Io(io_err) => {
                     assert!(matches!(io_err.kind(), ErrorKind::UnexpectedEof));
@@ -284,7 +321,7 @@ mod perf {
 
     use dataplane::batch::MemoryRecords;
 
-    use crate::batch_header::FileEmptyRecords;
+    use crate::{batch_header::FileEmptyRecords, LogIndex};
 
     use super::*;
 
@@ -297,16 +334,20 @@ mod perf {
         println!("starting test");
         let header_time = Instant::now();
         let msm_result =
-            LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap>(TEST_PATH)
-                .await
-                .expect("validate");
+            LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, LogIndex>(
+                TEST_PATH, None,
+            )
+            .await
+            .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
         println!("validator: {:#?}", msm_result);
 
         let record_time = Instant::now();
-        let _ = LogValidatorResult::validate::<_, MemoryRecords, SequentialMmap>(TEST_PATH)
-            .await
-            .expect("validate");
+        let _ = LogValidatorResult::validate::<_, MemoryRecords, SequentialMmap, LogIndex>(
+            TEST_PATH, None,
+        )
+        .await
+        .expect("validate");
         println!("full scan took: {:#?}", record_time.elapsed());
     }
 }

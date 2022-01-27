@@ -93,6 +93,15 @@ where
         let mut cursor = Cursor::new(bytes);
         let mut batch: Batch<R> = Batch::default();
         batch.decode_from_file_buf(&mut cursor, 0)?;
+        trace!("batch: {:#?}", batch);
+        /*
+        if !batch.validate_decoding() {
+            return Err(IoError::new(
+                ErrorKind::InvalidData,
+                format!("{:#?}", batch),
+            ));
+        }
+        */
 
         let mut batch_position = FileBatchPos::new(batch, pos);
 

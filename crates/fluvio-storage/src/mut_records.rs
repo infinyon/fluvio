@@ -23,6 +23,7 @@ use dataplane::{Offset, Size};
 use dataplane::core::Encoder;
 
 use crate::config::SharedReplicaConfig;
+use crate::mut_index::MutLogIndex;
 use crate::util::generate_file_name;
 use crate::validator::validate;
 use crate::validator::LogValidationError;
@@ -110,9 +111,9 @@ impl MutFileRecords {
         self.base_offset
     }
 
-    pub async fn validate(&mut self) -> Result<Offset, LogValidationError> {
+    pub async fn validate(&mut self, index: &MutLogIndex) -> Result<Offset, LogValidationError> {
         let f_sink = self.f_sink.lock().await;
-        validate(f_sink.get_path()).await
+        validate(f_sink.get_path(), Some(index)).await
     }
 
     /// get current file position
@@ -145,6 +146,7 @@ impl MutFileRecords {
 
         let mut buffer: Vec<u8> = Vec::with_capacity(len);
         item.encode(&mut buffer, 0)?;
+        assert_eq!(buffer.len(), len);
         let mf_sink = self.f_sink.clone();
         let mut f_sink = mf_sink.lock().await;
 
