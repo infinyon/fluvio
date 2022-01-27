@@ -16,11 +16,11 @@ check-clippy: install-clippy install_rustup_target
 	cargo +$(RUSTV) check --all --all-features --tests $(VERBOSE_FLAG) $(TARGET_FLAG)
 	cargo +$(RUSTV) clippy --all --all-features --tests $(VERBOSE_FLAG) -- -D warnings -A clippy::upper_case_acronyms $(TARGET_FLAG)
 
-install-deny:
-	cargo install --locked cargo-deny	
+install-udeps:
+	cargo install cargo-udeps --locked
 
-check-crate-audit: install-deny
-	cargo deny check
+check-udeps: install-udeps
+	cargo +nightly udeps --all-targets
 
 build_smartmodules:
 	make -C crates/fluvio-smartmodule/examples build

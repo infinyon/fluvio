@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartmodule"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -17,7 +17,6 @@ crate-type = ['lib']
 eyre = { version = "0.6", default-features = false }
 fluvio-dataplane-protocol = { version = "0.9.0", path = "../fluvio-dataplane-protocol", default-features = false }
 fluvio-smartmodule-derive = { version = "0.2.0", path = "../fluvio-smartmodule-derive" }
-fluvio-spu-schema = { version = "0.9", path = "../fluvio-spu-schema" }
 
 [dev-dependencies]
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }

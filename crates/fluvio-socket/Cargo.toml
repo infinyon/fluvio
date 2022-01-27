@@ -45,7 +45,6 @@ fluvio-future = { version = "0.3.1", features = [
     "zero_copy",
     "native2_tls",
 ] }
-flv-util = { version = "0.5.0", features = ["fixture"] }
 portpicker = "0.1.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]
