@@ -82,7 +82,7 @@ pub(crate) fn dump_index(opt: IndexOpt) {
     };
 }
 
-const MAX: u32 = 100000;
+const MAX: u32 = 100;
 
 async fn print_index(path: PathBuf) -> Result<(), StorageError> {
     let log = LogIndex::open_from_path(path).await?;

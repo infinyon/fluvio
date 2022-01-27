@@ -3,6 +3,7 @@ use std::io::ErrorKind;
 use std::path::Path;
 
 use dataplane::batch::BatchRecords;
+use tracing::error;
 use tracing::{debug, warn, trace};
 
 use dataplane::Offset;
@@ -90,26 +91,36 @@ impl LogValidatorResult {
         while let Some(batch_pos) = batch_stream.next().await {
             let batch_base_offset = batch_pos.get_batch().get_base_offset();
 
-            let delta = batch_base_offset - val.base_offset;
+            let header = batch_pos.get_batch().get_header();
+            let offset_delta = header.last_offset_delta;
+
+            debug!(batch_base_offset, offset_delta, "found batch");
+
+            let delta_offset = batch_base_offset - val.base_offset;
 
             // if index exits, ensure it matches
+
             if let Some(index) = index {
-                if let Some(idx) = index.find_offset(delta as u32) {
-                    if idx.position() != batch_pos.get_pos() {
+                debug!("trying to find offset");
+                if let Some(idx) = index.find_offset(delta_offset as u32) {
+                    let idx_pos = idx.position();
+                    if idx_pos != batch_pos.get_pos() {
+                        error!(
+                            delta_offset,
+                            idx_pos,
+                            batch_pos = batch_pos.get_pos(),
+                            "index mismatch"
+                        );
                         return Err(LogValidationError::InvalidIndex {
                             offset: batch_base_offset,
                             pos: batch_pos.get_pos(),
                             index_position: idx.position(),
                         });
+                    } else {
+                        debug!(idx_pos, "index pos matches");
                     }
-                } else {
-                    return Err(LogValidationError::OffsetNotOrdered);
                 }
             }
-            let header = batch_pos.get_batch().get_header();
-            let offset_delta = header.last_offset_delta;
-
-            trace!(batch_base_offset, offset_delta, "found batch");
 
             if batch_base_offset < val.base_offset {
                 warn!(

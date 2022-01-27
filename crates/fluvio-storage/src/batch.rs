@@ -311,7 +311,7 @@ mod tests {
         let mut active_segment = MutableSegment::create(300, option).await.expect("segment");
 
         active_segment
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("writing batches");
 
@@ -337,11 +337,11 @@ mod tests {
         let mut active_segment = MutableSegment::create(300, option).await.expect("create");
 
         active_segment
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("write");
         active_segment
-            .write_batch(&mut create_batch_with_producer(25, 2))
+            .append_batch(&mut create_batch_with_producer(25, 2))
             .await
             .expect("batch");
 
