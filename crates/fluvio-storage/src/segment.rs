@@ -80,9 +80,9 @@ where
         start_pos: Size,
     ) -> Result<BatchHeaderStream, StorageError> {
         trace!(
-            "opening batch header: {:#?} at: {}",
-            self.msg_log.get_path(),
-            start_pos
+            path = ?self.msg_log.get_path(),
+            start_pos,
+            "opening batch header"
         );
 
         // let metadata = file.metadata().await?;
@@ -162,7 +162,10 @@ where
                     )),
                 }
             }
-            None => Ok(None),
+            None => {
+                debug!(start_offset, "offset position not found");
+                Ok(None)
+            }
         }
     }
 
@@ -187,7 +190,10 @@ where
 
         let delta = (offset - self.base_offset) as Size;
         let position = match self.index.find_offset(delta) {
-            None => 0,
+            None => {
+                debug!(delta, "relative offset not found in index");
+                0
+            }
             Some(entry) => entry.position(),
         };
         debug!(file_postition = position, "found file pos");
@@ -242,10 +248,10 @@ impl Segment<LogIndex, FileRecordsSlice> {
         option: Arc<SharedReplicaConfig>,
     ) -> Result<Self, StorageError> {
         let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
-        let base_offset = msg_log.get_base_offset();
-        let end_offset = msg_log.validate().await?;
-        debug!(end_offset, base_offset, "base offset from msg_log");
         let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
+        let base_offset = msg_log.get_base_offset();
+        let end_offset = msg_log.validate(&index).await?;
+        debug!(end_offset, base_offset, "base offset from msg_log");
 
         Ok(Segment {
             msg_log,
@@ -322,7 +328,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
     /// validate the segment and load last offset
     pub async fn validate(&mut self) -> Result<(), StorageError> {
-        self.end_offset = self.msg_log.validate().await?;
+        self.end_offset = self.msg_log.validate(&self.index).await?;
         Ok(())
     }
 

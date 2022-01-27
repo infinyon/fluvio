@@ -44,7 +44,12 @@ async fn print_logs(path: PathBuf) -> Result<(), StorageError> {
             batch_pos.len(),
         );
     }
-    println!("done");
+
+    if let Some(invalid) = header.invalid() {
+        println!("invalid: {:#?}", invalid);
+    } else {
+        println!("all checked");
+    }
 
     Ok(())
 }
@@ -77,7 +82,7 @@ pub(crate) fn dump_index(opt: IndexOpt) {
     };
 }
 
-const MAX: u32 = 100;
+const MAX: u32 = 100000;
 
 async fn print_index(path: PathBuf) -> Result<(), StorageError> {
     let log = LogIndex::open_from_path(path).await?;

@@ -18,6 +18,7 @@ use dataplane::{Offset, Size};
 use tracing::error;
 use tracing::info;
 
+use crate::LogIndex;
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
 use crate::validator::validate;
@@ -77,8 +78,8 @@ impl FileRecordsSlice {
         self.base_offset
     }
 
-    pub async fn validate(&self) -> Result<Offset, LogValidationError> {
-        validate(&self.path).await
+    pub async fn validate(&self, index: &LogIndex) -> Result<Offset, LogValidationError> {
+        validate(&self.path, Some(index)).await
     }
 
     pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {

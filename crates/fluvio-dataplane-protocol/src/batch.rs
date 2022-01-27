@@ -110,6 +110,16 @@ impl<R> Batch<R> {
     }
 }
 
+impl<R> Batch<R>
+where
+    R: Encoder,
+{
+    /// check if batch is valid after decoded
+    pub fn validate_decoding(&self) -> bool {
+        self.batch_len == (BATCH_HEADER_SIZE + self.records.write_size(0)) as i32
+    }
+}
+
 impl Batch {
     /// Create a new empty batch
     pub fn new() -> Self {
@@ -297,6 +307,7 @@ mod test {
         assert_eq!(batch.header.crc, 843514105);
         let b = decoded_record.value.as_ref();
         assert_eq!(b, b"test");
+        assert!(batch.validate_decoding());
 
         Ok(())
     }
