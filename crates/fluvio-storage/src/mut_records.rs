@@ -133,20 +133,21 @@ impl MutFileRecords {
 
     /// try to write batch
     /// if there is enough room, return true, false otherwise
-    pub async fn write_batch(&mut self, item: &Batch) -> Result<bool, StorageError> {
-        trace!("start sending using batch {:#?}", item.get_header());
-        if item.base_offset < self.base_offset {
+    pub async fn write_batch(&mut self, batch: &Batch) -> Result<bool, StorageError> {
+        trace!("start sending using batch {:#?}", batch.get_header());
+        if batch.base_offset < self.base_offset {
             return Err(StorageError::LogValidation(LogValidationError::BaseOff));
         }
 
-        self.item_last_offset_delta = item.get_last_offset_delta();
-        let len = item.write_size(0);
+        self.item_last_offset_delta = batch.get_last_offset_delta();
+        let batch_len = batch.write_size(0);
 
-        debug!(len, pos = self.get_pos(), "writing batch of size",);
+        debug!(batch_len, pos = self.get_pos(), "writing batch of size",);
 
-        let mut buffer: Vec<u8> = Vec::with_capacity(len);
-        item.encode(&mut buffer, 0)?;
-        assert_eq!(buffer.len(), len);
+        let mut buffer: Vec<u8> = Vec::with_capacity(batch_len);
+        batch.encode(&mut buffer, 0)?;
+        assert_eq!(buffer.len(), batch_len);
+
         let mf_sink = self.f_sink.clone();
         let mut f_sink = mf_sink.lock().await;
 

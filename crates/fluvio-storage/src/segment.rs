@@ -5,6 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use fluvio_future::fs::remove_file;
+use fluvio_protocol::Encoder;
 use tracing::{debug, trace, instrument, info};
 
 use dataplane::batch::Batch;
@@ -303,10 +304,10 @@ impl Segment<MutLogIndex, MutFileRecords> {
         base_offset: Offset,
         option: Arc<SharedReplicaConfig>,
     ) -> Result<MutableSegment, StorageError> {
-        trace!(
-            "opening mut segment: {} at: {:#?}",
+        debug!(
             base_offset,
-            &option.base_dir
+            base_dir = ?option.base_dir,
+            "opening active segment for write"
         );
         let msg_log = MutFileRecords::create(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
@@ -356,36 +357,29 @@ impl Segment<MutLogIndex, MutFileRecords> {
         Segment::open_for_read(self.get_base_offset(), self.end_offset, self.option.clone()).await
     }
 
-    /// write a batch, the batch is relative, we assume this would be add to current segment
-    #[instrument(skip(item))]
-    pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
-        let current_offset = self.end_offset;
-        let base_offset = self.base_offset;
-        let pos = self.get_log_pos();
+    /// Append new batch to segment.  This will update the index and msg log
+    /// This will perform following steps:
+    /// 1. Set batch's base offset to current end offset
+    /// 2. Append batch to msg log
+    /// 3. Write batch location to index
+    #[instrument(skip(batch))]
+    pub async fn append_batch(&mut self, batch: &mut Batch) -> Result<bool, StorageError> {
+        let file_pos = self.get_log_pos();
+        batch.set_base_offset(self.end_offset);
 
-        // fill in the base offset using current offset if record's batch offset is 0
-        // ensure batch is not already recorded
-        if item.base_offset == 0 {
-            item.set_base_offset(current_offset);
-        } else if item.base_offset < current_offset {
-            return Err(StorageError::LogValidation(
-                LogValidationError::ExistingBatch,
-            ));
-        }
-
-        let batch_offset_delta = (current_offset - base_offset) as i32;
+        // relative offset of the batch to segment
+        let relative_offset_in_segment = (self.end_offset - self.base_offset) as i32;
         debug!(
-            base_offset,
-            file_offset = pos,
-            batch_len = compute_batch_record_size(item),
+            relative_offset_in_segment,
+            batch_len = batch.write_size(0),
             "start writing batch"
         );
 
-        if self.msg_log.write_batch(item).await? {
+        if self.msg_log.write_batch(batch).await? {
             let batch_len = self.msg_log.get_pos();
 
             self.index
-                .write_index((batch_offset_delta as u32, pos, batch_len))
+                .write_index(relative_offset_in_segment as u32, file_pos, batch_len)
                 .await?;
 
             let last_offset_delta = self.msg_log.get_item_last_offset_delta();
@@ -465,7 +459,7 @@ mod tests {
 
         // batch of 1
         active_segment
-            .write_batch(&mut create_batch_with_producer(100, 1))
+            .append_batch(&mut create_batch_with_producer(100, 1))
             .await
             .expect("write");
         assert_eq!(active_segment.get_end_offset(), 21);
@@ -512,7 +506,7 @@ mod tests {
             .expect("segment");
 
         active_segment
-            .write_batch(&mut create_batch_with_producer(100, 4))
+            .append_batch(&mut create_batch_with_producer(100, 4))
             .await
             .expect("batch");
 
@@ -555,15 +549,15 @@ mod tests {
             .await
             .expect("write");
         seg_sink
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("write");
         seg_sink
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("write");
         seg_sink
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("write");
 
@@ -615,10 +609,10 @@ mod tests {
         // test whether you can send batch with non zero base offset
         let mut next_batch = create_batch();
         next_batch.base_offset = 46;
-        assert!(seg_sink.write_batch(&mut next_batch).await.is_ok());
+        assert!(seg_sink.append_batch(&mut next_batch).await.is_ok());
 
         let mut fail_batch = create_batch();
         fail_batch.base_offset = 45;
-        assert!(seg_sink.write_batch(&mut fail_batch).await.is_err());
+        assert!(seg_sink.append_batch(&mut fail_batch).await.is_err());
     }
 }

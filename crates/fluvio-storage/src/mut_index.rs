@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use libc::c_void;
 use tracing::debug;
+use tracing::instrument;
 use tracing::trace;
 use tracing::error;
 
@@ -42,6 +43,7 @@ pub struct MutLogIndex {
     file: File,
     base_offset: Offset,
     bytes_delta: Size,
+    last_offset_delta: Size,
     pos: Size,
     option: Arc<SharedReplicaConfig>,
     ptr: *mut c_void,
@@ -68,7 +70,8 @@ impl MutLogIndex {
 
         debug!(
             ?index_file_path,
-            max_bytes = option.index_max_bytes.get(),
+            index_max_bytes = option.index_max_bytes.get(),
+            index_max_interval_bytes = option.index_max_interval_bytes.get(),
             "creating index file"
         );
 
@@ -86,6 +89,7 @@ impl MutLogIndex {
             file,
             pos: 0,
             bytes_delta: 0,
+            last_offset_delta: 0,
             option,
             ptr,
             base_offset,
@@ -98,6 +102,7 @@ impl MutLogIndex {
     ) -> Result<Self, IoError> {
         let index_file_path = generate_file_name(&option.base_dir, base_offset, EXTENSION);
 
+        debug!(path = ?index_file_path, "opening mut index");
         // create new memory file and
         if option.index_max_bytes.get() == 0 {
             return Err(IoError::new(ErrorKind::InvalidInput, "invalid API"));
@@ -113,19 +118,19 @@ impl MutLogIndex {
             b_slices.as_ptr() as *mut libc::c_void
         };
 
-        trace!("opening mut index at: {:#?}, pos: {}", index_file_path, 0);
-
         let mut index = MutLogIndex {
             mmap: m_file,
             file,
             pos: 0,
             bytes_delta: 0,
+            last_offset_delta: 0,
             option,
             ptr,
             base_offset,
         };
 
-        index.update_pos()?;
+        index.pos = index.find_next_index()?;
+        debug!(index.pos, "next index slot");
 
         Ok(index)
     }
@@ -156,16 +161,15 @@ impl MutLogIndex {
         self.base_offset
     }
 
-    /// recalculate the
-    fn update_pos(&mut self) -> Result<(), IoError> {
+    /// find next index to write by finding empty
+    fn find_next_index(&self) -> Result<u32, IoError> {
         let entries = self.entries();
         trace!("updating position with: {}", entries);
 
         for i in 0..entries {
             if self[i as usize].position() == 0 {
-                trace!("set positioning: {}", i);
-                self.pos = i;
-                return Ok(());
+                debug!(i, "found empty slot");
+                return Ok(i as u32);
             }
         }
 
@@ -175,39 +179,53 @@ impl MutLogIndex {
         ))
     }
 
-    pub async fn write_index(&mut self, item: (Size, Size, Size)) -> Result<(), IoError> {
-        debug!(
-            offset_delta = item.0,
-            pos = item.1,
-            len = item.2,
-            "writing index"
-        );
-        let batch_size = item.2;
-
+    /// write index entry
+    /// offset_delta is relative offset in the segment, this should be always increase
+    #[instrument(skip(self))]
+    pub async fn write_index(
+        &mut self,
+        offset_delta: Size,
+        file_position: Size,
+        batch_size: Size,
+    ) -> Result<(), IoError> {
         let bytes_delta = self.bytes_delta;
-        if bytes_delta < self.option.index_max_interval_bytes.get() {
+        let max_interval = self.option.index_max_interval_bytes.get();
+
+        // check that offset delta should be incremental
+        if offset_delta > 0 {
+            assert!(offset_delta > self.last_offset_delta);
+        } else {
+            assert_eq!(self.last_offset_delta, 0);
+        }
+
+        self.last_offset_delta = offset_delta;
+
+        // only write to index if accmulated batch size is greater than max interval
+        if bytes_delta < max_interval {
             self.bytes_delta = bytes_delta + batch_size;
-            debug!(
+            trace!(
                 bytes_delta = self.bytes_delta,
-                max = self.option.index_max_interval_bytes.get(),
+                max_interval,
                 "no write due to less than max interval"
             );
             return Ok(());
         }
 
-        let pos = self.pos as usize;
-        let max_entries = self.entries();
-        self.pos = (pos + 1) as Size;
-        self.bytes_delta = 0;
+        // write new index entry
 
-        if pos < max_entries as usize {
-            self[pos] = (item.0, item.1).to_be();
-            debug!(max_entries, pos, "add new entry");
+        let max_entries = self.entries();
+
+        if self.pos < max_entries {
+            let pos = self.pos as usize;
+            self[pos] = (offset_delta, file_position);
+            debug!(max_entries, pos = self.pos, "add new entry at");
             self.mmap.flush_ft().await?;
+            self.bytes_delta = 0;
+            self.pos += 1;
         } else {
             error!(
                 "index position: {} is greater than max entries: {}, ignoring",
-                pos, max_entries
+                self.pos, max_entries
             );
         }
 
@@ -261,6 +279,7 @@ mod tests {
     use std::fs::File;
     use std::io::Read;
 
+    use dataplane::Offset;
     use flv_util::fixture::ensure_clean_file;
 
     use super::MutLogIndex;
@@ -271,19 +290,50 @@ mod tests {
     const TEST_FILE: &str = "00000000000000000121.index";
 
     #[fluvio_future::test]
-    async fn test_index_write() {
-        let option = default_option(50).shared();
+    async fn test_index_simple_write() {
+        const BASE_OFFSET: Offset = 121;
+
+        let option = default_option(200).shared();
+        assert_eq!(option.index_max_interval_bytes.get(), 200);
         let test_file = option.base_dir.join(TEST_FILE);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(121, option.clone())
+        let mut index = MutLogIndex::create(BASE_OFFSET, option.clone())
             .await
             .expect("crate");
 
-        index_sink.write_index((5, 200, 70)).await.expect("send"); // this will be ignored
-        index_sink.write_index((10, 100, 70)).await.expect("send"); // this will be written since batch size 70 is greater than 50
+        assert_eq!(index.pos, 0);
+        assert_eq!(index.base_offset, BASE_OFFSET);
 
-        assert_eq!(index_sink.pos, 1);
+        index.write_index(0, 0, 50).await.expect("send"); // this will be ignored, since pending size is less than max interval
+
+        assert_eq!(index.pos, 0);
+        assert_eq!(index.bytes_delta, 50);
+        assert_eq!(index.last_offset_delta, 0);
+
+        index.write_index(10, 50, 100).await.expect("send"); // this should be also ignored.
+
+        assert_eq!(index.pos, 0);
+        assert_eq!(index.bytes_delta, 150);
+        assert_eq!(index.last_offset_delta, 10);
+
+        index.write_index(15, 150, 100).await.expect("send"); // still ignored but next one will write.
+
+        assert_eq!(index.pos, 0);
+        assert_eq!(index.bytes_delta, 250);
+        assert_eq!(index.last_offset_delta, 15);
+
+        index.write_index(20, 250, 100).await.expect("send"); // trigger write
+
+        assert_eq!(index.pos, 1);
+        assert_eq!(index.bytes_delta, 0);
+        assert_eq!(index.last_offset_delta, 20);
+
+        index.write_index(30, 300, 100).await.expect("send"); // no trigger
+
+        assert_eq!(index.pos, 1);
+        assert_eq!(index.bytes_delta, 100);
+        assert_eq!(index.last_offset_delta, 30);
 
         let mut f = File::open(&test_file).expect("open");
         let mut buffer = vec![0; 32];
@@ -293,13 +343,13 @@ mod tests {
         assert_eq!(buffer[0], 0);
         assert_eq!(buffer[1], 0);
         assert_eq!(buffer[2], 0);
-        assert_eq!(buffer[3], 10);
+        assert_eq!(buffer[3], 20); // offset_delta,
         assert_eq!(buffer[4], 0);
         assert_eq!(buffer[5], 0);
         assert_eq!(buffer[6], 0);
-        assert_eq!(buffer[7], 100);
+        assert_eq!(buffer[7], 250); // file position
 
-        drop(index_sink);
+        drop(index);
 
         // open same file
 
@@ -317,7 +367,7 @@ mod tests {
 
         let mut index_sink = MutLogIndex::create(122, option).await.expect("create");
 
-        index_sink.write_index((5, 16, 70)).await.expect("send");
+        index_sink.write_index(5, 16, 70).await.expect("send");
 
         index_sink.shrink().await.expect("shrink");
 
@@ -336,10 +386,10 @@ mod tests {
 
         let mut index_sink = MutLogIndex::create(123, option).await.expect("create");
 
-        index_sink.write_index((100, 16, 70)).await.expect("send");
-        index_sink.write_index((500, 200, 70)).await.expect("send");
-        index_sink.write_index((800, 100, 70)).await.expect("send");
-        index_sink.write_index((1000, 200, 70)).await.expect("send");
+        index_sink.write_index(100, 16, 70).await.expect("send");
+        index_sink.write_index(500, 200, 70).await.expect("send");
+        index_sink.write_index(800, 100, 70).await.expect("send");
+        index_sink.write_index(1000, 200, 70).await.expect("send");
 
         assert_eq!(
             index_sink.find_offset(600).map(|p| p.to_be()),

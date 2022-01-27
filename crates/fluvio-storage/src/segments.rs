@@ -373,7 +373,7 @@ mod tests {
         end_offset: Offset,
     ) -> Result<ReadSegment, StorageError> {
         let mut mut_segment = MutableSegment::create(start, option).await?;
-        mut_segment.write_batch(&mut create_batch()).await?;
+        mut_segment.append_batch(&mut create_batch()).await?;
         mut_segment.set_end_offset(end_offset); // only used for testing
         let segment = mut_segment.convert_to_segment().await?;
         Ok(segment)

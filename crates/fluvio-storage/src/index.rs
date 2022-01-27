@@ -29,9 +29,12 @@ const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 pub const EXTENSION: &str = "index";
 
 pub trait Index {
+    /// find Offset position in the index
     fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)>;
 
     fn len(&self) -> Size;
+
+    /// number of entries in the index
     fn entries(&self) -> Size {
         self.len() / INDEX_ENTRY_SIZE
     }
@@ -256,8 +259,8 @@ mod tests {
             .await
             .expect("create");
 
-        mut_index.write_index((5, 16, 70)).await.expect("send");
-        mut_index.write_index((10, 100, 70)).await.expect("send");
+        mut_index.write_index(5, 16, 70).await.expect("send");
+        mut_index.write_index(10, 100, 70).await.expect("send");
 
         mut_index.shrink().await.expect("shrink");
 

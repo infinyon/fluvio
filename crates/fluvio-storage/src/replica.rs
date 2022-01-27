@@ -331,7 +331,7 @@ impl FileReplica {
 
     #[instrument(skip(self, item))]
     async fn write_batch(&mut self, item: &mut Batch) -> Result<(), StorageError> {
-        if !(self.active_segment.write_batch(item).await?) {
+        if !(self.active_segment.append_batch(item).await?) {
             info!(
                 partition = self.partition,
                 path = %self.option.base_dir.display(),
@@ -343,7 +343,7 @@ impl FileReplica {
             let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
             let old_segment = old_mut_segment.as_segment().await?;
             self.prev_segments.add_segment(old_segment).await;
-            self.active_segment.write_batch(item).await?;
+            self.active_segment.append_batch(item).await?;
         }
         Ok(())
     }
