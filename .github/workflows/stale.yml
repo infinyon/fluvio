@@ -13,6 +13,7 @@ jobs:
       pull-requests: write
 
     steps:
+    # Options and descriptions: https://github.com/actions/stale/blob/main/README.md
     - uses: actions/stale@v3
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
@@ -20,3 +21,6 @@ jobs:
         stale-pr-message: 'Stale pull request message'
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
+        exempt-all-milestones: true
+        exempt-issue-labels: 'RFC','Review Backlog','Epic','technical debt','no-stale'
+        exempt-pr-labels: 'no-stale'
