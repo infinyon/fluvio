@@ -14,13 +14,14 @@ jobs:
 
     steps:
     # Options and descriptions: https://github.com/actions/stale/blob/main/README.md
-    - uses: actions/stale@v3
+    - uses: actions/stale@v4
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         stale-issue-message: 'Stale issue message'
         stale-pr-message: 'Stale pull request message'
         stale-issue-label: 'no-issue-activity'
         stale-pr-label: 'no-pr-activity'
-        exempt-all-milestones: true
-        exempt-issue-labels: 'RFC','Review Backlog','Epic','technical debt','no-stale'
+        exempt-all-milestones: 'true'
+        exempt-issue-labels: 'RFC,Review Backlog,Epic,technical debt,no-stale'
         exempt-pr-labels: 'no-stale'
+        debug-only: true
