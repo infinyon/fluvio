@@ -16,7 +16,7 @@ env:
 
 jobs:
   unused_deps_check:
-    name: Unused Rust crate check
+    name: Rust check ${{ matrix.check }} (${{ matrix.rust-target }}) 
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

@@ -6,15 +6,14 @@ on:
 
 jobs:
   stale:
-
     runs-on: ubuntu-latest
     permissions:
       issues: write
       pull-requests: write
-
     steps:
     # Options and descriptions: https://github.com/actions/stale/blob/main/README.md
     - uses: actions/stale@v4
+      id: stale
       with:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
         stale-issue-message: 'Stale issue message'
@@ -24,4 +23,6 @@ jobs:
         exempt-all-milestones: 'true'
         exempt-issue-labels: 'RFC,Review Backlog,Epic,technical debt,no-stale'
         exempt-pr-labels: 'no-stale'
-        debug-only: true
+        #debug-only: 'true'
+    - name: Print outputs
+      run: echo ${{ join(steps.stale.outputs.*, ',') }}
