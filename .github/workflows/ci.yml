@@ -1037,3 +1037,33 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
+###
+  unused_deps_check:
+    name: Unused Rust crate check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        rust: [nightly]
+        rust-target: [x86_64-unknown-linux-gnu]
+        check: [unused-dependencies]
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install Zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.rust-target }}-${{ matrix.check }}
+      - name: Unused dependencies test
+        if: ${{ matrix.check == 'unused-dependencies' }}
+        run: make check-udeps 

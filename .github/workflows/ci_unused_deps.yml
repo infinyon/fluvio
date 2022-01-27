@@ -15,7 +15,7 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  check:
+  unused_deps_check:
     name: Unused Rust crate check
     runs-on: ${{ matrix.os }}
     strategy:
