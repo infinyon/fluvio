@@ -217,7 +217,7 @@ impl MutLogIndex {
 
         if self.pos < max_entries {
             let pos = self.pos as usize;
-            self[pos] = (offset_delta, file_position);
+            self[pos] = (offset_delta, file_position).to_be();
             debug!(max_entries, pos = self.pos, "add new entry at");
             self.mmap.flush_ft().await?;
             self.bytes_delta = 0;
