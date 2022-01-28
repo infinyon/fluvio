@@ -29,7 +29,17 @@ const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 pub const EXTENSION: &str = "index";
 
 pub trait Index {
-    /// find Offset position in the index
+    /// Find Offset position in the index
+    /// This will find index entry with least and min offset.
+    /// For example, if we have index entries:
+    /// 0: [30,100]    // offset: 30, position: 100
+    /// 1: [100,2000] // offset: 100, position: 2000
+    /// 2: [300,4000] // offset: 300, position: 4000
+    /// 3: [500,6000] // offset: 500, position: 6000
+    ///
+    /// find_offset(50) will return Some((4,100))
+    /// find_offset(1000) will return Some((500,6000))
+    /// find_offset(10) will return None
     fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)>;
 
     fn len(&self) -> Size;
@@ -164,7 +174,7 @@ impl LogIndex {
 
 impl Index for LogIndex {
     fn find_offset(&self, offset: Size) -> Option<(Size, Size)> {
-        lookup_entry(self, offset).map(|idx| self[idx])
+        lookup_entry(self, offset).map(|idx| self[idx].to_be())
     }
 
     fn len(&self) -> Size {
@@ -181,7 +191,7 @@ impl Deref for LogIndex {
     }
 }
 
-/// find the index of the offset that matches
+/// perform binary search given
 pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usize> {
     let first_entry = offsets[0];
     if offset < first_entry.offset() {

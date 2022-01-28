@@ -27,24 +27,17 @@ const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 
 pub const EXTENSION: &str = "index";
 
-/// Segment index
-///
-/// Maps offset into file position (Seek)
-///
-/// It is backed by memory mapped file
-///
-/// For active segment, index can grow
-/// For non active, it is fixed
-/// we maintain state in the lock to handle waker
+/// Index file for offset
+/// Each entry in index consist of pair of (relative_offset, file_position)
 
 // implement index file
 pub struct MutLogIndex {
     mmap: MemoryMappedMutFile,
     file: File,
-    base_offset: Offset,
-    bytes_delta: Size,
+    base_offset: Offset,         // base offset of segment
+    accumulated_batch_len: Size, // accumulated batches len
     last_offset_delta: Size,
-    pos: Size,
+    slot_index: Size, // track of the index slot
     option: Arc<SharedReplicaConfig>,
     ptr: *mut c_void,
 }
@@ -87,8 +80,8 @@ impl MutLogIndex {
         Ok(MutLogIndex {
             mmap: m_file,
             file,
-            pos: 0,
-            bytes_delta: 0,
+            slot_index: 0,
+            accumulated_batch_len: 0,
             last_offset_delta: 0,
             option,
             ptr,
@@ -121,16 +114,16 @@ impl MutLogIndex {
         let mut index = MutLogIndex {
             mmap: m_file,
             file,
-            pos: 0,
-            bytes_delta: 0,
+            slot_index: 0,
+            accumulated_batch_len: 0,
             last_offset_delta: 0,
             option,
             ptr,
             base_offset,
         };
 
-        index.pos = index.find_next_index()?;
-        debug!(index.pos, "next index slot");
+        index.slot_index = index.find_next_index()?;
+        debug!(index.slot_index, "next index slot");
 
         Ok(index)
     }
@@ -138,7 +131,7 @@ impl MutLogIndex {
     // shrink index file to last know position
 
     pub async fn shrink(&mut self) -> Result<(), IoError> {
-        let target_len = (self.pos * INDEX_ENTRY_SIZE) as u64;
+        let target_len = (self.slot_index * INDEX_ENTRY_SIZE) as u64;
         debug!(
             target_len,
             base_offset = self.base_offset,
@@ -188,7 +181,7 @@ impl MutLogIndex {
         file_position: Size,
         batch_size: Size,
     ) -> Result<(), IoError> {
-        let bytes_delta = self.bytes_delta;
+        let bytes_delta = self.accumulated_batch_len;
         let max_interval = self.option.index_max_interval_bytes.get();
 
         // check that offset delta should be incremental
@@ -202,9 +195,9 @@ impl MutLogIndex {
 
         // only write to index if accmulated batch size is greater than max interval
         if bytes_delta < max_interval {
-            self.bytes_delta = bytes_delta + batch_size;
+            self.accumulated_batch_len = bytes_delta + batch_size;
             trace!(
-                bytes_delta = self.bytes_delta,
+                bytes_delta = self.accumulated_batch_len,
                 max_interval,
                 "no write due to less than max interval"
             );
@@ -215,17 +208,17 @@ impl MutLogIndex {
 
         let max_entries = self.entries();
 
-        if self.pos < max_entries {
-            let pos = self.pos as usize;
+        if self.slot_index < max_entries {
+            let pos = self.slot_index as usize;
             self[pos] = (offset_delta, file_position).to_be();
-            debug!(max_entries, pos = self.pos, "add new entry at");
+            debug!(max_entries, pos, "add new entry at");
             self.mmap.flush_ft().await?;
-            self.bytes_delta = 0;
-            self.pos += 1;
+            self.accumulated_batch_len = 0;
+            self.slot_index += 1;
         } else {
             error!(
                 "index position: {} is greater than max entries: {}, ignoring",
-                self.pos, max_entries
+                self.slot_index, max_entries
             );
         }
 
@@ -235,19 +228,20 @@ impl MutLogIndex {
 
 impl Index for MutLogIndex {
     /// find offset indexes using relative offset
+    /// returns (relative_offset, file_position)
     fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)> {
         trace!(
-            "try to find relative offset: {}  index: {}",
             relative_offset,
-            self.pos
+            self.slot_index,
+            "try to find relative offset",
         );
 
-        if self.pos == 0 {
+        if self.slot_index == 0 {
             trace!("no entries, returning none");
             return None;
         }
-        let (lower, _) = self.split_at(self.pos as usize);
-        lookup_entry(lower, relative_offset).map(|idx| self[idx])
+        let (lower, _) = self.split_at(self.slot_index as usize);
+        lookup_entry(lower, relative_offset).map(|idx| self[idx].to_be())
     }
 
     fn len(&self) -> Size {
@@ -287,11 +281,11 @@ mod tests {
     use crate::fixture::default_option;
     use crate::index::OffsetPosition;
 
-    const TEST_FILE: &str = "00000000000000000121.index";
+    const TEST_FILE: &str = "00000000000000000000.index";
 
     #[fluvio_future::test]
     async fn test_index_simple_write() {
-        const BASE_OFFSET: Offset = 121;
+        const BASE_OFFSET: Offset = 0;
 
         let option = default_option(200).shared();
         assert_eq!(option.index_max_interval_bytes.get(), 200);
@@ -302,37 +296,37 @@ mod tests {
             .await
             .expect("crate");
 
-        assert_eq!(index.pos, 0);
+        assert_eq!(index.slot_index, 0);
         assert_eq!(index.base_offset, BASE_OFFSET);
 
         index.write_index(0, 0, 50).await.expect("send"); // this will be ignored, since pending size is less than max interval
 
-        assert_eq!(index.pos, 0);
-        assert_eq!(index.bytes_delta, 50);
+        assert_eq!(index.slot_index, 0);
+        assert_eq!(index.accumulated_batch_len, 50);
         assert_eq!(index.last_offset_delta, 0);
 
         index.write_index(10, 50, 100).await.expect("send"); // this should be also ignored.
 
-        assert_eq!(index.pos, 0);
-        assert_eq!(index.bytes_delta, 150);
+        assert_eq!(index.slot_index, 0);
+        assert_eq!(index.accumulated_batch_len, 150);
         assert_eq!(index.last_offset_delta, 10);
 
         index.write_index(15, 150, 100).await.expect("send"); // still ignored but next one will write.
 
-        assert_eq!(index.pos, 0);
-        assert_eq!(index.bytes_delta, 250);
+        assert_eq!(index.slot_index, 0);
+        assert_eq!(index.accumulated_batch_len, 250);
         assert_eq!(index.last_offset_delta, 15);
 
         index.write_index(20, 250, 100).await.expect("send"); // trigger write
 
-        assert_eq!(index.pos, 1);
-        assert_eq!(index.bytes_delta, 0);
+        assert_eq!(index.slot_index, 1);
+        assert_eq!(index.accumulated_batch_len, 0);
         assert_eq!(index.last_offset_delta, 20);
 
         index.write_index(30, 300, 100).await.expect("send"); // no trigger
 
-        assert_eq!(index.pos, 1);
-        assert_eq!(index.bytes_delta, 100);
+        assert_eq!(index.slot_index, 1);
+        assert_eq!(index.accumulated_batch_len, 100);
         assert_eq!(index.last_offset_delta, 30);
 
         let mut f = File::open(&test_file).expect("open");
@@ -349,12 +343,16 @@ mod tests {
         assert_eq!(buffer[6], 0);
         assert_eq!(buffer[7], 250); // file position
 
+        assert_eq!(index.find_offset(16), None);
+
+        assert_eq!(index.find_offset(20), Some((20, 250)));
+
         drop(index);
 
         // open same file
 
         let index_sink = MutLogIndex::open(121, option).await.expect("open");
-        assert_eq!(index_sink.pos, 1);
+        assert_eq!(index_sink.slot_index, 1);
     }
 
     const TEST_FILE2: &str = "00000000000000000122.index";
@@ -391,13 +389,7 @@ mod tests {
         index_sink.write_index(800, 100, 70).await.expect("send");
         index_sink.write_index(1000, 200, 70).await.expect("send");
 
-        assert_eq!(
-            index_sink.find_offset(600).map(|p| p.to_be()),
-            Some((500, 200))
-        );
-        assert_eq!(
-            index_sink.find_offset(2000).map(|p| p.to_be()),
-            Some((1000, 200))
-        );
+        assert_eq!(index_sink.find_offset(600), Some((500, 200)));
+        assert_eq!(index_sink.find_offset(2000), Some((1000, 200)));
     }
 }
