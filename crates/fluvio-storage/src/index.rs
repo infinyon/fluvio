@@ -51,8 +51,6 @@ pub trait Index {
 }
 
 pub trait OffsetPosition: Sized {
-    /// convert to be endian
-    #[allow(clippy::wrong_self_convention)]
     fn to_be(self) -> Self;
 
     fn offset(&self) -> Size;
@@ -62,18 +60,17 @@ pub trait OffsetPosition: Sized {
 
 impl OffsetPosition for (Size, Size) {
     fn to_be(self) -> Self {
-        let (offset, pos) = self;
-        (offset.to_be(), pos.to_be())
+        (self.0.to_be(), self.1.to_be())
     }
 
     #[inline(always)]
     fn offset(&self) -> Size {
-        self.0.to_be()
+        self.0
     }
 
     #[inline(always)]
     fn position(&self) -> Size {
-        self.1.to_be()
+        self.1
     }
 }
 
@@ -193,7 +190,7 @@ impl Deref for LogIndex {
 
 /// perform binary search given
 pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usize> {
-    let first_entry = offsets[0];
+    let first_entry = offsets[0].to_be();
     if offset < first_entry.offset() {
         trace!(
             "offset: {} is less than: first: {}",
@@ -203,7 +200,7 @@ pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usi
         return None;
     }
 
-    match offsets.binary_search_by(|entry| entry.offset().cmp(&offset)) {
+    match offsets.binary_search_by(|entry| entry.offset().to_be().cmp(&offset)) {
         Ok(idx) => Some(idx),
         Err(idx) => Some(idx - 1),
     }

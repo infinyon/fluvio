@@ -23,7 +23,6 @@ use crate::config::{SharedReplicaConfig};
 use crate::{StorageError};
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
-use crate::validator::LogValidationError;
 
 pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
 pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
@@ -398,6 +397,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 }
 
+/*
 /// compute total number of values in the default batch
 fn compute_batch_record_size(batch: &Batch) -> usize {
     batch
@@ -405,6 +405,7 @@ fn compute_batch_record_size(batch: &Batch) -> usize {
         .iter()
         .fold(0, |acc, batch| acc + batch.value.len())
 }
+*/
 
 #[cfg(test)]
 mod tests {
