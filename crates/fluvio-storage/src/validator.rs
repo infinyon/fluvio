@@ -4,7 +4,7 @@ use std::path::Path;
 
 use dataplane::batch::BatchRecords;
 use tracing::error;
-use tracing::{debug, warn, trace};
+use tracing::{debug, warn};
 
 use dataplane::Offset;
 

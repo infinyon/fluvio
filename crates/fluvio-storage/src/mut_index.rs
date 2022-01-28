@@ -181,7 +181,7 @@ impl MutLogIndex {
         file_position: Size,
         batch_size: Size,
     ) -> Result<(), IoError> {
-        let bytes_delta = self.accumulated_batch_len;
+        let accumulated_len = self.accumulated_batch_len;
         let max_interval = self.option.index_max_interval_bytes.get();
 
         // check that offset delta should be incremental
@@ -194,8 +194,8 @@ impl MutLogIndex {
         self.last_offset_delta = offset_delta;
 
         // only write to index if accmulated batch size is greater than max interval
-        if bytes_delta < max_interval {
-            self.accumulated_batch_len = bytes_delta + batch_size;
+        if accumulated_len < max_interval {
+            self.accumulated_batch_len = accumulated_len + batch_size;
             trace!(
                 bytes_delta = self.accumulated_batch_len,
                 max_interval,
@@ -210,7 +210,7 @@ impl MutLogIndex {
 
         if self.slot_index < max_entries {
             let pos = self.slot_index as usize;
-            self[pos] = (offset_delta, file_position).to_be();
+            self[pos] = (offset_delta.to_be(), file_position.to_be());
             debug!(max_entries, pos, "add new entry at");
             self.mmap.flush_ft().await?;
             self.accumulated_batch_len = 0;
@@ -277,9 +277,9 @@ mod tests {
     use flv_util::fixture::ensure_clean_file;
 
     use super::MutLogIndex;
+    use crate::LogIndex;
     use crate::index::Index;
     use crate::fixture::default_option;
-    use crate::index::OffsetPosition;
 
     const TEST_FILE: &str = "00000000000000000000.index";
 
@@ -346,10 +346,25 @@ mod tests {
         assert_eq!(index.find_offset(16), None);
 
         assert_eq!(index.find_offset(20), Some((20, 250)));
+        assert_eq!(index.find_offset(40), Some((20, 250)));
+
+        // write more
+        index.write_index(40, 400, 100).await.expect("send"); // no trigger
+        assert_eq!(index.slot_index, 1);
+        assert_eq!(index.accumulated_batch_len, 200);
+        assert_eq!(index.last_offset_delta, 40);
+
+        index.write_index(60, 500, 300).await.expect("send"); // trigger write
+        assert_eq!(index.slot_index, 2);
+        assert_eq!(index.accumulated_batch_len, 0);
+        assert_eq!(index.last_offset_delta, 60);
+
+        assert_eq!(index.find_offset(50), Some((20, 250)));
+        assert_eq!(index.find_offset(70), Some((60, 500)));
 
         drop(index);
 
-        // open same file
+        // open same file and check index
 
         let index_sink = MutLogIndex::open(121, option).await.expect("open");
         assert_eq!(index_sink.slot_index, 1);
@@ -382,14 +397,21 @@ mod tests {
         let test_file = option.base_dir.join(TEST_FILE3);
         ensure_clean_file(&test_file);
 
-        let mut index_sink = MutLogIndex::create(123, option).await.expect("create");
+        let mut mut_index = MutLogIndex::create(123, option.clone())
+            .await
+            .expect("create");
 
-        index_sink.write_index(100, 16, 70).await.expect("send");
-        index_sink.write_index(500, 200, 70).await.expect("send");
-        index_sink.write_index(800, 100, 70).await.expect("send");
-        index_sink.write_index(1000, 200, 70).await.expect("send");
+        mut_index.write_index(100, 16, 70).await.expect("send");
+        mut_index.write_index(500, 200, 70).await.expect("send");
+        mut_index.write_index(800, 100, 70).await.expect("send");
+        mut_index.write_index(1000, 200, 70).await.expect("send");
 
-        assert_eq!(index_sink.find_offset(600), Some((500, 200)));
-        assert_eq!(index_sink.find_offset(2000), Some((1000, 200)));
+        mut_index.shrink().await.expect("shrink");
+        drop(mut_index);
+
+        let index = LogIndex::open_from_offset(123, option).await.expect("open");
+
+        assert_eq!(index.find_offset(600), Some((500, 200)));
+        assert_eq!(index.find_offset(2000), Some((1000, 200)));
     }
 }
