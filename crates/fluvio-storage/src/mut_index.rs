@@ -174,6 +174,9 @@ impl MutLogIndex {
 
     /// write index entry
     /// offset_delta is relative offset in the segment, this should be always increase
+    /// offset_delta: relative offset in the segment
+    /// file_position: file position in the segment
+    /// batch_size: size of the batch
     #[instrument(skip(self))]
     pub async fn write_index(
         &mut self,

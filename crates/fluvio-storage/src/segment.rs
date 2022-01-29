@@ -4,13 +4,12 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-use fluvio_future::fs::remove_file;
-use fluvio_protocol::Encoder;
 use tracing::{debug, trace, instrument, info};
 
+use fluvio_future::fs::remove_file;
+use fluvio_future::file_slice::AsyncFileSlice;
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size, ErrorCode};
-use fluvio_future::file_slice::AsyncFileSlice;
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
@@ -322,6 +321,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         })
     }
 
+    #[cfg(test)]
     fn get_log_pos(&self) -> u32 {
         self.msg_log.get_pos()
     }
@@ -363,22 +363,24 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// 3. Write batch location to index
     #[instrument(skip(batch))]
     pub async fn append_batch(&mut self, batch: &mut Batch) -> Result<bool, StorageError> {
-        let file_pos = self.get_log_pos();
         batch.set_base_offset(self.end_offset);
 
         // relative offset of the batch to segment
         let relative_offset_in_segment = (self.end_offset - self.base_offset) as i32;
         debug!(
-            relative_offset_in_segment,
-            batch_len = batch.write_size(0),
-            "start writing batch"
+            base_offset = batch.get_base_offset(),
+            relative_offset_in_segment, "batch"
         );
 
-        if self.msg_log.write_batch(batch).await? {
-            let batch_len = self.msg_log.get_pos();
-
+        let (write_success, batch_len) = self.msg_log.write_batch(batch).await?;
+        if write_success {
+            let file_pos = self.msg_log.get_pos();
             self.index
-                .write_index(relative_offset_in_segment as u32, file_pos, batch_len)
+                .write_index(
+                    relative_offset_in_segment as u32,
+                    file_pos,
+                    batch_len as u32,
+                )
                 .await?;
 
             let last_offset_delta = self.msg_log.get_item_last_offset_delta();
