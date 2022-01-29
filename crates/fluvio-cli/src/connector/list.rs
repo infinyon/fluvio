@@ -99,7 +99,7 @@ mod output {
                 .map(|r| {
                     let _spec = &r.spec;
                     Row::new(vec![
-                        Cell::new_align(&r.name, Alignment::RIGHT),
+                        Cell::new_align(&r.name, Alignment::LEFT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
                     ])
                 })
