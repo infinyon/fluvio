@@ -19,6 +19,7 @@ use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
 use crate::config::{SharedReplicaConfig};
+use crate::validator::LogValidationError;
 use crate::{StorageError};
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
@@ -363,7 +364,15 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// 3. Write batch location to index
     #[instrument(skip(batch))]
     pub async fn append_batch(&mut self, batch: &mut Batch) -> Result<bool, StorageError> {
-        batch.set_base_offset(self.end_offset);
+        // fill in the base offset using current offset if record's batch offset is 0
+        // ensure batch is not already recorded
+        if batch.base_offset == 0 {
+            batch.set_base_offset(self.end_offset);
+        } else if batch.base_offset < self.end_offset {
+            return Err(StorageError::LogValidation(
+                LogValidationError::ExistingBatch,
+            ));
+        }
 
         // relative offset of the batch to segment
         let relative_offset_in_segment = (self.end_offset - self.base_offset) as i32;
@@ -376,7 +385,6 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
         let (write_success, batch_len) = self.msg_log.write_batch(batch).await?;
         if write_success {
-            
             self.index
                 .write_index(
                     relative_offset_in_segment as u32,
