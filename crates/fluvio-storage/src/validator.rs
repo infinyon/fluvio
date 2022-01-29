@@ -60,6 +60,7 @@ impl LogValidatorResult {
     pub async fn validate<P, R, S, I>(
         path: P,
         index: Option<&I>,
+        skip_errors: bool,
     ) -> Result<Self, LogValidationError>
     where
         P: AsRef<Path>,
@@ -120,11 +121,13 @@ impl LogValidatorResult {
                                 diff_index_pos = index_pos - last_index_pos,
                                 "index mismatch"
                             );
-                            return Err(LogValidationError::InvalidIndex {
-                                offset: batch_offset,
-                                pos: batch_pos.get_pos(),
-                                index_position: index_pos,
-                            });
+                            if !skip_errors {
+                                return Err(LogValidationError::InvalidIndex {
+                                    offset: batch_offset,
+                                    pos: batch_pos.get_pos(),
+                                    index_position: index_pos,
+                                });
+                            }
                         } else {
                             trace!(
                                 offset,
@@ -207,12 +210,21 @@ impl LogValidatorResult {
 /// validate the file and find last offset
 /// if file is not valid then return error
 #[instrument(skip(index, path))]
-pub async fn validate<P, I>(path: P, index: Option<&I>) -> Result<Offset, LogValidationError>
+pub async fn validate<P, I>(
+    path: P,
+    index: Option<&I>,
+    skip_errors: bool,
+) -> Result<Offset, LogValidationError>
 where
     P: AsRef<Path>,
     I: Index,
 {
-    match LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, I>(path, index).await
+    match LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, I>(
+        path,
+        index,
+        skip_errors,
+    )
+    .await
     {
         Ok(val) => Ok(val.next_offset()),
         Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
@@ -262,7 +274,7 @@ mod tests {
         let log_path = log_records.get_path().to_owned();
         drop(log_records);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None)
+        let next_offset = validate::<_, LogIndex>(&log_path, None, false)
             .await
             .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET);
@@ -300,7 +312,7 @@ mod tests {
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None)
+        let next_offset = validate::<_, LogIndex>(&log_path, None, false)
             .await
             .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET + 5);
@@ -343,7 +355,7 @@ mod tests {
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
-        match validate::<_, LogIndex>(&test_file, None).await {
+        match validate::<_, LogIndex>(&test_file, None, false).await {
             Err(err) => match err {
                 LogValidationError::Io(io_err) => {
                     assert!(matches!(io_err.kind(), ErrorKind::UnexpectedEof));
@@ -376,7 +388,7 @@ mod perf {
         let header_time = Instant::now();
         let msm_result =
             LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, LogIndex>(
-                TEST_PATH, None,
+                TEST_PATH, None, false,
             )
             .await
             .expect("validate");
@@ -385,7 +397,7 @@ mod perf {
 
         let record_time = Instant::now();
         let _ = LogValidatorResult::validate::<_, MemoryRecords, SequentialMmap, LogIndex>(
-            TEST_PATH, None,
+            TEST_PATH, None, false,
         )
         .await
         .expect("validate");

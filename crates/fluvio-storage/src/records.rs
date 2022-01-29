@@ -78,8 +78,12 @@ impl FileRecordsSlice {
         self.base_offset
     }
 
-    pub async fn validate(&self, index: &LogIndex) -> Result<Offset, LogValidationError> {
-        validate(&self.path, Some(index)).await
+    pub async fn validate(
+        &self,
+        index: &LogIndex,
+        skip_errors: bool,
+    ) -> Result<Offset, LogValidationError> {
+        validate(&self.path, Some(index), skip_errors).await
     }
 
     pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {

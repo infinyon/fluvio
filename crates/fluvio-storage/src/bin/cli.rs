@@ -11,6 +11,10 @@ use fluvio_storage::{
     config::{SharedReplicaConfig, StorageConfig, ReplicaConfig},
 };
 
+///
+/// Bunch of storage utilities:
+///
+/// validation: `cargo run --release --bin storage-cli --features=cli validate  ~/.fluvio/data/spu-logs-5001/longevity-0 `
 #[derive(Debug, StructOpt)]
 #[structopt(name = "storage", about = "Flavio Storage CLI")]
 enum Main {
@@ -132,6 +136,9 @@ pub(crate) struct SegmentValidateOpt {
 
     #[structopt(long, default_value = "0")]
     base_offset: Offset,
+
+    #[structopt(long)]
+    skip_errors: bool,
 }
 
 pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), StorageError> {
@@ -149,7 +156,7 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), Stor
         "performing validation on segment: {:#?}",
         file_path.display()
     );
-    active_segment.validate().await?;
+    active_segment.validate(opt.skip_errors).await?;
 
     Ok(())
 }
