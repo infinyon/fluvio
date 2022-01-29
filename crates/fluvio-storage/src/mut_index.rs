@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use libc::c_void;
 use tracing::debug;
-use tracing::info;
 use tracing::instrument;
 use tracing::trace;
 use tracing::error;
@@ -199,7 +198,7 @@ impl MutLogIndex {
             self.accumulated_batch_len = accumulated_len + batch_size;
             trace!(
                 bytes_delta = self.accumulated_batch_len,
-                max_interval,
+                max_interval = max_interval,
                 "no write due to less than max interval"
             );
             return Ok(());

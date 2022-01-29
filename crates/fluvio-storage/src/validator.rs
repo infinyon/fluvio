@@ -89,56 +89,68 @@ impl LogValidatorResult {
             },
         };
 
+        let mut last_index_pos = 0;
+        let mut last_batch_pos = 0;
+
         while let Some(batch_pos) = batch_stream.next().await {
-            let batch_base_offset = batch_pos.get_batch().get_base_offset();
+            let batch_offset = batch_pos.get_batch().get_base_offset();
+            let pos = batch_pos.get_pos();
 
             let header = batch_pos.get_batch().get_header();
             let offset_delta = header.last_offset_delta;
 
-            trace!(batch_base_offset, pos = batch_pos.get_pos(), "found batch");
+            trace!( offset = batch_offset, pos, diff_pos = pos - last_batch_pos,"found batch");
 
             // offset relative to segment
-            let delta_offset = batch_base_offset - val.base_offset;
+            let delta_offset = batch_offset - val.base_offset;
+           
 
             if let Some(index) = index {
-                if let Some((offset, position)) = index.find_offset(delta_offset as u32) {
+                if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
                     if offset == delta_offset as u32 {
-                        if position != batch_pos.get_pos() {
+                        if index_pos != pos {
                             error!(
-                                delta_offset,
-                                batch_pos = batch_pos.get_pos(),
+                                offset,
+                                index_position = index_pos,
+                                diff_index_batch_pos = index_pos - pos,
+                                diff_index_pos = index_pos - last_index_pos,
                                 "index mismatch"
                             );
                             return Err(LogValidationError::InvalidIndex {
-                                offset: batch_base_offset,
+                                offset: batch_offset,
                                 pos: batch_pos.get_pos(),
-                                index_position: 0,
+                                index_position: index_pos
                             });
                         } else {
-                            trace!(offset, position, "+ index pos matches");
+                            trace!(offset, index_pos, diff_pos = index_pos - last_index_pos, "+ index pos matches");
+                            last_index_pos = index_pos;
                         }
                     } else {
+                        /* 
                         trace!(
                             delta_offset,
                             offset,
-                            position,
+                            index_pos,
                             "- different offset from index, skipping"
                         );
+                        */
                     }
                 } else {
-                    trace!(delta_offset, "no index found");
+                  //  trace!(delta_offset, "no index found");
                 }
             }
 
-            if batch_base_offset < val.base_offset {
+            if batch_offset < val.base_offset {
                 warn!(
                     "batch base offset: {} is less than base offset: {} path: {:#?}",
-                    batch_base_offset,
+                    batch_offset,
                     val.base_offset,
                     file_path.display()
                 );
                 return Err(LogValidationError::BaseOff);
             }
+
+            last_batch_pos = batch_pos.get_pos();
 
             /*
             // test converting batch to slice
@@ -159,7 +171,7 @@ impl LogValidatorResult {
             }
             */
 
-            val.last_offset = batch_base_offset + offset_delta as Offset;
+            val.last_offset = batch_offset + offset_delta as Offset;
 
             // perform a simple json decoding
 
