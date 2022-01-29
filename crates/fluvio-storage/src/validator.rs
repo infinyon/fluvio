@@ -99,11 +99,15 @@ impl LogValidatorResult {
             let header = batch_pos.get_batch().get_header();
             let offset_delta = header.last_offset_delta;
 
-            trace!( offset = batch_offset, pos, diff_pos = pos - last_batch_pos,"found batch");
+            trace!(
+                offset = batch_offset,
+                pos,
+                diff_pos = pos - last_batch_pos,
+                "found batch"
+            );
 
             // offset relative to segment
             let delta_offset = batch_offset - val.base_offset;
-           
 
             if let Some(index) = index {
                 if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
@@ -119,14 +123,19 @@ impl LogValidatorResult {
                             return Err(LogValidationError::InvalidIndex {
                                 offset: batch_offset,
                                 pos: batch_pos.get_pos(),
-                                index_position: index_pos
+                                index_position: index_pos,
                             });
                         } else {
-                            trace!(offset, index_pos, diff_pos = index_pos - last_index_pos, "+ index pos matches");
+                            trace!(
+                                offset,
+                                index_pos,
+                                diff_pos = index_pos - last_index_pos,
+                                "+ index pos matches"
+                            );
                             last_index_pos = index_pos;
                         }
                     } else {
-                        /* 
+                        /*
                         trace!(
                             delta_offset,
                             offset,
@@ -136,7 +145,7 @@ impl LogValidatorResult {
                         */
                     }
                 } else {
-                  //  trace!(delta_offset, "no index found");
+                    //  trace!(delta_offset, "no index found");
                 }
             }
 

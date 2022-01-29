@@ -7,6 +7,7 @@ use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use async_lock::Mutex;
 
+use tracing::instrument;
 use tracing::{debug, warn, trace};
 
 use futures_lite::io::AsyncWriteExt;
@@ -42,7 +43,7 @@ const DELAY_FLUSH_SIA_MSEC: u64 = 3;
 /// Can append new batch to file
 pub struct MutFileRecords {
     base_offset: Offset,
-    item_last_offset_delta: Size,
+    last_offset_delta: Size,
     f_sink: Arc<Mutex<BoundedFileSink>>,
     f_slice_root: AsyncFileSlice,
     cached_len: u64,
@@ -101,7 +102,7 @@ impl MutFileRecords {
             flush_policy: get_flush_policy_from_config(&option),
             write_count: 0,
             flush_count: Arc::new(AtomicU32::new(0)),
-            item_last_offset_delta: 0,
+            last_offset_delta: 0,
             path: log_path.to_owned(),
             flush_time_tx: None,
         })
@@ -128,21 +129,22 @@ impl MutFileRecords {
     }
 
     pub fn get_item_last_offset_delta(&self) -> Size {
-        self.item_last_offset_delta
+        self.last_offset_delta
     }
 
     /// try to write batch
     /// if there is enough room, return true, false otherwise
-    pub async fn write_batch(&mut self, batch: &Batch) -> Result<bool, StorageError> {
+    #[instrument(skip(self,batch),fields(pos=self.get_pos(),last_offset=self.last_offset_delta))]
+    pub async fn write_batch(&mut self, batch: &Batch) -> Result<(bool, usize), StorageError> {
         trace!("start sending using batch {:#?}", batch.get_header());
         if batch.base_offset < self.base_offset {
             return Err(StorageError::LogValidation(LogValidationError::BaseOff));
         }
 
-        self.item_last_offset_delta = batch.get_last_offset_delta();
+        self.last_offset_delta = batch.get_last_offset_delta();
         let batch_len = batch.write_size(0);
 
-        debug!(batch_len, pos = self.get_pos(), "writing batch of size",);
+        debug!(batch_len, "writing batch of size",);
 
         let mut buffer: Vec<u8> = Vec::with_capacity(batch_len);
         batch.encode(&mut buffer, 0)?;
@@ -154,6 +156,7 @@ impl MutFileRecords {
         if f_sink.can_be_appended(buffer.len() as u64) {
             f_sink.write_all(&buffer).await?;
             self.cached_len = f_sink.get_current_len();
+            debug!(pos = self.get_pos(), "update pos",);
             drop(f_sink); // unlock because flush may reaqire the lock
             self.write_count = self.write_count.saturating_add(1);
             match self.flush_policy.should_flush() {
@@ -174,14 +177,14 @@ impl MutFileRecords {
                 }
             }
 
-            Ok(true)
+            Ok((true, batch_len))
         } else {
             debug!(
                 len = f_sink.get_current_len(),
                 buffer_len = buffer.len(),
                 "no more room to add"
             );
-            Ok(false)
+            Ok((false, batch_len))
         }
     }
 
@@ -442,8 +445,9 @@ mod tests {
 
         let batch = builder.batch();
         let write_size = batch.write_size(0);
-        debug!("write size: {}", write_size); // for now, this is 79 bytes
+        debug!(write_size, "write size"); // for now, this is 79 bytes
         msg_sink.write_batch(&batch).await.expect("create");
+        assert_eq!(msg_sink.get_pos() as usize, write_size);
 
         let log_path = msg_sink.get_path().to_owned();
 
@@ -462,6 +466,7 @@ mod tests {
 
         debug!("write 2");
         msg_sink.write_batch(&builder.batch()).await.expect("write");
+        assert_eq!(msg_sink.get_pos() as usize, write_size * 2);
 
         let bytes = read_bytes_from_file(&log_path).expect("read");
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
