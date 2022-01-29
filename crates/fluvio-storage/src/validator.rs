@@ -5,7 +5,6 @@ use std::path::Path;
 use dataplane::batch::BatchRecords;
 use tracing::error;
 use tracing::instrument;
-use tracing::trace;
 use tracing::{debug, warn};
 
 use dataplane::Offset;
@@ -61,6 +60,7 @@ impl LogValidatorResult {
         path: P,
         index: Option<&I>,
         skip_errors: bool,
+        verbose: bool,
     ) -> Result<Self, LogValidationError>
     where
         P: AsRef<Path>,
@@ -100,12 +100,10 @@ impl LogValidatorResult {
             let header = batch_pos.get_batch().get_header();
             let offset_delta = header.last_offset_delta;
 
-            trace!(
-                offset = batch_offset,
-                pos,
-                diff_pos = pos - last_batch_pos,
-                "found batch"
-            );
+            if verbose {
+                let diff_pos = pos - last_batch_pos;
+                println!("found batch offset = {batch_offset}, pos = {pos}, diff_pos = {diff_pos}");
+            }
 
             // offset relative to segment
             let delta_offset = batch_offset - val.base_offset;
@@ -114,13 +112,13 @@ impl LogValidatorResult {
                 if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
                     if offset == delta_offset as u32 {
                         if index_pos != pos {
-                            error!(
-                                offset,
-                                index_position = index_pos,
-                                diff_index_batch_pos = index_pos - pos,
-                                diff_index_pos = index_pos - last_index_pos,
-                                "index mismatch"
-                            );
+                            if verbose {
+                                let diff_index_batch_pos = index_pos - pos;
+                                let diff_index_pos = index_pos - last_index_pos;
+                                println!(
+                                    "-- index mismatch: offset = {offset}, idx_pos = {index_pos}, diff_idx_batch_pos = {diff_index_batch_pos}, diff_idx_pos={diff_index_pos}"
+                                );
+                            }
                             if !skip_errors {
                                 return Err(LogValidationError::InvalidIndex {
                                     offset: batch_offset,
@@ -129,12 +127,13 @@ impl LogValidatorResult {
                                 });
                             }
                         } else {
-                            trace!(
-                                offset,
-                                index_pos,
-                                diff_pos = index_pos - last_index_pos,
-                                "+ index pos matches"
-                            );
+                            if verbose {
+                                let diff_pos = index_pos - last_index_pos;
+                                println!(
+                                    "+ offset = {offset}, idx_pos = {index_pos}, diff_pos={diff_pos}"
+                                );
+                            }
+
                             last_index_pos = index_pos;
                         }
                     } else {
@@ -195,6 +194,8 @@ impl LogValidatorResult {
         }
 
         debug!(val.last_offset, "found last offset");
+
+
         Ok(val)
     }
 
@@ -214,6 +215,7 @@ pub async fn validate<P, I>(
     path: P,
     index: Option<&I>,
     skip_errors: bool,
+    verbose: bool,
 ) -> Result<Offset, LogValidationError>
 where
     P: AsRef<Path>,
@@ -223,6 +225,7 @@ where
         path,
         index,
         skip_errors,
+        verbose,
     )
     .await
     {
@@ -274,7 +277,7 @@ mod tests {
         let log_path = log_records.get_path().to_owned();
         drop(log_records);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None, false)
+        let next_offset = validate::<_, LogIndex>(&log_path, None, false, false)
             .await
             .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET);
@@ -312,7 +315,7 @@ mod tests {
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None, false)
+        let next_offset = validate::<_, LogIndex>(&log_path, None, false, false)
             .await
             .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET + 5);
@@ -355,7 +358,7 @@ mod tests {
         let bytes = vec![0x01, 0x02, 0x03];
         f_sink.write_all(&bytes).await.expect("write some junk");
         f_sink.flush().await.expect("flush");
-        match validate::<_, LogIndex>(&test_file, None, false).await {
+        match validate::<_, LogIndex>(&test_file, None, false, false).await {
             Err(err) => match err {
                 LogValidationError::Io(io_err) => {
                     assert!(matches!(io_err.kind(), ErrorKind::UnexpectedEof));
@@ -388,7 +391,7 @@ mod perf {
         let header_time = Instant::now();
         let msm_result =
             LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, LogIndex>(
-                TEST_PATH, None, false,
+                TEST_PATH, None, false, false,
             )
             .await
             .expect("validate");
@@ -397,7 +400,7 @@ mod perf {
 
         let record_time = Instant::now();
         let _ = LogValidatorResult::validate::<_, MemoryRecords, SequentialMmap, LogIndex>(
-            TEST_PATH, None, false,
+            TEST_PATH, None, false, false,
         )
         .await
         .expect("validate");
