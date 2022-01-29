@@ -106,8 +106,12 @@ impl MutFileRecords {
         self.base_offset
     }
 
-    pub async fn validate(&mut self, index: &MutLogIndex) -> Result<Offset, LogValidationError> {
-        validate(&self.path, Some(index)).await
+    pub async fn validate(
+        &mut self,
+        index: &MutLogIndex,
+        skip_errors: bool,
+    ) -> Result<Offset, LogValidationError> {
+        validate(&self.path, Some(index), skip_errors).await
     }
 
     /// get current file position

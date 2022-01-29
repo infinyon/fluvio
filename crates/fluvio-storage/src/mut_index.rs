@@ -39,6 +39,7 @@ pub struct MutLogIndex {
     last_offset_delta: Size,
     slot_index: Size, // track of the index slot
     option: Arc<SharedReplicaConfig>,
+    max_index_interval: Size,
     ptr: *mut c_void,
 }
 
@@ -61,6 +62,8 @@ impl MutLogIndex {
             ));
         }
 
+        let max_index_interval = option.index_max_interval_bytes.get_consistent();
+
         debug!(
             ?index_file_path,
             index_max_bytes = option.index_max_bytes.get(),
@@ -78,6 +81,7 @@ impl MutLogIndex {
         };
 
         Ok(MutLogIndex {
+            max_index_interval,
             mmap: m_file,
             file,
             slot_index: 0,
@@ -111,8 +115,11 @@ impl MutLogIndex {
             b_slices.as_ptr() as *mut libc::c_void
         };
 
+        let max_index_interval = option.index_max_interval_bytes.get_consistent();
+
         let mut index = MutLogIndex {
             mmap: m_file,
+            max_index_interval,
             file,
             slot_index: 0,
             accumulated_batch_len: 0,
@@ -184,9 +191,6 @@ impl MutLogIndex {
         file_position: Size,
         batch_size: Size,
     ) -> Result<(), IoError> {
-        let accumulated_len = self.accumulated_batch_len;
-        let max_interval = self.option.index_max_interval_bytes.get();
-
         // check that offset delta should be incremental
         if offset_delta > 0 {
             assert!(offset_delta > self.last_offset_delta);
@@ -197,11 +201,11 @@ impl MutLogIndex {
         self.last_offset_delta = offset_delta;
 
         // only write to index if accmulated batch size is greater than max interval
-        if accumulated_len < max_interval {
-            self.accumulated_batch_len = accumulated_len + batch_size;
+        if self.accumulated_batch_len < self.max_index_interval {
+            self.accumulated_batch_len += batch_size;
             trace!(
                 bytes_delta = self.accumulated_batch_len,
-                max_interval = max_interval,
+                max_interval = self.max_index_interval,
                 "no write due to less than max interval"
             );
             return Ok(());

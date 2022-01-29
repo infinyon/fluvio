@@ -166,6 +166,11 @@ impl SharedConfigValue {
     }
 
     #[inline(always)]
+    pub fn get_consistent(&self) -> u32 {
+        self.0.load(std::sync::atomic::Ordering::SeqCst)
+    }
+
+    #[inline(always)]
     pub fn set(&self, value: u32) {
         self.0.store(value, std::sync::atomic::Ordering::Relaxed)
     }
