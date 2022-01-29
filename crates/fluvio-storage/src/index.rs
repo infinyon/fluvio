@@ -51,10 +51,13 @@ pub trait Index {
 }
 
 pub trait OffsetPosition: Sized {
+    /// convert to big endian format, this must be performed before send out to caller
     fn to_be(self) -> Self;
 
+    /// offset
     fn offset(&self) -> Size;
 
+    /// file position
     fn position(&self) -> Size;
 }
 

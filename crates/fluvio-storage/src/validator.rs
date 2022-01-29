@@ -4,11 +4,12 @@ use std::path::Path;
 
 use dataplane::batch::BatchRecords;
 use tracing::error;
+use tracing::instrument;
+use tracing::trace;
 use tracing::{debug, warn};
 
 use dataplane::Offset;
 
-use crate::OffsetPosition;
 use crate::batch::FileBatchStream;
 use crate::batch::SequentialMmap;
 use crate::batch::StorageBytesIterator;
@@ -94,31 +95,38 @@ impl LogValidatorResult {
             let header = batch_pos.get_batch().get_header();
             let offset_delta = header.last_offset_delta;
 
-            debug!(batch_base_offset, offset_delta, "found batch");
+            trace!(batch_base_offset, pos = batch_pos.get_pos(), "found batch");
 
+            // offset relative to segment
             let delta_offset = batch_base_offset - val.base_offset;
 
-            // if index exits, ensure it matches
-
             if let Some(index) = index {
-                debug!("trying to find offset");
-                if let Some(idx) = index.find_offset(delta_offset as u32) {
-                    let idx_pos = idx.position();
-                    if idx_pos != batch_pos.get_pos() {
-                        error!(
-                            delta_offset,
-                            idx_pos,
-                            batch_pos = batch_pos.get_pos(),
-                            "index mismatch"
-                        );
-                        return Err(LogValidationError::InvalidIndex {
-                            offset: batch_base_offset,
-                            pos: batch_pos.get_pos(),
-                            index_position: idx.position(),
-                        });
+                if let Some((offset, position)) = index.find_offset(delta_offset as u32) {
+                    if offset == delta_offset as u32 {
+                        if position != batch_pos.get_pos() {
+                            error!(
+                                delta_offset,
+                                batch_pos = batch_pos.get_pos(),
+                                "index mismatch"
+                            );
+                            return Err(LogValidationError::InvalidIndex {
+                                offset: batch_base_offset,
+                                pos: batch_pos.get_pos(),
+                                index_position: 0,
+                            });
+                        } else {
+                            trace!(offset, position, "+ index pos matches");
+                        }
                     } else {
-                        debug!(idx_pos, "index pos matches");
+                        trace!(
+                            delta_offset,
+                            offset,
+                            position,
+                            "- different offset from index, skipping"
+                        );
                     }
+                } else {
+                    trace!(delta_offset, "no index found");
                 }
             }
 
@@ -177,6 +185,7 @@ impl LogValidatorResult {
 
 /// validate the file and find last offset
 /// if file is not valid then return error
+#[instrument(skip(index, path))]
 pub async fn validate<P, I>(path: P, index: Option<&I>) -> Result<Offset, LogValidationError>
 where
     P: AsRef<Path>,

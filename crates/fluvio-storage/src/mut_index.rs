@@ -8,6 +8,7 @@ use std::sync::Arc;
 
 use libc::c_void;
 use tracing::debug;
+use tracing::info;
 use tracing::instrument;
 use tracing::trace;
 use tracing::error;
@@ -209,9 +210,9 @@ impl MutLogIndex {
         let max_entries = self.entries();
 
         if self.slot_index < max_entries {
-            let pos = self.slot_index as usize;
-            self[pos] = (offset_delta.to_be(), file_position.to_be());
-            debug!(max_entries, pos, "add new entry at");
+            let slot_index = self.slot_index as usize;
+            debug!(slot_index, offset_delta, file_position, "add new entry at");
+            self[slot_index] = (offset_delta.to_be(), file_position.to_be());
             self.mmap.flush_ft().await?;
             self.accumulated_batch_len = 0;
             self.slot_index += 1;
@@ -229,19 +230,20 @@ impl MutLogIndex {
 impl Index for MutLogIndex {
     /// find offset indexes using relative offset
     /// returns (relative_offset, file_position)
+    #[instrument(level = "trace",skip(self),fields(slot=self.slot_index))]
     fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)> {
-        trace!(
-            relative_offset,
-            self.slot_index,
-            "try to find relative offset",
-        );
-
         if self.slot_index == 0 {
             trace!("no entries, returning none");
             return None;
         }
         let (lower, _) = self.split_at(self.slot_index as usize);
-        lookup_entry(lower, relative_offset).map(|idx| self[idx].to_be())
+        if let Some(index) = lookup_entry(lower, relative_offset) {
+            trace!(index, "found index slot");
+            Some(self[index].to_be())
+        } else {
+            trace!("no index slot found");
+            None
+        }
     }
 
     fn len(&self) -> Size {
