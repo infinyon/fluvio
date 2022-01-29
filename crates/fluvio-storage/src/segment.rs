@@ -328,7 +328,11 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 
     /// validate the segment and load last offset
-    pub async fn validate(&mut self, skip_errors: bool, verbose: bool) -> Result<Offset, StorageError> {
+    pub async fn validate(
+        &mut self,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<Offset, StorageError> {
         self.end_offset = self
             .msg_log
             .validate(&self.index, skip_errors, verbose)

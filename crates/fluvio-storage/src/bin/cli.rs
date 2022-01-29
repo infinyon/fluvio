@@ -159,7 +159,7 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), Stor
         "performing validation on segment: {:#?}",
         file_path.display()
     );
-    
+
     let last_offset = active_segment
         .validate(opt.skip_errors, opt.verbose)
         .await?;

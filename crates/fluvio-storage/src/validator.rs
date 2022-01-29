@@ -111,14 +111,22 @@ impl LogValidatorResult {
             if let Some(index) = index {
                 if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
                     if offset == delta_offset as u32 {
+                        if verbose {
+                            let diff_pos = index_pos - last_index_pos;
+                            println!(
+                                "index offset = {offset}, idx_pos = {index_pos}, diff_pos={diff_pos}"
+                            );
+                        }
+
                         if index_pos != pos {
                             if verbose {
                                 let diff_index_batch_pos = index_pos - pos;
                                 let diff_index_pos = index_pos - last_index_pos;
                                 println!(
-                                    "-- index mismatch: offset = {offset}, idx_pos = {index_pos}, diff_idx_batch_pos = {diff_index_batch_pos}, diff_idx_pos={diff_index_pos}"
+                                    "-- index mismatch: diff pos = {diff_index_batch_pos}, diff from prev index pos={diff_index_pos}"
                                 );
                             }
+
                             if !skip_errors {
                                 return Err(LogValidationError::InvalidIndex {
                                     offset: batch_offset,
@@ -127,13 +135,6 @@ impl LogValidatorResult {
                                 });
                             }
                         } else {
-                            if verbose {
-                                let diff_pos = index_pos - last_index_pos;
-                                println!(
-                                    "+ offset = {offset}, idx_pos = {index_pos}, diff_pos={diff_pos}"
-                                );
-                            }
-
                             last_index_pos = index_pos;
                         }
                     } else {
@@ -194,7 +195,6 @@ impl LogValidatorResult {
         }
 
         debug!(val.last_offset, "found last offset");
-
 
         Ok(val)
     }
