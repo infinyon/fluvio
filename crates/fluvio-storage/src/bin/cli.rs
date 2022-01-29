@@ -139,6 +139,9 @@ pub(crate) struct SegmentValidateOpt {
 
     #[structopt(long)]
     skip_errors: bool,
+
+    #[structopt(long)]
+    verbose: bool,
 }
 
 pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), StorageError> {
@@ -156,7 +159,12 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), Stor
         "performing validation on segment: {:#?}",
         file_path.display()
     );
-    active_segment.validate(opt.skip_errors).await?;
+    
+    let last_offset = active_segment
+        .validate(opt.skip_errors, opt.verbose)
+        .await?;
+
+    println!("completed, last offset = {last_offset}");
 
     Ok(())
 }

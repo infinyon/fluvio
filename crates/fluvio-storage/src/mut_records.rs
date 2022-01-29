@@ -110,8 +110,9 @@ impl MutFileRecords {
         &mut self,
         index: &MutLogIndex,
         skip_errors: bool,
+        verbose: bool,
     ) -> Result<Offset, LogValidationError> {
-        validate(&self.path, Some(index), skip_errors).await
+        validate(&self.path, Some(index), skip_errors, verbose).await
     }
 
     /// get current file position

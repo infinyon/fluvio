@@ -250,7 +250,7 @@ impl Segment<LogIndex, FileRecordsSlice> {
         let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
         let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
-        let end_offset = msg_log.validate(&index, false).await?;
+        let end_offset = msg_log.validate(&index, false, false).await?;
         debug!(end_offset, base_offset, "base offset from msg_log");
 
         Ok(Segment {
@@ -328,9 +328,12 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 
     /// validate the segment and load last offset
-    pub async fn validate(&mut self, skip_errors: bool) -> Result<(), StorageError> {
-        self.end_offset = self.msg_log.validate(&self.index, skip_errors).await?;
-        Ok(())
+    pub async fn validate(&mut self, skip_errors: bool, verbose: bool) -> Result<Offset, StorageError> {
+        self.end_offset = self
+            .msg_log
+            .validate(&self.index, skip_errors, verbose)
+            .await?;
+        Ok(self.end_offset)
     }
 
     // shrink index

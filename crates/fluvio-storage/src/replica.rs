@@ -204,7 +204,7 @@ impl FileReplica {
             debug!(last_offset, "last segment found, validating offsets");
             let mut last_segment =
                 MutableSegment::open_for_write(last_offset, shared_config.clone()).await?;
-            last_segment.validate(false).await?;
+            last_segment.validate(false, false).await?;
             info!(
                 end_offset = last_segment.get_end_offset(),
                 "existing segment validated with last offset",
