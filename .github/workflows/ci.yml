@@ -117,6 +117,7 @@ jobs:
         with:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+          retention-days: 1
 
   # build other binaries which doesn't need test
   build_binaries:
@@ -247,6 +248,7 @@ jobs:
         with:
           name: ${{ matrix.binary }}-${{ matrix.rust-target }}
           path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+          retention-days: 1
 
   # Run all checks and unit test. This always run on debug mode
   check:
@@ -549,6 +551,7 @@ jobs:
         with:
           name: local-${{ matrix.run }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
+          retention-days: 1
       
 
   build_image:
@@ -586,6 +589,7 @@ jobs:
         with:
           name: infinyon-fluvio-${{ matrix.rust-target }}.tar
           path: /tmp/infinyon-fluvio-${{ matrix.rust-target }}.tar
+          retention-days: 1
 
   k8_cluster_test:
     name: Kubernetes cluster test - ${{ matrix.test }} (${{ matrix.run }}) on k8 (${{ matrix.k8 }})
@@ -703,6 +707,7 @@ jobs:
         with:
           name: k8_${{ matrix.run }}-${{ matrix.test }}-log
           path: diagnostics*.gz
+          retention-days: 1
 
   k8_upgrade_test:
     name: Upgrade cluster test on (${{ matrix.run }})
@@ -766,6 +771,7 @@ jobs:
         with:
           name: k8_upgrade_${{ matrix.run }}_log
           path: diagnostics*.gz
+          retention-days: 1
 
   k8_cli_backward_compat:
     name: Latest CLI vs Stable Cluster
@@ -882,6 +888,7 @@ jobs:
         with:
           name: k8-cli-smoke_log
           path: diagnostics*.gz
+          retention-days: 1
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
