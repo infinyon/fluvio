@@ -7,6 +7,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use fluvio_future::fs::File;
 use tracing::trace;
 use tracing::debug;
 use memmap::Mmap;
@@ -146,23 +147,22 @@ where
     }
 }
 
-// stream to iterate batch
-pub struct FileBatchStream<R = MemoryRecords, S = SequentialMmap> {
+// Stream to iterate over batches in a file
+pub struct FileBatchStream<R = MemoryRecords, S = MmapBytesIterator> {
     invalid: Option<IoError>,
     byte_iterator: S,
     data: PhantomData<R>,
 }
 
-impl<R, S> FileBatchStream<R, S>
+impl<R> FileBatchStream<R, MmapBytesIterator>
 where
-    R: Default + Debug,
-    S: StorageBytesIterator,
+    R: BatchRecords,
 {
-    pub async fn open<P>(path: P) -> Result<FileBatchStream<R, S>, IoError>
+    pub async fn open<P>(path: P) -> Result<FileBatchStream<R, MmapBytesIterator>, IoError>
     where
         P: AsRef<Path> + Send,
     {
-        let byte_iterator = S::open(path).await?;
+        let byte_iterator = MmapBytesIterator::open(path).await?;
 
         //trace!("opening batch stream on: {}",file);
         Ok(Self {
@@ -171,7 +171,13 @@ where
             data: PhantomData,
         })
     }
+}
 
+impl<R, S> FileBatchStream<R, S>
+where
+    R: Default + Debug,
+    S: StorageBytesIterator,
+{
     /// check if it is invalid
     pub fn invalid(self) -> Option<IoError> {
         self.invalid
@@ -211,14 +217,14 @@ where
     }
 }
 
-pub struct SequentialMmap {
+/// Memory mapped based iterator
+pub struct MmapBytesIterator {
     map: Mmap,
     pos: Size,
 }
 
-#[async_trait]
-impl StorageBytesIterator for SequentialMmap {
-    async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
+impl MmapBytesIterator {
+    pub(crate) async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
         let m_path = path.as_ref().to_owned();
         let (mmap, _file, _) = spawn_blocking(move || {
             let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
@@ -234,7 +240,10 @@ impl StorageBytesIterator for SequentialMmap {
 
         Ok(Self { map: mmap, pos: 0 })
     }
+}
 
+#[async_trait]
+impl StorageBytesIterator for MmapBytesIterator {
     fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
         // println!("inner len: {}, read_len: {}", self.map.len(),len);
         let bytes = (&self.map).split_at(self.pos as usize).1;
@@ -262,11 +271,33 @@ impl StorageBytesIterator for SequentialMmap {
     }
 }
 
+/// File based iterator
+pub struct FileBytesIterator {
+    file: File,
+}
+
+#[async_trait]
+impl StorageBytesIterator for FileBytesIterator {
+    fn get_pos(&self) -> Size {
+        todo!()
+    }
+
+    fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
+        todo!()
+    }
+
+    fn seek(&mut self, amount: Size) -> Size {
+        todo!()
+    }
+
+    fn set_absolute(&mut self, offset: Size) -> Size {
+        todo!()
+    }
+}
+
 /// Iterate over some kind of storage with bytes
 #[async_trait]
 pub trait StorageBytesIterator: Sized {
-    async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError>;
-
     fn get_pos(&self) -> Size;
 
     /// return slice of bytes at current position

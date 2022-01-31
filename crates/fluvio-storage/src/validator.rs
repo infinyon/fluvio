@@ -1,6 +1,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
 use std::path::Path;
+use std::path::PathBuf;
 
 use dataplane::batch::BatchRecords;
 use tracing::error;
@@ -10,7 +11,7 @@ use tracing::{debug, warn};
 use dataplane::Offset;
 
 use crate::batch::FileBatchStream;
-use crate::batch::SequentialMmap;
+use crate::batch::MmapBytesIterator;
 use crate::batch::StorageBytesIterator;
 use crate::batch_header::FileEmptyRecords;
 use crate::index::Index;
@@ -48,6 +49,7 @@ pub enum LogValidationError {
 #[derive(Debug, Default)]
 pub struct LogValidatorResult {
     pub base_offset: Offset,
+    file_path: PathBuf,
     pub batches: u32,
     pub last_offset: Offset,
     pub success: u32,
@@ -55,8 +57,7 @@ pub struct LogValidatorResult {
 }
 
 impl LogValidatorResult {
-    /// open validator on the log file path
-    pub async fn validate<P, R, S, I>(
+    pub async fn validate<P, R, I>(
         path: P,
         index: Option<&I>,
         skip_errors: bool,
@@ -65,24 +66,23 @@ impl LogValidatorResult {
     where
         P: AsRef<Path>,
         R: BatchRecords + Default + std::fmt::Debug,
-        S: StorageBytesIterator,
         I: Index,
     {
-        let file_path = path.as_ref();
-
+        let file_path = path.as_ref().to_path_buf();
         let mut val = Self {
-            base_offset: log_path_get_offset(file_path)?,
+            base_offset: log_path_get_offset(&file_path)?,
             last_offset: -1,
+            file_path,
             ..Default::default()
         };
 
         debug!(
-            file_name = %file_path.display(),
+            file_name = %val.file_path.display(),
             val.base_offset,
             "validating",
         );
 
-        let mut batch_stream: FileBatchStream<R, S> = match FileBatchStream::open(file_path).await {
+        let batch_stream: FileBatchStream<R> = match FileBatchStream::open(&val.file_path).await {
             Ok(batch_stream) => batch_stream,
             Err(err) => match err.kind() {
                 ErrorKind::UnexpectedEof => return Err(LogValidationError::Empty(val.base_offset)),
@@ -90,6 +90,30 @@ impl LogValidatorResult {
             },
         };
 
+        val.validate_with_stream::<P, R, MmapBytesIterator, I>(
+            batch_stream,
+            index,
+            skip_errors,
+            verbose,
+        )
+        .await?;
+        Ok(val)
+    }
+
+    /// open validator on the log file path
+    pub async fn validate_with_stream<P, R, S, I>(
+        &mut self,
+        mut batch_stream: FileBatchStream<R, S>,
+        index: Option<&I>,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<(), LogValidationError>
+    where
+        P: AsRef<Path>,
+        R: BatchRecords + Default + std::fmt::Debug,
+        S: StorageBytesIterator,
+        I: Index,
+    {
         let mut last_index_pos = 0;
         let mut last_batch_pos = 0;
 
@@ -106,7 +130,7 @@ impl LogValidatorResult {
             }
 
             // offset relative to segment
-            let delta_offset = batch_offset - val.base_offset;
+            let delta_offset = batch_offset - self.base_offset;
 
             if let Some(index) = index {
                 if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
@@ -152,12 +176,12 @@ impl LogValidatorResult {
                 }
             }
 
-            if batch_offset < val.base_offset {
+            if batch_offset < self.base_offset {
                 warn!(
                     "batch base offset: {} is less than base offset: {} path: {:#?}",
                     batch_offset,
-                    val.base_offset,
-                    file_path.display()
+                    self.base_offset,
+                    self.file_path.display()
                 );
                 return Err(LogValidationError::BaseOff);
             }
@@ -183,20 +207,20 @@ impl LogValidatorResult {
             }
             */
 
-            val.last_offset = batch_offset + offset_delta as Offset;
+            self.last_offset = batch_offset + offset_delta as Offset;
 
             // perform a simple json decoding
 
-            val.batches += 1;
+            self.batches += 1;
         }
 
         if let Some(err) = batch_stream.invalid() {
             return Err(err.into());
         }
 
-        debug!(val.last_offset, "found last offset");
+        debug!(self.last_offset, "found last offset");
 
-        Ok(val)
+        Ok(())
     }
 
     fn next_offset(&self) -> Offset {
@@ -221,13 +245,8 @@ where
     P: AsRef<Path>,
     I: Index,
 {
-    match LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, I>(
-        path,
-        index,
-        skip_errors,
-        verbose,
-    )
-    .await
+    match LogValidatorResult::validate::<_, FileEmptyRecords, I>(path, index, skip_errors, verbose)
+        .await
     {
         Ok(val) => Ok(val.next_offset()),
         Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
@@ -389,17 +408,16 @@ mod perf {
 
         println!("starting test");
         let header_time = Instant::now();
-        let msm_result =
-            LogValidatorResult::validate::<_, FileEmptyRecords, SequentialMmap, LogIndex>(
-                TEST_PATH, None, false, false,
-            )
-            .await
-            .expect("validate");
+        let msm_result = LogValidatorResult::validate::<_, FileEmptyRecords, LogIndex>(
+            TEST_PATH, None, false, false,
+        )
+        .await
+        .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
         println!("validator: {:#?}", msm_result);
 
         let record_time = Instant::now();
-        let _ = LogValidatorResult::validate::<_, MemoryRecords, SequentialMmap, LogIndex>(
+        let _ = LogValidatorResult::validate::<_, MemoryRecords, LogIndex>(
             TEST_PATH, None, false, false,
         )
         .await
