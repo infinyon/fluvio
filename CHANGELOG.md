@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.18 - UNRELEASED
+## Platform Version 0.9.19 - UNRELEASED
+
+## Platform Version 0.9.18 - 2022-01-31
 * Show Platform version for fluvio run ([#2104](https://github.com/infinyon/fluvio/issues/2104))
 * Fix batching producer for WASM platforms ([#2120](https://github.com/infinyon/fluvio/issues/2120))
 * Make Test runner more reliable ([#2110](https://github.com/infinyon/fluvio/issues/2110))
