@@ -7,6 +7,7 @@
 * Fix connector crd to store version ([#2123](https://github.com/infinyon/fluvio/issues/2123))
 * Remove max version requirements ([#2106](https://github.com/infinyon/fluvio/issues/2106))
 * Optimize memory allocation  ([#2069](https://github.com/infinyon/fluvio/pull/2133))
+* Translate `_` with `-` in connector parameters ([#2149](https://github.com/infinyon/fluvio/issues/2149))
   
 ## Platform Version 0.9.17 - 2022-01-12
 * Change default values of TopicProducerConfig ([#2069](https://github.com/infinyon/fluvio/issues/2069))
