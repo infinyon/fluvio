@@ -7,7 +7,6 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
-use fluvio_future::fs::File;
 use tracing::trace;
 use tracing::debug;
 use memmap::Mmap;
@@ -64,11 +63,11 @@ where
     }
 
     /// decode next batch from sequence map
-    pub(crate) fn read_from<S: StorageBytesIterator>(
+    pub(crate) async fn read_from<S: StorageBytesIterator>(
         file: &mut S,
     ) -> Result<Option<FileBatchPos<R>>, IoError> {
         let pos = file.get_pos();
-        let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32);
+        let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32).await?;
         trace!(
             read_len,
             bytes_len = bytes.len(),
@@ -114,18 +113,22 @@ where
             "decoding header",
         );
 
-        batch_position.read_records(file, remainder)?;
+        batch_position.read_records(file, remainder).await?;
 
         Ok(Some(batch_position))
     }
 
     /// decode the records of contents
-    fn read_records<'a, S>(&'a mut self, file: &'a mut S, content_len: usize) -> Result<(), IoError>
+    async fn read_records<'a, S>(
+        &'a mut self,
+        file: &'a mut S,
+        content_len: usize,
+    ) -> Result<(), IoError>
     where
         S: StorageBytesIterator,
     {
         // for now se
-        let (bytes, read_len) = file.read_bytes(content_len as u32);
+        let (bytes, read_len) = file.read_bytes(content_len as u32).await?;
 
         trace!(
             "file batch: read records {} bytes out of {}",
@@ -154,25 +157,6 @@ pub struct FileBatchStream<R = MemoryRecords, S = MmapBytesIterator> {
     data: PhantomData<R>,
 }
 
-impl<R> FileBatchStream<R, MmapBytesIterator>
-where
-    R: BatchRecords,
-{
-    pub async fn open<P>(path: P) -> Result<FileBatchStream<R, MmapBytesIterator>, IoError>
-    where
-        P: AsRef<Path> + Send,
-    {
-        let byte_iterator = MmapBytesIterator::open(path).await?;
-
-        //trace!("opening batch stream on: {}",file);
-        Ok(Self {
-            byte_iterator,
-            invalid: None,
-            data: PhantomData,
-        })
-    }
-}
-
 impl<R, S> FileBatchStream<R, S>
 where
     R: Default + Debug,
@@ -188,14 +172,14 @@ where
         self.byte_iterator.get_pos()
     }
 
-    #[inline(always)]
-    pub fn seek(&mut self, pos: Size) {
-        self.byte_iterator.seek(pos);
+    pub async fn seek(&mut self, pos: Size) -> Result<(), IoError> {
+        self.byte_iterator.seek(pos).await?;
+        Ok(())
     }
 
-    #[inline(always)]
-    pub fn set_absolute(&mut self, abs_offset: Size) {
-        self.byte_iterator.set_absolute(abs_offset);
+    pub async fn set_absolute(&mut self, abs_offset: Size) -> Result<(), IoError> {
+        self.byte_iterator.set_absolute(abs_offset).await?;
+        Ok(())
     }
 }
 
@@ -204,9 +188,23 @@ where
     R: BatchRecords,
     S: StorageBytesIterator,
 {
+    pub async fn open<P>(path: P) -> Result<FileBatchStream<R, S>, IoError>
+    where
+        P: AsRef<Path> + Send,
+    {
+        let byte_iterator = S::open(path).await?;
+
+        //trace!("opening batch stream on: {}",file);
+        Ok(Self {
+            byte_iterator,
+            invalid: None,
+            data: PhantomData,
+        })
+    }
+
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!(pos = self.get_pos(), "reading next from");
-        match FileBatchPos::read_from(&mut self.byte_iterator) {
+        match FileBatchPos::read_from(&mut self.byte_iterator).await {
             Ok(batch_res) => batch_res,
             Err(err) => {
                 debug!("error getting batch: {}", err);
@@ -223,8 +221,11 @@ pub struct MmapBytesIterator {
     pos: Size,
 }
 
-impl MmapBytesIterator {
-    pub(crate) async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
+impl MmapBytesIterator {}
+
+#[async_trait]
+impl StorageBytesIterator for MmapBytesIterator {
+    async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
         let m_path = path.as_ref().to_owned();
         let (mmap, _file, _) = spawn_blocking(move || {
             let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
@@ -240,29 +241,26 @@ impl MmapBytesIterator {
 
         Ok(Self { map: mmap, pos: 0 })
     }
-}
 
-#[async_trait]
-impl StorageBytesIterator for MmapBytesIterator {
-    fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
+    async fn read_bytes(&mut self, len: Size) -> Result<(&[u8], Size), IoError> {
         // println!("inner len: {}, read_len: {}", self.map.len(),len);
         let bytes = (&self.map).split_at(self.pos as usize).1;
         let prev_pos = self.pos;
         self.pos = min(self.map.len() as Size, self.pos as Size + len);
         // println!("prev pos: {}, new pos: {}", prev_pos, self.pos);
-        (bytes, self.pos - prev_pos)
+        Ok((bytes, self.pos - prev_pos))
     }
 
     // seek relative
-    fn seek(&mut self, amount: Size) -> Size {
+    async fn seek(&mut self, amount: Size) -> Result<Size, IoError> {
         self.pos = min(self.map.len() as Size, self.pos as Size + amount);
-        self.pos
+        Ok(amount)
     }
 
     // seek absolute
-    fn set_absolute(&mut self, offset: Size) -> Size {
+    async fn set_absolute(&mut self, offset: Size) -> Result<Size, IoError> {
         self.pos = min(self.map.len() as Size, offset);
-        self.pos
+        Ok(self.pos)
     }
 
     #[inline(always)]
@@ -271,43 +269,21 @@ impl StorageBytesIterator for MmapBytesIterator {
     }
 }
 
-/// File based iterator
-pub struct FileBytesIterator {
-    file: File,
-}
-
-#[async_trait]
-impl StorageBytesIterator for FileBytesIterator {
-    fn get_pos(&self) -> Size {
-        todo!()
-    }
-
-    fn read_bytes(&mut self, len: Size) -> (&[u8], Size) {
-        todo!()
-    }
-
-    fn seek(&mut self, amount: Size) -> Size {
-        todo!()
-    }
-
-    fn set_absolute(&mut self, offset: Size) -> Size {
-        todo!()
-    }
-}
-
 /// Iterate over some kind of storage with bytes
 #[async_trait]
 pub trait StorageBytesIterator: Sized {
+    async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError>;
+
     fn get_pos(&self) -> Size;
 
     /// return slice of bytes at current position
-    fn read_bytes(&mut self, len: Size) -> (&[u8], Size);
+    async fn read_bytes(&mut self, len: Size) -> Result<(&[u8], Size), IoError>;
 
     /// seek relative
-    fn seek(&mut self, amount: Size) -> Size;
+    async fn seek(&mut self, amount: Size) -> Result<Size, IoError>;
 
     /// set absolute position
-    fn set_absolute(&mut self, offset: Size) -> Size;
+    async fn set_absolute(&mut self, offset: Size) -> Result<Size, IoError>;
 }
 
 #[cfg(test)]
