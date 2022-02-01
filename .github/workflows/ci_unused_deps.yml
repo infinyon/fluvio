@@ -4,7 +4,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: dep-check-${{ github.head_ref }}
+  group: dep-check-${{ github.head_ref || 'ci_unused_deps' }}
   cancel-in-progress: true
 
 on:
