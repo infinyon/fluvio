@@ -4,12 +4,12 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.head_ref || 'ci_unused_deps' }}
+  group: dep-check-${{ github.head_ref }}
   cancel-in-progress: true
 
 on:
   pull_request:
-    branches: [master]
+    branches: [staging]
   workflow_dispatch:
 env:
   CARGO_TERM_COLOR: always
