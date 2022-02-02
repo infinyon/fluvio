@@ -176,7 +176,7 @@ mod tests {
             .await
             .expect("open");
 
-        header_stream.set_absolute(55205702);
+        header_stream.set_absolute(55205702).await.expect("set");
 
         let offset_seek = 46612;
 
