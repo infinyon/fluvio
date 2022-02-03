@@ -15,6 +15,7 @@ use crate::batch::FileBatchStream;
 use crate::batch::MmapBytesIterator;
 use crate::batch::StorageBytesIterator;
 use crate::batch_header::FileEmptyRecords;
+use crate::file::FileBytesIterator;
 use crate::index::Index;
 use crate::util::log_path_get_offset;
 use crate::util::OffsetError;
@@ -68,23 +69,8 @@ where
     S: StorageBytesIterator,
     R: BatchRecords + Default + std::fmt::Debug,
 {
-    #[instrument(skip(index, path))]
-    pub async fn validate(
-        path: P,
-        index: Option<&I>,
-        skip_errors: bool,
-        verbose: bool,
-    ) -> Result<Offset, LogValidationError> {
-        match Self::validate_inner::<_, FileEmptyRecords, I, S>(path, index, skip_errors, verbose)
-            .await
-        {
-            Ok(val) => Ok(val.next_offset()),
-            Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
-            Err(err) => Err(err),
-        }
-    }
-
-    async fn validate(
+    
+    async fn validate_core(
         path: P,
         index: Option<&I>,
         skip_errors: bool,
@@ -119,7 +105,7 @@ where
             },
         };
 
-        val.validate_with_stream::<P, R, S, I>(batch_stream, index, skip_errors, verbose)
+        val.validate_with_stream(batch_stream, index, skip_errors, verbose)
             .await?;
         Ok(val)
     }
@@ -250,6 +236,48 @@ where
     }
 }
 
+
+impl<P, I, S> LogValidator<P, FileEmptyRecords, I, S>
+where
+    P: AsRef<Path>,
+    I: Index,
+    S: StorageBytesIterator,
+{
+    /// generalized validation using byte iterator
+    #[instrument(skip(index, path))]
+    async fn validate_segment(
+        path: P,
+        index: Option<&I>,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<Offset, LogValidationError> {
+        match Self::validate_core(path, index, skip_errors, verbose)
+            .await
+        {
+            Ok(val) => Ok(val.next_offset()),
+            Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
+            Err(err) => Err(err),
+        }
+    }
+}
+
+
+/// Default validation using FileBytesIterator
+#[instrument(skip(index, path))]
+pub async fn validate<P,I>(
+    path: P,
+    index: Option<&I>,
+    skip_errors: bool,
+    verbose: bool,
+) -> Result<Offset, LogValidationError>
+where
+    P: AsRef<Path>,
+    I: Index,
+{
+    LogValidator::<P,FileEmptyRecords, I,FileBytesIterator>::validate_segment(path, index, skip_errors, verbose).await
+}
+
+
 /// validate the file and find last offset
 /// if file is not valid then return error
 
@@ -273,7 +301,7 @@ mod tests {
     use crate::records::FileRecords;
     use crate::validator::LogValidationError;
 
-    use super::validate;
+    use super::*;
 
     #[fluvio_future::test]
     async fn test_validate_empty() {
@@ -295,7 +323,7 @@ mod tests {
         let log_path = log_records.get_path().to_owned();
         drop(log_records);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None, false, false)
+        let next_offset = validate::<_,LogIndex>(&log_path, None, false, false)
             .await
             .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET);
@@ -408,16 +436,18 @@ mod perf {
         println!("starting test");
         let header_time = Instant::now();
         let msm_result =
-            LogValidator::validate::<_, FileEmptyRecords, LogIndex>(TEST_PATH, None, false, false)
+            LogValidator::<_, FileEmptyRecords, LogIndex>::validate_segment(TEST_PATH, None, false, false)
                 .await
                 .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
         println!("validator: {:#?}", msm_result);
 
+        /* 
         let record_time = Instant::now();
-        let _ = LogValidator::validate::<_, MemoryRecords, LogIndex>(TEST_PATH, None, false, false)
+        let _ = LogValidator::<_, MemoryRecords, LogIndex>::validate_segment(TEST_PATH, None, false, false)
             .await
             .expect("validate");
         println!("full scan took: {:#?}", record_time.elapsed());
+        */
     }
 }
