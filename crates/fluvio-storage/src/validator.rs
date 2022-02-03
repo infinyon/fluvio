@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::marker::PhantomData;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -46,34 +47,61 @@ pub enum LogValidationError {
 }
 
 /// Validation Log file
-#[derive(Debug, Default)]
-pub struct LogValidatorResult {
+#[derive(Debug)]
+pub struct LogValidator<P, R, I, S = MmapBytesIterator> {
     pub base_offset: Offset,
     file_path: PathBuf,
     pub batches: u32,
     pub last_offset: Offset,
     pub success: u32,
     pub failed: u32,
+    data1: PhantomData<P>,
+    data2: PhantomData<R>,
+    data3: PhantomData<I>,
+    data4: PhantomData<S>,
 }
 
-impl LogValidatorResult {
-    pub async fn validate<P, R, I>(
+impl<P, R, I, S> LogValidator<P, R, I, S>
+where
+    P: AsRef<Path>,
+    I: Index,
+    S: StorageBytesIterator,
+    R: BatchRecords + Default + std::fmt::Debug,
+{
+    #[instrument(skip(index, path))]
+    pub async fn validate(
         path: P,
         index: Option<&I>,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<Self, LogValidationError>
-    where
-        P: AsRef<Path>,
-        R: BatchRecords + Default + std::fmt::Debug,
-        I: Index,
-    {
+    ) -> Result<Offset, LogValidationError> {
+        match Self::validate_inner::<_, FileEmptyRecords, I, S>(path, index, skip_errors, verbose)
+            .await
+        {
+            Ok(val) => Ok(val.next_offset()),
+            Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
+            Err(err) => Err(err),
+        }
+    }
+
+    async fn validate(
+        path: P,
+        index: Option<&I>,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<Self, LogValidationError> {
         let file_path = path.as_ref().to_path_buf();
         let mut val = Self {
             base_offset: log_path_get_offset(&file_path)?,
             last_offset: -1,
             file_path,
-            ..Default::default()
+            batches: 0,
+            success: 0,
+            failed: 0,
+            data1: PhantomData,
+            data2: PhantomData,
+            data3: PhantomData,
+            data4: PhantomData,
         };
 
         debug!(
@@ -82,7 +110,8 @@ impl LogValidatorResult {
             "validating",
         );
 
-        let batch_stream: FileBatchStream<R> = match FileBatchStream::open(&val.file_path).await {
+        let batch_stream: FileBatchStream<R, S> = match FileBatchStream::open(&val.file_path).await
+        {
             Ok(batch_stream) => batch_stream,
             Err(err) => match err.kind() {
                 ErrorKind::UnexpectedEof => return Err(LogValidationError::Empty(val.base_offset)),
@@ -90,30 +119,19 @@ impl LogValidatorResult {
             },
         };
 
-        val.validate_with_stream::<P, R, MmapBytesIterator, I>(
-            batch_stream,
-            index,
-            skip_errors,
-            verbose,
-        )
-        .await?;
+        val.validate_with_stream::<P, R, S, I>(batch_stream, index, skip_errors, verbose)
+            .await?;
         Ok(val)
     }
 
     /// open validator on the log file path
-    pub async fn validate_with_stream<P, R, S, I>(
+    pub async fn validate_with_stream(
         &mut self,
         mut batch_stream: FileBatchStream<R, S>,
         index: Option<&I>,
         skip_errors: bool,
         verbose: bool,
-    ) -> Result<(), LogValidationError>
-    where
-        P: AsRef<Path>,
-        R: BatchRecords + Default + std::fmt::Debug,
-        S: StorageBytesIterator,
-        I: Index,
-    {
+    ) -> Result<(), LogValidationError> {
         let mut last_index_pos = 0;
         let mut last_batch_pos = 0;
 
@@ -234,25 +252,6 @@ impl LogValidatorResult {
 
 /// validate the file and find last offset
 /// if file is not valid then return error
-#[instrument(skip(index, path))]
-pub async fn validate<P, I>(
-    path: P,
-    index: Option<&I>,
-    skip_errors: bool,
-    verbose: bool,
-) -> Result<Offset, LogValidationError>
-where
-    P: AsRef<Path>,
-    I: Index,
-{
-    match LogValidatorResult::validate::<_, FileEmptyRecords, I>(path, index, skip_errors, verbose)
-        .await
-    {
-        Ok(val) => Ok(val.next_offset()),
-        Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
-        Err(err) => Err(err),
-    }
-}
 
 #[cfg(test)]
 mod tests {
@@ -408,20 +407,17 @@ mod perf {
 
         println!("starting test");
         let header_time = Instant::now();
-        let msm_result = LogValidatorResult::validate::<_, FileEmptyRecords, LogIndex>(
-            TEST_PATH, None, false, false,
-        )
-        .await
-        .expect("validate");
+        let msm_result =
+            LogValidator::validate::<_, FileEmptyRecords, LogIndex>(TEST_PATH, None, false, false)
+                .await
+                .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
         println!("validator: {:#?}", msm_result);
 
         let record_time = Instant::now();
-        let _ = LogValidatorResult::validate::<_, MemoryRecords, LogIndex>(
-            TEST_PATH, None, false, false,
-        )
-        .await
-        .expect("validate");
+        let _ = LogValidator::validate::<_, MemoryRecords, LogIndex>(TEST_PATH, None, false, false)
+            .await
+            .expect("validate");
         println!("full scan took: {:#?}", record_time.elapsed());
     }
 }
