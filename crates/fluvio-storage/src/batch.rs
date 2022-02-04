@@ -7,6 +7,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use tracing::instrument;
 use tracing::trace;
 use tracing::debug;
 use memmap::Mmap;
@@ -63,6 +64,7 @@ where
     }
 
     /// decode next batch from sequence map
+    #[instrument(skip(file))]
     pub(crate) async fn read_from<S: StorageBytesIterator>(
         file: &mut S,
     ) -> Result<Option<FileBatchPos<R>>, IoError> {
@@ -194,7 +196,6 @@ where
     {
         let byte_iterator = S::open(path).await?;
 
-        //trace!("opening batch stream on: {}",file);
         Ok(Self {
             byte_iterator,
             invalid: None,
@@ -202,6 +203,7 @@ where
         })
     }
 
+    #[instrument(skip(self))]
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!(pos = self.get_pos(), "reading next from");
         match FileBatchPos::read_from(&mut self.byte_iterator).await {

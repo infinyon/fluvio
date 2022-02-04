@@ -6,10 +6,13 @@ use async_trait::async_trait;
 use blocking::unblock;
 use bytes::BytesMut;
 use dataplane::Size;
-use fluvio_future::fs::File;
+
 use libc::{c_void};
 use nix::errno::Errno;
 use nix::Result as NixResult;
+use tracing::{debug, instrument};
+
+use fluvio_future::fs::File;
 
 use crate::batch::StorageBytesIterator;
 
@@ -25,6 +28,7 @@ pub struct FileBytesIterator {
 #[async_trait]
 impl StorageBytesIterator for FileBytesIterator {
     async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
+        debug!(path = ?path.as_ref().display(),"open file");
         let file = File::open(path).await?;
         Ok(Self {
             file,
@@ -37,6 +41,7 @@ impl StorageBytesIterator for FileBytesIterator {
         self.pos
     }
 
+    #[instrument(skip(self),fields(pos = self.pos))]
     async fn read_bytes(&mut self, len: Size) -> Result<(&[u8], Size), IoError> {
         self.buf.resize(len as usize, 0);
         let fd = AsyncFileDescriptor(self.file.as_raw_fd());
@@ -88,5 +93,32 @@ impl AsyncFileDescriptor {
             Ok(total_read as usize)
         })
         .await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::env::temp_dir;
+
+    use fluvio_future::{fs::File, io::WriteExt};
+
+    use super::*;
+
+    #[fluvio_future::test]
+    async fn test_read_bytes() {
+        let test_file = temp_dir().join("simple_write");
+
+        let mut file = File::create(&test_file).await.expect("file creation");
+        file.write_all(b"hello world").await.expect("write");
+        file.flush().await.expect("flush");
+        drop(file);
+
+        let mut iter = FileBytesIterator::open(&test_file)
+            .await
+            .expect("open test");
+        let (word, len) = iter.read_bytes(5).await.expect("read bytes");
+        assert_eq!(len, 5);
+        assert_eq!(word, b"hello");
     }
 }

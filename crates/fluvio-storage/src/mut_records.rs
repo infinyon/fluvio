@@ -372,9 +372,9 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Cursor;
 
-    use dataplane::Offset;
     use tracing::debug;
 
+    use dataplane::Offset;
     use flv_util::fixture::{ensure_new_dir};
     use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::core::{Decoder, Encoder};

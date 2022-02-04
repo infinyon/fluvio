@@ -69,7 +69,6 @@ where
     S: StorageBytesIterator,
     R: BatchRecords + Default + std::fmt::Debug,
 {
-    
     async fn validate_core(
         path: P,
         index: Option<&I>,
@@ -111,6 +110,7 @@ where
     }
 
     /// open validator on the log file path
+    #[instrument(skip(self, index, skip_errors, verbose, batch_stream))]
     pub async fn validate_with_stream(
         &mut self,
         mut batch_stream: FileBatchStream<R, S>,
@@ -236,7 +236,6 @@ where
     }
 }
 
-
 impl<P, I, S> LogValidator<P, FileEmptyRecords, I, S>
 where
     P: AsRef<Path>,
@@ -251,9 +250,7 @@ where
         skip_errors: bool,
         verbose: bool,
     ) -> Result<Offset, LogValidationError> {
-        match Self::validate_core(path, index, skip_errors, verbose)
-            .await
-        {
+        match Self::validate_core(path, index, skip_errors, verbose).await {
             Ok(val) => Ok(val.next_offset()),
             Err(LogValidationError::Empty(base_offset)) => Ok(base_offset),
             Err(err) => Err(err),
@@ -261,10 +258,9 @@ where
     }
 }
 
-
 /// Default validation using FileBytesIterator
 #[instrument(skip(index, path))]
-pub async fn validate<P,I>(
+pub async fn validate<P, I>(
     path: P,
     index: Option<&I>,
     skip_errors: bool,
@@ -274,9 +270,14 @@ where
     P: AsRef<Path>,
     I: Index,
 {
-    LogValidator::<P,FileEmptyRecords, I,FileBytesIterator>::validate_segment(path, index, skip_errors, verbose).await
+    LogValidator::<P, FileEmptyRecords, I, FileBytesIterator>::validate_segment(
+        path,
+        index,
+        skip_errors,
+        verbose,
+    )
+    .await
 }
-
 
 /// validate the file and find last offset
 /// if file is not valid then return error
@@ -323,7 +324,7 @@ mod tests {
         let log_path = log_records.get_path().to_owned();
         drop(log_records);
 
-        let next_offset = validate::<_,LogIndex>(&log_path, None, false, false)
+        let next_offset = validate::<_, LogIndex>(&log_path, None, false, false)
             .await
             .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET);
@@ -435,14 +436,15 @@ mod perf {
 
         println!("starting test");
         let header_time = Instant::now();
-        let msm_result =
-            LogValidator::<_, FileEmptyRecords, LogIndex>::validate_segment(TEST_PATH, None, false, false)
-                .await
-                .expect("validate");
+        let msm_result = LogValidator::<_, FileEmptyRecords, LogIndex>::validate_segment(
+            TEST_PATH, None, false, false,
+        )
+        .await
+        .expect("validate");
         println!("header only took: {:#?}", header_time.elapsed());
         println!("validator: {:#?}", msm_result);
 
-        /* 
+        /*
         let record_time = Instant::now();
         let _ = LogValidator::<_, MemoryRecords, LogIndex>::validate_segment(TEST_PATH, None, false, false)
             .await
