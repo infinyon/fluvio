@@ -10,7 +10,7 @@ use dataplane::Size;
 use libc::{c_void};
 use nix::errno::Errno;
 use nix::Result as NixResult;
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, trace};
 
 use fluvio_future::fs::File;
 
@@ -41,7 +41,7 @@ impl StorageBytesIterator for FileBytesIterator {
         self.pos
     }
 
-    #[instrument(skip(self),fields(pos = self.pos))]
+    #[instrument(skip(self),level = "trace",fields(pos = self.pos))]
     async fn read_bytes(&mut self, len: Size) -> Result<(&[u8], Size), IoError> {
         self.buf.resize(len as usize, 0);
         let fd = AsyncFileDescriptor(self.file.as_raw_fd());
@@ -49,6 +49,7 @@ impl StorageBytesIterator for FileBytesIterator {
             .pread(self.buf.clone(), self.pos as i64, len as usize)
             .await
             .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?;
+        trace!(len, ?fd, "read bytes");
         Ok((self.buf.as_ref(), len as Size))
     }
 
@@ -64,6 +65,7 @@ impl StorageBytesIterator for FileBytesIterator {
 }
 
 /// Async File Descriptor
+#[derive(Debug)]
 struct AsyncFileDescriptor(RawFd);
 
 impl AsyncFileDescriptor {
@@ -76,16 +78,17 @@ impl AsyncFileDescriptor {
             let mut buf_offset = 0;
             let mut total_read = 0;
             while buf_len > 0 {
+                trace!(fd, buf_len, buf_offset, total_read, "pread start");
                 let res = unsafe {
                     libc::pread(
                         fd,
                         buf.as_mut_ptr().offset(buf_offset) as *mut c_void,
-                        buf.len(),
+                        buf_len,
                         offset + total_read as i64,
                     )
                 };
-
                 let read = Errno::result(res).map(|r| r as isize)?;
+                trace!(fd, read, "pread success");
                 buf_len -= read as usize;
                 buf_offset += read;
                 total_read += read;
@@ -101,7 +104,9 @@ mod tests {
 
     use std::env::temp_dir;
 
-    use fluvio_future::{fs::File, io::WriteExt};
+    use futures_lite::AsyncWriteExt;
+
+    use fluvio_future::{fs::File};
 
     use super::*;
 
