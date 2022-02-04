@@ -70,7 +70,8 @@ where
         file: &mut S,
     ) -> Result<Option<FileBatchPos<R>>, IoError> {
         let pos = file.get_pos();
-        let (bytes, read_len) = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32).await?;
+        let bytes = file.read_bytes(BATCH_FILE_HEADER_SIZE as u32).await?;
+        let read_len = bytes.len();
         trace!(
             read_len,
             bytes_len = bytes.len(),
@@ -83,7 +84,7 @@ where
             return Ok(None);
         }
 
-        if read_len < BATCH_FILE_HEADER_SIZE as u32 {
+        if read_len < BATCH_FILE_HEADER_SIZE {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
                 format!(
@@ -131,7 +132,8 @@ where
         S: StorageBytesIterator,
     {
         // for now se
-        let (bytes, read_len) = file.read_bytes(content_len as u32).await?;
+        let bytes = file.read_bytes(content_len as u32).await?;
+        let read_len = bytes.len();
 
         trace!(
             "file batch: read records {} bytes out of {}",
@@ -139,7 +141,7 @@ where
             content_len
         );
 
-        if read_len < content_len as u32 {
+        if read_len < content_len {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
                 "not enough for records",
@@ -245,8 +247,8 @@ impl StorageBytesIterator for MmapBytesIterator {
         Ok(Self { map: mmap, pos: 0 })
     }
 
-    async fn read_bytes(&mut self, len: Size) -> Result<(Bytes, Size), IoError> {
-        /* 
+    async fn read_bytes(&mut self, len: Size) -> Result<Bytes, IoError> {
+        /*
                 // println!("inner len: {}, read_len: {}", self.map.len(),len);
         let bytes = (&self.map).split_at(self.pos as usize).1;
         let prev_pos = self.pos;
@@ -283,7 +285,7 @@ pub trait StorageBytesIterator: Sized {
     fn get_pos(&self) -> Size;
 
     /// return slice of bytes at current position
-    async fn read_bytes(&mut self, len: Size) -> Result<(Bytes, Size), IoError>;
+    async fn read_bytes(&mut self, len: Size) -> Result<Bytes, IoError>;
 
     /// seek relative
     async fn seek(&mut self, amount: Size) -> Result<Size, IoError>;
