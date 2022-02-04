@@ -37,17 +37,15 @@ impl StorageBytesIterator for FileBytesIterator {
     }
 
     #[instrument(skip(self),level = "trace",fields(pos = self.pos))]
-    async fn read_bytes(&mut self, len: Size) -> Result<(Bytes, Size), IoError> {
-        let mut buf = BytesMut::with_capacity(len as usize);
-        buf.resize(len as usize,0);
+    async fn read_bytes(&mut self, len: Size) -> Result<Bytes, IoError> {
         let fd = AsyncFileDescriptor(self.file.as_raw_fd());
-        let len = fd
-            .pread(buf.clone(), self.pos as i64, len as usize)
+        let buffer = fd
+            .pread(self.pos as i64, len as usize)
             .await
             .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?;
-        trace!(len, ?fd, "read bytes");
-        
-        Ok((buf.freeze(), len as Size))
+        trace!(len = buffer.len(), "read bytes");
+
+        Ok(buffer)
     }
 
     async fn seek(&mut self, amount: Size) -> Result<Size, IoError> {
@@ -67,11 +65,12 @@ struct AsyncFileDescriptor(RawFd);
 
 impl AsyncFileDescriptor {
     /// read number of bytes into shared buffer at offset
-    #[instrument(skip(self, buffer),level = "trace",fields(fd = self.0, offset, len))]
-    async fn pread(&self, mut buffer: BytesMut, offset: i64, len: usize) -> NixResult<usize> {
+    #[instrument(skip(self),level = "trace",fields(fd = self.0, offset, len))]
+    async fn pread(&self, offset: i64, len: usize) -> NixResult<Bytes> {
         let fd = self.0;
         unblock(move || {
-            let buf = buffer.as_mut();
+            let mut buf = BytesMut::with_capacity(len as usize);
+            buf.resize(len as usize, 0);
             let mut buf_len = len;
             let mut buf_offset = 0;
             let mut total_read = 0;
@@ -91,7 +90,7 @@ impl AsyncFileDescriptor {
                 buf_offset += read;
                 total_read += read;
             }
-            Ok(total_read as usize)
+            Ok(buf.freeze())
         })
         .await
     }
@@ -120,8 +119,8 @@ mod tests {
         let mut iter = FileBytesIterator::open(&test_file)
             .await
             .expect("open test");
-        let (word, len) = iter.read_bytes(5).await.expect("read bytes");
-        assert_eq!(len, 5);
+        let word = iter.read_bytes(5).await.expect("read bytes");
+        assert_eq!(word.len(), 5);
         assert_eq!(word.as_ref(), b"hello");
     }
 }
