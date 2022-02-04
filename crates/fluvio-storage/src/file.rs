@@ -44,7 +44,7 @@ impl StorageBytesIterator for FileBytesIterator {
             .await
             .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?;
         trace!(len = buffer.len(), "read bytes");
-
+        self.pos += len;
         Ok(buffer)
     }
 
@@ -70,7 +70,7 @@ impl AsyncFileDescriptor {
         let fd = self.0;
         unblock(move || {
             let mut buf = BytesMut::with_capacity(len as usize);
-           // buf.resize(len as usize, 0);
+            // buf.resize(len as usize, 0);
             let mut buf_len = len;
             let mut buf_offset = 0;
             let mut total_read = 0;
@@ -85,10 +85,15 @@ impl AsyncFileDescriptor {
                     )
                 };
                 let read = Errno::result(res).map(|r| r as isize)?;
-                trace!(fd, read, "pread success");
-                buf_len -= read as usize;
-                buf_offset += read;
-                total_read += read;
+                if read == 0 {
+                    trace!(fd, "end of file");
+                    break;
+                } else {
+                    trace!(fd, read, "pread success");
+                    buf_len -= read as usize;
+                    buf_offset += read;
+                    total_read += read;
+                }
             }
             unsafe { buf.set_len(total_read as usize) };
             Ok(buf.freeze())
@@ -123,5 +128,10 @@ mod tests {
         let word = iter.read_bytes(5).await.expect("read bytes");
         assert_eq!(word.len(), 5);
         assert_eq!(word.as_ref(), b"hello");
+        let word = iter.read_bytes(6).await.expect("read bytes");
+        assert_eq!(word.len(), 6);
+        assert_eq!(word.as_ref(), b" world");
+        let word = iter.read_bytes(6).await.expect("read bytes");
+        assert_eq!(word.len(), 0);
     }
 }
