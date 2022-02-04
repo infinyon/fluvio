@@ -160,11 +160,14 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), Stor
         file_path.display()
     );
 
+    let start = std::time::Instant::now();
     let last_offset = active_segment
         .validate(opt.skip_errors, opt.verbose)
         .await?;
 
-    println!("completed, last offset = {last_offset}");
+    let duration = start.elapsed().as_secs_f32();
+
+    println!("completed, last offset = {last_offset}, took: {duration} seconds");
 
     Ok(())
 }
