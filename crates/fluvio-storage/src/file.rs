@@ -22,6 +22,7 @@ pub struct AsyncFile(File);
 pub struct FileBytesIterator {
     file: File,
     pos: Size,
+    end: bool,
 }
 
 #[async_trait]
@@ -29,7 +30,11 @@ impl StorageBytesIterator for FileBytesIterator {
     async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
         debug!(path = ?path.as_ref().display(),"open file");
         let file = File::open(path).await?;
-        Ok(Self { file, pos: 0 })
+        Ok(Self {
+            file,
+            pos: 0,
+            end: false,
+        })
     }
 
     fn get_pos(&self) -> Size {
@@ -37,15 +42,23 @@ impl StorageBytesIterator for FileBytesIterator {
     }
 
     #[instrument(skip(self),level = "trace",fields(pos = self.pos))]
-    async fn read_bytes(&mut self, len: Size) -> Result<Bytes, IoError> {
+    async fn read_bytes(&mut self, len: Size) -> Result<Option<Bytes>, IoError> {
         let fd = AsyncFileDescriptor(self.file.as_raw_fd());
-        let buffer = fd
+        match fd
             .pread(self.pos as i64, len as usize)
             .await
-            .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?;
-        trace!(len = buffer.len(), "read bytes");
-        self.pos += len;
-        Ok(buffer)
+            .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?
+        {
+            Some(buffer) => {
+                trace!(len = buffer.len(), "read bytes");
+                self.pos += len;
+                Ok(Some(buffer))
+            }
+            None => {
+                self.end = true;
+                Ok(None)
+            }
+        }
     }
 
     async fn seek(&mut self, amount: Size) -> Result<Size, IoError> {
@@ -66,7 +79,7 @@ struct AsyncFileDescriptor(RawFd);
 impl AsyncFileDescriptor {
     /// read number of bytes into shared buffer at offset
     #[instrument(skip(self),level = "trace",fields(fd = self.0, offset, len))]
-    async fn pread(&self, offset: i64, len: usize) -> NixResult<Bytes> {
+    async fn pread(&self, offset: i64, len: usize) -> NixResult<Option<Bytes>> {
         let fd = self.0;
         unblock(move || {
             let mut buf = BytesMut::with_capacity(len as usize);
@@ -87,7 +100,11 @@ impl AsyncFileDescriptor {
                 let read = Errno::result(res).map(|r| r as isize)?;
                 if read == 0 {
                     trace!(fd, "end of file");
-                    break;
+                    if total_read == 0 {
+                        return Ok(None);
+                    } else {
+                        break;
+                    }
                 } else {
                     trace!(fd, read, "pread success");
                     buf_len -= read as usize;
@@ -96,7 +113,7 @@ impl AsyncFileDescriptor {
                 }
             }
             unsafe { buf.set_len(total_read as usize) };
-            Ok(buf.freeze())
+            Ok(Some(buf.freeze()))
         })
         .await
     }
@@ -125,13 +142,12 @@ mod tests {
         let mut iter = FileBytesIterator::open(&test_file)
             .await
             .expect("open test");
-        let word = iter.read_bytes(5).await.expect("read bytes");
+        let word = iter.read_bytes(5).await.expect("read bytes").expect("some");
         assert_eq!(word.len(), 5);
         assert_eq!(word.as_ref(), b"hello");
-        let word = iter.read_bytes(6).await.expect("read bytes");
+        let word = iter.read_bytes(6).await.expect("read bytes").expect("some");
         assert_eq!(word.len(), 6);
         assert_eq!(word.as_ref(), b" world");
-        let word = iter.read_bytes(6).await.expect("read bytes");
-        assert_eq!(word.len(), 0);
+        assert!(iter.read_bytes(6).await.expect("read bytes").is_none());
     }
 }
