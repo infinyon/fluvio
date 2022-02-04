@@ -294,6 +294,7 @@ jobs:
         run: ./release-scripts/test-crate-version.sh
       - name: Cargo-deny check
         if: matrix.check == 'cargo-deny'
+        continue-on-error: true
         uses: EmbarkStudios/cargo-deny-action@v1
 
   # Run integration test. This always run on release mode
