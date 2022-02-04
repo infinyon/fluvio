@@ -361,7 +361,7 @@ mod tests {
         let log_path = msg_sink.get_path().to_owned();
         drop(msg_sink);
 
-        let next_offset = validate::<_, LogIndex>(&log_path, None, false, false)
+        let next_offset = validate::<_, LogIndex>(&log_path, None, false, true)
             .await
             .expect("validate");
         assert_eq!(next_offset, BASE_OFFSET + 5);
