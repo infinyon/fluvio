@@ -4,7 +4,7 @@ use std::io::{Error as IoError, ErrorKind};
 
 use async_trait::async_trait;
 use blocking::unblock;
-use bytes::BytesMut;
+use bytes::{BytesMut, Bytes};
 use dataplane::Size;
 
 use libc::{c_void};
@@ -22,7 +22,6 @@ pub struct AsyncFile(File);
 pub struct FileBytesIterator {
     file: File,
     pos: Size,
-    buf: BytesMut,
 }
 
 #[async_trait]
@@ -30,11 +29,7 @@ impl StorageBytesIterator for FileBytesIterator {
     async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
         debug!(path = ?path.as_ref().display(),"open file");
         let file = File::open(path).await?;
-        Ok(Self {
-            file,
-            pos: 0,
-            buf: BytesMut::with_capacity(1024),
-        })
+        Ok(Self { file, pos: 0 })
     }
 
     fn get_pos(&self) -> Size {
@@ -42,15 +37,17 @@ impl StorageBytesIterator for FileBytesIterator {
     }
 
     #[instrument(skip(self),level = "trace",fields(pos = self.pos))]
-    async fn read_bytes(&mut self, len: Size) -> Result<(&[u8], Size), IoError> {
-        self.buf.resize(len as usize, 0);
+    async fn read_bytes(&mut self, len: Size) -> Result<(Bytes, Size), IoError> {
+        let mut buf = BytesMut::with_capacity(len as usize);
+        buf.resize(len as usize,0);
         let fd = AsyncFileDescriptor(self.file.as_raw_fd());
         let len = fd
-            .pread(self.buf.clone(), self.pos as i64, len as usize)
+            .pread(buf.clone(), self.pos as i64, len as usize)
             .await
             .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?;
         trace!(len, ?fd, "read bytes");
-        Ok((self.buf.as_ref(), len as Size))
+        
+        Ok((buf.freeze(), len as Size))
     }
 
     async fn seek(&mut self, amount: Size) -> Result<Size, IoError> {
@@ -70,15 +67,16 @@ struct AsyncFileDescriptor(RawFd);
 
 impl AsyncFileDescriptor {
     /// read number of bytes into shared buffer at offset
-    async fn pread(&self, mut buf: BytesMut, offset: i64, len: usize) -> NixResult<usize> {
+    #[instrument(skip(self, buffer),level = "trace",fields(fd = self.0, offset, len))]
+    async fn pread(&self, mut buffer: BytesMut, offset: i64, len: usize) -> NixResult<usize> {
         let fd = self.0;
         unblock(move || {
-            let buf = buf.as_mut();
+            let buf = buffer.as_mut();
             let mut buf_len = len;
             let mut buf_offset = 0;
             let mut total_read = 0;
             while buf_len > 0 {
-                trace!(fd, buf_len, buf_offset, total_read, "pread start");
+                trace!(buf_len, buf_offset, total_read, "pread start");
                 let res = unsafe {
                     libc::pread(
                         fd,
@@ -124,6 +122,6 @@ mod tests {
             .expect("open test");
         let (word, len) = iter.read_bytes(5).await.expect("read bytes");
         assert_eq!(len, 5);
-        assert_eq!(word, b"hello");
+        assert_eq!(word.as_ref(), b"hello");
     }
 }

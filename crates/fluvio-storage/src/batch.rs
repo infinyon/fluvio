@@ -7,6 +7,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use bytes::Bytes;
 use tracing::instrument;
 use tracing::trace;
 use tracing::debug;
@@ -244,13 +245,16 @@ impl StorageBytesIterator for MmapBytesIterator {
         Ok(Self { map: mmap, pos: 0 })
     }
 
-    async fn read_bytes(&mut self, len: Size) -> Result<(&[u8], Size), IoError> {
-        // println!("inner len: {}, read_len: {}", self.map.len(),len);
+    async fn read_bytes(&mut self, len: Size) -> Result<(Bytes, Size), IoError> {
+        /* 
+                // println!("inner len: {}, read_len: {}", self.map.len(),len);
         let bytes = (&self.map).split_at(self.pos as usize).1;
         let prev_pos = self.pos;
         self.pos = min(self.map.len() as Size, self.pos as Size + len);
         // println!("prev pos: {}, new pos: {}", prev_pos, self.pos);
         Ok((bytes, self.pos - prev_pos))
+        */
+        todo!()
     }
 
     // seek relative
@@ -279,7 +283,7 @@ pub trait StorageBytesIterator: Sized {
     fn get_pos(&self) -> Size;
 
     /// return slice of bytes at current position
-    async fn read_bytes(&mut self, len: Size) -> Result<(&[u8], Size), IoError>;
+    async fn read_bytes(&mut self, len: Size) -> Result<(Bytes, Size), IoError>;
 
     /// seek relative
     async fn seek(&mut self, amount: Size) -> Result<Size, IoError>;
