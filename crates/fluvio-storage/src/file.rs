@@ -70,7 +70,7 @@ impl AsyncFileDescriptor {
         let fd = self.0;
         unblock(move || {
             let mut buf = BytesMut::with_capacity(len as usize);
-            buf.resize(len as usize, 0);
+           // buf.resize(len as usize, 0);
             let mut buf_len = len;
             let mut buf_offset = 0;
             let mut total_read = 0;
@@ -90,6 +90,7 @@ impl AsyncFileDescriptor {
                 buf_offset += read;
                 total_read += read;
             }
+            unsafe { buf.set_len(total_read as usize) };
             Ok(buf.freeze())
         })
         .await
