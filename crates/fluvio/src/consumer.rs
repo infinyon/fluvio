@@ -151,25 +151,31 @@ where
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
-        let stream = self.stream_batches_with_config(offset, config).await?;
+        let (stream, start_offset) = self
+            .inner_stream_batches_with_config(offset, config)
+            .await?;
         let partition = self.partition;
-        let flattened =
-            stream.flat_map(move |result: Result<Batch, _>| match result {
-                Err(e) => Either::Right(once(err(e))),
-                Ok(batch) => {
-                    let base_offset = batch.base_offset;
-                    let records = batch.own_records().into_iter().enumerate().map(
-                        move |(relative, record)| {
-                            Ok(Record {
+        let flattened = stream.flat_map(move |result: Result<Batch, _>| match result {
+            Err(e) => Either::Right(once(err(e))),
+            Ok(batch) => {
+                let base_offset = batch.base_offset;
+                let records = batch.own_records().into_iter().enumerate().filter_map(
+                    move |(relative, record)| {
+                        let record_offset = base_offset + relative as i64;
+                        if record_offset >= start_offset {
+                            Some(Ok(Record {
                                 partition,
-                                offset: base_offset + relative as i64,
+                                offset: record_offset,
                                 record,
-                            })
-                        },
-                    );
-                    Either::Left(iter(records))
-                }
-            });
+                            }))
+                        } else {
+                            None
+                        }
+                    },
+                );
+                Either::Left(iter(records))
+            }
+        });
 
         Ok(flattened)
     }
@@ -205,7 +211,27 @@ where
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Batch, ErrorCode>>, FluvioError> {
-        let stream = self.request_stream(offset, config).await?;
+        let (stream, _start_offset) = self
+            .inner_stream_batches_with_config(offset, config)
+            .await?;
+        Ok(stream)
+    }
+
+    /// Continuously streams batches of messages, starting an offset in the consumer's partition
+    /// Returns both the stream and the start offset of the stream.
+    #[instrument(skip(self, offset, config))]
+    async fn inner_stream_batches_with_config(
+        &self,
+        offset: Offset,
+        config: ConsumerConfig,
+    ) -> Result<
+        (
+            impl Stream<Item = Result<Batch, ErrorCode>>,
+            dataplane::Offset,
+        ),
+        FluvioError,
+    > {
+        let (stream, start_offset) = self.request_stream(offset, config).await?;
         let flattened = stream.flat_map(|batch_result: Result<DefaultStreamFetchResponse, _>| {
             let response = match batch_result {
                 Ok(response) => response,
@@ -229,19 +255,25 @@ where
             Either::Left(iter(items))
         });
 
-        Ok(flattened)
+        Ok((flattened, start_offset))
     }
 
     /// Creates a stream of `DefaultStreamFetchResponse` for older consumers who rely
     /// on the internal structure of the fetch response. New clients should use the
     /// `stream` and `stream_with_config` methods.
+    /// Returns both the stream and the start offset of the stream.
     #[instrument(skip(self, config))]
     async fn request_stream(
         &self,
         offset: Offset,
         config: ConsumerConfig,
-    ) -> Result<impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>, FluvioError>
-    {
+    ) -> Result<
+        (
+            impl Stream<Item = Result<DefaultStreamFetchResponse, ErrorCode>>,
+            dataplane::Offset,
+        ),
+        FluvioError,
+    > {
         use fluvio_future::task::spawn;
         use futures_util::stream::empty;
         use fluvio_protocol::api::Request;
@@ -389,7 +421,7 @@ where
             ft_stream.flatten_stream().boxed()
         };
 
-        Ok(stream)
+        Ok((stream, start_absolute_offset))
     }
 }
 
