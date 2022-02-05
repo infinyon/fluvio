@@ -50,9 +50,6 @@ pub struct DataGeneratorTestOption {
     #[structopt(long, default_value = "1")]
     pub producers: u32,
 
-    #[structopt(long, default_value = "1")]
-    pub consumers: u32,
-
     // Offset the consumer should start from
     //#[structopt(long, default_value = "0")]
     //pub consumer_offset: u32,
@@ -78,7 +75,6 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
     println!("Starting Longevity Test");
     println!("Expected runtime: {:?}", option.option.runtime_seconds);
-    println!("# Consumers: {}", option.option.consumers);
     println!("# Producers: {}", option.option.producers);
 
     if !option.option.verbose {
@@ -109,10 +105,6 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
         println!("Starting Producer #{}", i);
         let producer = async_process!(
             async {
-                test_driver
-                    .connect()
-                    .await
-                    .expect("Connecting to cluster failed");
                 producer::producer(test_driver, option, i).await
             },
             format!("producer-{}", i)
