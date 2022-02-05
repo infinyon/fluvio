@@ -259,7 +259,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, crate-version, cargo-deny]
+        check: [fmt, clippy, doc, test, crate-version, crate-audit]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -292,8 +292,8 @@ jobs:
       - name: Crate version check
         if: matrix.check == 'crate-version'
         run: ./release-scripts/test-crate-version.sh
-      - name: Cargo-deny check
-        if: matrix.check == 'cargo-deny'
+      - name: Audit crate licenses + advisories 
+        if: matrix.check == 'crate-audit'
         continue-on-error: true
         uses: EmbarkStudios/cargo-deny-action@v1
 
