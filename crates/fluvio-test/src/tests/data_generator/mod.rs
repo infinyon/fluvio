@@ -10,7 +10,7 @@ use structopt::StructOpt;
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
-use fluvio_test_util::{async_process, fork_and_wait};
+use fluvio_test_util::async_process;
 
 #[derive(Debug, Clone)]
 pub struct DataGeneratorTestCase {
@@ -34,7 +34,7 @@ impl From<TestCase> for DataGeneratorTestCase {
 }
 
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio DataGenerator Test")]
+#[structopt(name = "Fluvio Longevity Test")]
 pub struct DataGeneratorTestOption {
     // total time we want the producer to run, in seconds
     #[structopt(long, parse(try_from_str = parse_seconds), default_value = "3600")]
@@ -76,37 +76,14 @@ impl TestOption for DataGeneratorTestOption {
 pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     let option: DataGeneratorTestCase = test_case.into();
 
-    println!("Starting Data Generator");
+    println!("Starting Longevity Test");
     println!("Expected runtime: {:?}", option.option.runtime_seconds);
-    //println!("# Consumers: {}", option.option.consumers);
+    println!("# Consumers: {}", option.option.consumers);
     println!("# Producers: {}", option.option.producers);
 
     if !option.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
-
-    // Uncommented, this locks
-    //let _setup_status = fork_and_wait! {
-    //    fluvio_future::task::run_block_on(async {
-    //        println!("Setup block start");
-    //        let mut test_driver_setup = test_driver.clone();
-    //        let mut sync_opt = option.environment.clone();
-    //        // Connect test driver to cluster before starting test
-    //        test_driver_setup.connect().await.expect("Unable to connect to cluster");
-
-
-    //        // Create topic before starting test
-    //        sync_opt.topic_name = Some("sync".to_string());
-    //        test_driver_setup.create_topic(&sync_opt).await.unwrap();
-    //        //test_driver_setup.create_topic(&option_setup.environment)
-    //        //    .await
-    //        //    .expect("Unable to create default topic");
-
-    //        // Disconnect test driver to cluster before starting test
-    //        test_driver_setup.disconnect();
-    //        println!("Setup block end");
-    //    })
-    //};
 
     //let mut consumer_wait = Vec::new();
     //for consumer_id in 0..option.option.consumers {
@@ -131,7 +108,13 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     for i in 0..option.option.producers {
         println!("Starting Producer #{}", i);
         let producer = async_process!(
-            async { producer::producer(test_driver, option, i).await },
+            async {
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                producer::producer(test_driver, option, i).await
+            },
             format!("producer-{}", i)
         );
 
