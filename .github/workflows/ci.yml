@@ -259,7 +259,7 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
-        check: [fmt, clippy, doc, test, crate_version]
+        check: [fmt, clippy, doc, test, crate-version, crate-audit]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
@@ -290,9 +290,12 @@ jobs:
         if: matrix.check == 'test'
         run: make run-all-unit-test
       - name: Crate version check
-        if: matrix.check == 'crate_version'
-        run: |
-          ./release-scripts/test-crate-version.sh
+        if: matrix.check == 'crate-version'
+        run: ./release-scripts/test-crate-version.sh
+      - name: Audit crate licenses + advisories 
+        if: matrix.check == 'crate-audit'
+        continue-on-error: true
+        uses: EmbarkStudios/cargo-deny-action@v1
 
   # Run integration test. This always run on release mode
   check_integration:
