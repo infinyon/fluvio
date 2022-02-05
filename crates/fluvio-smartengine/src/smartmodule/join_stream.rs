@@ -8,8 +8,7 @@ use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInt
 use crate::{
     WasmSlice,
     smartmodule::{
-        SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
-        SmartModuleExtraParams,
+        SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
     },
 };
 
@@ -38,12 +37,11 @@ impl JoinFnKind {
 
 impl SmartModuleJoinStream {
     pub fn new(
-        engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params, version)?;
+        let mut base = SmartModuleContext::new(module, params, version)?;
         let join_fn =
             if let Ok(join_fn) = base.instance.get_typed_func(&mut base.store, JOIN_FN_NAME) {
                 JoinFnKind::New(join_fn)

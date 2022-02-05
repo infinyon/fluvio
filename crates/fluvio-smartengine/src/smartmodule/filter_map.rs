@@ -6,8 +6,7 @@ use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInt
 use crate::{
     WasmSlice,
     smartmodule::{
-        SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
-        SmartModuleExtraParams,
+        SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
     },
 };
 
@@ -36,12 +35,11 @@ impl FilterMapFnKind {
 
 impl SmartModuleFilterMap {
     pub fn new(
-        engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params, version)?;
+        let mut base = SmartModuleContext::new(module, params, version)?;
         let filter_map_fn = if let Ok(fmap_fn) = base
             .instance
             .get_typed_func(&mut base.store, FILTER_MAP_FN_NAME)
