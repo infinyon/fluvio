@@ -74,9 +74,9 @@ allow = [
     "MIT",
     "BSD-3-Clause",
     "Apache-2.0",
-    "Apache-2.0 WITH LLVM-exception",
     "MPL-2.0",
-    "Unlicense"
+    "Unlicense",
+    "ISC"
 ]
 # List of explicitly disallowed licenses
 # See https://spdx.org/licenses/ for list of possible licenses

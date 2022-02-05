@@ -19,7 +19,7 @@ check-clippy: install-clippy install_rustup_target
 install-deny:
 	cargo install --locked cargo-deny	
 
-check-third-party-license: install-deny
+check-crate-audit: install-deny
 	cargo deny check
 
 build_smartmodules:
