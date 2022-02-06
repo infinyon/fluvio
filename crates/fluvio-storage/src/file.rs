@@ -1,3 +1,4 @@
+use std::cmp::max;
 use std::os::unix::prelude::{RawFd, AsRawFd};
 use std::path::Path;
 use std::io::{Error as IoError, ErrorKind};
@@ -16,13 +17,17 @@ use fluvio_future::fs::File;
 
 use crate::batch::StorageBytesIterator;
 
-pub struct AsyncFile(File);
+const DEFAULT_BUFFER_SIZE: usize = 4096;
 
 /// File based iterator
 pub struct FileBytesIterator {
-    file: File,
-    pos: Size,
-    end: bool,
+    pub file: File,
+    pub pos: Size,
+    pub end: bool,
+    pub read_count: usize,
+    pub cache_hit: usize,
+    reader: AsyncFileDescriptor,
+    buffer: Bytes,
 }
 
 #[async_trait]
@@ -31,9 +36,13 @@ impl StorageBytesIterator for FileBytesIterator {
         debug!(path = ?path.as_ref().display(),"open file");
         let file = File::open(path).await?;
         Ok(Self {
-            file,
+            file: file,
             pos: 0,
             end: false,
+            read_count: 0,
+            cache_hit: 0,
+            reader: AsyncFileDescriptor(),
+            buffer: Bytes::new(),
         })
     }
 
@@ -43,19 +52,56 @@ impl StorageBytesIterator for FileBytesIterator {
 
     #[instrument(skip(self),level = "trace",fields(pos = self.pos))]
     async fn read_bytes(&mut self, len: Size) -> Result<Option<Bytes>, IoError> {
-        let fd = AsyncFileDescriptor(self.file.as_raw_fd());
-        match fd
-            .pread(self.pos as i64, len as usize)
+        
+
+        // if we have enough bytes in buffer
+        if self.buffer.len() >= len as usize {
+            trace!(buf_len = self.buffer.len(), "in buffer");
+            self.cache_hit += 1;
+            let cached_buffer = self.buffer.split_to(len as usize);
+            trace!(return_len = cached_buffer.len(), "split");
+            return Ok(Some(cached_buffer));
+        } else if self.end {
+            if self.buffer.is_empty() {
+                trace!("eof and empty");
+                return Ok(None)
+            } else {
+                let cached_buffer = self.buffer.split_to(self.buffer.len());
+                trace!(return_len = cached_buffer.len(),remain = self.buffer.len(),"eof and not empty");
+                return Ok(Some(cached_buffer))
+            }
+        }
+
+        let fd = self.file.as_raw_fd();
+
+        match self
+            .reader
+            .pread(fd, self.pos as i64, max(DEFAULT_BUFFER_SIZE, len as usize))
             .await
             .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?
         {
-            Some(buffer) => {
-                trace!(len = buffer.len(), "read bytes");
+            ReadOutput::Some { mut buffer, eof } => {
+                trace!(len = buffer.len(), eof, "read bytes");
                 self.pos += len;
-                Ok(Some(buffer))
+                self.read_count += 1;
+                self.end = eof;
+                // only cache if we have enough bytes
+                if buffer.len() < DEFAULT_BUFFER_SIZE as usize {
+                    self.buffer = buffer.split_off(len as usize);
+                    trace!(
+                        return_len = buffer.len(),
+                        remaining_len = self.buffer.len(),
+                        "caching"
+                    );
+                    Ok(Some(buffer))
+                } else {
+                    self.buffer = Bytes::new();
+                    Ok(Some(buffer))
+                }
             }
-            None => {
+            ReadOutput::Empty => {
                 self.end = true;
+                self.buffer = Bytes::new();
                 Ok(None)
             }
         }
@@ -72,18 +118,40 @@ impl StorageBytesIterator for FileBytesIterator {
     }
 }
 
+enum ReadOutput {
+    Empty, // EOF, no bytes read
+    Some { buffer: Bytes, eof: bool },
+}
+
+impl ReadOutput {
+    #[allow(unused)]
+    pub fn expect(self, msg: &str) -> (Bytes, bool) {
+        match self {
+            Self::Some { buffer, eof } => (buffer, eof),
+            Self::Empty => panic!("{msg}"),
+        }
+    }
+
+    #[allow(unused)]
+    pub fn is_empty(self) -> bool {
+        match self {
+            Self::Some { .. } => false,
+            Self::Empty => true,
+        }
+    }
+}
+
 /// Async File Descriptor
 #[derive(Debug)]
-struct AsyncFileDescriptor(RawFd);
+struct AsyncFileDescriptor();
 
 impl AsyncFileDescriptor {
     /// read number of bytes into shared buffer at offset
-    #[instrument(skip(self),level = "trace",fields(fd = self.0, offset, len))]
-    async fn pread(&self, offset: i64, len: usize) -> NixResult<Option<Bytes>> {
-        let fd = self.0;
+    #[instrument(skip(self), level = "trace", fields(fd, offset, len))]
+    async fn pread(&self, fd: RawFd, offset: i64, len: usize) -> NixResult<ReadOutput> {
         unblock(move || {
+            let mut eof = false;
             let mut buf = BytesMut::with_capacity(len as usize);
-            // buf.resize(len as usize, 0);
             let mut buf_len = len;
             let mut buf_offset = 0;
             let mut total_read = 0;
@@ -99,21 +167,25 @@ impl AsyncFileDescriptor {
                 };
                 let read = Errno::result(res).map(|r| r as isize)?;
                 if read == 0 {
-                    trace!(fd, "end of file");
+                    trace!(fd, total_read, "end of file");
                     if total_read == 0 {
-                        return Ok(None);
+                        return Ok(ReadOutput::Empty);
                     } else {
+                        eof = true;
                         break;
                     }
                 } else {
-                    trace!(fd, read, "pread success");
                     buf_len -= read as usize;
                     buf_offset += read;
                     total_read += read;
+                    trace!(fd, read, buf_len, buf_offset, total_read, "pread success");
                 }
             }
             unsafe { buf.set_len(total_read as usize) };
-            Ok(Some(buf.freeze()))
+            Ok(ReadOutput::Some {
+                buffer: buf.freeze(),
+                eof,
+            })
         })
         .await
     }
@@ -131,7 +203,44 @@ mod tests {
     use super::*;
 
     #[fluvio_future::test]
-    async fn test_read_bytes() {
+    async fn test_file_descriptor() {
+        let test_file = temp_dir().join("simple_write");
+
+        let mut file = File::create(&test_file).await.expect("file creation");
+        file.write_all(b"hello world").await.expect("write");
+        file.flush().await.expect("flush");
+        drop(file);
+
+        let file = File::open(&test_file).await.expect("open");
+        let reader = AsyncFileDescriptor();
+        let fd = file.as_raw_fd();
+
+        let (word, eof) = reader
+            .pread(fd, 0, 5)
+            .await
+            .expect("read bytes")
+            .expect("some");
+        assert_eq!(word.len(), 5);
+        assert_eq!(word.as_ref(), b"hello");
+        assert_eq!(eof, false);
+        let (word, eof) = reader
+            .pread(fd, 5, 20)
+            .await
+            .expect("read bytes")
+            .expect("some");
+        assert_eq!(word.len(), 6);
+        assert_eq!(word.as_ref(), b" world");
+        assert_eq!(eof, true);
+        // try to read past end of file
+        assert!(reader
+            .pread(fd, 100, 10)
+            .await
+            .expect("read bytes")
+            .is_empty());
+    }
+
+    #[fluvio_future::test]
+    async fn test_file_iterator() {
         let test_file = temp_dir().join("simple_write");
 
         let mut file = File::create(&test_file).await.expect("file creation");
@@ -145,9 +254,19 @@ mod tests {
         let word = iter.read_bytes(5).await.expect("read bytes").expect("some");
         assert_eq!(word.len(), 5);
         assert_eq!(word.as_ref(), b"hello");
+
+        // this should be cached and return fully
+        let word = iter.read_bytes(3).await.expect("read bytes").expect("some");
+        assert_eq!(word.len(), 3);
+        assert_eq!(word.as_ref(), b" wo");
+
+        // only 3 bytes are cached since we reached eof
         let word = iter.read_bytes(6).await.expect("read bytes").expect("some");
-        assert_eq!(word.len(), 6);
-        assert_eq!(word.as_ref(), b" world");
+        assert_eq!(word.len(), 3);
+        assert_eq!(word.as_ref(), b"rld");
+
+        // after reaching eof, no more bytes are read
         assert!(iter.read_bytes(6).await.expect("read bytes").is_none());
+        assert_eq!(iter.read_count, 1);
     }
 }
