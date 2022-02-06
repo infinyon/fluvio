@@ -1,5 +1,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::os::unix::prelude::AsRawFd;
+use std::os::unix::prelude::FromRawFd;
 use std::path::PathBuf;
 use std::path::Path;
 use std::sync::Arc;
@@ -28,6 +30,9 @@ use crate::StorageError;
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
 
 pub trait FileRecords {
+    /// get clone of the file
+    fn file(&self) -> File;
+
     fn get_base_offset(&self) -> Offset;
 
     // fn get_file(&self) -> &File;
@@ -111,6 +116,10 @@ impl FileRecordsSlice {
 }
 
 impl FileRecords for FileRecordsSlice {
+    fn file(&self) -> File {
+        unsafe { File::from_raw_fd(self.file.as_raw_fd()) }
+    }
+
     fn get_base_offset(&self) -> Offset {
         self.base_offset
     }

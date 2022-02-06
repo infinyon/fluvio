@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 use std::os::unix::prelude::AsRawFd;
+use std::os::unix::prelude::FromRawFd;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fmt;
@@ -318,6 +319,10 @@ impl FileRecords for MutFileRecords {
     fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice, IoError> {
         let reslice = AsyncFileSlice::new(self.file.as_raw_fd(), start as u64, len as u64);
         Ok(reslice)
+    }
+
+    fn file(&self) -> File {
+        unsafe { File::from_raw_fd(self.file.as_raw_fd()) }
     }
 }
 

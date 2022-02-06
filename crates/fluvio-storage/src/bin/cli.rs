@@ -1,4 +1,4 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{path::PathBuf};
 
 use dataplane::Offset;
 use structopt::StructOpt;
@@ -7,8 +7,8 @@ use fluvio_future::task::run_block_on;
 use fluvio_storage::{
     LogIndex, StorageError, OffsetPosition,
     batch_header::BatchHeaderStream,
-    segment::{Segment, MutableSegment},
-    config::{SharedReplicaConfig, StorageConfig, ReplicaConfig},
+    segment::{MutableSegment},
+    config::{ReplicaConfig},
 };
 
 ///

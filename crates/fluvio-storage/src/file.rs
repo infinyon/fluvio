@@ -27,6 +27,10 @@ impl StorageBytesIterator for FileBytesIterator {
     async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
         debug!(path = ?path.as_ref().display(),"open file");
         let file = File::open(path).await?;
+        Self::from_file(file).await
+    }
+
+    async fn from_file(file: File) -> Result<Self, IoError> {
         Ok(Self {
             file,
             pos: 0,

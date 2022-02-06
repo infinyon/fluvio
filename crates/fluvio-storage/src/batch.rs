@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
+use fluvio_future::fs::File;
 use tracing::instrument;
 use tracing::trace;
 use tracing::debug;
@@ -215,6 +216,16 @@ where
         })
     }
 
+    pub async fn from_file(file: File) -> Result<FileBatchStream<R, S>, IoError> {
+        let byte_iterator = S::from_file(file).await?;
+
+        Ok(Self {
+            byte_iterator,
+            invalid: None,
+            data: PhantomData,
+        })
+    }
+
     #[instrument(skip(self))]
     pub async fn next(&mut self) -> Option<FileBatchPos<R>> {
         trace!(pos = self.get_pos(), "reading next from");
@@ -232,6 +243,8 @@ where
 /// Iterate over some kind of storage with bytes
 #[async_trait]
 pub trait StorageBytesIterator: Sized {
+    async fn from_file(file: File) -> Result<Self, IoError>;
+
     async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError>;
 
     fn get_pos(&self) -> Size;
