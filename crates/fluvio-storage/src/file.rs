@@ -50,7 +50,7 @@ impl StorageBytesIterator for FileBytesIterator {
         self.pos
     }
 
-    #[instrument(skip(self),level = "trace",fields(pos = self.pos))]
+    #[instrument(skip(self),level = "trace", fields(pos = self.pos))]
     async fn read_bytes(&mut self, len: Size) -> Result<Option<Bytes>, IoError> {
         
 
@@ -100,6 +100,7 @@ impl StorageBytesIterator for FileBytesIterator {
                 }
             }
             ReadOutput::Empty => {
+                trace!("empty");
                 self.end = true;
                 self.buffer = Bytes::new();
                 Ok(None)
