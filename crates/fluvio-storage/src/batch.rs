@@ -1,5 +1,3 @@
-use std::cmp::min;
-use std::fs::OpenOptions;
 use std::io::Error as IoError;
 use std::io::Cursor;
 use std::io::ErrorKind;
@@ -7,20 +5,19 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::path::Path;
 
-use bytes::Bytes;
 use tracing::instrument;
 use tracing::trace;
 use tracing::debug;
-use memmap::Mmap;
 use async_trait::async_trait;
-
-use fluvio_future::task::spawn_blocking;
+use bytes::Bytes;
 
 use dataplane::batch::{
     Batch, BatchRecords, BATCH_PREAMBLE_SIZE, BATCH_HEADER_SIZE, BATCH_FILE_HEADER_SIZE,
     MemoryRecords,
 };
 use dataplane::Size;
+
+use crate::file::FileBytesIterator;
 
 /// hold information about position of batch in the file
 pub struct FileBatchPos<R>
@@ -168,7 +165,7 @@ where
 }
 
 // Stream to iterate over batches in a file
-pub struct FileBatchStream<R = MemoryRecords, S = MmapBytesIterator> {
+pub struct FileBatchStream<R = MemoryRecords, S = FileBytesIterator> {
     invalid: Option<IoError>,
     byte_iterator: S,
     data: PhantomData<R>,
@@ -229,63 +226,6 @@ where
                 None
             }
         }
-    }
-}
-
-/// Memory mapped based iterator
-pub struct MmapBytesIterator {
-    map: Mmap,
-    pos: Size,
-}
-
-impl MmapBytesIterator {}
-
-#[async_trait]
-impl StorageBytesIterator for MmapBytesIterator {
-    async fn open<P: AsRef<Path> + Send>(path: P) -> Result<Self, IoError> {
-        let m_path = path.as_ref().to_owned();
-        let (mmap, _file, _) = spawn_blocking(move || {
-            let mfile = OpenOptions::new().read(true).open(&m_path).unwrap();
-            let meta = mfile.metadata().unwrap();
-            if meta.len() == 0 {
-                // if file size is zero, we can't map it, and there is no offset, se return error
-                return Err(IoError::new(ErrorKind::UnexpectedEof, "file size is zero"));
-            }
-
-            unsafe { Mmap::map(&mfile) }.map(|mm_file| (mm_file, mfile, m_path))
-        })
-        .await?;
-
-        Ok(Self { map: mmap, pos: 0 })
-    }
-
-    async fn read_bytes(&mut self, len: Size) -> Result<Option<Bytes>, IoError> {
-        /*
-                // println!("inner len: {}, read_len: {}", self.map.len(),len);
-        let bytes = (&self.map).split_at(self.pos as usize).1;
-        let prev_pos = self.pos;
-        self.pos = min(self.map.len() as Size, self.pos as Size + len);
-        // println!("prev pos: {}, new pos: {}", prev_pos, self.pos);
-        Ok((bytes, self.pos - prev_pos))
-        */
-        todo!()
-    }
-
-    // seek relative
-    async fn seek(&mut self, amount: Size) -> Result<Size, IoError> {
-        self.pos = min(self.map.len() as Size, self.pos as Size + amount);
-        Ok(amount)
-    }
-
-    // seek absolute
-    async fn set_absolute(&mut self, offset: Size) -> Result<Size, IoError> {
-        self.pos = min(self.map.len() as Size, offset);
-        Ok(self.pos)
-    }
-
-    #[inline(always)]
-    fn get_pos(&self) -> Size {
-        self.pos
     }
 }
 

@@ -12,7 +12,6 @@ use tracing::{debug, warn};
 use dataplane::Offset;
 
 use crate::batch::FileBatchStream;
-use crate::batch::MmapBytesIterator;
 use crate::batch::StorageBytesIterator;
 use crate::batch_header::FileEmptyRecords;
 use crate::file::FileBytesIterator;
@@ -47,15 +46,9 @@ pub enum LogValidationError {
     },
 }
 
-pub struct ValidationOption {
-    pub skip_errors: bool,
-    pub verbose: bool,
-    pub check_index: bool
-}
-
 /// Validation Log file
 #[derive(Debug)]
-pub struct LogValidator<P, R, I, S = MmapBytesIterator> {
+pub struct LogValidator<P, R, I, S = FileBytesIterator> {
     pub base_offset: Offset,
     file_path: PathBuf,
     pub batches: u32,
@@ -141,7 +134,6 @@ where
 
             // offset relative to segment
             let delta_offset = batch_offset - self.base_offset;
-            /* 
 
             if let Some(index) = index {
                 if let Some((offset, index_pos)) = index.find_offset(delta_offset as u32) {
@@ -186,7 +178,6 @@ where
                     //  trace!(delta_offset, "no index found");
                 }
             }
-            */
 
             if batch_offset < self.base_offset {
                 warn!(
@@ -429,8 +420,6 @@ mod tests {
 mod perf {
 
     use std::time::Instant;
-
-    use dataplane::batch::MemoryRecords;
 
     use crate::{batch_header::FileEmptyRecords, LogIndex};
 
