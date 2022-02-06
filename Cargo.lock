@@ -2045,7 +2045,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "anyhow",
  "flate2",
