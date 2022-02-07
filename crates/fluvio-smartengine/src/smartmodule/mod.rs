@@ -156,7 +156,7 @@ impl SmartEngine {
         let host_fn_import = module
             .imports()
             .next()
-            .ok_or(Error::msg("At least one import is required"))?;
+            .ok_or_else(|| Error::msg("At least one import is required"))?;
         linker.func_wrap(
             host_fn_import.module(),
             host_fn_import.name().unwrap_or(""),
