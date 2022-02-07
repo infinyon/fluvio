@@ -22,6 +22,12 @@ install-udeps:
 check-udeps: install-udeps
 	cargo +nightly udeps --all-targets
 
+install-deny:
+	cargo install --locked cargo-deny	
+
+check-crate-audit: install-deny
+	cargo deny check
+
 build_smartmodules:
 	make -C crates/fluvio-smartmodule/examples build
 
