@@ -8,7 +8,7 @@ build-cli-minimal: install_rustup_target
 
 
 build-cluster: install_rustup_target
-	cargo build --bin fluvio-run $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
+	cargo build --bin fluvio-run --features wasi $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 
 build-test:	install_rustup_target 
 	cargo build --bin fluvio-test $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
