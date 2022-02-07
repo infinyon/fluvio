@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.19 - UNRELEASED
+* Add WASI support to SmartEngine ([#1874](https://github.com/infinyon/fluvio/issues/1874))
 
 ## Platform Version 0.9.18 - 2022-01-31
 * Show Platform version for fluvio run ([#2104](https://github.com/infinyon/fluvio/issues/2104))
