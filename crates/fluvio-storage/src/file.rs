@@ -3,6 +3,7 @@ use std::path::Path;
 use std::io::{Error as IoError, ErrorKind};
 
 use async_trait::async_trait;
+use blocking::unblock;
 use bytes::{BytesMut, Bytes};
 use dataplane::Size;
 
@@ -48,7 +49,8 @@ impl StorageBytesIterator for FileBytesIterator {
 
         // this will block task which will make it harder to scale
         // this should be replaced with async implementation
-        match pread(fd, self.pos as i64, len as usize)
+        let file_pos = self.pos as i64;
+        match unblock(move || pread(fd, file_pos, len as usize)).await
             .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?
         {
             ReadOutput::Some { buffer, eof } => {
