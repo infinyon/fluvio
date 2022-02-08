@@ -101,7 +101,7 @@ mod output {
                     Row::new(vec![
                         Cell::new_align(&r.name, Alignment::LEFT),
                         Cell::new_align(
-                            &spec.version.clone().unwrap_or("latest".to_string()),
+                            &spec.version.clone().unwrap_or_else(|| "latest".to_string()),
                             Alignment::LEFT,
                         ),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
