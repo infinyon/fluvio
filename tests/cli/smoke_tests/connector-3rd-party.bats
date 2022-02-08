@@ -27,7 +27,7 @@ setup_file() {
     sleep 10
     run $FLUVIO_BIN connector list
 
-    assert_output --partial "my-invalid-third-party-connector  Invalid"
+    assert_output --partial "my-invalid-third-party-connector  v1       Invalid"
 }
 
 teardown_file() {

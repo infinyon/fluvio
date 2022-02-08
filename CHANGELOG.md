@@ -3,6 +3,7 @@
 ## Platform Version 0.9.19 - UNRELEASED
 * Add WASI support to SmartEngine ([#1874](https://github.com/infinyon/fluvio/issues/1874))
 * Fix incorrect behavior when consuming with a given offset in a partition with batches with more than one record. ([#2002](https://github.com/infinyon/fluvio/issues/2002))
+* Add `version` column to `fluvio connector list` ([#2145](https://github.com/infinyon/fluvio/issues/2145))
 
 ## Platform Version 0.9.18 - 2022-01-31
 * Show Platform version for fluvio run ([#2104](https://github.com/infinyon/fluvio/issues/2104))

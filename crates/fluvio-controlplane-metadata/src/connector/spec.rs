@@ -26,6 +26,12 @@ pub struct ManagedConnectorSpec {
     pub secrets: BTreeMap<String, SecretString>,
 }
 
+impl ManagedConnectorSpec {
+    pub fn version(&self) -> String {
+        self.version.clone().unwrap_or_else(|| "latest".to_string())
+    }
+}
+
 #[derive(Encoder, Decoder, Default, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
