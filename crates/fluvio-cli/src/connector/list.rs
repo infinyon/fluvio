@@ -100,10 +100,7 @@ mod output {
                     let spec = &r.spec;
                     Row::new(vec![
                         Cell::new_align(&r.name, Alignment::LEFT),
-                        Cell::new_align(
-                            &spec.version.clone().unwrap_or_else(|| "latest".to_string()),
-                            Alignment::LEFT,
-                        ),
+                        Cell::new_align(&spec.version(), Alignment::LEFT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
                     ])
                 })
