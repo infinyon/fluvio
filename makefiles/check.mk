@@ -50,4 +50,4 @@ run-client-doc-test: install_rustup_target
 
 
 fluvio_run_bin: install_rustup_target
-	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET)
+	cargo build --bin fluvio-run $(RELEASE_FLAG) --target $(TARGET) $(DEBUG_SMARTMODULE_FLAG)

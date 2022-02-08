@@ -7,7 +7,7 @@ use dataplane::smartmodule::{
 };
 use crate::{
     WasmSlice,
-    smartmodule::{SmartModuleWithEngine, SmartEngine, SmartModuleContext, SmartModuleInstance},
+    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
 };
 
 const FILTER_FN_NAME: &str = "filter";
@@ -35,12 +35,11 @@ impl FilterFnKind {
 
 impl SmartModuleFilter {
     pub fn new(
-        engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params, version)?;
+        let mut base = SmartModuleContext::new(module, params, version)?;
         let filter_fn = if let Ok(filt_fn) = base
             .instance
             .get_typed_func(&mut base.store, FILTER_FN_NAME)

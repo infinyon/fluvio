@@ -6,7 +6,7 @@ use dataplane::record::Record;
 use dataplane::smartmodule::SmartModuleExtraParams;
 use tracing::{debug, instrument, trace};
 use anyhow::{Error, Result};
-use wasmtime::{Memory, Store, Engine, Module, Func, Caller, Extern, Trap, Instance};
+use wasmtime::{Memory, Engine, Module, Caller, Extern, Trap, Instance, IntoFunc, Store};
 
 use crate::smartmodule::filter::SmartModuleFilter;
 use crate::smartmodule::map::SmartModuleMap;
@@ -32,8 +32,15 @@ pub mod file_batch;
 pub mod join_stream;
 
 pub type WasmSlice = (i32, i32, u32);
+
 #[cfg(feature = "smartmodule")]
 use fluvio_controlplane_metadata::smartmodule::{SmartModuleSpec};
+
+#[cfg(feature = "wasi")]
+type State = wasmtime_wasi::WasiCtx;
+
+#[cfg(not(feature = "wasi"))]
+type State = ();
 
 use self::join_stream::SmartModuleJoinStream;
 
@@ -111,6 +118,54 @@ impl SmartEngine {
     }
 }
 
+#[cfg(not(feature = "wasi"))]
+impl SmartEngine {
+    fn new_store(&self) -> Store<State> {
+        Store::new(&self.0, ())
+    }
+
+    fn instantiate<Params, Args>(
+        &self,
+        store: &mut wasmtime::Store<State>,
+        module: &Module,
+        host_fn: impl IntoFunc<State, Params, Args>,
+    ) -> Result<Instance, Error> {
+        let func = wasmtime::Func::wrap(&mut *store, host_fn);
+        Instance::new(store, module, &[func.into()])
+    }
+}
+
+#[cfg(feature = "wasi")]
+impl SmartEngine {
+    fn new_store(&self) -> Store<State> {
+        let wasi = wasmtime_wasi::WasiCtxBuilder::new()
+            .inherit_stderr()
+            .inherit_stdout()
+            .build();
+        Store::new(&self.0, wasi)
+    }
+
+    fn instantiate<Params, Args>(
+        &self,
+        store: &mut wasmtime::Store<State>,
+        module: &Module,
+        host_fn: impl IntoFunc<State, Params, Args>,
+    ) -> Result<Instance, Error> {
+        let mut linker = wasmtime::Linker::new(&self.0);
+        wasmtime_wasi::add_to_linker(&mut linker, |c| c)?;
+        let host_fn_import = module
+            .imports()
+            .next()
+            .ok_or_else(|| Error::msg("At least one import is required"))?;
+        linker.func_wrap(
+            host_fn_import.module(),
+            host_fn_import.name().unwrap_or(""),
+            host_fn,
+        )?;
+        linker.instantiate(store, module)
+    }
+}
+
 impl Debug for SmartEngine {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "SmartModuleEngine")
@@ -128,12 +183,12 @@ impl SmartModuleWithEngine {
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<SmartModuleFilter> {
-        let filter = SmartModuleFilter::new(&self.engine, self, params, version)?;
+        let filter = SmartModuleFilter::new(self, params, version)?;
         Ok(filter)
     }
 
     fn create_map(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleMap> {
-        let map = SmartModuleMap::new(&self.engine, self, params, version)?;
+        let map = SmartModuleMap::new(self, params, version)?;
         Ok(map)
     }
 
@@ -142,7 +197,7 @@ impl SmartModuleWithEngine {
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<SmartModuleFilterMap> {
-        let filter_map = SmartModuleFilterMap::new(&self.engine, self, params, version)?;
+        let filter_map = SmartModuleFilterMap::new(self, params, version)?;
         Ok(filter_map)
     }
 
@@ -151,12 +206,12 @@ impl SmartModuleWithEngine {
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<SmartModuleArrayMap> {
-        let map = SmartModuleArrayMap::new(&self.engine, self, params, version)?;
+        let map = SmartModuleArrayMap::new(self, params, version)?;
         Ok(map)
     }
 
     fn create_join(&self, params: SmartModuleExtraParams, version: i16) -> Result<SmartModuleJoin> {
-        let join = SmartModuleJoin::new(&self.engine, self, params, version)?;
+        let join = SmartModuleJoin::new(self, params, version)?;
         Ok(join)
     }
 
@@ -165,7 +220,7 @@ impl SmartModuleWithEngine {
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<SmartModuleJoinStream> {
-        let join = SmartModuleJoinStream::new(&self.engine, self, params, version)?;
+        let join = SmartModuleJoinStream::new(self, params, version)?;
         Ok(join)
     }
 
@@ -175,14 +230,13 @@ impl SmartModuleWithEngine {
         accumulator: Vec<u8>,
         version: i16,
     ) -> Result<SmartModuleAggregate> {
-        let aggregate =
-            SmartModuleAggregate::new(&self.engine, self, params, accumulator, version)?;
+        let aggregate = SmartModuleAggregate::new(self, params, accumulator, version)?;
         Ok(aggregate)
     }
 }
 
 pub struct SmartModuleContext {
-    store: Store<()>,
+    store: Store<State>,
     instance: Instance,
     records_cb: Arc<RecordsCallBack>,
     params: SmartModuleExtraParams,
@@ -191,30 +245,28 @@ pub struct SmartModuleContext {
 
 impl SmartModuleContext {
     pub fn new(
-        engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self> {
-        let mut store = Store::new(&engine.0, ());
+        let mut store = module.engine.new_store();
         let cb = Arc::new(RecordsCallBack::new());
         let records_cb = cb.clone();
-        let copy_records = Func::wrap(
-            &mut store,
-            move |mut caller: Caller<'_, ()>, ptr: i32, len: i32| {
-                debug!(len, "callback from wasm filter");
-                let memory = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
-                };
+        let copy_records_fn = move |mut caller: Caller<'_, State>, ptr: i32, len: i32| {
+            debug!(len, "callback from wasm filter");
+            let memory = match caller.get_export("memory") {
+                Some(Extern::Memory(mem)) => mem,
+                _ => return Err(Trap::new("failed to find host memory")),
+            };
 
-                let records = RecordsMemory { ptr, len, memory };
-                cb.set(records);
-                Ok(())
-            },
-        );
+            let records = RecordsMemory { ptr, len, memory };
+            cb.set(records);
+            Ok(())
+        };
 
-        let instance = Instance::new(&mut store, &module.module, &[copy_records.into()])?;
+        let instance = module
+            .engine
+            .instantiate(&mut store, &module.module, copy_records_fn)?;
         Ok(Self {
             store,
             instance,
@@ -370,7 +422,7 @@ pub struct RecordsMemory {
 }
 
 impl RecordsMemory {
-    fn copy_memory_from(&self, store: &mut Store<()>) -> Result<Vec<u8>> {
+    fn copy_memory_from(&self, store: &mut Store<State>) -> Result<Vec<u8>> {
         let mut bytes = vec![0u8; self.len as u32 as usize];
         self.memory.read(store, self.ptr as usize, &mut bytes)?;
         Ok(bytes)

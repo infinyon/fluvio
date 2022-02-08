@@ -10,6 +10,7 @@ FLUVIO_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio,./target/$
 RELEASE_FLAG=$(if $(RELEASE),--release,)
 TARGET_FLAG=$(if $(TARGET),--target $(TARGET),)
 VERBOSE_FLAG=$(if $(VERBOSE),--verbose,)
+DEBUG_SMARTMODULE_FLAG=$(if $(DEBUG_SMARTMODULE),--features wasi,)
 
 BUILD_FLAGS = $(RELEASE_FLAG) $(TARGET_FLAG) $(VERBOSE_FLAG)
 

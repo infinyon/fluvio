@@ -6,7 +6,7 @@ use wasmtime::{AsContextMut, Trap, TypedFunc};
 
 use crate::{
     WasmSlice,
-    smartmodule::{SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
+    smartmodule::{SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance},
 };
 use dataplane::smartmodule::{
     SmartModuleAggregateInput, SmartModuleInput, SmartModuleOutput, SmartModuleInternalError,
@@ -38,13 +38,12 @@ impl AggregateFnKind {
 
 impl SmartModuleAggregate {
     pub fn new(
-        engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         accumulator: Vec<u8>,
         version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params, version)?;
+        let mut base = SmartModuleContext::new(module, params, version)?;
         let aggregate_fn: AggregateFnKind = if let Ok(agg_fn) = base
             .instance
             .get_typed_func(&mut base.store, AGGREGATE_FN_NAME)

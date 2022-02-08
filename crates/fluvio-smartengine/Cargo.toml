@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -13,9 +13,11 @@ description = "The offical Fluvio SmartEngine"
 
 [features]
 smartmodule = ["fluvio-controlplane-metadata", "flate2"]
+wasi = ["wasmtime-wasi"]
 
 [dependencies]
 wasmtime = "0.33"
+wasmtime-wasi = {version="0.33", optional = true}
 nix = "0.23"
 tracing = "0.1.27"
 anyhow = "1.0.38"
