@@ -112,7 +112,7 @@ impl CreateOpt {
                 install_channel_fluvio_bin(channel_name.to_string(), &config, version).await?;
             }
 
-            //fixes [issue_2168](https://github.com/infinyon/fluvio/issues/2168) 
+            //fixes issue_2168
             //only save if the version parse is successful
             config.save()?;
 
