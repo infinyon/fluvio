@@ -21,15 +21,12 @@ doc = false
 cfg-if = "1.0.0"
 anyhow = "1.0.38"
 tracing = "0.1.27"
-tracing-futures = "0.2.5"
 bytes = "1.0.0"
 structopt = "0.3.5"
 toml = "0.5.5"
 futures-util = { version = "0.3.5", features = ["sink"] }
 async-trait = "0.1.51"
-serde_yaml = "0.8.8"
 serde = { version = "1.0.103", features = ['derive'] }
-chrono = { version = "0.4.6", features = ["serde"] }
 pin-utils = "0.1.0-alpha.4"
 regex = "1.3.1"
 tokio = { version = "1.3.0", features = ["macros"] }
