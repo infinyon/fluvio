@@ -240,6 +240,10 @@ pub mod metadata {
         pub use fluvio_sc_schema::objects::*;
     }
 
+    pub mod tableformat {
+        pub use fluvio_sc_schema::tableformat::*;
+    }
+
     pub mod core {
         pub use fluvio_sc_schema::core::*;
     }
