@@ -8,7 +8,7 @@ use std::io::{Error, ErrorKind};
 use std::time::Duration;
 
 use fluvio_stream_dispatcher::actions::WSAction;
-use tracing::{debug, trace, instrument};
+use tracing::{info, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::Status;
@@ -29,7 +29,7 @@ pub async fn handle_create_spu_group_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     let name = common.name;
 
-    debug!( spg = %name,
+    info!( spg = %name,
          replica = %spg.replicas,
          "creating spg");
 
@@ -71,6 +71,7 @@ async fn process_custom_spu_request(ctx: &Context, name: String, spg_spec: SpuGr
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::SpuError, error)
     } else {
+        info!(%name, "spg created");
         Status::new_ok(name.clone())
     }
 }

@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 
 use dataplane::ErrorCode;
-use tracing::{instrument, info};
+use tracing::{instrument, info, debug};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};
@@ -18,7 +18,7 @@ pub async fn handle_create_request<AC: AuthContext>(
 ) -> Result<ResponseMessage<Status>, IoError> {
     let (header, obj_req) = request.get_header_request();
 
-    info!(?obj_req, "create request");
+    debug!(?obj_req, "create request");
     let ObjectApiCreateRequest { common, request } = obj_req;
     let status = match request {
         ObjectCreateRequest::Topic(create) => {
@@ -69,7 +69,7 @@ mod create_handler {
 
     use fluvio_controlplane_metadata::core::Spec;
     use fluvio_stream_dispatcher::store::StoreContext;
-    use tracing::{debug, trace, instrument};
+    use tracing::{info, trace, instrument};
 
     use dataplane::ErrorCode;
     use fluvio_sc_schema::{AdminSpec, Status};
@@ -94,7 +94,7 @@ mod create_handler {
     {
         let name = create.name;
 
-        debug!(ty = %S::LABEL,"creating");
+        info!(%name, ty = %S::LABEL,"creating");
 
         if let Ok(authorized) = auth_ctx
             .auth
@@ -126,6 +126,8 @@ mod create_handler {
                 let error = Some(err.to_string());
                 Status::new(name, error_code(err), error)
             } else {
+                info!(%name, ty = %S::LABEL,"created");
+
                 Status::new_ok(name.clone())
             },
         )

@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, trace, instrument};
+use tracing::{debug, info, trace, instrument};
 
 use fluvio_sc_schema::Status;
 use fluvio_auth::{AuthContext, InstanceAction};
@@ -17,7 +17,7 @@ pub async fn handle_delete_tableformat<AC: AuthContext>(
 ) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
-    debug!("delete tableformats: {}", name);
+    info!(%name, "deleting tableformat");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -56,6 +56,7 @@ pub async fn handle_delete_tableformat<AC: AuthContext>(
                 Some(err.to_string()),
             )
         } else {
+            info!(%name, "tableformat deleted");
             Status::new_ok(name)
         }
     } else {

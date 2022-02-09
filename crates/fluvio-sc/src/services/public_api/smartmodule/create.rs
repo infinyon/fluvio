@@ -6,7 +6,7 @@
 
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, trace, instrument};
+use tracing::{info, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::{Status};
@@ -27,7 +27,7 @@ pub async fn handle_create_smartmodule_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     let name = create.name;
 
-    debug!(%name,"creating smart module");
+    info!(%name,"creating smart module");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -67,6 +67,7 @@ async fn process_smartmodule_request(
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::SmartModuleError, error) // TODO: create error type
     } else {
+        info!(%name, "smart module created");
         Status::new_ok(name.clone())
     }
 }

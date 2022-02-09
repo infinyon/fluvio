@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, trace, instrument};
+use tracing::{info, trace, instrument};
 
 use fluvio_sc_schema::Status;
 use fluvio_auth::{AuthContext, InstanceAction};
@@ -17,7 +17,7 @@ pub async fn handle_delete_spu_group<AC: AuthContext>(
 ) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
-    debug!("delete spg group: {}", name);
+    info!(%name, "deleting spu group");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -47,6 +47,7 @@ pub async fn handle_delete_spu_group<AC: AuthContext>(
         if let Err(err) = auth_ctx.global_ctx.spgs().delete(name.clone()).await {
             Status::new(name.clone(), ErrorCode::SpuError, Some(err.to_string()))
         } else {
+            info!(%name, "spu group deleted");
             Status::new_ok(name)
         }
     } else {
