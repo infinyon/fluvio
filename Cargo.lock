@@ -2251,6 +2251,7 @@ dependencies = [
 name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
+ "async-std",
  "async-trait",
  "bytes 1.1.0",
  "crc",
@@ -3907,6 +3908,15 @@ dependencies = [
  "async-std",
  "fluvio",
  "tracing-subscriber 0.2.25",
+]
+
+[[package]]
+name = "producer-consumer"
+version = "0.0.0"
+dependencies = [
+ "async-std",
+ "fluvio",
+ "futures",
 ]
 
 [[package]]

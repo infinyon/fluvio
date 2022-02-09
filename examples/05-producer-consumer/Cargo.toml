@@ -1,0 +1,11 @@
+[package]
+name = "producer-consumer"
+version = "0.0.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+edition = "2021"
+publish = false
+
+[dependencies]
+fluvio = { path = "../../crates/fluvio", features = ["unstable"] }
+futures = "0.3.0"
+async-std = { version = "1.8.0", default-features = false,features = ["attributes"] }

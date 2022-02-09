@@ -1,44 +1,50 @@
-use fluvio::RecordKey;
 use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use std::time::SystemTime;
 use tracing::debug;
 use fluvio_test_util::{async_process, fork_and_wait};
+use fluvio::{Offset, FluvioError, RecordKey};
+use futures::StreamExt;
+use std::time::Duration;
 
 use super::DataGeneratorTestCase;
 use crate::tests::TestRecordBuilder;
 
-pub async fn producer(mut test_driver: TestDriver, option: DataGeneratorTestCase, producer_id: u32) {
-    debug!("About to get a producer");
-    // Uncommented, this locks
-    println!("[producer] about to send ready to sync topic");
-    let _setup_status = fork_and_wait! {
-        fluvio_future::task::run_block_on(async {
-            let mut test_driver_sync = test_driver.clone();
-            // Connect test driver to cluster before starting test
-            test_driver_sync.connect().await.expect("Unable to connect to cluster");
+pub async fn producer(
+    mut test_driver: TestDriver,
+    option: DataGeneratorTestCase,
+    producer_id: u32,
+) {
+    //debug!("About to get a producer");
+    //// Uncommented, this locks
+    //println!("[producer] about to send ready to sync topic");
+    //let _setup_status = fork_and_wait! {
+    //    fluvio_future::task::run_block_on(async {
+    //        let mut test_driver_sync = test_driver.clone();
+    //        // Connect test driver to cluster before starting test
+    //        test_driver_sync.connect().await.expect("Unable to connect to cluster");
 
-            //// Create topic before starting test
-            //test_driver_sync.create_topic(&test_case.environment)
-            //    .await
-            //    .expect("Unable to create default topic");
+    //        //// Create topic before starting test
+    //        //test_driver_sync.create_topic(&test_case.environment)
+    //        //    .await
+    //        //    .expect("Unable to create default topic");
 
-            //println!("Create sync topic");
-            //let mut sync_opt = option.environment.clone();
-            //sync_opt.topic_name = Some("sync".to_string());
-            //test_driver_sync.create_topic(&sync_opt).await.unwrap();
+    //        //println!("Create sync topic");
+    //        //let mut sync_opt = option.environment.clone();
+    //        //sync_opt.topic_name = Some("sync".to_string());
+    //        //test_driver_sync.create_topic(&sync_opt).await.unwrap();
 
-            println!("Creating sync producer");
-            let sync_producer = test_driver_sync.create_producer("sync").await;
-            println!("[producer] about to send ready");
-            // Send a ready status
-            sync_producer.send(RecordKey::NULL, "ready").await.unwrap();
-            drop(sync_producer);
+    //        println!("Creating sync producer");
+    //        let sync_producer = test_driver_sync.create_producer("sync").await;
+    //        println!("[producer] about to send ready");
+    //        // Send a ready status
+    //        sync_producer.send(RecordKey::NULL, "ready").await.unwrap();
+    //        drop(sync_producer);
 
-            // Disconnect test driver to cluster before starting test
-            test_driver_sync.disconnect();
-        })
-    };
+    //        // Disconnect test driver to cluster before starting test
+    //        test_driver_sync.disconnect();
+    //    })
+    //};
 
     println!("[producer] about produce to test topic");
 
@@ -46,6 +52,35 @@ pub async fn producer(mut test_driver: TestDriver, option: DataGeneratorTestCase
         .connect()
         .await
         .expect("Connecting to cluster failed");
+
+    let sync_consumer = test_driver.get_consumer("sync", 0).await;
+
+    // TODO: Support starting stream from consumer offset
+    let mut sync_stream = sync_consumer
+        .stream(Offset::from_end(0))
+        .await
+        .expect("Unable to open stream");
+
+    let sync_producer = test_driver.create_producer("sync").await;
+
+    async_std::task::sleep(Duration::from_secs(5)).await;
+
+    sync_producer.send(RecordKey::NULL, "ready").await.unwrap();
+
+    println!("{}: waiting for start", producer_id);
+    println!("{}: waiting for start", producer_id);
+    while let Some(Ok(record)) = sync_stream.next().await {
+        let _key = record
+            .key()
+            .map(|key| String::from_utf8_lossy(key).to_string());
+        let value = String::from_utf8_lossy(record.value()).to_string();
+
+        if value.eq("start") {
+            println!("Starting producer");
+            println!("Starting producer");
+            break;
+        }
+    }
 
     let producer = test_driver
         .create_producer(&option.environment.topic_name())

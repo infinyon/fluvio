@@ -33,6 +33,9 @@ sysinfo = { version = "0.23.0" }
 signal-hook = "0.3.13"
 indicatif = "0.16.2"
 
+async-std = { version = "1.8.0", default-features = false,features = ["attributes"] }
+
+
 # Fluvio dependencies
 fluvio = { path = "../fluvio" }
 fluvio-types = { path = "../fluvio-types" }
