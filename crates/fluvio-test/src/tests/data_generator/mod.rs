@@ -99,7 +99,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
         fluvio_future::task::run_block_on(async {
             let mut test_driver_setup = test_driver.clone();
             let mut sync_option = option.clone();
-            sync_option.environment.topic_name = Some("asdfg".to_string());
+            //sync_option.environment.topic_name = Some("asdfg".to_string());
 
 
             //async_std::task::sleep(Duration::from_secs(5)).await;
@@ -161,9 +161,11 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                     println!("main: all ready, send start");
 
                     // this isn't sending...
-                  sync_producer.send(RecordKey::NULL, "start").await.unwrap();
-                  println!("printprintprint");
-                  println!("printprintprint");
+                    sync_producer.send(RecordKey::NULL, "start").await.unwrap();
+                    sync_producer.flush().await.unwrap();
+                    println!("printprintprint");
+                    println!("printprintprint");
+
                   break;
                 }
             }
