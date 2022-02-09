@@ -1,7 +1,7 @@
 use std::io::Error as IoError;
 
 use dataplane::ErrorCode;
-use tracing::{instrument, info, debug};
+use tracing::{instrument, debug};
 
 use dataplane::api::{RequestMessage, ResponseMessage};
 use fluvio_sc_schema::{Status};

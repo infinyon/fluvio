@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, info, trace, instrument};
+use tracing::{info, trace, instrument};
 
 use fluvio_sc_schema::Status;
 use fluvio_auth::{AuthContext, InstanceAction};

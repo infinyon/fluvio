@@ -5,6 +5,7 @@
 * Fix incorrect behavior when consuming with a given offset in a partition with batches with more than one record. ([#2002](https://github.com/infinyon/fluvio/issues/2002))
 * Add `version` column to `fluvio connector list` ([#2145](https://github.com/infinyon/fluvio/issues/2145))
 * Reimport metadata for tableformat in fluvio client ([#2175](https://github.com/infinyon/fluvio/issues/2175))
+* Change log level for admin actions to info in SC public services ([#2177](https://github.com/infinyon/fluvio/issues/2177))
 
 ## Platform Version 0.9.18 - 2022-01-31
 * Show Platform version for fluvio run ([#2104](https://github.com/infinyon/fluvio/issues/2104))
