@@ -13,11 +13,11 @@ pub enum StorageError {
 
     #[error(transparent)]
     Io(#[from] IoError),
-    #[error("Offset error")]
+    #[error("Offset error: {0}")]
     Offset(#[from] OffsetError),
-    #[error("Log validation error")]
+    #[error("Log validation error: {0}")]
     LogValidation(#[from] LogValidationError),
-    #[error("Zero-copy send file error")]
+    #[error("Zero-copy send file error: {0}")]
     SendFile(#[from] SendFileError),
     #[error("Batch exceeded maximum bytes: {0}")]
     BatchTooBig(usize),
