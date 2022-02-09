@@ -4,7 +4,7 @@
 //! Connects to server and fetches logs
 //!
 
-use fluvio_controlplane_metadata::tableformat::TableFormatColumnConfig;
+use fluvio::metadata::tableformat::TableFormatColumnConfig;
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use super::TableModel;
 use std::collections::BTreeMap;

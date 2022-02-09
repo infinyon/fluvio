@@ -9,7 +9,7 @@ use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
-use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
+use fluvio::metadata::tableformat::{TableFormatSpec};
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;

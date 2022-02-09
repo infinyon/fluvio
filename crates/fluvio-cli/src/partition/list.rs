@@ -7,7 +7,7 @@
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::partition::*;
+use fluvio::metadata::partition::*;
 
 use crate::Result;
 use crate::common::output::Terminal;
