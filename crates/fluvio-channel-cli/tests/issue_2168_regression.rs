@@ -15,7 +15,7 @@
 // just in case the version was indeed written to the file.
 // This should never succeed and we assert that.
 #[test]
-fn issue_2168_regression_test() -> Result<(), Box<dyn std::error::Error>> {
+fn issue_2168_regression_test() {
     use assert_cmd::prelude::*; // Add methods on commands
     use predicates::prelude::*; // Used for writing assertions
     use std::process::Command; // Run programs
@@ -38,21 +38,21 @@ fn issue_2168_regression_test() -> Result<(), Box<dyn std::error::Error>> {
         .collect();
 
     //verify our test channel name is not currently in the channel config
-    let mut cmd = Command::cargo_bin("fluvio-channel")?;
+    let mut cmd = Command::cargo_bin("fluvio-channel").expect("fluvio-channel binary");
     cmd.arg("version").arg("list");
     cmd.assert()
         .success()
         .stdout(predicate::str::contains(&random_channel_name).count(0));
 
     //if we get this far, we can attempt to create the channel version
-    let mut cmd = Command::cargo_bin("fluvio-channel")?;
+    let mut cmd = Command::cargo_bin("fluvio-channel").expect("fluvio-channel binary");
     cmd.arg("version").arg("create").arg(&random_channel_name);
     cmd.assert()
         .failure()
         .stdout(predicate::str::contains("Unable to resolve version"));
 
     //verify our test channel name STILL IS NOT in the channel config
-    let mut cmd = Command::cargo_bin("fluvio-channel")?;
+    let mut cmd = Command::cargo_bin("fluvio-channel").expect("fluvio-channel binary");
     cmd.arg("version").arg("list");
     cmd.assert()
         .success()
@@ -60,7 +60,7 @@ fn issue_2168_regression_test() -> Result<(), Box<dyn std::error::Error>> {
 
     //just in case, clean up by deleting the random channel
     //from the channel config file (it should NOT be found)
-    let mut cmd = Command::cargo_bin("fluvio-channel")?;
+    let mut cmd = Command::cargo_bin("fluvio-channel").expect("fluvio-channel binary");
     cmd.arg("version").arg("delete").arg(&random_channel_name);
     cmd.assert()
         .success()
@@ -68,6 +68,4 @@ fn issue_2168_regression_test() -> Result<(), Box<dyn std::error::Error>> {
             "Release channel \"{}\" not found",
             &random_channel_name
         )));
-
-    Ok(())
 }
