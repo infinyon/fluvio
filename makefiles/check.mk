@@ -29,6 +29,7 @@ run-all-unit-test: install_rustup_target
 	cargo test --lib --all-features $(BUILD_FLAGS)
 	cargo test -p fluvio-smartmodule $(BUILD_FLAGS)
 	cargo test -p fluvio-storage $(BUILD_FLAGS)
+	cargo test -p fluvio-channel-cli $(BUILD_FLAGS)
 	make test-all -C crates/fluvio-protocol
 
 run-integration-test: build_smartmodules install_rustup_target
