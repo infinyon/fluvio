@@ -7,7 +7,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use fluvio::metadata::tableformat::TableFormatSpec;
 
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
@@ -46,7 +46,7 @@ mod output {
     use fluvio_extension_common::Terminal;
 
     use fluvio::metadata::objects::Metadata;
-    use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+    use fluvio::metadata::tableformat::TableFormatSpec;
 
     use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;

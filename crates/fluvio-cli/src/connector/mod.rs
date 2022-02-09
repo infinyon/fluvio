@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::Read;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::{ManagedConnectorSpec, SecretString};
+use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 

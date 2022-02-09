@@ -6,7 +6,7 @@
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio::metadata::connector::ManagedConnectorSpec;
 
 use crate::CliError;
 

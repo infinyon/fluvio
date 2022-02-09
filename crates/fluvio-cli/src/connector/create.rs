@@ -4,7 +4,7 @@
 //! CLI tree to generate Create a Managed Connector
 //!
 
-use fluvio_controlplane_metadata::topic::ReplicaSpec;
+use fluvio::metadata::topic::ReplicaSpec;
 use structopt::StructOpt;
 use tracing::debug;
 

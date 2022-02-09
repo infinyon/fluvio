@@ -6,7 +6,7 @@
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use fluvio::metadata::tableformat::TableFormatSpec;
 
 use crate::CliError;
 

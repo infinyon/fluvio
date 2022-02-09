@@ -77,7 +77,6 @@ fluvio-socket = { path = "../fluvio-socket" }
 fluvio-command = { version = "0.2.0" }
 fluvio-package-index = { path = "../fluvio-package-index" }
 fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
-fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = ["use_serde", "k8"] }
 k8-types = { version = "0.5.0", features = ["core"] }
 fluvio-channel = { path = "../fluvio-channel" }
 fluvio-cli-common = { path = "../fluvio-cli-common" }
