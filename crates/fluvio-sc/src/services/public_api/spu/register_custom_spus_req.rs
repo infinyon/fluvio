@@ -3,7 +3,7 @@
 //!
 //! Converts Custom Spu API request into KV request and sends to KV store for processing.
 //!
-use tracing::{debug, trace, instrument};
+use tracing::{debug, info, trace, instrument};
 use std::io::{Error as IoError};
 
 use dataplane::ErrorCode;
@@ -34,7 +34,7 @@ impl RegisterCustomSpu {
     ) -> Status {
         let name = create.name;
 
-        debug!(
+        info!(
             %name,
             spu_id = spec.id,
             "creating custom spu");
@@ -110,6 +110,7 @@ impl RegisterCustomSpu {
             let error = Some(err.to_string());
             Status::new(self.name.to_owned(), ErrorCode::SpuError, error)
         } else {
+            info!(name = %self.name, spu_id = self.spec.id, "custom spu created");
             Status::new_ok(self.name.to_owned())
         }
     }

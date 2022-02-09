@@ -4,7 +4,7 @@
 //! Delete topic request handler. Lookup topic in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use tracing::{debug, trace, instrument};
+use tracing::{info, trace, instrument};
 use std::io::{Error, ErrorKind};
 
 use dataplane::ErrorCode;
@@ -21,7 +21,7 @@ pub async fn handle_delete_topic<AC: AuthContext>(
     topic_name: String,
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
-    debug!("api request: delete topic '{}'", topic_name);
+    info!(%topic_name, "Deleting topic");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -60,12 +60,13 @@ pub async fn handle_delete_topic<AC: AuthContext>(
                 Some(err.to_string()),
             )
         } else {
-            Status::new_ok(topic_name.clone())
+            info!(%topic_name, "topic deleted");
+            Status::new_ok(topic_name)
         }
     } else {
         // topic does not exist
         Status::new(
-            topic_name.clone(),
+            topic_name,
             ErrorCode::TopicNotFound,
             Some("not found".to_owned()),
         )
