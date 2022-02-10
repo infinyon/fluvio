@@ -19,8 +19,17 @@ fn issue_2168_regression_test() {
     use assert_cmd::prelude::*; // Add methods on commands
     use predicates::prelude::*; // Used for writing assertions
     use std::process::Command; // Run programs
+    use std::env;
     use rand::Rng;
 
+    //we want to check if we're in the CI environment.
+    if env::var("CI").is_ok() {
+        //if so, we should initialize the channel config file
+        //at this point, this should always be true since Github Actions always sets this as such
+        let mut cmd = Command::cargo_bin("fluvio-channel").expect("fluvio-channel binary");
+        cmd.arg("version").arg("switch").arg("stable");
+        cmd.assert().success();
+    }
     //channel name characters to be used at random
     const CHARSET: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ\
                             abcdefghijklmnopqrstuvwxyz\
