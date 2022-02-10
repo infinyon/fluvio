@@ -27,8 +27,13 @@ tracing = "0.1.19"
 cfg-if = "1.0"
 dirs = "4.0.0"
 
-fluvio-cli-common = { path = "../fluvio-cli-common", default-features = false }
+fluvio-cli-common = { path = "../fluvio-cli-common" }
 fluvio-channel = { path = "../fluvio-channel" }
 fluvio-future = { version = "0.3.0", features = ["task", "subscriber"], optional = true }
 fluvio-types = { path = "../fluvio-types", default-features = false, optional = true }
 fluvio-package-index = { path = "../fluvio-package-index" }
+
+[dev-dependencies]
+assert_cmd = "2.0.4"
+predicates = "2.1.1"
+rand = "0.8.4"
