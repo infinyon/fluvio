@@ -46,7 +46,7 @@ serde_yaml = "0.8"
 
 # Fluvio dependencies
 fluvio-auth = { path = "../fluvio-auth" }
-fluvio-future = { version = "0.3.0", features = [
+fluvio-future = { version = "0.3.13", features = [
     "subscriber",
     "openssl_tls",
     "zero_copy",

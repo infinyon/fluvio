@@ -273,11 +273,11 @@ dependencies = [
 
 [[package]]
 name = "async-native-tls"
-version = "0.3.3"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e9e7a929bd34c68a82d58a4de7f86fffdaf97fb2af850162a7bb19dd7269b33"
+checksum = "d57d4cec3c647232e1094dc013546c0b33ce785d8aeb251e1f20dfaf8a9a13fe"
 dependencies = [
- "async-std",
+ "futures-util",
  "native-tls",
  "thiserror",
  "url",
@@ -1891,9 +1891,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.12"
+version = "0.3.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f7fe88112f29cac1cf6b091ec04613b4b4611f5083a3b64423d7a8632e9bf012"
+checksum = "dc1cf2cf885d9872c9da76c6db9dd664b02d63ea69a237bac5c651fb6482cec7"
 dependencies = [
  "async-fs",
  "async-io",
@@ -2064,7 +2064,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "anyhow",
  "flate2",
@@ -2101,7 +2101,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-socket"
-version = "0.11.1"
+version = "0.11.2"
 dependencies = [
  "async-channel",
  "async-lock",

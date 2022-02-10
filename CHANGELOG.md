@@ -6,6 +6,7 @@
 * Add `version` column to `fluvio connector list` ([#2145](https://github.com/infinyon/fluvio/issues/2145))
 * Reimport metadata for tableformat in fluvio client ([#2175](https://github.com/infinyon/fluvio/issues/2175))
 * Change log level for admin actions to info in SC public services ([#2177](https://github.com/infinyon/fluvio/issues/2177))
+* Fix problem with zero copy ([#2181](https://github.com/infinyon/fluvio/issues/2181))
 
 ## Platform Version 0.9.18 - 2022-01-31
 * Show Platform version for fluvio run ([#2104](https://github.com/infinyon/fluvio/issues/2104))
