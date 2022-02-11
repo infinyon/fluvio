@@ -18,6 +18,7 @@ mod list;
 mod logs;
 
 use create::CreateManagedConnectorOpt;
+use update::UpdateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
 use logs::LogsManagedConnectorOpt;
@@ -32,6 +33,13 @@ pub enum ManagedConnectorCmd {
     )]
     Create(CreateManagedConnectorOpt),
 
+    /// Update a Managed Connector
+    #[structopt(
+        name = "update",
+        template = COMMAND_TEMPLATE,
+    )]
+    Update(UpdateManagedConnectorOpt),
+    
     /// Delete a Managed Connector
     #[structopt(
         name = "delete",
@@ -59,6 +67,9 @@ impl ManagedConnectorCmd {
         match self {
             Self::Create(create) => {
                 create.process(fluvio).await?;
+            }
+            Self::Update(update) => {
+                update.process(fluvio).await?;
             }
             Self::Delete(delete) => {
                 delete.process(fluvio).await?;

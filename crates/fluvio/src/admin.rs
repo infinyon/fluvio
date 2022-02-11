@@ -144,7 +144,7 @@ impl FluvioAdmin {
         self.socket.send_receive(request).await
     }
 
-    /// create new object
+    /// Create new object
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
@@ -162,7 +162,26 @@ impl FluvioAdmin {
         Ok(())
     }
 
-    /// delete object by key
+    /// Update object by key
+    /// key is depend on spec, most are string but some allow multiple types
+    #[instrument(skip(self, name, dry_run, spec))]
+    pub async fn update<S, K>(&self, key: K, dry_run: bool, spec: S) -> Result<(), FluvioError>
+    where
+        S: UpdateableAdminSpec + Sync + Send,
+        K: Into<S::UpdateKey>,
+        ObjectApiUpdateRequest: From<(UpdateRequest, S)>,
+    {
+        let update_request = UpdateRequest { name, dry_run };
+        let update_request: ObjectApiUpdateRequest = (update_request, spec).into();
+
+        debug!("sending update request: {:#?}", update_request);
+
+        self.send_receive(update_request).await?.as_result()?;
+
+        Ok(())
+    }
+    
+    /// Delete object by key
     /// key is depend on spec, most are string but some allow multiple types
     #[instrument(skip(self, key))]
     pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>
