@@ -1,7 +1,5 @@
 pub mod producer;
-//pub mod consumer;
 
-use crate::tests::TestRecordBuilder;
 use core::panic;
 use std::any::Any;
 use std::num::ParseIntError;
@@ -14,24 +12,24 @@ use fluvio_test_util::test_meta::environment::EnvironmentSetup;
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::{async_process, fork_and_wait};
 
-use fluvio::{Offset, FluvioError, RecordKey};
+use fluvio::{Offset, RecordKey};
 use futures::StreamExt;
 
 #[derive(Debug, Clone)]
-pub struct DataGeneratorTestCase {
+pub struct GeneratorTestCase {
     pub environment: EnvironmentSetup,
-    pub option: DataGeneratorTestOption,
+    pub option: GeneratorTestOption,
 }
 
-impl From<TestCase> for DataGeneratorTestCase {
+impl From<TestCase> for GeneratorTestCase {
     fn from(test_case: TestCase) -> Self {
         let data_generator_option = test_case
             .option
             .as_any()
-            .downcast_ref::<DataGeneratorTestOption>()
-            .expect("DataGeneratorTestOption")
+            .downcast_ref::<GeneratorTestOption>()
+            .expect("GeneratorTestOption")
             .to_owned();
-        DataGeneratorTestCase {
+        GeneratorTestCase {
             environment: test_case.environment,
             option: data_generator_option,
         }
@@ -40,7 +38,7 @@ impl From<TestCase> for DataGeneratorTestCase {
 
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 #[structopt(name = "Fluvio Longevity Test")]
-pub struct DataGeneratorTestOption {
+pub struct GeneratorTestOption {
     /// Max time we want the producer to run, in seconds - Default: forever
     #[structopt(long, parse(try_from_str = parse_seconds), default_value = "0")]
     runtime_seconds: Duration,
@@ -76,15 +74,15 @@ fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
     Ok(Duration::from_secs(seconds))
 }
 
-impl TestOption for DataGeneratorTestOption {
+impl TestOption for GeneratorTestOption {
     fn as_any(&self) -> &dyn Any {
         self
     }
 }
 
-#[fluvio_test(topic = "generated")]
+#[fluvio_test(name = "generator", topic = "generated")]
 pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
-    let option: DataGeneratorTestCase = test_case.into();
+    let option: GeneratorTestCase = test_case.into();
 
     println!("Starting data generation");
 
@@ -102,7 +100,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     println!("linger (ms): {:?}", option.option.batch_linger_ms);
     println!("batch size (Bytes): {:?}", option.option.batch_size);
 
-    // Generate a run id
+    // Generate a run id if we're running multiple instances
     let run_id = if option.option.multi {
         Some(Uuid::new_v4().to_simple().to_string())
     } else {
@@ -151,7 +149,6 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
             println!("setup");
 
-            //println!("main: opening consumer to sync");
             let sync_consumer = test_driver
                 .get_consumer(&sync_topic, 0)
                 .await;
@@ -166,9 +163,8 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                 .await;
 
             // Wait for everyone to get ready
-            let mut num_producers = 1;
+            let mut num_producers = option.option.producers;
             let mut is_ready = false;
-            //println!("main: waiting on {num_producers} to get ready");
             while let Some(Ok(record)) = sync_stream.next().await {
                 let _key = record
                     .key()

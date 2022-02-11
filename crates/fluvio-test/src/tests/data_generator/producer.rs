@@ -2,17 +2,16 @@ use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use std::time::SystemTime;
 use tracing::debug;
-use fluvio_test_util::{async_process, fork_and_wait};
-use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin, RecordKey};
+use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, RecordKey};
 use futures::StreamExt;
 use std::time::Duration;
 
-use super::DataGeneratorTestCase;
+use super::GeneratorTestCase;
 use crate::tests::TestRecordBuilder;
 
 pub async fn producer(
     mut test_driver: TestDriver,
-    option: DataGeneratorTestCase,
+    option: GeneratorTestCase,
     producer_id: u32,
     run_id: Option<String>,
 ) {
@@ -88,9 +87,6 @@ pub async fn producer(
         }
     }
 
-    // Read in the timer value we want to run for
-    // Note, we're going to give the consumer a couple extra seconds since it starts its timer first
-
     let mut records_sent = 0;
     let test_start = SystemTime::now();
 
@@ -107,13 +103,12 @@ pub async fn producer(
             records_sent += 1;
         }
     }
-    //}
 
     println!("Producer stopped. Time's up!\nRecords sent: {records_sent}",)
 }
 
 async fn send_record(
-    option: &DataGeneratorTestCase,
+    option: &GeneratorTestCase,
     producer_id: u32,
     records_sent: u32,
     test_driver: &TestDriver,
@@ -127,7 +122,7 @@ async fn send_record(
     producer.flush().await.expect("flush");
 }
 
-fn generate_record(option: DataGeneratorTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
+fn generate_record(option: GeneratorTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
     let record = TestRecordBuilder::new()
         .with_tag(format!("{}", record_id))
         .with_random_data(option.option.record_size)
