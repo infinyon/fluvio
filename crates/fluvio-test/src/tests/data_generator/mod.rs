@@ -40,8 +40,8 @@ impl From<TestCase> for GeneratorTestCase {
 #[structopt(name = "Fluvio Longevity Test")]
 pub struct GeneratorTestOption {
     /// Max time we want the producer to run, in seconds - Default: forever
-    #[structopt(long, parse(try_from_str = parse_seconds), default_value = "0")]
-    runtime_seconds: Duration,
+    #[structopt(long, parse(try_from_str = parse_seconds))]
+    runtime_seconds: Option<Duration>,
 
     /// Record payload size used by test (bytes)
     #[structopt(long, default_value = "1000")]
@@ -86,8 +86,8 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
     println!("Starting data generation");
 
-    let expected_runtime = if !option.option.runtime_seconds.is_zero() {
-        format!("{:?}", option.option.runtime_seconds)
+    let expected_runtime = if let Some(timeout) = option.option.runtime_seconds {
+        format!("{:?}", timeout)
     } else {
         format!("forever")
     };

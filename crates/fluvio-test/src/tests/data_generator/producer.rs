@@ -92,8 +92,8 @@ pub async fn producer(
 
     debug!("About to start producer loop");
 
-    if !option.option.runtime_seconds.is_zero() {
-        while test_start.elapsed().unwrap() <= option.option.runtime_seconds {
+    if let Some(timeout) = option.option.runtime_seconds {
+        while test_start.elapsed().unwrap() <= timeout {
             send_record(&option, producer_id, records_sent, &test_driver, &producer).await;
             records_sent += 1;
         }
