@@ -50,7 +50,8 @@ impl StorageBytesIterator for FileBytesIterator {
         // this will block task which will make it harder to scale
         // this should be replaced with async implementation
         let file_pos = self.pos as i64;
-        match unblock(move || pread(fd, file_pos, len as usize)).await
+        match unblock(move || pread(fd, file_pos, len as usize))
+            .await
             .map_err(|e| IoError::new(ErrorKind::Other, format!("pread error: {:#?}", e)))?
         {
             ReadOutput::Some { buffer, eof } => {
@@ -92,7 +93,7 @@ impl ReadOutput {
     }
 
     #[allow(unused)]
-    pub fn is_empty(self) -> bool {
+    pub fn is_empty(&self) -> bool {
         match self {
             Self::Some { .. } => false,
             Self::Empty => true,
@@ -334,11 +335,11 @@ mod tests {
         let (word, eof) = pread(fd, 0, 5).expect("read bytes").expect("some");
         assert_eq!(word.len(), 5);
         assert_eq!(word.as_ref(), b"hello");
-        assert_eq!(eof, false);
+        assert!(!eof);
         let (word, eof) = pread(fd, 5, 20).expect("read bytes").expect("some");
         assert_eq!(word.len(), 6);
         assert_eq!(word.as_ref(), b" world");
-        assert_eq!(eof, true);
+        assert!(eof);
         // try to read past end of file
         assert!(pread(fd, 100, 10).expect("read bytes").is_empty());
     }
