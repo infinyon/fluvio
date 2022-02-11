@@ -164,7 +164,7 @@ impl MutLogIndex {
     /// find empty slot
     fn find_first_empty_index(&self) -> Result<u32, IoError> {
         let entries = self.entries();
-        trace!("updating position with: {}", entries);
+        trace!(entries,"total entries");
 
         for i in 0..entries {
             if self[i as usize].position() == 0 {
@@ -289,11 +289,12 @@ mod tests {
     use crate::index::Index;
     use crate::fixture::default_option;
 
-    const TEST_FILE: &str = "00000000000000000000.index";
+    
 
     #[fluvio_future::test]
     async fn test_index_simple_write() {
         const BASE_OFFSET: Offset = 0;
+        const TEST_FILE: &str = "00000000000000000000.index";
 
         let option = default_option(200).shared();
         assert_eq!(option.index_max_interval_bytes.get(), 200);
@@ -374,14 +375,15 @@ mod tests {
 
         // open same file and check index
 
-        let index_sink = MutLogIndex::open(121, option).await.expect("open");
-        assert_eq!(index_sink.first_empty_slot, 1);
+        let index_sink = MutLogIndex::open(BASE_OFFSET, option).await.expect("open");
+        assert_eq!(index_sink.first_empty_slot, 2);
     }
 
-    const TEST_FILE2: &str = "00000000000000000122.index";
+   
 
     #[fluvio_future::test]
     async fn test_index_shrink() {
+        const TEST_FILE2: &str = "00000000000000000122.index";
         let option = default_option(0).shared();
         let test_file = option.base_dir.join(TEST_FILE2);
         ensure_clean_file(&test_file);
@@ -397,10 +399,10 @@ mod tests {
         assert_eq!(m.len(), 8);
     }
 
-    const TEST_FILE3: &str = "00000000000000000123.index";
-
+    
     #[fluvio_future::test]
     async fn test_mut_index_findoffset() {
+        const TEST_FILE3: &str = "00000000000000000123.index";
         let option = default_option(0).shared();
         let test_file = option.base_dir.join(TEST_FILE3);
         ensure_clean_file(&test_file);
