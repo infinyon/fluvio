@@ -23,13 +23,13 @@ pub async fn producer(
     let sync_topic = if let Some(run_id) = &run_id {
         format!("sync-{}", run_id)
     } else {
-        format!("sync")
+        "sync".to_string()
     };
 
     let test_topic = if let Some(run_id) = &run_id {
         format!("{}-{}", &option.environment.topic_name(), run_id)
     } else {
-        format!("{}", &option.environment.topic_name())
+        (&option.environment.topic_name()).to_string()
     };
 
     test_driver

@@ -89,7 +89,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     let expected_runtime = if let Some(timeout) = option.option.runtime_seconds {
         format!("{:?}", timeout)
     } else {
-        format!("forever")
+        "forever".to_string()
     };
 
     println!("Expected runtime: {:?}", expected_runtime);
@@ -131,7 +131,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
             let sync_topic = if let Some(run_id) = &run_id {
                 format!("sync-{}", run_id)
             } else {
-                format!("sync")
+                "sync".to_string()
             };
 
             env_opts.topic_name = Some(sync_topic.clone());
