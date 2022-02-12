@@ -172,13 +172,10 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), Stor
     Ok(())
 }
 
-
-
 #[derive(Debug, StructOpt)]
 pub(crate) struct ReplicaOpt {
     #[structopt(parse(from_os_str))]
     dir_name: PathBuf,
-
 
     #[structopt(long)]
     skip_errors: bool,
@@ -195,7 +192,7 @@ pub(crate) async fn validate_replica(opt: ReplicaOpt) -> Result<(), StorageError
         .build()
         .shared();
 
-        
+    /*
     let mut active_segment = MutableSegment::open_for_write(opt.base_offset, option)
         .await
         .expect("failed to open segment");
@@ -213,7 +210,7 @@ pub(crate) async fn validate_replica(opt: ReplicaOpt) -> Result<(), StorageError
     let duration = start.elapsed().as_secs_f32();
 
     println!("completed, last offset = {last_offset}, took: {duration} seconds");
+    */
 
     Ok(())
 }
-
