@@ -46,7 +46,12 @@ impl LogsManagedConnectorOpt {
                 vec!["logs", pod]
             };
             Command::new("kubectl").args(args).spawn()?.wait()?;
+            Ok(())
+        } else {
+            Err(CliError::InvalidArg(format!(
+                "Connector {} does not exist",
+                self.name
+            )))
         }
-        Ok(())
     }
 }
