@@ -25,9 +25,16 @@ pub struct LogsManagedConnectorOpt {
 impl LogsManagedConnectorOpt {
     pub async fn process(self) -> Result<(), CliError> {
         let pods = Command::new("kubectl")
-            .args(["get", "pods", "-o=jsonpath='{.items[*].metadata.name}"])
+            .args([
+                "get",
+                "pods",
+                "--selector",
+                "app=fluvio-connector",
+                "-o=jsonpath={.items[*].metadata.name}",
+            ])
             .output()?
             .stdout;
+
         let pods = String::from_utf8_lossy(&pods);
         let pod = pods.split(' ').find(|pod| pod.starts_with(&self.name));
 
