@@ -37,7 +37,7 @@ pub struct MutLogIndex {
     base_offset: Offset,         // base offset of segment
     accumulated_batch_len: Size, // accumulated batches len
     last_offset_delta: Size,
-    first_empty_slot: Size,           // track of the current write slot
+    first_empty_slot: Size, // track of the current write slot
     option: Arc<SharedReplicaConfig>,
     max_index_interval: Size,
     ptr: *mut c_void,
@@ -164,7 +164,7 @@ impl MutLogIndex {
     /// find empty slot
     fn find_first_empty_index(&self) -> Result<u32, IoError> {
         let entries = self.entries();
-        trace!(entries,"total entries");
+        trace!(entries, "total entries");
 
         for i in 0..entries {
             if self[i as usize].position() == 0 {
@@ -289,8 +289,6 @@ mod tests {
     use crate::index::Index;
     use crate::fixture::default_option;
 
-    
-
     #[fluvio_future::test]
     async fn test_index_simple_write() {
         const BASE_OFFSET: Offset = 0;
@@ -379,8 +377,6 @@ mod tests {
         assert_eq!(index_sink.first_empty_slot, 2);
     }
 
-   
-
     #[fluvio_future::test]
     async fn test_index_shrink() {
         const TEST_FILE2: &str = "00000000000000000122.index";
@@ -399,7 +395,6 @@ mod tests {
         assert_eq!(m.len(), 8);
     }
 
-    
     #[fluvio_future::test]
     async fn test_mut_index_findoffset() {
         const TEST_FILE3: &str = "00000000000000000123.index";
