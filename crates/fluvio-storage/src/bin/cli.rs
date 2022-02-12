@@ -10,11 +10,12 @@ use fluvio_storage::{
     segment::{MutableSegment},
     config::{ReplicaConfig},
 };
+use fluvio_storage::records::FileRecords;
 
 ///
 /// Bunch of storage utilities:
 ///
-/// validation: `cargo run --release --bin storage-cli --features=cli validate  ~/.fluvio/data/spu-logs-5001/longevity-0 `
+/// validation: `cargo run --bin storage-cli --features=cli --release validate ~/.fluvio/data/spu-logs-5001/longevity-0 --skip-errors=false `
 #[derive(Debug, StructOpt)]
 #[structopt(name = "storage", about = "Flavio Storage CLI")]
 enum Main {
@@ -24,7 +25,7 @@ enum Main {
     #[structopt(name = "index")]
     Index(IndexOpt),
 
-    #[structopt(name = "validate_segment")]
+    #[structopt(name = "validate")]
     ValidateSegment(SegmentValidateOpt),
 }
 
@@ -157,7 +158,7 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), Stor
 
     println!(
         "performing validation on segment: {:#?}",
-        file_path.display()
+        active_segment.get_msg_log().get_path()
     );
 
     let start = std::time::Instant::now();
@@ -168,49 +169,6 @@ pub(crate) async fn validate_segment(opt: SegmentValidateOpt) -> Result<(), Stor
     let duration = start.elapsed().as_secs_f32();
 
     println!("completed, last offset = {last_offset}, took: {duration} seconds");
-
-    Ok(())
-}
-
-#[derive(Debug, StructOpt)]
-pub(crate) struct ReplicaOpt {
-    #[structopt(parse(from_os_str))]
-    dir_name: PathBuf,
-
-    #[structopt(long)]
-    skip_errors: bool,
-
-    #[structopt(long)]
-    verbose: bool,
-}
-
-pub(crate) async fn validate_replica(opt: ReplicaOpt) -> Result<(), StorageError> {
-    let dir_name = opt.dir_name;
-
-    let option = ReplicaConfig::builder()
-        .base_dir(dir_name.clone())
-        .build()
-        .shared();
-
-    /*
-    let mut active_segment = MutableSegment::open_for_write(opt.base_offset, option)
-        .await
-        .expect("failed to open segment");
-
-    println!(
-        "performing validation on segment: {:#?}",
-        file_path.display()
-    );
-
-    let start = std::time::Instant::now();
-    let last_offset = active_segment
-        .validate(opt.skip_errors, opt.verbose)
-        .await?;
-
-    let duration = start.elapsed().as_secs_f32();
-
-    println!("completed, last offset = {last_offset}, took: {duration} seconds");
-    */
 
     Ok(())
 }

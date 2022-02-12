@@ -75,6 +75,10 @@ where
         &self.index
     }
 
+    pub fn get_msg_log(&self) -> &L {
+        &self.msg_log
+    }
+
     pub async fn open_batch_header_stream(
         &self,
         start_pos: Size,

@@ -2,7 +2,7 @@ pub mod batch;
 pub mod batch_header;
 mod checkpoint;
 mod error;
-mod records;
+pub mod records;
 mod index;
 mod mut_records;
 mod mut_index;
