@@ -170,7 +170,8 @@ mod tests {
         );
     }
 
-    #[fluvio_future::test]
+    //#[fluvio_future::test]
+    #[allow(unused)]
     async fn test_find_position() {
         let mut header_stream = BatchHeaderStream::open("/tmp/bad_header.log")
             .await

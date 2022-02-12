@@ -196,9 +196,9 @@ pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usi
     let first_entry = offsets[0].to_be();
     if offset < first_entry.offset() {
         trace!(
-            "offset: {} is less than: first: {}",
             offset,
-            first_entry.offset()
+            first = first_entry.offset(),
+            "offset is less than: first",
         );
         return None;
     }
