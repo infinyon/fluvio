@@ -119,7 +119,6 @@ impl FluvioService for PublicService {
                             shared_sink,
                             "UpdateOffsetsRequest"
                         ),
-                        SpuServerRequest::DiagnosticsRequest(_) => todo!(),
                     }
                 }
                 Some(Err(e)) => {

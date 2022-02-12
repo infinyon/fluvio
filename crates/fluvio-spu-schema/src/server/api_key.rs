@@ -20,7 +20,6 @@ pub enum SpuServerApiKey {
     FetchOffsets = 1002,
     StreamFetch = 1003,
     UpdateOffsets = 1005,
-    Diagnostics = 2000,
 }
 
 impl Default for SpuServerApiKey {
