@@ -380,3 +380,32 @@ pub fn is_fluvio_bin_in_std_dir(fluvio_bin: &Path) -> bool {
     // Verify if fluvio_bin is in the same directory as {home_dir/CLI_CONFIG_PATH}
     fluvio_bin.starts_with(fluvio_home_dir)
 }
+
+/// Determine if provided channel name is a pinned version channel
+pub fn is_pinned_version_channel(channel_name: &str) -> bool {
+    match channel_name {
+        "stable" | "latest" | "dev" => false,
+        _ => true,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+
+    #[test]
+    fn test_is_pinned_version_channel() {
+        let test_cases = [
+            ("stable", false),
+            ("latest", false),
+            ("dev", false),
+            ("X.Y.Z", true),
+            ("f.l.u.v.i.o", true),
+        ];
+
+        for case in test_cases {
+            assert_eq!(is_pinned_version_channel(case.0), case.1);
+        }
+    }
+}

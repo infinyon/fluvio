@@ -21,6 +21,7 @@ path = "src/lib.rs"
 default = ["fluvio-future", "fluvio-types"]
 
 [dependencies]
+colored = "2"
 color-eyre = { version = "0.5.5", default-features = false }
 structopt = { version = "0.3.16", default-features = false }
 tracing = "0.1.19"
