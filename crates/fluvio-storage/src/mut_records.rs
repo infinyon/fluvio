@@ -176,7 +176,7 @@ impl MutFileRecords {
 
             Ok((true, batch_len, self.len))
         } else {
-            debug!(self.len, buffer_len = buffer.len(), "no more room to add");
+            debug!(self.len, batch_len, "no more room to add");
             Ok((false, batch_len, self.len))
         }
     }
