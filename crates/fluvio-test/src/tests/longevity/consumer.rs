@@ -8,6 +8,7 @@ use fluvio_test_util::test_runner::test_driver::TestDriver;
 use fluvio_test_util::test_meta::environment::EnvDetail;
 use fluvio::Offset;
 use fluvio_future::timer::sleep;
+use tracing::info;
 
 use super::LongevityTestCase;
 use crate::tests::TestRecord;
@@ -30,6 +31,8 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
     let mut records_recvd = 0;
 
     let start_consume = SystemTime::now();
+    let mut last_receive = SystemTime::now();
+    info!(consumer_id, "Starting consumer");
 
     'consumer_loop: loop {
         select! {
@@ -77,20 +80,23 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
 
                         if let Err(err) = result {
                             let elapsed_time = start_consume.elapsed().unwrap().as_secs();
+                            let poll_elapsed_time = last_receive.elapsed().unwrap().as_secs();
                             println!(
-                                    "[consumer-{consumer_id}] record: {records_recvd} offset: {}, elapsed: {elapsed_time}  seconds",
+                                    "[consumer-{consumer_id}] record: {records_recvd} offset: {}, elapsed: {elapsed_time}  seconds, poll elapsed: {poll_elapsed_time} seconds",
                                     record_raw.offset(),
                                 );
 
                             panic!("Consumer {consumer_id} failed to consume record: {:?}", err);
+                        } else {
+                            last_receive = SystemTime::now();
                         }
 
 
-                    //    let elapsed_time = now.elapsed().unwrap().as_secs();
-
                     } else {
                         let elapsed_time = start_consume.elapsed().unwrap().as_secs();
-                        panic!("{}",format!("Stream ended unexpectedly, consumer: {consumer_id}, records received: {records_recvd}, seconds: {elapsed_time}"));
+                        let poll_elapsed_time = last_receive.elapsed().unwrap().as_secs();
+                        info!(consumer_id,records_recvd,"stream ended");
+                        panic!("{}",format!("Stream ended unexpectedly, consumer: {consumer_id}, records received: {records_recvd}, seconds: {elapsed_time}, poll elapsed: {poll_elapsed_time} seconds"));
                     }
                 }
         }
