@@ -21,6 +21,8 @@ pub enum StorageError {
     SendFile(#[from] SendFileError),
     #[error("Batch exceeded maximum bytes: {0}")]
     BatchTooBig(usize),
+    #[error("Batch is empty")]
+    EmptyBatch,
 }
 
 impl From<BoundedFileSinkError> for StorageError {

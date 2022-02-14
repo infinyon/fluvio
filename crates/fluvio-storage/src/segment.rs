@@ -19,7 +19,6 @@ use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
 use crate::config::{SharedReplicaConfig};
-use crate::validator::LogValidationError;
 use crate::{StorageError};
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
@@ -48,7 +47,7 @@ impl<I, L> fmt::Debug for Segment<I, L> {
 }
 
 impl<I, L> Segment<I, L> {
-    /// end offset, this always starts at 0 which indicates empty records
+    /// end offset, this always starts as baseoffset which indicates empty records
     pub fn get_end_offset(&self) -> Offset {
         self.end_offset
     }
@@ -375,21 +374,25 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// 3. Write batch location to index
     #[instrument(skip(batch))]
     pub async fn append_batch(&mut self, batch: &mut Batch) -> Result<bool, StorageError> {
-        // fill in the base offset using current offset if record's batch offset is 0
-        // ensure batch is not already recorded
-        if batch.base_offset == 0 {
-            batch.set_base_offset(self.end_offset);
-        } else if batch.base_offset < self.end_offset {
-            return Err(StorageError::LogValidation(
-                LogValidationError::ExistingBatch,
-            ));
+        // adjust base offset and offset delta
+        // reject if batch len is 0
+        if batch.records().is_empty() {
+            return Err(StorageError::EmptyBatch);
         }
+
+        batch.set_base_offset(self.end_offset);
+        batch.update_offset_deltas();
+
+        let next_end_offset = batch.get_last_offset();
 
         // relative offset of the batch to segment
         let relative_offset_in_segment = (self.end_offset - self.base_offset) as i32;
-        debug!(
+        info!(
             base_offset = batch.get_base_offset(),
-            relative_offset_in_segment, "batch"
+            current_end_offset = self.end_offset,
+            next_end_offset,
+            relative_offset_in_segment,
+            "writing batch",
         );
 
         let file_pos = self.msg_log.get_pos();
@@ -403,10 +406,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
                     batch_len as u32,
                 )
                 .await?;
-
-            let last_offset_delta = self.msg_log.get_item_last_offset_delta();
-            trace!("flushing: last offset delta: {}", last_offset_delta);
-            self.end_offset = self.end_offset + last_offset_delta as Offset + 1;
+            self.end_offset = next_end_offset + 1;
             debug!(end_offset = self.end_offset, "updated leo");
             Ok(true)
         } else {
@@ -630,13 +630,18 @@ mod tests {
         assert_eq!(offset_pos3.get_pos(), 158);
         assert_eq!(offset_pos3.len(), 67);
 
-        // test whether you can send batch with non zero base offset
+        // test whether you can send batch with zero
+        assert_eq!(seg_sink.get_end_offset(), 46);
         let mut next_batch = create_batch();
-        next_batch.base_offset = 46;
+        next_batch.base_offset = 0;
         assert!(seg_sink.append_batch(&mut next_batch).await.is_ok());
+        assert_eq!(seg_sink.get_end_offset(), 48);
 
-        let mut fail_batch = create_batch();
-        fail_batch.base_offset = 45;
-        assert!(seg_sink.append_batch(&mut fail_batch).await.is_err());
+        // test batch with other base offset
+        let mut next_batch = create_batch();
+        next_batch.base_offset = 1000;
+        assert!(seg_sink.append_batch(&mut next_batch).await.is_ok());
+        assert_eq!(seg_sink.get_end_offset(), 50);
+     
     }
 }

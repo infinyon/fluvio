@@ -112,7 +112,7 @@ where
 
         let remainder = batch_position.len() as usize - BATCH_HEADER_SIZE as usize;
         trace!(
-            last_offset = batch_position.get_batch().get_last_offset_delta(),
+            last_offset = batch_position.get_batch().get_last_offset(),
             remainder,
             pos,
             "decoding header",

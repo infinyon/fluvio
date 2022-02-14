@@ -38,11 +38,12 @@ pub enum LogValidationError {
     #[error("Empty file: {0}")]
     Empty(i64),
 
-    #[error("Invalid Index: {offset} pos: {pos} offset: {index_position}")]
+    #[error("Invalid Index: {offset} pos: {batch_file_pos} offset: {index_position}")]
     InvalidIndex {
         offset: Offset,
-        pos: u32,
+        batch_file_pos: u32,
         index_position: u32,
+        diff_position: u32,
     },
 }
 
@@ -157,8 +158,9 @@ where
                             if !skip_errors {
                                 return Err(LogValidationError::InvalidIndex {
                                     offset: batch_offset,
-                                    pos: batch_pos.get_pos(),
+                                    batch_file_pos: batch_pos.get_pos(),
                                     index_position: index_pos,
+                                    diff_position: index_pos - batch_pos.get_pos(),
                                 });
                             }
                         } else {

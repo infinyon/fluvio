@@ -41,7 +41,6 @@ pub const MESSAGE_LOG_EXTENSION: &str = "log";
 /// Can append new batch to file
 pub struct MutFileRecords {
     base_offset: Offset,
-    last_offset_delta: Size,
     file: File,
     len: u32,
     max_len: u32,
@@ -97,7 +96,6 @@ impl MutFileRecords {
             _flush_policy: get_flush_policy_from_config(&option),
             write_count: 0,
             flush_count: Arc::new(AtomicU32::new(0)),
-            last_offset_delta: 0,
             path: log_path.to_owned(),
             _flush_time_tx: None,
         })
@@ -122,20 +120,15 @@ impl MutFileRecords {
         self.len
     }
 
-    pub fn get_item_last_offset_delta(&self) -> Size {
-        self.last_offset_delta
-    }
-
     /// try to write batch
     /// if there is enough room, return true, false otherwise
-    #[instrument(skip(self,batch),fields(pos=self.get_pos(),last_offset=self.last_offset_delta))]
+    #[instrument(skip(self,batch),fields(pos=self.get_pos()))]
     pub async fn write_batch(&mut self, batch: &Batch) -> Result<(bool, usize), StorageError> {
         trace!("start sending using batch {:#?}", batch.get_header());
         if batch.base_offset < self.base_offset {
             return Err(StorageError::LogValidation(LogValidationError::BaseOff));
         }
 
-        self.last_offset_delta = batch.get_last_offset_delta();
         let batch_len = batch.write_size(0);
 
         debug!(batch_len, "writing batch of size",);

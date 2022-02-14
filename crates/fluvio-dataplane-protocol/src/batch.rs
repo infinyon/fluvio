@@ -88,12 +88,17 @@ impl<R> Batch<R> {
     }
 
     pub fn get_last_offset(&self) -> Offset {
-        self.get_base_offset() + self.get_last_offset_delta() as Offset
+        self.get_base_offset() + self.last_offset_delta() as Offset
     }
 
     /// get last offset delta
+    #[deprecated(since = "0.9.2", note = "use last_offset_delta instead")]
     pub fn get_last_offset_delta(&self) -> Size {
         self.get_header().last_offset_delta as Size
+    }
+
+    pub fn last_offset_delta(&self) -> i32 {
+        self.get_header().last_offset_delta
     }
 
     /// decode from buf stored in the file
@@ -127,15 +132,21 @@ impl Batch {
     }
 
     /// add new record, this will update the offset to correct
-    pub fn add_record(&mut self, mut record: Record) {
-        let last_offset_delta = if self.records.is_empty() {
-            0
-        } else {
-            self.records.len() as Offset
-        };
-        record.preamble.set_offset_delta(last_offset_delta);
-        self.header.last_offset_delta = last_offset_delta as i32;
-        self.records.push(record)
+    pub fn add_record(&mut self, record: Record) {
+        self.add_records(&mut vec![record]);
+    }
+
+    pub fn add_records(&mut self, records: &mut Vec<Record>) {
+        self.records.append(records);
+        self.update_offset_deltas();
+    }
+
+    /// adjust offset delta in the records and header
+    pub fn update_offset_deltas(&mut self) {
+        for (index, record) in self.records.iter_mut().enumerate() {
+            record.preamble.set_offset_delta(index as Offset);
+        }
+        self.header.last_offset_delta = self.records.len() as i32 - 1;
     }
 
     /// computed last offset which is base offset + number of records
@@ -244,7 +255,7 @@ impl Default for BatchHeader {
             magic: 2,
             crc: 0,
             attributes: 0,
-            last_offset_delta: 0,
+            last_offset_delta: -1,
             first_timestamp: 0,
             max_time_stamp: 0,
             producer_id: -1,
@@ -304,7 +315,7 @@ mod test {
 
         let decoded_record = batch.records.get(0).unwrap();
         println!("record crc: {}", batch.header.crc);
-        assert_eq!(batch.header.crc, 843514105);
+        assert_eq!(batch.header.crc, 1430948200);
         let b = decoded_record.value.as_ref();
         assert_eq!(b, b"test");
         assert!(batch.validate_decoding());
@@ -332,16 +343,23 @@ mod test {
     #[test]
     fn test_records_offset() {
         let mut batch = Batch::<MemoryRecords>::default();
-        assert_eq!(batch.get_last_offset_delta(), 0);
+        assert_eq!(batch.get_base_offset(), 0);
+
+        assert_eq!(batch.last_offset_delta(), -1);
+        // last offset is -1 because there are no records in the batch
+        assert_eq!(batch.get_last_offset(), -1);
 
         batch.add_record(Record::default());
-        assert_eq!(batch.get_last_offset_delta(), 0);
+        assert_eq!(batch.last_offset_delta(), 0);
+        assert_eq!(batch.get_last_offset(), 0);
 
         batch.add_record(Record::default());
-        assert_eq!(batch.get_last_offset_delta(), 1);
+        assert_eq!(batch.last_offset_delta(), 1);
+        assert_eq!(batch.get_last_offset(), 1);
 
         batch.add_record(Record::default());
-        assert_eq!(batch.get_last_offset_delta(), 2);
+        assert_eq!(batch.last_offset_delta(), 2);
+        assert_eq!(batch.get_last_offset(), 2);
 
         assert_eq!(
             batch
@@ -367,7 +385,6 @@ mod test {
                 .get_offset_delta(),
             2
         );
-        assert_eq!(batch.get_last_offset_delta(), 2);
     }
 
     #[test]
@@ -399,6 +416,6 @@ mod test {
             )
         }
 
-        assert_eq!(batch_created.get_last_offset_delta(), 2);
+        assert_eq!(batch_created.last_offset_delta(), 2);
     }
 }

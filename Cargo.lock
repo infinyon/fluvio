@@ -1860,6 +1860,7 @@ dependencies = [
  "crc32c",
  "derive_builder",
  "eyre",
+ "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol",
  "fluvio-socket",
