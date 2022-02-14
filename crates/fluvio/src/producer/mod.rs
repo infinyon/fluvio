@@ -37,7 +37,7 @@ pub use self::error::ProducerError;
 use self::event::EventHandler;
 pub use self::output::ProduceOutput;
 use self::partition_producer::PartitionProducer;
-pub use self::record::FutureRecordMetadata;
+pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
 use crate::error::Result;
 
@@ -309,6 +309,17 @@ impl TopicProducer {
         })
     }
 
+    /// Send all the queued records in the producer batches.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// # use fluvio::{TopicProducer, FluvioError};
+    /// # async fn example(producer: &TopicProducer) -> Result<(), FluvioError> {
+    /// producer.send("Key", "Value").await?;
+    /// producer.flush().await?;
+    /// # Ok(())
+    /// # }
     pub async fn flush(&self) -> Result<(), FluvioError> {
         self.inner.flush().await
     }
@@ -316,6 +327,10 @@ impl TopicProducer {
     /// Sends a key/value record to this producer's Topic.
     ///
     /// The partition that the record will be sent to is derived from the Key.
+    ///
+    ///  Depending on the producer configuration, a `send` call will not send immediately
+    ///  the record to the SPU. Instead, it could add the record to a batch.
+    ///  `TopicProducer::flush` is used to immediately send all the queued records in the producer batches.
     ///
     /// # Example
     ///
