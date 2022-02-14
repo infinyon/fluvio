@@ -1,4 +1,5 @@
 use std::io::Error as IoError;
+use std::io::Write;
 use std::os::unix::prelude::AsRawFd;
 use std::os::unix::prelude::FromRawFd;
 use std::path::PathBuf;
@@ -123,7 +124,7 @@ impl MutFileRecords {
     /// try to write batch
     /// if there is enough room, return true, false otherwise
     #[instrument(skip(self,batch),fields(pos=self.get_pos()))]
-    pub async fn write_batch(&mut self, batch: &Batch) -> Result<(bool, usize), StorageError> {
+    pub async fn write_batch(&mut self, batch: &Batch) -> Result<(bool, usize, u32), StorageError> {
         trace!("start sending using batch {:#?}", batch.get_header());
         if batch.base_offset < self.base_offset {
             return Err(StorageError::LogValidation(LogValidationError::BaseOff));
@@ -138,7 +139,10 @@ impl MutFileRecords {
         assert_eq!(buffer.len(), batch_len);
 
         if (batch_len as u32 + self.len) <= self.max_len {
-            self.file.write_all(&buffer).await?;
+            let raw_fd = self.file.as_raw_fd();
+            let mut std_file = unsafe { std::fs::File::from_raw_fd(raw_fd) };
+            std_file.write_all(&buffer)?;
+            std::mem::forget(std_file);
             self.len += batch_len as u32;
             debug!(pos = self.get_pos(), "update pos",);
             self.write_count = self.write_count.saturating_add(1);
@@ -170,10 +174,10 @@ impl MutFileRecords {
             }
             */
 
-            Ok((true, batch_len))
+            Ok((true, batch_len, self.len))
         } else {
             debug!(self.len, buffer_len = buffer.len(), "no more room to add");
-            Ok((false, batch_len))
+            Ok((false, batch_len, self.len))
         }
     }
 
@@ -420,7 +424,6 @@ mod tests {
         assert!(msg_sink.write_batch(&wrong_builder.batch()).await.is_err());
     }
 
-    #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_every() {
         const BASE_OFFSET: Offset = 100;

@@ -387,22 +387,24 @@ impl Segment<MutLogIndex, MutFileRecords> {
 
         // relative offset of the batch to segment
         let relative_offset_in_segment = (self.end_offset - self.base_offset) as i32;
+        let start_file_pos = self.msg_log.get_pos();
         info!(
             base_offset = batch.get_base_offset(),
             current_end_offset = self.end_offset,
             next_end_offset,
             relative_offset_in_segment,
+            start_file_pos,
             "writing batch",
         );
 
-        let file_pos = self.msg_log.get_pos();
-
-        let (write_success, batch_len) = self.msg_log.write_batch(batch).await?;
+    
+        let (write_success, batch_len,end_file_pos) = self.msg_log.write_batch(batch).await?;
+        info!(write_success,batch_len,end_file_pos,next_end_offset,"batch written");
         if write_success {
             self.index
                 .write_index(
                     relative_offset_in_segment as u32,
-                    file_pos,
+                    start_file_pos,
                     batch_len as u32,
                 )
                 .await?;
