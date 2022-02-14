@@ -131,18 +131,18 @@ impl MutFileRecords {
         }
 
         let batch_len = batch.write_size(0);
-
         debug!(batch_len, "writing batch of size",);
 
-        let mut buffer: Vec<u8> = Vec::with_capacity(batch_len);
-        batch.encode(&mut buffer, 0)?;
-        assert_eq!(buffer.len(), batch_len);
-
         if (batch_len as u32 + self.len) <= self.max_len {
+            let mut buffer: Vec<u8> = Vec::with_capacity(batch_len);
+            batch.encode(&mut buffer, 0)?;
+            assert_eq!(buffer.len(), batch_len);
+
             let raw_fd = self.file.as_raw_fd();
             let mut std_file = unsafe { std::fs::File::from_raw_fd(raw_fd) };
             std_file.write_all(&buffer)?;
             std::mem::forget(std_file);
+
             self.len += batch_len as u32;
             debug!(pos = self.get_pos(), "update pos",);
             self.write_count = self.write_count.saturating_add(1);

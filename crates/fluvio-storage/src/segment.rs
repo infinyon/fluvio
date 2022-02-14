@@ -397,9 +397,11 @@ impl Segment<MutLogIndex, MutFileRecords> {
             "writing batch",
         );
 
-    
-        let (write_success, batch_len,end_file_pos) = self.msg_log.write_batch(batch).await?;
-        info!(write_success,batch_len,end_file_pos,next_end_offset,"batch written");
+        let (write_success, batch_len, end_file_pos) = self.msg_log.write_batch(batch).await?;
+        info!(
+            write_success,
+            batch_len, end_file_pos, next_end_offset, "batch written"
+        );
         if write_success {
             self.index
                 .write_index(
@@ -644,6 +646,5 @@ mod tests {
         next_batch.base_offset = 1000;
         assert!(seg_sink.append_batch(&mut next_batch).await.is_ok());
         assert_eq!(seg_sink.get_end_offset(), 50);
-     
     }
 }
