@@ -388,7 +388,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         // relative offset of the batch to segment
         let relative_offset_in_segment = (self.end_offset - self.base_offset) as i32;
         let start_file_pos = self.msg_log.get_pos();
-        info!(
+        debug!(
             base_offset = batch.get_base_offset(),
             current_end_offset = self.end_offset,
             next_end_offset,
