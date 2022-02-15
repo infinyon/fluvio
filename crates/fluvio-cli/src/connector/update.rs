@@ -37,7 +37,7 @@ impl UpdateManagedConnectorOpt {
         let spec: ManagedConnectorSpec = config.clone().into();
         let name = spec.name.clone();
 
-        debug!(connector_name = %name, connector_spec = >spec "updating managed_connector");
+        debug!(connector_name = %name, connector_spec = ?spec "updating managed_connector");
 
         let admin = fluvio.admin().await;
 
