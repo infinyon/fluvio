@@ -24,6 +24,13 @@ teardown_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$CONNECTOR_TOPIC"
 }
 
+# Update non-existing connector - Negative test
+@test "Update non-existing test connector" {
+    run timeout 15s "$FLUVIO_BIN" connector update --config "$CONNECTOR_CONFIG"
+    assert_failure
+    assert_output --partial "Invalid connector"
+}
+
 # Create connector
 @test "Create test connector" {
     run timeout 15s "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
@@ -35,6 +42,12 @@ teardown_file() {
     run timeout 15s "$FLUVIO_BIN" connector create --config "$CONNECTOR_CONFIG"
     assert_failure
     assert_output --partial "Connector already exists"
+}
+
+# Update existing connector
+@test "Update existing test connector" {
+    run timeout 15s "$FLUVIO_BIN" connector update --config "$CONNECTOR_CONFIG"
+    assert_success
 }
 
 # Create connector w/ invalid config - Negative test
