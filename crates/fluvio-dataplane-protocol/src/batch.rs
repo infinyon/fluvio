@@ -341,7 +341,7 @@ mod test {
     */
 
     #[test]
-    fn test_records_offset() {
+    fn test_batch_offset_delta() {
         let mut batch = Batch::<MemoryRecords>::default();
         assert_eq!(batch.get_base_offset(), 0);
 
@@ -360,6 +360,96 @@ mod test {
         batch.add_record(Record::default());
         assert_eq!(batch.last_offset_delta(), 2);
         assert_eq!(batch.get_last_offset(), 2);
+
+        assert_eq!(
+            batch
+                .records
+                .get(0)
+                .expect("index 0 should exists")
+                .get_offset_delta(),
+            0
+        );
+        assert_eq!(
+            batch
+                .records
+                .get(1)
+                .expect("index 1 should exists")
+                .get_offset_delta(),
+            1
+        );
+        assert_eq!(
+            batch
+                .records
+                .get(2)
+                .expect("index 2 should exists")
+                .get_offset_delta(),
+            2
+        );
+    }
+
+    #[test]
+    fn test_batch_offset_diff_base() {
+        let mut batch = Batch::<MemoryRecords>::default();
+        batch.set_base_offset(1000);
+        assert_eq!(batch.get_base_offset(), 1000);
+
+        assert_eq!(batch.last_offset_delta(), -1);
+        // last offset is -1 because there are no records in the batch
+        assert_eq!(batch.get_last_offset(), 999);
+
+        batch.add_record(Record::default());
+        assert_eq!(batch.last_offset_delta(), 0);
+        assert_eq!(batch.get_last_offset(), 1000);
+
+        batch.add_record(Record::default());
+        assert_eq!(batch.last_offset_delta(), 1);
+        assert_eq!(batch.get_last_offset(), 1001);
+
+        batch.add_record(Record::default());
+        assert_eq!(batch.last_offset_delta(), 2);
+        assert_eq!(batch.get_last_offset(), 1002);
+
+        assert_eq!(
+            batch
+                .records
+                .get(0)
+                .expect("index 0 should exists")
+                .get_offset_delta(),
+            0
+        );
+        assert_eq!(
+            batch
+                .records
+                .get(1)
+                .expect("index 1 should exists")
+                .get_offset_delta(),
+            1
+        );
+        assert_eq!(
+            batch
+                .records
+                .get(2)
+                .expect("index 2 should exists")
+                .get_offset_delta(),
+            2
+        );
+    }
+
+    #[test]
+    fn test_records_offset_delta() {
+        let mut batch = Batch::<MemoryRecords>::default();
+        batch.set_base_offset(2000);
+        assert_eq!(batch.get_base_offset(), 2000);
+
+        // add records directly
+        batch.records.append(&mut vec![
+            Record::default(),
+            Record::default(),
+            Record::default(),
+        ]);
+        batch.update_offset_deltas();
+        assert_eq!(batch.last_offset_delta(), 2);
+        assert_eq!(batch.get_last_offset(), 2002);
 
         assert_eq!(
             batch
