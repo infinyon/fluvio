@@ -360,7 +360,7 @@ where
                         let fetch_last_value = listener.listen().await;
                         debug!(fetch_last_value, stream_id, "received end fetch");
                         if fetch_last_value < 0 {
-                            debug!("fetch last is end, terminating");
+                            info!("fetch last is end, terminating");
                             break;
                         } else {
                             debug!(

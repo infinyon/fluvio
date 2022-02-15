@@ -29,38 +29,51 @@ const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 pub const EXTENSION: &str = "index";
 
 pub trait Index {
+    /// Find Offset position in the index
+    /// This will find index entry with least and min offset.
+    /// For example, if we have index entries:
+    /// 0: [30,100]    // offset: 30, position: 100
+    /// 1: [100,2000] // offset: 100, position: 2000
+    /// 2: [300,4000] // offset: 300, position: 4000
+    /// 3: [500,6000] // offset: 500, position: 6000
+    ///
+    /// find_offset(50) will return Some((4,100))
+    /// find_offset(1000) will return Some((500,6000))
+    /// find_offset(10) will return None
     fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)>;
 
     fn len(&self) -> Size;
+
+    /// number of entries in the index
     fn entries(&self) -> Size {
         self.len() / INDEX_ENTRY_SIZE
     }
 }
 
 pub trait OffsetPosition: Sized {
-    /// convert to be endian
-    #[allow(clippy::wrong_self_convention)]
+    /// convert to big endian format, this must be performed before send out to caller
     fn to_be(self) -> Self;
 
+    /// offset
     fn offset(&self) -> Size;
 
+    /// file position
     fn position(&self) -> Size;
 }
 
 impl OffsetPosition for (Size, Size) {
     fn to_be(self) -> Self {
-        let (offset, pos) = self;
-        (offset.to_be(), pos.to_be())
+        (self.0.to_be(), self.1.to_be())
     }
 
     #[inline(always)]
     fn offset(&self) -> Size {
-        self.0.to_be()
+        self.0
     }
 
     #[inline(always)]
     fn position(&self) -> Size {
-        self.1.to_be()
+        self.1
     }
 }
 
@@ -161,7 +174,7 @@ impl LogIndex {
 
 impl Index for LogIndex {
     fn find_offset(&self, offset: Size) -> Option<(Size, Size)> {
-        lookup_entry(self, offset).map(|idx| self[idx])
+        lookup_entry(self, offset).map(|idx| self[idx].to_be())
     }
 
     fn len(&self) -> Size {
@@ -178,19 +191,19 @@ impl Deref for LogIndex {
     }
 }
 
-/// find the index of the offset that matches
+/// perform binary search given
 pub(crate) fn lookup_entry(offsets: &[(Size, Size)], offset: Size) -> Option<usize> {
-    let first_entry = offsets[0];
+    let first_entry = offsets[0].to_be();
     if offset < first_entry.offset() {
         trace!(
-            "offset: {} is less than: first: {}",
             offset,
-            first_entry.offset()
+            first = first_entry.offset(),
+            "offset is less than: first",
         );
         return None;
     }
 
-    match offsets.binary_search_by(|entry| entry.offset().cmp(&offset)) {
+    match offsets.binary_search_by(|entry| entry.offset().to_be().cmp(&offset)) {
         Ok(idx) => Some(idx),
         Err(idx) => Some(idx - 1),
     }
@@ -256,8 +269,8 @@ mod tests {
             .await
             .expect("create");
 
-        mut_index.write_index((5, 16, 70)).await.expect("send");
-        mut_index.write_index((10, 100, 70)).await.expect("send");
+        mut_index.write_index(5, 16, 70).await.expect("send");
+        mut_index.write_index(10, 100, 70).await.expect("send");
 
         mut_index.shrink().await.expect("shrink");
 

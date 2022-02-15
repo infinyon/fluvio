@@ -248,10 +248,10 @@ impl Decoder for RecordSet {
     where
         T: Buf,
     {
-        trace!("raw buffer len: {}", src.remaining());
+        trace!(len = src.remaining(), "raw buffer size");
         let mut len: i32 = 0;
         len.decode(src, version)?;
-        trace!("Record sets decoded content len: {}", len);
+        trace!(len, "Record sets decoded content");
 
         if src.remaining() < len as usize {
             return Err(Error::new(
@@ -268,11 +268,7 @@ impl Decoder for RecordSet {
 
         let mut count = 0;
         while buf.remaining() > 0 {
-            trace!(
-                "decoding batches: {}, remaining bytes: {}",
-                count,
-                buf.remaining()
-            );
+            trace!(count, remaining = buf.remaining(), "decoding batches");
             let mut batch = Batch::default();
             match batch.decode(&mut buf, version) {
                 Ok(_) => self.batches.push(batch),

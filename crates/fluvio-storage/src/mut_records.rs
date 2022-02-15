@@ -1,28 +1,29 @@
 use std::io::Error as IoError;
+use std::io::Write;
+use std::os::unix::prelude::AsRawFd;
+use std::os::unix::prelude::FromRawFd;
 use std::path::PathBuf;
 use std::path::Path;
 use std::fmt;
-use std::time::{Duration, Instant};
+use std::time::{Instant};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use async_lock::Mutex;
 
-use tracing::{debug, warn, trace};
+use fluvio_future::fs::File;
+use tracing::instrument;
+use tracing::{debug, trace};
 
 use futures_lite::io::AsyncWriteExt;
 use async_channel::Sender;
 
-use fluvio_future::timer;
-// use fluvio_future::fs::File;
 use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_future::fs::BoundedFileSink;
-use fluvio_future::fs::BoundedFileOption;
 use fluvio_future::fs::BoundedFileSinkError;
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size};
 use dataplane::core::Encoder;
 
 use crate::config::SharedReplicaConfig;
+use crate::mut_index::MutLogIndex;
 use crate::util::generate_file_name;
 use crate::validator::validate;
 use crate::validator::LogValidationError;
@@ -36,20 +37,19 @@ pub const MESSAGE_LOG_EXTENSION: &str = "log";
 // this is a delay put in because the scheduler switch
 // to the flush task is fast enough that it might beat
 // out waiting writes which should be preferred
-const DELAY_FLUSH_SIA_MSEC: u64 = 3;
+//const DELAY_FLUSH_SIA_MSEC: u64 = 3;
 
 /// Can append new batch to file
 pub struct MutFileRecords {
     base_offset: Offset,
-    item_last_offset_delta: Size,
-    f_sink: Arc<Mutex<BoundedFileSink>>,
-    f_slice_root: AsyncFileSlice,
-    cached_len: u64,
-    flush_policy: FlushPolicy,
+    file: File,
+    len: u32,
+    max_len: u32,
+    _flush_policy: FlushPolicy,
     write_count: u64,
     flush_count: Arc<AtomicU32>,
     path: PathBuf,
-    flush_time_tx: Option<Sender<Instant>>,
+    _flush_time_tx: Option<Sender<Instant>>,
 }
 
 impl fmt::Debug for MutFileRecords {
@@ -83,26 +83,22 @@ impl MutFileRecords {
         option: Arc<SharedReplicaConfig>,
     ) -> Result<MutFileRecords, BoundedFileSinkError> {
         let log_path = generate_file_name(&option.base_dir, base_offset, MESSAGE_LOG_EXTENSION);
-        let sink_option = BoundedFileOption {
-            max_len: Some(option.segment_max_bytes.get() as u64),
-        };
-        debug!(log_path = ?log_path, max_len = ?sink_option.max_len,"creating log at");
-
-        let f_sink = BoundedFileSink::open_append(&log_path, sink_option).await?;
-        debug!("file created");
-        let f_slice_root = f_sink.slice_from(0, 0)?;
-        let cached_len = f_sink.get_current_len();
+        let max_len = option.segment_max_bytes.get() as u32;
+        debug!(log_path = ?log_path, max_len = "creating log at");
+        let file = fluvio_future::fs::util::open_read_append(log_path.clone()).await?;
+        let metadata = file.metadata().await?;
+        let len = metadata.len() as u32;
+        debug!(len, "log created");
         Ok(MutFileRecords {
             base_offset,
-            f_sink: Arc::new(Mutex::new(f_sink)),
-            f_slice_root,
-            cached_len,
-            flush_policy: get_flush_policy_from_config(&option),
+            file,
+            len,
+            max_len,
+            _flush_policy: get_flush_policy_from_config(&option),
             write_count: 0,
             flush_count: Arc::new(AtomicU32::new(0)),
-            item_last_offset_delta: 0,
             path: log_path.to_owned(),
-            flush_time_tx: None,
+            _flush_time_tx: None,
         })
     }
 
@@ -110,49 +106,55 @@ impl MutFileRecords {
         self.base_offset
     }
 
-    pub async fn validate(&mut self) -> Result<Offset, LogValidationError> {
-        let f_sink = self.f_sink.lock().await;
-        validate(f_sink.get_path()).await
+    pub async fn validate(
+        &mut self,
+        index: &MutLogIndex,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<Offset, LogValidationError> {
+        validate(&self.path, Some(index), skip_errors, verbose).await
     }
 
     /// get current file position
+    #[inline(always)]
     pub fn get_pos(&self) -> Size {
-        if self.cached_len > u32::MAX.into() {
-            warn!(
-                "mutRecord position truncation {} -> {}",
-                self.cached_len, self.cached_len as Size
-            );
-        }
-        self.cached_len as Size
-    }
-
-    pub fn get_item_last_offset_delta(&self) -> Size {
-        self.item_last_offset_delta
+        self.len
     }
 
     /// try to write batch
     /// if there is enough room, return true, false otherwise
-    pub async fn write_batch(&mut self, item: &Batch) -> Result<bool, StorageError> {
-        trace!("start sending using batch {:#?}", item.get_header());
-        if item.base_offset < self.base_offset {
+    #[instrument(skip(self,batch),fields(pos=self.get_pos()))]
+    pub async fn write_batch(&mut self, batch: &Batch) -> Result<(bool, usize, u32), StorageError> {
+        trace!("start sending using batch {:#?}", batch.get_header());
+        if batch.base_offset < self.base_offset {
             return Err(StorageError::LogValidation(LogValidationError::BaseOff));
         }
 
-        self.item_last_offset_delta = item.get_last_offset_delta();
-        let len = item.write_size(0);
+        let batch_len = batch.write_size(0);
+        debug!(batch_len, "writing batch of size",);
 
-        debug!(len, pos = self.get_pos(), "writing batch of size",);
+        if (batch_len as u32 + self.len) <= self.max_len {
+            let mut buffer: Vec<u8> = Vec::with_capacity(batch_len);
+            batch.encode(&mut buffer, 0)?;
+            assert_eq!(buffer.len(), batch_len);
 
-        let mut buffer: Vec<u8> = Vec::with_capacity(len);
-        item.encode(&mut buffer, 0)?;
-        let mf_sink = self.f_sink.clone();
-        let mut f_sink = mf_sink.lock().await;
+            let raw_fd = self.file.as_raw_fd();
+            let mut std_file = unsafe { std::fs::File::from_raw_fd(raw_fd) };
+            std_file.write_all(&buffer)?;
+            std::mem::forget(std_file);
 
-        if f_sink.can_be_appended(buffer.len() as u64) {
-            f_sink.write_all(&buffer).await?;
-            self.cached_len = f_sink.get_current_len();
-            drop(f_sink); // unlock because flush may reaqire the lock
+            self.len += batch_len as u32;
+            debug!(pos = self.get_pos(), "update pos",);
             self.write_count = self.write_count.saturating_add(1);
+
+            self.flush().await?;
+            debug!(
+                flush_count = self.flush_count(),
+                write_count = self.write_count,
+                "Flushing Now"
+            );
+
+            /*
             match self.flush_policy.should_flush() {
                 FlushAction::NoFlush => {}
 
@@ -170,40 +172,43 @@ impl MutFileRecords {
                     self.delay_flush(delay_millis).await?;
                 }
             }
+            */
 
-            Ok(true)
+            Ok((true, batch_len, self.len))
         } else {
-            debug!(
-                len = f_sink.get_current_len(),
-                buffer_len = buffer.len(),
-                "no more room to add"
-            );
-            Ok(false)
+            debug!(self.len, batch_len, "no more room to add");
+            Ok((false, batch_len, self.len))
         }
     }
 
-    #[allow(unused)]
     pub async fn flush(&mut self) -> Result<(), IoError> {
         self.flush_count.fetch_add(1, Ordering::Relaxed);
-        let mut f_sink = self.f_sink.lock().await;
-        debug!("flush: count {:?}", self.flush_count);
-        f_sink.flush().await
+        self.file.flush().await?;
+        Ok(())
     }
 
     pub fn flush_count(&self) -> u32 {
         self.flush_count.load(Ordering::Relaxed)
     }
 
-    async fn delay_flush(&mut self, delay_millis: u32) -> Result<(), IoError> {
-        let delay_tgt = delay_millis as u64;
-        let mf_sink = self.f_sink.clone();
+    /*
+    async fn delay_flush(&mut self, _delay_millis: u32) -> Result<(), IoError> {
+        //let delay_tgt = delay_millis as u64;
 
         if self.flush_time_tx.is_none() {
             // no task running so start one
             let (tx, rx) = async_channel::bounded(100);
             self.flush_time_tx = Some(tx);
-            let delay_tgt = Duration::from_millis(delay_tgt);
+           // let delay_tgt = Duration::from_millis(delay_tgt);
             let flush_count = self.flush_count.clone();
+
+            if let Err(e) = self.file.flush().await {
+                warn!("flush error {}", e);
+            } else {
+                let fc = flush_count.fetch_add(1, Ordering::Relaxed);
+                debug!(fc,"flush");
+            }
+
 
             fluvio_future::task::spawn(async move {
                 let mut delay_dur = delay_tgt;
@@ -248,8 +253,7 @@ impl MutFileRecords {
                     timer::after(delay_dur).await;
 
                     debug!("delay flush: get lock");
-                    let mut f_sink = mf_sink.lock().await;
-                    if let Err(e) = f_sink.flush().await {
+                    if let Err(e) = self.file.flush().await {
                         warn!("flush error {}", e);
                     } else {
                         let fc = flush_count.fetch_add(1, Ordering::Relaxed);
@@ -258,7 +262,9 @@ impl MutFileRecords {
                 }
                 debug!("delay_flush task exited");
             });
+
         }
+
 
         // update running flush
         if let Some(flush_tx) = &self.flush_time_tx {
@@ -270,6 +276,7 @@ impl MutFileRecords {
         }
         Ok(())
     }
+    */
 }
 
 impl FileRecords for MutFileRecords {
@@ -299,16 +306,20 @@ impl FileRecords for MutFileRecords {
 
     fn as_file_slice(&self, start: Size) -> Result<AsyncFileSlice, IoError> {
         let reslice = AsyncFileSlice::new(
-            self.f_slice_root.fd(),
+            self.file.as_raw_fd(),
             start as u64,
-            self.cached_len - start as u64,
+            (self.len - start as u32) as u64,
         );
         Ok(reslice)
     }
 
     fn as_file_slice_from_to(&self, start: Size, len: Size) -> Result<AsyncFileSlice, IoError> {
-        let reslice = AsyncFileSlice::new(self.f_slice_root.fd(), start as u64, len as u64);
+        let reslice = AsyncFileSlice::new(self.file.as_raw_fd(), start as u64, len as u64);
         Ok(reslice)
+    }
+
+    fn file(&self) -> File {
+        unsafe { File::from_raw_fd(self.file.as_raw_fd()) }
     }
 }
 
@@ -321,6 +332,7 @@ pub enum FlushPolicy {
     IdleFlush { delay_millis: u32 },
 }
 
+#[allow(unused)]
 enum FlushAction {
     NoFlush,
     Now,
@@ -330,6 +342,7 @@ enum FlushAction {
 impl FlushPolicy {
     /// Evaluates the flush policy and returns a flush action
     // to take
+    #[allow(unused)]
     fn should_flush(&mut self) -> FlushAction {
         use FlushPolicy::{NoFlush, EveryWrite, CountWrites, IdleFlush};
         match self {
@@ -361,9 +374,9 @@ mod tests {
     use std::env::temp_dir;
     use std::io::Cursor;
 
-    use dataplane::Offset;
     use tracing::debug;
 
+    use dataplane::Offset;
     use flv_util::fixture::{ensure_new_dir};
     use dataplane::batch::{Batch, MemoryRecords};
     use dataplane::core::{Decoder, Encoder};
@@ -411,7 +424,6 @@ mod tests {
         assert!(msg_sink.write_batch(&wrong_builder.batch()).await.is_err());
     }
 
-    #[allow(clippy::unnecessary_mut_passed)]
     #[fluvio_future::test]
     async fn test_write_records_every() {
         const BASE_OFFSET: Offset = 100;
@@ -429,7 +441,7 @@ mod tests {
             .await
             .expect("create");
 
-        debug!("{:?}", msg_sink.flush_policy);
+        //debug!("{:?}", msg_sink.flush_policy);
         assert_eq!(msg_sink.get_pos(), 0);
 
         let mut builder = BatchProducer::builder()
@@ -439,8 +451,9 @@ mod tests {
 
         let batch = builder.batch();
         let write_size = batch.write_size(0);
-        debug!("write size: {}", write_size); // for now, this is 79 bytes
+        debug!(write_size, "write size"); // for now, this is 79 bytes
         msg_sink.write_batch(&batch).await.expect("create");
+        assert_eq!(msg_sink.get_pos() as usize, write_size);
 
         let log_path = msg_sink.get_path().to_owned();
 
@@ -459,6 +472,7 @@ mod tests {
 
         debug!("write 2");
         msg_sink.write_batch(&builder.batch()).await.expect("write");
+        assert_eq!(msg_sink.get_pos() as usize, write_size * 2);
 
         let bytes = read_bytes_from_file(&log_path).expect("read");
         assert_eq!(bytes.len(), write_size * 2, "should be 158 bytes");
@@ -473,7 +487,9 @@ mod tests {
 
     // This Test configures policy to flush after every NUM_WRITES
     // and checks to see when the flush occurs relative to the write count
-    #[fluvio_future::test]
+
+    //#[fluvio_future::test]
+    #[allow(unused)]
     async fn test_write_records_count() {
         let test_dir = temp_dir().join("mut_records_word_count");
         ensure_new_dir(&test_dir).expect("new");
@@ -550,7 +566,8 @@ mod tests {
     // The test still verifies that flushes on writes have occured within the
     // expected timeframe
     #[cfg(not(target_os = "macos"))]
-    #[fluvio_future::test]
+    #[allow(unused)]
+    //#[fluvio_future::test]
     async fn test_write_records_idle_delay() {
         use std::time::Duration;
         use fluvio_future::timer;
