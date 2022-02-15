@@ -4,7 +4,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-use tracing::{debug, trace, instrument, info};
+use tracing::{debug, trace, instrument, info, error};
 
 use fluvio_future::fs::remove_file;
 use fluvio_future::file_slice::AsyncFileSlice;
@@ -19,6 +19,7 @@ use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
 use crate::config::{SharedReplicaConfig};
+use crate::validator::LogValidationError;
 use crate::{StorageError};
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
@@ -254,15 +255,41 @@ impl Segment<LogIndex, FileRecordsSlice> {
         let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
         let end_offset = msg_log.validate(&index, false, false).await?;
-        debug!(end_offset, base_offset, "base offset from msg_log");
-
-        Ok(Segment {
-            msg_log,
-            index,
-            option,
-            base_offset,
-            end_offset,
-        })
+        match msg_log.validate(&index, false, false).await {
+            Ok(end_offset) => {
+                debug!(end_offset, base_offset, "base offset from msg_log");
+                Ok(Segment {
+                    msg_log,
+                    index,
+                    option,
+                    base_offset,
+                    end_offset,
+                })
+            }
+            Err(LogValidationError::InvalidIndex {
+                offset,
+                batch_file_pos,
+                index_position,
+                diff_position,
+            }) => {
+                error!(
+                    offset,
+                    batch_file_pos, index_position, diff_position, "invalid index, rebuilding"
+                );
+                //  let index = msg_log.generate_index().await?;
+                Ok(Segment {
+                    msg_log,
+                    index,
+                    option,
+                    base_offset,
+                    end_offset,
+                })
+            }
+            Err(err) => {
+                error!(?err, "validation error");
+                Err(err.into())
+            }
+        }
     }
 
     pub(crate) fn is_expired(&self, expired_duration: &Duration) -> bool {
