@@ -66,10 +66,6 @@ impl UpdateManagedConnectorOpt {
                 .await
             {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    debug!(
-                        ?replica_spec,
-                        "UpdateManagedConnectorOpt topic spec - Re-Using"
-                    );
                     Ok(())
                 }
                 Ok(_) => {
