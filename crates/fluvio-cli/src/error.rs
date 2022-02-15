@@ -65,6 +65,8 @@ pub enum CliError {
     #[error(transparent)]
     TlsError(#[from] fluvio_future::openssl::TlsError),
 
+    #[error("Invalid connector: {0}")]
+    InvalidConnector(String),
     #[error("Invalid argument: {0}")]
     InvalidArg(String),
     #[error("Unknown error: {0}")]

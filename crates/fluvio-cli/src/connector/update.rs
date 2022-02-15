@@ -27,7 +27,7 @@ use super::ConnectorConfig;
 #[derive(Debug, StructOpt, Default)]
 pub struct UpdateManagedConnectorOpt {
     /// The name for the update Managed Connector
-    #[structopt(short = "c", long = "config", value_name = "config")]
+    #[structopt(short = "c", long = "config", value_name = "config", required(true))]
     pub config: String,
 }
 
@@ -41,29 +41,47 @@ impl UpdateManagedConnectorOpt {
 
         let admin = fluvio.admin().await;
 
-/* We are going to handle it better than below crude delete/create restart :)
+        // admin.find ?
+        let lists = admin.list::<ManagedConnectorSpec, _>(vec![]).await?;
+        let existing_config = match lists.into_iter().find(|c| c.name == config.name) {
+            None => {
+                return Err(CliError::InvalidConnector(format!(
+                    "{} - does not exist.",
+                    config.name
+                )))
+            }
+            Some(c) => c,
+        };
 
-       admin.delete::<ManagedConnectorSpec, _>(&self.name).await?;
-       if config.create_topic {
+        debug!("Found connector: {:?}", existing_config);
+
+        // create_topic will succeed even if the topic already exists. PR: 1823
+        // A New Topic might have been defined - We will not delete the old one.
+        if config.create_topic {
+            // Check if the topic already exists by trying to create it
             let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            debug!("topic spec: {:?}", replica_spec);
+            debug!("UpdateManagedConnectorOpt topic spec: {:?}", replica_spec);
             match admin
                 .create::<TopicSpec>(config.topic, false, replica_spec.into())
                 .await
             {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    //println!("Topic already exists");
+                    debug!("UpdateManagedConnectorOpt - Re-using Topic");
                     Ok(())
                 }
-                Ok(_) => Ok(()),
+                Ok(_) => {
+                    debug!("UpdateManagedConnectorOpt - Created a new topic.");
+                    Ok(())
+                }
                 Err(e) => Err(e),
             }?;
         }
 
-        admin.create(name.to_string(), false, spec).await?;
+        admin
+            .delete::<ManagedConnectorSpec, _>(&config.name)
+            .await?;
+        admin.create(config.name, false, spec).await?;
 
         Ok(())
-         */
     }
 }
-                                                  
