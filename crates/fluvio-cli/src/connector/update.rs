@@ -26,7 +26,7 @@ use super::ConnectorConfig;
 
 #[derive(Debug, StructOpt, Default)]
 pub struct UpdateManagedConnectorOpt {
-    /// The name for the update Managed Connector
+    /// The configuration file for the update Managed Connector
     #[structopt(short = "c", long = "config", value_name = "config", required(true))]
     pub config: String,
 }
@@ -37,7 +37,7 @@ impl UpdateManagedConnectorOpt {
         let spec: ManagedConnectorSpec = config.clone().into();
         let name = spec.name.clone();
 
-        debug!("updating managed_connector: {}, spec: {:#?}", name, spec);
+        debug!(connector_name = %name, connector_spec = >spec "updating managed_connector");
 
         let admin = fluvio.admin().await;
 
@@ -53,20 +53,20 @@ impl UpdateManagedConnectorOpt {
             Some(c) => c,
         };
 
-        debug!("Found connector: {:?}", existing_config);
+        debug!(?existing_config, "Found connector");
 
         // create_topic will succeed even if the topic already exists. PR: 1823
         // A New Topic might have been defined - We will not delete the old one.
         if config.create_topic {
             // Check if the topic already exists by trying to create it
             let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            debug!("UpdateManagedConnectorOpt topic spec: {:?}", replica_spec);
+            debug!(?replica_spec, "UpdateManagedConnectorOpt topic spec");
             match admin
                 .create::<TopicSpec>(config.topic, false, replica_spec.into())
                 .await
             {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    debug!("UpdateManagedConnectorOpt - Re-using Topic");
+                    debug!(?replica_spec, "UpdateManagedConnectorOpt topic spec - Re-Using")
                     Ok(())
                 }
                 Ok(_) => {
