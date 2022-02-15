@@ -37,7 +37,7 @@ impl UpdateManagedConnectorOpt {
         let spec: ManagedConnectorSpec = config.clone().into();
         let name = spec.name.clone();
 
-        debug!(connector_name = %name, connector_spec = ?spec "updating managed_connector");
+        debug!(connector_name = %name, connector_spec = ?spec, "updating managed_connector");
 
         let admin = fluvio.admin().await;
 
@@ -66,7 +66,10 @@ impl UpdateManagedConnectorOpt {
                 .await
             {
                 Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    debug!(?replica_spec, "UpdateManagedConnectorOpt topic spec - Re-Using")
+                    debug!(
+                        ?replica_spec,
+                        "UpdateManagedConnectorOpt topic spec - Re-Using"
+                    );
                     Ok(())
                 }
                 Ok(_) => {
