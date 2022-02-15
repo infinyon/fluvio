@@ -13,11 +13,13 @@ use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
 mod create;
+mod update;
 mod delete;
 mod list;
 mod logs;
 
 use create::CreateManagedConnectorOpt;
+use update::UpdateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
 use logs::LogsManagedConnectorOpt;
@@ -31,6 +33,13 @@ pub enum ManagedConnectorCmd {
         template = COMMAND_TEMPLATE,
     )]
     Create(CreateManagedConnectorOpt),
+
+    /// Update a Managed Connector
+    #[structopt(
+        name = "update",
+        template = COMMAND_TEMPLATE,
+    )]
+    Update(UpdateManagedConnectorOpt),
 
     /// Delete a Managed Connector
     #[structopt(
@@ -59,6 +68,9 @@ impl ManagedConnectorCmd {
         match self {
             Self::Create(create) => {
                 create.process(fluvio).await?;
+            }
+            Self::Update(update) => {
+                update.process(fluvio).await?;
             }
             Self::Delete(delete) => {
                 delete.process(fluvio).await?;

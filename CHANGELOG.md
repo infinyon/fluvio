@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.20 - UNRELEASED
+* Add `connector update -c config` to update the running configuration of a given existing managed connector ([#2188](https://github.com/infinyon/fluvio/pull/2188))
 
 ## Platform Version 0.9.19 - 2022-02-10
 * Add WASI support to SmartEngine ([#1874](https://github.com/infinyon/fluvio/issues/1874))
