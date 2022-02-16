@@ -51,7 +51,7 @@ impl CreateManagedConnectorOpt {
                 Ok(())
             }
             Ok(_) => Ok(()),
-                Err(e) => Err(e),
+            Err(e) => Err(e),
         }?;
 
         admin.create(name.to_string(), false, spec).await?;

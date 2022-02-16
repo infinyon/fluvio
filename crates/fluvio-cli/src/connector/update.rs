@@ -64,9 +64,7 @@ impl UpdateManagedConnectorOpt {
             .create::<TopicSpec>(config.topic, false, replica_spec.into())
             .await
         {
-            Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                Ok(())
-            }
+            Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => Ok(()),
             Ok(_) => {
                 debug!("UpdateManagedConnectorOpt - Created a new topic.");
                 Ok(())
