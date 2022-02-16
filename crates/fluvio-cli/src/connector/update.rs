@@ -55,26 +55,24 @@ impl UpdateManagedConnectorOpt {
 
         debug!(?existing_config, "Found connector");
 
-        // create_topic will succeed even if the topic already exists. PR: 1823
+        // topic already exists. original decision PR: 1823
         // A New Topic might have been defined - We will not delete the old one.
-        if config.create_topic {
-            // Check if the topic already exists by trying to create it
-            let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            debug!(?replica_spec, "UpdateManagedConnectorOpt topic spec");
-            match admin
-                .create::<TopicSpec>(config.topic, false, replica_spec.into())
-                .await
-            {
-                Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    Ok(())
-                }
-                Ok(_) => {
-                    debug!("UpdateManagedConnectorOpt - Created a new topic.");
-                    Ok(())
-                }
-                Err(e) => Err(e),
-            }?;
-        }
+        // Check if the topic already exists by trying to create it
+        let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
+        debug!(?replica_spec, "UpdateManagedConnectorOpt topic spec");
+        match admin
+            .create::<TopicSpec>(config.topic, false, replica_spec.into())
+            .await
+        {
+            Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
+                Ok(())
+            }
+            Ok(_) => {
+                debug!("UpdateManagedConnectorOpt - Created a new topic.");
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }?;
 
         admin
             .delete::<ManagedConnectorSpec, _>(&config.name)
