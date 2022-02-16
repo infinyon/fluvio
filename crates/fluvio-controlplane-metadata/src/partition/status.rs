@@ -33,6 +33,7 @@ pub struct PartitionStatus {
     // TODO: There is no such thing as `lsr`, it is a typo
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
+    pub size: i64,
     pub is_being_deleted: bool,
 }
 
@@ -67,12 +68,14 @@ impl PartitionStatus {
     pub fn new2(
         leader: impl Into<ReplicaStatus>,
         replicas: Vec<ReplicaStatus>,
+        size: i64,
         resolution: PartitionResolution,
     ) -> Self {
         Self {
             resolution,
             leader: leader.into(),
             replicas,
+            size,
             ..Default::default()
         }
     }
@@ -146,6 +149,7 @@ impl PartitionStatus {
     /// ignore changes from spu = -1 or offsets = -1
     pub fn merge(&mut self, other: Self) {
         self.resolution = other.resolution;
+        self.size = other.size;
         if let Some(old) = self.leader.merge(&other.leader) {
             self.replicas.push(old); // move old leader to replicas
         }

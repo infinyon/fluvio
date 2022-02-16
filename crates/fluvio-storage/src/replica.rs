@@ -1,10 +1,13 @@
 use std::cmp::min;
 use std::mem;
+use std::os::linux::fs::MetadataExt;
 use std::sync::Arc;
 
 use fluvio_future::file_slice::AsyncFileSlice;
+use fluvio_future::fs::read_dir;
 use fluvio_protocol::Encoder;
-use tracing::{debug, trace, warn, instrument, info};
+use futures_lite::StreamExt;
+use tracing::{debug, trace, warn, instrument, info, error};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
@@ -95,6 +98,21 @@ impl ReplicaStorage for FileReplica {
             }
             Isolation::ReadUncommitted => self.read_records(offset, None, max_len).await,
         }
+    }
+
+    #[instrument(skip(self))]
+    async fn get_partition_size(&self) -> Result<u64, ErrorCode> {
+        let mut entries = read_dir(&self.option.base_dir)
+            .await
+            .map_err(|_| ErrorCode::SpuError)?;
+
+        while let Some(entry) = entries.try_next().await.map_err(|_| ErrorCode::SpuError)? {
+            if entry.file_name().to_string_lossy().ends_with(".log") {
+                let metadata = entry.metadata().await.map_err(|_| ErrorCode::SpuError)?;
+                return Ok(metadata.len());
+            }
+        }
+        Err(ErrorCode::SpuError)
     }
 
     /// write records to this replica

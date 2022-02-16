@@ -13,7 +13,7 @@ use async_rwlock::{RwLock};
 
 use dataplane::{record::RecordSet};
 use dataplane::{Offset, Isolation, ReplicaKey};
-use fluvio_controlplane_metadata::partition::{Replica};
+use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{SpuId};
@@ -282,7 +282,7 @@ where
     /// convert myself as
     async fn as_lrs_request(&self) -> LrsRequest {
         let leader = (self.leader(), self.hw(), self.leo()).into();
-        let replicas = self
+        let replicas: Vec<ReplicaStatus> = self
             .followers
             .read()
             .await
@@ -291,14 +291,19 @@ where
                 (*follower_id, follower_info.hw, follower_info.leo).into()
             })
             .collect();
+        let storage_reader = self.storage.read().await;
+        let size = storage_reader
+            .get_partition_size()
+            .await
+            .expect("Unexpected error") as i64; // TODO: Change
 
-        LrsRequest::new(self.id().to_owned(), leader, replicas)
+        LrsRequest::new(self.id().to_owned(), leader, replicas, size)
     }
 
     #[instrument(skip(self))]
     pub async fn update_status(&self) {
         let lrs = self.as_lrs_request().await;
-        debug!(hw = lrs.leader.hw, leo = lrs.leader.leo);
+        debug!(hw = lrs.leader.hw, leo = lrs.leader.leo, size = lrs.size);
         self.status_update.send(lrs).await
     }
 
