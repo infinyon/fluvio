@@ -66,7 +66,11 @@ pub struct GeneratorTestOption {
     /// When set, unique topics will be used so multiple
     /// instances of generator against cluster won't collide
     #[structopt(long)]
-    multi: bool,
+    multi_run: bool,
+
+    /// Number of topics for producers to send traffic to
+    #[structopt(long, default_value = "1")]
+    topics: u32,
 }
 
 fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
@@ -101,7 +105,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     println!("batch size (Bytes): {:?}", option.option.batch_size);
 
     // Generate a run id if we're running multiple instances
-    let run_id = if option.option.multi {
+    let run_id = if option.option.multi_run {
         Some(Uuid::new_v4().to_simple().to_string())
     } else {
         None
@@ -185,7 +189,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                     }
                 } else {
 
-                    // Idea: we can provide live output here if producers report metrics
+                    // Idea for interactive runs: we can provide live stats here if producers report metrics
                     break;
                 }
             }
