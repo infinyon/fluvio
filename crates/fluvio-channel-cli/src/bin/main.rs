@@ -293,20 +293,17 @@ fn main() -> Result<()> {
         )
     };
 
-    match channel_cli.command {
-        RootCmd::Other(args) => {
-            if args.contains(&"update".to_string())
-                && fluvio_channel::is_pinned_version_channel(channel_name.as_str())
-            {
-                println!(
+    if let RootCmd::Other(args) = channel_cli.command {
+        if args.contains(&"update".to_string())
+            && fluvio_channel::is_pinned_version_channel(channel_name.as_str())
+        {
+            println!(
                     "{}\n{}\n",
                     "Unsupported Feature: The `fluvio update` command is not supported when using a pinned version channel. To use a different version run:".yellow(),
                     "  fluvio version create X.Y.Z\n  fluvio version switch X.Y.Z".italic().yellow()
                 );
-                std::process::exit(1);
-            }
+            std::process::exit(1);
         }
-        _ => (),
     }
 
     // Set env vars

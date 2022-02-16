@@ -383,10 +383,7 @@ pub fn is_fluvio_bin_in_std_dir(fluvio_bin: &Path) -> bool {
 
 /// Determine if provided channel name is a pinned version channel
 pub fn is_pinned_version_channel(channel_name: &str) -> bool {
-    match channel_name {
-        "stable" | "latest" | "dev" => false,
-        _ => true,
-    }
+    !matches!(channel_name, "stable" | "latest" | "dev")
 }
 
 #[cfg(test)]
