@@ -1678,6 +1678,7 @@ dependencies = [
  "assert_cmd",
  "cfg-if",
  "color-eyre",
+ "colored",
  "dirs 4.0.0",
  "fluvio-channel",
  "fluvio-cli-common",

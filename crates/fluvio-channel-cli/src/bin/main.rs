@@ -1,6 +1,7 @@
 use std::env;
 use std::str::FromStr;
 use color_eyre::eyre::{Result, eyre};
+use colored::Colorize;
 use structopt::StructOpt;
 use structopt::clap::AppSettings;
 
@@ -173,7 +174,6 @@ fn main() -> Result<()> {
     // If we're in frontend mode, we want to pass the help text request
 
     let fluvio_channel_root = Root::from_args_safe();
-    //println!("{:#?}", fluvio_channel_root);
 
     let channel_cli = if let Ok(channel_cli) = fluvio_channel_root {
         match channel_cli.command {
@@ -214,42 +214,18 @@ fn main() -> Result<()> {
             args.remove(0);
         }
 
-        //print_help(is_frontend)?;
-        //std::process::exit(0);
         Root {
             command: RootCmd::Other(args),
             ..Default::default()
         }
     };
 
-    // Only if we use `version` subcommand with args
-    // Otherwise pass through to fluvio binary
-
-    // Pick a fluvio binary
-
-    // open a config file
-    // if one doesn't exist, we'll eventually create it before exec
-    // (TODO: Make that location overridable (env var / optional flag))
-    // initialize with stable, latest, dev channels
-    let channel_config_path = FluvioChannelConfig::default_config_location();
-    let _channel = if FluvioChannelConfig::exists(&channel_config_path) {
-        //println!("Config file exists @ {:#?}", &channel_config_path);
-        FluvioChannelConfig::from_file(channel_config_path)?
-    } else {
-        // Default to stable channel behavior
-        FluvioChannelConfig::default()
-    };
-
-    // //
-
     // Check on channel via channel config file
     let (channel_name, channel) = if is_frontend && !&channel_cli.skip_channel_check() {
-        // Look for channel config
-        // TODO: Let this be configurable
+        // TODO: Let this be configurable, make the location overridable (env var / optional flag))
         let channel_config_path = FluvioChannelConfig::default_config_location();
 
         let maybe_channel_config = if FluvioChannelConfig::exists(&channel_config_path) {
-            //println!("Config file exists @ {:#?}", &channel_config_path);
             Some(FluvioChannelConfig::from_file(channel_config_path)?)
         } else {
             // If the channel config doesn't exist, we will create one and initialize with defaults
@@ -316,6 +292,19 @@ fn main() -> Result<()> {
             FluvioChannelInfo::dev_channel(),
         )
     };
+
+    if let RootCmd::Other(args) = channel_cli.command {
+        if args.contains(&"update".to_string())
+            && fluvio_channel::is_pinned_version_channel(channel_name.as_str())
+        {
+            println!(
+                    "{}\n{}\n",
+                    "Unsupported Feature: The `fluvio update` command is not supported when using a pinned version channel. To use a different version run:".yellow(),
+                    "  fluvio version create X.Y.Z\n  fluvio version switch X.Y.Z".italic().yellow()
+                );
+            std::process::exit(1);
+        }
+    }
 
     // Set env vars
     env::set_var(FLUVIO_RELEASE_CHANNEL, channel_name.clone());
