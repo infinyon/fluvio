@@ -39,21 +39,21 @@ impl CreateManagedConnectorOpt {
         debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
 
         let admin = fluvio.admin().await;
-        if config.create_topic {
-            let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            debug!("topic spec: {:?}", replica_spec);
-            match admin
-                .create::<TopicSpec>(config.topic, false, replica_spec.into())
-                .await
-            {
-                Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    //println!("Topic already exists");
-                    Ok(())
-                }
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
-            }?;
-        }
+
+        let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
+        debug!("topic spec: {:?}", replica_spec);
+        match admin
+            .create::<TopicSpec>(config.topic, false, replica_spec.into())
+            .await
+        {
+            Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
+                //println!("Topic already exists");
+                Ok(())
+            }
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }?;
+
         admin.create(name.to_string(), false, spec).await?;
 
         Ok(())

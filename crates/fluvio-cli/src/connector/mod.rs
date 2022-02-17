@@ -94,8 +94,6 @@ pub struct ConnectorConfig {
     pub(crate) topic: String,
     pub(crate) version: Option<String>,
     #[serde(default)]
-    pub(crate) create_topic: bool,
-    #[serde(default)]
     parameters: BTreeMap<String, String>,
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
