@@ -1645,7 +1645,8 @@ dependencies = [
  "hex",
  "home",
  "http-types",
- "humantime",
+ "human_bytes",
+ "humantime 2.1.0",
  "indicatif",
  "k8-client",
  "k8-config",
@@ -2779,6 +2780,12 @@ name = "httpdate"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
+
+[[package]]
+name = "human_bytes"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc178557b4a227ff4d9c51fbbf17f29607c32a96be106c97bb8499e075db0de2"
 
 [[package]]
 name = "humantime"
