@@ -102,16 +102,31 @@ impl ReplicaStorage for FileReplica {
 
     #[instrument(skip(self))]
     async fn get_partition_size(&self) -> Result<u64, ErrorCode> {
-        let mut entries = read_dir(&self.option.base_dir)
-            .await
-            .map_err(|_| ErrorCode::SpuError)?;
+        let mut entries = read_dir(&self.option.base_dir).await.map_err(|err| {
+            error!(
+                "failed to open the log base dir \"{}\": {}",
+                self.option.base_dir.to_string_lossy(),
+                err
+            );
+            ErrorCode::StorageError
+        })?;
 
-        while let Some(entry) = entries.try_next().await.map_err(|_| ErrorCode::SpuError)? {
+        while let Ok(Some(entry)) = entries.try_next().await {
             if entry.file_name().to_string_lossy().ends_with(".log") {
-                let metadata = entry.metadata().await.map_err(|_| ErrorCode::SpuError)?;
+                let metadata = entry.metadata().await.map_err(|err| {
+                    error!(
+                        "fetching metadata for file \"{}\" failed: {err}",
+                        entry.file_name().to_string_lossy(),
+                    );
+                    ErrorCode::StorageError
+                })?;
                 return Ok(metadata.len());
             }
         }
+        error!(
+            "no log file found in {}",
+            self.option.base_dir.to_string_lossy()
+        );
         Err(ErrorCode::SpuError)
     }
 
