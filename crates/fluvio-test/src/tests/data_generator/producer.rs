@@ -107,7 +107,7 @@ pub async fn producer(
     } else {
         loop {
             for producer in producers.iter() {
-                send_record(&option, producer_id, records_sent, &test_driver, &producer).await;
+                send_record(&option, producer_id, records_sent, &test_driver, producer).await;
                 records_sent += 1;
             }
         }
