@@ -15,21 +15,11 @@ pub async fn producer(
     producer_id: u32,
     run_id: Option<String>,
 ) {
-    // This is a bit of a hack to prevent attempting to make producer/consumers
-    // before the sync topic is created
-    async_std::task::sleep(Duration::from_secs(5)).await;
-
     // Sync topic is unique per instance of generator
     let sync_topic = if let Some(run_id) = &run_id {
         format!("sync-{}", run_id)
     } else {
         "sync".to_string()
-    };
-
-    let test_topic = if let Some(run_id) = &run_id {
-        format!("{}-{}", &option.environment.topic_name(), run_id)
-    } else {
-        (&option.environment.topic_name()).to_string()
     };
 
     test_driver
@@ -39,27 +29,42 @@ pub async fn producer(
 
     // Create the testing producer
 
-    let maybe_builder = match (option.option.batch_linger_ms, option.option.batch_size) {
-        (Some(linger), Some(batch)) => Some(
-            TopicProducerConfigBuilder::default()
-                .linger(Duration::from_millis(linger))
-                .batch_size(batch),
-        ),
-        (Some(linger), None) => {
-            Some(TopicProducerConfigBuilder::default().linger(Duration::from_millis(linger)))
-        }
-        (None, Some(batch)) => Some(TopicProducerConfigBuilder::default().batch_size(batch)),
-        (None, None) => None,
-    };
+    // TODO: Create a Vec of producers per topic
+    let mut producers = Vec::new();
 
-    let producer = if let Some(producer_config) = maybe_builder {
-        let config = producer_config.build().expect("producer builder");
-        test_driver
-            .create_producer_with_config(&test_topic, config)
-            .await
-    } else {
-        test_driver.create_producer(&test_topic).await
-    };
+    for topic_id in 0..option.option.topics {
+        let maybe_builder = match (option.option.batch_linger_ms, option.option.batch_size) {
+            (Some(linger), Some(batch)) => Some(
+                TopicProducerConfigBuilder::default()
+                    .linger(Duration::from_millis(linger))
+                    .batch_size(batch),
+            ),
+            (Some(linger), None) => {
+                Some(TopicProducerConfigBuilder::default().linger(Duration::from_millis(linger)))
+            }
+            (None, Some(batch)) => Some(TopicProducerConfigBuilder::default().batch_size(batch)),
+            (None, None) => None,
+        };
+
+        let env_opts = option.environment.clone();
+
+        let test_topic_name = if let Some(run_id) = run_id.clone() {
+            format!("{}-{}-{}", env_opts.topic_name(), run_id, topic_id)
+        } else {
+            format!("{}-{}", env_opts.topic_name(), topic_id)
+        };
+
+        if let Some(producer_config) = maybe_builder {
+            let config = producer_config.build().expect("producer builder");
+            producers.push(
+                test_driver
+                    .create_producer_with_config(&test_topic_name, config)
+                    .await,
+            )
+        } else {
+            producers.push(test_driver.create_producer(&test_topic_name).await)
+        };
+    }
 
     // Create the syncing producer/consumer
 
@@ -94,13 +99,17 @@ pub async fn producer(
 
     if let Some(timeout) = option.option.runtime_seconds {
         while test_start.elapsed().unwrap() <= timeout {
-            send_record(&option, producer_id, records_sent, &test_driver, &producer).await;
-            records_sent += 1;
+            for producer in producers.iter() {
+                send_record(&option, producer_id, records_sent, &test_driver, producer).await;
+                records_sent += 1;
+            }
         }
     } else {
         loop {
-            send_record(&option, producer_id, records_sent, &test_driver, &producer).await;
-            records_sent += 1;
+            for producer in producers.iter() {
+                send_record(&option, producer_id, records_sent, &test_driver, &producer).await;
+                records_sent += 1;
+            }
         }
     }
 

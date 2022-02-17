@@ -111,9 +111,54 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
         None
     };
 
+    let sync_topic = if let Some(run_id) = &run_id {
+        format!("sync-{}", run_id)
+    } else {
+        "sync".to_string()
+    };
+
     if !option.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
+
+    // Create topics
+    let _setup_status = fork_and_wait! {
+        fluvio_future::task::run_block_on(async {
+            let mut test_driver_setup = test_driver.clone();
+
+            // Connect test driver to cluster before starting test
+            test_driver_setup.connect().await.expect("Unable to connect to cluster");
+
+
+            // Create sync topic before starting test
+            {
+            let mut env_opts = option.environment.clone();
+            env_opts.topic_name = Some(sync_topic.clone());
+            test_driver_setup.create_topic(&env_opts)
+                .await
+                .expect("Unable to create default topic");
+            }
+
+            // multiple topic creation
+            for topic_id in 0..option.option.topics {
+                let mut env_opts = option.environment.clone();
+
+                let test_topic_name =  if let Some(run_id) = run_id.clone() {
+                    format!("{}-{}-{}", env_opts.topic_name(), run_id, topic_id)
+                } else {
+                    format!("{}-{}", env_opts.topic_name(), topic_id)
+                };
+
+                env_opts.topic_name = Some(test_topic_name);
+                test_driver_setup.create_topic(&env_opts)
+                    .await
+                    .expect("Unable to create default topic");
+            }
+
+            test_driver_setup.disconnect();
+
+        })
+    };
 
     // Pass run id to producers, so they can select the correct topics
     let mut producer_wait = Vec::new();
@@ -130,25 +175,9 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     let _setup_status = fork_and_wait! {
         fluvio_future::task::run_block_on(async {
             let mut test_driver_setup = test_driver.clone();
-            let mut env_opts = option.environment.clone();
-
-            let sync_topic = if let Some(run_id) = &run_id {
-                format!("sync-{}", run_id)
-            } else {
-                "sync".to_string()
-            };
-
-            env_opts.topic_name = Some(sync_topic.clone());
-
 
             // Connect test driver to cluster before starting test
             test_driver_setup.connect().await.expect("Unable to connect to cluster");
-
-
-            // Create sync topic before starting test
-            test_driver_setup.create_topic(&env_opts)
-                .await
-                .expect("Unable to create default topic");
 
 
             println!("setup");
