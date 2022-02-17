@@ -2251,6 +2251,7 @@ dependencies = [
 name = "fluvio-test"
 version = "0.0.0"
 dependencies = [
+ "async-std",
  "async-trait",
  "bytes 1.1.0",
  "crc",
@@ -2283,6 +2284,7 @@ dependencies = [
  "sysinfo 0.23.2",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -5271,6 +5273,16 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+ "serde",
+]
+
+[[package]]
+name = "uuid"
+version = "0.8.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
+dependencies = [
+ "getrandom 0.2.4",
  "serde",
 ]
 
