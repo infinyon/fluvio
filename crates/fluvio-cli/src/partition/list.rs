@@ -124,13 +124,19 @@ mod display {
                         }
                     };
 
+                    let printable_size = if status.size == -1 {
+                        "ERROR".to_string()
+                    } else {
+                        human_bytes::human_bytes(status.size as f64)
+                    };
+
                     row![
                         l -> topic,
                         l -> partition.to_string(),
                         l -> spec.leader.to_string(),
                         l -> format!("{:?}",spec.followers()),
                         l -> format!("{:?}",status.resolution),
-                        l -> status.size,
+                        l -> printable_size,
                         l -> status.leader.hw.to_string(),
                         l -> status.leader.leo.to_string(),
                         l -> status.lsr.to_string(),

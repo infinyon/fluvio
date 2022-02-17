@@ -295,7 +295,8 @@ where
         let size = storage_reader
             .get_partition_size()
             .await
-            .expect("Unexpected error") as i64; // TODO: Change
+            .map(|e| e as i64)
+            .unwrap_or(-1);
 
         LrsRequest::new(self.id().to_owned(), leader, replicas, size)
     }
