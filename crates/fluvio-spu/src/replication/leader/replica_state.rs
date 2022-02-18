@@ -760,6 +760,11 @@ mod test_leader {
             Ok(())
         }
 
+        // just return hw multiplied by 100.
+        async fn get_partition_size(&self) -> Result<u64, dataplane::ErrorCode> {
+            Ok((self.pos.hw * 100) as u64)
+        }
+
         async fn update_high_watermark(
             &mut self,
             offset: Offset,
