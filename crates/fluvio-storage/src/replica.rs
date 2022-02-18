@@ -1,6 +1,5 @@
 use std::cmp::min;
 use std::mem;
-use std::os::linux::fs::MetadataExt;
 use std::sync::Arc;
 
 use fluvio_future::file_slice::AsyncFileSlice;
@@ -393,6 +392,7 @@ fn replica_dir_name<S: AsRef<str>>(topic_name: S, partition_index: Size) -> Stri
 #[cfg(test)]
 mod tests {
 
+    use fluvio_future::fs::remove_dir_all;
     use fluvio_future::timer::sleep;
     use tracing::debug;
     use std::env::temp_dir;
@@ -688,6 +688,29 @@ mod tests {
 
         let size = replica.get_partition_size().await.expect("partition size");
         assert_eq!(size, 79 * 2);
+    }
+
+    #[fluvio_future::test]
+    async fn test_replica_storage_size_delete_log() {
+        let option = base_option("test_storage_size_deleted");
+        let mut replica = create_replica("test", 0, option.clone()).await;
+
+        let mut records = RecordSet::default().add(create_batch());
+
+        replica
+            .write_recordset(&mut records, true)
+            .await
+            .expect("write");
+
+        assert_eq!(replica.get_hw(), 2);
+
+        let size = replica.get_partition_size().await.expect("partition size");
+        assert_eq!(size, 79);
+
+        remove_dir_all(option.base_dir).await.expect("delete base dir");
+
+        let error = replica.get_partition_size().await.expect_err("error partition size");
+        assert_eq!(error, dataplane::ErrorCode::StorageError)
     }
 
     /// test fetch only committed records
