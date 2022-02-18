@@ -404,8 +404,10 @@ pub struct ThirdPartyConnectorSpec {
 }
 
 impl ThirdPartyConnectorSpec {
-    pub async fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let body = surf::get(url).recv_string().await?;
-        Ok(serde_yaml::from_str(&body)?)
+    pub async fn from_url(_url: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        // disable third party support
+        //let body = surf::get(url).recv_string().await?;
+        //Ok(serde_yaml::from_str(&body)?)
+        todo!()
     }
 }
