@@ -37,6 +37,10 @@ main() {
   pushd "${tmp_dir}"
   docker build -t "$docker_repo:$commit_hash" -t "$docker_repo:$commit_hash-$target" $build_args .
 
+  if [ "$K8" = "lima" ]; then
+    echo "no need to export image for lima"
+  fi
+
   if [ "$K8" = "k3d" ]; then
     echo "export image to k3d cluster"
     docker image save "$docker_repo:$commit_hash" --output /tmp/infinyon-fluvio.tar
