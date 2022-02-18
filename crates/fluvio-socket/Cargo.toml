@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.11.3"
+version = "0.11.4"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -25,7 +25,7 @@ async-lock = "2.4.0"
 event-listener = "2.0.0"
 async-channel = "1.6.1"
 tokio = { version = "1.11.0", features = ["macros"] }
-tokio-util = { version = "0.6.8", features = ["codec", "compat"] }
+tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
 async-trait = "0.1.21"
 pin-project = "1.0.1"
 thiserror = "1.0.20"

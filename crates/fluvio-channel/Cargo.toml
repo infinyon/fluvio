@@ -24,6 +24,6 @@ tracing = "0.1.19"
 dirs = "4.0.0"
 toml = "0.5.5"
 serde = { version = "1.0.118", features = ["derive"] }
-color-eyre = { version = "0.5.5", default-features = false }
+color-eyre = { version = "0.6.0", default-features = false }
 
 fluvio-types = { path = "../fluvio-types", default-features = false, optional = true }
