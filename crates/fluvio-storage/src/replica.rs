@@ -16,10 +16,10 @@ use dataplane::batch::Batch;
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
-use crate::segments::{SharedSegments};
+use crate::segments::SharedSegments;
 use crate::segment::MutableSegment;
 use crate::config::{ReplicaConfig, SharedReplicaConfig, StorageConfig};
-use crate::{ReplicaSlice};
+use crate::ReplicaSlice;
 use crate::{StorageError, ReplicaStorage};
 
 /// Replica is public abstraction for commit log which are distributed.
@@ -100,6 +100,8 @@ impl ReplicaStorage for FileReplica {
         }
     }
 
+    /// reads log file of the current partition
+    /// return the size in byte
     #[instrument(skip(self))]
     async fn get_partition_size(&self) -> Result<u64, ErrorCode> {
         let mut entries = read_dir(&self.option.base_dir).await.map_err(|err| {
@@ -112,11 +114,12 @@ impl ReplicaStorage for FileReplica {
         })?;
 
         while let Ok(Some(entry)) = entries.try_next().await {
-            if entry.file_name().to_string_lossy().ends_with(".log") {
+            let os_file_name = entry.file_name();
+            if os_file_name.to_string_lossy().ends_with(".log") {
                 let metadata = entry.metadata().await.map_err(|err| {
                     error!(
                         "fetching metadata for file \"{}\" failed: {err}",
-                        entry.file_name().to_string_lossy(),
+                        os_file_name.to_string_lossy(),
                     );
                     ErrorCode::StorageError
                 })?;
@@ -400,7 +403,7 @@ mod tests {
     use std::time::Duration;
 
     use dataplane::{Isolation, batch::Batch};
-    use dataplane::{Offset};
+    use dataplane::Offset;
     use dataplane::core::{Decoder, Encoder};
     use dataplane::record::{Record, RecordSet};
     use dataplane::batch::MemoryRecords;
@@ -409,7 +412,7 @@ mod tests {
     use flv_util::fixture::ensure_clean_dir;
 
     use crate::config::{ReplicaConfig, StorageConfig};
-    use crate::{StorageError};
+    use crate::StorageError;
     use crate::ReplicaStorage;
     use crate::fixture::storage_config;
 
@@ -657,6 +660,34 @@ mod tests {
         // restore replica
         let replica = create_replica("test", 0, option).await;
         assert_eq!(replica.get_hw(), 2);
+    }
+
+    const TEST_STORAGE_SIZE_DIR: &str = "test_storage_size";
+
+    #[fluvio_future::test]
+    async fn test_replica_storage_size() {
+        let option = base_option(TEST_STORAGE_SIZE_DIR);
+        let mut replica = create_replica("test", 0, option.clone()).await;
+
+        let mut records = RecordSet::default().add(create_batch());
+
+        replica
+            .write_recordset(&mut records, true)
+            .await
+            .expect("write");
+
+        assert_eq!(replica.get_hw(), 2);
+
+        let size = replica.get_partition_size().await.expect("partition size");
+        assert_eq!(size, 79);
+
+        replica
+            .write_recordset(&mut records, true)
+            .await
+            .expect("write");
+
+        let size = replica.get_partition_size().await.expect("partition size");
+        assert_eq!(size, 79 * 2);
     }
 
     /// test fetch only committed records
