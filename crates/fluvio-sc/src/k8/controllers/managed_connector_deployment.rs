@@ -388,7 +388,8 @@ mod third_party_connector_tests {
         assert_eq!(image, None);
     }
 
-    #[fluvio_future::test]
+    //#[fluvio_future::test]
+    #[allow(unused)]
     async fn test_official_3rd_party_connector() {
         let image = ManagedConnectorDeploymentController::get_image("https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml", &["https://raw.githubusercontent.com/infinyon/fluvio-connectors".to_string()]).await;
         assert_eq!(

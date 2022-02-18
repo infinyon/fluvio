@@ -875,6 +875,7 @@ jobs:
           chmod +x ~/bin/fluvio && ~/bin/fluvio version
           echo "~/bin" >> $GITHUB_PATH
       - name: Start cluster
+        timeout-minutes: 5
         run: |
           fluvio cluster start --develop
 
