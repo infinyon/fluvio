@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.20 - UNRELEASED
+## Platform Version 0.9.21 - UNRELEASED
+
+## Platform Version 0.9.20 - 2022-02-10
 * Add `connector update -c config` to update the running configuration of a given existing managed connector ([#2188](https://github.com/infinyon/fluvio/pull/2188))
 * Handle large number of produce and consumers ([#2116](https://github.com/infinyon/fluvio/issues/2116))
 * Disable `fluvio update` when using pinned version channel ([#2155](https://github.com/infinyon/fluvio/issues/2155))
@@ -22,7 +24,7 @@
 * Remove max version requirements ([#2106](https://github.com/infinyon/fluvio/issues/2106))
 * Optimize memory allocation  ([#2069](https://github.com/infinyon/fluvio/pull/2133))
 * Translate `_` with `-` in connector parameters ([#2149](https://github.com/infinyon/fluvio/issues/2149))
-  
+
 ## Platform Version 0.9.17 - 2022-01-12
 * Change default values of TopicProducerConfig ([#2069](https://github.com/infinyon/fluvio/issues/2069))
 * Enhance CLI Diagnostics with system info  ([#2069](https://github.com/infinyon/fluvio/pull/2092))
@@ -38,8 +40,8 @@
 * Add support for 3rd party connectors ([#2027](https://github.com/infinyon/fluvio/pull/2027))
 * Introduce channels into CLI ([#2021](https://github.com/infinyon/fluvio/issues/2021))
 * Upgrade to Zig 0.9 and LLVM 13 ([#2046](https://github.com/infinyon/fluvio/pull/2046))
-* Add API to converting to list type from metadata ([#2052](https://github.com/infinyon/fluvio/pull/2052)) 
-* Check if the local cluster exists during installation ([#2041](https://github.com/infinyon/fluvio/issues/2041))   
+* Add API to converting to list type from metadata ([#2052](https://github.com/infinyon/fluvio/pull/2052))
+* Check if the local cluster exists during installation ([#2041](https://github.com/infinyon/fluvio/issues/2041))
 
 > Note:
 > For existing CLI users, we recommend following [the instructions to re-install their CLI](https://www.fluvio.io/download/). This is a requirement in order to use Fluvio CLI Channels.
