@@ -193,7 +193,6 @@ where
             .retrieve_items::<S::K8Spec, _>(self.namespace.clone())
             .await
             .map_err(|err| {
-                error!("{:#?}", err);
                 IoError::new(
                     ErrorKind::InvalidData,
                     format!("error retrieving k8: {:?}", err),
