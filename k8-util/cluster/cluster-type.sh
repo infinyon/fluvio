@@ -12,6 +12,8 @@ elif echo ${nodes} | grep -q control-plane; then
     echo "kind"
 elif echo ${nodes} | grep -q microk8s; then
     echo "microk8"
+elif echo ${nodes} | grep -q lima; then
+    echo "lima"
 else 
-    "unknown"
+    echo "unknown"
 fi
