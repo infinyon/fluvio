@@ -876,7 +876,7 @@ jobs:
           echo "~/bin" >> $GITHUB_PATH
       - name: Start cluster
         run: |
-          fluvio cluster start --develop --connector-prefix "https://raw.githubusercontent.com/infinyon/fluvio-connectors"
+          fluvio cluster start --develop
 
       - name: Run CLI smoke tests
         run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
