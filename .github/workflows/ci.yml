@@ -448,7 +448,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1,r2,r3,r4,r5]
+        run: [r1]
         spu: [2]
         test:
           [
@@ -608,7 +608,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1,r2,r3,r4,r5]
+        run: [r1]
         test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
         k8: [k3d, minikube]
         spu: [2]
