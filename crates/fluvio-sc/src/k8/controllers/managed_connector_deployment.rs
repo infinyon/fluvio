@@ -388,7 +388,8 @@ mod third_party_connector_tests {
         assert_eq!(image, None);
     }
 
-    #[fluvio_future::test]
+    //#[fluvio_future::test]
+    #[allow(unused)]
     async fn test_official_3rd_party_connector() {
         let image = ManagedConnectorDeploymentController::get_image("https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml", &["https://raw.githubusercontent.com/infinyon/fluvio-connectors".to_string()]).await;
         assert_eq!(
@@ -404,8 +405,10 @@ pub struct ThirdPartyConnectorSpec {
 }
 
 impl ThirdPartyConnectorSpec {
-    pub async fn from_url(url: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let body = surf::get(url).recv_string().await?;
-        Ok(serde_yaml::from_str(&body)?)
+    pub async fn from_url(_url: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        // disable third party support
+        //let body = surf::get(url).recv_string().await?;
+        //Ok(serde_yaml::from_str(&body)?)
+        todo!()
     }
 }
