@@ -707,9 +707,14 @@ mod tests {
         let size = replica.get_partition_size().await.expect("partition size");
         assert_eq!(size, 79);
 
-        remove_dir_all(option.base_dir).await.expect("delete base dir");
+        remove_dir_all(option.base_dir)
+            .await
+            .expect("delete base dir");
 
-        let error = replica.get_partition_size().await.expect_err("error partition size");
+        let error = replica
+            .get_partition_size()
+            .await
+            .expect_err("error partition size");
         assert_eq!(error, dataplane::ErrorCode::StorageError)
     }
 
