@@ -824,6 +824,7 @@ jobs:
           chmod +x ~/bin/fluvio && ~/bin/fluvio version
           echo "~/bin" >> $GITHUB_PATH
       - name: Test ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} cluster
+        timeout-minutes: 5
         run: |
           make FLUVIO_BIN=~/bin/fluvio SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
 
@@ -892,6 +893,7 @@ jobs:
           FLV_DISPATCHER_WAIT: 300
         run: fluvio cluster start --develop
       - name: Run CLI smoke tests
+        timeout-minutes: 5
         run: make FLUVIO_BIN=~/bin/fluvio cli-smoke
       - name: Run diagnostics
         if: ${{ !success() }}
