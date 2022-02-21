@@ -1646,7 +1646,7 @@ dependencies = [
  "home",
  "http-types",
  "human_bytes",
- "humantime 2.1.0",
+ "humantime",
  "indicatif",
  "k8-client",
  "k8-config",
