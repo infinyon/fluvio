@@ -15,7 +15,11 @@ path = "src/lib.rs"
 cli = [
     "structopt",
     "color-eyre",
+    "duct",
     "prettytable-rs",
+    "tar",
+    "flate2",
+    "sysinfo",
     "fluvio-extension-common/target",
     "fluvio-sc-schema/use_serde",
 ]
@@ -25,35 +29,33 @@ colored = "2.0.0"
 semver = "1.0.3"
 url = "2.1.1"
 tracing = "0.1.19"
-tracing-futures = "0.2.4"
 serde = "1.0.115"
 serde_json = "1.0.57"
 serde_yaml = "0.8.17"
 thiserror = "1.0.20"
 async-trait = "0.1.21"
-color-eyre = { version = "0.5.8", default-features = false, optional = true }
-structopt = { version = "0.3.25", default-features = false, optional = true }
-prettytable-rs = { version = "0.8.0", optional = true }
 futures-util = "0.3"
 futures-channel = { version = "0.3", features = ["sink"] }
 tokio = { version = "1.3.0", features = ["macros"] }
 once_cell = "1.5"
 derive_builder = "0.10.2"
-remoteprocess = "0.4.2"
 which = "4.1.0"
 directories = "4.0.0"
 tempfile = "3.2"
-include_dir = "0.6.1"
+include_dir = "0.7.2"
 tempdir = "0.3.7"
-duct = "0.13"
-chrono = "0.4"
-flate2 = "1"
-tar = "0.4"
 anyhow = "1.0.44"
 async-channel = "1.6.1"
 indicatif = "0.16.2"
-nix = "0.23"
 rand = "0.8.4"
+chrono = { version = "0.4" }
+color-eyre = { version = "0.6.0", default-features = false, optional = true }
+structopt = { version = "0.3.25", default-features = false, optional = true }
+duct = { version = "0.13", default-features = false, optional = true }
+prettytable-rs = { version = "0.8.0", default-features = false, optional = true }
+flate2 = { version = "1", default-features = false, optional = true }
+tar = { version = "0.4", default-features = false, optional = true }
+sysinfo = { version = "0.23.0", default-features = false, optional = true }
 
 # Fluvio dependencies
 fluvio = { path = "../fluvio", default-features = false }
@@ -71,7 +73,7 @@ k8-client = { version = "5.4.0" }
 k8-metadata-client = { version = "3.2.0" }
 k8-types = { version = "0.5.0", features = ["app"] }
 fluvio-types = { path = "../fluvio-types" }
-fluvio-channel = { path  = "../fluvio-channel" }
+fluvio-channel = { path = "../fluvio-channel" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.7", features = ["task", "fixture"] }

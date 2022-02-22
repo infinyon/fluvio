@@ -1,5 +1,7 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
+use std::os::unix::prelude::AsRawFd;
+use std::os::unix::prelude::FromRawFd;
 use std::path::PathBuf;
 use std::path::Path;
 use std::sync::Arc;
@@ -18,6 +20,7 @@ use dataplane::{Offset, Size};
 use tracing::error;
 use tracing::info;
 
+use crate::LogIndex;
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
 use crate::validator::validate;
@@ -27,6 +30,9 @@ use crate::StorageError;
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
 
 pub trait FileRecords {
+    /// get clone of the file
+    fn file(&self) -> File;
+
     fn get_base_offset(&self) -> Offset;
 
     // fn get_file(&self) -> &File;
@@ -77,8 +83,13 @@ impl FileRecordsSlice {
         self.base_offset
     }
 
-    pub async fn validate(&self) -> Result<Offset, LogValidationError> {
-        validate(&self.path).await
+    pub async fn validate(
+        &self,
+        index: &LogIndex,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<Offset, LogValidationError> {
+        validate(&self.path, Some(index), skip_errors, verbose).await
     }
 
     pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {
@@ -105,6 +116,10 @@ impl FileRecordsSlice {
 }
 
 impl FileRecords for FileRecordsSlice {
+    fn file(&self) -> File {
+        unsafe { File::from_raw_fd(self.file.as_raw_fd()) }
+    }
+
     fn get_base_offset(&self) -> Offset {
         self.base_offset
     }

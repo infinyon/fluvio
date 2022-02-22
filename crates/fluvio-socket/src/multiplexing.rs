@@ -22,6 +22,7 @@ use fluvio_future::net::ConnectionFd;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
+use tracing::info;
 use tracing::{debug, error, trace, instrument};
 
 use fluvio_future::timer::sleep;
@@ -386,11 +387,11 @@ impl MultiPlexingResponseDispatcher {
                                 Err(err) => error!("error decoding response, {}", err),
                             }
                         } else {
-                            debug!("problem getting frame from stream. terminating");
+                            info!("problem getting frame from stream. terminating");
                             break;
                         }
                     } else {
-                        debug!("inner stream has terminated ");
+                        info!("inner stream has terminated ");
                         self.stale.store(true, SeqCst);
 
                         let guard = self.senders.lock().await;
@@ -420,7 +421,7 @@ impl MultiPlexingResponseDispatcher {
                         }
                     }
 
-                    debug!("multiplexer terminated");
+                    info!("multiplexer terminated");
                     break;
 
                 }

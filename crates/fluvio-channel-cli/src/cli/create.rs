@@ -105,13 +105,16 @@ impl CreateOpt {
             new_channel_info.set_tag_strategy(image_tag_strategy)?;
 
             config.insert_channel(channel_name.clone(), new_channel_info)?;
-            config.save()?;
 
             // We should also try to install the binary if it doesn't exist in the binary path
             if !binary_path.exists() {
                 let version = FluvioBinVersion::parse(channel_name)?;
                 install_channel_fluvio_bin(channel_name.to_string(), &config, version).await?;
             }
+
+            //fixes issue_2168
+            //only save if the version parse is successful
+            config.save()?;
 
             Ok(())
         } else {

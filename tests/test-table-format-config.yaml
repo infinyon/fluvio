@@ -1,0 +1,5 @@
+name: smoke-test 
+inputFormat: "JSON"
+columns:
+  - keyPath: "key1"
+  - keyPath: "key2"

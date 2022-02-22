@@ -4,7 +4,7 @@
 //! Lookup custom-spu in local metadata, grab its K8 context
 //! and send K8 a delete message.
 //!
-use tracing::{debug, trace, instrument};
+use tracing::{debug, info, trace, instrument};
 use std::io::{Error, ErrorKind};
 
 use dataplane::ErrorCode;
@@ -25,6 +25,8 @@ pub async fn handle_un_register_custom_spu_request<AC: AuthContext>(
     auth_ctx: &AuthServiceContext<AC>,
 ) -> Result<Status, Error> {
     let spu_name = key.to_string();
+
+    info!(%spu_name, "Deleting(unregistering) custom spu");
     if let Ok(authorized) = auth_ctx
         .auth
         .allow_instance_action(
@@ -110,6 +112,7 @@ async fn un_register_custom_spu<AC: AuthContext>(
             Some(format!("error deleting: {}", err)),
         )
     } else {
-        Status::new_ok(spu_name.clone())
+        info!(%spu_name, "custom spu unregistered");
+        Status::new_ok(spu_name)
     }
 }

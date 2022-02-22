@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.12.1"
+version = "0.12.5"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -21,7 +21,6 @@ unstable = []
 
 [dependencies]
 tracing = "0.1.19"
-tracing-futures = "0.2.4"
 futures-util = "0.3.6"
 bytes = "1.0.1"
 toml = "0.5.5"
@@ -41,6 +40,7 @@ siphasher = "0.3.5"
 cfg-if = "1.0.0"
 derive_builder = "0.10"
 async-trait = "0.1.51"
+instant = "0.1.12"
 
 
 # Fluvio dependencies

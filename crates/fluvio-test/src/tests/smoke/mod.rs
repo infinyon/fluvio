@@ -8,25 +8,26 @@ use std::any::Any;
 use std::fmt;
 use std::path::PathBuf;
 use std::time::Duration;
+use std::fs::File;
+use std::io::Read;
+use std::collections::BTreeMap;
 
 use structopt::StructOpt;
+use tracing::debug;
+use serde::{Deserialize};
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
 use fluvio_test_util::test_meta::{TestOption, TestCase};
 use fluvio_test_util::async_process;
 
+use fluvio_cli::tableformat::TableFormatConfig;
+use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 use fluvio::metadata::{
     topic::{TopicSpec, TopicReplicaParam, ReplicaSpec},
     connector::{ManagedConnectorSpec, SecretString},
 };
 use fluvio_future::timer::sleep;
-
-use tracing::debug;
-use std::fs::File;
-use std::io::Read;
-use std::collections::BTreeMap;
-use serde::{Deserialize};
 
 #[derive(Debug, Clone)]
 pub struct SmokeTestCase {
@@ -63,7 +64,11 @@ pub struct SmokeTestOption {
     #[structopt(long)]
     pub connector_config: Option<PathBuf>,
     #[structopt(long)]
+    pub table_format_config: Option<PathBuf>,
+    #[structopt(long)]
     pub skip_consumer_validate: bool,
+    #[structopt(long)]
+    pub skip_test_connector: bool,
 }
 
 impl TestOption for SmokeTestOption {
@@ -89,136 +94,197 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let smoke_test_case: SmokeTestCase = test_case.into();
 
     // If connector tests requested
-    let maybe_connector = if let Some(ref connector_config) =
-        smoke_test_case.option.connector_config
-    {
-        let connector_process = async_process!(async {
-            test_driver
-                .connect()
-                .await
-                .expect("Connecting to cluster failed");
+    let maybe_connector = if !smoke_test_case.option.skip_test_connector {
+        if let Some(ref connector_config) = smoke_test_case.option.connector_config {
+            let connector_process = async_process!(
+                async {
+                    test_driver
+                        .connect()
+                        .await
+                        .expect("Connecting to cluster failed");
 
-            // Add a connector CRD
-            let admin = test_driver.client().admin().await;
-            // Create a managed connector
-            let config = ConnectorConfig::from_file(&connector_config).unwrap();
-            let spec: ManagedConnectorSpec = config.clone().into();
-            let name = spec.name.clone();
+                    // Add a connector CRD
+                    let admin = test_driver.client().admin().await;
+                    // Create a managed connector
+                    let config = ConnectorConfig::from_file(&connector_config).unwrap();
+                    let spec: ManagedConnectorSpec = config.clone().into();
+                    let name = spec.name.clone();
 
-            debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
+                    debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
 
-            // If the managed connector wants its topic created, don't fail if it already exists
-            if config.create_topic {
-                println!("Attempt to create connector's topic");
-                let topic_spec: TopicSpec =
-                    ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false)).into();
-                debug!("topic spec: {:?}", topic_spec);
-                admin
-                    .create(config.topic.clone(), false, topic_spec)
-                    .await
-                    .unwrap_or(());
-            }
+                    // If the managed connector wants its topic created, don't fail if it already exists
+                    if config.create_topic {
+                        println!("Attempt to create connector's topic");
+                        let topic_spec: TopicSpec =
+                            ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false)).into();
+                        debug!("topic spec: {:?}", topic_spec);
+                        admin
+                            .create(config.topic.clone(), false, topic_spec)
+                            .await
+                            .unwrap_or(());
+                    }
 
-            // If the connector already exists, don't fail
-            println!("Attempt to create connector");
-            admin
-                .create(name.to_string(), false, spec)
-                .await
-                .unwrap_or(());
+                    // If the connector already exists, don't fail
+                    println!("Attempt to create connector");
+                    admin
+                        .create(name.to_string(), false, spec)
+                        .await
+                        .unwrap_or(());
 
-            // Build a new SmokeTestCase so we can use the consumer verify
-            // Ending after a static number of records received
-            let new_smoke_test_case = SmokeTestCase {
-                environment: EnvironmentSetup {
-                    topic_name: Some(config.topic.clone()),
-                    tls: smoke_test_case.environment.tls,
-                    tls_user: smoke_test_case.environment.tls_user(),
-                    spu: smoke_test_case.environment.spu,
-                    replication: smoke_test_case.environment.replication,
-                    partition: smoke_test_case.environment.partition,
-                    ..Default::default()
+                    // Build a new SmokeTestCase so we can use the consumer verify
+                    // Ending after a static number of records received
+                    let new_smoke_test_case = SmokeTestCase {
+                        environment: EnvironmentSetup {
+                            topic_name: Some(config.topic.clone()),
+                            tls: smoke_test_case.environment.tls,
+                            tls_user: smoke_test_case.environment.tls_user(),
+                            spu: smoke_test_case.environment.spu,
+                            replication: smoke_test_case.environment.replication,
+                            partition: smoke_test_case.environment.partition,
+                            ..Default::default()
+                        },
+                        option: SmokeTestOption {
+                            skip_consumer_validate: true,
+                            producer_iteration: 10,
+                            connector_config: smoke_test_case.option.connector_config.clone(),
+                            ..Default::default()
+                        },
+                    };
+
+                    // Verify that connector is creating data
+                    let start_offset =
+                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone()).await;
+                    let start = start_offset.get(&config.topic.clone()).expect("offsets");
+
+                    println!("Verify connector is creating data: (start: {})", start);
+
+                    const CI_TIME: u64 = 90;
+                    const DEV_TIME: u64 = 10;
+
+                    let wait_sec = if std::env::var("CI").is_ok() {
+                        CI_TIME
+                    } else {
+                        DEV_TIME
+                    };
+
+                    println!("Waiting {} seconds to let connector write", &wait_sec);
+                    sleep(Duration::from_secs(wait_sec)).await;
+
+                    let check_offset =
+                        offsets::find_offsets(&test_driver, &new_smoke_test_case.clone()).await;
+                    let check = check_offset.get(&config.topic.clone()).expect("offsets");
+
+                    if check > start {
+                        println!("Connector is receiving data: (check: {})", check)
+                    } else {
+                        panic!("Connector not receiving data")
+                    };
+
+                    println!("Run consume test against connector topic");
+                    validate_consume_message_api(
+                        test_driver,
+                        start_offset,
+                        &new_smoke_test_case.clone(),
+                    )
+                    .await;
                 },
-                option: SmokeTestOption {
-                    skip_consumer_validate: true,
-                    producer_iteration: 10,
-                    connector_config: smoke_test_case.option.connector_config.clone(),
-                    ..Default::default()
-                },
-            };
+                "connector"
+            );
 
-            // Verify that connector is creating data
-            let start_offset =
-                offsets::find_offsets(&test_driver, &new_smoke_test_case.clone()).await;
-            let start = start_offset.get(&config.topic.clone()).expect("offsets");
+            Some(connector_process)
 
-            println!("Verify connector is creating data: (start: {})", start);
-
-            const CI_TIME: u64 = 90;
-            const DEV_TIME: u64 = 10;
-
-            let wait_sec = if std::env::var("CI").is_ok() {
-                CI_TIME
-            } else {
-                DEV_TIME
-            };
-
-            println!("Waiting {} seconds to let connector write", &wait_sec);
-            sleep(Duration::from_secs(wait_sec)).await;
-
-            let check_offset =
-                offsets::find_offsets(&test_driver, &new_smoke_test_case.clone()).await;
-            let check = check_offset.get(&config.topic.clone()).expect("offsets");
-
-            if check > start {
-                println!("Connector is receiving data: (check: {})", check)
-            } else {
-                panic!("Connector not receiving data")
-            };
-
-            println!("Run consume test against connector topic");
-            validate_consume_message_api(test_driver, start_offset, &new_smoke_test_case.clone())
-                .await;
-        });
-
-        Some(connector_process)
-
-        // Wait a few seconds to allow the connector a chance to deploy and store data
+            // Wait a few seconds to allow the connector a chance to deploy and store data
+        } else {
+            None
+        }
     } else {
+        println!("Skipping test-connector tests, by request");
         None
     };
 
+    // TableFormat test
+    let maybe_table_format =
+        if let Some(ref table_format_config) = smoke_test_case.option.table_format_config {
+            let table_format_process = async_process!(
+                async {
+                    let config = TableFormatConfig::from_file(table_format_config)
+                        .expect("TableFormat config load failed");
+                    let table_format_spec: TableFormatSpec = config.into();
+                    let name = table_format_spec.name.clone();
+
+                    test_driver
+                        .connect()
+                        .await
+                        .expect("Connecting to cluster failed");
+
+                    let admin = test_driver.client().admin().await;
+
+                    admin
+                        .create(name.clone(), false, table_format_spec)
+                        .await
+                        .expect("TableFormat create failed");
+                    println!("tableformat \"{}\" created", &name);
+
+                    // Wait a moment then delete
+                    sleep(Duration::from_secs(5)).await;
+
+                    admin
+                        .delete::<TableFormatSpec, _>(name.clone())
+                        .await
+                        .expect("TableFormat delete failed");
+                    println!("tableformat \"{}\" deleted", &name);
+                },
+                "tableformat"
+            );
+
+            Some(table_format_process)
+            // Create a managed connector
+        } else {
+            None
+        };
+
     // We're going to handle the `--consumer-wait` flag in this process
-    let producer_wait = async_process!(async {
-        let mut test_driver_consumer_wait = test_driver.clone();
+    let producer_wait = async_process!(
+        async {
+            let mut test_driver_consumer_wait = test_driver.clone();
 
-        test_driver
-            .connect()
-            .await
-            .expect("Connecting to cluster failed");
-        println!("About to start producer test");
-
-        let start_offset = produce::produce_message(test_driver, &smoke_test_case).await;
-
-        // If we've passed in `--consumer-wait` then we should start the consumer after the producer
-        if smoke_test_case.option.consumer_wait {
-            test_driver_consumer_wait
-                .connect()
-                .await
-                .expect("Connecting to cluster failed");
-            validate_consume_message_api(test_driver_consumer_wait, start_offset, &smoke_test_case)
-                .await;
-        }
-    });
-
-    // By default, we should run the consumer and producer at the same time
-    if !smoke_test_case.option.consumer_wait {
-        let consumer_wait = async_process!(async {
             test_driver
                 .connect()
                 .await
                 .expect("Connecting to cluster failed");
-            consume::validate_consume_message(test_driver, &smoke_test_case).await;
-        });
+            println!("About to start producer test");
+
+            let start_offset = produce::produce_message(test_driver, &smoke_test_case).await;
+
+            // If we've passed in `--consumer-wait` then we should start the consumer after the producer
+            if smoke_test_case.option.consumer_wait {
+                test_driver_consumer_wait
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                validate_consume_message_api(
+                    test_driver_consumer_wait,
+                    start_offset,
+                    &smoke_test_case,
+                )
+                .await;
+            }
+        },
+        "producer"
+    );
+
+    // By default, we should run the consumer and producer at the same time
+    if !smoke_test_case.option.consumer_wait {
+        let consumer_wait = async_process!(
+            async {
+                test_driver
+                    .connect()
+                    .await
+                    .expect("Connecting to cluster failed");
+                consume::validate_consume_message(test_driver, &smoke_test_case).await;
+            },
+            "consumer validation"
+        );
 
         let _ = consumer_wait.join();
     }
@@ -226,6 +292,10 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
 
     if let Some(connector_wait) = maybe_connector {
         let _ = connector_wait.join();
+    };
+
+    if let Some(table_format_wait) = maybe_table_format {
+        let _ = table_format_wait.join();
     };
 }
 

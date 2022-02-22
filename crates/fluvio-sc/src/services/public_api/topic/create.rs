@@ -14,7 +14,7 @@ use std::io::{Error as IoError, ErrorKind};
 use fluvio_controlplane_metadata::topic::ReplicaSpec;
 use fluvio_sc_schema::objects::CommonCreateRequest;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
-use tracing::{debug, trace, instrument};
+use tracing::{info, debug, trace, instrument};
 
 use dataplane::ErrorCode;
 
@@ -40,7 +40,7 @@ pub async fn handle_create_topics_request<AC: AuthContext>(
 ) -> Result<Status, IoError> {
     let name = create.name;
 
-    debug!( topic = %name,"creating");
+    info!( topic = %name,"creating topic");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -85,7 +85,7 @@ async fn validate_topic_request(name: &str, topic_spec: &TopicSpec, metadata: &C
         return Status::new(
             name.to_string(),
             ErrorCode::TopicInvalidName,
-            Some(format!("Invalid topic name: '{}'. Topic name can contain only lowercase alphanumeric characters or '-'.", name.to_string())),
+            Some(format!("Invalid topic name: '{}'. Topic name can contain only lowercase alphanumeric characters or '-'.", name)),
         );
     }
 
@@ -189,7 +189,7 @@ async fn process_topic_request<AC: AuthContext>(
         Ok(instance) => instance,
         Err(err) => {
             return Status::new(
-                name,
+                name.clone(),
                 ErrorCode::TopicNotProvisioned,
                 Some(format!("error: {}", err)),
             )
@@ -198,8 +198,9 @@ async fn process_topic_request<AC: AuthContext>(
 
     let partition_count = topic_instance.spec.partitions();
     debug!(
-        "waiting for {} partitions to be provisioned",
-        partition_count
+        %partition_count,
+        "waiting for partitions to be provisioned",
+
     );
     let topic_uid = &topic_instance.ctx().item().uid;
 
@@ -223,6 +224,7 @@ async fn process_topic_request<AC: AuthContext>(
                     provisioned_count
                 );
                 if provisioned_count == partition_count {
+                    info!(topic = %name, "Topic created successfully");
                     return Status::new_ok(name);
                 }
             }

@@ -3,40 +3,127 @@ name: Hourly tests
 permissions:
   contents: read
 
+concurrency:
+  group: hourly-${{ github.ref }}
+  cancel-in-progress: true
+
 on:
   schedule:
     - cron: '0 * * * *'
-#  pull_request:
-#    branches: [master]
+ # pull_request:
+ #   branches: [master]
   workflow_dispatch:
 jobs:
-  longevity:
-    name: Longevity test 
+
+  build_long_binaries:
+    name: Test buiild for ${{ matrix.binary }}  on (${{ matrix.os }})
+    if: ${{ false }}
     runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        rust-target:
+          - x86_64-unknown-linux-musl
+        rust: [stable]
+        binary: [fluvio-test]
+        os: [ubuntu-latest]
+    env:
+      RUST_BACKTRACE: full
+      RUSTV: ${{ matrix.rust }}
+      TARGET: ${{ matrix.rust-target }}
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
+      RELEASE_NAME: debug
+    steps:
+      - uses: actions/checkout@v2
+
+      # If this job is being run by Bors (it was pushed to staging),
+      # then build and run in release mode
+      - name: Set build RELEASE mode
+        shell: bash
+        run: |
+          echo "RELEASE=true" | tee -a $GITHUB_ENV
+          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
+          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
+
+      - name: Install Rust ${{ matrix.rust }}
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{ matrix.rust }}
+          profile: minimal
+          override: true
+      - name: Install zig
+        run: ./actions/zig-install.sh ${{ matrix.os }}
+      - uses: Swatinem/rust-cache@v1
+        with:
+          key: ${{ matrix.os }}-${{ env.RUST_BIN_DIR }}-${{ matrix.binary }}
+
+      - name: Build fluvio
+        if: matrix.binary == 'fluvio'
+        run: make build-cli
+
+      - name: Build fluvio-run
+        if: matrix.binary == 'fluvio-run'
+        run: make build-cluster
+
+      - name: Build fluvio-test
+        if: matrix.binary == 'fluvio-test'
+        run: make build-test
+
+      # Upload artifacts
+      - name: Upload artifact - ${{ matrix.binary }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.binary }}-${{ matrix.rust-target }}
+          path: ${{ env.RUST_BIN_DIR }}/${{ matrix.binary }}
+
+
+  longevity:
+    name: Hourly Longevity test 
+    runs-on: ${{ matrix.os }}
+ #   needs:
+ #    - build_long_binaries
     timeout-minutes: 60
     strategy:
       fail-fast: false 
       matrix:
         os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+        run: [r1]
+       # run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
+        binary: [dev]
     env:
       K3D_VERSION: v4.4.8
+      TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
+      RUN_TIME: 1800
+      PRODUCER: 10
     steps:
       - uses: actions/checkout@v2
 
       - name: Login GH CLI
+  #      if: ${{ false }}
         run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
 
       - name: Download dev release
-        run: gh release download dev -R infinyon/fluvio -D /tmp
+  #      if: ${{ false }}
+        run: gh release download dev -R infinyon/fluvio -D /tmp/release
 
-      - name: Unpack fluvio-test
+      - name: Unpack fluvio-test from dev release
+  #      if: ${{ false }}
         run: |
-          unzip "/tmp/fluvio-test-x86_64-unknown-linux-musl.zip" -d "/tmp/fluvio-test-x86_64-unknown-linux-musl"
-          chmod +x /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test
-          cp /tmp/fluvio-test-x86_64-unknown-linux-musl/fluvio-test .
+          cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
+          echo "/tmp/release" >> $GITHUB_PATH
 
-      - name: Print artifacts and mark executable
-        run: chmod +x ./fluvio-test
+      - name: Download build artifact - fluvio-test
+        if: ${{ false }}
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/bin
+
+      - name: Set up Fluvio binaries from build
+        if: ${{ false }}
+        run: |
+          chmod +x ~/bin/fluvio-test
+          echo "~/bin" >> $GITHUB_PATH
 
       ## DEBUG: Don't forget to remove this
       ## TODO: Figure out how to add this to the hourly test
@@ -61,7 +148,11 @@ jobs:
       - name: Install Fluvio CLI and start cluster
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
-          ~/.fluvio/bin/fluvio cluster start --image-version=latest
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Start Fluvio Cluster
+        run: |
+          fluvio version
+          fluvio cluster start
 
       # Disabled for now bc data load is unstable in CI
       #- name: Look for longevity data
@@ -82,13 +173,12 @@ jobs:
       #      echo "Longevity data does not exist"
       #    fi
 
-      - name: Print partition list
-        run: |
-          ~/.fluvio/bin/fluvio partition list
-          sleep 15
 
       - name: Run longevity test
-        run: make TEST_BIN=./fluvio-test longevity-test
+        timeout-minutes: 35
+        run: |
+          sleep 10
+          RUST_LOG=info fluvio-test longevity -- --runtime-seconds=${{ env.RUN_TIME }} --producers ${{ env.PRODUCER }} --consumers ${{ env.PRODUCER }}
           
       ## If the test passed, then copy the data from cluster to store into artifacts
       #- name: Export data from the cluster for caching
@@ -113,27 +203,15 @@ jobs:
       #    name: 'longevity-data' 
       #    path: longevity-data.tar
       #    retention-days: 5
-
-      - name: Save logs
+      - name: Run diagnostics
         if: failure()
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_longevity_spu0.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_longevity_sc.log || true
-      - name: Upload logs
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
         timeout-minutes: 5
         if: failure()
-        uses: actions/upload-artifact@v2
         with:
-          name: k8_longevity_log
-          path: /tmp/k8_*.log
+          name: hourly-longevity-${{ matrix.run }}.diag
+          path: diagnostics*.gz
+      

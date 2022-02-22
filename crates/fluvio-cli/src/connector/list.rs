@@ -7,7 +7,7 @@ use std::sync::Arc;
 use structopt::StructOpt;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+use fluvio::metadata::connector::ManagedConnectorSpec;
 
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
@@ -47,7 +47,7 @@ mod output {
     use fluvio_extension_common::Terminal;
 
     use fluvio::metadata::objects::Metadata;
-    use fluvio_controlplane_metadata::connector::ManagedConnectorSpec;
+    use fluvio::metadata::connector::ManagedConnectorSpec;
 
     use crate::CliError;
     use fluvio_extension_common::output::TableOutputHandler;
@@ -84,7 +84,7 @@ mod output {
     impl TableOutputHandler for ListManagedConnectors {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS",]
+            row!["NAME", "VERSION", "STATUS",]
         }
 
         /// return errors in string format
@@ -97,9 +97,10 @@ mod output {
             self.0
                 .iter()
                 .map(|r| {
-                    let _spec = &r.spec;
+                    let spec = &r.spec;
                     Row::new(vec![
-                        Cell::new_align(&r.name, Alignment::RIGHT),
+                        Cell::new_align(&r.name, Alignment::LEFT),
+                        Cell::new_align(&spec.version(), Alignment::LEFT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
                     ])
                 })

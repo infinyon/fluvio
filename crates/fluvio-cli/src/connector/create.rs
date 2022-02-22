@@ -4,7 +4,7 @@
 //! CLI tree to generate Create a Managed Connector
 //!
 
-use fluvio_controlplane_metadata::topic::ReplicaSpec;
+use fluvio::metadata::topic::ReplicaSpec;
 use structopt::StructOpt;
 use tracing::debug;
 
@@ -32,30 +32,28 @@ pub struct CreateManagedConnectorOpt {
 
 impl CreateManagedConnectorOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
-        let config = ConnectorConfig::from_file(&self.config).await?;
-        let topic = config.topic.clone();
-        let create_topic = config.create_topic.clone();
-        let spec = config.to_managed_connector_spec().await?;
+        let config = ConnectorConfig::from_file(&self.config)?;
+        let spec: ManagedConnectorSpec = config.clone().into();
         let name = spec.name.clone();
 
         debug!("creating managed_connector: {}, spec: {:#?}", name, spec);
 
         let admin = fluvio.admin().await;
-        if create_topic {
-            let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
-            debug!("topic spec: {:?}", replica_spec);
-            match admin
-                .create::<TopicSpec>(topic, false, replica_spec.into())
-                .await
-            {
-                Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
-                    //println!("Topic already exists");
-                    Ok(())
-                }
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
-            }?;
-        }
+
+        let replica_spec = ReplicaSpec::Computed(TopicReplicaParam::new(1, 1, false));
+        debug!("topic spec: {:?}", replica_spec);
+        match admin
+            .create::<TopicSpec>(config.topic, false, replica_spec.into())
+            .await
+        {
+            Err(FluvioError::AdminApi(ApiError::Code(ErrorCode::TopicAlreadyExists, _))) => {
+                //println!("Topic already exists");
+                Ok(())
+            }
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        }?;
+
         admin.create(name.to_string(), false, spec).await?;
 
         Ok(())

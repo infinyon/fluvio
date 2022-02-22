@@ -45,7 +45,7 @@ impl DescribeTopicsOpt {
 
 mod display {
 
-    use fluvio_controlplane_metadata::topic::ReplicaSpec;
+    use fluvio::metadata::topic::ReplicaSpec;
     use prettytable::Row;
     use prettytable::row;
     use serde::Serialize;

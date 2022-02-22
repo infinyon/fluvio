@@ -53,8 +53,5 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
     }
     //}
 
-    println!(
-        "Producer stopped. Time's up!\nRecords sent: {:?}",
-        records_sent
-    )
+    println!("Producer stopped. Time's up!\nRecords sent: {records_sent}",)
 }

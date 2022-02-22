@@ -204,7 +204,7 @@ impl FileReplica {
             debug!(last_offset, "last segment found, validating offsets");
             let mut last_segment =
                 MutableSegment::open_for_write(last_offset, shared_config.clone()).await?;
-            last_segment.validate().await?;
+            last_segment.validate(false, false).await?;
             info!(
                 end_offset = last_segment.get_end_offset(),
                 "existing segment validated with last offset",
@@ -289,7 +289,10 @@ impl FileReplica {
                 trace!("start offset is same as end offset, skipping");
                 return Ok(slice);
             } else if start_offset > leo {
-                return Err(ErrorCode::OffsetOutOfRange);
+                return Err(ErrorCode::Other(format!(
+                    "start offset: {} is greater than leo: {}",
+                    start_offset, leo
+                )));
             } else if let Some(slice) = self
                 .active_segment
                 .records_slice(start_offset, max_offset)
@@ -297,7 +300,10 @@ impl FileReplica {
             {
                 slice
             } else {
-                return Err(ErrorCode::OffsetOutOfRange);
+                return Err(ErrorCode::Other(format!(
+                    "no records found in active replica, start: {}, max: {:#?}, active: {:#?}",
+                    start_offset, max_offset, self.active_segment
+                )));
             }
         } else {
             debug!(start_offset, active_base_offset, "not in active sgments");
@@ -325,15 +331,19 @@ impl FileReplica {
 
     #[instrument(skip(self, item))]
     async fn write_batch(&mut self, item: &mut Batch) -> Result<(), StorageError> {
-        if !(self.active_segment.write_batch(item).await?) {
-            debug!("segment has no room, rolling over previous segment");
+        if !(self.active_segment.append_batch(item).await?) {
+            info!(
+                partition = self.partition,
+                path = %self.option.base_dir.display(),
+                base_offset = self.active_segment.get_base_offset(),
+                "rolling over active segment");
             self.active_segment.roll_over().await?;
             let last_offset = self.active_segment.get_end_offset();
             let new_segment = MutableSegment::create(last_offset, self.option.clone()).await?;
             let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
             let old_segment = old_mut_segment.as_segment().await?;
             self.prev_segments.add_segment(old_segment).await;
-            self.active_segment.write_batch(item).await?;
+            self.active_segment.append_batch(item).await?;
         }
         Ok(())
     }

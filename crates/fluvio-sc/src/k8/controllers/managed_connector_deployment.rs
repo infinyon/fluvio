@@ -8,6 +8,7 @@ use k8_types::{
         ConfigMapVolumeSource, ContainerSpec, ImagePullPolicy, KeyToPath, PodSpec, VolumeMount,
         VolumeSpec, SecretVolumeSpec, PodSecurityContext,
     },
+    Env,
 };
 
 use fluvio_future::{task::spawn, timer::sleep};
@@ -224,7 +225,7 @@ impl ManagedConnectorDeploymentController {
         let parameters: Vec<String> = parameters
             .keys()
             .zip(parameters.values())
-            .flat_map(|(key, value)| [format!("--{}={}", key.clone(), value.clone())])
+            .flat_map(|(key, value)| [format!("--{}={}", key.replace("_", "-"), value)])
             .collect::<Vec<_>>();
 
         // Prefixing the args with a "--" passed to the container is needed for an unclear reason.
@@ -288,6 +289,12 @@ impl ManagedConnectorDeploymentController {
                 });
             }
         }
+        let secrets = &mc_spec.secrets;
+        let env: Vec<Env> = secrets
+            .keys()
+            .zip(secrets.values())
+            .flat_map(|(key, value)| [Env::key_value(key, &(**value).to_string())])
+            .collect::<Vec<_>>();
 
         debug!(
             "Starting connector for image: {:?} with arguments {:?}",
@@ -307,9 +314,7 @@ impl ManagedConnectorDeploymentController {
                     name: Self::DEFAULT_CONNECTOR_NAME.to_owned(),
                     image: Some(image),
                     image_pull_policy: Some(image_pull_policy),
-                    /*
-                    env, // TODO
-                    */
+                    env,
                     volume_mounts,
                     args,
                     ..Default::default()
@@ -329,5 +334,81 @@ impl ManagedConnectorDeploymentController {
             selector: LabelSelector { match_labels },
             ..Default::default()
         })
+    }
+    pub async fn get_image(type_: &str, allowed_connector_prefix: &[String]) -> Option<String> {
+        let image = if type_.starts_with("https://") {
+            debug!(
+                "Checking 3rd party connector {:?} in allowed_prefixes - {:?}",
+                type_, allowed_connector_prefix
+            );
+            let mut image = None;
+            for prefix in allowed_connector_prefix {
+                if type_.starts_with(prefix.as_str()) {
+                    match ThirdPartyConnectorSpec::from_url(type_).await {
+                        Ok(spec) => {
+                            debug!("Retrieved third party metadata {:?}", spec);
+                            image = Some(spec.image);
+                        }
+                        Err(e) => {
+                            info!("3rd party connector spec failed to retrieve {:?}", e);
+                        }
+                    }
+                    break;
+                }
+            }
+            if let Some(image) = image {
+                image
+            } else {
+                debug!("None of the connector prefixes matched!");
+                return None;
+            }
+        } else {
+            format!("infinyon/fluvio-connect-{}", type_)
+        };
+        Some(image)
+    }
+}
+#[cfg(test)]
+mod third_party_connector_tests {
+    use super::*;
+
+    #[fluvio_future::test]
+    async fn test_authorized_prefix() {
+        let image = ManagedConnectorDeploymentController::get_image("foo", &[]).await;
+        assert_eq!(image, Some("infinyon/fluvio-connect-foo".to_string()));
+    }
+
+    #[fluvio_future::test]
+    async fn test_unauthorized_prefix() {
+        let image = ManagedConnectorDeploymentController::get_image(
+            "https://google.com",
+            &["https://yahoo.com".to_string()],
+        )
+        .await;
+        assert_eq!(image, None);
+    }
+
+    //#[fluvio_future::test]
+    #[allow(unused)]
+    async fn test_official_3rd_party_connector() {
+        let image = ManagedConnectorDeploymentController::get_image("https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml", &["https://raw.githubusercontent.com/infinyon/fluvio-connectors".to_string()]).await;
+        assert_eq!(
+            image,
+            Some("infinyon/fluvio-connect-test-connector".to_string())
+        );
+    }
+}
+
+#[derive(Default, Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ThirdPartyConnectorSpec {
+    pub image: String,
+}
+
+impl ThirdPartyConnectorSpec {
+    pub async fn from_url(_url: &str) -> Result<Self, Box<dyn std::error::Error>> {
+        // disable third party support
+        //let body = surf::get(url).recv_string().await?;
+        //Ok(serde_yaml::from_str(&body)?)
+        todo!()
     }
 }

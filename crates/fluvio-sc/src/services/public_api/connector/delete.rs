@@ -1,6 +1,6 @@
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, trace, instrument};
+use tracing::{info, trace, instrument};
 
 use fluvio_sc_schema::Status;
 use fluvio_auth::{AuthContext, InstanceAction};
@@ -17,7 +17,7 @@ pub async fn handle_delete_managed_connector<AC: AuthContext>(
 ) -> Result<Status, Error> {
     use dataplane::ErrorCode;
 
-    debug!("delete managed connectors: {}", name);
+    info!(connector_name = %name, "deleting managed connector");
 
     if let Ok(authorized) = auth_ctx
         .auth
@@ -60,6 +60,7 @@ pub async fn handle_delete_managed_connector<AC: AuthContext>(
                 Some(err.to_string()),
             )
         } else {
+            info!(connector_name = %name, "managed connector deleted");
             Status::new_ok(name)
         }
     } else {

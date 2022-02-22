@@ -20,6 +20,9 @@
         ],
         "SmartModule": [
             "All"
+        ],
+        "TableFormat": [
+            "All"
         ]
     },
     "Root": {
@@ -42,6 +45,9 @@
             "All"
         ],
         "SmartModule": [
+            "All"
+        ],
+        "TableFormat": [
             "All"
         ]
     }

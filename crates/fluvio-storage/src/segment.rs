@@ -4,12 +4,12 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-use fluvio_future::fs::remove_file;
-use tracing::{debug, trace, instrument, info};
+use tracing::{debug, trace, instrument, info, error};
 
+use fluvio_future::fs::remove_file;
+use fluvio_future::file_slice::AsyncFileSlice;
 use dataplane::batch::Batch;
 use dataplane::{Offset, Size, ErrorCode};
-use fluvio_future::file_slice::AsyncFileSlice;
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
@@ -19,10 +19,10 @@ use crate::records::FileRecords;
 use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
 use crate::config::{SharedReplicaConfig};
+use crate::validator::LogValidationError;
 use crate::{StorageError};
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
-use crate::validator::LogValidationError;
 
 pub type MutableSegment = Segment<MutLogIndex, MutFileRecords>;
 pub type ReadSegment = Segment<LogIndex, FileRecordsSlice>;
@@ -48,7 +48,7 @@ impl<I, L> fmt::Debug for Segment<I, L> {
 }
 
 impl<I, L> Segment<I, L> {
-    /// end offset, this always starts at 0 which indicates empty records
+    /// end offset, this always starts as baseoffset which indicates empty records
     pub fn get_end_offset(&self) -> Offset {
         self.end_offset
     }
@@ -75,20 +75,24 @@ where
         &self.index
     }
 
+    pub fn get_msg_log(&self) -> &L {
+        &self.msg_log
+    }
+
     pub async fn open_batch_header_stream(
         &self,
         start_pos: Size,
     ) -> Result<BatchHeaderStream, StorageError> {
         trace!(
-            "opening batch header: {:#?} at: {}",
-            self.msg_log.get_path(),
-            start_pos
+            path = ?self.msg_log.get_path(),
+            start_pos,
+            "opening batch header"
         );
 
         // let metadata = file.metadata().await?;
         // debug!("batch file len: {}",metadata.len());
         let mut stream = BatchHeaderStream::open(self.msg_log.get_path()).await?;
-        stream.set_absolute(start_pos);
+        stream.set_absolute(start_pos).await?;
         Ok(stream)
     }
 
@@ -146,7 +150,10 @@ where
                                             ErrorCode::Other(format!("msg slice: {:#?}", err))
                                         })?,
                                 )),
-                                None => Err(ErrorCode::OffsetOutOfRange),
+                                None => Err(ErrorCode::Other(format!(
+                                    "max offset position: {} not found",
+                                    max_offset
+                                ))),
                             }
                         }
                     }
@@ -159,7 +166,10 @@ where
                     )),
                 }
             }
-            None => Ok(None),
+            None => {
+                debug!(start_offset, "offset position not found");
+                Ok(None)
+            }
         }
     }
 
@@ -184,7 +194,10 @@ where
 
         let delta = (offset - self.base_offset) as Size;
         let position = match self.index.find_offset(delta) {
-            None => 0,
+            None => {
+                debug!(delta, "relative offset not found in index");
+                0
+            }
             Some(entry) => entry.position(),
         };
         debug!(file_postition = position, "found file pos");
@@ -239,18 +252,44 @@ impl Segment<LogIndex, FileRecordsSlice> {
         option: Arc<SharedReplicaConfig>,
     ) -> Result<Self, StorageError> {
         let msg_log = FileRecordsSlice::open(base_offset, option.clone()).await?;
-        let base_offset = msg_log.get_base_offset();
-        let end_offset = msg_log.validate().await?;
-        debug!(end_offset, base_offset, "base offset from msg_log");
         let index = LogIndex::open_from_offset(base_offset, option.clone()).await?;
-
-        Ok(Segment {
-            msg_log,
-            index,
-            option,
-            base_offset,
-            end_offset,
-        })
+        let base_offset = msg_log.get_base_offset();
+        let end_offset = msg_log.validate(&index, false, false).await?;
+        match msg_log.validate(&index, false, false).await {
+            Ok(end_offset) => {
+                debug!(end_offset, base_offset, "base offset from msg_log");
+                Ok(Segment {
+                    msg_log,
+                    index,
+                    option,
+                    base_offset,
+                    end_offset,
+                })
+            }
+            Err(LogValidationError::InvalidIndex {
+                offset,
+                batch_file_pos,
+                index_position,
+                diff_position,
+            }) => {
+                error!(
+                    offset,
+                    batch_file_pos, index_position, diff_position, "invalid index, rebuilding"
+                );
+                //  let index = msg_log.generate_index().await?;
+                Ok(Segment {
+                    msg_log,
+                    index,
+                    option,
+                    base_offset,
+                    end_offset,
+                })
+            }
+            Err(err) => {
+                error!(?err, "validation error");
+                Err(err.into())
+            }
+        }
     }
 
     pub(crate) fn is_expired(&self, expired_duration: &Duration) -> bool {
@@ -294,10 +333,10 @@ impl Segment<MutLogIndex, MutFileRecords> {
         base_offset: Offset,
         option: Arc<SharedReplicaConfig>,
     ) -> Result<MutableSegment, StorageError> {
-        trace!(
-            "opening mut segment: {} at: {:#?}",
+        debug!(
             base_offset,
-            &option.base_dir
+            base_dir = ?option.base_dir,
+            "opening active segment for write"
         );
         let msg_log = MutFileRecords::create(base_offset, option.clone()).await?;
         let base_offset = msg_log.get_base_offset();
@@ -313,14 +352,22 @@ impl Segment<MutLogIndex, MutFileRecords> {
         })
     }
 
+    #[cfg(test)]
     fn get_log_pos(&self) -> u32 {
         self.msg_log.get_pos()
     }
 
     /// validate the segment and load last offset
-    pub async fn validate(&mut self) -> Result<(), StorageError> {
-        self.end_offset = self.msg_log.validate().await?;
-        Ok(())
+    pub async fn validate(
+        &mut self,
+        skip_errors: bool,
+        verbose: bool,
+    ) -> Result<Offset, StorageError> {
+        self.end_offset = self
+            .msg_log
+            .validate(&self.index, skip_errors, verbose)
+            .await?;
+        Ok(self.end_offset)
     }
 
     // shrink index
@@ -347,41 +394,50 @@ impl Segment<MutLogIndex, MutFileRecords> {
         Segment::open_for_read(self.get_base_offset(), self.end_offset, self.option.clone()).await
     }
 
-    /// write a batch, the batch is relative, we assume this would be add to current segment
-    #[instrument(skip(item))]
-    pub async fn write_batch(&mut self, item: &mut Batch) -> Result<bool, StorageError> {
-        let current_offset = self.end_offset;
-        let base_offset = self.base_offset;
-        let pos = self.get_log_pos();
-
-        // fill in the base offset using current offset if record's batch offset is 0
-        // ensure batch is not already recorded
-        if item.base_offset == 0 {
-            item.set_base_offset(current_offset);
-        } else if item.base_offset < current_offset {
-            return Err(StorageError::LogValidation(
-                LogValidationError::ExistingBatch,
-            ));
+    /// Append new batch to segment.  This will update the index and msg log
+    /// This will perform following steps:
+    /// 1. Set batch's base offset to current end offset
+    /// 2. Append batch to msg log
+    /// 3. Write batch location to index
+    #[instrument(skip(batch))]
+    pub async fn append_batch(&mut self, batch: &mut Batch) -> Result<bool, StorageError> {
+        // adjust base offset and offset delta
+        // reject if batch len is 0
+        if batch.records().is_empty() {
+            return Err(StorageError::EmptyBatch);
         }
 
-        let batch_offset_delta = (current_offset - base_offset) as i32;
+        batch.set_base_offset(self.end_offset);
+        batch.update_offset_deltas();
+
+        let next_end_offset = batch.get_last_offset();
+
+        // relative offset of the batch to segment
+        let relative_offset_in_segment = (self.end_offset - self.base_offset) as i32;
+        let start_file_pos = self.msg_log.get_pos();
         debug!(
-            base_offset,
-            file_offset = pos,
-            batch_len = compute_batch_record_size(item),
-            "start writing batch"
+            base_offset = batch.get_base_offset(),
+            current_end_offset = self.end_offset,
+            next_end_offset,
+            relative_offset_in_segment,
+            start_file_pos,
+            "writing batch",
         );
 
-        if self.msg_log.write_batch(item).await? {
-            let batch_len = self.msg_log.get_pos();
-
+        let (write_success, batch_len, end_file_pos) = self.msg_log.write_batch(batch).await?;
+        info!(
+            write_success,
+            batch_len, end_file_pos, next_end_offset, "batch written"
+        );
+        if write_success {
             self.index
-                .write_index((batch_offset_delta as u32, pos, batch_len))
+                .write_index(
+                    relative_offset_in_segment as u32,
+                    start_file_pos,
+                    batch_len as u32,
+                )
                 .await?;
-
-            let last_offset_delta = self.msg_log.get_item_last_offset_delta();
-            trace!("flushing: last offset delta: {}", last_offset_delta);
-            self.end_offset = self.end_offset + last_offset_delta as Offset + 1;
+            self.end_offset = next_end_offset + 1;
             debug!(end_offset = self.end_offset, "updated leo");
             Ok(true)
         } else {
@@ -395,6 +451,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
     }
 }
 
+/*
 /// compute total number of values in the default batch
 fn compute_batch_record_size(batch: &Batch) -> usize {
     batch
@@ -402,6 +459,7 @@ fn compute_batch_record_size(batch: &Batch) -> usize {
         .iter()
         .fold(0, |acc, batch| acc + batch.value.len())
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -456,7 +514,7 @@ mod tests {
 
         // batch of 1
         active_segment
-            .write_batch(&mut create_batch_with_producer(100, 1))
+            .append_batch(&mut create_batch_with_producer(100, 1))
             .await
             .expect("write");
         assert_eq!(active_segment.get_end_offset(), 21);
@@ -503,7 +561,7 @@ mod tests {
             .expect("segment");
 
         active_segment
-            .write_batch(&mut create_batch_with_producer(100, 4))
+            .append_batch(&mut create_batch_with_producer(100, 4))
             .await
             .expect("batch");
 
@@ -546,15 +604,15 @@ mod tests {
             .await
             .expect("write");
         seg_sink
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("write");
         seg_sink
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("write");
         seg_sink
-            .write_batch(&mut create_batch())
+            .append_batch(&mut create_batch())
             .await
             .expect("write");
 
@@ -603,13 +661,17 @@ mod tests {
         assert_eq!(offset_pos3.get_pos(), 158);
         assert_eq!(offset_pos3.len(), 67);
 
-        // test whether you can send batch with non zero base offset
+        // test whether you can send batch with zero
+        assert_eq!(seg_sink.get_end_offset(), 46);
         let mut next_batch = create_batch();
-        next_batch.base_offset = 46;
-        assert!(seg_sink.write_batch(&mut next_batch).await.is_ok());
+        next_batch.base_offset = 0;
+        assert!(seg_sink.append_batch(&mut next_batch).await.is_ok());
+        assert_eq!(seg_sink.get_end_offset(), 48);
 
-        let mut fail_batch = create_batch();
-        fail_batch.base_offset = 45;
-        assert!(seg_sink.write_batch(&mut fail_batch).await.is_err());
+        // test batch with other base offset
+        let mut next_batch = create_batch();
+        next_batch.base_offset = 1000;
+        assert!(seg_sink.append_batch(&mut next_batch).await.is_ok());
+        assert_eq!(seg_sink.get_end_offset(), 50);
     }
 }

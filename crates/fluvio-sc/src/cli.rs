@@ -85,6 +85,7 @@ impl ScOpt {
         mut self,
     ) -> Result<(Config, K8Config, Option<(String, TlsConfig)>), ScError> {
         let k8_config = K8Config::load().expect("no k8 config founded");
+        info!(?k8_config, "k8 config");
 
         // if name space is specified, use one from k8 config
         if self.namespace.is_none() {

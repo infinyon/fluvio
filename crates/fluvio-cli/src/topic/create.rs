@@ -13,10 +13,10 @@ use tracing::debug;
 use structopt::StructOpt;
 use humantime::parse_duration;
 
-use fluvio_controlplane_metadata::topic::CleanupPolicy;
-use fluvio_controlplane_metadata::topic::ReplicaSpec;
-use fluvio_controlplane_metadata::topic::SegmentBasedPolicy;
-use fluvio_controlplane_metadata::topic::TopicStorageConfig;
+use fluvio::metadata::topic::CleanupPolicy;
+use fluvio::metadata::topic::ReplicaSpec;
+use fluvio::metadata::topic::SegmentBasedPolicy;
+use fluvio::metadata::topic::TopicStorageConfig;
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 
 use fluvio::Fluvio;

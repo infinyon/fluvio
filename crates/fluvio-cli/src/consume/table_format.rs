@@ -13,7 +13,7 @@ use tui::{
     Frame, Terminal,
 };
 use crossterm::event::{Event, KeyCode, MouseEventKind};
-use fluvio_controlplane_metadata::tableformat::{TableFormatColumnConfig, TableFormatSpec, DataFormat};
+use fluvio::metadata::tableformat::{TableFormatColumnConfig, TableFormatSpec, DataFormat};
 
 use std::collections::BTreeMap;
 

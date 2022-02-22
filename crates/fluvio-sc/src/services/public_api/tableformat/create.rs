@@ -6,7 +6,7 @@
 
 use std::io::{Error, ErrorKind};
 
-use tracing::{debug, trace, instrument};
+use tracing::{debug, info, trace, instrument};
 
 use dataplane::ErrorCode;
 use fluvio_sc_schema::{Status};
@@ -27,7 +27,7 @@ pub async fn handle_create_tableformat_request<AC: AuthContext>(
 ) -> Result<Status, Error> {
     let name = create.name;
 
-    debug!(%name,"creating tableformat");
+    info!(%name,"creating tableformat");
 
     if auth_ctx
         .global_ctx
@@ -82,6 +82,7 @@ async fn process_tableformat_request(
         let error = Some(err.to_string());
         Status::new(name, ErrorCode::TableFormatError, error) // TODO: create error type
     } else {
+        info!(%name,"tableformat created");
         Status::new_ok(name.clone())
     }
 }

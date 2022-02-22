@@ -134,7 +134,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
             use fluvio_test_util::test_meta::test_timer::TestTimer;
             use fluvio_test_util::test_runner::test_driver::TestDriver;
             use fluvio_test_util::test_runner::test_meta::FluvioTestMeta;
-            use fluvio_test_util::async_process;
+            use fluvio_test_util::{async_process,fork_and_wait};
 
             let test_reqs : TestRequirements = serde_json::from_str(#fn_test_reqs_str).expect("Could not deserialize test reqs");
 
@@ -147,79 +147,31 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                 // Setup topics before starting test
                 // Doing setup in another process to avoid async in parent process
                 // Otherwise there is .await blocking in child processes if tests fork() too
-                let topic_setup_wait = async_process!(async {
-                    let mut test_driver_setup = test_driver.clone();
-                    // Connect test driver to cluster before starting test
-                    test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-                    // Create topic before starting test
-                    test_driver_setup.create_topic(&test_case.environment)
-                        .await
-                        .expect("Unable to create default topic");
+                let _setup_status = fork_and_wait! {
+                    fluvio_future::task::run_block_on(async {
+                        let mut test_driver_setup = test_driver.clone();
+                        // Connect test driver to cluster before starting test
+                        test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-                    // Disconnect test driver to cluster before starting test
-                    test_driver_setup.disconnect();
-                });
+                        // Create topic before starting test
+                        test_driver_setup.create_topic(&test_case.environment)
+                            .await
+                            .expect("Unable to create default topic");
 
-                let _ = topic_setup_wait.join().expect("Topic setup wait failed");
-
-                 // Start a test timer for the user's test now that setup is done
-                let mut test_timer = TestTimer::start();
-                let (test_end, test_end_listener) = crossbeam_channel::unbounded();
-
-                // Run the test in its own process
-                // We're not using the `async_process` macro here
-                // Only bc we are sending something to a channel in waiting thread
-                let test_process = match fork::fork() {
-                    Ok(fork::Fork::Parent(child_pid)) => child_pid,
-                    Ok(fork::Fork::Child) => {
-                        #user_test_fn_iden(test_driver, test_case);
-                        std::process::exit(0);
-                    }
-                    Err(_) => panic!("Test fork failed"),
+                        // Disconnect test driver to cluster before starting test
+                        test_driver_setup.disconnect();
+                    })
                 };
 
-                let test_wait = std::thread::spawn( move || {
-                    let pid = nix::unistd::Pid::from_raw(test_process.clone());
-                    match nix::sys::wait::waitpid(pid, None) {
-                        Ok(status) => {
-                            tracing::debug!("[main] Test exited with status {:?}", status);
+                #user_test_fn_iden(test_driver, test_case);
 
-                            // Send something through the channel to signal test completion
-                            test_end.send(()).unwrap();
-                        }
-                        Err(err) => panic!("[main] Test failed: {}", err),
-                    }
-                });
+                Ok(TestResult {
+                    success: true,
+                    duration: std::time::Duration::new(0, 0),
+                    ..std::default::Default::default()
+                })
 
-                // All of this is to handle test timeout
-                let mut sel = crossbeam_channel::Select::new();
-                let test_thread_done = sel.recv(&test_end_listener);
-                let thread_selector = sel.select_timeout(test_case.environment.timeout());
-
-                match thread_selector {
-                    Err(_) => {
-                        // Need to catch this panic to kill test parent process + all child processes
-                        panic!("Test timeout met: {:?}", test_case.environment.timeout());
-                    },
-                    Ok(thread_selector) => match thread_selector.index() {
-                        i if i == test_thread_done => {
-                            // This is needed to let crossbeam select channel know we selected an operation, or it'll panic
-                            let _ = thread_selector.recv(&test_end_listener);
-
-                            // Stop the test timer before reporting
-                            test_timer.stop();
-
-                            Ok(TestResult {
-                                success: true,
-                                duration: test_timer.duration(),
-                                ..std::default::Default::default()
-                            })
-
-                        }
-                        _ => unreachable!()
-                    }
-                }
             } else {
                 println!("Test skipped...");
 

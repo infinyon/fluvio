@@ -19,5 +19,7 @@ For more detail, refer to [`RELEASE.md`](https://github.com/infinyon/fluvio/blob
 - [ ] Run the [`Release` workflow in Github Actions](https://github.com/infinyon/fluvio/actions/workflows/release.yml) (Retry at least once if failure)
 - [ ] Verify that the [crates publish to crates.io](https://github.com/infinyon/fluvio/actions/workflows/publish_crates.yml) succeeds (Retry at least once if failure)
 - [ ] Update `VERSION` and `CHANGELOG.md` files
-- [ ] Create a PR and use the `release_template.md` close this issue
+- [ ] Create a PR and use `release_template.md` close this issue
+  - Add form data `template=release_template.md` to the PR URL while creating in order to use template
+  - e.g. https://github.com/infinyon/fluvio/compare/master...username:your-branch?expand=1&template=release_template.md
 - [ ] Announce new release in Discord

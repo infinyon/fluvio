@@ -6,8 +6,7 @@ use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleInt
 use crate::{
     WasmSlice,
     smartmodule::{
-        SmartEngine, SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance,
-        SmartModuleExtraParams,
+        SmartModuleWithEngine, SmartModuleContext, SmartModuleInstance, SmartModuleExtraParams,
     },
 };
 
@@ -35,12 +34,11 @@ impl MapFnKind {
 
 impl SmartModuleMap {
     pub fn new(
-        engine: &SmartEngine,
         module: &SmartModuleWithEngine,
         params: SmartModuleExtraParams,
         version: i16,
     ) -> Result<Self> {
-        let mut base = SmartModuleContext::new(engine, module, params, version)?;
+        let mut base = SmartModuleContext::new(module, params, version)?;
         let map_fn = if let Ok(map_fn) = base.instance.get_typed_func(&mut base.store, MAP_FN_NAME)
         {
             MapFnKind::New(map_fn)

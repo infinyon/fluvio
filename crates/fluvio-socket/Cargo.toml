@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-socket"
-version = "0.11.0"
+version = "0.11.4"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Provide TCP socket wrapper for fluvio protocol"
@@ -25,13 +25,13 @@ async-lock = "2.4.0"
 event-listener = "2.0.0"
 async-channel = "1.6.1"
 tokio = { version = "1.11.0", features = ["macros"] }
-tokio-util = { version = "0.6.8", features = ["codec", "compat"] }
+tokio-util = { version = "0.7.0", features = ["codec", "compat"] }
 async-trait = "0.1.21"
 pin-project = "1.0.1"
 thiserror = "1.0.20"
 
 # Fluvio dependencies
-fluvio-future = { version = "0.3.2", features = ["net", "task"] }
+fluvio-future = { version = "0.3.13", features = ["net", "task"] }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = [
     "derive",
     "api",
@@ -39,13 +39,12 @@ fluvio-protocol = { path = "../fluvio-protocol", version = "0.7", features = [
 ] }
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.1", features = [
+fluvio-future = { version = "0.3.13", features = [
     "fixture",
     "fs",
     "zero_copy",
     "native2_tls",
 ] }
-flv-util = { version = "0.5.0", features = ["fixture"] }
 portpicker = "0.1.1"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dev-dependencies]

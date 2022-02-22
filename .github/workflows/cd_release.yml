@@ -4,7 +4,8 @@ permissions:
   contents: read
 
 on:
-
+#  pull_request:
+#    branches: [master]
   workflow_run:
     workflows: ["Release"]
     types:
@@ -14,15 +15,37 @@ on:
       alt_version:
         required: false
         description: Provide expected semver. If empty VERSION in repo will be used
-        default: ''
+        default: ""
 
 env:
   USE_VERSION: ${{ github.event.inputs.alt_version }}
   K3D_VERSION: v4.4.8
 
 jobs:
+  release_check:
+    name: Release success check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Login GH CLI
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+      - name: Get status of latest RELEASE_CHECK run
+        id: release_check
+        run: |
+          gh api /repos/{owner}/{repo}/actions/workflows/release.yml/runs | jq .workflow_runs[0] > /tmp/release_latest.txt  
+          echo "Latest Release run: $(cat /tmp/release_latest.txt | jq .html_url | tr -d '"')"
+          RELEASE_CHECK=$(cat /tmp/release_latest.txt | jq .conclusion | tr -d '"')
+          if [[ "$RELEASE_CHECK" = "success" ]]
+          then
+            echo ✅ Most recent RELEASE_CHECK run passed
+            exit 0;
+          else
+            echo ❌ Most recent RELEASE_CHECK run failed
+            exit 1;
+          fi
   installer_check:
     name: Installer check
+    needs: [release_check]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -42,28 +65,28 @@ jobs:
       - name: Set the VERSION env var for installer script
         if: matrix.version == 'none'
         run: echo "Leave VERSION unset"
-      - name: Curl Install - stable 
+      - name: Curl Install - stable
         if: matrix.version == 'stable'
         run: echo "VERSION=stable" | tee -a $GITHUB_ENV
       - name: Curl Install - Version number
         if: matrix.version == 'semver'
         run: echo "VERSION=$EXPECTED_VERSION" | tee -a $GITHUB_ENV
 
-        # Utilizes the env var set in the previous step 
+        # Utilizes the env var set in the previous step
       - name: Curl Install
         run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash | tee /tmp/installer.version
 
       - name: Verify installer output
         run: |
-            INSTALLER_VERSION=$(cat /tmp/installer.version | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
-            if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
-              echo "✅ Installer version check passed: $EXPECTED_VERSION";
-            else
-              echo "❌ Installer version check failed";
-              echo "Version reported by installer: $INSTALLER_VERSION";
-              echo "Expected version: $EXPECTED_VERSION";
-              exit 1;
-            fi
+          INSTALLER_VERSION=$(cat /tmp/installer.version | grep "Downloading Fluvio" | grep -v "channel" | awk '{print $5}')
+          if [ "$INSTALLER_VERSION" = "$EXPECTED_VERSION" ]; then
+            echo "✅ Installer version check passed: $EXPECTED_VERSION";
+          else
+            echo "❌ Installer version check failed";
+            echo "Version reported by installer: $INSTALLER_VERSION";
+            echo "Expected version: $EXPECTED_VERSION";
+            exit 1;
+          fi
 
   start_cluster:
     name: Start cluster test
@@ -83,17 +106,32 @@ jobs:
         run: |
           ./k8-util/cluster/reset-k3d.sh
       - name: Install Fluvio
-        run: curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
       - name: Pre-Start - local cluster
         if: matrix.cluster_type == 'local'
         run: echo "IF_LOCAL=--local" | tee -a $GITHUB_ENV
       - name: Pre-Start - Kubernetes cluster
         if: matrix.cluster_type == 'k8s'
         run: echo "IF_LOCAL=" | tee -a $GITHUB_ENV
- 
       - name: Start cluster
-        run: ~/.fluvio/bin/fluvio cluster start ${IF_LOCAL} 
+        timeout-minutes: 3
+        run: |
+          fluvio version
+          fluvio cluster start ${IF_LOCAL}
+      - name: Run diagnostics
+        if: failure()
+        timeout-minutes: 5
+        run: |
+          fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: start_cluster_${{ matrix.cluster_type }}
+          path: diagnostics*.gz
       # TODO: Verify platform version
 
   upgrade_prev_stable:
@@ -143,27 +181,14 @@ jobs:
           ~/.fluvio/bin/fluvio version
 
       # TODO: Verify platform version
-
-      - name: Save logs
-        if: failure()
-        run: |
-          date
-          uname -a
-          helm list
-          kubectl get crd
-          kubectl get spu
-          kubectl get partitions
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spg
-          kubectl logs fluvio-spg-main-0  > /tmp/k8_release_upgrade_spu0.log || true
-          ./dev-tools/sc-pod-log.sh > /tmp/k8_release_upgrade_sc.log || true
-      - name: Upload logs
+      - name: Run diagnostics
+        if: ${{ !success() }}
         timeout-minutes: 5
-        if: failure()
+        run: ~/.fluvio/bin/fluvio cluster diagnostics
+      - name: Upload diagnostics
         uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
         with:
-          name: k8_release_upgrade_log
-          path: /tmp/k8_*.log
+          name: upgrade-prev-stable-diagnostics
+          path: diagnostics*.gz

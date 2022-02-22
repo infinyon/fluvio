@@ -9,7 +9,7 @@ use structopt::StructOpt;
 use tracing::debug;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::tableformat::TableFormatSpec;
+use fluvio::metadata::tableformat::TableFormatSpec;
 use crate::tableformat::TableFormatConfig;
 
 use crate::CliError;

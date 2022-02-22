@@ -25,11 +25,20 @@ pub struct LogsManagedConnectorOpt {
 impl LogsManagedConnectorOpt {
     pub async fn process(self) -> Result<(), CliError> {
         let pods = Command::new("kubectl")
-            .args(["get", "pods", "-o=jsonpath='{.items[*].metadata.name}"])
+            .args([
+                "get",
+                "pods",
+                "--selector",
+                "app=fluvio-connector",
+                "-o=jsonpath={.items[*].metadata.name}",
+            ])
             .output()?
             .stdout;
+
         let pods = String::from_utf8_lossy(&pods);
-        let pod = pods.split(' ').find(|pod| pod.starts_with(&self.name));
+        let pod = pods
+            .split(' ')
+            .find(|pod_name| self.is_matching_connector_name(pod_name));
 
         if let Some(pod) = pod {
             println!();
@@ -39,7 +48,19 @@ impl LogsManagedConnectorOpt {
                 vec!["logs", pod]
             };
             Command::new("kubectl").args(args).spawn()?.wait()?;
+            Ok(())
+        } else {
+            Err(CliError::InvalidArg(format!(
+                "Connector {} does not exist",
+                self.name
+            )))
         }
-        Ok(())
+    }
+
+    fn is_matching_connector_name(&self, pod_name: &str) -> bool {
+        const GENERATED_STRING_SIZE: usize = 17;
+
+        let connector_name = &pod_name[..pod_name.len() - GENERATED_STRING_SIZE];
+        connector_name == self.name
     }
 }

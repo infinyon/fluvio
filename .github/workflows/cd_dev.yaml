@@ -5,7 +5,7 @@ permissions:
   contents: read
 
 concurrency: 
-  group: ${{ 'cd_dev' }}
+  group: cd_dev
   cancel-in-progress: true
 
 on:
@@ -31,13 +31,14 @@ env:
 jobs:
   # Perform E2E sanity checks
   verify_latest_releases:
-    name: Verify latest (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
+    name: Verify latest run ${{ matrix.run }} (${{ matrix.cluster_type }}) on (${{ matrix.os }}), 
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest,macos-11]
+        os: [ubuntu-latest]
         cluster_type: [local,k8]
+        run: [r1]
     env:
       SLEEP: 10
       TOPIC: foobar
@@ -75,39 +76,41 @@ jobs:
             else
               export PROXY=""
           fi
-          fluvio cluster start --spu-storage-size 1 --image-version latest $PROXY
+          fluvio cluster start  --spu-storage-size 1 --image-version latest $PROXY
       - name: Run E2E Test
         timeout-minutes: 2
         run: |
+            date +"%Y-%m-%dT%H:%M:%S%z"
             fluvio version
             fluvio topic create ${{ env.TOPIC }}
+            # wait for topic to be created
+            sleep ${{ env.SLEEP }}
+            date +"%Y-%m-%dT%H:%M:%S%z"
             echo foo | fluvio produce ${{ env.TOPIC }}
             fluvio consume ${{ env.TOPIC }} -o 0 -d | grep -F -w "foo"
             # Delete the topic afterword but this looks to not work right now.
             # fluvio topic delete "${{ env.TOPIC }}"
 
-      - name: Debug failure for Mac
-        if: failure()
-        run: |
-          docker port `docker ps -aqf "name=fluvio-control-plane"`
-      - name: Debug failure
-        if: failure()
-        run: |
-          kubectl get pods
-          kubectl get pvc
-          kubectl get svc
-          kubectl get topics
-          kubectl get partitions
-          kubectl get spu
-
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: cd_failure_${{ matrix.run }}_${{ matrix.cluster_type }}
+          path: diagnostics*.gz
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
-        if: failure()
+        if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
 
   # Perform upgrade test from previous stable version to latest
@@ -135,25 +138,26 @@ jobs:
         run: |
             export PATH=~/.fluvio/bin:$PATH
             USE_LATEST=true make upgrade-test
-      - name: Save logs
-        if: failure()
-        run: |
-          helm list
-          kubectl get statefulset
-          kubectl get pvc
-          kubectl get pods
-          kubectl get svc
-          kubectl get spu
-          kubectl get spg
-          kubectl logs -l app=fluvio-sc > /tmp/flv_sc.log
+      - name: Run diagnostics
+        if: ${{ !success() }}
+        timeout-minutes: 5
+        run: ~/.fluvio/bin/fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: ${{ !success() }}
+        with:
+          name: cluster-upgrade-diag
+          path: diagnostics*.gz
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
-        if: failure()
+        if: ${{ !success() }}
         with:
           status: ${{ job.status }}
-          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took # selectable (default: repo,message)
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
 
   # Verify latest version of CLI
   installer_check:

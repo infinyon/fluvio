@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.7.0"
+version = "0.7.1"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"
@@ -16,7 +16,6 @@ target = ["fluvio"]
 
 [dependencies]
 tracing = "0.1.19"
-tracing-futures = "0.2.4"
 structopt = { version = "0.3.16", default-features = false }
 prettytable-rs = "0.8.0"
 serde = { version = "1.0.103", features = ['derive'] }

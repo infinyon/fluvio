@@ -1,3 +1,4 @@
+pub mod self_test;
 pub mod smoke;
 pub mod concurrent;
 pub mod multiple_partitions;
@@ -8,6 +9,7 @@ pub mod election;
 pub mod producer_fail;
 pub mod reconnection;
 pub mod batching;
+pub mod data_generator;
 
 use serde::{Serialize, Deserialize};
 use std::time::SystemTime;

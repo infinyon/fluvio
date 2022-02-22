@@ -96,7 +96,10 @@ pub mod config;
 use tracing::instrument;
 pub use error::FluvioError;
 pub use config::FluvioConfig;
-pub use producer::{TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, RecordKey};
+pub use producer::{
+    TopicProducerConfigBuilder, TopicProducerConfig, TopicProducer, RecordKey, ProduceOutput,
+    FutureRecordMetadata, RecordMetadata,
+};
 
 pub use consumer::{
     PartitionConsumer, ConsumerConfig, MultiplePartitionConsumer, PartitionSelectionStrategy,
@@ -112,9 +115,6 @@ pub(crate) mod built_info {
 
 /// The minimum VERSION of the Fluvio Platform that this client is compatible with.
 const MINIMUM_PLATFORM_VERSION: &str = "0.9.0";
-
-/// The maximum VERSION of the Fluvio Platform that this client is compatible with.
-const MAXIMUM_PLATFORM_VERSION: &str = "0.10.0";
 
 /// Creates a producer that sends records to the named topic
 ///
@@ -241,6 +241,10 @@ pub mod metadata {
 
     pub mod objects {
         pub use fluvio_sc_schema::objects::*;
+    }
+
+    pub mod tableformat {
+        pub use fluvio_sc_schema::tableformat::*;
     }
 
     pub mod core {

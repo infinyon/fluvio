@@ -144,7 +144,7 @@ impl FluvioAdmin {
         self.socket.send_receive(request).await
     }
 
-    /// create new object
+    /// Create new object
     #[instrument(skip(self, name, dry_run, spec))]
     pub async fn create<S>(&self, name: String, dry_run: bool, spec: S) -> Result<(), FluvioError>
     where
@@ -162,7 +162,7 @@ impl FluvioAdmin {
         Ok(())
     }
 
-    /// delete object by key
+    /// Delete object by key
     /// key is depend on spec, most are string but some allow multiple types
     #[instrument(skip(self, key))]
     pub async fn delete<S, K>(&self, key: K) -> Result<(), FluvioError>

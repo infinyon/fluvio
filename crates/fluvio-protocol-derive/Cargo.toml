@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-protocol-derive"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description =  "Procedure macro to encode/decode fluvio protocol"
@@ -24,3 +24,6 @@ features = ["full"]
 [dev-dependencies]
 trybuild = { git = "https://github.com/infinyon/trybuild", branch = "check_option" }
 fluvio-protocol = { path = "../fluvio-protocol", features = ["derive", "api"] }
+
+[package.metadata.cargo-udeps.ignore]
+development = ["fluvio-protocol"] # Used only in doc-tests, which `cargo-udeps` cannot check

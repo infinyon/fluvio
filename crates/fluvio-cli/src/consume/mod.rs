@@ -9,7 +9,7 @@ use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
-use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
+use fluvio::metadata::tableformat::{TableFormatSpec};
 use tracing::{debug, trace, instrument};
 use structopt::StructOpt;
 use structopt::clap::arg_enum;
@@ -42,7 +42,7 @@ use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
     format_json, format_basic_table_record, format_fancy_table_record,
 };
-use handlebars::Handlebars;
+use handlebars::{self, Handlebars};
 
 const DEFAULT_TAIL: u32 = 10;
 const USER_TEMPLATE: &str = "user_template";
@@ -198,26 +198,6 @@ impl ConsumeOpt {
                     if t.name.as_str() == tableformat_name {
                         //println!("debug: Found tableformat: {:?}", t.spec);
                         found = Some(t.spec);
-
-                        //let tableformat_test = TableFormatSpec {
-                        //    name: "hardcoded_test".to_string(),
-                        //    columns: Some(vec![
-                        //        TableColumn {
-                        //            key_path: "key2".to_string(),
-                        //            header_label: Some("Key #2".to_string()),
-                        //            ..Default::default()
-                        //        },
-                        //        TableColumn {
-                        //            key_path: "key1".to_string(),
-                        //            //primary_key: true,
-                        //            header_label: Some("Key #1".to_string()),
-                        //            ..Default::default()
-                        //        },
-                        //    ]),
-                        //    ..Default::default()
-                        //};
-                        //println!("debug: Using test tableformat: {:?}", tableformat_test);
-                        //found = Some(tableformat_test);
                         break;
                     }
                 }
@@ -399,6 +379,8 @@ impl ConsumeOpt {
             None => None,
             Some(format) => {
                 let mut reg = Handlebars::new();
+                // opt-out of HTML escaping of printable record data
+                reg.register_escape_fn(handlebars::no_escape);
                 reg.register_template_string(USER_TEMPLATE, format)?;
                 Some(reg)
             }

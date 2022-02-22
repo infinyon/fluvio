@@ -3,7 +3,7 @@ use std::fmt;
 use std::fmt::{Debug, Display};
 use std::sync::Arc;
 
-use tracing::{debug, instrument};
+use tracing::{debug, instrument, info};
 
 use dataplane::api::RequestMessage;
 use dataplane::api::Request;
@@ -143,10 +143,10 @@ impl ClientConfig {
 
     #[instrument(skip(self))]
     pub async fn connect(self) -> Result<VersionedSocket, FluvioError> {
-        debug!(add = %self.addr, "Connection to");
+        debug!(add = %self.addr, "try connection to");
         let socket =
             FluvioSocket::connect_with_connector(&self.addr, self.connector.as_ref()).await?;
-        debug!(add = %self.addr, "creating version socket");
+        info!(add = %self.addr, "connect to socket");
         VersionedSocket::connect(socket, Arc::new(self)).await
     }
 

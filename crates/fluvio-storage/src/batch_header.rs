@@ -27,6 +27,7 @@ mod tests {
 
     use dataplane::Offset;
     use flv_util::fixture::{ensure_new_dir};
+    use tracing::debug;
 
     use crate::fixture::BatchProducer;
     use crate::mut_records::MutFileRecords;
@@ -167,5 +168,38 @@ mod tests {
             stream.get_pos(),
             last_base_offset
         );
+    }
+
+    //#[fluvio_future::test]
+    #[allow(unused)]
+    async fn test_find_position() {
+        let mut header_stream = BatchHeaderStream::open("/tmp/bad_header.log")
+            .await
+            .expect("open");
+
+        header_stream.set_absolute(55205702).await.expect("set");
+
+        let offset_seek = 46612;
+
+        let mut found = true;
+        while let Some(batch_pos) = header_stream.next().await {
+            debug!(
+                pos = batch_pos.get_pos(),
+                base_offset = batch_pos.get_batch().base_offset,
+                batch_len = batch_pos.get_batch().batch_len,
+                last_offset = batch_pos.get_batch().get_last_offset(),
+                "batch_pos"
+            );
+            let last_offset = batch_pos.get_batch().get_last_offset();
+            if last_offset >= offset_seek {
+                debug!(last_offset, "found batch last offset");
+                found = true;
+                break;
+            } else {
+                debug!(last_offset, "skipping batch end offset");
+            }
+        }
+
+        assert!(found);
     }
 }

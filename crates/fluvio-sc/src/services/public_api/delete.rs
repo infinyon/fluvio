@@ -5,7 +5,7 @@
 //! and send K8 a delete message.
 //!
 use dataplane::ErrorCode;
-use tracing::{debug, instrument, trace};
+use tracing::{instrument, trace, debug};
 use std::io::Error;
 
 use dataplane::api::{RequestMessage, ResponseMessage};
@@ -23,7 +23,7 @@ pub async fn handle_delete_request<AC: AuthContext>(
 ) -> Result<ResponseMessage<Status>, Error> {
     let (header, del_req) = request.get_header_request();
 
-    debug!("del request: {:#?}", del_req);
+    debug!(?del_req, "del request");
 
     let status = match del_req {
         ObjectApiDeleteRequest::Topic(req) => {
@@ -70,7 +70,7 @@ mod delete_handler {
 
     use dataplane::ErrorCode;
     use fluvio_stream_dispatcher::store::StoreContext;
-    use tracing::{debug, trace, instrument};
+    use tracing::{info, trace, instrument};
 
     use fluvio_sc_schema::{AdminSpec, Status};
     use fluvio_auth::{AuthContext, InstanceAction};
@@ -95,7 +95,7 @@ mod delete_handler {
     {
         use dataplane::ErrorCode;
 
-        debug!(ty = %S::LABEL,%name,"deleting");
+        info!(ty = %S::LABEL,%name, "deleting");
 
         if let Ok(authorized) = auth_ctx
             .auth
@@ -123,6 +123,7 @@ mod delete_handler {
                 let err_string = err.to_string();
                 Status::new(name.clone(), error_code(err), Some(err_string))
             } else {
+                info!(ty = %S::LABEL,%name, "deleted");
                 Status::new_ok(name)
             }
         } else {
