@@ -542,7 +542,11 @@ async fn test_replication2_promote() {
         .is_none());
 
     // ensure leader ctx is there
-    assert!(follower_ctx.leaders_state().get(&new_replica.id).is_some());
+    assert!(follower_ctx
+        .leaders_state()
+        .get(&new_replica.id)
+        .await
+        .is_some());
 
     sleep(Duration::from_millis(WAIT_TERMINATE)).await;
 
@@ -575,6 +579,7 @@ async fn test_replication_dispatch_in_sequence() {
     let leader = leader_gctx
         .leaders_state()
         .get(&replica.id)
+        .await
         .expect("replica");
     assert!(leader_gctx
         .followers_state()
@@ -665,6 +670,7 @@ async fn test_replication_dispatch_out_of_sequence() {
     let leader = leader_gctx
         .leaders_state()
         .get(&replica.id)
+        .await
         .expect("replica");
     assert!(leader_gctx
         .followers_state()

@@ -111,7 +111,7 @@ async fn test_stream_fetch_basic() {
         let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
             .await
             .expect("replica");
-        ctx.leaders_state().insert(test_id, replica.clone());
+        ctx.leaders_state().insert(test_id, replica.clone()).await;
 
         let stream_request = DefaultStreamFetchRequest {
             topic: topic.clone(),
@@ -385,7 +385,7 @@ async fn test_stream_fetch_filter(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -559,7 +559,7 @@ async fn test_stream_fetch_filter_individual(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -683,7 +683,7 @@ async fn test_stream_filter_error_fetch(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -816,7 +816,7 @@ async fn test_stream_filter_max(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // write 2 batches each with 10 records
     //debug!("records: {:#?}", records);
@@ -977,7 +977,7 @@ async fn test_stream_fetch_map_error(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -1111,7 +1111,7 @@ async fn test_stream_aggregate_fetch_single_batch(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -1257,7 +1257,7 @@ async fn test_stream_aggregate_fetch_multiple_batch(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Aggregate 6 records in 2 batches
     // First batch:
@@ -1393,7 +1393,7 @@ async fn test_stream_fetch_and_new_request(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -1510,7 +1510,7 @@ async fn test_stream_fetch_invalid_wasm_module(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -1608,7 +1608,7 @@ async fn test_stream_fetch_array_map(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Input: One JSON record with 10 ints: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
     let mut records = BatchProducer::builder()
@@ -1725,7 +1725,7 @@ async fn test_stream_fetch_filter_map(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Input: the following records:
     //
@@ -1851,7 +1851,7 @@ async fn test_stream_fetch_filter_with_params(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let mut params = BTreeMap::new();
     params.insert("key".to_string(), "b".to_string());
@@ -2043,7 +2043,7 @@ async fn test_stream_fetch_invalid_smartmodule(
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     let stream_request = DefaultStreamFetchRequest {
         topic: topic.to_owned(),
@@ -2116,7 +2116,8 @@ async fn test_stream_fetch_join(
             .await
             .expect("replica");
     ctx.leaders_state()
-        .insert(test_id_left, replica_left.clone());
+        .insert(test_id_left, replica_left.clone())
+        .await;
 
     ctx.replica_localstore().insert(test_left.clone());
     let topic_right = JOIN_RIGHT_TOPIC;
@@ -2128,7 +2129,8 @@ async fn test_stream_fetch_join(
             .expect("replica");
     ctx.replica_localstore().insert(test_right);
     ctx.leaders_state()
-        .insert(test_id_right, replica_right.clone());
+        .insert(test_id_right, replica_right.clone())
+        .await;
 
     // Input: the following records:
     //
