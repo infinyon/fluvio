@@ -82,7 +82,7 @@ async fn handle_produce_partition(
         ..Default::default()
     };
 
-    let leader_state = match ctx.leaders_state().get(&replica_id) {
+    let leader_state = match ctx.leaders_state().get(&replica_id).await {
         Some(leader_state) => leader_state,
         None => {
             debug!(%replica_id, "Replica not found");

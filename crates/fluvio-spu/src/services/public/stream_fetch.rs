@@ -57,7 +57,7 @@ impl StreamFetchHandler {
         let (header, msg) = request.get_header_request();
         let replica = ReplicaKey::new(msg.topic.clone(), msg.partition);
 
-        if let Some(leader_state) = ctx.leaders_state().get(&replica) {
+        if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
             let (stream_id, offset_publisher) =
                 ctx.stream_publishers().create_new_publisher().await;
             let consumer_offset_listener = offset_publisher.change_listner();
