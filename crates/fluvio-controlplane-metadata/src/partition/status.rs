@@ -33,8 +33,8 @@ pub struct PartitionStatus {
     // TODO: There is no such thing as `lsr`, it is a typo
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 5)]
-    #[serde(default)]
     pub size: i64,
     pub is_being_deleted: bool,
 }
