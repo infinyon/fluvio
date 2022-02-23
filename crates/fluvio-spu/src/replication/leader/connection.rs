@@ -139,7 +139,7 @@ impl FollowerHandler {
         let leaders = self.ctx.leaders_state();
 
         for replica in replicas {
-            if let Some(leader) = leaders.get(&replica) {
+            if let Some(leader) = leaders.get(&replica).await {
                 if let Some(topic_response) = leader
                     .follower_updates(&self.follower_id, self.max_bytes)
                     .await
@@ -176,7 +176,7 @@ impl FollowerHandler {
         for update in request.replicas.into_iter() {
             debug!(?update, "request");
             let replica_key = update.replica;
-            if let Some(leader) = self.ctx.leaders_state().get(&replica_key) {
+            if let Some(leader) = self.ctx.leaders_state().get(&replica_key).await {
                 let status = leader
                     .update_states_from_followers(
                         self.follower_id,

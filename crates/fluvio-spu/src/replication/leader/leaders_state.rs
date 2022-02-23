@@ -1,7 +1,7 @@
 use std::{
     ops::{Deref},
 };
-use std::sync::RwLock;
+use async_lock::RwLock;
 use std::collections::HashMap;
 
 use tracing::{error, instrument};
@@ -46,23 +46,23 @@ impl<S> ReplicaLeadersState<S> {
 
 impl<S> ReplicaLeadersState<S> {
     /// get clone of state
-    pub fn get(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
-        let read = self.read().unwrap();
+    pub async fn get(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
+        let read = self.read().await;
         read.get(replica).cloned()
     }
 
-    pub fn remove(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
-        let mut writer = self.write().unwrap();
+    pub async fn remove(&self, replica: &ReplicaKey) -> Option<SharedLeaderState<S>> {
+        let mut writer = self.write().await;
         writer.remove(replica)
     }
 
     #[allow(unused)]
-    pub fn insert(
+    pub async fn insert(
         &self,
         replica: ReplicaKey,
         state: SharedLeaderState<S>,
     ) -> Option<SharedLeaderState<S>> {
-        let mut writer = self.write().unwrap();
+        let mut writer = self.write().await;
         writer.insert(replica, state)
     }
 }
@@ -95,7 +95,7 @@ impl ReplicaLeadersState<FileReplica> {
         replica_id: ReplicaKey,
         leader_state: LeaderReplicaState<FileReplica>,
     ) {
-        let mut writer = self.write().unwrap();
+        let mut writer = self.write().await;
         if let Some(old_replica) = writer.insert(replica_id.clone(), leader_state.clone()) {
             error!(
                 "there was existing replica when creating new leader replica: {}",

@@ -41,7 +41,7 @@ async fn test_produce_basic() {
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
-    ctx.leaders_state().insert(test_id, replica.clone());
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
 
     // Make three produce requests with <records_per_request> records and check that returned offset is correct
     let records_per_request = 9;

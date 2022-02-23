@@ -318,7 +318,7 @@ mod file_replica {
                                     }
                                 }
                             } else if new_replica.leader == local_id {
-                                if self.leaders_state().get(&new_replica.id).is_some() {
+                                if self.leaders_state().get(&new_replica.id).await.is_some() {
                                 } else {
                                     error!("leader controller was not found: {}", new_replica.id);
                                 }
@@ -342,7 +342,7 @@ mod file_replica {
         )]
         async fn remove_leader_replica(&self, replica: Replica) -> ReplicaRemovedRequest {
             // try to send message to leader controller if still exists
-            if let Some(previous_state) = self.leaders_state().remove(&replica.id) {
+            if let Some(previous_state) = self.leaders_state().remove(&replica.id).await {
                 if let Err(err) = previous_state.remove().await {
                     error!("error: {} removing replica: {}", err, replica);
                 } else {
@@ -390,7 +390,7 @@ mod file_replica {
             )
         )]
         pub async fn demote_replica(&self, replica: Replica) {
-            if let Some(leader_replica_state) = self.leaders_state().remove(&replica.id) {
+            if let Some(leader_replica_state) = self.leaders_state().remove(&replica.id).await {
                 drop(leader_replica_state);
                 if let Err(err) = self
                     .followers_state_owned()
