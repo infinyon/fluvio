@@ -132,7 +132,9 @@ impl ConnectorConfig {
             let body = surf::get(uses).recv_string().await?;
             Ok(serde_yaml::from_str(&body)?)
         } else if uses.starts_with("file://") {
-            let path = uses.strip_prefix("file://").ok_or(CliError::Other("Incorrectly formed file path".to_string()))?;
+            let path = uses
+                .strip_prefix("file://")
+                .ok_or(CliError::Other("Incorrectly formed file path".to_string()))?;
             println!("Opening file {:?}", path);
             let mut file = File::open(path)?;
             let mut contents = String::new();
@@ -142,7 +144,9 @@ impl ConnectorConfig {
         } else if uses.starts_with("github://") {
             todo!()
         } else if uses.starts_with("infinyon:") {
-            let connector_type = uses.strip_prefix("infinyon:").ok_or(CliError::Other("Incorrectly formed image name".to_string()))?;
+            let connector_type = uses
+                .strip_prefix("infinyon:")
+                .ok_or(CliError::Other("Incorrectly formed image name".to_string()))?;
             Ok(ManagedConnectorMetadata {
                 image: format!("infinyon/fluvio-connect-{}", connector_type),
                 author: Some("Fluvio Contributors <team@fluvio.io>".to_string()),
@@ -154,31 +158,35 @@ impl ConnectorConfig {
     }
     pub async fn to_managed_connector_spec(self) -> Result<ManagedConnectorSpec, CliError> {
         let metadata: ManagedConnectorMetadata = self.uses_to_metadata().await?;
-        Ok(
-            ManagedConnectorSpec {
-                name: self.name,
-                topic: self.topic,
-                metadata,
-                parameters: self.parameters,
-                secrets: self.secrets,
-                version: self.version,
-            }
-        )
+        Ok(ManagedConnectorSpec {
+            name: self.name,
+            topic: self.topic,
+            metadata,
+            parameters: self.parameters,
+            secrets: self.secrets,
+            version: self.version,
+        })
     }
 }
 
 #[fluvio_future::test_async]
 async fn simple_config_test() -> Result<(), ()> {
-    let _: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/connectors/simple-config.yaml")
-        .expect("Failed to load test config")
-        .to_managed_connector_spec().await.expect("Failed to load metadat");
+    let _: ManagedConnectorSpec =
+        ConnectorConfig::from_file("test-data/connectors/simple-config.yaml")
+            .expect("Failed to load test config")
+            .to_managed_connector_spec()
+            .await
+            .expect("Failed to load metadat");
     Ok(())
 }
 
 #[fluvio_future::test_async]
 async fn file_metadata_config_test() -> Result<(), ()> {
-    let _: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/connectors/file-metadata-config.yaml")
-        .expect("Failed to load test config")
-        .to_managed_connector_spec().await.expect("Failed to load metadat");
+    let _: ManagedConnectorSpec =
+        ConnectorConfig::from_file("test-data/connectors/file-metadata-config.yaml")
+            .expect("Failed to load test config")
+            .to_managed_connector_spec()
+            .await
+            .expect("Failed to load metadat");
     Ok(())
 }
