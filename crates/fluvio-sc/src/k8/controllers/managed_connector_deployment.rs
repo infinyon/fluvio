@@ -1,6 +1,6 @@
 use std::{collections::HashMap, time::Duration};
 
-use tracing::{debug, error, info, trace, instrument};
+use tracing::{debug, error, trace, instrument};
 use k8_client::ClientError;
 use k8_types::{
     LabelProvider, LabelSelector, TemplateMeta, TemplateSpec,
@@ -165,16 +165,16 @@ impl ManagedConnectorDeploymentController {
     ) -> Result<(), ClientError> {
         let key = managed_connector.key();
 
-        let mut connector_prefixes = Vec::new();
+        //let mut connector_prefixes = Vec::new();
 
         if let Some(config) = self.config_ctx.store().value("fluvio").await {
             let config = config.inner_owned().spec;
-            connector_prefixes = config.connector_prefixes;
+            //connector_prefixes = config.connector_prefixes;
         }
         let k8_deployment_spec = Self::generate_k8_deployment_spec(
             managed_connector.spec(),
             self.tls_config.as_ref(),
-            &connector_prefixes,
+            //&connector_prefixes,
         )
         .await;
         trace!(?k8_deployment_spec);
@@ -205,7 +205,7 @@ impl ManagedConnectorDeploymentController {
     pub async fn generate_k8_deployment_spec(
         mc_spec: &ManagedConnectorSpec,
         tls_config: Option<&TlsConfig>,
-        allowed_connector_prefix: &[String],
+        //allowed_connector_prefix: &[String],
     ) -> Option<K8DeploymentSpec> {
         let config_map_volume_spec = VolumeSpec {
             name: "fluvio-config-volume".to_string(),
@@ -334,81 +334,5 @@ impl ManagedConnectorDeploymentController {
             selector: LabelSelector { match_labels },
             ..Default::default()
         })
-    }
-    pub async fn get_image(type_: &str, allowed_connector_prefix: &[String]) -> Option<String> {
-        let image = if type_.starts_with("https://") {
-            debug!(
-                "Checking 3rd party connector {:?} in allowed_prefixes - {:?}",
-                type_, allowed_connector_prefix
-            );
-            let mut image = None;
-            for prefix in allowed_connector_prefix {
-                if type_.starts_with(prefix.as_str()) {
-                    match ThirdPartyConnectorSpec::from_url(type_).await {
-                        Ok(spec) => {
-                            debug!("Retrieved third party metadata {:?}", spec);
-                            image = Some(spec.image);
-                        }
-                        Err(e) => {
-                            info!("3rd party connector spec failed to retrieve {:?}", e);
-                        }
-                    }
-                    break;
-                }
-            }
-            if let Some(image) = image {
-                image
-            } else {
-                debug!("None of the connector prefixes matched!");
-                return None;
-            }
-        } else {
-            format!("infinyon/fluvio-connect-{}", type_)
-        };
-        Some(image)
-    }
-}
-#[cfg(test)]
-mod third_party_connector_tests {
-    use super::*;
-
-    #[fluvio_future::test]
-    async fn test_authorized_prefix() {
-        let image = ManagedConnectorDeploymentController::get_image("foo", &[]).await;
-        assert_eq!(image, Some("infinyon/fluvio-connect-foo".to_string()));
-    }
-
-    #[fluvio_future::test]
-    async fn test_unauthorized_prefix() {
-        let image = ManagedConnectorDeploymentController::get_image(
-            "https://google.com",
-            &["https://yahoo.com".to_string()],
-        )
-        .await;
-        assert_eq!(image, None);
-    }
-
-    //#[fluvio_future::test]
-    #[allow(unused)]
-    async fn test_official_3rd_party_connector() {
-        let image = ManagedConnectorDeploymentController::get_image("https://raw.githubusercontent.com/infinyon/fluvio-connectors/main/rust-connectors/utils/test-connector/connector.yaml", &["https://raw.githubusercontent.com/infinyon/fluvio-connectors".to_string()]).await;
-        assert_eq!(
-            image,
-            Some("infinyon/fluvio-connect-test-connector".to_string())
-        );
-    }
-}
-
-#[derive(Default, Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub struct ThirdPartyConnectorSpec {
-    pub image: String,
-}
-
-impl ThirdPartyConnectorSpec {
-    pub async fn from_url(_url: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        // disable third party support
-        //let body = surf::get(url).recv_string().await?;
-        //Ok(serde_yaml::from_str(&body)?)
-        todo!()
     }
 }

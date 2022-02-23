@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::Read;
 
 use fluvio::Fluvio;
-use fluvio_controlplane_metadata::connector::{ManagedConnectorSpec, ManagedConnectorMetadata, SecretString};
+use fluvio::metadata::connector::{ManagedConnectorSpec, ManagedConnectorMetadata, SecretString};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -104,9 +104,21 @@ pub struct ConnectorConfig {
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
 }
+impl From<ConnectorConfig> for ManagedConnectorSpec {
+    fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
+        ManagedConnectorSpec {
+            name: config.name,
+            topic: config.topic,
+            parameters: config.parameters,
+            secrets: config.secrets,
+            version: config.version,
+            metadata: Default::default(),
+        }
+    }
+}
 
 impl ConnectorConfig {
-    pub async fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
+    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -121,20 +133,20 @@ impl ConnectorConfig {
             Ok(serde_yaml::from_str(&body)?)
         } else if uses.starts_with("file://") {
             let path = uses.strip_prefix("file://").ok_or(CliError::Other("Incorrectly formed file path".to_string()))?;
+            println!("Opening file {:?}", path);
             let mut file = File::open(path)?;
             let mut contents = String::new();
             file.read_to_string(&mut contents)?;
             let metadata: ManagedConnectorMetadata = serde_yaml::from_str(&contents)?;
             Ok(metadata)
         } else if uses.starts_with("github://") {
-
             todo!()
         } else if uses.starts_with("infinyon:") {
             let connector_type = uses.strip_prefix("infinyon:").ok_or(CliError::Other("Incorrectly formed image name".to_string()))?;
             Ok(ManagedConnectorMetadata {
                 image: format!("infinyon/fluvio-connect-{}", connector_type),
-                author: "Fluvio Contributors <team@fluvio.io>".to_string(),
-                license: "Apache-2.0".to_string(),
+                author: Some("Fluvio Contributors <team@fluvio.io>".to_string()),
+                license: Some("Apache-2.0".to_string()),
             })
         } else {
             Err(CliError::Other("No valid uses scheme supplied".to_string()))
@@ -156,8 +168,16 @@ impl ConnectorConfig {
 }
 
 #[fluvio_future::test_async]
-async fn config_test() -> Result<(), ()> {
-    let _: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/test-config.yaml").await
+async fn simple_config_test() -> Result<(), ()> {
+    let _: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/connectors/simple-config.yaml")
+        .expect("Failed to load test config")
+        .to_managed_connector_spec().await.expect("Failed to load metadat");
+    Ok(())
+}
+
+#[fluvio_future::test_async]
+async fn file_metadata_config_test() -> Result<(), ()> {
+    let _: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/connectors/file-metadata-config.yaml")
         .expect("Failed to load test config")
         .to_managed_connector_spec().await.expect("Failed to load metadat");
     Ok(())

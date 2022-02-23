@@ -33,12 +33,10 @@ pub struct ManagedConnectorSpec {
 )]
 pub struct ManagedConnectorMetadata {
     pub image: String,
-    pub author: String,
-    pub license: String,
+    pub author: Option<String>,
+    pub license: Option<String>,
 }
 
-struct ManagedConnectorMetadataRestrictions {
-}
 impl ManagedConnectorSpec {
     pub fn version(&self) -> String {
         self.version.clone().unwrap_or_else(|| "latest".to_string())

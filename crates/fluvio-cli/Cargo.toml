@@ -89,4 +89,4 @@ fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], opt
 indicatif = "0.16.2"
 
 [dev-dependencies]
-fluvio-future = { version = "0.3.0", features = ["fixture"] }
+fluvio-future = { version = "0.3.0", features = ["fixture", "fluvio-test-derive"] }

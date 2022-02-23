@@ -6,7 +6,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use super::super::{ManagedConnectorStatus, ManagedConnectorMetadata, SecretString};
+use super::super::{ManagedConnectorStatus, SecretString};
 use crate::k8_types::{Spec, Crd, DefaultHeader};
 use std::collections::BTreeMap;
 
@@ -48,8 +48,8 @@ pub struct K8ManagedConnectorSpec {
 #[serde(rename_all = "camelCase", default)]
 pub struct K8ManagedConnectorMetadata {
     pub image: String,
-    pub author: String,
-    pub license: String,
+    pub author: Option<String>,
+    pub license: Option<String>,
 }
 mod convert {
 

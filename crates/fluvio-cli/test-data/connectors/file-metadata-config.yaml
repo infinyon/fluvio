@@ -1,6 +1,6 @@
 version: 0.1.0
 name: my-test-mqtt
-type: mqtt
+uses: "file://./test-data/connectors/file-metadata.yaml"
 topic: my-mqtt
 create_topic: false
 direction: source
