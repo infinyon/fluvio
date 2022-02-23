@@ -34,6 +34,7 @@ pub struct PartitionStatus {
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
     #[fluvio(min_version = 5)]
+    #[serde(default)]
     pub size: i64,
     pub is_being_deleted: bool,
 }
