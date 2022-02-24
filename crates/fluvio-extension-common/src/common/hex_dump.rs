@@ -40,11 +40,11 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
     if !collector.is_empty() {
         let last_char_idx = record_cnt % cols;
         if last_char_idx <= cols / 2 {
-            result.push_str(&" ".to_owned());
+            result.push(' ');
         }
         for _ in last_char_idx..cols {
-            collector.push_str(&" ".to_owned());
-            result.push_str(&"   ".to_owned());
+            collector.push(' ');
+            result.push_str("   ");
         }
 
         result.push_str(&format!("  |{}|\n", collector));

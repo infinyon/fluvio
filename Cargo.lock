@@ -1760,7 +1760,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.13.2"
+version = "0.13.3"
 dependencies = [
  "async-trait",
  "base64",
@@ -1799,7 +1799,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "async-trait",
  "fluvio",

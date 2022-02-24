@@ -230,12 +230,11 @@ impl FluvioChannelInfo {
         };
 
         // This is to handle windows binaries, which should end in `.exe`
-        let fluvio_bin_name;
         cfg_if! {
             if #[cfg(not(target_os = "windows"))] {
-                fluvio_bin_name = format!("fluvio-{}", channel_name)
+                let fluvio_bin_name = format!("fluvio-{}", channel_name);
             } else {
-                fluvio_bin_name = format!("fluvio-{}.exe", channel_name)
+                let fluvio_bin_name = format!("fluvio-{}.exe", channel_name);
             }
         }
 
@@ -302,12 +301,11 @@ impl FluvioChannelInfo {
     }
 
     pub fn dev_channel() -> Self {
-        let fluvio_bin_name;
         cfg_if! {
             if #[cfg(not(target_os = "windows"))] {
-                fluvio_bin_name = "fluvio".to_string()
+                let fluvio_bin_name = "fluvio".to_string();
             } else {
-                fluvio_bin_name = "fluvio.exe".to_string()
+                let fluvio_bin_name = "fluvio.exe".to_string();
             }
         }
         // fluvio binary is expected to be in same dir as the current binary
