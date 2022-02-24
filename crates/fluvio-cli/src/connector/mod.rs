@@ -104,6 +104,7 @@ pub struct ConnectorConfig {
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
 }
+
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
         ManagedConnectorSpec {
@@ -118,7 +119,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
 }
 
 impl ConnectorConfig {
-    pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
+    pub async fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -134,7 +135,7 @@ impl ConnectorConfig {
         } else if uses.starts_with("file://") {
             let path = uses
                 .strip_prefix("file://")
-                .ok_or(CliError::Other("Incorrectly formed file path".to_string()))?;
+                .ok_or_else(|| CliError::Other("Incorrectly formed file path".to_string()))?;
             println!("Opening file {:?}", path);
             let mut file = File::open(path)?;
             let mut contents = String::new();
@@ -146,7 +147,7 @@ impl ConnectorConfig {
         } else if uses.starts_with("infinyon:") {
             let connector_type = uses
                 .strip_prefix("infinyon:")
-                .ok_or(CliError::Other("Incorrectly formed image name".to_string()))?;
+                .ok_or_else(|| CliError::Other("Incorrectly formed image name".to_string()))?;
             Ok(ManagedConnectorMetadata {
                 image: format!("infinyon/fluvio-connect-{}", connector_type),
                 author: Some("Fluvio Contributors <team@fluvio.io>".to_string()),
@@ -172,7 +173,7 @@ impl ConnectorConfig {
 #[fluvio_future::test_async]
 async fn simple_config_test() -> Result<(), ()> {
     let _: ManagedConnectorSpec =
-        ConnectorConfig::from_file("test-data/connectors/simple-config.yaml")
+        ConnectorConfig::from_file("test-data/connectors/simple-config.yaml").await
             .expect("Failed to load test config")
             .to_managed_connector_spec()
             .await
@@ -183,7 +184,7 @@ async fn simple_config_test() -> Result<(), ()> {
 #[fluvio_future::test_async]
 async fn file_metadata_config_test() -> Result<(), ()> {
     let _: ManagedConnectorSpec =
-        ConnectorConfig::from_file("test-data/connectors/file-metadata-config.yaml")
+        ConnectorConfig::from_file("test-data/connectors/file-metadata-config.yaml").await
             .expect("Failed to load test config")
             .to_managed_connector_spec()
             .await

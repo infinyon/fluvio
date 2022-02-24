@@ -164,19 +164,9 @@ impl ManagedConnectorDeploymentController {
         managed_connector: MetadataStoreObject<ManagedConnectorSpec, K8MetaItem>,
     ) -> Result<(), ClientError> {
         let key = managed_connector.key();
-
-        /*
-        let mut connector_prefixes = Vec::new();
-
-        if let Some(config) = self.config_ctx.store().value("fluvio").await {
-            let config = config.inner_owned().spec;
-            connector_prefixes = config.connector_prefixes;
-        }
-        */
         let k8_deployment_spec = Self::generate_k8_deployment_spec(
             managed_connector.spec(),
             self.tls_config.as_ref(),
-            //&connector_prefixes,
         )
         .await;
         trace!(?k8_deployment_spec);
