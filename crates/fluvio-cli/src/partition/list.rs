@@ -124,10 +124,10 @@ mod display {
                         }
                     };
 
-                    let printable_size = if status.size == -1 {
-                        "ERROR".to_string()
-                    } else {
-                        human_bytes::human_bytes(status.size as f64)
+                    let printable_size = match status.size {
+                        PartitionStatus::SIZE_NOT_SUPPORTED => "NOT SUPPORTED".to_string(),
+                        PartitionStatus::SIZE_ERROR => "ERROR".to_string(),
+                        _ => human_bytes::human_bytes(status.size as f64),
                     };
 
                     row![

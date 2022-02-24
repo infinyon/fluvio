@@ -33,10 +33,14 @@ pub struct PartitionStatus {
     // TODO: There is no such thing as `lsr`, it is a typo
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
-    #[cfg_attr(feature = "use_serde", serde(default))]
+    #[cfg_attr(feature = "use_serde", serde(default = "default_partition_status_size"))]
     #[fluvio(min_version = 5)]
     pub size: i64,
     pub is_being_deleted: bool,
+}
+
+const fn default_partition_status_size() -> i64 {
+    PartitionStatus::SIZE_NOT_SUPPORTED
 }
 
 impl fmt::Display for PartitionStatus {
@@ -54,6 +58,9 @@ impl fmt::Display for PartitionStatus {
 // -----------------------------------
 
 impl PartitionStatus {
+    pub const SIZE_ERROR: i64 = -1;
+    pub const SIZE_NOT_SUPPORTED: i64 = -2;
+
     pub fn leader(leader: impl Into<ReplicaStatus>) -> Self {
         Self::new(leader.into(), vec![])
     }
