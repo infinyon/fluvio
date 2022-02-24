@@ -276,7 +276,7 @@ impl StreamFetchHandler {
                     }
 
                     // If the consumer offset is not behind, there is no need to send records
-                    if !(consumer_offset_update < last_partition_offset) {
+                    if consumer_offset_update >= last_partition_offset {
                         debug!(
                             consumer_offset_update,
                             last_partition_offset,
