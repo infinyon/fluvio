@@ -112,8 +112,10 @@ impl ReplicaStorage for FileReplica {
             ErrorCode::StorageError
         })?;
 
+        let mut total_size = None;
         while let Ok(Some(entry)) = entries.try_next().await {
             let os_file_name = entry.file_name();
+
             if os_file_name.to_string_lossy().ends_with(".log") {
                 let metadata = entry.metadata().await.map_err(|err| {
                     error!(
@@ -122,14 +124,19 @@ impl ReplicaStorage for FileReplica {
                     );
                     ErrorCode::StorageError
                 })?;
-                return Ok(metadata.len());
+                let file_len = metadata.len();
+                debug!("Log segment found. Add {file_len} byte to the total_size.");
+                *total_size.get_or_insert(0) += file_len;
             }
         }
-        error!(
-            "no log file found in {}",
-            self.option.base_dir.to_string_lossy()
-        );
-        Err(ErrorCode::SpuError)
+
+        total_size.ok_or_else(|| {
+            error!(
+                "no log file found in {}",
+                self.option.base_dir.to_string_lossy()
+            );
+            ErrorCode::SpuError
+        })
     }
 
     /// write records to this replica
