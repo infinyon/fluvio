@@ -37,7 +37,8 @@ impl LogsManagedConnectorOpt {
 
         let pods = String::from_utf8_lossy(&pods);
         let pod = if !pods.is_empty() {
-            pods.split(' ').find(|pod_name| self.is_matching_connector_name(pod_name))
+            pods.split(' ')
+                .find(|pod_name| self.is_matching_connector_name(pod_name))
         } else {
             None
         };
@@ -62,7 +63,8 @@ impl LogsManagedConnectorOpt {
     fn is_matching_connector_name(&self, pod_name: &str) -> bool {
         const GENERATED_STRING_SIZE: usize = 17;
 
-        let connector_name = &pod_name[..pod_name.len() - pod_name.len().min(GENERATED_STRING_SIZE)];
+        let connector_name =
+            &pod_name[..pod_name.len() - pod_name.len().min(GENERATED_STRING_SIZE)];
         connector_name == self.name
     }
 }
