@@ -969,11 +969,15 @@ impl ClusterInstaller {
         admin: &FluvioAdmin,
         pb: &ProgressRenderer,
     ) -> Result<bool, K8InstallError> {
-        let time = SystemTime::now();
         let expected_spu = self.config.spu_replicas as usize;
-        debug!("waiting for SPU with: {} loop", *MAX_SC_NETWORK_LOOP);
+        let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
+        let time = SystemTime::now();
+        debug!(
+            timeout = *MAX_PROVISION_TIME_SEC,
+            "waiting for SPU with timeout"
+        );
 
-        for i in 0..*MAX_SC_NETWORK_LOOP {
+        while time.elapsed().unwrap() < timeout_duration {
             debug!("retrieving spu specs");
 
             let spu = admin.list::<SpuSpec, _>([]).await?;
@@ -1000,7 +1004,7 @@ impl ClusterInstaller {
                 debug!(
                     expected_spu,
                     ready_spu,
-                    attempt = i,
+                    elapsed = elapsed.as_secs(),
                     "Not all SPUs are ready. Waiting",
                 );
 
