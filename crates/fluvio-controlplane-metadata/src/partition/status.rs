@@ -20,7 +20,7 @@ use super::ElectionScoring;
 // Data Structures
 // -----------------------------------
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -33,10 +33,26 @@ pub struct PartitionStatus {
     // TODO: There is no such thing as `lsr`, it is a typo
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
-    #[cfg_attr(feature = "use_serde", serde(default = "default_partition_status_size"))]
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default = "default_partition_status_size")
+    )]
     #[fluvio(min_version = 5)]
     pub size: i64,
     pub is_being_deleted: bool,
+}
+
+impl Default for PartitionStatus {
+    fn default() -> Self {
+        Self {
+            size: PartitionStatus::SIZE_NOT_SUPPORTED,
+            resolution: Default::default(),
+            leader: Default::default(),
+            lsr: Default::default(),
+            replicas: Default::default(),
+            is_being_deleted: Default::default(),
+        }
+    }
 }
 
 const fn default_partition_status_size() -> i64 {
