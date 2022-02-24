@@ -8,9 +8,9 @@ mod constants {
 
     use once_cell::sync::Lazy;
 
-    /// maximum time waiting for network check, DNS or network
-    pub static MAX_SC_NETWORK_LOOP: Lazy<u16> = Lazy::new(|| {
-        let var_value = env::var("FLV_CLUSTER_MAX_SC_NETWORK_LOOP").unwrap_or_default();
+    /// maximum time waiting for SC and SPU to provision
+    pub static MAX_PROVISION_TIME_SEC: Lazy<u16> = Lazy::new(|| {
+        let var_value = env::var("FLV_CLUSTER_PROVISION_TIMEOUT").unwrap_or_default();
         var_value.parse().unwrap_or(300)
     });
 }

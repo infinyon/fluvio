@@ -24,7 +24,7 @@ use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::runtime::local::{LocalSpuProcessClusterManager, ScProcess};
 use crate::progress::{InstallProgressMessage, ProgressBarFactory};
 
-use super::constants::*;
+use super::constants::MAX_PROVISION_TIME_SEC;
 use super::common::check_crd;
 
 pub static DEFAULT_DATA_DIR: Lazy<Option<PathBuf>> =
@@ -554,9 +554,10 @@ impl LocalInstaller {
         let admin = client.admin().await;
 
         let pb = self.pb_factory.create();
+        let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
         let time = SystemTime::now();
         // wait for list of spu
-        for _ in 0..*MAX_SC_NETWORK_LOOP {
+        while time.elapsed().unwrap() < timeout_duration {
             let spus = admin.list::<SpuSpec, _>(vec![]).await?;
             let ready_spu = spus.iter().filter(|spu| spu.status.is_online()).count();
             let elapsed = time.elapsed().unwrap();
@@ -575,10 +576,13 @@ impl LocalInstaller {
             }
         }
 
-        error!("waited too long, bailing out");
+        error!(
+            "waited too long: {} secs, bailing out",
+            time.elapsed().unwrap().as_secs()
+        );
         Err(LocalInstallError::Other(format!(
-            "not able to provision:{} spu",
-            spu
+            "not able to provision:{spu} spu in {} secs",
+            time.elapsed().unwrap().as_secs()
         )))
     }
 }
