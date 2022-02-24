@@ -13,7 +13,7 @@ use async_rwlock::{RwLock};
 
 use dataplane::{record::RecordSet};
 use dataplane::{Offset, Isolation, ReplicaKey};
-use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus};
+use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
 use fluvio_types::{SpuId};
@@ -296,7 +296,7 @@ where
             .get_partition_size()
             .await
             .map(|e| e as i64)
-            .unwrap_or(-1);
+            .unwrap_or(PartitionStatus::SIZE_ERROR);
 
         LrsRequest::new(self.id().to_owned(), leader, replicas, size)
     }
