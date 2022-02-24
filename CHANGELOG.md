@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.21 - UNRELEASED
+* Make store time out configurable ([#2116](https://github.com/infinyon/fluvio/issues/2212))
 
 ## Platform Version 0.9.20 - 2022-02-10
 * Add `connector update -c config` to update the running configuration of a given existing managed connector ([#2188](https://github.com/infinyon/fluvio/pull/2188))
