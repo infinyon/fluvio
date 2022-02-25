@@ -6,7 +6,7 @@ use async_channel::Sender;
 
 use tracing::trace;
 
-use dataplane::Offset;
+use dataplane::{Offset, ErrorCode};
 use dataplane::record::Record;
 use fluvio_types::PartitionId;
 use fluvio_protocol::Encoder;
@@ -113,7 +113,7 @@ where {
 }
 
 pub(crate) struct ProducerBatch {
-    pub(crate) notify: Sender<Offset>,
+    pub(crate) notify: Sender<(Offset, ErrorCode)>,
     batch_metadata: Arc<BatchMetadata>,
     write_limit: usize,
     current_size: usize,

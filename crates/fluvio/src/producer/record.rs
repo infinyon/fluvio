@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use dataplane::Offset;
+use dataplane::{Offset, ErrorCode};
 use fluvio_types::PartitionId;
 use async_channel::Receiver;
 use async_lock::RwLock;
@@ -33,7 +33,7 @@ impl RecordMetadata {
 /// Possible states of a batch in the accumulator
 pub(crate) enum BatchMetadataState {
     /// The batch is buffered and ready to be sent to the SPU
-    Buffered(Receiver<Offset>),
+    Buffered(Receiver<(Offset, ErrorCode)>),
     /// The batch was sent to the SPU. Base offset is known
     Sended(Offset),
     /// There was an error sending the batch to the SPU
@@ -45,7 +45,7 @@ pub(crate) struct BatchMetadata {
 }
 
 impl BatchMetadata {
-    pub(crate) fn new(receiver: Receiver<Offset>) -> Self {
+    pub(crate) fn new(receiver: Receiver<(Offset, ErrorCode)>) -> Self {
         Self {
             state: RwLock::new(BatchMetadataState::Buffered(receiver)),
         }
@@ -61,10 +61,17 @@ impl BatchMetadata {
                     .recv()
                     .await
                     .map_err(|err| ProducerError::GetRecordMetadata(Some(err)));
+
                 match offset_result {
                     Ok(offset) => {
-                        *state = BatchMetadataState::Sended(offset);
-                        Ok(offset)
+                        if offset.1 == ErrorCode::None {
+                            *state = BatchMetadataState::Sended(offset.0);
+                            Ok(offset.0)
+                        } else {
+                            let error = ProducerError::SpuErrorCode(offset.1);
+                            *state = BatchMetadataState::Failed(error.clone());
+                            Err(error.into())
+                        }
                     }
                     Err(err) => {
                         *state = BatchMetadataState::Failed(err.clone());
