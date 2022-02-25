@@ -94,6 +94,7 @@ mod display {
                 "LEADER",
                 "REPLICAS",
                 "RESOLUTION",
+                "SIZE",
                 "HW",
                 "LEO",
                 "LRS",
@@ -123,12 +124,19 @@ mod display {
                         }
                     };
 
+                    let printable_size = match status.size {
+                        PartitionStatus::SIZE_NOT_SUPPORTED => "NA".to_string(),
+                        PartitionStatus::SIZE_ERROR => "ERROR".to_string(),
+                        _ => human_bytes::human_bytes(status.size as f64),
+                    };
+
                     row![
                         l -> topic,
                         l -> partition.to_string(),
                         l -> spec.leader.to_string(),
                         l -> format!("{:?}",spec.followers()),
                         l -> format!("{:?}",status.resolution),
+                        l -> printable_size,
                         l -> status.leader.hw.to_string(),
                         l -> status.leader.leo.to_string(),
                         l -> status.lsr.to_string(),

@@ -63,6 +63,7 @@ pub struct LrsRequest {
     pub id: ReplicaKey,
     pub leader: ReplicaStatus,
     pub replicas: Vec<ReplicaStatus>,
+    pub size: i64,
 }
 
 impl PartialEq for LrsRequest {
@@ -87,11 +88,17 @@ impl fmt::Display for LrsRequest {
 }
 
 impl LrsRequest {
-    pub fn new(id: ReplicaKey, leader: ReplicaStatus, replicas: Vec<ReplicaStatus>) -> Self {
+    pub fn new(
+        id: ReplicaKey,
+        leader: ReplicaStatus,
+        replicas: Vec<ReplicaStatus>,
+        size: i64,
+    ) -> Self {
         Self {
             id,
             leader,
             replicas,
+            size,
         }
     }
 }

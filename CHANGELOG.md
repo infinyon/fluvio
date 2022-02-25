@@ -2,6 +2,7 @@
 
 ## Platform Version 0.9.21 - UNRELEASED
 * Make store time out configurable ([#2116](https://github.com/infinyon/fluvio/issues/2212))
+* Add a `size` field in the `fluvio partition list` output. This field represents the size of logs in the partition. ([#2148](https://github.com/infinyon/fluvio/issues/2148))
 
 ## Platform Version 0.9.20 - 2022-02-10
 * Add `connector update -c config` to update the running configuration of a given existing managed connector ([#2188](https://github.com/infinyon/fluvio/pull/2188))

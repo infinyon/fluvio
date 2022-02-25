@@ -178,6 +178,8 @@ mod inner {
             isolation: Isolation,
         ) -> Result<ReplicaSlice, ErrorCode>;
 
+        async fn get_partition_size(&self) -> Result<u64, ErrorCode>;
+
         /// write record set
         async fn write_recordset(
             &mut self,
