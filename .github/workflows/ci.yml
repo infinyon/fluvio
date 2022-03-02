@@ -68,9 +68,7 @@ jobs:
       TARGET: ${{ matrix.rust-target }}
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
-      OPENSSL_NO_VENDOR: 1
-      OPENSSL_DIR: openssl_fluvio      
-    steps:
+     steps:
       - uses: actions/checkout@v2
 
       # If this job is being run by Bors (it was pushed to staging),
@@ -193,8 +191,6 @@ jobs:
       TARGET: ${{ matrix.rust-target }}
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
-      OPENSSL_NO_VENDOR: 1
-      OPENSSL_DIR: openssl_fluvio
     steps:
       - uses: actions/checkout@v2
 

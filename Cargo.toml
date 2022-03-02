@@ -40,6 +40,8 @@ members = [
 ]
 resolver = "2"
 
+[patch.crates-io]
+openssl-src = { git = 'https://github.com/infinyon/openssl-src' }
 
 # Used to make eyre faster on debug builds
 # See https://github.com/yaahc/color-eyre#improving-perf-on-debug-builds
