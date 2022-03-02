@@ -20,7 +20,7 @@ use super::ElectionScoring;
 // Data Structures
 // -----------------------------------
 
-#[derive(Decoder, Encoder, Default, Debug, Clone, PartialEq)]
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -33,7 +33,30 @@ pub struct PartitionStatus {
     // TODO: There is no such thing as `lsr`, it is a typo
     pub lsr: u32,
     pub replicas: Vec<ReplicaStatus>,
+    #[cfg_attr(
+        feature = "use_serde",
+        serde(default = "default_partition_status_size")
+    )]
+    #[fluvio(min_version = 5)]
+    pub size: i64,
     pub is_being_deleted: bool,
+}
+
+impl Default for PartitionStatus {
+    fn default() -> Self {
+        Self {
+            size: PartitionStatus::SIZE_NOT_SUPPORTED,
+            resolution: Default::default(),
+            leader: Default::default(),
+            lsr: Default::default(),
+            replicas: Default::default(),
+            is_being_deleted: Default::default(),
+        }
+    }
+}
+
+const fn default_partition_status_size() -> i64 {
+    PartitionStatus::SIZE_NOT_SUPPORTED
 }
 
 impl fmt::Display for PartitionStatus {
@@ -51,6 +74,9 @@ impl fmt::Display for PartitionStatus {
 // -----------------------------------
 
 impl PartitionStatus {
+    pub const SIZE_ERROR: i64 = -1;
+    pub const SIZE_NOT_SUPPORTED: i64 = -2;
+
     pub fn leader(leader: impl Into<ReplicaStatus>) -> Self {
         Self::new(leader.into(), vec![])
     }
@@ -67,12 +93,14 @@ impl PartitionStatus {
     pub fn new2(
         leader: impl Into<ReplicaStatus>,
         replicas: Vec<ReplicaStatus>,
+        size: i64,
         resolution: PartitionResolution,
     ) -> Self {
         Self {
             resolution,
             leader: leader.into(),
             replicas,
+            size,
             ..Default::default()
         }
     }
@@ -146,6 +174,7 @@ impl PartitionStatus {
     /// ignore changes from spu = -1 or offsets = -1
     pub fn merge(&mut self, other: Self) {
         self.resolution = other.resolution;
+        self.size = other.size;
         if let Some(old) = self.leader.merge(&other.leader) {
             self.replicas.push(old); // move old leader to replicas
         }

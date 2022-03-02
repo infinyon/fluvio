@@ -30,6 +30,7 @@ env:
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
+  MAX_PROVISION_TIME_SEC: 600
 
 jobs:
   # this job set up dynamic configuration shared among jobs
@@ -492,15 +493,11 @@ jobs:
           ./k8-util/cluster/reset-k3d.sh
       - name: Start fluvio cluster
         timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 600
         if: matrix.test != 'smoke-test-tls'
         run: fluvio cluster start --local --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
       - name: Start fluvio cluster TLS
         if: matrix.test == 'smoke-test-tls'
         timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 600
         # note that Local config doesn't not support auth and scopes in the argument for now
         run: >
           AUTH_POLICY=${{ env.AUTH_FILE }}
@@ -682,21 +679,15 @@ jobs:
       - name: Start fluvio cluster
         if: matrix.test == 'smoke-test-k8'
         timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 600
         run: |
           fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }}
       - name: Start fluvio cluster TLS
         timeout-minutes: 10
-        env:
-            FLV_DISPATCHER_WAIT: 600
         if: matrix.test == 'smoke-test-k8-tls'
         run: |
           fluvio cluster start --develop --spu ${{ matrix.spu }} --rust-log ${{ env.SERVER_LOG }} ${{ env.TLS_ARGS }}
       - name: Start fluvio cluster TLS with root
         timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 600
         if: matrix.test == 'smoke-test-k8-tls-root-unclean'
         run: |
           make smoke-test-k8-tls-policy-setup
@@ -766,7 +757,6 @@ jobs:
         timeout-minutes: 5
         env:
           TEST_DATA_BYTES: 10000
-          FLV_DISPATCHER_WAIT: 300
         run: |
           date
           k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
@@ -809,8 +799,6 @@ jobs:
           ./k8-util/cluster/reset-k3d.sh
       - name: Install stable CLI and start Fluvio cluster
         timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 600
         run: |
           curl -fsS https://packages.fluvio.io/v1/install.sh | bash
           ~/.fluvio/bin/fluvio cluster start
@@ -890,8 +878,6 @@ jobs:
           echo "~/bin" >> $GITHUB_PATH
       - name: Start cluster
         timeout-minutes: 10
-        env:
-          FLV_DISPATCHER_WAIT: 600
         run: fluvio cluster start --develop
       - name: Run CLI smoke tests
         timeout-minutes: 5

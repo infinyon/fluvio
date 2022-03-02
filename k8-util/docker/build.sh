@@ -23,7 +23,7 @@ main() {
 
   if [ "$K8" = "minikube" ]; then
     echo "Setting Minikube build context"
-    eval $(minikube -p minikube docker-env)
+    eval $(minikube -p minikube docker-env --shell=bash)
   fi
 
   cp "${fluvio_run}" "${tmp_dir}/fluvio-run"

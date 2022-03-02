@@ -49,6 +49,7 @@ mod context {
         store: Arc<LocalStore<S, MetaContext>>,
         sender: Sender<WSAction<S, MetaContext>>,
         receiver: Receiver<WSAction<S, MetaContext>>,
+        wait_time: u64,
     }
 
     impl<S, MetaContext> StoreContext<S, MetaContext>
@@ -68,7 +69,13 @@ mod context {
                 store,
                 sender,
                 receiver,
+                wait_time: *MAX_WAIT_TIME,
             }
+        }
+
+        /// set wait time out in seconds
+        pub fn set_wait_time(&mut self, wait_time: u64) {
+            self.wait_time = wait_time;
         }
 
         pub async fn send(
@@ -171,7 +178,7 @@ mod context {
                 Ok(_) => {
                     // wait for object created in the store
 
-                    let mut timer = sleep(Duration::from_secs(*MAX_WAIT_TIME));
+                    let mut timer = sleep(Duration::from_secs(self.wait_time));
                     let mut spec_listener = self.change_listener();
                     loop {
                         // check if we can find old object

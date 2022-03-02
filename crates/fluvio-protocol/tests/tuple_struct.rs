@@ -11,10 +11,7 @@ pub struct TestString(String);
 
 #[test]
 fn test_encode_tuple_struct() -> Result<(), Error> {
-    let v1 = TupleStruct {
-        0: "Struct without named fields".to_string(),
-        1: 42,
-    };
+    let v1 = TupleStruct("Struct without named fields".to_string(), 42);
     let mut src = vec![];
     v1.encode(&mut src, 0)?;
 
@@ -29,9 +26,7 @@ fn test_encode_tuple_struct() -> Result<(), Error> {
 
 #[test]
 fn test_encode_test_string() -> Result<(), Error> {
-    let v1 = TestString {
-        0: "Inner string".to_string(),
-    };
+    let v1 = TestString("Inner string".to_string());
     let mut src = vec![];
     v1.encode(&mut src, 0)?;
 

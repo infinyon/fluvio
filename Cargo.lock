@@ -1712,6 +1712,7 @@ dependencies = [
  "hex",
  "home",
  "http-types",
+ "human_bytes",
  "humantime",
  "indicatif",
  "k8-client",
@@ -1828,7 +1829,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.13.2"
+version = "0.14.0"
 dependencies = [
  "async-trait",
  "base64",
@@ -1867,7 +1868,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-extension-common"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "async-trait",
  "fluvio",
@@ -2025,7 +2026,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2206,7 +2207,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.7.1"
+version = "0.7.2"
 dependencies = [
  "async-channel",
  "async-rwlock",
@@ -2862,6 +2863,12 @@ name = "httpdate"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
+
+[[package]]
+name = "human_bytes"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc178557b4a227ff4d9c51fbbf17f29607c32a96be106c97bb8499e075db0de2"
 
 [[package]]
 name = "humantime"

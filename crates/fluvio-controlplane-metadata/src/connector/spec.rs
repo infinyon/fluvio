@@ -70,13 +70,13 @@ impl FromStr for SecretString {
     type Err = Infallible;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(Self { 0: s.into() })
+        Ok(Self(s.into()))
     }
 }
 
 impl From<String> for SecretString {
     fn from(s: String) -> Self {
-        Self { 0: s }
+        Self(s)
     }
 }
 

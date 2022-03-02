@@ -205,6 +205,7 @@ async fn receive_lrs_update(ctx: &SharedContext, requests: UpdateLrsRequest) {
             let new_status = PartitionStatus::new2(
                 lrs_req.leader,
                 lrs_req.replicas,
+                lrs_req.size,
                 PartitionResolution::Online,
             );
             current_status.merge(new_status);

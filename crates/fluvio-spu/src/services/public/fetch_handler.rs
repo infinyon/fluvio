@@ -91,7 +91,7 @@ async fn handle_fetch_partition(
         ..Default::default()
     };
 
-    let leader_state = match ctx.leaders_state().get(&replica_id) {
+    let leader_state = match ctx.leaders_state().get(&replica_id).await {
         Some(leader_state) => leader_state,
         None => {
             debug!("Not leader for partition:");
