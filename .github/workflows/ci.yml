@@ -68,8 +68,8 @@ jobs:
       TARGET: ${{ matrix.rust-target }}
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
-      OPENSSL_DIR: openssl_fluvio
-      
+      OPENSSL_NO_VENDOR: 1
+      OPENSSL_DIR: openssl_fluvio      
     steps:
       - uses: actions/checkout@v2
 
@@ -82,6 +82,7 @@ jobs:
           echo "RELEASE=true" | tee -a $GITHUB_ENV
           echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
           echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
+          
       - name: Print env
         run: |
           echo "RUST_BIN_DIR = ${{ env.RUST_BIN_DIR }} "
@@ -192,6 +193,7 @@ jobs:
       TARGET: ${{ matrix.rust-target }}
       RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
       RELEASE_NAME: debug
+      OPENSSL_NO_VENDOR: 1
       OPENSSL_DIR: openssl_fluvio
     steps:
       - uses: actions/checkout@v2
