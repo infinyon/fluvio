@@ -414,7 +414,7 @@ mod tests {
     use dataplane::core::{Decoder, Encoder};
     use dataplane::record::{Record, RecordSet};
     use dataplane::batch::MemoryRecords;
-    use dataplane::fixture::{BatchProducer, create_batch};
+    use dataplane::fixture::{BatchProducer, create_batch, create_batch_with_producer};
     use dataplane::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
 
@@ -667,6 +667,41 @@ mod tests {
         // restore replica
         let replica = create_replica("test", 0, option).await;
         assert_eq!(replica.get_hw(), 2);
+    }
+
+    #[fluvio_future::test]
+    async fn test_replica_commit_segment_rollout() {
+        let mut option = base_option("test_commit_segment_rollout");
+        option.segment_max_bytes = 1024;
+
+        let mut replica = create_replica("test", 0, option.clone()).await;
+
+        let mut records = RecordSet::default()
+            .add(create_batch_with_producer(12, 100));
+
+        replica
+            .write_recordset(&mut records, true)
+            .await
+            .expect("write");
+
+        let mut records = RecordSet::default()
+            .add(create_batch_with_producer(12, 100));
+
+        replica
+            .write_recordset(&mut records, true)
+            .await
+            .expect("write");
+
+        let length = {
+            let reader = replica.prev_segments.read().await;
+            reader.len()
+        };
+        assert_eq!(length, 1);
+
+        drop(replica);
+
+        let replica = create_replica("test", 0, option).await;
+        drop(replica)
     }
 
     const TEST_STORAGE_SIZE_DIR: &str = "test_storage_size";
