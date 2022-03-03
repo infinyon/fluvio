@@ -55,6 +55,7 @@ impl Default for PartitionStatus {
     }
 }
 
+#[cfg(feature = "use_serde")]
 const fn default_partition_status_size() -> i64 {
     PartitionStatus::SIZE_NOT_SUPPORTED
 }

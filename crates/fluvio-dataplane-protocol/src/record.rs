@@ -12,6 +12,8 @@ use once_cell::sync::Lazy;
 use bytes::Buf;
 use bytes::BufMut;
 
+use crate::batch::BatchRecords;
+use crate::batch::MemoryRecords;
 use crate::core::{Encoder, Decoder};
 use crate::core::DecoderVarInt;
 use crate::core::EncoderVarInt;
@@ -203,8 +205,8 @@ impl Decoder for RecordData {
 /// Represents sets of batches in storage
 //  It is written consequently with len as prefix
 #[derive(Default, Debug)]
-pub struct RecordSet {
-    pub batches: Vec<Batch>,
+pub struct RecordSet<R = MemoryRecords> {
+    pub batches: Vec<Batch<R>>,
 }
 
 impl fmt::Display for RecordSet {
@@ -213,8 +215,8 @@ impl fmt::Display for RecordSet {
     }
 }
 
-impl RecordSet {
-    pub fn add(mut self, batch: Batch) -> Self {
+impl<R: BatchRecords> RecordSet<R> {
+    pub fn add(mut self, batch: Batch<R>) -> Self {
         self.batches.push(batch);
         self
     }
@@ -228,10 +230,7 @@ impl RecordSet {
 
     /// total records
     pub fn total_records(&self) -> usize {
-        self.batches
-            .iter()
-            .map(|batches| batches.records().len())
-            .sum()
+        self.batches.iter().map(|batch| batch.records_len()).sum()
     }
 
     /// return base offset
@@ -243,7 +242,7 @@ impl RecordSet {
     }
 }
 
-impl Decoder for RecordSet {
+impl<R: BatchRecords> Decoder for RecordSet<R> {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
     where
         T: Buf,
@@ -296,7 +295,7 @@ impl Decoder for RecordSet {
     }
 }
 
-impl Encoder for RecordSet {
+impl<R: BatchRecords> Encoder for RecordSet<R> {
     fn write_size(&self, version: Version) -> usize {
         self.batches
             .iter()
@@ -613,7 +612,8 @@ mod test {
         assert_eq!(out.len(), original_len - TRUNCATED);
 
         println!("decoding...");
-        let decoded_batches = RecordSet::decode_from(&mut Cursor::new(out), 0).expect("decoding");
+        let decoded_batches =
+            RecordSet::<MemoryRecords>::decode_from(&mut Cursor::new(out), 0).expect("decoding");
         assert_eq!(decoded_batches.batches.len(), 2);
     }
 
