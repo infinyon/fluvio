@@ -11,7 +11,7 @@ use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
 use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size};
-use dataplane::batch::Batch;
+use dataplane::batch::{Batch, BatchRecords};
 use dataplane::record::RecordSet;
 
 use crate::{OffsetInfo, checkpoint::CheckPoint};
@@ -143,9 +143,9 @@ impl ReplicaStorage for FileReplica {
     /// if update_highwatermark is set, set high watermark is end
     //  this is used when LRS = 1
     #[instrument(skip(self, records, update_highwatermark))]
-    async fn write_recordset(
+    async fn write_recordset<R: BatchRecords>(
         &mut self,
-        records: &mut RecordSet,
+        records: &mut RecordSet<R>,
         update_highwatermark: bool,
     ) -> Result<(), StorageError> {
         let max_batch_size = self.option.max_batch_size.get() as usize;
@@ -372,7 +372,10 @@ impl FileReplica {
     }
 
     #[instrument(skip(self, item))]
-    async fn write_batch(&mut self, item: &mut Batch) -> Result<(), StorageError> {
+    async fn write_batch<R: BatchRecords>(
+        &mut self,
+        item: &mut Batch<R>,
+    ) -> Result<(), StorageError> {
         if !(self.active_segment.append_batch(item).await?) {
             info!(
                 partition = self.partition,

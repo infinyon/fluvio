@@ -144,7 +144,7 @@ async fn test_stream_fetch_basic() {
             let partition = &response.partition;
             assert_eq!(partition.error_code, ErrorCode::None);
             assert_eq!(partition.high_watermark, 2);
-            assert_eq!(partition.next_offset_for_fetch(), Some(2)); // shoule be same as HW
+            assert_eq!(partition.next_offset_for_fetch(), Some(2)); // should be same as HW
 
             assert_eq!(partition.records.batches.len(), 1);
             let batch = &partition.records.batches[0];

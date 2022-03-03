@@ -15,7 +15,7 @@ use crate::Offset;
 use crate::Size;
 use crate::record::Record;
 
-pub trait BatchRecords: Default + Debug + Encoder + Decoder {
+pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
     /// how many bytes does record wants to process
     #[deprecated]
     fn remainder_bytes(&self, remainder: usize) -> usize {
@@ -91,6 +91,9 @@ impl<R> Batch<R> {
         self.get_base_offset() + self.last_offset_delta() as Offset
     }
 
+    pub fn records_len(&self) -> usize {
+        self.last_offset_delta() as usize + 1
+    }
     /// get last offset delta
     #[deprecated(since = "0.9.2", note = "use last_offset_delta instead")]
     pub fn get_last_offset_delta(&self) -> Size {
@@ -125,12 +128,19 @@ where
     }
 }
 
-impl Batch {
+impl<R: BatchRecords> Batch<R> {
     /// Create a new empty batch
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// computed last offset which is base offset + number of records
+    pub fn computed_last_offset(&self) -> Offset {
+        self.get_base_offset() + self.records_len() as Offset
+    }
+}
+
+impl Batch {
     /// add new record, this will update the offset to correct
     pub fn add_record(&mut self, record: Record) {
         self.add_records(&mut vec![record]);
@@ -141,17 +151,11 @@ impl Batch {
         self.update_offset_deltas();
     }
 
-    /// adjust offset delta in the records and header
     pub fn update_offset_deltas(&mut self) {
         for (index, record) in self.records.iter_mut().enumerate() {
             record.preamble.set_offset_delta(index as Offset);
         }
-        self.header.last_offset_delta = self.records.len() as i32 - 1;
-    }
-
-    /// computed last offset which is base offset + number of records
-    pub fn computed_last_offset(&self) -> Offset {
-        self.get_base_offset() + self.records.len() as Offset
+        self.header.last_offset_delta = self.records().len() as i32 - 1;
     }
 }
 

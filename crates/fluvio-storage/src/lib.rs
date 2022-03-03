@@ -28,6 +28,7 @@ mod inner {
 
     use async_trait::async_trait;
 
+    use dataplane::batch::BatchRecords;
     use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey};
     use dataplane::record::RecordSet;
     use fluvio_controlplane_metadata::partition::Replica;
@@ -181,9 +182,9 @@ mod inner {
         async fn get_partition_size(&self) -> Result<u64, ErrorCode>;
 
         /// write record set
-        async fn write_recordset(
+        async fn write_recordset<R: BatchRecords>(
             &mut self,
-            records: &mut RecordSet,
+            records: &mut RecordSet<R>,
             update_highwatermark: bool,
         ) -> Result<(), StorageError>;
 
