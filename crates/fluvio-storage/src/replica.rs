@@ -676,16 +676,14 @@ mod tests {
 
         let mut replica = create_replica("test", 0, option.clone()).await;
 
-        let mut records = RecordSet::default()
-            .add(create_batch_with_producer(12, 100));
+        let mut records = RecordSet::default().add(create_batch_with_producer(12, 100));
 
         replica
             .write_recordset(&mut records, true)
             .await
             .expect("write");
 
-        let mut records = RecordSet::default()
-            .add(create_batch_with_producer(12, 100));
+        let mut records = RecordSet::default().add(create_batch_with_producer(12, 100));
 
         replica
             .write_recordset(&mut records, true)
