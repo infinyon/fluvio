@@ -36,6 +36,15 @@ pub struct ManagedConnectorMetadata {
     pub author: Option<String>,
     pub license: Option<String>,
 }
+impl FromStr for ManagedConnectorMetadata {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(Self {
+            image: s.to_string(),
+            ..Default::default()
+        })
+    }
+}
 
 impl ManagedConnectorSpec {
     pub fn version(&self) -> String {

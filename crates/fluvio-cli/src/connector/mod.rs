@@ -95,7 +95,8 @@ pub struct ConnectorConfig {
     /// https:// specifies the url to the metadata
     /// github:// a github repo
     /// infinyon:http -> github.com/infinyon/fluvio-connectors/.../http/
-    uses: String,
+    #[serde(deserialize_with = "string_or_struct")]
+    uses: ManagedConnectorMetadata,
 
     pub(crate) topic: String,
     pub(crate) version: Option<String>,
@@ -127,6 +128,7 @@ impl ConnectorConfig {
         Ok(connector_config)
     }
 
+    /*
     pub async fn uses_to_metadata(&self) -> Result<ManagedConnectorMetadata, CliError> {
         let uses = &self.uses;
         if uses.starts_with("https://") {
@@ -168,6 +170,7 @@ impl ConnectorConfig {
             version: self.version,
         })
     }
+    */
 }
 
 #[fluvio_future::test_async]
@@ -190,4 +193,49 @@ async fn file_metadata_config_test() -> Result<(), ()> {
             .await
             .expect("Failed to load metadat");
     Ok(())
+}
+
+use std::collections::BTreeMap as Map;
+use std::fmt;
+use std::marker::PhantomData;
+use std::str::FromStr;
+use serde::de::{self, Visitor, MapAccess, Deserializer};
+
+fn string_or_struct<'de, T, D>(deserializer: D) -> Result<T, D::Error>
+where
+	T: Deserialize<'de> + FromStr<Err = String>,
+	D: Deserializer<'de>,
+{
+	struct StringOrStruct<T>(PhantomData<fn() -> T>);
+
+	impl<'de, T> Visitor<'de> for StringOrStruct<T>
+	where
+		T: Deserialize<'de> + FromStr<Err = String>,
+	{
+		type Value = T;
+
+		fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+			formatter.write_str("string or map")
+		}
+
+		fn visit_str<E>(self, value: &str) -> Result<T, E>
+		where
+			E: de::Error,
+		{
+			Ok(FromStr::from_str(value).unwrap())
+		}
+
+		fn visit_map<M>(self, map: M) -> Result<T, M::Error>
+		where
+			M: MapAccess<'de>,
+		{
+			// `MapAccessDeserializer` is a wrapper that turns a `MapAccess`
+			// into a `Deserializer`, allowing it to be used as the input to T's
+			// `Deserialize` implementation. T then deserializes itself using
+			// the entries from the map visitor.
+			Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+		}
+	}
+
+	deserializer.deserialize_any(StringOrStruct(PhantomData))
 }
