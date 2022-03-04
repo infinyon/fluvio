@@ -76,7 +76,16 @@ impl TestRequirementAttribute {
     }
 
     fn timeout(name_value: &syn::MetaNameValue) -> Result<TestRequirementAttribute, SynError> {
-        if let Lit::Int(timeout) = &name_value.lit {
+        if let Lit::Bool(boot_lit) = &name_value.lit {
+            if boot_lit.value() {
+                Err(SynError::new(
+                    boot_lit.span(),
+                    "timeout must be u64 or false",
+                ))
+            } else {
+                Ok(Self::Timeout(Duration::MAX))
+            }
+        } else if let Lit::Int(timeout) = &name_value.lit {
             let parsed = timeout
                 .base10_digits()
                 .parse::<u64>()
@@ -162,7 +171,11 @@ impl TestRequirements {
                 }
                 TestRequirementAttribute::Topic(topic) => test_requirements.topic = Some(topic),
                 TestRequirementAttribute::Timeout(timeout) => {
-                    test_requirements.timeout = Some(timeout)
+                    if timeout.is_zero() {
+                        test_requirements.timeout = None
+                    } else {
+                        test_requirements.timeout = Some(timeout)
+                    }
                 }
                 TestRequirementAttribute::ClusterType(cluster_type) => {
                     test_requirements.cluster_type = Some(cluster_type)

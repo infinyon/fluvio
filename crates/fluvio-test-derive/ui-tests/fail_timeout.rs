@@ -14,6 +14,14 @@ pub fn test2(mut test_driver: TestDriver, test_case: TestCase) {
 pub fn test3(mut test_driver: TestDriver, test_case: TestCase) {
 }
 
+#[fluvio_test(timeout = "-1")]
+pub fn test4(mut test_driver: TestDriver, test_case: TestCase) {
+}
+
+#[fluvio_test(timeout = true)]
+pub fn test5(mut test_driver: TestDriver, test_case: TestCase) {
+}
+
 fn main() {
 }
 

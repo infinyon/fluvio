@@ -3,6 +3,7 @@ use crate::test_meta::test_result::TestResult;
 use super::test_driver::TestDriver;
 use crate::test_meta::derive_attr::TestRequirements;
 use crate::test_meta::environment::EnvDetail;
+use std::time::Duration;
 
 #[derive(Debug)]
 pub struct FluvioTestMeta {
@@ -46,6 +47,8 @@ impl FluvioTestMeta {
         // Set timer
         if let Some(timeout) = test_reqs.timeout {
             test_case.environment.set_timeout(timeout)
+        } else {
+            test_case.environment.set_timeout(Duration::MAX)
         }
     }
 
