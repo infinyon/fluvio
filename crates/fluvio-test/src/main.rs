@@ -126,6 +126,7 @@ fn run_test(
     debug!("running waiting for signal");
 
     const TICK: Duration = Duration::from_millis(100);
+    let disable_timeout = environment.disable_timeout;
     let timeout = environment.timeout();
     let mut message_spinner = create_spinning_indicator();
     let mut timed_out = false;
@@ -137,7 +138,7 @@ fn run_test(
         }
 
         let elapsed = start.elapsed().expect("Unable to get elapsed time");
-        if elapsed > timeout {
+        if !disable_timeout && elapsed > timeout {
             timed_out = true;
             break;
         }

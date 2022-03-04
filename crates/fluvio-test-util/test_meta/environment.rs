@@ -4,6 +4,19 @@ use structopt::StructOpt;
 use std::fmt::Debug;
 use std::num::ParseIntError;
 use std::time::Duration;
+use serde::{Serialize, Deserialize};
+use humantime::parse_duration;
+
+// Add # of topics
+// Add topic partitions
+// Add retention-time, segment-size
+
+// Add # producers
+// payload size
+// producer batch-size, linger
+// (reserve space for compression)
+
+// Add # consumers
 
 pub trait EnvDetail: Debug + Clone {
     fn set_topic_name(&mut self, topic: String);
@@ -136,17 +149,57 @@ pub struct EnvironmentSetup {
     #[structopt(short("t"), long)]
     pub topic_name: Option<String>,
 
-    /// number of spu
+    /// # topics - Appends id as "-#" (zero-based) to topic name if > 1
     #[structopt(long, default_value = "1")]
-    pub spu: u16,
+    pub num_topic: u16,
 
-    /// number of replicas
+    /// Append random as "-<random>" to topic name (before id, if --num-topics > 1)
+    #[structopt(long)]
+    pub topic_random: bool,
+
+    /// Segment size (bytes) per topic
+    #[structopt(long, default_value = "1000000000")]
+    pub topic_segment_size: u32,
+
+    /// Retention time per topic 
+    /// ex. 30s, 15m, 2h, 1w
+    #[structopt(long, default_value = "7d" ,parse(try_from_str = parse_duration))]
+    pub topic_retention_time: Duration,
+
+    /// Number of replicas per topic
     #[structopt(short, long, default_value = "1")]
     pub replication: u16,
 
-    /// number of partitions
+    /// Number of partitions per topic
     #[structopt(short, long, default_value = "1")]
     pub partition: u16,
+
+    /// Number of spu
+    #[structopt(long, default_value = "1")]
+    pub spu: u16,
+
+    /// # Producers to use (if test uses them)
+    #[structopt(long, default_value = "1")]
+    pub producer: u16,
+
+    /// Producer batch size (bytes)
+    #[structopt(long)]
+    pub producer_batch_size: Option<u32>,
+
+    /// Producer Linger (milliseconds)
+    #[structopt(long)]
+    pub producer_linger: Option<u32>,
+
+    /// producer record size (bytes)
+    #[structopt(long, default_value = "1000")]
+    pub producer_record_size: u32,
+
+    /// # Consumers to use (if test uses them)
+    #[structopt(long, default_value = "1")]
+    pub consumer: u16,
+
+    // todo: add consumer config options
+
 
     /// enable tls
     #[structopt(long)]
@@ -184,8 +237,13 @@ pub struct EnvironmentSetup {
     #[structopt(long)]
     pub skip_checks: bool,
 
-    /// In seconds, the maximum time a test will run before considered a fail (default: 1 hour)
-    #[structopt(long, parse(try_from_str = parse_timeout_seconds), default_value = "3600")]
+    /// Disable timeout - overrides use of `--timeout`
+    #[structopt(long)]
+    pub disable_timeout: bool,
+
+    /// Global timeout for a test. Will report as fail when reached
+    /// ex. 30s, 15m, 2h, 1w
+    #[structopt(long, default_value = "1h" ,parse(try_from_str = parse_duration))]
     pub timeout: Duration,
 
     /// K8: use specific image version
