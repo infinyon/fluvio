@@ -104,6 +104,7 @@ pub async fn producer(
                 records_sent += 1;
             }
         }
+        println!("Timer is up")
     } else {
         loop {
             for producer in producers.iter() {
@@ -128,7 +129,6 @@ async fn send_record(
         .send_count(producer, RecordKey::NULL, record)
         .await
         .expect("Producer Send failed");
-    producer.flush().await.expect("flush");
 }
 
 fn generate_record(option: GeneratorTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
