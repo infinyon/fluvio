@@ -178,7 +178,7 @@ pub struct EnvironmentSetup {
     /// Retention time per topic
     /// ex. 30s, 15m, 2h, 1w
     #[structopt(long, default_value = "7d" ,parse(try_from_str = parse_duration))]
-    pub topic_retention_time: Duration,
+    pub topic_retention: Duration,
 
     /// Number of replicas per topic
     #[structopt(short, long, default_value = "1")]

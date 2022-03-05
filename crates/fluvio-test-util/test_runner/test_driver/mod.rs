@@ -7,6 +7,10 @@ use fluvio::{Fluvio, FluvioError};
 use fluvio::metadata::topic::TopicSpec;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
 use fluvio::TopicProducerConfig;
+use fluvio::metadata::topic::CleanupPolicy;
+use fluvio::metadata::topic::ReplicaSpec;
+use fluvio::metadata::topic::SegmentBasedPolicy;
+use fluvio::metadata::topic::TopicStorageConfig;
 
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
@@ -197,29 +201,20 @@ impl TestDriver {
 
         let admin = self.client().admin().await;
 
-        let topic_spec =
+        let mut topic_spec =
             TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
-        // TODO: handle topic retention, segment size
-        //.set_storage(&mut self, storage: TopicStorageConfig)
 
-        // This is from CLI
-        //let mut topic_spec: TopicSpec = replica_spec.into();
-        //if let Some(retention) = self.setting.retention_time {
-        //    topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
-        //        time_in_seconds: retention.as_secs() as u32,
-        //    }));
-        //}
+        // Topic Retention time
+        topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
+            time_in_seconds: option.topic_retention.as_secs() as u32,
+        }));
 
-        //if self.setting.segment_size.is_some() {
-        //    let mut storage = TopicStorageConfig::default();
-
-        //    if let Some(segment_size) = self.setting.segment_size {
-        //        storage.segment_size = Some(segment_size);
-        //    }
-
-        //    topic_spec.set_storage(storage);
-        //}
-
+        // Topic segment size
+        let mut storage = TopicStorageConfig::default();
+        storage.segment_size = Some(option.topic_segment_size) ;
+        topic_spec.set_storage(storage);
+        
+        // Create multiple topics
         for n in 0..option.num_topic {
             // Create topic and record how long it takes
             let now = SystemTime::now();
