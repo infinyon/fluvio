@@ -21,7 +21,7 @@ pub async fn find_offsets(test_driver: &TestDriver, test_case: &SmokeTestCase) -
     let mut admin = test_driver.client().admin().await;
 
     for _i in 0..partition {
-        let topic_name = test_case.environment.topic_name();
+        let topic_name = test_case.environment.base_topic_name();
         // find last offset
         let offset = last_leo(&mut admin, &topic_name).await;
         println!("found topic: {} offset: {}", &topic_name, offset);

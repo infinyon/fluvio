@@ -50,7 +50,7 @@ pub async fn batching(
 ) -> TestResult {
     println!("Starting produce_batch test");
 
-    let topic_name = test_case.environment.topic_name();
+    let topic_name = test_case.environment.base_topic_name();
 
     let leader = {
         let admin: FluvioAdmin = test_driver.client().admin().await;

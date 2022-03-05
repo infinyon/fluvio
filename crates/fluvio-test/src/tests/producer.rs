@@ -222,8 +222,9 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     .expect("Connecting to cluster failed");
 
                 producer_work(
+                    // TODO: Support for multiple topics
                     test_driver
-                        .create_producer(&test_case.environment.topic_name())
+                        .create_producer(&test_case.environment.base_topic_name())
                         .await,
                     n,
                     workload_size,

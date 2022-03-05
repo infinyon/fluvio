@@ -34,21 +34,26 @@ impl FluvioTestMeta {
         if test_case.environment.is_topic_set() {
             test_case
                 .environment
-                .set_topic_name(test_case.environment.topic_name())
+                .set_base_topic_name(test_case.environment.base_topic_name())
         // Next, we should fall back to the value set on the macro
         } else if let Some(topic) = &test_reqs.topic {
-            test_case.environment.set_topic_name(topic.to_string());
+            test_case.environment.set_base_topic_name(topic.to_string());
         } else {
-            test_case.environment.set_topic_name("topic".to_string());
+            test_case
+                .environment
+                .set_base_topic_name("topic".to_string());
         }
     }
 
     pub fn set_timeout(test_reqs: &TestRequirements, test_case: &mut TestCase) {
-        // Set timer
+        // If timeout is set in #[fluvio_test()] macro
         if let Some(timeout) = test_reqs.timeout {
             test_case.environment.set_timeout(timeout)
         } else {
-            test_case.environment.set_timeout(Duration::MAX)
+            // Default CLI value
+            test_case
+                .environment
+                .set_timeout(test_case.environment.timeout)
         }
     }
 

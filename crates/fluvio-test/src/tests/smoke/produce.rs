@@ -35,7 +35,7 @@ pub async fn produce_message_with_api(
 ) {
     let partition = test_case.environment.partition;
     let produce_iteration = test_case.option.producer_iteration;
-    let topic_name = test_case.environment.topic_name();
+    let topic_name = test_case.environment.base_topic_name();
 
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
@@ -105,7 +105,7 @@ mod cli {
 
     fn produce_message_inner(_iteration: u32, offsets: &Offsets, test_case: &SmokeTestCase) {
         use std::io;
-        let topic_name = test_case.environment.topic_name();
+        let topic_name = test_case.environment.base_topic_name();
 
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 

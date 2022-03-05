@@ -14,8 +14,9 @@ use super::LongevityTestCase;
 use crate::tests::TestRecord;
 
 pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase, consumer_id: u32) {
+    // TODO: How should we test multiple partitions?
     let consumer = test_driver
-        .get_consumer(&option.environment.topic_name(), 0)
+        .get_consumer(&option.environment.base_topic_name(), 0)
         .await;
 
     // TODO: Support starting stream from consumer offset
@@ -27,7 +28,8 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
     // Note, we're going to give the consumer some buffer
     // to give it a better chance to read all records
     let consumer_buffer_time = Duration::from_millis(25);
-    let mut test_timer = sleep(option.option.runtime_seconds + consumer_buffer_time);
+    //let mut test_timer = sleep(option.environment.timeout + consumer_buffer_time);
+    let mut test_timer = sleep(Duration::from_secs(31_557_600));
     let mut records_recvd = 0;
 
     let start_consume = SystemTime::now();

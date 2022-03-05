@@ -46,7 +46,7 @@ pub async fn produce_batch(
 ) -> TestResult {
     println!("Starting produce_batch test");
 
-    let topic_name = test_case.environment.topic_name();
+    let topic_name = test_case.environment.base_topic_name();
     let producer: TopicProducer = test_driver.create_producer(&topic_name).await;
 
     println!("Created producer");

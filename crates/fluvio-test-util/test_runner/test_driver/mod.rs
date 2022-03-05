@@ -8,7 +8,6 @@ use fluvio::metadata::topic::TopicSpec;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
 use fluvio::TopicProducerConfig;
 use fluvio::metadata::topic::CleanupPolicy;
-use fluvio::metadata::topic::ReplicaSpec;
 use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
 
@@ -188,7 +187,7 @@ impl TestDriver {
     pub async fn create_topic(&self, option: &EnvironmentSetup) -> Result<(), ()> {
         use std::time::SystemTime;
 
-        let topic_name = option.topic_name();
+        let topic_name = option.base_topic_name();
 
         if option.num_topic > 1 {
             println!(
@@ -211,10 +210,9 @@ impl TestDriver {
 
         // Topic segment size
         let mut storage = TopicStorageConfig::default();
-        storage.segment_size = Some(option.topic_segment_size) ;
+        storage.segment_size = Some(option.topic_segment_size);
         topic_spec.set_storage(storage);
-        
-        // Create multiple topics
+
         for n in 0..option.num_topic {
             // Create topic and record how long it takes
             let now = SystemTime::now();

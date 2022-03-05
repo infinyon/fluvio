@@ -13,7 +13,7 @@ pub async fn producer(
     digests: Sender<String>,
 ) {
     let producer = test_driver
-        .create_producer(&option.environment.topic_name())
+        .create_producer(&option.environment.base_topic_name())
         .await;
 
     // Iterations ranging approx. 5000 - 20_000

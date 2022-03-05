@@ -2,10 +2,8 @@ pub mod producer;
 
 use core::panic;
 use std::any::Any;
-use std::num::ParseIntError;
 use std::time::Duration;
 use structopt::StructOpt;
-use uuid::Uuid;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -39,43 +37,9 @@ impl From<TestCase> for GeneratorTestCase {
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 #[structopt(name = "Fluvio Longevity Test")]
 pub struct GeneratorTestOption {
-    /// Max time we want the producer to run, in seconds - Default: forever
-    #[structopt(long, parse(try_from_str = parse_seconds))]
-    runtime_seconds: Option<Duration>,
-
-    /// Record payload size used by test (bytes)
-    #[structopt(long, default_value = "1000")]
-    record_size: usize,
-
-    /// Number of producers to create
-    #[structopt(long, default_value = "1")]
-    pub producers: u32,
-
-    /// Producer linger (ms)
-    #[structopt(long = "linger")]
-    pub batch_linger_ms: Option<u64>,
-
-    /// Producer batch size (bytes)
-    #[structopt(long)]
-    pub batch_size: Option<usize>,
-
     /// Opt-in to detailed output printed to stdout
     #[structopt(long, short)]
     verbose: bool,
-
-    /// When set, unique topics will be used so multiple
-    /// instances of generator against cluster won't collide
-    #[structopt(long)]
-    multi_run: bool,
-
-    /// Number of topics for producers to send traffic to
-    #[structopt(long, default_value = "1")]
-    topics: u32,
-}
-
-fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
-    let seconds = s.parse::<u64>()?;
-    Ok(Duration::from_secs(seconds))
 }
 
 impl TestOption for GeneratorTestOption {
@@ -84,34 +48,30 @@ impl TestOption for GeneratorTestOption {
     }
 }
 
-#[fluvio_test(name = "generator", topic = "generated")]
+#[fluvio_test(name = "generator", topic = "generated", timeout = false)]
 pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
     let option: GeneratorTestCase = test_case.into();
 
     println!("Starting data generation");
 
-    let expected_runtime = if let Some(timeout) = option.option.runtime_seconds {
-        format!("{:?}", timeout)
+    let expected_runtime = if option.environment.timeout != Duration::MAX {
+        format!("{:?}", option.environment.timeout)
     } else {
         "forever".to_string()
     };
 
     println!("Expected runtime: {:?}", expected_runtime);
 
-    println!("# Producers: {}", option.option.producers);
+    println!("# Producers: {}", option.environment.producer);
 
     // Batch info
-    println!("linger (ms): {:?}", option.option.batch_linger_ms);
-    println!("batch size (Bytes): {:?}", option.option.batch_size);
+    println!("linger (ms): {:?}", option.environment.producer_linger);
+    println!(
+        "batch size (Bytes): {:?}",
+        option.environment.producer_batch_size
+    );
 
-    // Generate a run id if we're running multiple instances
-    let run_id = if option.option.multi_run {
-        Some(Uuid::new_v4().to_simple().to_string())
-    } else {
-        None
-    };
-
-    let sync_topic = if let Some(run_id) = &run_id {
+    let sync_topic = if let Some(run_id) = &option.environment.topic_salt {
         format!("sync-{}", run_id)
     } else {
         "sync".to_string()
@@ -129,7 +89,6 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
             // Connect test driver to cluster before starting test
             test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-
             // Create sync topic before starting test
             {
             let mut env_opts = option.environment.clone();
@@ -139,22 +98,6 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                 .expect("Unable to create default topic");
             }
 
-            // multiple topic creation
-            for topic_id in 0..option.option.topics {
-                let mut env_opts = option.environment.clone();
-
-                let test_topic_name =  if let Some(run_id) = run_id.clone() {
-                    format!("{}-{}-{}", env_opts.topic_name(), run_id, topic_id)
-                } else {
-                    format!("{}-{}", env_opts.topic_name(), topic_id)
-                };
-
-                env_opts.topic_name = Some(test_topic_name);
-                test_driver_setup.create_topic(&env_opts)
-                    .await
-                    .expect("Unable to create default topic");
-            }
-
             test_driver_setup.disconnect();
 
         })
@@ -162,10 +105,18 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
 
     // Pass run id to producers, so they can select the correct topics
     let mut producer_wait = Vec::new();
-    for i in 0..option.option.producers {
+    for i in 0..option.environment.producer {
         println!("Starting Producer #{}", i);
         let producer = async_process!(
-            async { producer::producer(test_driver.clone(), option, i, run_id.clone()).await },
+            async {
+                producer::producer(
+                    test_driver.clone(),
+                    option.clone(),
+                    i,
+                    option.environment.topic_salt.clone(),
+                )
+                .await
+            },
             format!("producer-{}", i)
         );
 
@@ -196,7 +147,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
                 .await;
 
             // Wait for everyone to get ready
-            let mut num_producers = option.option.producers;
+            let mut num_producers = option.environment.producer;
             let mut is_ready = false;
             while let Some(Ok(record)) = sync_stream.next().await {
                 let _key = record

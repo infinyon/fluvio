@@ -8,7 +8,7 @@ use super::MultiplePartitionTestCase;
 
 pub async fn consumer_stream(test_driver: &TestDriver, option: MultiplePartitionTestCase) {
     let consumer = test_driver
-        .get_all_partitions_consumer(&option.environment.topic_name())
+        .get_all_partitions_consumer(&option.environment.base_topic_name())
         .await;
     let mut stream = consumer.stream(Offset::beginning()).await.unwrap();
 

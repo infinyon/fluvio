@@ -10,7 +10,7 @@ use crate::tests::TestRecordBuilder;
 pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, producer_id: u32) {
     debug!("About to get a producer");
     let producer = test_driver
-        .create_producer(&option.environment.topic_name())
+        .create_producer(&option.environment.base_topic_name())
         .await;
 
     // Read in the timer value we want to run for
@@ -20,10 +20,10 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
     let test_start = SystemTime::now();
 
     debug!("About to start producer loop");
-    while test_start.elapsed().unwrap() <= option.option.runtime_seconds {
+    while test_start.elapsed().unwrap() <= option.environment.timeout {
         let record = TestRecordBuilder::new()
             .with_tag(format!("{}", records_sent))
-            .with_random_data(option.option.record_size)
+            .with_random_data(option.environment.producer_record_size)
             .build();
         let record_json = serde_json::to_string(&record)
             .expect("Convert record to json string failed")
@@ -47,7 +47,6 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
             .send_count(&producer, RecordKey::NULL, record_json)
             .await
             .expect("Producer Send failed");
-        producer.flush().await.expect("flush");
 
         records_sent += 1;
     }
