@@ -154,7 +154,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
                         // Connect test driver to cluster before starting test
                         test_driver_setup.connect().await.expect("Unable to connect to cluster");
 
-                        // Create topic before starting test
+                        // Create topics before starting test
                         test_driver_setup.create_topic(&test_case.environment)
                             .await
                             .expect("Unable to create default topic");

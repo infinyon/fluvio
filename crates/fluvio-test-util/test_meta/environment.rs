@@ -6,6 +6,7 @@ use std::num::ParseIntError;
 use std::time::Duration;
 use serde::{Serialize, Deserialize};
 use humantime::parse_duration;
+use uuid::Uuid;
 
 // Add # of topics
 // Add topic partitions
@@ -40,10 +41,20 @@ pub trait EnvDetail: Debug + Clone {
 }
 
 impl EnvDetail for EnvironmentSetup {
+    // set the base topic name
     fn set_topic_name(&mut self, topic: String) {
-        self.topic_name = Some(topic);
+        // Append a random string to the end. Multiple tests will use different topics
+        let maybe_random = if self.topic_random {
+            let random = Uuid::new_v4().to_simple().to_string();
+            format!("{topic}-{random}")
+        } else {
+            topic
+        };
+
+        self.topic_name = Some(maybe_random);
     }
 
+    // Return the topic name base
     fn topic_name(&self) -> String {
         if let Some(topic_name) = self.topic_name.clone() {
             topic_name
@@ -157,11 +168,14 @@ pub struct EnvironmentSetup {
     #[structopt(long)]
     pub topic_random: bool,
 
+    //    // This is for storing the random str for topic names
+    //    topic_random_str: Option<String>,
+    //
     /// Segment size (bytes) per topic
     #[structopt(long, default_value = "1000000000")]
     pub topic_segment_size: u32,
 
-    /// Retention time per topic 
+    /// Retention time per topic
     /// ex. 30s, 15m, 2h, 1w
     #[structopt(long, default_value = "7d" ,parse(try_from_str = parse_duration))]
     pub topic_retention_time: Duration,
@@ -199,8 +213,6 @@ pub struct EnvironmentSetup {
     pub consumer: u16,
 
     // todo: add consumer config options
-
-
     /// enable tls
     #[structopt(long)]
     pub tls: bool,
@@ -253,10 +265,4 @@ pub struct EnvironmentSetup {
     /// K8: use sc address
     #[structopt(long)]
     pub proxy_addr: Option<String>,
-}
-
-#[allow(clippy::unnecessary_wraps)]
-fn parse_timeout_seconds(timeout_str: &str) -> Result<Duration, ParseIntError> {
-    let parsed = timeout_str.parse::<u64>().expect("Parsing seconds failed");
-    Ok(Duration::from_secs(parsed))
 }

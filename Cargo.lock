@@ -2272,6 +2272,7 @@ dependencies = [
  "syn",
  "tokio",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
