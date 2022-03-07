@@ -2,6 +2,8 @@ use std::time::Duration;
 
 use derive_builder::Builder;
 
+use fluvio_compression::Compression;
+
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
 const DEFAULT_LINGER_MS: u64 = 100;
@@ -18,6 +20,11 @@ fn default_linger_duration() -> Duration {
 fn default_partitioner() -> Box<dyn Partitioner + Send + Sync> {
     Box::new(SiphashRoundRobinPartitioner::new())
 }
+
+fn default_compression() -> Compression {
+    Compression::None
+}
+
 /// Options used to adjust the behavior of the Producer.
 /// Create this struct with [`TopicProducerConfigBuilder`].
 ///
@@ -34,14 +41,19 @@ pub struct TopicProducerConfig {
     /// Partitioner assigns the partition to each record that needs to be send
     #[builder(default = "default_partitioner()")]
     pub(crate) partitioner: Box<dyn Partitioner + Send + Sync>,
+
+    /// Compression algorithm used by Fluvio producer to compress data.
+    #[builder(default = "default_compression()")]
+    pub(crate) compression: Compression,
 }
 
 impl Default for TopicProducerConfig {
     fn default() -> Self {
         Self {
-            linger: Duration::from_millis(DEFAULT_LINGER_MS),
-            batch_size: DEFAULT_BATCH_SIZE_BYTES,
-            partitioner: Box::new(SiphashRoundRobinPartitioner::new()),
+            linger: default_linger_duration(),
+            batch_size: default_batch_size(),
+            partitioner: default_partitioner(),
+            compression: default_compression(),
         }
     }
 }

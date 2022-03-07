@@ -4,8 +4,7 @@ use std::time::Duration;
 
 use async_lock::{Mutex, RwLock};
 use dataplane::ReplicaKey;
-use dataplane::batch::Batch;
-use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
+use dataplane::produce::{RawPartitionRequest, RawTopicRequest, RawProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
@@ -186,13 +185,13 @@ impl PartitionProducer {
         }
 
         // Send each batch and notify base offset
-        let mut request = DefaultProduceRequest::default();
+        let mut request = RawProduceRequest::default();
 
-        let mut topic_request = DefaultTopicRequest {
+        let mut topic_request = RawTopicRequest {
             name: self.replica.topic.to_string(),
             ..Default::default()
         };
-        let mut partition_request = DefaultPartitionRequest {
+        let mut partition_request = RawPartitionRequest {
             partition_index: self.replica.partition,
             ..Default::default()
         };
@@ -200,11 +199,12 @@ impl PartitionProducer {
         let mut batch_notifiers = vec![];
 
         for p_batch in batches_ready {
-            let batch = p_batch.records;
+            let notify = p_batch.notify.clone();
+            let batch = p_batch.try_into()?;
 
-            let batch = Batch::from(batch);
             partition_request.records.batches.push(batch);
-            batch_notifiers.push(p_batch.notify);
+
+            batch_notifiers.push(notify);
         }
 
         topic_request.partitions.push(partition_request);

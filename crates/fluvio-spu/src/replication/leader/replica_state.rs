@@ -11,7 +11,7 @@ use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
 
-use dataplane::{record::RecordSet};
+use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::batch::BatchRecords;
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};

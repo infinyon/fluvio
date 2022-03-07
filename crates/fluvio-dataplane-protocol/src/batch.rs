@@ -2,7 +2,10 @@ use std::io::Error;
 use std::mem::size_of;
 use std::fmt::Debug;
 
+use fluvio_compression::CompressionError;
 use tracing::trace;
+
+use fluvio_compression::Compression;
 
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufMut;
@@ -15,6 +18,8 @@ use crate::Offset;
 use crate::Size;
 use crate::record::Record;
 
+pub const COMPRESSION_CODEC_MASK: i16 = 0x07;
+
 pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
     /// how many bytes does record wants to process
     #[deprecated]
@@ -26,7 +31,33 @@ pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
 /// A type describing in-memory records
 pub type MemoryRecords = Vec<Record>;
 
+/// A type describing Raw records
+#[derive(Debug, Default)]
+pub struct RawRecords(pub Vec<u8>);
+
+impl Encoder for RawRecords {
+    fn write_size(&self, _version: Version) -> usize {
+        self.0.len()
+    }
+
+    fn encode<T: BufMut>(&self, buf: &mut T, _version: Version) -> Result<(), Error> {
+        buf.put_slice(&self.0);
+        Ok(())
+    }
+}
+
+impl Decoder for RawRecords {
+    fn decode<T: Buf>(&mut self, buf: &mut T, _version: Version) -> Result<(), Error> {
+        let len = buf.remaining();
+
+        self.0.resize(len, 0);
+        buf.copy_to_slice(&mut self.0);
+        Ok(())
+    }
+}
 impl BatchRecords for MemoryRecords {}
+
+impl BatchRecords for RawRecords {}
 
 /// size of the offset and length
 pub const BATCH_PREAMBLE_SIZE: usize = size_of::<Offset>()     // Offset
@@ -104,6 +135,10 @@ impl<R> Batch<R> {
         self.get_header().last_offset_delta
     }
 
+    pub fn get_compression(&self) -> Result<Compression, CompressionError> {
+        self.get_header().get_compression()
+    }
+
     /// decode from buf stored in the file
     /// read all excluding records
     pub fn decode_from_file_buf<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
@@ -118,6 +153,33 @@ impl<R> Batch<R> {
     }
 }
 
+impl TryFrom<Batch<RawRecords>> for Batch {
+    type Error = CompressionError;
+    fn try_from(batch: Batch<RawRecords>) -> Result<Self, Self::Error> {
+        let records = batch.memory_records()?;
+        Ok(Batch {
+            base_offset: batch.base_offset,
+            batch_len: (BATCH_HEADER_SIZE + records.write_size(0)) as i32,
+            header: batch.header,
+            records,
+        })
+    }
+}
+
+impl TryFrom<Batch> for Batch<RawRecords> {
+    type Error = CompressionError;
+    fn try_from(f: Batch) -> Result<Self, Self::Error> {
+        let mut buf = Vec::new();
+        f.records.encode(&mut buf, 0)?;
+        let records = RawRecords(buf);
+        Ok(Batch {
+            base_offset: f.base_offset,
+            batch_len: f.batch_len,
+            header: f.header,
+            records,
+        })
+    }
+}
 impl<R> Batch<R>
 where
     R: Encoder,
@@ -158,6 +220,22 @@ impl Batch {
         self.header.last_offset_delta = self.records().len() as i32 - 1;
     }
 }
+impl Batch<RawRecords> {
+    pub fn memory_records(&self) -> Result<MemoryRecords, CompressionError> {
+        let compression = self.get_compression()?;
+
+        let mut records: MemoryRecords = Default::default();
+        if let Compression::None = compression {
+            records.decode(&mut &self.records.0[..], 0)?;
+        } else {
+            let decompressed = compression
+                .uncompress(&self.records.0[..])?
+                .ok_or(CompressionError::UnreachableError)?;
+            records.decode(&mut &decompressed[..], 0)?;
+        }
+        Ok(records)
+    }
+}
 
 impl<T: Into<MemoryRecords>> From<T> for Batch {
     fn from(records: T) -> Self {
@@ -190,7 +268,17 @@ where
     {
         trace!("decoding batch");
         self.decode_from_file_buf(src, version)?;
-        self.records.decode(src, version)?;
+
+        let batch_len = self.batch_len as usize - BATCH_HEADER_SIZE;
+        let mut buf = src.take(batch_len);
+        if buf.remaining() < batch_len {
+            return Err(Error::new(
+                std::io::ErrorKind::UnexpectedEof,
+                "not enough buf records",
+            ));
+        }
+
+        self.records.decode(&mut buf, version)?;
         Ok(())
     }
 }
@@ -252,6 +340,17 @@ pub struct BatchHeader {
     pub first_sequence: i32,
 }
 
+impl BatchHeader {
+    fn get_compression(&self) -> Result<Compression, CompressionError> {
+        let compression_bits = self.attributes & COMPRESSION_CODEC_MASK;
+        Compression::try_from(compression_bits as i8)
+    }
+
+    pub fn set_compression(&mut self, compression: Compression) {
+        let compression_bits = compression as i16 & COMPRESSION_CODEC_MASK;
+        self.attributes = (self.attributes & !COMPRESSION_CODEC_MASK) | compression_bits;
+    }
+}
 impl Default for BatchHeader {
     fn default() -> Self {
         BatchHeader {

@@ -6,7 +6,7 @@ use futures_util::StreamExt;
 use tracing::{debug, error, instrument, trace};
 use tokio::select;
 
-use dataplane::record::FileRecordSet;
+use dataplane::{record::FileRecordSet, batch::RawRecords};
 use fluvio_types::event::{StickyEvent, offsets::OffsetPublisher};
 use fluvio_future::task::spawn;
 use fluvio_socket::{ExclusiveFlvSink, SocketError};
@@ -18,6 +18,7 @@ use dataplane::{
 };
 use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
+use fluvio_compression::CompressionError;
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
@@ -185,6 +186,10 @@ impl StreamFetchHandler {
                     Ok(())
                 }
                 StreamFetchError::Socket(err) => Err(err),
+                StreamFetchError::Compression(err) => {
+                    error!(%err, "compression error");
+                    Ok(())
+                }
             }
         } else {
             Ok(())
@@ -425,13 +430,15 @@ impl StreamFetchHandler {
             return Ok((starting_offset, false));
         }
 
-        let records = &file_partition_response.records;
-        let mut file_batch_iterator = FileBatchIterator::from_raw_slice(records.raw_slice());
-
-        // If a SmartModule is provided, we need to read records from file to memory
-        // In-memory records are then processed by SmartModule and returned to consumer
         let output = match smartmodule_instance {
             Some(smartmodule_instance) => {
+                // If a SmartModule is provided, we need to read records from file to memory
+                // In-memory records are then processed by SmartModule and returned to consumer
+
+                let records = &file_partition_response.records;
+                let mut file_batch_iterator =
+                    FileBatchIterator::from_raw_slice(records.raw_slice());
+
                 let (batch, smartmodule_error) = smartmodule_instance
                     .process_batch(
                         &mut file_batch_iterator,
@@ -492,8 +499,8 @@ impl StreamFetchHandler {
         mut next_offset: Offset,
         batch: Batch,
         smartmodule_error: Option<SmartModuleRuntimeError>,
-    ) -> Result<(Offset, bool), SocketError> {
-        type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+    ) -> Result<(Offset, bool), StreamFetchError> {
+        type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet<RawRecords>>;
 
         let error_code = match smartmodule_error {
             Some(error) => ErrorCode::SmartModuleRuntimeError(error),
@@ -528,7 +535,7 @@ impl StreamFetchHandler {
             error_code,
             high_watermark: file_partition_response.high_watermark,
             log_start_offset: file_partition_response.log_start_offset,
-            records,
+            records: records.try_into()?,
             next_filter_offset: next_offset,
             // we mark last offset in the response that we should sync up
             ..Default::default()
@@ -563,7 +570,7 @@ async fn send_back_error(
     stream_id: u32,
     error_code: ErrorCode,
 ) -> Result<(), SocketError> {
-    type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet>;
+    type DefaultPartitionResponse = FetchablePartitionResponse<RecordSet<RawRecords>>;
     let partition_response = DefaultPartitionResponse {
         error_code,
         partition_index: replica.partition,
@@ -590,6 +597,7 @@ async fn send_back_error(
 }
 
 enum StreamFetchError {
+    Compression(CompressionError),
     Socket(SocketError),
     Fetch(ErrorCode),
 }
@@ -606,6 +614,11 @@ impl From<ErrorCode> for StreamFetchError {
     }
 }
 
+impl From<CompressionError> for StreamFetchError {
+    fn from(err: CompressionError) -> Self {
+        Self::Compression(err)
+    }
+}
 pub mod publishers {
 
     use std::{

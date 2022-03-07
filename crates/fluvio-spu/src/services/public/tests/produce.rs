@@ -1,7 +1,9 @@
 use std::{env::temp_dir, time::Duration};
 
 use dataplane::{
-    produce::{DefaultProduceRequest, TopicProduceData, PartitionProduceData},
+    produce::{
+        DefaultProduceRequest, DefaultPartitionRequest, TopicProduceData, PartitionProduceData,
+    },
     api::RequestMessage,
 };
 use fluvio_controlplane_metadata::partition::Replica;
@@ -46,13 +48,15 @@ async fn test_produce_basic() {
     // Make three produce requests with <records_per_request> records and check that returned offset is correct
     let records_per_request = 9;
     for i in 0..3 {
-        let records = create_filter_records(records_per_request);
+        let records = create_filter_records(records_per_request)
+            .try_into()
+            .expect("filter records");
 
         let mut produce_request = DefaultProduceRequest {
             ..Default::default()
         };
 
-        let partition_produce = PartitionProduceData {
+        let partition_produce = DefaultPartitionRequest {
             partition_index: 0,
             records,
         };
@@ -86,7 +90,9 @@ async fn test_produce_basic() {
     let partitions = (0..2)
         .map(|_| PartitionProduceData {
             partition_index: 0,
-            records: create_filter_records(records_per_request),
+            records: create_filter_records(records_per_request)
+                .try_into()
+                .expect("partition"),
         })
         .collect::<Vec<_>>();
     let topic_produce_request = TopicProduceData {

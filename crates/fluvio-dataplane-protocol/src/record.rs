@@ -14,6 +14,7 @@ use bytes::BufMut;
 
 use crate::batch::BatchRecords;
 use crate::batch::MemoryRecords;
+use crate::batch::RawRecords;
 use crate::core::{Encoder, Decoder};
 use crate::core::DecoderVarInt;
 use crate::core::EncoderVarInt;
@@ -21,6 +22,7 @@ use crate::core::Version;
 
 use crate::batch::Batch;
 use crate::Offset;
+use fluvio_compression::CompressionError;
 
 /// maximum text to display
 static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
@@ -209,6 +211,18 @@ pub struct RecordSet<R = MemoryRecords> {
     pub batches: Vec<Batch<R>>,
 }
 
+impl TryFrom<RecordSet> for RecordSet<RawRecords> {
+    type Error = CompressionError;
+    fn try_from(set: RecordSet) -> Result<Self, Self::Error> {
+        let batches: Result<Vec<_>, _> = set
+            .batches
+            .into_iter()
+            .map(|batch| batch.try_into())
+            .collect();
+        Ok(Self { batches: batches? })
+    }
+}
+
 impl fmt::Display for RecordSet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{} batches", self.batches.len())
@@ -230,7 +244,10 @@ impl<R: BatchRecords> RecordSet<R> {
 
     /// total records
     pub fn total_records(&self) -> usize {
-        self.batches.iter().map(|batch| batch.records_len()).sum()
+        self.batches
+            .iter()
+            .map(|batches| batches.records_len())
+            .sum()
     }
 
     /// return base offset

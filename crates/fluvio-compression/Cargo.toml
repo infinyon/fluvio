@@ -1,0 +1,23 @@
+[package]
+name = "fluvio-compression"
+version = "0.0.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["Fluvio Contributors <team@fluvio.io>"]
+categories = ["compression"]
+keywords = ["fluvio", "compression"]
+repository = "https://github.com/infinyon/fluvio"
+description = "Fluvio Compression library"
+
+[features]
+default = ["gzip", "snappy", "lz4"]
+gzip = ["flate2"]
+snappy = ["snap"]
+lz4 = ["lz4_flex"]
+
+[dependencies]
+serde = { version = "1.0.110", features = ['derive'] }
+flate2 = { version = "1.0.20", optional = true }
+snap = { version = "1", optional = true }
+lz4_flex = { version = "0.9", optional = true, default-features = false, features = ["safe-decode", "safe-encode", "frame"] }
+thiserror = "1.0.30"
