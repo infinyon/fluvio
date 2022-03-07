@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use std::collections::{HashMap, hash_map::Entry};
 use std::ops::{Deref, DerefMut};
 
+use dataplane::batch::BatchRecords;
 use fluvio_storage::config::ReplicaConfig;
 use tracing::{debug, warn, instrument};
 use async_rwlock::{RwLock};
@@ -202,9 +203,9 @@ where
     }
 
     /// update from leader with new record set
-    pub async fn update_from_leader(
+    pub async fn update_from_leader<R: BatchRecords>(
         &self,
-        records: &mut RecordSet,
+        records: &mut RecordSet<R>,
         leader_hw: Offset,
     ) -> Result<bool, StorageError> {
         let mut changes = false;
@@ -242,7 +243,10 @@ where
 
     /// try to write records
     /// ensure records has correct baseoffset
-    async fn write_recordsets(&self, records: &mut RecordSet) -> Result<bool, StorageError> {
+    async fn write_recordsets<R: BatchRecords>(
+        &self,
+        records: &mut RecordSet<R>,
+    ) -> Result<bool, StorageError> {
         let storage_leo = self.leo();
         if records.base_offset() != storage_leo {
             // this could happend if records were sent from leader before hw was sync
