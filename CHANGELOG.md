@@ -3,7 +3,7 @@
 ## Platform Version 0.9.21 - UNRELEASED
 * Make store time out configurable ([#2116](https://github.com/infinyon/fluvio/issues/2212))
 * Add a `size` field in the `fluvio partition list` output. This field represents the size of logs in the partition. ([#2148](https://github.com/infinyon/fluvio/issues/2148))
-* Support partial CA Intermediate Trust Anchors ([#2232](https://github.com/infinyon/fluvio/pull/2232))
+* Add support for partial CA Intermediate Trust Anchors ([#2232](https://github.com/infinyon/fluvio/pull/2232))
 * Fix Installer problem with self-signed certs ([#2216](https://github.com/infinyon/fluvio/issues/2216))
 
 ## Platform Version 0.9.20 - 2022-02-10
