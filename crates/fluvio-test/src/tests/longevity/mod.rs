@@ -54,11 +54,12 @@ impl TestOption for LongevityTestOption {
 // TODO: Need to add producer + consumer support for multiple topics
 #[fluvio_test(topic = "longevity")]
 pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
-    println!("DEBUG: {:?}", test_case);
+    //println!("DEBUG: {:#?}", test_case);
     let option: LongevityTestCase = test_case.into();
 
     println!("Starting Longevity Test");
     println!("Expected runtime: {:?}", option.environment.timeout());
+    println!("# Topics: {}", option.environment.num_topic);
     println!("# Consumers: {}", option.environment.consumer);
     println!("# Producers: {}", option.environment.producer);
 

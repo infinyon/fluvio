@@ -209,8 +209,9 @@ impl TestDriver {
         }));
 
         // Topic segment size
-        let mut storage = TopicStorageConfig::default();
-        storage.segment_size = Some(option.topic_segment_size);
+        let storage = TopicStorageConfig {
+            segment_size: Some(option.topic_segment_size),
+        };
         topic_spec.set_storage(storage);
 
         for n in 0..option.num_topic {

@@ -166,6 +166,7 @@ pub struct EnvironmentSetup {
     pub topic_random: bool,
 
     // This is used to randomize topic names
+    #[structopt(skip)]
     pub topic_salt: Option<String>,
 
     /// Segment size (bytes) per topic

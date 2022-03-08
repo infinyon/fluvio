@@ -9,9 +9,20 @@ use crate::tests::TestRecordBuilder;
 
 pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, producer_id: u32) {
     debug!("About to get a producer");
-    let producer = test_driver
-        .create_producer(&option.environment.base_topic_name())
-        .await;
+
+    let mut producers = Vec::new();
+
+    for t in 0..option.environment.num_topic {
+        let topic_name = if option.environment.num_topic == 1 {
+            option.environment.base_topic_name()
+        } else {
+            format!("{}-{}", option.environment.base_topic_name(), t)
+        };
+
+        let producer = test_driver.create_producer(&topic_name).await;
+
+        producers.push(producer);
+    }
 
     // Read in the timer value we want to run for
     // Note, we're going to give the consumer a couple extra seconds since it starts its timer first
@@ -43,14 +54,16 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
         }
 
         // Record the latency
-        test_driver
-            .send_count(&producer, RecordKey::NULL, record_json)
-            .await
-            .expect("Producer Send failed");
+
+        for p in &producers {
+            test_driver
+                .send_count(p, RecordKey::NULL, record_json.clone())
+                .await
+                .expect("Producer Send failed");
+        }
 
         records_sent += 1;
     }
-    //}
 
     println!("Producer stopped. Time's up!\nRecords sent: {records_sent}",)
 }

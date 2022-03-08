@@ -3,7 +3,6 @@ use crate::test_meta::test_result::TestResult;
 use super::test_driver::TestDriver;
 use crate::test_meta::derive_attr::TestRequirements;
 use crate::test_meta::environment::EnvDetail;
-use std::time::Duration;
 
 #[derive(Debug)]
 pub struct FluvioTestMeta {
