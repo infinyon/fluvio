@@ -1,4 +1,5 @@
 use async_channel::RecvError;
+use dataplane::ErrorCode;
 
 use super::record::RecordMetadata;
 
@@ -17,4 +18,6 @@ pub enum ProducerError {
     PartitionNotFound(PartitionId),
     #[error("Internal error: {0}")]
     Internal(String),
+    #[error("Producer received an error code: {0}")]
+    SpuErrorCode(ErrorCode),
 }

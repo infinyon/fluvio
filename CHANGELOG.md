@@ -5,6 +5,7 @@
 * Add a `size` field in the `fluvio partition list` output. This field represents the size of logs in the partition. ([#2148](https://github.com/infinyon/fluvio/issues/2148))
 * Add support for partial CA Intermediate Trust Anchors ([#2232](https://github.com/infinyon/fluvio/pull/2232))
 * Fix Installer problem with self-signed certs ([#2216](https://github.com/infinyon/fluvio/issues/2216))
+* Report SPU error codes to FutureRecordMetadata ([#2228](https://github.com/infinyon/fluvio/issues/2228))
 
 ## Platform Version 0.9.20 - 2022-02-10
 * Add `connector update -c config` to update the running configuration of a given existing managed connector ([#2188](https://github.com/infinyon/fluvio/pull/2188))

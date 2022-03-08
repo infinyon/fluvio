@@ -216,10 +216,9 @@ impl PartitionProducer {
         for (batch_notifier, response) in batch_notifiers.into_iter().zip(response.responses.iter())
         {
             let base_offset = response.partitions[0].base_offset;
-            if let Err(_e) = batch_notifier.send(base_offset).await {
-                trace!(
-                    "Failed to notify producer of successful produce because receiver was dropped"
-                );
+            let fluvio_error = response.partitions[0].error_code.clone();
+            if let Err(_e) = batch_notifier.send((base_offset, fluvio_error)).await {
+                trace!("Failed to notify produce result because receiver was dropped");
             }
         }
 
