@@ -32,7 +32,7 @@ pub async fn producer(
     // TODO: Create a Vec of producers per topic
     let mut producers = Vec::new();
 
-    for topic_id in 0..option.environment.num_topic {
+    for topic_id in 0..option.environment.topic {
         let maybe_builder = match (
             option.environment.producer_linger,
             option.environment.producer_batch_size,
@@ -51,7 +51,7 @@ pub async fn producer(
 
         let env_opts = option.environment.clone();
 
-        let test_topic_name = if env_opts.num_topic > 1 {
+        let test_topic_name = if env_opts.topic > 1 {
             format!("{}-{topic_id}", env_opts.base_topic_name())
         } else {
             env_opts.base_topic_name()

@@ -189,10 +189,10 @@ impl TestDriver {
 
         let topic_name = option.base_topic_name();
 
-        if option.num_topic > 1 {
+        if option.topic > 1 {
             println!(
                 "Creating {} topics. Base name: {}",
-                option.num_topic, &topic_name
+                option.topic, &topic_name
             );
         } else {
             println!("Creating the topic: {}", &topic_name);
@@ -214,11 +214,11 @@ impl TestDriver {
         };
         topic_spec.set_storage(storage);
 
-        for n in 0..option.num_topic {
+        for n in 0..option.topic {
             // Create topic and record how long it takes
             let now = SystemTime::now();
 
-            let topic_name = if option.num_topic > 1 {
+            let topic_name = if option.topic > 1 {
                 format!("{}-{}", topic_name.clone(), n)
             } else {
                 topic_name.clone()

@@ -154,12 +154,12 @@ pub struct EnvironmentSetup {
     pub cluster_delete: bool,
 
     /// topic name used
-    #[structopt(short("t"), long)]
+    #[structopt(long)]
     pub topic_name: Option<String>,
 
     /// # topics - Appends id as "-#" (zero-based) to topic name if > 1
     #[structopt(long, default_value = "1")]
-    pub num_topic: u16,
+    pub topic: u16,
 
     /// Append random as "-<random>" to topic name (before id, if --num-topics > 1)
     #[structopt(long)]

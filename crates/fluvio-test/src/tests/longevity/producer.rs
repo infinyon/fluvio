@@ -12,8 +12,8 @@ pub async fn producer(test_driver: TestDriver, option: LongevityTestCase, produc
 
     let mut producers = Vec::new();
 
-    for t in 0..option.environment.num_topic {
-        let topic_name = if option.environment.num_topic == 1 {
+    for t in 0..option.environment.topic {
+        let topic_name = if option.environment.topic == 1 {
             option.environment.base_topic_name()
         } else {
             format!("{}-{}", option.environment.base_topic_name(), t)

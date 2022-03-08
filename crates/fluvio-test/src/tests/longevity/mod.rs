@@ -59,7 +59,7 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
 
     println!("Starting Longevity Test");
     println!("Expected runtime: {:?}", option.environment.timeout());
-    println!("# Topics: {}", option.environment.num_topic);
+    println!("# Topics: {}", option.environment.topic);
     println!("# Consumers: {}", option.environment.consumer);
     println!("# Producers: {}", option.environment.producer);
 
