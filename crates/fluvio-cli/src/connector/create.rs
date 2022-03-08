@@ -32,7 +32,7 @@ pub struct CreateManagedConnectorOpt {
 
 impl CreateManagedConnectorOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
-        let config = ConnectorConfig::from_file(&self.config).await?;
+        let config = ConnectorConfig::from_file(&self.config)?;
         let spec: ManagedConnectorSpec = config.clone().into();
         let name = spec.name.clone();
 

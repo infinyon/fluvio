@@ -28,7 +28,7 @@ pub struct ManagedConnectorSpec {
 #[derive(Encoder, Decoder, Default, Debug, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(serde::Serialize),
     serde(rename_all = "camelCase")
 )]
 pub struct ManagedConnectorMetadata {
@@ -43,6 +43,47 @@ impl FromStr for ManagedConnectorMetadata {
             image: s.to_string(),
             ..Default::default()
         })
+    }
+}
+
+#[cfg(feature = "use_serde")]
+mod deserialize_managed_connector {
+    use super::*;
+    use serde::de::{self, Visitor, MapAccess, Deserializer, Deserialize};
+    struct ManagedConnectorMetadataVisitor;
+    impl<'de> Visitor<'de> for ManagedConnectorMetadataVisitor
+    {
+        type Value = ManagedConnectorMetadata;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("string or map")
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<ManagedConnectorMetadata, E>
+        where
+            E: de::Error,
+        {
+            Ok(FromStr::from_str(value).unwrap())
+        }
+
+        fn visit_map<M>(self, map: M) -> Result<ManagedConnectorMetadata, M::Error>
+        where
+            M: MapAccess<'de>,
+        {
+            // `MapAccessDeserializer` is a wrapper that turns a `MapAccess`
+            // into a `Deserializer`, allowing it to be used as the input to T's
+            // `Deserialize` implementation. T then deserializes itself using
+            // the entries from the map visitor.
+            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+        }
+    }
+    impl<'de> Deserialize<'de> for ManagedConnectorMetadata {
+        fn deserialize<D>(deserializer: D) -> Result<ManagedConnectorMetadata, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            deserializer.deserialize_any(ManagedConnectorMetadataVisitor)
+        }
     }
 }
 

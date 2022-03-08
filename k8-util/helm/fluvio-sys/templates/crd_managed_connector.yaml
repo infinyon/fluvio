@@ -34,10 +34,6 @@ spec:
                 metadata:
                   type: object
                   x-kubernetes-preserve-unknown-fields: true
-                type:
-                  type: string
-                  minimum: 2
-                  maximum: 100
                 version:
                   type: string
                   minimum: 2
