@@ -62,7 +62,7 @@ fluvio-controlplane-metadata = { features = [
 ], path = "../fluvio-controlplane-metadata" }
 fluvio-stream-dispatcher = { path = "../fluvio-stream-dispatcher" }
 k8-client = { version = "5.5.1", optional = true }
-k8-metadata-client = { version = "3.3.1" }
+k8-metadata-client = { version = "3.2.0" }
 k8-types = { version = "0.5.2", features = ["app"] }
 fluvio-protocol = { path = "../fluvio-protocol" }
 fluvio-socket = { path = "../fluvio-socket" }
