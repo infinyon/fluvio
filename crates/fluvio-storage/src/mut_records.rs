@@ -9,6 +9,7 @@ use std::time::{Instant};
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 
+use dataplane::batch::BatchRecords;
 use fluvio_future::fs::File;
 use tracing::instrument;
 use tracing::{debug, trace};
@@ -124,7 +125,10 @@ impl MutFileRecords {
     /// try to write batch
     /// if there is enough room, return true, false otherwise
     #[instrument(skip(self,batch),fields(pos=self.get_pos()))]
-    pub async fn write_batch(&mut self, batch: &Batch) -> Result<(bool, usize, u32), StorageError> {
+    pub async fn write_batch<R: BatchRecords>(
+        &mut self,
+        batch: &Batch<R>,
+    ) -> Result<(bool, usize, u32), StorageError> {
         trace!("start sending using batch {:#?}", batch.get_header());
         if batch.base_offset < self.base_offset {
             return Err(StorageError::LogValidation(LogValidationError::BaseOff));

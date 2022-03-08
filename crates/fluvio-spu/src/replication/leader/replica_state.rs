@@ -687,6 +687,7 @@ mod test_leader {
     use fluvio_controlplane_metadata::partition::{ReplicaKey, Replica};
     use fluvio_storage::{ReplicaStorage, ReplicaStorageConfig, OffsetInfo, ReplicaSlice};
     use dataplane::{Offset, ErrorCode};
+    use dataplane::batch::BatchRecords;
     use dataplane::fixture::{create_recordset};
 
     use crate::{
@@ -748,9 +749,9 @@ mod test_leader {
         }
 
         // do dummy implementations of write
-        async fn write_recordset(
+        async fn write_recordset<R: BatchRecords>(
             &mut self,
-            records: &mut dataplane::record::RecordSet,
+            records: &mut dataplane::record::RecordSet<R>,
             update_highwatermark: bool,
         ) -> Result<(), fluvio_storage::StorageError> {
             self.pos.leo = records.last_offset().unwrap();

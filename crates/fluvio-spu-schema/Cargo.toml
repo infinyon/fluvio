@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-spu-schema"
-version = "0.9.2"
+version = "0.9.3"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio API for SPU"
@@ -24,4 +24,4 @@ static_assertions = "1.1.0"
 
 # Fluvio dependencies
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
-dataplane = { version = "0.9", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.10", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }

@@ -45,7 +45,7 @@ serde_yaml = "0.8"
 
 # Fluvio dependencies
 fluvio-auth = { path = "../fluvio-auth" }
-fluvio-future = { version = "0.3.13", features = [
+fluvio-future = { version = "0.3.14", features = [
     "subscriber",
     "openssl_tls",
     "zero_copy",
@@ -61,10 +61,10 @@ fluvio-controlplane-metadata = { features = [
     "serde",
 ], path = "../fluvio-controlplane-metadata" }
 fluvio-stream-dispatcher = { path = "../fluvio-stream-dispatcher" }
-k8-client = { version = "5.5.0", optional = true }
+k8-client = { version = "5.5.1", optional = true }
 k8-metadata-client = { version = "3.2.0" }
-fluvio-protocol = { path = "../fluvio-protocol" }
 k8-types = { version = "0.5.2", features = ["app"] }
+fluvio-protocol = { path = "../fluvio-protocol" }
 fluvio-socket = { path = "../fluvio-socket" }
 dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 fluvio-service = { path = "../fluvio-service" }
@@ -72,5 +72,5 @@ flv-tls-proxy = { version = "0.5.0" }
 
 [dev-dependencies]
 rand = "0.8.4"
-fluvio-future = { version = "0.3.0", features = ["fixture"] }
+fluvio-future = { version = "0.3.14", features = ["fixture"] }
 flv-util = { version = "0.5.0", features = ["fixture"] }

@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use crate::batch::BatchRecords;
 use crate::core::Decoder;
 use crate::core::Encoder;
 use crate::derive::FluvioDefault;
@@ -91,7 +92,7 @@ where
     pub records: R,
 }
 
-impl FetchablePartitionResponse<RecordSet> {
+impl<R: BatchRecords> FetchablePartitionResponse<RecordSet<R>> {
     /// offset that will be use for fetching rest of offsets
     /// this will be 1 greater than last offset of previous query
     /// If all records have been read then it will be either HW or LEO

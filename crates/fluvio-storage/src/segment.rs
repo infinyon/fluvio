@@ -8,7 +8,7 @@ use tracing::{debug, trace, instrument, info, error};
 
 use fluvio_future::fs::remove_file;
 use fluvio_future::file_slice::AsyncFileSlice;
-use dataplane::batch::Batch;
+use dataplane::batch::{Batch, BatchRecords};
 use dataplane::{Offset, Size, ErrorCode};
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
@@ -400,15 +400,17 @@ impl Segment<MutLogIndex, MutFileRecords> {
     /// 2. Append batch to msg log
     /// 3. Write batch location to index
     #[instrument(skip(batch))]
-    pub async fn append_batch(&mut self, batch: &mut Batch) -> Result<bool, StorageError> {
+    pub async fn append_batch<R: BatchRecords>(
+        &mut self,
+        batch: &mut Batch<R>,
+    ) -> Result<bool, StorageError> {
         // adjust base offset and offset delta
         // reject if batch len is 0
-        if batch.records().is_empty() {
+        if batch.records_len() == 0 {
             return Err(StorageError::EmptyBatch);
         }
 
         batch.set_base_offset(self.end_offset);
-        batch.update_offset_deltas();
 
         let next_end_offset = batch.get_last_offset();
 
