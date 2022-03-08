@@ -93,8 +93,10 @@ jobs:
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
-      RUN_TIME: 1800
+      RUN_TIME: 30m
       PRODUCER: 10
+      CONSUMER: 10
+      TOPIC: 3
     steps:
       - uses: actions/checkout@v2
 
@@ -178,7 +180,7 @@ jobs:
         timeout-minutes: 35
         run: |
           sleep 10
-          RUST_LOG=info fluvio-test longevity -- --runtime-seconds=${{ env.RUN_TIME }} --producers ${{ env.PRODUCER }} --consumers ${{ env.PRODUCER }}
+          RUST_LOG=info fluvio-test --timeout=${{ env.RUN_TIME }} --producer ${{ env.PRODUCER }} --consumer ${{ env.PRODUCER }} --topic ${{ env.TOPIC }} longevity 
           
       ## If the test passed, then copy the data from cluster to store into artifacts
       #- name: Export data from the cluster for caching
