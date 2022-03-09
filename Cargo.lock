@@ -1818,9 +1818,9 @@ dependencies = [
 
 [[package]]
 name = "fluvio-future"
-version = "0.3.13"
+version = "0.3.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc1cf2cf885d9872c9da76c6db9dd664b02d63ea69a237bac5c651fb6482cec7"
+checksum = "631ef3c6d2682640740296c24ae95f5cf98f3dcf86363f4c698a44d963bf516d"
 dependencies = [
  "async-fs",
  "async-io",
@@ -3006,9 +3006,9 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "5.5.0"
+version = "5.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f3d8b64d2b3f935a032944175f42286062cbfcaf4871c4ea6e739bbca04ae719"
+checksum = "4c4f7d17e61ff1404f67354687267cc094b1f18e300d7b50ff0ed4d03ebf1700"
 dependencies = [
  "async-trait",
  "base64",
