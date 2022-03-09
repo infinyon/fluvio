@@ -1057,13 +1057,13 @@ jobs:
         binary: [dev]
 
         test_run_time: [5m, 10m]
-        producer: [1, 10, 25]
-        producer_record_bytes: [100, 1000, 2000] # 100b, 1KB, 2KB
-        producer_batch_bytes: [1000, 5000, 10000] # 1KB, 5KB, 10KB
-        producer_linger_ms: [0, 1, 10]
-        consumer: [1, 10, 25]
-        topic: [1, 5, 10]
-        topic_segment_bytes: [5000, 100000, 10000000]  # 5KB, 100KB, 10MB
+        producer: [1, 25]
+        producer_record_bytes: [2000] # 2KB
+        producer_batch_bytes: [10000] # 10KB
+        producer_linger_ms: [10]
+        consumer: [1, 25]
+        topic: [1, 10]
+        topic_segment_bytes: [5000, 10000000]  # 5KB, 10MB
         topic_retention: [30s, 1m, 5m]
     env:
       K3D_VERSION: v4.4.8
