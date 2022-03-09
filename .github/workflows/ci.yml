@@ -1055,17 +1055,19 @@ jobs:
         run: [r1]
        # run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
         binary: [dev]
+
+        test_run_time: [5m, 10m]
+        producer: [1, 10, 25]
+        producer_record_bytes: [100, 1000, 2000] # 100b, 1KB, 2KB
+        producer_batch_bytes: [1000, 5000, 10000] # 1KB, 5KB, 10KB
+        producer_linger_ms: [0, 1, 10]
+        consumer: [1, 10, 25]
+        topic: [1, 5, 10]
+        topic_segment_bytes: [5000, 100000, 10000000]  # 5KB, 100KB, 10MB
+        topic_retention: [30s, 1m, 5m]
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
-      RUN_TIME: 15m
-      PRODUCER: 25
-      PRODUCER_BATCH_BYTES: 10000 # 10KB
-      PRODUCER_LINGER_MS: 10
-      CONSUMER: 25
-      TOPIC: 5
-      TOPIC_SEGMENT_BYTES: 10000000 # 10MB
-      TOPIC_RETENTION: 5m
     steps:
       - uses: actions/checkout@v2
 
@@ -1150,13 +1152,14 @@ jobs:
         run: |
           sleep 10
           RUST_LOG=info fluvio-test \
-            --timeout=${{ env.RUN_TIME }} \
-            --producer ${{ env.PRODUCER }} \
-            --producer-batch-size ${{ env.PRODUCER_BATCH_BYTES }} \
-            --producer-linger ${{ env.PRODUCER_LINGER_MS }} \
-            --consumer ${{ env.PRODUCER }} \
-            --topic ${{ env.TOPIC }} \
-            --topic-segment-size ${{ env.TOPIC_SEGMENT_BYTES }} \
-            --topic-retention ${{ env.TOPIC_RETENTION }} \
+            --timeout=${{ matrix.test_run_time }} \
+            --producer ${{ matrix.producer }} \
+            --producer-record-size ${{ matrix.producer_record_bytes }} \
+            --producer-batch-size ${{ matrix.producer_batch_bytes }} \
+            --producer-linger ${{ matrix.producer_linger_ms }} \
+            --consumer ${{ matrix.consumer }} \
+            --topic ${{ matrix.topic }} \
+            --topic-segment-size ${{ matrix.topic_segment_bytes }} \
+            --topic-retention ${{ matrix.topic_retention }} \
             longevity 
           
