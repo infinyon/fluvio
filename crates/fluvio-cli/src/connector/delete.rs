@@ -36,7 +36,8 @@ impl DeleteManagedConnectorOpt {
                 FluvioError::AdminApi(ApiError::Code(ErrorCode::ManagedConnectorNotFound, _)) => {
                     CliError::InvalidConnector(format!("{} not found", &self.name))
                 }
-                _ => CliError::Other(format!("{:?}", e)),
+                // Raise a bug for any Unhandled error.
+                _ => CliError::Unhandled(format!("{:?}", e)),
             })?;
 
         Ok(())
