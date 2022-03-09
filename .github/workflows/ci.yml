@@ -1058,10 +1058,14 @@ jobs:
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
-      RUN_TIME: 5m
-      PRODUCER: 10
-      CONSUMER: 10
-      TOPIC: 3
+      RUN_TIME: 15m
+      PRODUCER: 25
+      PRODUCER_BATCH_BYTES: 10000 # 10KB
+      PRODUCER_LINGER_MS: 10
+      CONSUMER: 25
+      TOPIC: 5
+      TOPIC_SEGMENT_BYTES: 10000000 # 10MB
+      TOPIC_RETENTION: 5m
     steps:
       - uses: actions/checkout@v2
 
@@ -1145,5 +1149,14 @@ jobs:
         timeout-minutes: 35
         run: |
           sleep 10
-          RUST_LOG=info fluvio-test --timeout=${{ env.RUN_TIME }} --producer ${{ env.PRODUCER }} --consumer ${{ env.PRODUCER }} --topic ${{ env.TOPIC }} longevity 
+          RUST_LOG=info fluvio-test \
+            --timeout=${{ env.RUN_TIME }} \
+            --producer ${{ env.PRODUCER }} \
+            --producer-batch-size ${{ env.PRODUCER_BATCH_BYTES }} \
+            --producer-linger ${{ env.PRODUCER_LINGER_MS }} \
+            --consumer ${{ env.PRODUCER }} \
+            --topic ${{ env.TOPIC }} \
+            --topic-segment-size ${{ env.TOPIC_SEGMENT_BYTES }} \
+            --topic-retention ${{ env.TOPIC_RETENTION }} \
+            longevity 
           
