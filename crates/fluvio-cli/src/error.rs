@@ -71,8 +71,6 @@ pub enum CliError {
     InvalidArg(String),
     #[error("Unknown error: {0}")]
     Other(String),
-    #[error("BUG! Report me - Unhandled error: {0}")]
-    Unhandled(String),
     #[error("Unexpected Infallible error")]
     Infallible(#[from] Infallible),
     #[error("Dataplane error: {0}")]
