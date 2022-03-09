@@ -1043,7 +1043,7 @@ jobs:
   longevity:
     name: Hourly Longevity test 
     runs-on: ${{ matrix.os }}
-    needs: config
+    needs: [config, build_primary_binaries]
  #   needs:
  #    - build_long_binaries
     timeout-minutes: 60
