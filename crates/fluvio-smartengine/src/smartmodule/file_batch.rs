@@ -78,7 +78,7 @@ impl Iterator for FileBatchIterator {
             )));
         }
 
-        let mut batch = Batch::default();
+        let mut batch: Batch = Batch::default();
         if let Err(err) = batch.decode_from_file_buf(&mut Cursor::new(header), 0) {
             return Some(Err(IoError::new(
                 ErrorKind::Other,
@@ -94,28 +94,49 @@ impl Iterator for FileBatchIterator {
             "fbatch header"
         );
 
-        let mut records = vec![0u8; remainder];
+        let mut raw_records = vec![0u8; remainder];
 
         self.offset += BATCH_FILE_HEADER_SIZE as i64;
 
-        let bytes_read = match pread(self.fd, &mut records, self.offset)
+        let bytes_read = match pread(self.fd, &mut raw_records, self.offset)
             .map_err(|err| IoError::new(ErrorKind::Other, format!("pread error {}", err)))
         {
             Ok(bytes) => bytes,
             Err(err) => return Some(Err(err)),
         };
 
-        if bytes_read < records.len() {
-            warn!(bytes_read, record_len = records.len());
+        if bytes_read < raw_records.len() {
+            warn!(bytes_read, record_len = raw_records.len());
             return Some(Err(IoError::new(
                 ErrorKind::UnexpectedEof,
                 format!(
                     "not enough for batch records {} out of {}",
                     bytes_read,
-                    records.len()
+                    raw_records.len()
                 ),
             )));
         }
+
+        let compression = match batch.get_compression() {
+            Ok(compression) => compression,
+            Err(err) => {
+                return Some(Err(IoError::new(
+                    ErrorKind::Other,
+                    format!("unknown compression value for batch {}", err),
+                )))
+            }
+        };
+
+        let records = match compression.uncompress(&raw_records) {
+            Ok(Some(records)) => records,
+            Ok(None) => raw_records,
+            Err(err) => {
+                return Some(Err(IoError::new(
+                    ErrorKind::Other,
+                    format!("uncompress error {}", err),
+                )))
+            }
+        };
 
         self.offset += bytes_read as i64;
 
