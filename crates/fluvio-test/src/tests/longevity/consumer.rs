@@ -40,7 +40,7 @@ pub async fn consumer_stream(test_driver: TestDriver, option: LongevityTestCase,
 
     // loop over number of topics
     for t in 0..option.environment.topic {
-        let topic_name = if option.environment.topic == 0 {
+        let topic_name = if option.environment.topic == 1 {
             option.environment.base_topic_name()
         } else {
             format!("{}-{}", option.environment.base_topic_name(), t)
