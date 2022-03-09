@@ -1056,15 +1056,15 @@ jobs:
        # run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
         binary: [dev]
 
-        test_run_time: [5m, 10m]
+        test_run_time: [10m]
         producer: [1, 25]
         producer_record_bytes: [2000] # 2KB
         producer_batch_bytes: [10000] # 10KB
         producer_linger_ms: [10]
         consumer: [1, 25]
         topic: [1, 10]
-        topic_segment_bytes: [5000, 10000000]  # 5KB, 10MB
-        topic_retention: [30s, 1m, 5m]
+        topic_segment_bytes: [10000000]  # 10MB
+        topic_retention: [5m]
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
@@ -1145,7 +1145,6 @@ jobs:
       #    else
       #      echo "Longevity data does not exist"
       #    fi
-
 
       - name: Run longevity test
         timeout-minutes: 35
