@@ -21,10 +21,24 @@ pub struct DeleteManagedConnectorOpt {
     name: String,
 }
 
+use fluvio::FluvioError;
+use fluvio_sc_schema::ApiError;
+use fluvio_sc_schema::errors::ErrorCode;
+
 impl DeleteManagedConnectorOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
-        admin.delete::<ManagedConnectorSpec, _>(&self.name).await?;
+
+        admin
+            .delete::<ManagedConnectorSpec, _>(&self.name)
+            .await
+            .map_err(|e| match e {
+                FluvioError::AdminApi(ApiError::Code(ErrorCode::ManagedConnectorNotFound, _)) => {
+                    CliError::InvalidConnector(format!("{} not found", &self.name))
+                }
+                _ => CliError::Other(format!("{:?}", e)),
+            })?;
+
         Ok(())
     }
 }
