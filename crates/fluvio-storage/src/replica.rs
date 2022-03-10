@@ -3,10 +3,8 @@ use std::mem;
 use std::sync::Arc;
 
 use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_future::fs::read_dir;
 use fluvio_protocol::Encoder;
-use futures_lite::StreamExt;
-use tracing::{debug, trace, warn, instrument, info, error};
+use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
