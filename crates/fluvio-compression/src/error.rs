@@ -6,7 +6,7 @@ pub enum CompressionError {
     #[error(transparent)]
     IoError(#[from] std::io::Error),
     #[error("unknown compression format: {0}")]
-    UnknownCompressionFormat(i8),
+    UnknownCompressionFormat(String),
     #[cfg(feature = "snappy")]
     #[error("error flushing Snap encoder: {0}")]
     SnapError(#[from] Box<IntoInnerError<FrameEncoder<Vec<u8>>>>),

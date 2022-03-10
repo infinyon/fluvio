@@ -1,3 +1,6 @@
+use std::str::FromStr;
+use std::mem;
+
 mod error;
 #[cfg(feature = "gzip")]
 mod gzip;
@@ -6,8 +9,6 @@ mod snappy;
 
 #[cfg(feature = "lz4")]
 mod lz4;
-
-use std::mem;
 
 pub use error::CompressionError;
 use serde::{Serialize, Deserialize};
@@ -41,7 +42,31 @@ impl TryFrom<i8> for Compression {
         if (0..=3).contains(&v) {
             Ok(unsafe { mem::transmute(v) })
         } else {
-            Err(CompressionError::UnknownCompressionFormat(v))
+            Err(CompressionError::UnknownCompressionFormat(format!(
+                "i8 representation: {}",
+                v
+            )))
+        }
+    }
+}
+
+impl FromStr for Compression {
+    type Err = CompressionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(Compression::None),
+
+            #[cfg(feature = "gzip")]
+            "gzip" => Ok(Compression::Gzip),
+
+            #[cfg(feature = "snappy")]
+            "snappy" => Ok(Compression::Snappy),
+
+            #[cfg(feature = "lz4")]
+            "lz4" => Ok(Compression::Lz4),
+
+            _ => Err(CompressionError::UnknownCompressionFormat(s.into())),
         }
     }
 }
