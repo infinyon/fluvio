@@ -698,11 +698,11 @@ mod tests {
             .await
             .expect("delete base dir");
 
-        let error = replica
+        let size = replica
             .get_partition_size()
             .await
-            .expect_err("error partition size");
-        assert_eq!(error, dataplane::ErrorCode::StorageError)
+            .expect("error partition size");
+        assert_eq!(size, 79);
     }
 
     /// test fetch only committed records
