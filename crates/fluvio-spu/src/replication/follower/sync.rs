@@ -7,6 +7,7 @@ use std::io::Error as IoError;
 use std::marker::PhantomData;
 
 use bytes::BytesMut;
+use dataplane::batch::RawRecords;
 use tracing::trace;
 
 use dataplane::core::{Encoder, Decoder, Version};
@@ -19,7 +20,7 @@ use dataplane::store::FileWrite;
 use super::api_key::FollowerPeerApiEnum;
 
 pub type FileSyncRequest = SyncRequest<FileRecordSet>;
-pub type DefaultSyncRequest = SyncRequest<RecordSet>;
+pub type DefaultSyncRequest = SyncRequest<RecordSet<RawRecords>>;
 pub type PeerFilePartitionResponse = PeerFetchablePartitionResponse<FileRecordSet>;
 pub type PeerFileTopicResponse = PeerFetchableTopicResponse<FileRecordSet>;
 
