@@ -18,3 +18,20 @@ pub fn uncompress<T: Read>(src: T) -> Result<Vec<u8>, CompressionError> {
     decoder.read_to_end(&mut buffer)?;
     Ok(buffer)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_compress_decompress() {
+        let text = "FLUVIO_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+        let compressed = compress(text.as_bytes()).unwrap();
+
+        assert!(compressed.len() < text.as_bytes().len());
+
+        let uncompressed = String::from_utf8(uncompress(compressed.as_slice()).unwrap()).unwrap();
+
+        assert_eq!(uncompressed, text);
+    }
+}
