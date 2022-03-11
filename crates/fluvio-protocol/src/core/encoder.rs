@@ -15,7 +15,7 @@ use crate::Version;
 use super::varint::variant_encode;
 use super::varint::variant_size;
 
-// trait for encoding and decoding using Kafka Protocol
+// trait for encoding and decoding using Fluvio Protocol
 pub trait Encoder {
     /// size of this object in bytes
     fn write_size(&self, version: Version) -> usize;

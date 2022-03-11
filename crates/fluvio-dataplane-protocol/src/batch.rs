@@ -32,6 +32,8 @@ pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
 pub type MemoryRecords = Vec<Record>;
 
 /// A type describing Raw records
+/// This structs decodes and encode its bytes as it is. Just the raw bytes of its internal vector.
+/// When decoding, please be sure that your src buffer have the exact number of bytes.
 #[derive(Debug, Default)]
 pub struct RawRecords(pub Vec<u8>);
 

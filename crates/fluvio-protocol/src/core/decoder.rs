@@ -14,7 +14,7 @@ use crate::Version;
 
 // trait for encoding and decoding using Kafka Protocol
 pub trait Decoder: Sized + Default {
-    /// decode Kafka compliant protocol values from buf
+    /// decode Fluvio compliant protocol values from buf
     fn decode_from<T>(src: &mut T, version: Version) -> Result<Self, Error>
     where
         T: Buf,
