@@ -1,5 +1,4 @@
 use std::str::FromStr;
-use std::mem;
 
 mod error;
 #[cfg(feature = "gzip")]
@@ -13,7 +12,7 @@ mod lz4;
 pub use error::CompressionError;
 use serde::{Serialize, Deserialize};
 
-/// The compression algorithm used to compress and decompress records in fluvio batch
+/// The compression algorithm used to compress and decompress records in fluvio batches
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 #[repr(i8)]
@@ -39,13 +38,15 @@ impl Default for Compression {
 impl TryFrom<i8> for Compression {
     type Error = CompressionError;
     fn try_from(v: i8) -> Result<Self, CompressionError> {
-        if (0..=3).contains(&v) {
-            Ok(unsafe { mem::transmute(v) })
-        } else {
-            Err(CompressionError::UnknownCompressionFormat(format!(
+        match v {
+            0 => Ok(Compression::None),
+            1 => Ok(Compression::Gzip),
+            2 => Ok(Compression::Snappy),
+            3 => Ok(Compression::Lz4),
+            _ => Err(CompressionError::UnknownCompressionFormat(format!(
                 "i8 representation: {}",
                 v
-            )))
+            ))),
         }
     }
 }

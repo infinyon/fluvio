@@ -274,7 +274,11 @@ where
         if buf.remaining() < batch_len {
             return Err(Error::new(
                 std::io::ErrorKind::UnexpectedEof,
-                "not enough buf records",
+                format!(
+                    "not enough buf records, expected: {}, found: {}",
+                    batch_len,
+                    buf.remaining()
+                ),
             ));
         }
 

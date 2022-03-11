@@ -188,6 +188,7 @@ impl StreamFetchHandler {
                 StreamFetchError::Socket(err) => Err(err),
                 StreamFetchError::Compression(err) => {
                     error!(%err, "compression error");
+                    send_back_error(&sink, &replica, &header, stream_id, ErrorCode::CompressionError).await?;
                     Ok(())
                 }
             }

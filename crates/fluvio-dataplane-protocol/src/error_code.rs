@@ -166,6 +166,11 @@ pub enum ErrorCode {
     DerivedStreamInvalid(String),
     #[error("can't do recursive derivedstream yet: {0}->{1}")]
     DerivedStreamRecursion(String, String),
+
+    // Compression errors
+    #[fluvio(tag = 9000)]
+    #[error("a compression error occurred in the SPU")]
+    CompressionError,
 }
 
 impl Default for ErrorCode {
