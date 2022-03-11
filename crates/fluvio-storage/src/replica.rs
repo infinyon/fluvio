@@ -103,12 +103,15 @@ impl ReplicaStorage for FileReplica {
     async fn get_partition_size(&self) -> Result<u64, ErrorCode> {
         let active_len = self.active_segment.get_msg_log().get_pos();
 
-        debug!("Active segment length: {active_len}.");
+        debug!(active_len, "Active segment length");
         let total_prev_segments_len = {
             let reader = self.prev_segments.read().await;
             reader.get_total_logs_len() as u32
         };
-        debug!("Cumulated previous segments length: {total_prev_segments_len}.");
+        debug!(
+            total_prev_segments_len,
+            "Cumulated previous segments length"
+        );
         let total_len = active_len + total_prev_segments_len;
 
         return Ok(total_len.into());
