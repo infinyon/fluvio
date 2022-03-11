@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use async_lock::{Mutex, RwLock};
 use dataplane::ReplicaKey;
-use dataplane::produce::{RawPartitionRequest, RawTopicRequest, RawProduceRequest};
+use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
@@ -185,13 +185,13 @@ impl PartitionProducer {
         }
 
         // Send each batch and notify base offset
-        let mut request = RawProduceRequest::default();
+        let mut request = DefaultProduceRequest::default();
 
-        let mut topic_request = RawTopicRequest {
+        let mut topic_request = DefaultTopicRequest {
             name: self.replica.topic.to_string(),
             ..Default::default()
         };
-        let mut partition_request = RawPartitionRequest {
+        let mut partition_request = DefaultPartitionRequest {
             partition_index: self.replica.partition,
             ..Default::default()
         };

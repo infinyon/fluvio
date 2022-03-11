@@ -8,7 +8,7 @@ use tracing::instrument;
 use dataplane::ErrorCode;
 use dataplane::produce::{
     ProduceResponse, TopicProduceResponse, PartitionProduceResponse, PartitionProduceData,
-    RawProduceRequest, RawTopicRequest,
+    DefaultProduceRequest, DefaultTopicRequest,
 };
 use dataplane::api::RequestMessage;
 use dataplane::api::ResponseMessage;
@@ -25,7 +25,7 @@ use crate::core::DefaultSharedGlobalContext;
     )
 )]
 pub async fn handle_produce_request(
-    request: RequestMessage<RawProduceRequest>,
+    request: RequestMessage<DefaultProduceRequest>,
     ctx: DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<ProduceResponse>, Error> {
     let (header, produce_request) = request.get_header_request();
@@ -38,9 +38,7 @@ pub async fn handle_produce_request(
     }
 
     trace!("Returning ProduceResponse: {:#?}", &response);
-    Ok(RequestMessage::<RawProduceRequest>::response_with_header(
-        &header, response,
-    ))
+    Ok(RequestMessage::<DefaultProduceRequest>::response_with_header(&header, response))
 }
 
 #[instrument(
@@ -49,7 +47,7 @@ pub async fn handle_produce_request(
 )]
 async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
-    topic_request: RawTopicRequest,
+    topic_request: DefaultTopicRequest,
 ) -> Result<TopicProduceResponse, Error> {
     trace!("Handling produce request for topic:");
     let topic = &topic_request.name;

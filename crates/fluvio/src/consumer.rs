@@ -406,8 +406,7 @@ where
 
                 let response_publisher = publisher.clone();
                 let update_stream = stream.map(move |item| {
-                    item.map(|raw_response| {
-                        let response: DefaultStreamFetchResponse = raw_response;
+                    item.map(|response| {
                         if let Some(last_offset) = response.partition.next_offset_for_fetch() {
                             debug!(last_offset, stream_id, "received last offset from spu");
                             response_publisher.update(last_offset);

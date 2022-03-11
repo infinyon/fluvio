@@ -22,8 +22,6 @@ use flate2::{
     bufread::{GzEncoder, GzDecoder},
 };
 
-//pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
-//pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
 pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet<RawRecords>>;
 pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet<RawRecords>>;
 
