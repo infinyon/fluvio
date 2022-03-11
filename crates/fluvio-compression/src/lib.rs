@@ -1,12 +1,9 @@
 use std::str::FromStr;
 
 mod error;
-#[cfg(feature = "gzip")]
-mod gzip;
-#[cfg(feature = "snappy")]
-mod snappy;
 
-#[cfg(feature = "lz4")]
+mod gzip;
+mod snappy;
 mod lz4;
 
 pub use error::CompressionError;
@@ -18,14 +15,8 @@ use serde::{Serialize, Deserialize};
 #[repr(i8)]
 pub enum Compression {
     None = 0,
-
-    #[cfg(feature = "gzip")]
     Gzip = 1,
-
-    #[cfg(feature = "snappy")]
     Snappy = 2,
-
-    #[cfg(feature = "lz4")]
     Lz4 = 3,
 }
 
@@ -57,16 +48,9 @@ impl FromStr for Compression {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "none" => Ok(Compression::None),
-
-            #[cfg(feature = "gzip")]
             "gzip" => Ok(Compression::Gzip),
-
-            #[cfg(feature = "snappy")]
             "snappy" => Ok(Compression::Snappy),
-
-            #[cfg(feature = "lz4")]
             "lz4" => Ok(Compression::Lz4),
-
             _ => Err(CompressionError::UnknownCompressionFormat(s.into())),
         }
     }
@@ -77,14 +61,8 @@ impl Compression {
     pub fn compress(&self, src: &[u8]) -> Result<Vec<u8>, CompressionError> {
         match *self {
             Compression::None => Ok(src.to_vec()),
-
-            #[cfg(feature = "gzip")]
             Compression::Gzip => gzip::compress(src),
-
-            #[cfg(feature = "snappy")]
             Compression::Snappy => snappy::compress(src),
-
-            #[cfg(feature = "lz4")]
             Compression::Lz4 => lz4::compress(src),
         }
     }

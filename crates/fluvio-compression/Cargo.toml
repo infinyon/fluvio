@@ -10,14 +10,11 @@ repository = "https://github.com/infinyon/fluvio"
 description = "Fluvio Compression library"
 
 [features]
-default = ["gzip", "snappy", "lz4"]
-gzip = ["flate2"]
-snappy = ["snap"]
-lz4 = ["lz4_flex"]
+default = []
 
 [dependencies]
 serde = { version = "1.0.110", features = ['derive'] }
-flate2 = { version = "1.0.20", optional = true }
-snap = { version = "1", optional = true }
-lz4_flex = { version = "0.9", optional = true, default-features = false, features = ["safe-decode", "safe-encode", "frame"] }
+flate2 = { version = "1.0.20"}
+snap = { version = "1" }
+lz4_flex = { version = "0.9", default-features = false, features = ["safe-decode", "safe-encode", "frame"] }
 thiserror = "1.0.30"
