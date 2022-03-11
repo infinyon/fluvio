@@ -3,8 +3,6 @@ pub mod consumer;
 
 use core::panic;
 use std::any::Any;
-use std::num::ParseIntError;
-use std::time::Duration;
 use structopt::StructOpt;
 
 use fluvio_test_derive::fluvio_test;
@@ -36,22 +34,8 @@ impl From<TestCase> for LongevityTestCase {
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 #[structopt(name = "Fluvio Longevity Test")]
 pub struct LongevityTestOption {
-    // total time we want the producer to run, in seconds
-    #[structopt(long, parse(try_from_str = parse_seconds), default_value = "3600")]
-    runtime_seconds: Duration,
-
     // This should be mutually exclusive with runtime_seconds
     // num_records: u32
-
-    // record payload size used by test, in bytes
-    #[structopt(long, default_value = "1000")]
-    record_size: usize,
-
-    #[structopt(long, default_value = "1")]
-    pub producers: u32,
-
-    #[structopt(long, default_value = "1")]
-    pub consumers: u32,
 
     // Offset the consumer should start from
     //#[structopt(long, default_value = "0")]
@@ -61,32 +45,30 @@ pub struct LongevityTestOption {
     verbose: bool,
 }
 
-fn parse_seconds(s: &str) -> Result<Duration, ParseIntError> {
-    let seconds = s.parse::<u64>()?;
-    Ok(Duration::from_secs(seconds))
-}
-
 impl TestOption for LongevityTestOption {
     fn as_any(&self) -> &dyn Any {
         self
     }
 }
 
+// TODO: Need to add producer + consumer support for multiple topics
 #[fluvio_test(topic = "longevity")]
 pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
+    //println!("DEBUG: {:#?}", test_case);
     let option: LongevityTestCase = test_case.into();
 
     println!("Starting Longevity Test");
-    println!("Expected runtime: {:?}", option.option.runtime_seconds);
-    println!("# Consumers: {}", option.option.consumers);
-    println!("# Producers: {}", option.option.producers);
+    println!("Expected runtime: {:?}", option.environment.timeout());
+    println!("# Topics: {}", option.environment.topic);
+    println!("# Consumers: {}", option.environment.consumer);
+    println!("# Producers: {}", option.environment.producer);
 
     if !option.option.verbose {
         println!("Run with `--verbose` flag for more test output");
     }
 
     let mut consumer_wait = Vec::new();
-    for consumer_id in 0..option.option.consumers {
+    for consumer_id in 0..option.environment.consumer {
         println!("Starting Consumer #{}", consumer_id);
         let consumer = async_process!(
             async {
@@ -105,7 +87,7 @@ pub fn longevity(test_driver: FluvioTestDriver, test_case: TestCase) {
     }
 
     let mut producer_wait = Vec::new();
-    for i in 0..option.option.producers {
+    for i in 0..option.environment.producer {
         println!("Starting Producer #{}", i);
         let producer = async_process!(
             async {

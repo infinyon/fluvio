@@ -7,6 +7,9 @@ use fluvio::{Fluvio, FluvioError};
 use fluvio::metadata::topic::TopicSpec;
 use fluvio::{TopicProducer, RecordKey, PartitionConsumer, MultiplePartitionConsumer};
 use fluvio::TopicProducerConfig;
+use fluvio::metadata::topic::CleanupPolicy;
+use fluvio::metadata::topic::SegmentBasedPolicy;
+use fluvio::metadata::topic::TopicStorageConfig;
 
 #[allow(unused_imports)]
 use fluvio_command::CommandExt;
@@ -179,33 +182,65 @@ impl TestDriver {
         //);
     }
 
+    // This needs to support retention time and segment size
+    // this can create multiple topics
     pub async fn create_topic(&self, option: &EnvironmentSetup) -> Result<(), ()> {
         use std::time::SystemTime;
 
-        let topic_name = option.topic_name();
-        println!("Creating the topic: {}", &topic_name);
+        let topic_name = option.base_topic_name();
+
+        if option.topic > 1 {
+            println!(
+                "Creating {} topics. Base name: {}",
+                option.topic, &topic_name
+            );
+        } else {
+            println!("Creating the topic: {}", &topic_name);
+        }
 
         let admin = self.client().admin().await;
 
-        let topic_spec =
+        let mut topic_spec =
             TopicSpec::new_computed(option.partition as i32, option.replication() as i32, None);
 
-        // Create topic and record how long it takes
-        let now = SystemTime::now();
+        // Topic Retention time
+        topic_spec.set_cleanup_policy(CleanupPolicy::Segment(SegmentBasedPolicy {
+            time_in_seconds: option.topic_retention.as_secs() as u32,
+        }));
 
-        let topic_create = admin.create(topic_name.clone(), false, topic_spec).await;
+        // Topic segment size
+        let storage = TopicStorageConfig {
+            segment_size: Some(option.topic_segment_size),
+        };
+        topic_spec.set_storage(storage);
 
-        let _topic_time = now.elapsed().unwrap().as_nanos();
+        for n in 0..option.topic {
+            // Create topic and record how long it takes
+            let now = SystemTime::now();
 
-        if topic_create.is_ok() {
-            println!("topic \"{}\" created", topic_name);
-            //self.topic_create_latency_histogram
-            //    .record(topic_time as u64)
-            //    .unwrap();
-            //self.topic_num += 1;
-        } else {
-            println!("topic \"{}\" already exists", topic_name);
+            let topic_name = if option.topic > 1 {
+                format!("{}-{}", topic_name.clone(), n)
+            } else {
+                topic_name.clone()
+            };
+
+            let topic_create = admin
+                .create(topic_name.clone(), false, topic_spec.clone())
+                .await;
+
+            let _topic_time = now.elapsed().unwrap().as_nanos();
+
+            if topic_create.is_ok() {
+                println!("topic \"{}\" created", topic_name);
+                //self.topic_create_latency_histogram
+                //    .record(topic_time as u64)
+                //    .unwrap();
+                //self.topic_num += 1;
+            } else {
+                println!("topic \"{}\" already exists", topic_name);
+            }
         }
+
         Ok(())
     }
 

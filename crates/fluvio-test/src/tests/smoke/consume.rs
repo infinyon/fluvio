@@ -34,7 +34,7 @@ fn validate_consume_message_cli(test_case: &SmokeTestCase, offsets: Offsets) {
     let replication = test_case.environment.replication;
 
     for i in 0..replication {
-        let topic_name = test_case.environment.topic_name();
+        let topic_name = test_case.environment.base_topic_name();
         let offset = offsets.get(&topic_name).expect("topic offset");
         let mut command = get_binary("fluvio").expect("fluvio not found");
         command
@@ -70,7 +70,7 @@ pub async fn validate_consume_message_api(
 
     let producer_iteration = test_case.option.producer_iteration;
     let partition = test_case.environment.partition;
-    let topic_name = test_case.environment.topic_name();
+    let topic_name = test_case.environment.base_topic_name();
     let base_offset = offsets.get(&topic_name).expect("offsets");
 
     for i in 0..partition {

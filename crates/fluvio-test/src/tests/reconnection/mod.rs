@@ -51,7 +51,7 @@ pub async fn reconnection(mut test_driver: TestDriver, mut test_case: TestCase) 
     println!("Starting reconnection test");
 
     // first a create simple message
-    let topic_name = test_case.environment.topic_name();
+    let topic_name = test_case.environment.base_topic_name();
     let producer = test_driver.create_producer(&topic_name).await;
     println!("sending first record");
 

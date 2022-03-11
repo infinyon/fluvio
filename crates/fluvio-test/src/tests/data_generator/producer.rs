@@ -32,8 +32,11 @@ pub async fn producer(
     // TODO: Create a Vec of producers per topic
     let mut producers = Vec::new();
 
-    for topic_id in 0..option.option.topics {
-        let maybe_builder = match (option.option.batch_linger_ms, option.option.batch_size) {
+    for topic_id in 0..option.environment.topic {
+        let maybe_builder = match (
+            option.environment.producer_linger,
+            option.environment.producer_batch_size,
+        ) {
             (Some(linger), Some(batch)) => Some(
                 TopicProducerConfigBuilder::default()
                     .linger(Duration::from_millis(linger))
@@ -48,10 +51,10 @@ pub async fn producer(
 
         let env_opts = option.environment.clone();
 
-        let test_topic_name = if let Some(run_id) = run_id.clone() {
-            format!("{}-{}-{}", env_opts.topic_name(), run_id, topic_id)
+        let test_topic_name = if env_opts.topic > 1 {
+            format!("{}-{topic_id}", env_opts.base_topic_name())
         } else {
-            format!("{}-{}", env_opts.topic_name(), topic_id)
+            env_opts.base_topic_name()
         };
 
         if let Some(producer_config) = maybe_builder {
@@ -97,13 +100,14 @@ pub async fn producer(
 
     debug!("About to start producer loop");
 
-    if let Some(timeout) = option.option.runtime_seconds {
-        while test_start.elapsed().unwrap() <= timeout {
+    if option.environment.timeout != Duration::MAX {
+        while test_start.elapsed().unwrap() <= option.environment.timeout {
             for producer in producers.iter() {
                 send_record(&option, producer_id, records_sent, &test_driver, producer).await;
                 records_sent += 1;
             }
         }
+        println!("Timer is up")
     } else {
         loop {
             for producer in producers.iter() {
@@ -128,13 +132,12 @@ async fn send_record(
         .send_count(producer, RecordKey::NULL, record)
         .await
         .expect("Producer Send failed");
-    producer.flush().await.expect("flush");
 }
 
 fn generate_record(option: GeneratorTestCase, producer_id: u32, record_id: u32) -> Vec<u8> {
     let record = TestRecordBuilder::new()
         .with_tag(format!("{}", record_id))
-        .with_random_data(option.option.record_size)
+        .with_random_data(option.environment.producer_record_size)
         .build();
     let record_json = serde_json::to_string(&record)
         .expect("Convert record to json string failed")

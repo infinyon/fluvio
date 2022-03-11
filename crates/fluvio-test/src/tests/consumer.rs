@@ -275,9 +275,11 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     .await
                     .expect("Connecting to cluster failed");
 
+                // TODO: Support multiple topics
+
                 if is_multi {
                     let consumer = test_driver
-                        .get_all_partitions_consumer(&test_case.environment.topic_name())
+                        .get_all_partitions_consumer(&test_case.environment.base_topic_name())
                         .await;
                     let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
                         get_multi_stream(consumer, offset, test_case.clone()).await;
@@ -285,7 +287,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                     consume_work(Box::pin(stream), n.into(), test_case).await
                 } else {
                     let consumer = test_driver
-                        .get_consumer(&test_case.environment.topic_name(), partition)
+                        .get_consumer(&test_case.environment.base_topic_name(), partition)
                         .await;
                     let stream: Pin<Box<dyn Stream<Item = Result<Record, ErrorCode>>>> =
                         get_single_stream(consumer, offset, test_case.clone()).await;

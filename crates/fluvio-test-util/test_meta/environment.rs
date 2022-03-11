@@ -2,12 +2,14 @@ use crate::setup::environment::{EnvironmentType};
 use crate::test_runner::test_meta::FluvioTestMeta;
 use structopt::StructOpt;
 use std::fmt::Debug;
-use std::num::ParseIntError;
 use std::time::Duration;
+use humantime::parse_duration;
+use uuid::Uuid;
 
 pub trait EnvDetail: Debug + Clone {
-    fn set_topic_name(&mut self, topic: String);
-    fn topic_name(&self) -> String;
+    fn set_base_topic_name(&mut self, topic: String);
+    fn base_topic_name(&self) -> String;
+    fn topic_salt(&self) -> Option<String>;
     fn is_topic_set(&self) -> bool;
     fn replication(&self) -> u16;
     fn client_log(&self) -> Option<String>;
@@ -27,16 +29,34 @@ pub trait EnvDetail: Debug + Clone {
 }
 
 impl EnvDetail for EnvironmentSetup {
-    fn set_topic_name(&mut self, topic: String) {
-        self.topic_name = Some(topic);
+    // set the base topic name
+    fn set_base_topic_name(&mut self, topic: String) {
+        // Append a random string to the end. Multiple tests will use different topics
+        let maybe_salted = if self.topic_random {
+            let salt = Uuid::new_v4().to_simple().to_string();
+
+            // Save the salt for tests to use
+            self.topic_salt = Some(salt.clone());
+
+            format!("{topic}-{salt}")
+        } else {
+            topic
+        };
+
+        self.topic_name = Some(maybe_salted);
     }
 
-    fn topic_name(&self) -> String {
+    // Return the topic name base
+    fn base_topic_name(&self) -> String {
         if let Some(topic_name) = self.topic_name.clone() {
             topic_name
         } else {
             "topic".to_string()
         }
+    }
+
+    fn topic_salt(&self) -> Option<String> {
+        self.topic_salt.clone()
     }
 
     fn is_topic_set(&self) -> bool {
@@ -112,6 +132,7 @@ impl EnvDetail for EnvironmentSetup {
     }
 }
 
+// TODO: reserve space for compression
 /// cli options
 #[derive(Debug, Clone, StructOpt, Default, PartialEq)]
 pub struct EnvironmentSetup {
@@ -133,21 +154,63 @@ pub struct EnvironmentSetup {
     pub cluster_delete: bool,
 
     /// topic name used
-    #[structopt(short("t"), long)]
+    #[structopt(long)]
     pub topic_name: Option<String>,
 
-    /// number of spu
+    /// # topics - Appends id as "-#" (zero-based) to topic name if > 1
     #[structopt(long, default_value = "1")]
-    pub spu: u16,
+    pub topic: u16,
 
-    /// number of replicas
+    /// Append random as "-<random>" to topic name (before id, if --num-topics > 1)
+    #[structopt(long)]
+    pub topic_random: bool,
+
+    // This is used to randomize topic names
+    #[structopt(skip)]
+    pub topic_salt: Option<String>,
+
+    /// Segment size (bytes) per topic
+    #[structopt(long, default_value = "1000000000")]
+    pub topic_segment_size: u32,
+
+    /// Retention time per topic
+    /// ex. 30s, 15m, 2h, 1w
+    #[structopt(long, default_value = "7d", parse(try_from_str = parse_duration))]
+    pub topic_retention: Duration,
+
+    /// Number of replicas per topic
     #[structopt(short, long, default_value = "1")]
     pub replication: u16,
 
-    /// number of partitions
+    /// Number of partitions per topic
     #[structopt(short, long, default_value = "1")]
     pub partition: u16,
 
+    /// Number of spu
+    #[structopt(long, default_value = "1")]
+    pub spu: u16,
+
+    /// # Producers to use (if test uses them)
+    #[structopt(long, default_value = "1")]
+    pub producer: u32,
+
+    /// Producer batch size (bytes)
+    #[structopt(long)]
+    pub producer_batch_size: Option<usize>,
+
+    /// Producer Linger (milliseconds)
+    #[structopt(long)]
+    pub producer_linger: Option<u64>,
+
+    /// producer record size (bytes)
+    #[structopt(long, default_value = "1000")]
+    pub producer_record_size: usize,
+
+    /// # Consumers to use (if test uses them)
+    #[structopt(long, default_value = "1")]
+    pub consumer: u32,
+
+    // todo: add consumer config options
     /// enable tls
     #[structopt(long)]
     pub tls: bool,
@@ -184,8 +247,13 @@ pub struct EnvironmentSetup {
     #[structopt(long)]
     pub skip_checks: bool,
 
-    /// In seconds, the maximum time a test will run before considered a fail (default: 1 hour)
-    #[structopt(long, parse(try_from_str = parse_timeout_seconds), default_value = "3600")]
+    /// Disable timeout - overrides use of `--timeout`
+    #[structopt(long)]
+    pub disable_timeout: bool,
+
+    /// Global timeout for a test. Will report as fail when reached
+    /// ex. 30s, 15m, 2h, 1w
+    #[structopt(long, default_value = "1h", parse(try_from_str = parse_duration))]
     pub timeout: Duration,
 
     /// K8: use specific image version
@@ -195,10 +263,4 @@ pub struct EnvironmentSetup {
     /// K8: use sc address
     #[structopt(long)]
     pub proxy_addr: Option<String>,
-}
-
-#[allow(clippy::unnecessary_wraps)]
-fn parse_timeout_seconds(timeout_str: &str) -> Result<Duration, ParseIntError> {
-    let parsed = timeout_str.parse::<u64>().expect("Parsing seconds failed");
-    Ok(Duration::from_secs(parsed))
 }

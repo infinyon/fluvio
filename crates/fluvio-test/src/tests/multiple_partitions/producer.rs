@@ -6,7 +6,7 @@ use super::MultiplePartitionTestCase;
 
 pub async fn producer(test_driver: TestDriver, option: MultiplePartitionTestCase) {
     let producer = test_driver
-        .create_producer(&option.environment.topic_name())
+        .create_producer(&option.environment.base_topic_name())
         .await;
 
     let iterations: u16 = 10000;
