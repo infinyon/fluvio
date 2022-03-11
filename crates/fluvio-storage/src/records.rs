@@ -79,6 +79,10 @@ impl FileRecordsSlice {
         })
     }
 
+    pub fn get_len(&self) -> u64 {
+        self.len
+    }
+
     pub fn get_base_offset(&self) -> Offset {
         self.base_offset
     }

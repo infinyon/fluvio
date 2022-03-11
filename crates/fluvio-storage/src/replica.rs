@@ -3,10 +3,8 @@ use std::mem;
 use std::sync::Arc;
 
 use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_future::fs::read_dir;
 use fluvio_protocol::Encoder;
-use futures_lite::StreamExt;
-use tracing::{debug, trace, warn, instrument, info, error};
+use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
@@ -103,40 +101,20 @@ impl ReplicaStorage for FileReplica {
     /// return the size in byte
     #[instrument(skip(self))]
     async fn get_partition_size(&self) -> Result<u64, ErrorCode> {
-        let mut entries = read_dir(&self.option.base_dir).await.map_err(|err| {
-            error!(
-                "failed to open the log base dir \"{}\": {}",
-                self.option.base_dir.to_string_lossy(),
-                err
-            );
-            ErrorCode::StorageError
-        })?;
+        let active_len = self.active_segment.get_msg_log().get_pos();
 
-        let mut total_size = None;
-        while let Ok(Some(entry)) = entries.try_next().await {
-            let os_file_name = entry.file_name();
+        debug!(active_len, "Active segment length");
+        let total_prev_segments_len = {
+            let reader = self.prev_segments.read().await;
+            reader.get_total_logs_len() as u32
+        };
+        debug!(
+            total_prev_segments_len,
+            "Cumulated previous segments length"
+        );
+        let total_len = active_len + total_prev_segments_len;
 
-            if os_file_name.to_string_lossy().ends_with(".log") {
-                let metadata = entry.metadata().await.map_err(|err| {
-                    error!(
-                        "fetching metadata for file \"{}\" failed: {err}",
-                        os_file_name.to_string_lossy(),
-                    );
-                    ErrorCode::StorageError
-                })?;
-                let file_len = metadata.len();
-                debug!("Log segment found. Add {file_len} byte to the total_size.");
-                *total_size.get_or_insert(0) += file_len;
-            }
-        }
-
-        total_size.ok_or_else(|| {
-            error!(
-                "no log file found in {}",
-                self.option.base_dir.to_string_lossy()
-            );
-            ErrorCode::SpuError
-        })
+        return Ok(total_len.into());
     }
 
     /// write records to this replica
@@ -721,11 +699,11 @@ mod tests {
             .await
             .expect("delete base dir");
 
-        let error = replica
+        let size = replica
             .get_partition_size()
             .await
-            .expect_err("error partition size");
-        assert_eq!(error, dataplane::ErrorCode::StorageError)
+            .expect("error partition size");
+        assert_eq!(size, 79);
     }
 
     /// test fetch only committed records
