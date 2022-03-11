@@ -150,10 +150,30 @@ async fn test_stream_fetch_basic() {
             let batch = &partition.records.batches[0];
             assert_eq!(batch.base_offset, 0);
             assert_eq!(batch.get_last_offset(), 1);
-            assert_eq!(batch.records().len(), 2);
-            assert_eq!(batch.records()[0].value().as_ref(), TEST_RECORD);
-            assert_eq!(batch.records()[1].value().as_ref(), TEST_RECORD);
-            assert_eq!(batch.records()[1].get_offset_delta(), 1);
+            assert_eq!(batch.memory_records().expect("records").len(), 2);
+            assert_eq!(
+                batch
+                    .memory_records()
+                    .expect("failed to get memory records")[0]
+                    .value()
+                    .as_ref(),
+                TEST_RECORD
+            );
+            assert_eq!(
+                batch
+                    .memory_records()
+                    .expect("failed to get memory records")[1]
+                    .value()
+                    .as_ref(),
+                TEST_RECORD
+            );
+            assert_eq!(
+                batch
+                    .memory_records()
+                    .expect("failed to get memory records")[1]
+                    .get_offset_delta(),
+                1
+            );
         }
 
         drop(response);
@@ -184,9 +204,23 @@ async fn test_stream_fetch_basic() {
             let batch = &partition.records.batches[0];
             assert_eq!(batch.base_offset, 0);
             assert_eq!(batch.get_last_offset(), 1);
-            assert_eq!(batch.records().len(), 2);
-            assert_eq!(batch.records()[0].value().as_ref(), TEST_RECORD);
-            assert_eq!(batch.records()[1].value().as_ref(), TEST_RECORD);
+            assert_eq!(batch.memory_records().expect("records").len(), 2);
+            assert_eq!(
+                batch
+                    .memory_records()
+                    .expect("failed to get memory records")[0]
+                    .value()
+                    .as_ref(),
+                TEST_RECORD
+            );
+            assert_eq!(
+                batch
+                    .memory_records()
+                    .expect("failed to get memory records")[1]
+                    .value()
+                    .as_ref(),
+                TEST_RECORD
+            );
         }
 
         drop(response);
@@ -225,9 +259,23 @@ async fn test_stream_fetch_basic() {
             let batch = &partition.records.batches[0];
             assert_eq!(batch.base_offset, 2);
             assert_eq!(batch.get_last_offset(), 3);
-            assert_eq!(batch.records().len(), 2);
-            assert_eq!(batch.records()[0].value().as_ref(), TEST_RECORD);
-            assert_eq!(batch.records()[1].value().as_ref(), TEST_RECORD);
+            assert_eq!(batch.memory_records().expect("records").len(), 2);
+            assert_eq!(
+                batch
+                    .memory_records()
+                    .expect("failed to get memory records")[0]
+                    .value()
+                    .as_ref(),
+                TEST_RECORD
+            );
+            assert_eq!(
+                batch
+                    .memory_records()
+                    .expect("failed to get memory records")[1]
+                    .value()
+                    .as_ref(),
+                TEST_RECORD
+            );
         }
     }
 
@@ -428,12 +476,22 @@ async fn test_stream_fetch_filter(
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 0);
-        assert_eq!(batch.records().len(), 1);
+        assert_eq!(batch.memory_records().expect("records").len(), 1);
         assert_eq!(
-            batch.records()[0].value().as_ref(),
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .value()
+                .as_ref(),
             "a".repeat(100).as_bytes()
         );
-        assert_eq!(batch.records()[0].get_offset_delta(), 1);
+        assert_eq!(
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .get_offset_delta(),
+            1
+        );
     }
 
     drop(response);
@@ -486,9 +544,13 @@ async fn test_stream_fetch_filter(
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 4); // first base offset where we had filtered records
-        assert_eq!(batch.records().len(), 2);
+        assert_eq!(batch.memory_records().expect("records").len(), 2);
         assert_eq!(
-            batch.records()[0].value().as_ref(),
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .value()
+                .as_ref(),
             "a".repeat(100).as_bytes()
         );
     }
@@ -579,7 +641,7 @@ async fn test_stream_fetch_filter_individual(
         .await
         .expect("create stream");
 
-    let mut records: RecordSet = BatchProducer::builder()
+    let mut records = BatchProducer::builder()
         .records(1u16)
         .record_generator(Arc::new(|_, _| Record::new("1")))
         .build()
@@ -595,7 +657,7 @@ async fn test_stream_fetch_filter_individual(
         _ = fluvio_future::timer::sleep(std::time::Duration::from_millis(1000)) => (),
     }
 
-    let mut records: RecordSet = BatchProducer::builder()
+    let mut records = BatchProducer::builder()
         .records(1u16)
         .record_generator(Arc::new(|_, _| Record::new("2")))
         .build()
@@ -607,7 +669,9 @@ async fn test_stream_fetch_filter_individual(
         .expect("write");
 
     let response = stream.next().await.expect("first").expect("response");
-    let records = response.partition.records.batches[0].records();
+    let records = response.partition.records.batches[0]
+        .memory_records()
+        .expect("failed to get memory records");
     assert_eq!(records.len(), 1);
     assert_eq!(records[0].value.as_ref(), "2".as_bytes());
 
@@ -707,7 +771,7 @@ async fn test_stream_filter_error_fetch(
         Record::new(value)
     }
 
-    let mut records: RecordSet = BatchProducer::builder()
+    let mut records = BatchProducer::builder()
         .records(11u16)
         .record_generator(Arc::new(generate_record))
         .build()
@@ -728,7 +792,9 @@ async fn test_stream_filter_error_fetch(
     let response = stream.next().await.expect("first").expect("response");
 
     assert_eq!(response.partition.records.batches.len(), 1);
-    let records = response.partition.records.batches[0].records();
+    let records = response.partition.records.batches[0]
+        .memory_records()
+        .expect("memory records");
     assert_eq!(records.len(), 5);
     assert_eq!(records[0].value.as_ref(), "0".as_bytes());
     assert_eq!(records[1].value.as_ref(), "2".as_bytes());
@@ -868,9 +934,13 @@ async fn test_stream_filter_max(
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 0);
-        assert_eq!(batch.records().len(), 2);
+        assert_eq!(batch.memory_records().expect("records").len(), 2);
         assert_eq!(
-            batch.records()[0].value().as_ref(),
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .value()
+                .as_ref(),
             "a".repeat(100).as_bytes()
         );
     }
@@ -902,9 +972,13 @@ async fn test_stream_filter_max(
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 20);
-        assert_eq!(batch.records().len(), 1);
+        assert_eq!(batch.memory_records().expect("records").len(), 1);
         assert_eq!(
-            batch.records()[0].value().as_ref(),
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .value()
+                .as_ref(),
             "a".repeat(100).as_bytes()
         );
     }
@@ -996,7 +1070,7 @@ async fn test_stream_fetch_map_error(
         .await
         .expect("create stream");
 
-    let mut records: RecordSet = BatchProducer::builder()
+    let mut records = BatchProducer::builder()
         .records(10u16)
         .record_generator(Arc::new(|i, _| {
             if i < 9 {
@@ -1018,7 +1092,9 @@ async fn test_stream_fetch_map_error(
     let response = stream.next().await.expect("first").expect("response");
 
     assert_eq!(response.partition.records.batches.len(), 1);
-    let records = response.partition.records.batches[0].records();
+    let records = response.partition.records.batches[0]
+        .memory_records()
+        .expect("records");
     assert_eq!(records.len(), 9);
     assert_eq!(records[0].value.as_ref(), "0".as_bytes());
     assert_eq!(records[1].value.as_ref(), "2".as_bytes());
@@ -1167,9 +1243,9 @@ async fn test_stream_aggregate_fetch_single_batch(
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 0);
-        assert_eq!(batch.records().len(), 5);
+        assert_eq!(batch.memory_records().expect("records").len(), 5);
 
-        let records = batch.records();
+        let records = batch.memory_records().expect("records");
 
         assert_eq!("A0", records[0].value().as_str().expect("string"));
         assert_eq!("A01", records[1].value().as_str().expect("string"));
@@ -1328,9 +1404,9 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 0);
-        assert_eq!(batch.records().len(), 6);
+        assert_eq!(batch.memory_records().expect("records").len(), 6);
 
-        let records = batch.records();
+        let records = batch.memory_records().expect("records");
         debug!("final records {:#?}", records);
 
         assert_eq!("A0", records[0].value().as_str().expect("string"));
@@ -1653,7 +1729,12 @@ async fn test_stream_fetch_array_map(
     let batch = &response.partition.records.batches[0];
 
     // Output: 10 records containing integers 0-9
-    for (i, record) in batch.records().iter().enumerate() {
+    for (i, record) in batch
+        .memory_records()
+        .expect("memory records")
+        .iter()
+        .enumerate()
+    {
         assert_eq!(
             record.value.as_ref(),
             RecordData::from(i.to_string()).as_ref()
@@ -1771,7 +1852,7 @@ async fn test_stream_fetch_filter_map(
 
     assert_eq!(response.partition.records.batches.len(), 1);
     let batch = &response.partition.records.batches[0];
-    assert_eq!(batch.records().len(), 2);
+    assert_eq!(batch.memory_records().expect("records").len(), 2);
 
     // Output:
     //
@@ -1780,7 +1861,7 @@ async fn test_stream_fetch_filter_map(
     // 33 -> _
     // 44 -> 22
     // 55 -> _
-    let records = batch.records();
+    let records = batch.memory_records().expect("records");
     assert_eq!(records[0].value, RecordData::from(11.to_string()));
     assert_eq!(records[1].value, RecordData::from(22.to_string()));
 
@@ -1900,12 +1981,22 @@ async fn test_stream_fetch_filter_with_params(
 
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 0);
-        assert_eq!(batch.records().len(), 1);
+        assert_eq!(batch.memory_records().expect("records").len(), 1);
         assert_eq!(
-            batch.records()[0].value().as_ref(),
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .value()
+                .as_ref(),
             "b".repeat(100).as_bytes()
         );
-        assert_eq!(batch.records()[0].get_offset_delta(), 0);
+        assert_eq!(
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .get_offset_delta(),
+            0
+        );
 
         assert_eq!(partition.error_code, ErrorCode::None);
         assert_eq!(partition.high_watermark, 2);
@@ -1945,12 +2036,22 @@ async fn test_stream_fetch_filter_with_params(
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
         assert_eq!(batch.base_offset, 0);
-        assert_eq!(batch.records().len(), 1);
+        assert_eq!(batch.memory_records().expect("records").len(), 1);
         assert_eq!(
-            batch.records()[0].value().as_ref(),
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .value()
+                .as_ref(),
             "a".repeat(100).as_bytes()
         );
-        assert_eq!(batch.records()[0].get_offset_delta(), 1);
+        assert_eq!(
+            batch
+                .memory_records()
+                .expect("failed to get memory records")[0]
+                .get_offset_delta(),
+            1
+        );
     }
 
     server_end_event.notify();
@@ -2189,13 +2290,13 @@ async fn test_stream_fetch_join(
 
     assert_eq!(response.partition.records.batches.len(), 1);
     let batch = &response.partition.records.batches[0];
-    assert_eq!(batch.records().len(), 2);
+    assert_eq!(batch.memory_records().expect("records").len(), 2);
 
     // Output:
     //     + 9
     // 11 -> 20
     // 22 -> 31
-    let records = batch.records();
+    let records = batch.memory_records().expect("records");
     assert_eq!(records[0].value, RecordData::from(20.to_string()));
     assert_eq!(records[1].value, RecordData::from(31.to_string()));
 
@@ -2229,13 +2330,13 @@ async fn test_stream_fetch_join(
 
     assert_eq!(response.partition.records.batches.len(), 1);
     let batch = &response.partition.records.batches[0];
-    assert_eq!(batch.records().len(), 2);
+    assert_eq!(batch.memory_records().expect("records").len(), 2);
 
     // Output:
     //     + 9
     // 33 -> 42
     // 44 -> 53
-    let records = batch.records();
+    let records = batch.memory_records().expect("records");
     assert_eq!(records[0].value, RecordData::from(42.to_string()));
     assert_eq!(records[1].value, RecordData::from(53.to_string()));
 
@@ -2287,13 +2388,13 @@ async fn test_stream_fetch_join(
 
     assert_eq!(response.partition.records.batches.len(), 1);
     let batch = &response.partition.records.batches[0];
-    assert_eq!(batch.records().len(), 2);
+    assert_eq!(batch.memory_records().expect("records").len(), 2);
 
     // Output:
     //     + 22
     // 55 -> 77
     // 66 -> 88
-    let records = batch.records();
+    let records = batch.memory_records().expect("records");
     assert_eq!(records[0].value, RecordData::from(77.to_string()));
     assert_eq!(records[1].value, RecordData::from(88.to_string()));
 

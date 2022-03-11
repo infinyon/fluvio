@@ -1,13 +1,14 @@
 use std::io::Error;
 
+use dataplane::batch::BatchRecords;
 use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
 use dataplane::ErrorCode;
 use dataplane::produce::{
-    DefaultProduceRequest, ProduceResponse, TopicProduceResponse, PartitionProduceResponse,
-    PartitionProduceData, TopicProduceData,
+    ProduceResponse, TopicProduceResponse, PartitionProduceResponse, PartitionProduceData,
+    DefaultProduceRequest, DefaultTopicRequest,
 };
 use dataplane::api::RequestMessage;
 use dataplane::api::ResponseMessage;
@@ -46,7 +47,7 @@ pub async fn handle_produce_request(
 )]
 async fn handle_produce_topic(
     ctx: &DefaultSharedGlobalContext,
-    topic_request: TopicProduceData<RecordSet>,
+    topic_request: DefaultTopicRequest,
 ) -> Result<TopicProduceResponse, Error> {
     trace!("Handling produce request for topic:");
     let topic = &topic_request.name;
@@ -70,10 +71,10 @@ async fn handle_produce_topic(
     skip(ctx, replica_id, partition_request),
     fields(%replica_id),
 )]
-async fn handle_produce_partition(
+async fn handle_produce_partition<R: BatchRecords>(
     ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
-    mut partition_request: PartitionProduceData<RecordSet>,
+    mut partition_request: PartitionProduceData<RecordSet<R>>,
 ) -> Result<PartitionProduceResponse, Error> {
     trace!("Handling produce request for partition:");
 

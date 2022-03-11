@@ -51,14 +51,15 @@ pub fn validate_message(iter: u32, offset: i64, test_case: &SmokeTestCase, data:
     for i in 0..prefix_len {
         assert!(
             data[i] == prefix[i],
-            "prefix failed, iter: {}, index: {}, data: {}, prefix: {}, data len: {}, offset: {}, topic: {}",
+            "prefix failed, iter: {}, index: {}, data: {}, prefix: {}, data len: {}, offset: {}, topic: {}, full_data: {}",
             iter,
             i,
             data[i],
             prefix_string,
             data.len(),
             offset,
-            test_case.environment.base_topic_name().as_str()
+            test_case.environment.base_topic_name().as_str(),
+            std::str::from_utf8(data).expect("failed to parse"),
         );
     }
 

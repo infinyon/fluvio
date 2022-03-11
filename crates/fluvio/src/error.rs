@@ -1,5 +1,6 @@
 use std::io::Error as IoError;
 
+use fluvio_compression::CompressionError;
 use fluvio_socket::SocketError;
 use fluvio_sc_schema::ApiError;
 use semver::Version;
@@ -54,6 +55,8 @@ To interact with this cluster, please install the matching CLI version using the
     Producer(#[from] ProducerError),
     #[error("Error building producer config: {0}")]
     TopicProducerConfigBuilder(#[from] TopicProducerConfigBuilderError),
+    #[error("Compression error: {0}")]
+    Compression(#[from] CompressionError),
     #[error("Unknown error: {0}")]
     Other(String),
 }

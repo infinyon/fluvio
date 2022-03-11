@@ -17,7 +17,7 @@ pub use fluvio_spu_schema::server::stream_fetch::{
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
-use dataplane::batch::Batch;
+use dataplane::batch::{Batch};
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
@@ -242,7 +242,18 @@ where
             // the records down the consumer stream, THEN an Err with the error inside.
             // This way the consumer always gets to read all records that were properly
             // processed before hitting an error, so that the error does not obscure those records.
-            let batches = response.partition.records.batches.into_iter().map(Ok);
+            let batches = response
+                .partition
+                .records
+                .batches
+                .into_iter()
+                .map(|raw_batch| {
+                    let batch: Result<Batch, _> = raw_batch.try_into();
+                    match batch {
+                        Ok(batch) => Ok(batch),
+                        Err(err) => Err(ErrorCode::Other(err.to_string())),
+                    }
+                });
             let error = {
                 let code = response.partition.error_code;
                 match code {
@@ -339,7 +350,9 @@ where
             .await?;
 
         let ft_stream = async move {
-            if let Some(Ok(response)) = stream.next().await {
+            if let Some(Ok(raw_response)) = stream.next().await {
+                let response: DefaultStreamFetchResponse = raw_response;
+
                 let stream_id = response.stream_id;
 
                 trace!("first stream response: {:#?}", response);
@@ -502,7 +515,7 @@ where
                     .records
                     .batches
                     .iter()
-                    .map(|it| it.records().len())
+                    .map(|it| it.records_len())
                     .sum();
                 let diff = self.remaining - count as i64;
                 self.remaining = diff.max(0);

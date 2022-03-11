@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use crate::batch::RawRecords;
 use crate::core::Encoder;
 use crate::core::Decoder;
 use crate::derive::FluvioDefault;
@@ -10,9 +11,9 @@ use crate::record::RecordSet;
 
 use super::ProduceResponse;
 
-pub type DefaultProduceRequest = ProduceRequest<RecordSet>;
-pub type DefaultPartitionRequest = PartitionProduceData<RecordSet>;
-pub type DefaultTopicRequest = TopicProduceData<RecordSet>;
+pub type DefaultProduceRequest = ProduceRequest<RecordSet<RawRecords>>;
+pub type DefaultPartitionRequest = PartitionProduceData<RecordSet<RawRecords>>;
+pub type DefaultTopicRequest = TopicProduceData<RecordSet<RawRecords>>;
 
 #[derive(Encoder, Decoder, FluvioDefault, Debug)]
 pub struct ProduceRequest<R>

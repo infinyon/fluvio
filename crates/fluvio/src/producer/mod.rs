@@ -288,7 +288,9 @@ impl TopicProducer {
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
             .spec;
         let partition_count = topic_spec.partitions();
-        let record_accumulator = RecordAccumulator::new(config.batch_size, partition_count);
+        let compression = config.compression;
+        let record_accumulator =
+            RecordAccumulator::new(config.batch_size, partition_count, compression);
         let producer_pool = ProducerPool::shared(
             topic.clone(),
             spu_pool.clone(),

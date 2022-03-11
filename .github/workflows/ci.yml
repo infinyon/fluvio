@@ -309,12 +309,14 @@ jobs:
         os: [ubuntu-latest]
         rust: [stable]
         rust-target: [x86_64-unknown-linux-gnu]
+        compression: [none, gzip, snappy, lz4]
     env:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
       RELEASE: true
       RELEASE_NAME: release
+      FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust ${{ matrix.rust }}
@@ -444,6 +446,7 @@ jobs:
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
       SERVER_LOG: fluvio=debug
+      FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     strategy:
       fail-fast: false
       matrix:
@@ -461,7 +464,7 @@ jobs:
             batch-failure,
             batch,
           ]
-
+        compression: [none, gzip, snappy, lz4]
     steps:
       - uses: actions/checkout@v2
       - name: Download artifact - fluvio
@@ -604,6 +607,7 @@ jobs:
       TEST_BIN: ~/bin/fluvio-test
       UNINSTALL: noclean
       SERVER_LOG: fluvio=debug
+      FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     strategy:
       fail-fast: false
       matrix:
@@ -613,6 +617,7 @@ jobs:
         test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
         k8: [k3d, minikube]
         spu: [2]
+        compression: [none, gzip, snappy, lz4]
     steps:
       - uses: actions/checkout@v2
       # Download artifacts
@@ -717,11 +722,14 @@ jobs:
     name: Upgrade cluster test on (${{ matrix.run }})
     needs: build_image
     runs-on: ${{ matrix.os }}
+    env:
+      FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
         run: [r1]
+        compression: [none, gzip, snappy, lz4]
     steps:
       - uses: actions/checkout@v2
       - name: Setup K3d
@@ -822,10 +830,13 @@ jobs:
     needs: build_image
     #if: ${{ false }}
     runs-on: ${{ matrix.os }}
+    env:
+      FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
+        compression: [none, gzip, snappy, lz4]
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust ${{ matrix.rust }}

@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::fmt::Debug;
 use std::time::Instant;
 
+use dataplane::batch::BatchRecords;
 use tracing::{debug, instrument};
 use async_rwlock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
@@ -126,9 +127,9 @@ where
     }
 
     #[instrument(skip(self, records, hw_update))]
-    pub async fn write_record_set(
+    pub async fn write_record_set<R: BatchRecords>(
         &self,
-        records: &mut RecordSet,
+        records: &mut RecordSet<R>,
         hw_update: bool,
     ) -> Result<i64, StorageError> {
         debug!(

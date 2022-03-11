@@ -9,6 +9,7 @@ use std::marker::PhantomData;
 use std::io::{self, Read};
 use std::borrow::Cow;
 
+use dataplane::batch::RawRecords;
 use dataplane::core::{Encoder, Decoder};
 use dataplane::api::Request;
 use dataplane::fetch::FetchablePartitionResponse;
@@ -21,9 +22,8 @@ use flate2::{
     bufread::{GzEncoder, GzDecoder},
 };
 
-pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet>;
-
-pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet>;
+pub type DefaultStreamFetchResponse = StreamFetchResponse<RecordSet<RawRecords>>;
+pub type DefaultStreamFetchRequest = StreamFetchRequest<RecordSet<RawRecords>>;
 
 use super::SpuServerApiKey;
 

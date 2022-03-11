@@ -11,8 +11,9 @@ use tracing::{debug, error, warn};
 use tracing::instrument;
 use async_rwlock::{RwLock};
 
-use dataplane::{record::RecordSet};
+use dataplane::record::RecordSet;
 use dataplane::{Offset, Isolation, ReplicaKey};
+use dataplane::batch::BatchRecords;
 use fluvio_controlplane_metadata::partition::{Replica, ReplicaStatus, PartitionStatus};
 use fluvio_controlplane::LrsRequest;
 use fluvio_storage::{FileReplica, StorageError, ReplicaStorage, OffsetInfo, ReplicaStorageConfig};
@@ -311,9 +312,9 @@ where
     /// write records to storage
     /// then update our follower's leo
     #[instrument(skip(self, records, notifiers))]
-    pub async fn write_record_set(
+    pub async fn write_record_set<R: BatchRecords>(
         &self,
-        records: &mut RecordSet,
+        records: &mut RecordSet<R>,
         notifiers: &FollowerNotifier,
     ) -> Result<i64, StorageError> {
         let base_offset = self

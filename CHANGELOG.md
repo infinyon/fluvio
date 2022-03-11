@@ -8,6 +8,7 @@
 * Report SPU error codes to FutureRecordMetadata ([#2228](https://github.com/infinyon/fluvio/issues/2228))
 * Optimize partition size computation ([#2230](https://github.com/infinyon/fluvio/issues/2230))
 * Fix fluvio-test configuration to support data generator ([#2237](https://github.com/infinyon/fluvio/pull/2237))
+* Add compression support. ([#2082](https://github.com/infinyon/fluvio/issues/2082))
 
 ## Platform Version 0.9.20 - 2022-02-17
 * Add `connector update -c config` to update the running configuration of a given existing managed connector ([#2188](https://github.com/infinyon/fluvio/pull/2188))
