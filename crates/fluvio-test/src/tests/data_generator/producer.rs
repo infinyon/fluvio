@@ -36,17 +36,41 @@ pub async fn producer(
         let maybe_builder = match (
             option.environment.producer_linger,
             option.environment.producer_batch_size,
+            option.environment.producer_compression,
         ) {
-            (Some(linger), Some(batch)) => Some(
+            (Some(linger), Some(batch), Some(compression)) => Some(
+                TopicProducerConfigBuilder::default()
+                    .linger(Duration::from_millis(linger))
+                    .batch_size(batch)
+                    .compression(compression),
+            ),
+            (Some(linger), Some(batch), None) => Some(
                 TopicProducerConfigBuilder::default()
                     .linger(Duration::from_millis(linger))
                     .batch_size(batch),
             ),
-            (Some(linger), None) => {
+            (Some(linger), None, None) => {
                 Some(TopicProducerConfigBuilder::default().linger(Duration::from_millis(linger)))
             }
-            (None, Some(batch)) => Some(TopicProducerConfigBuilder::default().batch_size(batch)),
-            (None, None) => None,
+            (Some(linger), None, Some(compression)) => Some(
+                TopicProducerConfigBuilder::default()
+                    .linger(Duration::from_millis(linger))
+                    .compression(compression),
+            ),
+            (None, Some(batch), Some(compression)) => Some(
+                TopicProducerConfigBuilder::default()
+                    .batch_size(batch)
+                    .compression(compression),
+            ),
+
+            (None, Some(batch), None) => {
+                Some(TopicProducerConfigBuilder::default().batch_size(batch))
+            }
+            (None, None, Some(compression)) => {
+                Some(TopicProducerConfigBuilder::default().compression(compression))
+            }
+
+            (None, None, None) => None,
         };
 
         let env_opts = option.environment.clone();

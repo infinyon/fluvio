@@ -5,6 +5,7 @@ use std::fmt::Debug;
 use std::time::Duration;
 use humantime::parse_duration;
 use uuid::Uuid;
+use fluvio::Compression;
 
 pub trait EnvDetail: Debug + Clone {
     fn set_base_topic_name(&mut self, topic: String);
@@ -205,6 +206,10 @@ pub struct EnvironmentSetup {
     /// producer record size (bytes)
     #[structopt(long, default_value = "1000")]
     pub producer_record_size: usize,
+
+    /// producer compression algorithm. (none, gzip, snappy or lz4)
+    #[structopt(long)]
+    pub producer_compression: Option<Compression>,
 
     /// # Consumers to use (if test uses them)
     #[structopt(long, default_value = "1")]
