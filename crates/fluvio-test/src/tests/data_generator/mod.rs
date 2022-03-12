@@ -70,6 +70,7 @@ pub fn data_generator(test_driver: FluvioTestDriver, test_case: TestCase) {
         "batch size (Bytes): {:?}",
         option.environment.producer_batch_size
     );
+    println!("compression algorithm: {:?}", option.environment.producer_compression);
 
     let sync_topic = if let Some(run_id) = &option.environment.topic_salt {
         format!("sync-{}", run_id)
