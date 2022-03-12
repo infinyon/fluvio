@@ -21,6 +21,18 @@ setup_file() {
     export TOPIC_NAME_3
     debug_msg "Topic name: $TOPIC_NAME_3"
 
+    TOPIC_NAME_4=$(random_string)
+    export TOPIC_NAME_4
+    debug_msg "Topic name: $TOPIC_NAME_4"
+
+    TOPIC_NAME_5=$(random_string)
+    export TOPIC_NAME_5
+    debug_msg "Topic name: $TOPIC_NAME_5"
+
+    TOPIC_NAME_6=$(random_string)
+    export TOPIC_NAME_6
+    debug_msg "Topic name: $TOPIC_NAME_6"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -30,6 +42,15 @@ setup_file() {
 
     MULTILINE_MESSAGE="$MESSAGE\n$MESSAGE_W_HTML_STR"
     export MULTILINE_MESSAGE
+
+    GZIP_MESSAGE="$MESSAGE-GZIP"
+    export GZIP_MESSAGE
+
+    SNAPPY_MESSAGE="$MESSAGE-SNAPPY"
+    export SNAPPY_MESSAGE
+
+    LZ4_MESSAGE="$MESSAGE-LZ4"
+    export LZ4_MESSAGE
 }
 
 teardown_file() {
@@ -45,6 +66,12 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_3"
     assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_4"
+    assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_5"
+    assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_6"
+    assert_success
 }
 
 # Produce message 
@@ -52,6 +79,9 @@ teardown_file() {
     run bash -c 'echo "$MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
     run bash -c 'echo "$MESSAGE_W_HTML_STR" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_2"'
     run bash -c 'echo -e "$MULTILINE_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_3"'
+    run bash -c 'echo -e "$GZIP_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_4" --compression gzip'
+    run bash -c 'echo -e "$SNAPPY_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_5" --compression snappy'
+    run bash -c 'echo -e "$LZ4_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_6" --compression lz4'
     assert_success
 }
 
@@ -78,3 +108,25 @@ teardown_file() {
     assert_output "$MESSAGE_W_HTML_STR"
     assert_success
 }
+
+@test "Consume gzip message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_4" -B -d
+
+    assert_output --partial "$GZIP_MESSAGE"
+    assert_success
+}
+
+@test "Consume snappy message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_5" -B -d
+
+    assert_output --partial "$SNAPPY_MESSAGE"
+    assert_success
+}
+
+@test "Consume lz4 message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_6" -B -d
+
+    assert_output --partial "$LZ4_MESSAGE"
+    assert_success
+}
+

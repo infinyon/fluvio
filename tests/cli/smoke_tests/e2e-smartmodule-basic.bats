@@ -73,7 +73,7 @@ setup_file() {
 
     TEST_MESSAGE="$(random_string 10)aaa"
     export TEST_MESSAGE
-    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --compression gzip'
     assert_success
 
     # Consume from topic and verify we should have 2 entries
@@ -179,7 +179,7 @@ setup_file() {
 
     TEST_MESSAGE="100"
     export TEST_MESSAGE
-    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    run bash -c 'echo "$TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --compression snappy'
     assert_success
 
     # Consume from topic and verify we should have 2 entries
@@ -226,7 +226,7 @@ setup_file() {
     export SECOND_MESSAGE
     THIRD_MESSAGE='"Cranberry"'
     export THIRD_MESSAGE
-    run bash -c 'echo "$FULL_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME"'
+    run bash -c 'echo "$FULL_TEST_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --compression lz4'
     assert_success
 
     # Consume from topic and verify we should have the json message

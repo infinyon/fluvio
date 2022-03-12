@@ -830,13 +830,10 @@ jobs:
     needs: build_image
     #if: ${{ false }}
     runs-on: ${{ matrix.os }}
-    env:
-      FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        compression: [none, gzip, snappy, lz4]
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust ${{ matrix.rust }}

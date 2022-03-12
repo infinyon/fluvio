@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::error;
 
-use fluvio::{Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey};
+use fluvio::{Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
@@ -40,6 +40,11 @@ pub struct ProduceOpt {
     #[structopt(long)]
     pub raw: bool,
 
+    /// Compression algorithm to use when sending records.
+    /// Supported values: none, gzip, snappy and lz4.
+    #[structopt(long)]
+    pub compression: Option<Compression>,
+
     /// Path to a file to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub file: Option<PathBuf>,
@@ -56,14 +61,19 @@ fn validate_key_separator(separator: String) -> std::result::Result<(), String> 
 
 impl ProduceOpt {
     pub async fn process(self, fluvio: &Fluvio) -> Result<()> {
-        let config = if self.interactive_mode() {
-            TopicProducerConfigBuilder::default()
-                .linger(std::time::Duration::from_millis(10))
-                .build()
-                .map_err(FluvioError::from)?
+        let config_builder = if self.interactive_mode() {
+            TopicProducerConfigBuilder::default().linger(std::time::Duration::from_millis(10))
         } else {
             Default::default()
         };
+
+        let config_builder = if let Some(compression) = self.compression {
+            config_builder.compression(compression)
+        } else {
+            config_builder
+        };
+
+        let config = config_builder.build().map_err(FluvioError::from)?;
         let producer = fluvio
             .topic_producer_with_config(&self.topic, config)
             .await?;
