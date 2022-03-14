@@ -3,6 +3,7 @@
 
 PUBLISH_CRATES=(
     fluvio-types
+    fluvio-compression
     fluvio-protocol-derive
     fluvio-protocol
     fluvio-dataplane-protocol
