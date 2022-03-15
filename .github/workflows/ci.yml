@@ -723,6 +723,7 @@ jobs:
     needs: build_image
     runs-on: ${{ matrix.os }}
     env:
+      FLV_SOCKET_WAIT: 600
       FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     strategy:
       fail-fast: false
