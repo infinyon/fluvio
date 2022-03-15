@@ -723,7 +723,6 @@ jobs:
     needs: build_image
     runs-on: ${{ matrix.os }}
     env:
-      FLV_SOCKET_WAIT: 600
       FLV_CLIENT_DEFAULT_COMPRESSION_CODEC: ${{ matrix.compression }}
     strategy:
       fail-fast: false
@@ -763,7 +762,7 @@ jobs:
         run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
 
       - name: Run upgrade test with CI artifacts
-        timeout-minutes: 5
+        timeout-minutes: 10 
         env:
           TEST_DATA_BYTES: 10000
         run: |
