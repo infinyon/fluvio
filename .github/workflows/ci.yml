@@ -1038,3 +1038,161 @@ jobs:
     steps:
       - name: Done
         run: echo "Done!"
+
+  longevity:
+    name: Hourly Longevity test 
+    runs-on: ${{ matrix.os }}
+    needs:
+     - build_primary_binaries
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false 
+      matrix:
+        os: [ubuntu-latest]
+        rust-target: [x86_64-unknown-linux-musl]
+        run: [r1]
+       # run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
+        binary: [dev]
+
+        test_run_time: [1h]
+        producer: [1, 25]
+        producer_record_bytes: [2000] # 2KB
+        producer_batch_bytes: [10000] # 10KB
+        producer_linger_ms: [10]
+        consumer: [1, 25]
+        topic: [1, 10]
+        topic_segment_bytes: [1000000]  # 1MB
+        topic_retention: [30s]
+    env:
+      K3D_VERSION: v4.4.8
+      TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login GH CLI
+        if: ${{ false }}
+        run: gh auth login --with-token < <(echo ${{ secrets.GITHUB_TOKEN }})
+
+      - name: Download dev release
+        if: ${{ false }}
+        run: gh release download dev -R infinyon/fluvio -D /tmp/release
+
+      - name: Unpack fluvio-test from dev release
+        if: ${{ false }}
+        run: |
+          cd /tmp/release; unzip ${{ env.TEST_BINARY }}.zip; chmod +x fluvio-test
+          echo "/tmp/release" >> $GITHUB_PATH
+
+      - name: Download build artifact - fluvio-test
+        #if: ${{ false }}
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/bin
+
+      - name: Set up Fluvio binaries from build
+        #if: ${{ false }}
+        run: |
+          chmod +x ~/bin/fluvio-test
+          echo "~/bin" >> $GITHUB_PATH
+
+      ## DEBUG: Don't forget to remove this
+      ## TODO: Figure out how to add this to the hourly test
+      #- name: Delete Artifact by Name
+      #  uses: jimschubert/delete-artifacts-action@v1
+      #  with:
+      #    log_level: 'debug'
+      #    artifact_name: longevity-data
+      #    dry_run: false
+
+      # TODO: Test optimization
+      # We want to check for certain conditions for when to run this test
+      # Check if the cached git commit matches the current git commit
+      # If the match, then we've already run a test on this build. Skip this run
+      # If they don't match, then let's run the test
+
+      - name: Setup K3d
+        run: curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
+      - name: Create K3d cluster
+        run: |
+          ./k8-util/cluster/reset-k3d.sh
+      - name: Install Fluvio CLI and start cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | VERSION=latest bash
+          echo "$HOME/.fluvio/bin" >> $GITHUB_PATH
+      - name: Start Fluvio Cluster
+        run: |
+          fluvio version
+          fluvio cluster start
+
+      # Disabled for now bc data load is unstable in CI
+      #- name: Look for longevity data
+      #  run: |
+      #    set -e
+      #    if gh run download -n longevity-data -D /tmp ; then
+      #      echo "Longevity data exists"
+      #      cd /tmp
+      #      tar -xvf longevity-data.tar
+      #      ~/.fluvio/bin/fluvio topic create test
+      #      kubectl cp longevity-existing-0/00000000000000000000.index fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.index
+      #      kubectl cp longevity-existing-0/00000000000000000000.log fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/00000000000000000000.log
+      #      kubectl cp longevity-existing-0/replication.chk fluvio-spg-main-0:var/lib/fluvio/data/spu-logs-0/test-0/replication.chk
+      #      k3d cluster stop --all
+      #      k3d cluster start --all
+      #      sleep 30
+      #    else
+      #      echo "Longevity data does not exist"
+      #    fi
+
+      - name: Run longevity test
+        timeout-minutes: 65
+        run: |
+          sleep 10
+          RUST_LOG=info fluvio-test \
+            --timeout=${{ matrix.test_run_time }} \
+            --producer ${{ matrix.producer }} \
+            --producer-record-size ${{ matrix.producer_record_bytes }} \
+            --producer-batch-size ${{ matrix.producer_batch_bytes }} \
+            --producer-linger ${{ matrix.producer_linger_ms }} \
+            --consumer ${{ matrix.consumer }} \
+            --topic ${{ matrix.topic }} \
+            --topic-segment-size ${{ matrix.topic_segment_bytes }} \
+            --topic-retention ${{ matrix.topic_retention }} \
+            longevity 
+          
+      ## If the test passed, then copy the data from cluster to store into artifacts
+      #- name: Export data from the cluster for caching
+      #  run: |
+      #    kubectl version
+      #    mkdir longevity-0
+      #    echo Copy fluvio topic data from container
+      #    kubectl cp fluvio-spg-main-0:/var/lib/fluvio/data/spu-logs-0/longevity-0 longevity-0
+      #    ls
+      #    echo List copied topic data
+      #    ls longevity-0
+      #    echo Make tarball from topic data
+      #    tar -cvf longevity-data.tar longevity-0
+      #    echo Verify tarball
+      #    cp longevity-data.tar /tmp
+      #    cd /tmp
+      #    tar -xvf longevity-data.tar
+
+      ## TODO: Add a shorter cache time
+      #- uses: actions/upload-artifact@v2
+      #  with:
+      #    name: 'longevity-data' 
+      #    path: longevity-data.tar
+      #    retention-days: 5
+      - name: Run diagnostics
+        if: failure()
+        timeout-minutes: 5
+        run: fluvio cluster diagnostics
+      - name: Upload diagnostics
+        uses: actions/upload-artifact@v2
+        timeout-minutes: 5
+        if: failure()
+        with:
+          name: hourly-longevity-${{ matrix.run }}.diag
+          path: diagnostics*.gz
+ 
