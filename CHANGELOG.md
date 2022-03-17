@@ -2,9 +2,10 @@
 
 ## Platform Version 0.9.22 - UNRELEASED
 * Add topic level compression configuration ([#2249](https://github.com/infinyon/fluvio/issues/2249))
+* Add producer batch related options for `fluvio produce`([#2257](https://github.com/infinyon/fluvio/issues/2257))
 
 ## Platform Version 0.9.21 - 2022-03-14
-* Make store time out configurable ([#2116](https://github.com/infinyon/fluvio/issues/2212))
+* Make store time out configurable ([#2112](https://github.com/infinyon/fluvio/issues/2212))
 * Add a `size` field in the `fluvio partition list` output. This field represents the size of logs in the partition. ([#2148](https://github.com/infinyon/fluvio/issues/2148))
 * Add support for partial CA Intermediate Trust Anchors ([#2232](https://github.com/infinyon/fluvio/pull/2232))
 * Fix Installer problem with self-signed certs ([#2216](https://github.com/infinyon/fluvio/issues/2216))
