@@ -123,6 +123,14 @@ impl TopicSpec {
         self.inner.cleanup_policy.as_ref()
     }
 
+    pub fn set_compression_type(&mut self, compression: CompressionType) {
+        self.inner.compression_type = Some(compression);
+    }
+
+    pub fn get_compression_type(&self) -> Option<&CompressionType> {
+        self.inner.compression_type.as_ref()
+    }
+
     pub fn get_storage(&self) -> Option<&TopicStorageConfig> {
         self.inner.storage.as_ref()
     }
@@ -181,6 +189,8 @@ pub(crate) struct TopicSpecInner {
     cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
     storage: Option<TopicStorageConfig>,
+    #[fluvio(min_version = 5)]
+    compression_type: Option<CompressionType>,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -743,6 +753,22 @@ impl SegmentBasedPolicy {
 )]
 pub struct TopicStorageConfig {
     pub segment_size: Option<u32>, // segment size
+}
+
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum CompressionType {
+    Gzip,
+    Snappy,
+    Lz4,
+    None,
+    Any,
+}
+
+impl Default for CompressionType {
+    fn default() -> Self {
+        CompressionType::Any
+    }
 }
 
 #[cfg(test)]

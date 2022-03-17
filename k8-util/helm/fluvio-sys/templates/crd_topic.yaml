@@ -137,6 +137,13 @@ spec:
                         timeInSeconds:
                           type: integer
                           minimum: 10
+                compressionType:
+                  type: string
+                  enum:
+                    - Any
+                    - Gzip
+                    - Snappy
+                    - Lz4
                 storage:
                   type: object
                   properties:

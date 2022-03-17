@@ -16,7 +16,7 @@ static DEFAULT_COMPRESSION_CODEC: Lazy<Compression> = Lazy::new(|| {
     let var_value =
         env::var("FLV_CLIENT_DEFAULT_COMPRESSION_CODEC").unwrap_or_else(|_| "none".to_string());
     let compression: Compression = var_value.parse().unwrap_or_else(|e| {
-        debug!(?e, "unknown compression format in FLV_CLIENT_DEFAULT_COMPRESSION_CODEC, using Compression::None");
+        debug!(?e, "unknown compression format in FLV_CLIENT_DEFAULT_COMPRESSION_CODEC, using Compression::None as default");
         Compression::None
     });
     compression
@@ -56,6 +56,8 @@ pub struct TopicProducerConfig {
     pub(crate) partitioner: Box<dyn Partitioner + Send + Sync>,
 
     /// Compression algorithm used by Fluvio producer to compress data.
+    /// If there is a topic level compression set and different than Any, this value will be ignored
+    /// and instead will be used topic level compression
     #[builder(default = "default_compression()")]
     pub(crate) compression: Compression,
 }

@@ -7,6 +7,8 @@ use async_lock::RwLock;
 use dataplane::ReplicaKey;
 use dataplane::record::Record;
 
+use fluvio_compression::Compression;
+use fluvio_sc_schema::topic::CompressionType;
 #[cfg(feature = "smartengine")]
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_types::PartitionId;
@@ -288,7 +290,15 @@ impl TopicProducer {
             .ok_or_else(|| FluvioError::TopicNotFound(topic.to_string()))?
             .spec;
         let partition_count = topic_spec.partitions();
-        let compression = config.compression;
+
+        let compression = match topic_spec.get_compression_type() {
+            None | Some(CompressionType::Any) => config.compression,
+            Some(CompressionType::Gzip) => Compression::Gzip,
+            Some(CompressionType::Snappy) => Compression::Snappy,
+            Some(CompressionType::Lz4) => Compression::Lz4,
+            Some(CompressionType::None) => Compression::None,
+        };
+
         let record_accumulator =
             RecordAccumulator::new(config.batch_size, partition_count, compression);
         let producer_pool = ProducerPool::shared(
