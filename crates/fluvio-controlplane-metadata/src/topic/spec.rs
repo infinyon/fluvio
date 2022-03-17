@@ -189,7 +189,7 @@ pub(crate) struct TopicSpecInner {
     cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
     storage: Option<TopicStorageConfig>,
-    #[fluvio(min_version = 5)]
+    #[fluvio(min_version = 6)]
     compression_type: Option<CompressionType>,
 }
 
