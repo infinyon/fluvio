@@ -291,13 +291,38 @@ impl TopicProducer {
             .spec;
         let partition_count = topic_spec.partitions();
 
-        let compression = match topic_spec.get_compression_type() {
-            None | Some(CompressionType::Any) => config.compression,
-            Some(CompressionType::Gzip) => Compression::Gzip,
-            Some(CompressionType::Snappy) => Compression::Snappy,
-            Some(CompressionType::Lz4) => Compression::Lz4,
-            Some(CompressionType::None) => Compression::None,
-        };
+        let compression =
+            match topic_spec.get_compression_type() {
+                None | Some(CompressionType::Any) => config.compression.unwrap_or_default(),
+                Some(CompressionType::Gzip) => match config.compression {
+                    Some(Compression::Gzip) | None => Compression::Gzip,
+                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        "Compression in the producer does not match with topic level compression"
+                            .to_string(),
+                    ))),
+                },
+                Some(CompressionType::Snappy) => match config.compression {
+                    Some(Compression::Snappy) | None => Compression::Snappy,
+                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        "Compression in the producer does not match with topic level compression"
+                            .to_string(),
+                    ))),
+                },
+                Some(CompressionType::Lz4) => match config.compression {
+                    Some(Compression::Snappy) | None => Compression::Snappy,
+                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        "Compression in the producer does not match with topic level compression"
+                            .to_string(),
+                    ))),
+                },
+                Some(CompressionType::None) => match config.compression {
+                    Some(Compression::Snappy) | None => Compression::Snappy,
+                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        "Compression in the producer does not match with topic level compression"
+                            .to_string(),
+                    ))),
+                },
+            };
 
         let record_accumulator =
             RecordAccumulator::new(config.batch_size, partition_count, compression);
