@@ -41,6 +41,7 @@ pub struct TopicProducerConfig {
     /// Compression algorithm used by Fluvio producer to compress data.
     /// If there is a topic level compression set and different than Any, this value will be ignored
     /// and instead will be used topic level compression
+    #[builder(setter(into, strip_option), default)]
     pub(crate) compression: Option<Compression>,
 }
 
