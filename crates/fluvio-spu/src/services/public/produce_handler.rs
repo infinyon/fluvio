@@ -97,7 +97,7 @@ async fn handle_produce_partition<R: BatchRecords>(
     let replica_metadata = match ctx.replica_localstore().spec(&replica_id) {
         Some(replica_metadata) => replica_metadata,
         None => {
-            debug!(%replica_id, "Replica not found");
+            error!(%replica_id, "Replica not found");
             partition_response.error_code = ErrorCode::TopicNotFound;
             return Ok(partition_response);
         }

@@ -40,6 +40,8 @@ async fn test_produce_basic() {
     let topic = "test_produce";
     let test = Replica::new((topic, 0), 5001, vec![5001]);
     let test_id = test.id.clone();
+    ctx.replica_localstore().sync_all(vec![test.clone()]);
+
     let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
         .await
         .expect("replica");
@@ -72,6 +74,7 @@ async fn test_produce_basic() {
             .send_and_receive(RequestMessage::new_request(produce_request))
             .await
             .expect("send offset");
+        println!("{:?}", produce_response);
 
         // Check base offset
         assert_eq!(produce_response.responses.len(), 1);
