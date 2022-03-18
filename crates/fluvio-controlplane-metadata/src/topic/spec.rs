@@ -758,16 +758,46 @@ pub struct TopicStorageConfig {
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CompressionType {
+    None,
     Gzip,
     Snappy,
     Lz4,
-    None,
     Any,
 }
 
 impl Default for CompressionType {
     fn default() -> Self {
         CompressionType::Any
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Invalid compression type in topic")]
+pub struct InvalidCompressionType;
+
+impl std::str::FromStr for CompressionType {
+    type Err = InvalidCompressionType;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(CompressionType::None),
+            "gzip" => Ok(CompressionType::Gzip),
+            "snappy" => Ok(CompressionType::Snappy),
+            "lz4" => Ok(CompressionType::Lz4),
+            "any" => Ok(CompressionType::Any),
+            _ => Err(InvalidCompressionType),
+        }
+    }
+}
+impl std::fmt::Display for CompressionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Self::None => write!(f, "none"),
+            Self::Gzip => write!(f, "gzip"),
+            Self::Snappy => write!(f, "snappy"),
+            Self::Lz4 => write!(f, "lz4"),
+            Self::Any => write!(f, "any"),
+        }
     }
 }
 
