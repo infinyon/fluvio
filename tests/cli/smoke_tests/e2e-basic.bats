@@ -68,9 +68,9 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_4" --compression-type gzip
     assert_success
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_5" 
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_5"
     assert_success
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_6"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_6" --compression-type any
     assert_success
 }
 
