@@ -75,7 +75,6 @@ async fn test_produce_basic() {
             .send_and_receive(RequestMessage::new_request(produce_request))
             .await
             .expect("send offset");
-        println!("{:?}", produce_response);
 
         // Check base offset
         assert_eq!(produce_response.responses.len(), 1);
@@ -186,7 +185,6 @@ async fn test_produce_invalid_compression() {
         .send_and_receive(RequestMessage::new_request(produce_request))
         .await
         .expect("send offset");
-    println!("{:?}", produce_response);
 
     // Check error code
     assert_eq!(produce_response.responses.len(), 1);
