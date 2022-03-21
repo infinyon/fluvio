@@ -17,6 +17,8 @@ use fluvio::metadata::topic::CleanupPolicy;
 use fluvio::metadata::topic::ReplicaSpec;
 use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
+use fluvio::metadata::topic::CompressionAlgorithm;
+
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 
 use fluvio::Fluvio;
@@ -143,6 +145,10 @@ impl CreateTopicOpt {
             }));
         }
 
+        if let Some(compression_type) = self.setting.compression_type {
+            topic_spec.set_compression_type(compression_type);
+        }
+
         if self.setting.segment_size.is_some() {
             let mut storage = TopicStorageConfig::default();
 
@@ -168,6 +174,10 @@ pub struct TopicConfigOpt {
     /// Segment size in bytes
     #[structopt(long, value_name = "bytes")]
     segment_size: Option<u32>,
+
+    /// Compression configuration for topic
+    #[structopt(long, value_name = "compression")]
+    compression_type: Option<CompressionAlgorithm>,
 }
 
 /// module to load partitions maps from file

@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.22 - UNRELEASED
+* Add topic level compression configuration ([#2249](https://github.com/infinyon/fluvio/issues/2249))
 
 ## Platform Version 0.9.21 - 2022-03-14
 * Make store time out configurable ([#2116](https://github.com/infinyon/fluvio/issues/2212))

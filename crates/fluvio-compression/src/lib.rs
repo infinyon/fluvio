@@ -86,3 +86,13 @@ impl Compression {
         }
     }
 }
+impl std::fmt::Display for Compression {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match *self {
+            Compression::None => write!(f, "none"),
+            Compression::Gzip => write!(f, "gzip"),
+            Compression::Snappy => write!(f, "snappy"),
+            Compression::Lz4 => write!(f, "lz4"),
+        }
+    }
+}

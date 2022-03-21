@@ -42,7 +42,14 @@ spec:
                   properties:
                     segmentSize:
                       type: integer
-                      minimum: 1024    
+                      minimum: 1024
+                compressionType:
+                  type: string
+                  enum:
+                    - Any
+                    - Gzip
+                    - Snappy
+                    - Lz4
             status:
               type: object
               x-kubernetes-preserve-unknown-fields: true

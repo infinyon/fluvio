@@ -123,6 +123,14 @@ impl TopicSpec {
         self.inner.cleanup_policy.as_ref()
     }
 
+    pub fn set_compression_type(&mut self, compression: CompressionAlgorithm) {
+        self.inner.compression_type = compression;
+    }
+
+    pub fn get_compression_type(&self) -> &CompressionAlgorithm {
+        &self.inner.compression_type
+    }
+
     pub fn get_storage(&self) -> Option<&TopicStorageConfig> {
         self.inner.storage.as_ref()
     }
@@ -181,6 +189,9 @@ pub(crate) struct TopicSpecInner {
     cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
     storage: Option<TopicStorageConfig>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
+    #[fluvio(min_version = 6)]
+    compression_type: CompressionAlgorithm,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -743,6 +754,52 @@ impl SegmentBasedPolicy {
 )]
 pub struct TopicStorageConfig {
     pub segment_size: Option<u32>, // segment size
+}
+
+#[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum CompressionAlgorithm {
+    None,
+    Gzip,
+    Snappy,
+    Lz4,
+    Any,
+}
+
+impl Default for CompressionAlgorithm {
+    fn default() -> Self {
+        CompressionAlgorithm::Any
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("Invalid compression type in topic")]
+pub struct InvalidCompressionAlgorithm;
+
+impl std::str::FromStr for CompressionAlgorithm {
+    type Err = InvalidCompressionAlgorithm;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "none" => Ok(CompressionAlgorithm::None),
+            "gzip" => Ok(CompressionAlgorithm::Gzip),
+            "snappy" => Ok(CompressionAlgorithm::Snappy),
+            "lz4" => Ok(CompressionAlgorithm::Lz4),
+            "any" => Ok(CompressionAlgorithm::Any),
+            _ => Err(InvalidCompressionAlgorithm),
+        }
+    }
+}
+impl std::fmt::Display for CompressionAlgorithm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        match self {
+            Self::None => write!(f, "none"),
+            Self::Gzip => write!(f, "gzip"),
+            Self::Snappy => write!(f, "snappy"),
+            Self::Lz4 => write!(f, "lz4"),
+            Self::Any => write!(f, "any"),
+        }
+    }
 }
 
 #[cfg(test)]

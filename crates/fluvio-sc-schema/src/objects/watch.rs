@@ -26,7 +26,7 @@ pub struct WatchRequest<S: AdminSpec> {
 
 impl Request for ObjectApiWatchRequest {
     const API_KEY: u16 = AdminPublicApiKey::Watch as u16;
-    const DEFAULT_API_VERSION: i16 = 4;
+    const DEFAULT_API_VERSION: i16 = 6;
     type Response = ObjectApiWatchResponse;
 }
 

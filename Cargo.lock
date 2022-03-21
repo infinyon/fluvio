@@ -1522,7 +1522,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1751,7 +1751,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-compression"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "flate2",
  "lz4_flex",
@@ -1774,7 +1774,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.14.0"
+version = "0.15.0"
 dependencies = [
  "async-trait",
  "base64",
@@ -1972,7 +1972,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.12.3"
+version = "0.13.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2004,7 +2004,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.2.6"
+version = "0.2.7"
 dependencies = [
  "anyhow",
  "flate2",

@@ -1,6 +1,8 @@
-use std::io::Error;
+use std::io::{Error, ErrorKind};
 
 use dataplane::batch::BatchRecords;
+use fluvio::Compression;
+use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
 use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
 use tracing::instrument;
@@ -74,7 +76,7 @@ async fn handle_produce_topic(
 async fn handle_produce_partition<R: BatchRecords>(
     ctx: &DefaultSharedGlobalContext,
     replica_id: ReplicaKey,
-    mut partition_request: PartitionProduceData<RecordSet<R>>,
+    partition_request: PartitionProduceData<RecordSet<R>>,
 ) -> Result<PartitionProduceResponse, Error> {
     trace!("Handling produce request for partition:");
 
@@ -92,8 +94,24 @@ async fn handle_produce_partition<R: BatchRecords>(
         }
     };
 
+    let replica_metadata = match ctx.replica_localstore().spec(&replica_id) {
+        Some(replica_metadata) => replica_metadata,
+        None => {
+            error!(%replica_id, "Replica not found");
+            partition_response.error_code = ErrorCode::TopicNotFound;
+            return Ok(partition_response);
+        }
+    };
+
+    let mut records = partition_request.records;
+    if validate_records(&records, replica_metadata.compression_type).is_err() {
+        error!(%replica_id, "Compression in batch not supported by this topic");
+        partition_response.error_code = ErrorCode::CompressionError;
+        return Ok(partition_response);
+    }
+
     let write_result = leader_state
-        .write_record_set(&mut partition_request.records, ctx.follower_notifier())
+        .write_record_set(&mut records, ctx.follower_notifier())
         .await;
 
     match write_result {
@@ -112,4 +130,31 @@ async fn handle_produce_partition<R: BatchRecords>(
     }
 
     Ok(partition_response)
+}
+
+fn validate_records<R: BatchRecords>(
+    records: &RecordSet<R>,
+    compression: CompressionAlgorithm,
+) -> Result<(), Error> {
+    if records.batches.iter().all(|batch| {
+        let batch_compression = if let Ok(compression) = batch.get_compression() {
+            compression
+        } else {
+            return false;
+        };
+        match compression {
+            CompressionAlgorithm::Any => true,
+            CompressionAlgorithm::None => batch_compression == Compression::None,
+            CompressionAlgorithm::Gzip => batch_compression == Compression::Gzip,
+            CompressionAlgorithm::Snappy => batch_compression == Compression::Snappy,
+            CompressionAlgorithm::Lz4 => batch_compression == Compression::Lz4,
+        }
+    }) {
+        Ok(())
+    } else {
+        Err(Error::new(
+            ErrorKind::Other,
+            "Compression not supported by topic",
+        ))
+    }
 }
