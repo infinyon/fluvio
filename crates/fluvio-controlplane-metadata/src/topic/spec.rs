@@ -124,11 +124,11 @@ impl TopicSpec {
     }
 
     pub fn set_compression_type(&mut self, compression: CompressionAlgorithm) {
-        self.inner.compression_type = Some(compression);
+        self.inner.compression_type = compression;
     }
 
-    pub fn get_compression_type(&self) -> Option<&CompressionAlgorithm> {
-        self.inner.compression_type.as_ref()
+    pub fn get_compression_type(&self) -> &CompressionAlgorithm {
+        &self.inner.compression_type
     }
 
     pub fn get_storage(&self) -> Option<&TopicStorageConfig> {
@@ -189,8 +189,9 @@ pub(crate) struct TopicSpecInner {
     cleanup_policy: Option<CleanupPolicy>,
     #[fluvio(min_version = 4)]
     storage: Option<TopicStorageConfig>,
+    #[cfg_attr(feature = "use_serde", serde(default))]
     #[fluvio(min_version = 6)]
-    compression_type: Option<CompressionAlgorithm>,
+    compression_type: CompressionAlgorithm,
 }
 
 impl From<ReplicaSpec> for TopicSpec {

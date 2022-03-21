@@ -109,7 +109,7 @@ mod display {
                         c -> topic.partitions_display(),
                         c -> topic.replication_factor_display(),
                         c -> format_duration(Duration::from_secs(topic.retention_secs() as u64)),
-                        c -> topic.get_compression_type().cloned().unwrap_or_default(),
+                        c -> topic.get_compression_type(),
                         c -> metadata.status.resolution.to_string(),
                         l -> metadata.status.reason
                     ]

@@ -150,7 +150,7 @@ async fn test_produce_invalid_compression() {
         MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
     let topic = "test_produce";
     let mut test = Replica::new((topic, 0), 5001, vec![5001]);
-    test.compression_type = Some(CompressionAlgorithm::Gzip);
+    test.compression_type = CompressionAlgorithm::Gzip;
     let test_id = test.id.clone();
     ctx.replica_localstore().sync_all(vec![test.clone()]);
 

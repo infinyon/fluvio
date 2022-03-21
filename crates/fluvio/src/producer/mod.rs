@@ -293,26 +293,26 @@ impl TopicProducer {
 
         let compression =
             match topic_spec.get_compression_type() {
-                None | Some(CompressionAlgorithm::Any) => config.compression.unwrap_or_default(),
-                Some(CompressionAlgorithm::Gzip) => match config.compression {
+                CompressionAlgorithm::Any => config.compression.unwrap_or_default(),
+                CompressionAlgorithm::Gzip => match config.compression {
                     Some(Compression::Gzip) | None => Compression::Gzip,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({}) does not match with topic level compression (gzip)", compression_config),
                     ))),
                 },
-                Some(CompressionAlgorithm::Snappy) => match config.compression {
+                CompressionAlgorithm::Snappy => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({}) does not match with topic level compression (snappy)", compression_config),
                     ))),
                 },
-                Some(CompressionAlgorithm::Lz4) => match config.compression {
+                CompressionAlgorithm::Lz4 => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({}) does not match with topic level compression (lz4)", compression_config),
                     ))),
                 },
-                Some(CompressionAlgorithm::None) => match config.compression {
+            CompressionAlgorithm::None => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({}) does not match with topic level compression (no compression)", compression_config)

@@ -21,7 +21,7 @@ pub struct Replica {
     pub cleanup_policy: Option<CleanupPolicy>,
     pub storage: Option<TopicStorageConfig>,
     #[fluvio(min_version = 6)]
-    pub compression_type: Option<CompressionAlgorithm>,
+    pub compression_type: CompressionAlgorithm,
 }
 
 impl Replica {

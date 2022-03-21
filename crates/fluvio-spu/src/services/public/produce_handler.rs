@@ -104,12 +104,7 @@ async fn handle_produce_partition<R: BatchRecords>(
     };
 
     let mut records = partition_request.records;
-    if validate_records(
-        &records,
-        replica_metadata.compression_type.unwrap_or_default(),
-    )
-    .is_err()
-    {
+    if validate_records(&records, replica_metadata.compression_type).is_err() {
         error!(%replica_id, "Compression in batch not supported by this topic");
         partition_response.error_code = ErrorCode::CompressionError;
         return Ok(partition_response);
