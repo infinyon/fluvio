@@ -62,13 +62,13 @@ teardown_file() {
     debug_msg "topic: $TOPIC_NAME"
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
     assert_success
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_2"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_2" --compression-type snappy 
     assert_success
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_3"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_3" --compression-type lz4
     assert_success
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_4"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_4" --compression-type gzip
     assert_success
-    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_5"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_5" 
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_6"
     assert_success

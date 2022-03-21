@@ -39,8 +39,8 @@ pub struct TopicProducerConfig {
     pub(crate) partitioner: Box<dyn Partitioner + Send + Sync>,
 
     /// Compression algorithm used by Fluvio producer to compress data.
-    /// If there is a topic level compression set and different than Any, this value will be ignored
-    /// and instead will be used topic level compression
+    /// If there is a topic level compression and it is not compatible with this setting, the producer
+    /// initialization will fail.
     #[builder(setter(into, strip_option), default)]
     pub(crate) compression: Option<Compression>,
 }
