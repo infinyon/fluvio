@@ -7,7 +7,7 @@ use dataplane::{
     api::RequestMessage,
     ErrorCode,
 };
-use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionType};
+use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
 use fluvio_future::timer::sleep;
 use fluvio_socket::{MultiplexerSocket, FluvioSocket};
 use flv_util::fixture::ensure_clean_dir;
@@ -150,7 +150,7 @@ async fn test_produce_invalid_compression() {
         MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
     let topic = "test_produce";
     let mut test = Replica::new((topic, 0), 5001, vec![5001]);
-    test.compression_type = Some(CompressionType::Gzip);
+    test.compression_type = Some(CompressionAlgorithm::Gzip);
     let test_id = test.id.clone();
     ctx.replica_localstore().sync_all(vec![test.clone()]);
 

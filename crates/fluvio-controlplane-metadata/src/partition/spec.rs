@@ -7,7 +7,7 @@
 use fluvio_types::SpuId;
 use dataplane::core::{Encoder, Decoder};
 
-use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec, CompressionType};
+use crate::topic::{CleanupPolicy, TopicStorageConfig, TopicSpec, CompressionAlgorithm};
 
 /// Spec for Partition
 /// Each partition has replicas spread among SPU
@@ -26,7 +26,7 @@ pub struct PartitionSpec {
     #[fluvio(min_version = 4)]
     pub storage: Option<TopicStorageConfig>,
     #[fluvio(min_version = 6)]
-    pub compression_type: Option<CompressionType>,
+    pub compression_type: Option<CompressionAlgorithm>,
 }
 
 impl PartitionSpec {

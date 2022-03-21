@@ -123,11 +123,11 @@ impl TopicSpec {
         self.inner.cleanup_policy.as_ref()
     }
 
-    pub fn set_compression_type(&mut self, compression: CompressionType) {
+    pub fn set_compression_type(&mut self, compression: CompressionAlgorithm) {
         self.inner.compression_type = Some(compression);
     }
 
-    pub fn get_compression_type(&self) -> Option<&CompressionType> {
+    pub fn get_compression_type(&self) -> Option<&CompressionAlgorithm> {
         self.inner.compression_type.as_ref()
     }
 
@@ -190,7 +190,7 @@ pub(crate) struct TopicSpecInner {
     #[fluvio(min_version = 4)]
     storage: Option<TopicStorageConfig>,
     #[fluvio(min_version = 6)]
-    compression_type: Option<CompressionType>,
+    compression_type: Option<CompressionAlgorithm>,
 }
 
 impl From<ReplicaSpec> for TopicSpec {
@@ -757,7 +757,7 @@ pub struct TopicStorageConfig {
 
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "use_serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum CompressionType {
+pub enum CompressionAlgorithm {
     None,
     Gzip,
     Snappy,
@@ -765,31 +765,31 @@ pub enum CompressionType {
     Any,
 }
 
-impl Default for CompressionType {
+impl Default for CompressionAlgorithm {
     fn default() -> Self {
-        CompressionType::Any
+        CompressionAlgorithm::Any
     }
 }
 
 #[derive(Debug, thiserror::Error)]
 #[error("Invalid compression type in topic")]
-pub struct InvalidCompressionType;
+pub struct InvalidCompressionAlgorithm;
 
-impl std::str::FromStr for CompressionType {
-    type Err = InvalidCompressionType;
+impl std::str::FromStr for CompressionAlgorithm {
+    type Err = InvalidCompressionAlgorithm;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "none" => Ok(CompressionType::None),
-            "gzip" => Ok(CompressionType::Gzip),
-            "snappy" => Ok(CompressionType::Snappy),
-            "lz4" => Ok(CompressionType::Lz4),
-            "any" => Ok(CompressionType::Any),
-            _ => Err(InvalidCompressionType),
+            "none" => Ok(CompressionAlgorithm::None),
+            "gzip" => Ok(CompressionAlgorithm::Gzip),
+            "snappy" => Ok(CompressionAlgorithm::Snappy),
+            "lz4" => Ok(CompressionAlgorithm::Lz4),
+            "any" => Ok(CompressionAlgorithm::Any),
+            _ => Err(InvalidCompressionAlgorithm),
         }
     }
 }
-impl std::fmt::Display for CompressionType {
+impl std::fmt::Display for CompressionAlgorithm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         match self {
             Self::None => write!(f, "none"),

@@ -8,7 +8,7 @@ use crate::partition::ReplicaKey;
 use crate::core::{MetadataItem};
 use crate::store::MetadataStoreObject;
 use crate::partition::PartitionSpec;
-use crate::topic::{CleanupPolicy, TopicStorageConfig, CompressionType};
+use crate::topic::{CleanupPolicy, TopicStorageConfig, CompressionAlgorithm};
 use super::store::*;
 
 /// Metadata about Replica send from SC
@@ -21,7 +21,7 @@ pub struct Replica {
     pub cleanup_policy: Option<CleanupPolicy>,
     pub storage: Option<TopicStorageConfig>,
     #[fluvio(min_version = 6)]
-    pub compression_type: Option<CompressionType>,
+    pub compression_type: Option<CompressionAlgorithm>,
 }
 
 impl Replica {

@@ -2,7 +2,7 @@ use std::io::{Error, ErrorKind};
 
 use dataplane::batch::BatchRecords;
 use fluvio::Compression;
-use fluvio_controlplane_metadata::topic::CompressionType;
+use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
 use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
 use tracing::instrument;
@@ -139,7 +139,7 @@ async fn handle_produce_partition<R: BatchRecords>(
 
 fn validate_records<R: BatchRecords>(
     records: &RecordSet<R>,
-    compression: CompressionType,
+    compression: CompressionAlgorithm,
 ) -> Result<(), Error> {
     if records.batches.iter().all(|batch| {
         let batch_compression = if let Ok(compression) = batch.get_compression() {
@@ -148,11 +148,11 @@ fn validate_records<R: BatchRecords>(
             return false;
         };
         match compression {
-            CompressionType::Any => true,
-            CompressionType::None => batch_compression == Compression::None,
-            CompressionType::Gzip => batch_compression == Compression::Gzip,
-            CompressionType::Snappy => batch_compression == Compression::Snappy,
-            CompressionType::Lz4 => batch_compression == Compression::Lz4,
+            CompressionAlgorithm::Any => true,
+            CompressionAlgorithm::None => batch_compression == Compression::None,
+            CompressionAlgorithm::Gzip => batch_compression == Compression::Gzip,
+            CompressionAlgorithm::Snappy => batch_compression == Compression::Snappy,
+            CompressionAlgorithm::Lz4 => batch_compression == Compression::Lz4,
         }
     }) {
         Ok(())

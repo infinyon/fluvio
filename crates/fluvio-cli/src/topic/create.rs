@@ -17,7 +17,7 @@ use fluvio::metadata::topic::CleanupPolicy;
 use fluvio::metadata::topic::ReplicaSpec;
 use fluvio::metadata::topic::SegmentBasedPolicy;
 use fluvio::metadata::topic::TopicStorageConfig;
-use fluvio::metadata::topic::CompressionType;
+use fluvio::metadata::topic::CompressionAlgorithm;
 
 use fluvio_sc_schema::topic::validate::valid_topic_name;
 
@@ -177,7 +177,7 @@ pub struct TopicConfigOpt {
 
     /// Compression configuration for topic
     #[structopt(long, value_name = "compression")]
-    compression_type: Option<CompressionType>,
+    compression_type: Option<CompressionAlgorithm>,
 }
 
 /// module to load partitions maps from file

@@ -8,7 +8,7 @@ use dataplane::ReplicaKey;
 use dataplane::record::Record;
 
 use fluvio_compression::Compression;
-use fluvio_sc_schema::topic::CompressionType;
+use fluvio_sc_schema::topic::CompressionAlgorithm;
 #[cfg(feature = "smartengine")]
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_types::PartitionId;
@@ -293,33 +293,30 @@ impl TopicProducer {
 
         let compression =
             match topic_spec.get_compression_type() {
-                None | Some(CompressionType::Any) => config.compression.unwrap_or_default(),
-                Some(CompressionType::Gzip) => match config.compression {
+                None | Some(CompressionAlgorithm::Any) => config.compression.unwrap_or_default(),
+                Some(CompressionAlgorithm::Gzip) => match config.compression {
                     Some(Compression::Gzip) | None => Compression::Gzip,
-                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        "Compression in the producer does not match with topic level compression"
-                            .to_string(),
+                    Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        format!("Compression in the producer ({}) does not match with topic level compression (gzip)", compression_config),
                     ))),
                 },
-                Some(CompressionType::Snappy) => match config.compression {
+                Some(CompressionAlgorithm::Snappy) => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
-                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        "Compression in the producer does not match with topic level compression"
-                            .to_string(),
+                    Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        format!("Compression in the producer ({}) does not match with topic level compression (snappy)", compression_config),
                     ))),
                 },
-                Some(CompressionType::Lz4) => match config.compression {
+                Some(CompressionAlgorithm::Lz4) => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
-                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        "Compression in the producer does not match with topic level compression"
-                            .to_string(),
+                    Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        format!("Compression in the producer ({}) does not match with topic level compression (lz4)", compression_config),
                     ))),
                 },
-                Some(CompressionType::None) => match config.compression {
+                Some(CompressionAlgorithm::None) => match config.compression {
                     Some(Compression::Snappy) | None => Compression::Snappy,
-                    _ => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
-                        "Compression in the producer does not match with topic level compression"
-                            .to_string(),
+                    Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
+                        format!("Compression in the producer ({}) does not match with topic level compression (no compression)", compression_config)
+
                     ))),
                 },
             };
