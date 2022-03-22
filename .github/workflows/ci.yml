@@ -1061,8 +1061,8 @@ jobs:
         producer_linger_ms: [10]
         consumer: [1, 25]
         topic: [1, 10]
-        topic_segment_bytes: [1000000]  # 1MB
-        topic_retention: [30s]
+        topic_segment_bytes: [500000]  # 500KB
+        topic_retention: [15s]
     env:
       K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
