@@ -3,6 +3,8 @@ use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
 use structopt::StructOpt;
 use tracing::error;
+use std::time::Duration;
+use humantime::parse_duration;
 
 use fluvio::{Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey};
 use fluvio_types::print_cli_ok;
@@ -48,6 +50,15 @@ pub struct ProduceOpt {
     /// Path to a file to produce to the topic. If absent, producer will read stdin.
     #[structopt(short, long)]
     pub file: Option<PathBuf>,
+
+    /// Time to wait before sending
+    /// Ex: '150ms', '20s'
+    #[structopt(long, parse(try_from_str = parse_duration))]
+    pub linger: Option<Duration>,
+
+    /// Max amount of bytes accumulated before sending
+    #[structopt(long)]
+    pub batch_size: Option<usize>,
 }
 
 fn validate_key_separator(separator: String) -> std::result::Result<(), String> {
@@ -67,8 +78,23 @@ impl ProduceOpt {
             Default::default()
         };
 
+        // Compression
         let config_builder = if let Some(compression) = self.compression {
             config_builder.compression(compression)
+        } else {
+            config_builder
+        };
+
+        // Linger
+        let config_builder = if let Some(linger) = self.linger {
+            config_builder.linger(linger)
+        } else {
+            config_builder
+        };
+
+        // Batch size
+        let config_builder = if let Some(batch_size) = self.batch_size {
+            config_builder.batch_size(batch_size)
         } else {
             config_builder
         };

@@ -33,6 +33,14 @@ setup_file() {
     export TOPIC_NAME_6
     debug_msg "Topic name: $TOPIC_NAME_6"
 
+    TOPIC_NAME_7=$(random_string)
+    export TOPIC_NAME_7
+    debug_msg "Topic name: $TOPIC_NAME_7"
+
+    TOPIC_NAME_8=$(random_string)
+    export TOPIC_NAME_8
+    debug_msg "Topic name: $TOPIC_NAME_8"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -51,6 +59,12 @@ setup_file() {
 
     LZ4_MESSAGE="$MESSAGE-LZ4"
     export LZ4_MESSAGE
+
+    LINGER_MESSAGE="$MESSAGE-LINGER"
+    export LINGER_MESSAGE
+
+    BATCH_MESSAGE="$MESSAGE-BATCH_MESSAGE"
+    export BATCH_MESSAGE
 }
 
 teardown_file() {
@@ -72,6 +86,10 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_6" --compression-type any
     assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_7"
+    assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_8"
+    assert_success
 }
 
 # Produce message 
@@ -82,6 +100,8 @@ teardown_file() {
     run bash -c 'echo -e "$GZIP_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_4" --compression gzip'
     run bash -c 'echo -e "$SNAPPY_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_5" --compression snappy'
     run bash -c 'echo -e "$LZ4_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_6" --compression lz4'
+    run bash -c 'echo -e "$LINGER_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_7" --linger 0s'
+    run bash -c 'echo -e "$BATCH_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_8" --batch-size 100'
     assert_success
 }
 
