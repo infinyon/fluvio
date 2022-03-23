@@ -1054,7 +1054,7 @@ jobs:
        # run: [r1,r2,r3,r4,r5,r6,r7,r8,r9]
         binary: [dev]
 
-        test_run_time: [1h]
+        test_run_time: [30m]
         producer: [1, 25]
         producer_record_bytes: [2000] # 2KB
         producer_batch_bytes: [10000] # 10KB
