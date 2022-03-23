@@ -7,7 +7,7 @@ use crate::tests::smoke::consume::validate_consume_message_api;
 use std::any::Any;
 use std::fmt;
 use std::path::PathBuf;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use std::fs::File;
 use std::io::Read;
 use std::collections::BTreeMap;
@@ -207,6 +207,7 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
         if let Some(ref table_format_config) = smoke_test_case.option.table_format_config {
             let table_format_process = async_process!(
                 async {
+                    let time = SystemTime::now();
                     let config = TableFormatConfig::from_file(table_format_config)
                         .expect("TableFormat config load failed");
                     let table_format_spec: TableFormatSpec = config.into();
@@ -232,7 +233,11 @@ pub fn smoke(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
                         .delete::<TableFormatSpec, _>(name.clone())
                         .await
                         .expect("TableFormat delete failed");
-                    println!("tableformat \"{}\" deleted", &name);
+                    println!(
+                        "tableformat \"{}\" deleted, took: {} seconds",
+                        &name,
+                        time.elapsed().unwrap().as_secs()
+                    );
                 },
                 "tableformat"
             );
