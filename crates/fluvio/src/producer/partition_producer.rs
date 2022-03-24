@@ -217,8 +217,14 @@ impl PartitionProducer {
         {
             let base_offset = response.partitions[0].base_offset;
             let fluvio_error = response.partitions[0].error_code.clone();
-            if let Err(_e) = batch_notifier.send((base_offset, fluvio_error)).await {
+            if let Err(_e) = batch_notifier
+                .send((base_offset, fluvio_error.clone()))
+                .await
+            {
                 trace!("Failed to notify produce result because receiver was dropped");
+            }
+            if fluvio_error.is_error() {
+                return Err(FluvioError::from(ProducerError::from(fluvio_error)));
             }
         }
 
