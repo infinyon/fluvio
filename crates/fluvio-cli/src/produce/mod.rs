@@ -1,12 +1,16 @@
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
+use futures::future::join_all;
 use structopt::StructOpt;
 use tracing::error;
 use std::time::Duration;
 use humantime::parse_duration;
 
-use fluvio::{Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey};
+use fluvio::{
+    Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
+    ProduceOutput,
+};
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
@@ -114,7 +118,8 @@ impl ProduceOpt {
                     buffer
                 }
             };
-            producer.send(RecordKey::NULL, buffer).await?;
+            let produce_output = producer.send(RecordKey::NULL, buffer).await?;
+            produce_output.wait().await?;
         } else {
             // Read input line-by-line and send as individual records
             self.produce_lines(&producer).await?;
@@ -132,9 +137,23 @@ impl ProduceOpt {
         match &self.file {
             Some(path) => {
                 let reader = BufReader::new(File::open(path)?);
+                let mut produce_outputs = vec![];
                 for line in reader.lines().filter_map(|it| it.ok()) {
-                    self.produce_line(producer, &line).await?;
+                    let produce_output = self.produce_line(producer, &line).await?;
+                    if let Some(produce_output) = produce_output {
+                        produce_outputs.push(produce_output);
+                    }
                 }
+
+                // ensure all records were properly sent
+                join_all(
+                    produce_outputs
+                        .into_iter()
+                        .map(|produce_output| produce_output.wait()),
+                )
+                .await
+                .into_iter()
+                .collect::<Result<Vec<_>, _>>()?;
             }
             None => {
                 let mut lines = BufReader::new(std::io::stdin()).lines();
@@ -142,7 +161,11 @@ impl ProduceOpt {
                     eprint!("> ");
                 }
                 while let Some(Ok(line)) = lines.next() {
-                    self.produce_line(producer, &line).await?;
+                    let produce_output = self.produce_line(producer, &line).await?;
+                    if let Some(produce_output) = produce_output {
+                        // ensure it was properly sent
+                        produce_output.wait().await?;
+                    }
                     if self.interactive_mode() {
                         print_cli_ok!();
                         eprint!("> ");
@@ -154,14 +177,17 @@ impl ProduceOpt {
         Ok(())
     }
 
-    async fn produce_line(&self, producer: &TopicProducer, line: &str) -> Result<()> {
-        if let Some(separator) = &self.key_separator {
-            self.produce_key_value(producer, line, separator).await?;
+    async fn produce_line(
+        &self,
+        producer: &TopicProducer,
+        line: &str,
+    ) -> Result<Option<ProduceOutput>> {
+        let produce_output = if let Some(separator) = &self.key_separator {
+            self.produce_key_value(producer, line, separator).await?
         } else {
-            producer.send(RecordKey::NULL, line).await?;
-        }
-
-        Ok(())
+            Some(producer.send(RecordKey::NULL, line).await?)
+        };
+        Ok(produce_output)
     }
 
     async fn produce_key_value(
@@ -169,7 +195,7 @@ impl ProduceOpt {
         producer: &TopicProducer,
         line: &str,
         separator: &str,
-    ) -> Result<()> {
+    ) -> Result<Option<ProduceOutput>> {
         let maybe_kv = line.split_once(separator);
         let (key, value) = match maybe_kv {
             Some(kv) => kv,
@@ -178,7 +204,7 @@ impl ProduceOpt {
                     "Failed to find separator '{}' in record, skipping: '{}'",
                     separator, line
                 );
-                return Ok(());
+                return Ok(None);
             }
         };
 
@@ -186,8 +212,7 @@ impl ProduceOpt {
             println!("[{}] {}", key, value);
         }
 
-        producer.send(key, value).await?;
-        Ok(())
+        Ok(Some(producer.send(key, value).await?))
     }
 
     fn interactive_mode(&self) -> bool {
