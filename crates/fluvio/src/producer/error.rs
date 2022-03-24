@@ -19,7 +19,7 @@ pub enum ProducerError {
     #[error("Internal error: {0}")]
     Internal(String),
     #[error("Producer received an error code: {0}")]
-    SpuErrorCode(ErrorCode),
+    SpuErrorCode(#[from] ErrorCode),
     #[error("Invalid configuration in producer: {0}")]
     InvalidConfiguration(String),
 }
