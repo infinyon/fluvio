@@ -307,13 +307,13 @@ impl TopicProducer {
                     ))),
                 },
                 CompressionAlgorithm::Lz4 => match config.compression {
-                    Some(Compression::Snappy) | None => Compression::Snappy,
+                    Some(Compression::Lz4) | None => Compression::Lz4,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({}) does not match with topic level compression (lz4)", compression_config),
                     ))),
                 },
             CompressionAlgorithm::None => match config.compression {
-                    Some(Compression::Snappy) | None => Compression::Snappy,
+                    Some(Compression::None) | None => Compression::None,
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({}) does not match with topic level compression (no compression)", compression_config)
 
