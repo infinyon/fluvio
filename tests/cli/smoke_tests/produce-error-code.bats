@@ -12,22 +12,36 @@ setup_file() {
     TOPIC_NAME=$(random_string)
     export TOPIC_NAME
     debug_msg "Topic name: $TOPIC_NAME"
+
+    TOPIC_NAME_2=$(random_string)
+    export TOPIC_NAME_2
+    debug_msg "Topic name: $TOPIC_NAME_2"
 }
 
 teardown_file() {
     run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME"
+    run timeout 15s "$FLUVIO_BIN" topic delete "$TOPIC_NAME_2"
     run rm $TOPIC_NAME.txt
 }
 
 # Create topic
-@test "Create a topic SPU error code" {
+@test "Create topics for test" {
     debug_msg "topic: $TOPIC_NAME"
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME"
+
+    debug_msg "topic: $TOPIC_NAME_2"
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_2" --compression-type snappy
 }
 
-# Produce message 
+# This should faild due to batch too big
 @test "Produce message with SPU error code" {
     run bash -c "yes a | tr -d "\n" |head -c 10000000 > $TOPIC_NAME.txt"
     run bash -c 'timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 50000000 --raw --file $TOPIC_NAME.txt'
+    assert_failure
+}
+
+# This should fail due to wrong compression algorithm
+@test "Produce message with wrong compression algorithm" {
+    run bash -c 'echo abcdefgh | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_2" --compression lz4'
     assert_failure
 }
