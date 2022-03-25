@@ -20,7 +20,6 @@ pub struct Replica {
     pub is_being_deleted: bool,
     pub cleanup_policy: Option<CleanupPolicy>,
     pub storage: Option<TopicStorageConfig>,
-    #[fluvio(min_version = 6)]
     pub compression_type: CompressionAlgorithm,
 }
 
