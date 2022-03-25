@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.22 - UNRELEASED
+## Platform Version 0.9.23 - UNRELEASED
+
+## Platform Version 0.9.22 - 2022-03-25
 * Add topic level compression configuration ([#2249](https://github.com/infinyon/fluvio/issues/2249))
 * Add producer batch related options for `fluvio produce`([#2257](https://github.com/infinyon/fluvio/issues/2257))
 
