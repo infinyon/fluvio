@@ -33,8 +33,14 @@ async fn main() {
 }
 
 async fn produce() -> Result<(), fluvio::FluvioError> {
-    let config = ConfigFile::load(None).unwrap();
-    let fluvio_config = config.config().cluster.get("cloud").unwrap();
+    let config = ConfigFile::load(None)?;
+    let fluvio_config = config
+        .config()
+        .cluster
+        .get("cloud")
+        .ok_or(fluvio::FluvioError::Other(
+            "Error Loading cloud config file".to_string(),
+        ))?;
     let fluvio_connection = fluvio::Fluvio::connect_with_config(fluvio_config);
     let producer = fluvio_connection.await?.topic_producer("simple").await?;
 

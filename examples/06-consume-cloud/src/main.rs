@@ -45,11 +45,20 @@ async fn main() {
 async fn consume() -> Result<(), fluvio::FluvioError> {
     use futures_lite::StreamExt;
 
-    let config = ConfigFile::load(None).unwrap();
-    let fluvio_config = config.config().cluster.get("cloud").unwrap();
+    let config = ConfigFile::load(None)?;
+    let fluvio_config = config
+        .config()
+        .cluster
+        .get("cloud")
+        .ok_or(fluvio::FluvioError::Other(
+            "Error Loading cloud config file".to_string(),
+        ))?;
     let fluvio_connection = fluvio::Fluvio::connect_with_config(fluvio_config);
 
-    let consumer = fluvio_connection.await?.consumer(PartitionSelectionStrategy::All("simple".to_string())).await?;
+    let consumer = fluvio_connection
+        .await?
+        .consumer(PartitionSelectionStrategy::All("simple".to_string()))
+        .await?;
     let mut stream = consumer.stream(fluvio::Offset::beginning()).await?;
 
     while let Some(Ok(record)) = stream.next().await {
