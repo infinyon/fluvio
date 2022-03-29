@@ -7,6 +7,7 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
+use fluvio_types::defaults::STORAGE_MAX_BATCH_SIZE;
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
     LegacySmartModulePayload, SmartModuleWasmCompressed, WASM_MODULE_API, WASM_MODULE_V2_API,
@@ -576,7 +577,9 @@ mod publish_stream {
 static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     use std::env;
     let var_value = env::var("FLV_CLIENT_MAX_FETCH_BYTES").unwrap_or_default();
-    let max_bytes: i32 = var_value.parse().unwrap_or(1000000);
+    let max_bytes: i32 = var_value
+        .parse()
+        .unwrap_or_else(|_| STORAGE_MAX_BATCH_SIZE.try_into().unwrap_or(1048588));
     max_bytes
 });
 
