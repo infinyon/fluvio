@@ -12,7 +12,6 @@ mod objects;
 mod fixture;
 
 use k8_client::new_shared;
-use tracing::error;
 
 use crate::cli::ScOpt;
 
