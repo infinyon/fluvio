@@ -53,7 +53,7 @@ async fn consume() -> Result<(), fluvio::FluvioError> {
     let fluvio_config = config
         .config()
         .cluster
-        .get("cloud")// set cloud profile
+        .get("cloud") // set cloud profile
         .ok_or(fluvio::FluvioError::Other(
             "Error Loading cloud config file".to_string(),
         ))?;
