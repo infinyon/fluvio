@@ -11,7 +11,7 @@ spec:
     singular: topic
   versions: 
     - name: v1
-      served: true
+      served: false
       storage: false
       deprecated: true
       schema:
