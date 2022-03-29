@@ -1,7 +1,11 @@
-//! A minimal example showing how to produce messages on Fluvio
+//! A minimal example showing how to produce messages on Fluvio custom profile
 //!
-//! Before running this example, make sure you have created a topic
-//! named `simple` with the following command:
+//! Before running this example, make sure you are logged into infinyon cloud and have created a topic
+//! named `simple` with the following commands:
+//!
+//! ```text
+//! $ fluvio cloud login
+//! ```
 //!
 //! ```text
 //! $ fluvio topic create simple
@@ -10,7 +14,7 @@
 //! Run this example using the following:
 //!
 //! ```text
-//! $ cargo run --bin produce-cloud
+//! $ cargo run --bin produce-custom-profile
 //! Sent simple record: Hello, Fluvio!
 //! ```
 //!
@@ -37,7 +41,7 @@ async fn produce() -> Result<(), fluvio::FluvioError> {
     let fluvio_config = config
         .config()
         .cluster
-        .get("cloud")
+        .get("cloud")// set cloud profile
         .ok_or(fluvio::FluvioError::Other(
             "Error Loading cloud config file".to_string(),
         ))?;
