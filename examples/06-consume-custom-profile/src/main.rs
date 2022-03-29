@@ -15,7 +15,7 @@
 //! ```
 //!
 //! You will also need to send some messages to the topic. You can
-//! either run the `06-produce-cloud` example to send some messages,
+//! either run the `06-produce-custom-profile` example to send some messages,
 //! or you can use the following command:
 //!
 //! ```text
