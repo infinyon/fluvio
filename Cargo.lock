@@ -2194,7 +2194,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-stream-dispatcher"
-version = "0.7.2"
+version = "0.7.3"
 dependencies = [
  "async-channel",
  "async-rwlock",
