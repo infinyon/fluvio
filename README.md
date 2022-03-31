@@ -52,9 +52,6 @@ in Rust, built to make it easy to run real-time applications.
 - [Fluvio CLI docs](https://www.fluvio.io/cli/)
 - [Fluvio Architecture](https://www.fluvio.io/docs/architecture/overview/)
 
-## Release Status
-
-Fluvio is currently in Beta and is not ready to be used in production. Our CLI and APIs are also in rapid development and may experience technical issues at any time. If you are interested in participating in our Beta Customer program please email us support@infinyon.com.
 
 ## Contributing
 
