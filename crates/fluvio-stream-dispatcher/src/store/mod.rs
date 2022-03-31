@@ -248,7 +248,8 @@ mod context {
             let mut spec_listener = self.change_listener();
             let mut timer = sleep(timeout);
 
-            match self.sender.send(action.clone()).await {
+            let debug_action = action.to_string();
+            match self.sender.send(action).await {
                 Ok(_) => loop {
                     if let Some(new_value) = self.store.value(key).await {
                         if let Some(old_value) = &current_value {
@@ -268,7 +269,7 @@ mod context {
                         _ = &mut timer => {
                             return Err(IoError::new(
                                 ErrorKind::TimedOut,
-                                format!("store timed out: {:#?} for {:?} timer: {} ms", action, key, timeout.as_millis()),
+                                format!("store timed out: {}  timer: {} ms", debug_action, timeout.as_millis()),
                             ));
                         },
 
