@@ -84,7 +84,7 @@ mod output {
     impl TableOutputHandler for ListManagedConnectors {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "VERSION", "STATUS",]
+            row!["NAME", "TYPE", "VERSION", "STATUS",]
         }
 
         /// return errors in string format
@@ -100,6 +100,7 @@ mod output {
                     let spec = &r.spec;
                     Row::new(vec![
                         Cell::new_align(&r.name, Alignment::LEFT),
+                        Cell::new_align(&spec.type_.to_string(), Alignment::LEFT),
                         Cell::new_align(&spec.version(), Alignment::LEFT),
                         Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
                     ])
