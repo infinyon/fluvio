@@ -37,6 +37,8 @@ pub async fn produce_message_with_api(
     let produce_iteration = test_case.option.producer_iteration;
     let topic_name = test_case.environment.base_topic_name();
 
+    println!(">> start producing message: {{ topic_name }}");
+
     for r in 0..partition {
         let base_offset = *offsets.get(&topic_name).expect("offsets");
 
@@ -73,6 +75,8 @@ pub async fn produce_message_with_api(
         }
         producer.flush().await.expect("flush");
     }
+
+    println!("<< produce message completed");
 }
 
 mod cli {

@@ -73,6 +73,8 @@ pub async fn validate_consume_message_api(
     let topic_name = test_case.environment.base_topic_name();
     let base_offset = offsets.get(&topic_name).expect("offsets");
 
+    println!(">> starting consume validation topic: {}", topic_name);
+
     for i in 0..partition {
         println!(
             "starting fetch stream for: {} base offset: {}, expected new records: {}",
