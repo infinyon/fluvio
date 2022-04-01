@@ -1,6 +1,6 @@
 use std::sync::Arc;
 use serde::Serialize;
-use structopt::StructOpt;
+use clap::Parser;
 use prettytable::{Row, row, cell};
 
 use crate::Result;
@@ -8,9 +8,9 @@ use fluvio::config::{ConfigFile, Config, TlsPolicy};
 use fluvio_extension_common::{Terminal, OutputFormat};
 use fluvio_extension_common::output::{TableOutputHandler, OutputType};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

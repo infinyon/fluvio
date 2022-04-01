@@ -5,7 +5,7 @@
 //!
 
 use std::path::PathBuf;
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::debug;
 
 use fluvio::Fluvio;
@@ -18,10 +18,10 @@ use crate::CliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, Parser, Default)]
 pub struct CreateTableFormatOpt {
     /// The path to the TableFormat config
-    #[structopt(short, long, parse(from_os_str))]
+    #[clap(short, long, parse(from_os_str))]
     pub config: PathBuf,
 }
 

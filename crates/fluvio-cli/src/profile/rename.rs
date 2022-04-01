@@ -1,9 +1,9 @@
-use structopt::StructOpt;
+use clap::Parser;
 use fluvio::config::ConfigFile;
 
 use crate::Result;
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct RenameOpt {
     /// The name of the profile to rename
     pub from: String,

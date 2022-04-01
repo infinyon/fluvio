@@ -4,21 +4,21 @@
 //! CLI tree to logs for managed connectors
 //!
 use std::process::Command;
-use structopt::StructOpt;
+use clap::Parser;
 use crate::CliError;
 
 // -----------------------------------
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct LogsManagedConnectorOpt {
     /// The name of the connector to view the logs
-    #[structopt(value_name = "name")]
+    #[clap(value_name = "name")]
     name: String,
 
     /// Follow the logs
-    #[structopt(long, short)]
+    #[clap(long, short)]
     pub follow: bool,
 }
 

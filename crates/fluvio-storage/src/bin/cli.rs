@@ -1,7 +1,7 @@
 use std::{path::PathBuf};
 
 use dataplane::Offset;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_future::task::run_block_on;
 use fluvio_storage::{
@@ -16,23 +16,23 @@ use fluvio_storage::records::FileRecords;
 /// Bunch of storage utilities:
 ///
 /// validation: `cargo run --bin storage-cli --features=cli --release validate ~/.fluvio/data/spu-logs-5001/longevity-0 --skip-errors=false `
-#[derive(Debug, StructOpt)]
-#[structopt(name = "storage", about = "Flavio Storage CLI")]
+#[derive(Debug, Parser)]
+#[clap(name = "storage", about = "Flavio Storage CLI")]
 enum Main {
-    #[structopt(name = "log")]
+    #[clap(name = "log")]
     Log(LogOpt),
 
-    #[structopt(name = "index")]
+    #[clap(name = "index")]
     Index(IndexOpt),
 
-    #[structopt(name = "validate")]
+    #[clap(name = "validate")]
     ValidateSegment(SegmentValidateOpt),
 }
 
 fn main() {
     fluvio_future::subscriber::init_logger();
 
-    let opt = Main::from_args();
+    let opt = Main::parse();
 
     let result = run_block_on(async {
         match opt {
@@ -46,15 +46,15 @@ fn main() {
     };
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub(crate) struct LogOpt {
-    #[structopt(parse(from_os_str))]
+    #[clap(parse(from_os_str))]
     file_name: PathBuf,
 
-    #[structopt(long, default_value = "100")]
+    #[clap(long, default_value = "100")]
     max: usize,
 
-    #[structopt(long, default_value = "0")]
+    #[clap(long, default_value = "0")]
     min: usize,
 }
 
@@ -88,15 +88,15 @@ async fn dump_log(opt: LogOpt) -> Result<(), StorageError> {
     Ok(())
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub(crate) struct IndexOpt {
-    #[structopt(parse(from_os_str))]
+    #[clap(parse(from_os_str))]
     file_name: PathBuf,
 
-    #[structopt(long, default_value = "100")]
+    #[clap(long, default_value = "100")]
     max: usize,
 
-    #[structopt(long, default_value = "0")]
+    #[clap(long, default_value = "0")]
     min: usize,
 }
 
@@ -130,18 +130,18 @@ async fn dump_index(opt: IndexOpt) -> Result<(), StorageError> {
     Ok(())
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub(crate) struct SegmentValidateOpt {
-    #[structopt(parse(from_os_str))]
+    #[clap(parse(from_os_str))]
     file_name: PathBuf,
 
-    #[structopt(long, default_value = "0")]
+    #[clap(long, default_value = "0")]
     base_offset: Offset,
 
-    #[structopt(long)]
+    #[clap(long)]
     skip_errors: bool,
 
-    #[structopt(long)]
+    #[clap(long)]
     verbose: bool,
 }
 

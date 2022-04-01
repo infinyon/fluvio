@@ -1,12 +1,12 @@
 use semver::Version;
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::progress::ProgressBarFactory;
 use crate::{ClusterChecker};
 use crate::check::{SysChartCheck, ClusterCheckError};
 use crate::charts::ChartConfig;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct CheckOpt {}
 
 impl CheckOpt {

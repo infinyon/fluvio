@@ -1,10 +1,10 @@
-use structopt::StructOpt;
+use clap::Parser;
 use crate::Result;
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 
 /// Delete an existing SmartModule with the given name
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteSmartModuleOpt {
     name: String,
 }

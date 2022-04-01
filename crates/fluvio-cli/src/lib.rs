@@ -33,8 +33,9 @@ mod root {
     use std::process::Command;
 
     use fluvio_channel::LATEST_CHANNEL_NAME;
-    use structopt::clap::{AppSettings, Shell, App, SubCommand};
-    use structopt::StructOpt;
+    use clap::{Parser, AppSettings, Command as ClapCommand, IntoApp};
+    use clap_complete::{generate, Shell};
+
     use tracing::debug;
 
     use fluvio::Fluvio;
@@ -65,11 +66,11 @@ mod root {
     use super::Result;
 
     /// Fluvio Command Line Interface
-    #[derive(StructOpt, Debug)]
+    #[derive(Parser, Debug)]
     pub struct Root {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         opts: RootOpt,
-        #[structopt(subcommand)]
+        #[clap(subcommand)]
         command: RootCmd,
     }
 
@@ -80,27 +81,25 @@ mod root {
         }
     }
 
-    #[derive(StructOpt, Debug)]
+    #[derive(Parser, Debug)]
     struct RootOpt {
-        #[structopt(flatten)]
+        #[clap(flatten)]
         pub target: ClusterTarget,
     }
 
-    #[derive(Debug, StructOpt)]
-    #[structopt(
+    #[derive(Debug, Parser)]
+    #[clap(
         about = "Fluvio Command Line Interface",
         name = "fluvio",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
         max_term_width = 100,
-        global_settings = &[
-            AppSettings::VersionlessSubcommands,
-            AppSettings::DeriveDisplayOrder,
-            AppSettings::DisableVersion,
-        ]
-    )]
+        disable_version_flag = true,
+        // VersionlessSubcommands is now default behaviour. See https://github.com/clap-rs/clap/pull/2831
+        global_setting = AppSettings::DeriveDisplayOrder
+        )]
     enum RootCmd {
         /// All top-level commands that require a Fluvio client are bundled in `FluvioCmd`
-        #[structopt(flatten)]
+        #[clap(flatten)]
         #[cfg(feature = "consumer")]
         Fluvio(FluvioCmd),
 
@@ -110,13 +109,13 @@ mod root {
         /// This might correspond to Fluvio running on Minikube or in the Cloud.
         /// There is one "active" profile, which determines which cluster all of the
         /// Fluvio CLI commands interact with.
-        #[structopt(name = "profile")]
+        #[clap(name = "profile")]
         Profile(ProfileOpt),
 
         /// Install or uninstall Fluvio cluster
         ///
         #[cfg(feature = "k8s")]
-        #[structopt(name = "cluster")]
+        #[clap(subcommand, name = "cluster")]
         Cluster(Box<ClusterCmd>),
 
         /// Install Fluvio plugins
@@ -126,15 +125,15 @@ mod root {
         /// be invoked by running `fluvio foo`.
         ///
         /// This command allows you to install plugins from Fluvio's package registry.
-        #[structopt(name = "install")]
+        #[clap(name = "install")]
         Install(InstallOpt),
 
         /// Update the Fluvio CLI
-        #[structopt(name = "update")]
+        #[clap(name = "update")]
         Update(UpdateOpt),
 
         /// Print Fluvio version information
-        #[structopt(name = "version")]
+        #[clap(name = "version")]
         Version(VersionOpt),
 
         /// Generate command-line completions for Fluvio
@@ -145,35 +144,32 @@ mod root {
         ///
         /// $ fluvio completions bash > ~/fluvio_completions.sh
         /// {n}$ echo "source ~/fluvio_completions.sh" >> ~/.bashrc
-        #[structopt(name = "completions")]
+        #[clap(subcommand, name = "completions")]
         Completions(CompletionCmd),
 
         /// Generate metadata for Fluvio base CLI
-        #[structopt(
-            name = "metadata",
-            settings = &[AppSettings::Hidden]
-        )]
+        #[clap(name = "metadata", hide = true)]
         Metadata(MetadataOpt),
 
         /// Create and work with Managed Connectors
-        #[structopt(name = "connector")]
+        #[clap(subcommand, name = "connector")]
         ManagedConnector(ManagedConnectorCmd),
 
         /// Create a TableFormat display specification
         ///
         /// Used with the consumer output type `full_table` to
         /// describe how to render JSON data in a tabular form
-        #[structopt(name = "table-format", aliases = &["tf"])]
+        #[clap(subcommand, name = "table-format", aliases = &["tf"])]
         TableFormat(TableFormatCmd),
 
         /// Create and manage DerivedStreams
         ///
         /// Use topics, SmartModules or other DerivedStreams
         /// to build a customized stream to consume
-        #[structopt(name = "derived-stream", aliases = &["ds"])]
+        #[clap(subcommand, name = "derived-stream", aliases = &["ds"])]
         DerivedStream(DerivedStreamCmd),
 
-        #[structopt(external_subcommand)]
+        #[clap(external_subcommand)]
         External(Vec<String>),
     }
 
@@ -252,14 +248,14 @@ mod root {
     // For some reason this doc string is the one that gets used for the top-level help menu.
     // Please don't change it unless you want to update the top-level help menu "about".
     /// Fluvio command-line interface
-    #[derive(StructOpt, Debug)]
+    #[derive(Parser, Debug)]
     pub enum FluvioCmd {
         /// Read messages from a topic/partition
-        #[structopt(name = "consume")]
+        #[clap(name = "consume")]
         Consume(Box<ConsumeOpt>),
 
         /// Write messages to a topic/partition
-        #[structopt(name = "produce")]
+        #[clap(name = "produce")]
         Produce(ProduceOpt),
 
         /// Manage and view Topics
@@ -268,7 +264,7 @@ mod root {
         /// are related to each other. Similar to the role of tables in a relational
         /// database, the names and contents of Topics will typically reflect the
         /// structure of the application domain they are used for.
-        #[structopt(name = "topic")]
+        #[clap(subcommand, name = "topic")]
         Topic(TopicCmd),
 
         /// Manage and view Partitions
@@ -278,13 +274,13 @@ mod root {
         /// partitions may be processed by separate SPUs on different computers. By
         /// dividing the load of a Topic evenly among partitions, you can increase the
         /// total throughput of the Topic.
-        #[structopt(name = "partition")]
+        #[clap(subcommand, name = "partition")]
         Partition(PartitionCmd),
 
         /// Create and manage SmartModules
         ///
         /// SmartModules are compiled WASM modules used to create SmartModules.
-        #[structopt(name = "smart-module", aliases = &["sm"])]
+        #[clap(subcommand, name = "smart-module", aliases = &["sm"])]
         SmartModule(SmartModuleCmd),
     }
 
@@ -316,19 +312,19 @@ mod root {
         }
     }
 
-    #[derive(Debug, StructOpt)]
+    #[derive(Debug, Parser)]
     pub struct HelpOpt {}
     impl HelpOpt {
         pub fn process(self) -> Result<()> {
             let external_commands = subcommand_metadata()?;
 
-            // Add external command definitions to our own clap::App definition
-            let mut app: App = Root::clap();
+            // Add external command definitions to our own clap::Command definition
+            let mut app: ClapCommand = Root::command();
             for i in &external_commands {
                 match i.path.file_name() {
                     Some(file_name) => {
                         app = app.subcommand(
-                            SubCommand::with_name(
+                            ClapCommand::new(
                                 file_name.to_string_lossy().strip_prefix("fluvio-").unwrap(),
                             )
                             .about(&*i.meta.description),
@@ -336,7 +332,7 @@ mod root {
                     }
                     None => {
                         app = app.subcommand(
-                            SubCommand::with_name(&*i.meta.title).about(&*i.meta.description),
+                            ClapCommand::new(&*i.meta.title).about(&*i.meta.description),
                         );
                     }
                 }
@@ -348,38 +344,37 @@ mod root {
         }
     }
 
-    #[derive(Debug, StructOpt)]
+    #[derive(Debug, Parser)]
     struct CompletionOpt {
-        #[structopt(long, default_value = "fluvio")]
+        #[clap(long, default_value = "fluvio")]
         name: String,
     }
 
-    #[derive(Debug, StructOpt)]
+    #[derive(Debug, Parser)]
     enum CompletionCmd {
         /// Generate CLI completions for bash
-        #[structopt(name = "bash")]
+        #[clap(name = "bash")]
         Bash(CompletionOpt),
-        // Zsh generation currently has a bug that causes panic
-        // /// Generate CLI completions for zsh
-        // #[structopt(name = "zsh")]
-        // Zsh(CompletionOpt),
+        /// Generate CLI completions for zsh
+        #[clap(name = "zsh")]
+        Zsh(CompletionOpt),
         /// Generate CLI completions for fish
-        #[structopt(name = "fish")]
+        #[clap(name = "fish")]
         Fish(CompletionOpt),
     }
 
     impl CompletionCmd {
         pub fn process(self) -> Result<()> {
-            let mut app: structopt::clap::App = RootCmd::clap();
+            let mut app: ClapCommand = RootCmd::command();
             match self {
                 Self::Bash(opt) => {
-                    app.gen_completions_to(opt.name, Shell::Bash, &mut std::io::stdout());
+                    generate(Shell::Bash, &mut app, opt.name, &mut std::io::stdout());
                 }
-                // Self::Zsh(opt) => {
-                //     app.gen_completions_to(opt.name, Shell::Zsh, &mut std::io::stdout());
-                // }
+                Self::Zsh(opt) => {
+                    generate(Shell::Zsh, &mut app, opt.name, &mut std::io::stdout());
+                }
                 Self::Fish(opt) => {
-                    app.gen_completions_to(opt.name, Shell::Fish, &mut std::io::stdout());
+                    generate(Shell::Fish, &mut app, opt.name, &mut std::io::stdout());
                 }
             }
             Ok(())

@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 mod create;
 mod delete;
@@ -18,34 +18,34 @@ use crate::common::COMMAND_TEMPLATE;
 use crate::common::output::Terminal;
 use crate::common::FluvioExtensionMetadata;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "topic", about = "Topic operations")]
+#[derive(Debug, Parser)]
+#[clap(name = "topic", about = "Topic operations")]
 pub enum TopicCmd {
     /// Create a Topic with the given name
-    #[structopt(
+    #[clap(
         name = "create",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Create(CreateTopicOpt),
 
     /// Delete a Topic with the given name
-    #[structopt(
+    #[clap(
         name = "delete",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteTopicOpt),
 
     /// Print detailed information about a Topic
-    #[structopt(
+    #[clap(
         name = "describe",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Describe(DescribeTopicsOpt),
 
     /// List all of the Topics in the cluster
-    #[structopt(
+    #[clap(
         name = "list",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     List(ListTopicsOpt),
 }

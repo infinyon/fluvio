@@ -2,8 +2,7 @@ use std::env;
 use std::str::FromStr;
 use color_eyre::eyre::{Result, eyre};
 use colored::Colorize;
-use structopt::StructOpt;
-use structopt::clap::AppSettings;
+use clap::{Parser, AppSettings, IntoApp};
 
 use fluvio_future::task::run_block_on;
 use std::env::current_exe;
@@ -31,18 +30,18 @@ const FLUVIO_BOOTSTRAP: &str = "FLUVIO_BOOTSTRAP";
 const CHANNEL_BOOTSTRAP: &str = "CHANNEL_BOOTSTRAP";
 const FLUVIO_FRONTEND: &str = "FLUVIO_FRONTEND";
 
-#[derive(Debug, PartialEq, StructOpt, Default)]
+#[derive(Debug, PartialEq, Parser, Default)]
 struct RootOpt {
-    #[structopt(long)]
+    #[clap(long)]
     skip_channel_check: bool,
 }
 
-#[derive(Debug, PartialEq, StructOpt, Default)]
-#[structopt(global_settings = &[AppSettings::DisableHelpSubcommand])]
+#[derive(Debug, PartialEq, Parser, Default)]
+#[clap(disable_help_subcommand = true)]
 struct Root {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     opt: RootOpt,
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     command: RootCmd,
 }
 
@@ -52,15 +51,15 @@ impl Root {
     }
 }
 
-#[derive(Debug, PartialEq, StructOpt)]
+#[derive(Debug, PartialEq, Parser)]
 struct ChannelOpt {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     cmd: Option<ChannelCmd>,
-    #[structopt(long, short)]
+    #[clap(long, short)]
     help: bool,
 }
 
-#[derive(Debug, PartialEq, StructOpt, Clone)]
+#[derive(Debug, PartialEq, Parser, Clone)]
 enum ChannelCmd {
     /// Create a local Fluvio release channel
     Create(CreateOpt),
@@ -83,25 +82,21 @@ impl ChannelCmd {
     }
 }
 
-#[derive(Debug, PartialEq, StructOpt)]
-#[structopt(
+#[derive(Debug, PartialEq, Parser)]
+#[clap(
     max_term_width = 100,
-    global_settings = &[
-        AppSettings::VersionlessSubcommands,
-        AppSettings::DeriveDisplayOrder,
-        AppSettings::DisableVersion,
-    ]
+    disable_version_flag = true,
+    // VersionlessSubcommands is now default behaviour. See https://github.com/clap-rs/clap/pull/2831
+    global_setting = AppSettings::DeriveDisplayOrder
 )]
 enum RootCmd {
     /// Prints help information
-    #[structopt(
-    settings = &[AppSettings::Hidden]
-    )]
+    #[clap(hide = true)]
     Help,
     Version(ChannelOpt),
 
     // This should be the fluvio binary's subcommand
-    #[structopt(external_subcommand)]
+    #[clap(external_subcommand)]
     Other(Vec<String>),
 }
 
@@ -173,7 +168,7 @@ fn main() -> Result<()> {
     // Now process command line args
     // If we're in frontend mode, we want to pass the help text request
 
-    let fluvio_channel_root = Root::from_args_safe();
+    let fluvio_channel_root = Root::try_parse();
 
     let channel_cli = if let Ok(channel_cli) = fluvio_channel_root {
         match channel_cli.command {
@@ -186,7 +181,7 @@ fn main() -> Result<()> {
                 debug!("fluvio-channel Version");
 
                 if channel_opt.help {
-                    let _ = ChannelOpt::clap().print_help();
+                    let _ = ChannelOpt::command().print_help();
                     println!();
                     std::process::exit(0);
                 } else if let Some(subcmd) = &channel_opt.cmd {
@@ -357,7 +352,7 @@ fn print_help(is_frontend: bool) -> Result<()> {
         //fluvio_help.print_help()?;
     } else {
         debug!("Print Fluvio-channel's help");
-        let mut fluvio_channel_help = Root::clap();
+        let mut fluvio_channel_help = Root::command();
         fluvio_channel_help.print_help()?;
         std::process::exit(0);
     }

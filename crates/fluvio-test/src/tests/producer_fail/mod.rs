@@ -2,7 +2,7 @@ use std::any::Any;
 
 use fluvio::{RecordKey, TopicProducer, FluvioAdmin, FluvioError};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -29,8 +29,8 @@ impl From<TestCase> for ProducerBatchTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Producer Batch Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Producer Batch Test")]
 pub struct ProduceBatchTestOption {}
 
 impl TestOption for ProduceBatchTestOption {

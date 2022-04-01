@@ -1,12 +1,12 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 use std::path::{Path, PathBuf};
 use std::fs::{File, create_dir_all, read_to_string};
 use std::io::{ErrorKind, Error as IoError, Write};
 use color_eyre::Result;
 use color_eyre::eyre::eyre;
 use fluvio_types::defaults::CLI_CONFIG_PATH;
-use structopt::StructOpt;
-use structopt::clap::arg_enum;
+use clap::{Parser, ArgEnum};
 use dirs::home_dir;
 use serde::{Serialize, Deserialize};
 use tracing::debug;
@@ -184,19 +184,27 @@ impl ChannelConfig {
     }
 }
 
-arg_enum! {
-    #[derive(Debug, StructOpt, Clone, PartialEq, Serialize, Deserialize)]
-    #[structopt(rename_all = "kebab-case")]
-    pub enum ImageTagStrategy {
-        Version,
-        VersionGit,
-        Git,
-    }
+#[derive(Debug, Parser, ArgEnum, Clone, PartialEq, Serialize, Deserialize)]
+#[clap(rename_all = "kebab-case")]
+pub enum ImageTagStrategy {
+    Version,
+    VersionGit,
+    Git,
 }
 
 impl Default for ImageTagStrategy {
     fn default() -> Self {
         Self::Version
+    }
+}
+
+impl Display for ImageTagStrategy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ImageTagStrategy::Version => f.write_str("version"),
+            ImageTagStrategy::VersionGit => f.write_str("version-git"),
+            ImageTagStrategy::Git => f.write_str("git"),
+        }
     }
 }
 

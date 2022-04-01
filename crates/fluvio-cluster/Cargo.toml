@@ -13,7 +13,7 @@ path = "src/lib.rs"
 
 [features]
 cli = [
-    "structopt",
+    "clap",
     "color-eyre",
     "duct",
     "prettytable-rs",
@@ -50,7 +50,7 @@ indicatif = "0.16.2"
 rand = "0.8.4"
 chrono = { version = "0.4" }
 color-eyre = { version = "0.6.0", default-features = false, optional = true }
-structopt = { version = "0.3.25", default-features = false, optional = true }
+clap = { version = "3.1.8", features = ["std", "derive"], default-features = false, optional = true }
 duct = { version = "0.13", default-features = false, optional = true }
 prettytable-rs = { version = "0.8.0", default-features = false, optional = true }
 flate2 = { version = "1", default-features = false, optional = true }

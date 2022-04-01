@@ -5,16 +5,16 @@
 //!
 
 use tracing::debug;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::Result;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteTopicOpt {
     /// The name of the Topic to delete
-    #[structopt(value_name = "name")]
+    #[clap(value_name = "name")]
     topic: String,
 }
 

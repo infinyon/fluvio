@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 use fluvio::Fluvio;
 
 mod list;
@@ -9,13 +9,13 @@ use crate::common::output::Terminal;
 use crate::common::FluvioExtensionMetadata;
 use self::list::ListPartitionOpt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(name = "partition", about = "Partition operations")]
+#[derive(Debug, Parser)]
+#[clap(name = "partition", about = "Partition operations")]
 pub enum PartitionCmd {
     /// List all of the Partitions in this cluster
-    #[structopt(
+    #[clap(
         name = "list",
-        template = crate::common::COMMAND_TEMPLATE,
+        help_template = crate::common::COMMAND_TEMPLATE,
     )]
     List(ListPartitionOpt),
 }

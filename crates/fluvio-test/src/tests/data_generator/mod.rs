@@ -3,7 +3,7 @@ pub mod producer;
 use core::panic;
 use std::any::Any;
 use std::time::Duration;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -34,11 +34,11 @@ impl From<TestCase> for GeneratorTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Longevity Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Longevity Test")]
 pub struct GeneratorTestOption {
     /// Opt-in to detailed output printed to stdout
-    #[structopt(long, short)]
+    #[clap(long, short)]
     verbose: bool,
 }
 

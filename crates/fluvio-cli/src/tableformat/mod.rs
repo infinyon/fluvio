@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 use serde::Deserialize;
 use std::path::PathBuf;
@@ -19,26 +19,26 @@ use delete::DeleteTableFormatOpt;
 use list::ListTableFormatsOpt;
 use crate::CliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum TableFormatCmd {
     /// Create a new TableFormat display
-    #[structopt(
+    #[clap(
         name = "create",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Create(CreateTableFormatOpt),
 
     /// Delete a TableFormat display
-    #[structopt(
+    #[clap(
         name = "delete",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteTableFormatOpt),
 
     /// List all TableFormat display
-    #[structopt(
+    #[clap(
         name = "list",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     List(ListTableFormatsOpt),
 }

@@ -732,17 +732,38 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "2.34.0"
+version = "3.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
+checksum = "71c47df61d9e16dc010b55dba1952a57d8c215dbb533fd13cdd13369aac73b1c"
 dependencies = [
- "ansi_term",
- "atty",
  "bitflags",
- "strsim 0.8.0",
+ "clap_derive",
+ "indexmap",
+ "lazy_static",
+ "os_str_bytes",
  "textwrap",
- "unicode-width",
- "vec_map",
+]
+
+[[package]]
+name = "clap_complete"
+version = "3.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "df6f3613c0a3cddfd78b41b10203eb322cb29b600cbdf808a7d3db95691b8e25"
+dependencies = [
+ "clap",
+]
+
+[[package]]
+name = "clap_derive"
+version = "3.1.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3aab4734e083b809aaf5794e14e756d1c798d2c69c7f7de7a09a2f5214993c1"
+dependencies = [
+ "heck 0.4.0",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -1188,7 +1209,7 @@ dependencies = [
  "ident_case",
  "proc-macro2",
  "quote",
- "strsim 0.10.0",
+ "strsim",
  "syn",
 ]
 
@@ -1626,12 +1647,12 @@ name = "fluvio-channel"
 version = "0.0.0"
 dependencies = [
  "cfg-if",
+ "clap",
  "color-eyre",
  "dirs 4.0.0",
  "fluvio-types",
  "semver 1.0.7",
  "serde",
- "structopt",
  "thiserror",
  "toml",
  "tracing",
@@ -1643,6 +1664,7 @@ version = "0.0.0"
 dependencies = [
  "assert_cmd",
  "cfg-if",
+ "clap",
  "color-eyre",
  "colored",
  "dirs 4.0.0",
@@ -1653,7 +1675,6 @@ dependencies = [
  "fluvio-types",
  "predicates",
  "rand 0.8.5",
- "structopt",
  "tracing",
 ]
 
@@ -1663,6 +1684,8 @@ version = "0.0.0"
 dependencies = [
  "async-h1",
  "atty",
+ "clap",
+ "clap_complete",
  "color-eyre",
  "colored",
  "content_inspector",
@@ -1700,7 +1723,6 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.2",
  "static_assertions",
- "structopt",
  "sysinfo",
  "tempdir",
  "thiserror",
@@ -1736,6 +1758,7 @@ dependencies = [
  "async-channel",
  "async-trait",
  "chrono",
+ "clap",
  "color-eyre",
  "colored",
  "derive_builder",
@@ -1767,7 +1790,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "structopt",
  "sysinfo",
  "tar",
  "tempdir",
@@ -1857,6 +1879,7 @@ name = "fluvio-extension-common"
 version = "0.7.2"
 dependencies = [
  "async-trait",
+ "clap",
  "fluvio",
  "fluvio-package-index",
  "futures-lite",
@@ -1865,7 +1888,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "structopt",
  "thiserror",
  "tracing",
 ]
@@ -1956,13 +1978,13 @@ dependencies = [
 name = "fluvio-run"
 version = "0.0.0"
 dependencies = [
+ "clap",
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-sc",
  "fluvio-spu",
  "semver 1.0.7",
  "serde_json",
- "structopt",
  "thiserror",
  "tracing",
  "tracing-subscriber 0.3.9",
@@ -1977,6 +1999,7 @@ dependencies = [
  "async-trait",
  "base64",
  "cfg-if",
+ "clap",
  "event-listener",
  "fluvio-auth",
  "fluvio-controlplane",
@@ -2003,7 +2026,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "structopt",
  "sysinfo",
  "tokio",
  "tracing",
@@ -2115,6 +2137,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "cfg-if",
+ "clap",
  "derive_builder",
  "event-listener",
  "flate2",
@@ -2140,7 +2163,6 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "structopt",
  "sysinfo",
  "thiserror",
  "tokio",
@@ -2171,6 +2193,7 @@ dependencies = [
  "async-trait",
  "blocking",
  "bytes",
+ "clap",
  "derive_builder",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2186,7 +2209,6 @@ dependencies = [
  "nix",
  "pin-utils",
  "serde",
- "structopt",
  "thiserror",
  "tokio",
  "tracing",
@@ -2234,6 +2256,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "bytes",
+ "clap",
  "crc",
  "crossbeam-channel",
  "fluvio",
@@ -2260,7 +2283,6 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "signal-hook",
- "structopt",
  "sysinfo",
  "tokio",
  "tracing",
@@ -2271,6 +2293,7 @@ dependencies = [
 name = "fluvio-test-derive"
 version = "0.0.0"
 dependencies = [
+ "clap",
  "crossbeam-channel",
  "fluvio",
  "fluvio-future",
@@ -2282,7 +2305,6 @@ dependencies = [
  "quote",
  "rand 0.8.5",
  "serde_json",
- "structopt",
  "syn",
  "tokio",
  "tracing",
@@ -2306,6 +2328,7 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "bytes",
+ "clap",
  "dyn-clone",
  "fluvio",
  "fluvio-cluster",
@@ -2324,7 +2347,6 @@ dependencies = [
  "semver 1.0.7",
  "serde",
  "serde_json",
- "structopt",
  "syn",
  "tokio",
  "tracing",
@@ -2724,6 +2746,12 @@ checksum = "6d621efb26863f0e9924c6ac577e8275e5e6b77455db64ffa6c65c904e9e132c"
 dependencies = [
  "unicode-segmentation",
 ]
+
+[[package]]
+name = "heck"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2540771e65fc8cb83cd6e8a237f70c319bd5c29f78ed1084ba5d50eeac86f7f9"
 
 [[package]]
 name = "hermit-abi"
@@ -3596,6 +3624,15 @@ checksum = "fb233f06c2307e1f5ce2ecad9f8121cffbbee2c95428f44ea85222e460d0d213"
 dependencies = [
  "libc",
  "winapi",
+]
+
+[[package]]
+name = "os_str_bytes"
+version = "6.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8e22443d1643a904602595ba1cd8f7d896afe56d26712531c5ff73a15b2fbf64"
+dependencies = [
+ "memchr",
 ]
 
 [[package]]
@@ -4646,39 +4683,9 @@ checksum = "213701ba3370744dcd1a12960caa4843b3d68b4d1c0a5d575e0d65b2ee9d16c0"
 
 [[package]]
 name = "strsim"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ea5119cdb4c55b55d432abb513a0429384878c15dde60cc77b1c99de1a95a6a"
-
-[[package]]
-name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
-
-[[package]]
-name = "structopt"
-version = "0.3.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6b5c64445ba8094a6ab0c3cd2ad323e07171012d9c98b0b15651daf1787a10"
-dependencies = [
- "clap",
- "lazy_static",
- "structopt-derive",
-]
-
-[[package]]
-name = "structopt-derive"
-version = "0.4.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcb5ae327f9cc13b68763b5749770cb9e048a99bd9dfdfa58d0cf05d5f64afe0"
-dependencies = [
- "heck",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn",
-]
 
 [[package]]
 name = "subtle"
@@ -4824,12 +4831,9 @@ checksum = "507e9898683b6c43a9aa55b64259b721b52ba226e0f3779137e50ad114a4c90b"
 
 [[package]]
 name = "textwrap"
-version = "0.11.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
-dependencies = [
- "unicode-width",
-]
+checksum = "b1141d4d61095b28419e22cb0bbf02755f5e54e0526f97f1e3d1d160e60885fb"
 
 [[package]]
 name = "thiserror"
@@ -5254,12 +5258,6 @@ name = "vcpkg"
 version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
-
-[[package]]
-name = "vec_map"
-version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f1bddf1187be692e79c5ffeab891132dfb0f236ed36a43c7ed39f1165ee20191"
 
 [[package]]
 name = "version_check"
@@ -5719,7 +5717,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3abb5f68da2c52eb1a1b5b2bb01b31f8d9f022741054828e639792d16ee81e38"
 dependencies = [
  "anyhow",
- "heck",
+ "heck 0.3.3",
  "proc-macro2",
  "quote",
  "shellexpand",

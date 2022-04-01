@@ -1,20 +1,18 @@
 use std::sync::Arc;
 
 use serde::Serialize;
-use structopt::clap::arg_enum;
+use clap::ArgEnum;
 
 use super::Terminal;
 
 use super::OutputType;
 use super::OutputError;
 
-arg_enum! {
-    #[derive(Debug, Clone, PartialEq)]
-    #[allow(non_camel_case_types)]
-    pub enum SerializeType {
-        yaml,
-        json,
-    }
+#[derive(ArgEnum, Debug, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum SerializeType {
+    yaml,
+    json,
 }
 
 impl From<OutputType> for SerializeType {

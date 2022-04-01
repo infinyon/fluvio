@@ -1,6 +1,6 @@
 use crate::setup::environment::{EnvironmentType};
 use crate::test_runner::test_meta::FluvioTestMeta;
-use structopt::StructOpt;
+use clap::Parser;
 use std::fmt::Debug;
 use std::time::Duration;
 use humantime::parse_duration;
@@ -135,137 +135,137 @@ impl EnvDetail for EnvironmentSetup {
 
 // TODO: reserve space for compression
 /// cli options
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
 pub struct EnvironmentSetup {
     /// Name of the test
-    #[structopt(possible_values=&FluvioTestMeta::all_test_names())]
+    #[clap(possible_values = FluvioTestMeta::all_test_names())]
     pub test_name: String,
 
     /// Ensure that test starts with a new cluster before test.
     /// Will delete existing cluster. Implies `--cluster-start`
-    #[structopt(long)]
+    #[clap(long)]
     pub cluster_start_fresh: bool,
 
     /// attempt to start a new cluster before test
-    #[structopt(short("s"), long)]
+    #[clap(short = 's', long)]
     pub cluster_start: bool,
 
     /// delete cluster after test
-    #[structopt(short("d"), long)]
+    #[clap(short = 'd', long)]
     pub cluster_delete: bool,
 
     /// topic name used
-    #[structopt(long)]
+    #[clap(long)]
     pub topic_name: Option<String>,
 
     /// # topics - Appends id as "-#" (zero-based) to topic name if > 1
-    #[structopt(long, default_value = "1")]
+    #[clap(long, default_value = "1")]
     pub topic: u16,
 
     /// Append random as "-<random>" to topic name (before id, if --num-topics > 1)
-    #[structopt(long)]
+    #[clap(long)]
     pub topic_random: bool,
 
     // This is used to randomize topic names
-    #[structopt(skip)]
+    #[clap(skip)]
     pub topic_salt: Option<String>,
 
     /// Segment size (bytes) per topic
-    #[structopt(long, default_value = "1000000000")]
+    #[clap(long, default_value = "1000000000")]
     pub topic_segment_size: u32,
 
     /// Retention time per topic
     /// ex. 30s, 15m, 2h, 1w
-    #[structopt(long, default_value = "7d", parse(try_from_str = parse_duration))]
+    #[clap(long, default_value = "7d", parse(try_from_str = parse_duration))]
     pub topic_retention: Duration,
 
     /// Number of replicas per topic
-    #[structopt(short, long, default_value = "1")]
+    #[clap(short, long, default_value = "1")]
     pub replication: u16,
 
     /// Number of partitions per topic
-    #[structopt(short, long, default_value = "1")]
+    #[clap(short, long, default_value = "1")]
     pub partition: u16,
 
     /// Number of spu
-    #[structopt(long, default_value = "1")]
+    #[clap(long, default_value = "1")]
     pub spu: u16,
 
     /// # Producers to use (if test uses them)
-    #[structopt(long, default_value = "1")]
+    #[clap(long, default_value = "1")]
     pub producer: u32,
 
     /// Producer batch size (bytes)
-    #[structopt(long)]
+    #[clap(long)]
     pub producer_batch_size: Option<usize>,
 
     /// Producer Linger (milliseconds)
-    #[structopt(long)]
+    #[clap(long)]
     pub producer_linger: Option<u64>,
 
     /// producer record size (bytes)
-    #[structopt(long, default_value = "1000")]
+    #[clap(long, default_value = "1000")]
     pub producer_record_size: usize,
 
     /// producer compression algorithm. (none, gzip, snappy or lz4)
-    #[structopt(long)]
+    #[clap(long)]
     pub producer_compression: Option<Compression>,
 
     /// # Consumers to use (if test uses them)
-    #[structopt(long, default_value = "1")]
+    #[clap(long, default_value = "1")]
     pub consumer: u32,
 
     // todo: add consumer config options
     /// enable tls
-    #[structopt(long)]
+    #[clap(long)]
     pub tls: bool,
 
     /// tls user, only used if tls is used
-    #[structopt(long, default_value = "root")]
+    #[clap(long, default_value = "root")]
     pub tls_user: String,
 
     /// run local environment
-    #[structopt(long)]
+    #[clap(long)]
     pub local: bool,
 
     /// run develop image, this is for k8. (Run `make minikube_image` first.)
-    #[structopt(long)]
+    #[clap(long)]
     pub develop: bool,
 
     // log apply to fluvio client
-    #[structopt(long)]
+    #[clap(long)]
     pub client_log: Option<String>,
 
     // log apply to fluvio
-    #[structopt(long)]
+    #[clap(long)]
     pub server_log: Option<String>,
 
     // log dir
-    #[structopt(long)]
+    #[clap(long)]
     pub log_dir: Option<String>,
 
     /// authorization ConfigMap
-    #[structopt(long)]
+    #[clap(long)]
     pub authorization_config_map: Option<String>,
 
     /// skip pre-install checks
-    #[structopt(long)]
+    #[clap(long)]
     pub skip_checks: bool,
 
     /// Disable timeout - overrides use of `--timeout`
-    #[structopt(long)]
+    #[clap(long)]
     pub disable_timeout: bool,
 
     /// Global timeout for a test. Will report as fail when reached
     /// ex. 30s, 15m, 2h, 1w
-    #[structopt(long, default_value = "1h", parse(try_from_str = parse_duration))]
+    #[clap(long, default_value = "1h", parse(try_from_str = parse_duration))]
     pub timeout: Duration,
 
     /// K8: use specific image version
-    #[structopt(long)]
+    #[clap(long)]
     pub image_version: Option<String>,
 
     /// K8: use sc address
-    #[structopt(long)]
+    #[clap(long)]
     pub proxy_addr: Option<String>,
 }

@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 use tracing::debug;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
@@ -19,13 +19,13 @@ use crate::common::OutputFormat;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DescribeTopicsOpt {
     /// The name of the Topic to describe
-    #[structopt(value_name = "name")]
+    #[clap(value_name = "name")]
     topic: String,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 
@@ -33,7 +33,7 @@ impl DescribeTopicsOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<()> {
         let topic = self.topic;
         let output_type = self.output.format;
-        debug!("describe topic: {}, {}", topic, output_type);
+        debug!("describe topic: {}, {:?}", topic, output_type);
 
         let admin = fluvio.admin().await;
         let topics = admin.list::<TopicSpec, _>(vec![topic]).await?;

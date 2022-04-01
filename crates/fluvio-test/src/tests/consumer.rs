@@ -1,7 +1,7 @@
 use std::any::Any;
 use dataplane::ErrorCode;
 use fluvio::consumer::Record;
-use structopt::StructOpt;
+use clap::Parser;
 use futures_lite::stream::StreamExt;
 use std::pin::Pin;
 use std::time::{Duration, SystemTime};
@@ -39,51 +39,51 @@ impl From<TestCase> for ConsumerTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Consumer Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Consumer Test")]
 pub struct ConsumerTestOption {
     /// Num of consumers to create
-    #[structopt(long, default_value = "1")]
+    #[clap(long, default_value = "1")]
     pub consumers: u16,
 
     /// Max records to consume before stopping
     /// Default, stop when end of topic reached
-    #[structopt(long, default_value = "0")]
+    #[clap(long, default_value = "0")]
     pub num_records: u32,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub max_bytes: Option<usize>,
 
     // TODO: These should be mutually exclusive to each other
     /// Offset should be relative to beginning
-    #[structopt(long)]
+    #[clap(long)]
     pub offset_beginning: bool,
     /// Offset should be relative to end
-    #[structopt(long)]
+    #[clap(long)]
     pub offset_end: bool,
 
     /// Absolute topic offset
     /// use --offset-beginning or --offset-end to refer to relative offsets
-    #[structopt(long, default_value = "0")]
+    #[clap(long, default_value = "0")]
     pub offset: i32,
 
     /// Partition to consume from.
     /// If multiple consumers, they will all use same partition
     // TODO: Support specifying multiple partitions
-    #[structopt(long, default_value = "0")]
+    #[clap(long, default_value = "0")]
     pub partition: i32,
 
     // TODO: This option needs to be mutually exclusive w/ partition
     /// Test should use multi-partition consumer, default all partitions
-    #[structopt(long)]
+    #[clap(long)]
     pub multi_partition: bool,
 
     // This will need to be mutually exclusive w/ num_records
     //// total time we want the consumer to run, in seconds
-    //#[structopt(long, parse(try_from_str = parse_seconds), default_value = "60")]
+    //#[clap(long, parse(try_from_str = parse_seconds), default_value = "60")]
     //runtime_seconds: Duration,
     /// Opt-in to detailed output printed to stdout
-    #[structopt(long, short)]
+    #[clap(long, short)]
     verbose: bool,
 }
 
@@ -240,7 +240,7 @@ pub fn run(mut test_driver: FluvioTestDriver, mut test_case: TestCase) {
     let is_multi = test_case.option.multi_partition;
     let raw_offset = test_case.option.offset;
 
-    // We'll assume for now that structopt is handling mutual exclusivity
+    // We'll assume for now that clap is handling mutual exclusivity
     let offset = if test_case.option.offset_beginning {
         Offset::from_beginning(raw_offset as u32)
     } else if test_case.option.offset_end {
