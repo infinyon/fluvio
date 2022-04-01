@@ -193,7 +193,7 @@ mod context {
                             _ = &mut timer => {
                                 return Err(IoError::new(
                                     ErrorKind::TimedOut,
-                                    format!("store timed out: {} for {:?}", S::LABEL,key)
+                                    format!("store timed out: {} for {:?}, timer: {} secs", S::LABEL,key,self.wait_time)
                                 ));
                             },
                             _ = spec_listener.listen() => {
@@ -248,6 +248,7 @@ mod context {
             let mut spec_listener = self.change_listener();
             let mut timer = sleep(timeout);
 
+            let debug_action = action.to_string();
             match self.sender.send(action).await {
                 Ok(_) => loop {
                     if let Some(new_value) = self.store.value(key).await {
@@ -268,7 +269,7 @@ mod context {
                         _ = &mut timer => {
                             return Err(IoError::new(
                                 ErrorKind::TimedOut,
-                                format!("store timed out: {} for {:?}", S::LABEL, key),
+                                format!("store timed out: {}  timer: {} ms", debug_action, timeout.as_millis()),
                             ));
                         },
 
