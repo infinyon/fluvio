@@ -1,5 +1,5 @@
 use std::any::Any;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::{RecordKey, TopicProducer};
 use fluvio_test_derive::fluvio_test;
@@ -33,32 +33,32 @@ impl From<TestCase> for ProducerTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Producer Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Producer Test")]
 pub struct ProducerTestOption {
     /// Num of producers to create
-    #[structopt(long, default_value = "3")]
+    #[clap(long, default_value = "3")]
     pub producers: u32,
 
     // Not sure how we're going to support this yet
     // max-throughput
 
     //// total time we want the producer to run, in seconds
-    //#[structopt(long, parse(try_from_str = parse_seconds), default_value = "60")]
+    //#[clap(long, parse(try_from_str = parse_seconds), default_value = "60")]
     //runtime_seconds: Duration,
     /// Total number of records to producer
-    #[structopt(long, default_value = "100")]
+    #[clap(long, default_value = "100")]
     pub num_records: u32,
 
     /// Size of dynamic payload portion of test record
-    #[structopt(long, default_value = "1000")]
+    #[clap(long, default_value = "1000")]
     pub record_size: usize,
 
     // Eventually we're going to need to support batch options
     // max-linger
     // max-batch
     /// Opt-in to detailed output printed to stdout
-    #[structopt(long, short)]
+    #[clap(long, short)]
     verbose: bool,
 }
 

@@ -3,7 +3,7 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use serde::Deserialize;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::derivedstream::{DerivedStreamSpec};
@@ -12,10 +12,10 @@ use crate::Result;
 use crate::error::CliError;
 
 /// Create a new SmartModule with a given name
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct CreateDerivedStreamOpt {
     /// The name for the new Managed Connector
-    #[structopt(short = "c", long = "config", value_name = "config")]
+    #[clap(short = 'c', long = "config", value_name = "config")]
     pub config: PathBuf,
 }
 

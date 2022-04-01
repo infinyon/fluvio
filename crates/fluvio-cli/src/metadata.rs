@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 use std::process::Command;
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::Result;
 use crate::topic::TopicCmd;
@@ -10,7 +10,7 @@ use crate::produce::ProduceOpt;
 use fluvio_command::CommandExt;
 use fluvio_extension_common::FluvioExtensionMetadata;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct MetadataOpt {}
 impl MetadataOpt {
     pub fn process(self) -> Result<()> {

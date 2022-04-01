@@ -5,7 +5,7 @@
 //!
 
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 mod sync;
 mod current;
@@ -25,9 +25,9 @@ use crate::profile::sync::SyncCmd;
 use crate::profile::list::ListOpt;
 use crate::profile::rename::RenameOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ProfileOpt {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     cmd: Option<ProfileCmd>,
 }
 
@@ -42,35 +42,35 @@ impl ProfileOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
-#[structopt(about = "Available Commands")]
+#[derive(Debug, Parser)]
+#[clap(about = "Available Commands")]
 pub enum ProfileCmd {
     /// Print the name of the current context
-    #[structopt(name = "current")]
+    #[clap(name = "current")]
     DisplayCurrent(CurrentOpt),
 
     /// Delete the named profile
-    #[structopt(name = "delete")]
+    #[clap(name = "delete")]
     DeleteProfile(DeleteProfileOpt),
 
     /// Delete the named cluster
-    #[structopt(name = "delete-cluster")]
+    #[clap(name = "delete-cluster")]
     DeleteCluster(DeleteClusterOpt),
 
     /// Display the entire Fluvio configuration
-    #[structopt(name = "list")]
+    #[clap(name = "list")]
     List(ListOpt),
 
     /// Rename a profile
-    #[structopt(name = "rename")]
+    #[clap(name = "rename")]
     Rename(RenameOpt),
 
     /// Switch to the named profile
-    #[structopt(name = "switch")]
+    #[clap(name = "switch")]
     Switch(SwitchOpt),
 
     /// Sync a profile from a cluster
-    #[structopt(name = "sync")]
+    #[clap(subcommand, name = "sync")]
     Sync(SyncCmd),
 }
 

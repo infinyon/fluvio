@@ -5,33 +5,33 @@
 //!
 
 use std::convert::TryFrom;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::customspu::CustomSpuSpec;
 use flv_util::socket_helpers::ServerAddress;
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct RegisterCustomSpuOpt {
     /// SPU id
-    #[structopt(short = "i", long = "id")]
+    #[clap(short = 'i', long = "id")]
     id: i32,
 
     /// SPU name
-    #[structopt(short = "n", long = "name", value_name = "string")]
+    #[clap(short = 'n', long = "name", value_name = "string")]
     name: Option<String>,
 
     /// Rack name
-    #[structopt(short = "r", long = "rack", value_name = "string")]
+    #[clap(short = 'r', long = "rack", value_name = "string")]
     rack: Option<String>,
 
     /// Public server::port
-    #[structopt(short = "p", long = "public-server", value_name = "host:port")]
+    #[clap(short = 'p', long = "public-server", value_name = "host:port")]
     public_server: String,
 
     /// Private server::port
-    #[structopt(short = "v", long = "private-server", value_name = "host:port")]
+    #[clap(short = 'v', long = "private-server", value_name = "host:port")]
     private_server: String,
 }
 

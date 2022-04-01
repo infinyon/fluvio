@@ -1,8 +1,8 @@
-use structopt::StructOpt;
+use clap::Parser;
 use crate::Result;
 
 /// Print details about a given SmartModule
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DescribeSmartModuleOpt {
     _name: String,
 }

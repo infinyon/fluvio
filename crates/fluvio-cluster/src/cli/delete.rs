@@ -1,22 +1,22 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 use crate::delete::ClusterUninstallConfig;
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteOpt {
-    #[structopt(long, value_name = "Kubernetes namespace")]
+    #[clap(long, value_name = "Kubernetes namespace")]
     namespace: Option<String>,
 
     /// Remove only local spu/sc(custom) fluvio installation
-    #[structopt(long, conflicts_with = "k8", conflicts_with = "sys")]
+    #[clap(long, conflicts_with = "k8", conflicts_with = "sys")]
     local: bool,
 
     /// Remove only k8 fluvio installation
-    #[structopt(long, conflicts_with = "local", conflicts_with = "sys")]
+    #[clap(long, conflicts_with = "local", conflicts_with = "sys")]
     k8: bool,
 
-    #[structopt(long, conflicts_with = "k8", conflicts_with = "local")]
+    #[clap(long, conflicts_with = "k8", conflicts_with = "local")]
     /// delete system chart
     sys: bool,
 }

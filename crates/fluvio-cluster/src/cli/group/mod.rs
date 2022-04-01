@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 mod create;
 mod delete;
@@ -14,26 +14,26 @@ use create::CreateManagedSpuGroupOpt;
 use delete::DeleteManagedSpuGroupOpt;
 use list::ListManagedSpuGroupsOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum SpuGroupCmd {
     /// Create a new managed SPU Group
-    #[structopt(
+    #[clap(
         name = "create",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Create(CreateManagedSpuGroupOpt),
 
     /// Delete a managed SPU Group
-    #[structopt(
+    #[clap(
         name = "delete",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteManagedSpuGroupOpt),
 
     /// List all SPU Groups
-    #[structopt(
+    #[clap(
         name = "list",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     List(ListManagedSpuGroupsOpt),
 }

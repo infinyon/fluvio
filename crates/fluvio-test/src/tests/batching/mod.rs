@@ -6,7 +6,7 @@ use tracing::debug;
 
 use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -33,8 +33,8 @@ impl From<TestCase> for BatchingTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Batching Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Batching Test")]
 pub struct BatchingTestOption {}
 
 impl TestOption for BatchingTestOption {

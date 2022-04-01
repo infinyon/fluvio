@@ -3,7 +3,7 @@ pub mod consumer;
 pub mod util;
 
 use std::any::Any;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_future::task::spawn;
 use fluvio_test_derive::fluvio_test;
@@ -32,8 +32,8 @@ impl From<TestCase> for ConcurrentTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Concurrent Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Concurrent Test")]
 pub struct ConcurrentTestOption {}
 
 impl TestOption for ConcurrentTestOption {

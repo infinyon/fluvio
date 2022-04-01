@@ -5,7 +5,7 @@
 //!
 
 use tracing::debug;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::spg::*;
@@ -16,26 +16,26 @@ use crate::cli::ClusterCliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, Parser, Default)]
 pub struct CreateManagedSpuGroupOpt {
     /// The name for the new SPU Group
-    #[structopt(value_name = "name")]
+    #[clap(value_name = "name")]
     pub name: String,
 
     /// The number of SPUs to create in this SPG
-    #[structopt(short, long, value_name = "integer", default_value = "1")]
+    #[clap(short, long, value_name = "integer", default_value = "1")]
     pub replicas: u16,
 
     /// Minimum SPU ID
-    #[structopt(long, value_name = "integer", default_value = "1")]
+    #[clap(long, value_name = "integer", default_value = "1")]
     pub min_id: i32,
 
     /// Rack name
-    #[structopt(long, value_name = "string")]
+    #[clap(long, value_name = "string")]
     pub rack: Option<String>,
 
     /// The amount of storage to assign to this SPG
-    #[structopt(long, value_name = "string")]
+    #[clap(long, value_name = "string")]
     pub storage_size: Option<String>,
 }
 

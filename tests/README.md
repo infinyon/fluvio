@@ -147,8 +147,8 @@ There are 4 parts to adding new tests.
 
 ### Passing vars from the CLI to your test
 
-* Your test needs to create a struct to hold test-specific variables. (This is required, even if it is empty.) The struct should derive `StructOpt` and implement the `TestOptions` trait.
-* The test runner uses this struct in order to parse cli flags for your test with [StructOpt::from_iter()](https://docs.rs/structopt/0.3.21/structopt/trait.StructOpt.html#method.from_iter)
+* Your test needs to create a struct to hold test-specific variables. (This is required, even if it is empty.) The struct should derive `Parser`.
+* The test runner uses this struct in order to parse cli flags for your test with [Parser::parse_from()](https://docs.rs/clap/latest/clap/trait.Parser.html#method.parse_from)
 
 ### Test stub of a new test
 

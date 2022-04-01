@@ -1,24 +1,24 @@
 use color_eyre::Result;
 use fluvio_channel::FluvioChannelConfig;
 use std::path::PathBuf;
-use structopt::StructOpt;
+use clap::{Parser, IntoApp};
 use tracing::debug;
 
-#[derive(Debug, StructOpt, Clone, PartialEq)]
+#[derive(Debug, Clone, Parser, PartialEq)]
 pub struct ListOpt {
     /// Path to alternate channel config
-    #[structopt(long)]
+    #[clap(long)]
     config: Option<PathBuf>,
 
     /// Display this help message
-    #[structopt(short, long)]
+    #[clap(short, long)]
     help: bool,
 }
 
 impl ListOpt {
     pub async fn process(&self) -> Result<()> {
         if self.help {
-            let _ = ListOpt::clap().print_help();
+            let _ = ListOpt::command().print_help();
             println!();
             return Ok(());
         }

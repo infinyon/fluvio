@@ -16,7 +16,7 @@ path = "src/lib.rs"
 default = ["fluvio-types"]
 
 [dependencies]
-structopt = { version = "0.3.16", default-features = false }
+clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
 cfg-if = "1.0"
 semver = "1.0.0"
 thiserror = "1.0.20"

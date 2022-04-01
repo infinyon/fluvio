@@ -1,4 +1,4 @@
-use structopt::StructOpt;
+use clap::Parser;
 use color_eyre::eyre::Result;
 use fluvio_cli::{Root, HelpOpt};
 use fluvio_future::task::run_block_on;
@@ -9,7 +9,7 @@ fn main() -> Result<()> {
         .display_env_section(false)
         .install()?;
     print_help_hack()?;
-    let root: Root = Root::from_args();
+    let root: Root = Root::parse();
 
     // If the CLI comes back with an error, attempt to handle it
     if let Err(e) = run_block_on(root.process()) {

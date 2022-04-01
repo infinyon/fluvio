@@ -11,8 +11,7 @@ use flate2::Compression;
 use flate2::bufread::GzEncoder;
 use fluvio::metadata::tableformat::{TableFormatSpec};
 use tracing::{debug, trace, instrument};
-use structopt::StructOpt;
-use structopt::clap::arg_enum;
+use clap::{Parser, ArgEnum};
 use fluvio_future::io::StreamExt;
 use futures::{select, FutureExt};
 
@@ -52,30 +51,30 @@ const USER_TEMPLATE: &str = "user_template";
 /// By default, consume operates in "streaming" mode, where the command will remain
 /// active and wait for new messages, printing them as they arrive. You can use the
 /// '-d' flag to exit after consuming all available messages.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ConsumeOpt {
     /// Topic name
-    #[structopt(value_name = "topic")]
+    #[clap(value_name = "topic")]
     pub topic: String,
 
     /// Partition id
-    #[structopt(short = "p", long, default_value = "0", value_name = "integer")]
+    #[clap(short = 'p', long, default_value = "0", value_name = "integer")]
     pub partition: i32,
 
     /// Consume records from all partitions
-    #[structopt(short = "A", long = "all-partitions", conflicts_with_all = &["partition"])]
+    #[clap(short = 'A', long = "all-partitions", conflicts_with_all = &["partition"])]
     pub all_partitions: bool,
 
     /// disable continuous processing of messages
-    #[structopt(short = "d", long)]
+    #[clap(short = 'd', long)]
     pub disable_continuous: bool,
 
     /// disable the progress bar and wait spinner
-    #[structopt(long)]
+    #[clap(long)]
     pub disable_progressbar: bool,
 
     /// Print records in "[key] value" format, with "[null]" for no key
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub key_value: bool,
 
     /// Provide a template string to print records with a custom format.
@@ -90,86 +89,86 @@ pub struct ConsumeOpt {
     /// Would produce a printout where records might look like this:
     ///
     /// Offset 0 has key A and value Apple
-    #[structopt(short = "F", long, conflicts_with_all = &["output", "key_value"])]
+    #[clap(short = 'F', long, conflicts_with_all = &["output", "key-value"])]
     pub format: Option<String>,
 
     /// Consume records using the formatting rules defined by TableFormat name
-    #[structopt(long, conflicts_with_all = &["key_value", "format"])]
+    #[clap(long, conflicts_with_all = &["key-value", "format"])]
     pub table_format: Option<String>,
 
     /// Consume records starting X from the beginning of the log (default: 0)
-    #[structopt(short = "B", value_name = "integer", conflicts_with_all = &["offset", "tail"])]
+    #[clap(short = 'B', value_name = "integer", conflicts_with_all = &["offset", "tail"])]
     pub from_beginning: Option<Option<u32>>,
 
     /// The offset of the first record to begin consuming from
-    #[structopt(short, long, value_name = "integer", conflicts_with_all = &["from_beginning", "tail"])]
+    #[clap(short, long, value_name = "integer", conflicts_with_all = &["from-beginning", "tail"])]
     pub offset: Option<u32>,
 
     /// Consume records starting X from the end of the log (default: 10)
-    #[structopt(short = "T", long, value_name = "integer", conflicts_with_all = &["from_beginning", "offset"])]
+    #[clap(short = 'T', long, value_name = "integer", conflicts_with_all = &["from-beginning", "offset"])]
     pub tail: Option<Option<u32>>,
 
     /// Consume records until end offset
-    #[structopt(long, value_name= "integer", conflicts_with_all = &["tail"])]
+    #[clap(long, value_name= "integer", conflicts_with_all = &["tail"])]
     pub end_offset: Option<i64>,
 
     /// Maximum number of bytes to be retrieved
-    #[structopt(short = "b", long = "maxbytes", value_name = "integer")]
+    #[clap(short = 'b', long = "maxbytes", value_name = "integer")]
     pub max_bytes: Option<i32>,
 
     /// Suppress items items that have an unknown output type
-    #[structopt(long = "suppress-unknown")]
+    #[clap(long = "suppress-unknown")]
     pub suppress_unknown: bool,
 
     /// Output
-    #[structopt(
-        short = "O",
+    #[clap(
+        short = 'O',
         long = "output",
         value_name = "type",
-        possible_values = &ConsumeOutputType::variants(),
-        case_insensitive = true,
+        arg_enum,
+        ignore_case = true
     )]
     pub output: Option<ConsumeOutputType>,
 
     /// Name of DerivedStream
-    #[structopt(long)]
+    #[clap(long)]
     pub derived_stream: Option<String>,
 
     /// Path to a SmartModule filter wasm file
-    #[structopt(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule"))]
     pub filter: Option<String>,
 
     /// Path to a SmartModule map wasm file
-    #[structopt(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule"))]
     pub map: Option<String>,
 
     /// Path to a SmartModule filter_map wasm file
-    #[structopt(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule"))]
     pub filter_map: Option<String>,
 
     /// Path to a SmartModule array_map wasm file
-    #[structopt(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule"))]
     pub array_map: Option<String>,
 
     /// Path to a SmartModule join wasm filee
-    #[structopt(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule"))]
     pub join: Option<String>,
 
     /// Path to a WASM file for aggregation
-    #[structopt(long, group("smartmodule"))]
+    #[clap(long, group("smartmodule"))]
     pub aggregate: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub join_topic: Option<String>,
 
     /// (Optional) Path to a file to use as an initial accumulator value with --aggregate
-    #[structopt(long)]
+    #[clap(long)]
     pub initial: Option<String>,
 
     /// (Optional) Extra input parameters passed to the smartmodule module.
     /// They should be passed using key=value format
     /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
-    #[structopt(short = "e", long= "extra-params", parse(try_from_str = parse_key_val), number_of_values = 1)]
+    #[clap(short = 'e', long= "extra-params", parse(try_from_str = parse_key_val), number_of_values = 1)]
     pub extra_params: Option<Vec<(String, String)>>,
 }
 
@@ -743,19 +742,18 @@ fn create_smartmodule(
     })
 }
 
-// Uses clap::arg_enum to choose possible variables
-arg_enum! {
-    #[derive(Debug, Clone, PartialEq)]
-    #[allow(non_camel_case_types)]
-    pub enum ConsumeOutputType {
-        dynamic,
-        text,
-        binary,
-        json,
-        raw,
-        table,
-        full_table,
-    }
+// Uses clap::ArgEnum to choose possible variables
+
+#[derive(ArgEnum, Debug, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum ConsumeOutputType {
+    dynamic,
+    text,
+    binary,
+    json,
+    raw,
+    table,
+    full_table,
 }
 
 /// Consume output type defaults to text formatting

@@ -3,7 +3,7 @@
 //!
 //! CLI tree to generate Delete Managed Connectors
 //!
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::connector::ManagedConnectorSpec;
@@ -14,10 +14,10 @@ use crate::CliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteManagedConnectorOpt {
     /// The name of the connector to delete
-    #[structopt(value_name = "name")]
+    #[clap(value_name = "name")]
     name: String,
 }
 

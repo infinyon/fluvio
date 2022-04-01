@@ -15,7 +15,7 @@ use std::convert::TryFrom;
 
 use tracing::info;
 use tracing::debug;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_types::print_cli_err;
 use k8_client::K8Config;
@@ -29,36 +29,36 @@ use crate::config::ScConfig;
 type Config = (ScConfig, Option<BasicRbacPolicy>);
 
 /// cli options
-#[derive(Debug, StructOpt, Default)]
-#[structopt(name = "sc-server", about = "Streaming Controller")]
+#[derive(Debug, Parser, Default)]
+#[clap(name = "sc-server", about = "Streaming Controller")]
 pub struct ScOpt {
-    #[structopt(long)]
+    #[clap(long)]
     /// running in local mode only
     local: bool,
 
-    #[structopt(long)]
+    #[clap(long)]
     /// Address for external service
     bind_public: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     /// Address for internal service
     bind_private: Option<String>,
 
     // k8 namespace
-    #[structopt(short = "n", long = "namespace", value_name = "namespace")]
+    #[clap(short = 'n', long = "namespace", value_name = "namespace")]
     namespace: Option<String>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     tls: TlsConfig,
 
-    #[structopt(
+    #[clap(
         long = "authorization-scopes",
         value_name = "authorization scopes path",
         env
     )]
     x509_auth_scopes: Option<PathBuf>,
 
-    #[structopt(
+    #[clap(
         long = "authorization-policy",
         value_name = "authorization policy path",
         env
@@ -66,7 +66,7 @@ pub struct ScOpt {
     auth_policy: Option<PathBuf>,
 
     /// only allow white list of controllers
-    #[structopt(long)]
+    #[clap(long)]
     white_list: Vec<String>,
 }
 
@@ -156,29 +156,29 @@ impl ScOpt {
     }
 }
 
-#[derive(Debug, StructOpt, Clone, Default)]
+#[derive(Debug, Parser, Clone, Default)]
 pub struct TlsConfig {
     /// enable tls
-    #[structopt(long)]
+    #[clap(long)]
     tls: bool,
 
     /// TLS: path to server certificate
-    #[structopt(long)]
+    #[clap(long)]
     pub server_cert: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     /// TLS: path to server private key
     pub server_key: Option<String>,
 
     /// TLS: enable client cert
-    #[structopt(long)]
+    #[clap(long)]
     pub enable_client_cert: bool,
 
     /// TLS: path to ca cert, required when client cert is enabled
-    #[structopt(long)]
+    #[clap(long)]
     pub ca_cert: Option<String>,
 
-    #[structopt(long)]
+    #[clap(long)]
     /// TLS: address of non tls public service, required
     bind_non_tls_public: Option<String>,
 }

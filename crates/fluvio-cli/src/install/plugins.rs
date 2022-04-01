@@ -1,4 +1,4 @@
-use structopt::StructOpt;
+use clap::Parser;
 use fluvio_index::{PackageId, HttpAgent, MaybeVersion};
 use super::error_convert;
 
@@ -11,17 +11,17 @@ use crate::install::update::{
     check_update_required, prompt_required_update, check_update_available, prompt_available_update,
 };
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct InstallOpt {
     /// The ID of a package to install, e.g. "fluvio/fluvio-cloud".
     package: PackageId<MaybeVersion>,
     /// Used for testing. Specifies alternate package location, e.g. "test/"
-    #[structopt(hidden = true, long)]
+    #[clap(hide = true, long)]
     prefix: Option<String>,
     /// Install the latest prerelease rather than the latest release
     ///
     /// If the package ID contains a version (e.g. `fluvio/fluvio:0.6.0`), this is ignored
-    #[structopt(long)]
+    #[clap(long)]
     pub develop: bool,
 }
 

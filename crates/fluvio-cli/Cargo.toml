@@ -38,7 +38,8 @@ k8s = [
 tracing = "0.1.19"
 url = "2.1.1"
 semver = "1.0.0"
-structopt = { version = "0.3.16", default-features = false }
+clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
+clap_complete = "3.1.1"
 dirs = "4.0.0"
 async-h1 = "2.1.2"
 http-types = "2.4.0"
