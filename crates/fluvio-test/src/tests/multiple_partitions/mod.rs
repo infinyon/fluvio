@@ -2,7 +2,7 @@ pub mod producer;
 pub mod consumer;
 
 use std::any::Any;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_future::task::spawn;
 use fluvio_test_derive::fluvio_test;
@@ -31,8 +31,8 @@ impl From<TestCase> for MultiplePartitionTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio MultiplePartition Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio MultiplePartition Test")]
 pub struct MultiplePartitionTestOption {}
 
 impl TestOption for MultiplePartitionTestOption {

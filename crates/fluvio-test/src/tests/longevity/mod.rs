@@ -3,7 +3,7 @@ pub mod consumer;
 
 use core::panic;
 use std::any::Any;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -31,17 +31,17 @@ impl From<TestCase> for LongevityTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Longevity Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Longevity Test")]
 pub struct LongevityTestOption {
     // This should be mutually exclusive with runtime_seconds
     // num_records: u32
 
     // Offset the consumer should start from
-    //#[structopt(long, default_value = "0")]
+    //#[clap(long, default_value = "0")]
     //pub consumer_offset: u32,
     /// Opt-in to detailed output printed to stdout
-    #[structopt(long, short)]
+    #[clap(long, short)]
     verbose: bool,
 }
 

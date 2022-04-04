@@ -3,7 +3,7 @@
 //!
 //! CLI tree to generate Delete TableFormat spec
 //!
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::tableformat::TableFormatSpec;
@@ -14,7 +14,7 @@ use crate::CliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteTableFormatOpt {
     /// The name of the connector to delete
     name: String,

@@ -38,7 +38,6 @@ pub mod runtime;
 /// extensions
 #[cfg(feature = "cli")]
 pub mod cli;
-
 use fluvio_helm as helm;
 
 pub use start::k8::{ClusterInstaller, ClusterConfig, ClusterConfigBuilder};

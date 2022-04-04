@@ -7,8 +7,7 @@ pub mod fork;
 use std::any::Any;
 use std::fmt::Debug;
 
-use structopt::StructOpt;
-use structopt::clap::AppSettings;
+use clap::Parser;
 
 use environment::EnvironmentSetup;
 
@@ -35,9 +34,9 @@ impl TestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, PartialEq)]
+#[derive(Debug, Clone, Parser, PartialEq)]
 pub enum TestCli {
-    #[structopt(external_subcommand)]
+    #[clap(external_subcommand)]
     Args(Vec<String>),
 }
 
@@ -47,15 +46,16 @@ impl Default for TestCli {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(
     name = "fluvio-test-runner",
     about = "Test fluvio platform",
-    global_settings = &[AppSettings::ColoredHelp])]
+    // AppSettings::ColoredHelp is on by default.
+)]
 pub struct BaseCli {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub environment: EnvironmentSetup,
 
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub test_cmd_args: Option<TestCli>,
 }

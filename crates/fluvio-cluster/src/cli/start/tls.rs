@@ -2,40 +2,40 @@ use std::path::PathBuf;
 use std::convert::TryFrom;
 
 use tracing::debug;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::config::{TlsPolicy, TlsPaths};
 
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct TlsOpt {
     /// Whether to use TLS
-    #[structopt(long)]
+    #[clap(long)]
     pub tls: bool,
 
     /// TLS: domain
-    #[structopt(long)]
+    #[clap(long)]
     pub domain: Option<String>,
 
     /// TLS: ca cert
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub ca_cert: Option<PathBuf>,
 
     /// TLS: client cert
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub client_cert: Option<PathBuf>,
 
     /// TLS: client key
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub client_key: Option<PathBuf>,
 
     /// TLS: path to server certificate
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub server_cert: Option<PathBuf>,
 
     /// TLS: path to server private key
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub server_key: Option<PathBuf>,
 }
 
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_from_opt() {
-        let tls_opt = TlsOpt::from_iter(vec![
+        let tls_opt = TlsOpt::parse_from(vec![
             "test", // First arg is treated as binary name
             "--tls",
             "--domain",
@@ -131,7 +131,7 @@ mod tests {
 
     #[test]
     fn test_missing_opts() {
-        let tls_opt: TlsOpt = TlsOpt::from_iter(vec![
+        let tls_opt: TlsOpt = TlsOpt::parse_from(vec![
             "test", // First arg is treated as binary name
             "--tls",
         ]);

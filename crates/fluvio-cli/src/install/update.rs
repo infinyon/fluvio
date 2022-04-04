@@ -1,5 +1,5 @@
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::{debug, instrument};
 
 use semver::Version;
@@ -14,10 +14,10 @@ use super::error_convert;
 
 const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct UpdateOpt {
     /// Update to the latest prerelease rather than the latest release
-    #[structopt(long)]
+    #[clap(long)]
     pub develop: bool,
 
     /// (Optional) the name of one or more plugins to update

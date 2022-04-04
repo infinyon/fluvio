@@ -1,8 +1,8 @@
-use structopt::StructOpt;
+use clap::Parser;
 use crate::Result;
 
 /// Print details about a given DerivedStream
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DescribeDerivedStreamOpt {
     _name: String,
 }

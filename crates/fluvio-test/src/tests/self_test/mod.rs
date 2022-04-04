@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::env;
 
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::{EnvironmentSetup};
@@ -29,11 +29,11 @@ impl From<TestCase> for SelfCheckTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Test Self Check")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Test Self Check")]
 pub struct SelfCheckTestOption {
     /// Intentionally panic to test panic handling
-    #[structopt(long)]
+    #[clap(long)]
     pub force_panic: bool,
 }
 

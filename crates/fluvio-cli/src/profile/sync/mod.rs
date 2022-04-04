@@ -1,4 +1,4 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 #[cfg(feature = "k8s")]
 mod k8;
@@ -10,18 +10,18 @@ use crate::profile::sync::local::LocalOpt;
 #[cfg(feature = "k8s")]
 use crate::profile::sync::k8::K8Opt;
 
-#[derive(Debug, StructOpt)]
-#[structopt(
+#[derive(Debug, Parser)]
+#[clap(
     name = "sync",
-    template = COMMAND_TEMPLATE,
+    help_template = COMMAND_TEMPLATE,
 )]
 pub enum SyncCmd {
     /// Sync a profile from a Kubernetes cluster
     #[cfg(feature = "k8s")]
-    #[structopt(name = "k8")]
+    #[clap(name = "k8")]
     K8(K8Opt),
     /// Sync a profile from a local cluster
-    #[structopt(name = "local")]
+    #[clap(name = "local")]
     Local(LocalOpt),
 }
 

@@ -1,7 +1,7 @@
 use std::sync::Arc;
-use std::str::FromStr;
 
-use structopt::StructOpt;
+use clap::ArgEnum;
+use clap::Parser;
 use semver::Version;
 use tracing::debug;
 
@@ -32,22 +32,22 @@ use fluvio_channel::{ImageTagStrategy, FLUVIO_IMAGE_TAG_STRATEGY};
 pub(crate) const VERSION: &str = include_str!("../../../../VERSION");
 
 /// Manage and view Fluvio clusters
-#[derive(StructOpt, Debug)]
+#[derive(Debug, Parser)]
 pub enum ClusterCmd {
     /// Install Fluvio cluster
-    #[structopt(name = "start")]
+    #[clap(name = "start")]
     Start(Box<StartOpt>),
 
     /// Upgrades an already-started Fluvio cluster
-    #[structopt(name = "upgrade")]
+    #[clap(name = "upgrade")]
     Upgrade(Box<UpgradeOpt>),
 
     /// Uninstall a Fluvio cluster
-    #[structopt(name = "delete")]
+    #[clap(name = "delete")]
     Delete(DeleteOpt),
 
     /// Check that all requirements for cluster startup are met
-    #[structopt(name = "check")]
+    #[clap(name = "check")]
     Check(CheckOpt),
 
     /// Manage and view Streaming Processing Units (SPUs)
@@ -56,17 +56,17 @@ pub enum ClusterCmd {
     /// of receiving messages from producers, storing those messages,
     /// and relaying them to consumers. This command lets you see
     /// the status of SPUs in your cluster.
-    #[structopt(name = "spu")]
+    #[clap(subcommand, name = "spu")]
     SPU(SpuCmd),
 
     /// Manage and view SPU Groups (SPGs)
     ///
     /// SPGs are groups of SPUs in a cluster which are managed together.
-    #[structopt(name = "spg")]
+    #[clap(subcommand, name = "spg")]
     SPUGroup(SpuGroupCmd),
 
     /// Collect anonymous diagnostic information to help with debugging
-    #[structopt(name = "diagnostics")]
+    #[clap(name = "diagnostics")]
     Diagnostics(DiagnosticsOpt),
 }
 
@@ -81,7 +81,7 @@ impl ClusterCmd {
         match self {
             Self::Start(mut start) => {
                 if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
-                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value)
+                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value, true)
                         .unwrap_or(ImageTagStrategy::Version);
                     match tag_strategy {
                         ImageTagStrategy::Version => {
@@ -103,7 +103,7 @@ impl ClusterCmd {
             }
             Self::Upgrade(mut upgrade) => {
                 if let Ok(tag_strategy_value) = std::env::var(FLUVIO_IMAGE_TAG_STRATEGY) {
-                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value)
+                    let tag_strategy = ImageTagStrategy::from_str(&tag_strategy_value, true)
                         .unwrap_or(ImageTagStrategy::Version);
                     match tag_strategy {
                         ImageTagStrategy::Version => {}

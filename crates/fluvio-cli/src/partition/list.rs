@@ -4,7 +4,7 @@
 //! CLI tree and processing to list SPUs
 //!
 
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::partition::*;
@@ -14,9 +14,9 @@ use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
 /// Option for Listing Partition
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListPartitionOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

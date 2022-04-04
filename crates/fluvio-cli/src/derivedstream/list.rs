@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::metadata::derivedstream::DerivedStreamSpec;
 use fluvio::Fluvio;
@@ -10,9 +10,9 @@ use crate::common::OutputFormat;
 use crate::Result;
 
 /// List all existing SmartModules
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListDerivedStreamOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

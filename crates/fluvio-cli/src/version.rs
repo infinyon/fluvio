@@ -1,5 +1,5 @@
 use sha2::{Digest, Sha256};
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::config::ConfigFile;
@@ -8,7 +8,7 @@ use crate::Result;
 use crate::metadata::subcommand_metadata;
 use crate::FLUVIO_RELEASE_CHANNEL;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct VersionOpt {}
 
 impl VersionOpt {

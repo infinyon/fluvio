@@ -1,8 +1,8 @@
-use structopt::StructOpt;
+use clap::Parser;
 use fluvio::config::ConfigFile;
 use crate::Result;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct CurrentOpt {}
 
 impl CurrentOpt {

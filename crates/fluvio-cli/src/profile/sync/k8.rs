@@ -1,5 +1,5 @@
 use std::convert::TryInto;
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::debug;
 
 use fluvio::config::{Profile, ConfigFile};
@@ -13,17 +13,17 @@ use k8_types::InputObjectMeta;
 use crate::{Result, CliError};
 use crate::common::tls::TlsClientOpt;
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, Parser, Default)]
 pub struct K8Opt {
     /// kubernetes namespace,
-    #[structopt(long, short, value_name = "namespace")]
+    #[clap(long, short, value_name = "namespace")]
     pub namespace: Option<String>,
 
     /// profile name
-    #[structopt(value_name = "name")]
+    #[clap(value_name = "name")]
     pub name: Option<String>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub tls: TlsClientOpt,
 }
 

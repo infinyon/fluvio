@@ -4,7 +4,7 @@
 //!
 
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::tableformat::TableFormatSpec;
@@ -13,9 +13,9 @@ use fluvio_extension_common::Terminal;
 use fluvio_extension_common::OutputFormat;
 use crate::CliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListTableFormatsOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

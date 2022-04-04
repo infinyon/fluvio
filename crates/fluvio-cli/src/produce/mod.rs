@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::path::PathBuf;
 use futures::future::join_all;
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::error;
 use std::time::Duration;
 use humantime::parse_duration;
@@ -28,44 +28,44 @@ use crate::Result;
 ///
 /// If '--key-separator' is used, records are sent as key/value pairs, and
 /// the keys are used to determine which partition the records are sent to.
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ProduceOpt {
     /// The name of the Topic to produce to
-    #[structopt(value_name = "topic")]
+    #[clap(value_name = "topic")]
     pub topic: String,
 
     /// Print progress output when sending records
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub verbose: bool,
 
     /// Sends key/value records split on the first instance of the separator.
-    #[structopt(long, validator = validate_key_separator)]
+    #[clap(long, validator = validate_key_separator)]
     pub key_separator: Option<String>,
 
     /// Send all input as one record. Use this when producing binary files.
-    #[structopt(long)]
+    #[clap(long)]
     pub raw: bool,
 
     /// Compression algorithm to use when sending records.
     /// Supported values: none, gzip, snappy and lz4.
-    #[structopt(long)]
+    #[clap(long)]
     pub compression: Option<Compression>,
 
     /// Path to a file to produce to the topic. If absent, producer will read stdin.
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub file: Option<PathBuf>,
 
     /// Time to wait before sending
     /// Ex: '150ms', '20s'
-    #[structopt(long, parse(try_from_str = parse_duration))]
+    #[clap(long, parse(try_from_str = parse_duration))]
     pub linger: Option<Duration>,
 
     /// Max amount of bytes accumulated before sending
-    #[structopt(long)]
+    #[clap(long)]
     pub batch_size: Option<usize>,
 }
 
-fn validate_key_separator(separator: String) -> std::result::Result<(), String> {
+fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
     if separator.is_empty() {
         return Err(
             "must be non-empty. If using '=', type it as '--key-separator \"=\"'".to_string(),

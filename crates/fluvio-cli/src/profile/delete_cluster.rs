@@ -1,14 +1,14 @@
-use structopt::StructOpt;
+use clap::Parser;
 use fluvio::config::ConfigFile;
 use crate::Result;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteClusterOpt {
     /// The name of a cluster connection to delete
-    #[structopt(value_name = "cluster name")]
+    #[clap(value_name = "cluster name")]
     pub cluster_name: String,
     /// Deletes a cluster even if its active
-    #[structopt(short, long)]
+    #[clap(short, long)]
     pub force: bool,
 }
 

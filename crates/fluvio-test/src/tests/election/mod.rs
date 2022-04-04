@@ -6,7 +6,7 @@ use futures_lite::stream::StreamExt;
 use fluvio::{Offset, RecordKey};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use fluvio_future::timer::sleep;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio_test_derive::fluvio_test;
 use fluvio_test_util::test_meta::environment::EnvironmentSetup;
@@ -36,8 +36,8 @@ impl From<TestCase> for ElectionTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio ELECTION Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio ELECTION Test")]
 pub struct ElectionTestOption {}
 
 impl TestOption for ElectionTestOption {

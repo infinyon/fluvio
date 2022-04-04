@@ -2,20 +2,20 @@
 use fluvio_test_derive::fluvio_test;
 #[warn(unused_imports)]
 use fluvio_test_util::test_meta::TestCase;
-use structopt::StructOpt;
+use clap::Parser;
 use std::any::Any;
 use fluvio_test_util::test_meta::TestOption;
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Test Example")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Test Example")]
 pub struct BareCaseTestOption {}
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Test Example")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Test Example")]
 pub struct TrueCaseTestOption {}
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Test Example")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Test Example")]
 pub struct FalseCaseTestOption {}
 
 impl TestOption for BareCaseTestOption {

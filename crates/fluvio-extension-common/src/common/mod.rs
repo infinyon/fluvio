@@ -1,20 +1,20 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 mod hex_dump;
 pub use self::hex_dump::*;
 
 use crate::output::OutputType;
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, Parser, Default)]
 pub struct OutputFormat {
     /// Output
-    #[structopt(
-        default_value,
-        short = "O",
+    #[clap(
+        default_value_t,
+        short = 'O',
         long = "output",
         value_name = "type",
-        possible_values = &OutputType::variants(),
-        case_insensitive = true
+        arg_enum,
+        ignore_case = true
     )]
     pub format: OutputType,
 }

@@ -5,7 +5,7 @@
 //!
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio::metadata::customspu::CustomSpuSpec;
@@ -16,15 +16,15 @@ use crate::cli::ClusterCliError;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct UnregisterCustomSpuOpt {
     /// SPU id
-    #[structopt(short = "i", long = "id", required_unless = "name")]
+    #[clap(short = 'i', long = "id", required_unless_present = "name")]
     id: Option<i32>,
 
     /// SPU name
-    #[structopt(
-        short = "n",
+    #[clap(
+        short = 'n',
         long = "name",
         value_name = "string",
         conflicts_with = "id"

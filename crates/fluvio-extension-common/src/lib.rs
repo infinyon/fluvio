@@ -81,7 +81,7 @@ impl Terminal for PrintTerminal {
 pub mod target {
     use std::io::{ErrorKind, Error as IoError};
     use std::convert::TryInto;
-    use structopt::StructOpt;
+    use clap::Parser;
 
     use fluvio::FluvioConfig;
     use fluvio::FluvioError;
@@ -108,16 +108,16 @@ pub mod target {
     }
 
     /// server configuration
-    #[derive(Debug, StructOpt, Default)]
+    #[derive(Debug, Parser, Default)]
     pub struct ClusterTarget {
         /// Address of cluster
-        #[structopt(short = "c", long, value_name = "host:port")]
+        #[clap(short = 'c', long, value_name = "host:port")]
         pub cluster: Option<String>,
 
-        #[structopt(flatten)]
+        #[clap(flatten)]
         pub tls: TlsClientOpt,
 
-        #[structopt(short = "P", long, value_name = "profile")]
+        #[clap(short = 'P', long, value_name = "profile")]
         pub profile: Option<String>,
     }
 
