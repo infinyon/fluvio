@@ -3,6 +3,8 @@
 ## Platform Version 0.9.23 - UNRELEASED
 * Add `TYPE` column to `fluvio connector list` ([#2218](https://github.com/infinyon/fluvio/issues/2218))
 * Use `Clap` instead of `StructOpt` for all CLI ([#2166](https://github.com/infinyon/fluvio/issues/2166))
+* Re-enable ZSH completions ([#2283](https://github.com/infinyon/fluvio/issues/2283))
+* Disable versions from displaying in CLI subcommands ([#1805](https://github.com/infinyon/fluvio/issues/1805))
 
 ## Platform Version 0.9.22 - 2022-03-25
 * Add topic level compression configuration ([#2249](https://github.com/infinyon/fluvio/issues/2249))
