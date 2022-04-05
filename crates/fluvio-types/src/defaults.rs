@@ -1,5 +1,8 @@
 pub const PRODUCT_NAME: &str = "fluvio";
 
+// Fluvio
+pub const FLUVIO_MAX_SIZE_TOPIC_NAME: u8 = 255;
+
 // SPU/SC Server Path
 pub const SERVER_CONFIG_BASE_PATH: &str = "/etc";
 pub const SERVER_CONFIG_DIR: &str = "fluvio";

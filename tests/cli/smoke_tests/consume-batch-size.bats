@@ -27,7 +27,7 @@ teardown_file() {
 
 @test "Produce message with batch large" {
     run bash -c "yes abc |head -c 1500000 > $TOPIC_NAME.txt"
-    run bash -c 'timeout 25s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 1048588 --file $TOPIC_NAME.txt --linger 5s'
+    run bash -c 'timeout 50s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 1048588 --file $TOPIC_NAME.txt --linger 5s'
     assert_success
 }
 

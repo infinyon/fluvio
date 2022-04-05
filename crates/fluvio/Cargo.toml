@@ -49,7 +49,7 @@ fluvio-future = { version = "0.3.12", features = [
     "openssl_tls",
     "task_unstable",
 ] }
-fluvio-types = { version = "0.3.0", features = [
+fluvio-types = { version = "0.3.3", features = [
     "events",
 ], path = "../fluvio-types" }
 fluvio-sc-schema = { version = "0.13.0", path = "../fluvio-sc-schema", default-features = false }

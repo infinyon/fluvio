@@ -5,6 +5,11 @@ use futures_lite::StreamExt;
 use tracing::debug;
 
 use fluvio::{Offset, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin};
+use fluvio::dataplane::batch::Batch;
+use fluvio::dataplane::batch::RawRecords;
+
+use dataplane::core::Encoder;
+
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use clap::Parser;
 
@@ -117,7 +122,7 @@ pub async fn batching(
 
         let config = TopicProducerConfigBuilder::default()
             .linger(Duration::from_millis(600000))
-            .batch_size(17)
+            .batch_size(17 + Batch::<RawRecords>::default().write_size(0))
             .build()
             .expect("failed to build config");
 
