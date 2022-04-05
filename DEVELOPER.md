@@ -24,7 +24,7 @@ Our guide uses Minikube as examples because it is easy to it get it started,
 but you can use another Kubernetes cluster as well.
 Please see [Kubernetes](https://kubernetes.io) for setting up a development cluster.
 
-Please read [doc](www.fluvio.io) for technical arch and operation guide.
+Please read [doc](https://www.fluvio.io) for technical arch and operation guide.
 
 ---
 
