@@ -4,7 +4,8 @@
 //! Connects to server and fetches logs
 //!
 
-use fluvio::metadata::tableformat::TableFormatColumnConfig;
+use comfy_table::Table;
+use fluvio::{metadata::tableformat::TableFormatColumnConfig};
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use super::TableModel;
 use std::collections::BTreeMap;
@@ -81,8 +82,7 @@ pub fn format_raw_record(record: &[u8]) -> String {
 /// Print table header if `print_header` is true
 /// Rows may not stay aligned with table header
 pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<String> {
-    use comfy_table::{Row, cell, Cell, Slice};
-    use comfy_table::format::{self, FormatBuilder};
+    use comfy_table::{Row, Cell};
 
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
@@ -122,40 +122,37 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
 
     let mut header: Row = Row::new();
 
-    for cell in keys_str.iter().map(|k| cell!(k.to_owned())).collect() {
+    for cell in keys_str
+        .iter()
+        .map(|k| Cell::new(k.to_owned()))
+        .collect::<Vec<Cell>>()
+    {
         header.add_cell(cell);
-
     }
 
     let mut entries: Row = Row::new();
 
-    for cell in values_str.iter().map(|v| Cell::new(v)).collect() {
+    for cell in values_str
+        .iter()
+        .map(|v| Cell::new(v))
+        .collect::<Vec<Cell>>()
+    {
         entries.add_cell(cell);
     }
 
+    let mut table = Table::new();
+    table.set_header(header);
+    table.add_row(entries);
 
-    // Print the table
-    let t_print = vec![header, entries];
+    let mut out: Vec<String> = Vec::new();
 
-    let mut table = comfy_table::Table::init(t_print);
-
-    let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
-    let table_format = base_format;
-    table.set_format(table_format.build());
-
-    let mut out = Vec::new();
-    let res = if print_header {
-        table.print(&mut out)
+    if print_header {
+        out = table.lines().collect();
     } else {
-        let slice = table.slice(1..);
-        slice.print(&mut out)
-    };
-
-    if res.is_ok() {
-        Some(String::from_utf8_lossy(&out).trim_end().to_string())
-    } else {
-        None
+        out = table.lines().skip(1).collect();
     }
+
+    Some(out.join("\n"))
 }
 
 // -----------------------------------

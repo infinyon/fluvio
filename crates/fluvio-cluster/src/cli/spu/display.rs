@@ -38,7 +38,7 @@ where
 impl TableOutputHandler for ListSpus {
     /// table header implementation
     fn header(&self) -> Row {
-        row!["ID", "NAME", "STATUS", "TYPE", "RACK", "PUBLIC", "PRIVATE"]
+        Row::from(["ID", "NAME", "STATUS", "TYPE", "RACK", "PUBLIC", "PRIVATE"])
     }
 
     /// return errors in string format
@@ -51,16 +51,18 @@ impl TableOutputHandler for ListSpus {
             .iter()
             .map(|metadata| {
                 let spu = &metadata.spec;
+                let mut row = Row::new();
 
-                row![
-                    r -> spu.id,
-                    l -> metadata.name,
-                    l -> metadata.status.to_string(),
-                    l -> spu.spu_type.to_string(),
-                    c -> (&spu.rack).as_ref().unwrap_or(&"-".to_string()),
-                    l -> spu.public_endpoint.to_string(),
-                    l -> spu.private_endpoint.to_string()
-                ]
+                row.add_cell(Cell::new(spu.id));
+
+                row.add_cell(Cell::new(metadata.name.to_string()));
+                row.add_cell(Cell::new(metadata.status.to_string()));
+                row.add_cell(Cell::new(spu.spu_type.to_string()));
+                row.add_cell(Cell::new((&spu.rack).as_ref().unwrap_or(&"-".to_string())));
+                row.add_cell(Cell::new(spu.public_endpoint.to_string()));
+                row.add_cell(Cell::new(spu.private_endpoint.to_string()));
+
+                row
             })
             .collect()
     }

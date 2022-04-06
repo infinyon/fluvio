@@ -81,7 +81,7 @@ mod output {
     impl TableOutputHandler for ListManagedConnectors {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "TYPE", "VERSION", "STATUS",]
+            Row::from(["NAME", "TYPE", "VERSION", "STATUS"])
         }
 
         /// return errors in string format
@@ -96,10 +96,17 @@ mod output {
                 .map(|r| {
                     let spec = &r.spec;
                     let mut row = Row::new();
-                    row.add_cell(Cell::new_align(&r.name, Alignment::LEFT));
-                    row.add_cell(Cell::new_align(&spec.type_.to_string(), Alignment::LEFT));
-                    row.add_cell(Cell::new_align(&spec.version(), Alignment::LEFT));
-                    row.add_cell(Cell::new_align(&r.status.to_string(), Alignment::RIGHT));
+                    row.add_cell(Cell::new(&r.name).set_alignment(CellAlignment::Left));
+                    row.add_cell(
+                        Cell::new(&spec.type_.to_string()).set_alignment(CellAlignment::Left),
+                    );
+                    row.add_cell(Cell::new(&spec.version()).set_alignment(CellAlignment::Left));
+
+                    row.add_cell(
+                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
+                    );
+
+                    row
                 })
                 .collect()
         }

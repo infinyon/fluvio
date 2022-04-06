@@ -41,7 +41,7 @@ mod display {
 
     use std::convert::TryInto;
 
-    use comfy_table::Row;
+    use comfy_table::{Row, Cell};
 
     use serde::Serialize;
 
@@ -87,7 +87,7 @@ mod display {
     impl TableOutputHandler for ListSpus {
         /// table header implementation
         fn header(&self) -> Row {
-            row![
+            Row::from([
                 "TOPIC",
                 "PARTITION",
                 "LEADER",
@@ -97,8 +97,8 @@ mod display {
                 "HW",
                 "LEO",
                 "LRS",
-                "FOLLOWER OFFSETS"
-            ]
+                "FOLLOWER OFFSETS",
+            ])
         }
 
         /// return errors in string format
@@ -131,17 +131,19 @@ mod display {
 
                     let mut row = Row::new();
 
-                    row.add_cell(topic);
-                    row.add_cell(partition.to_string());
-                    row.add_cell(spec.leader.to_string());
-                    row.add_cell(format!("{:?}",spec.followers()));
-                    row.add_cell(format!("{:?}",status.resolution));
-                    row.add_cell(printable_size);
-                    row.add_cell(status.leader.hw.to_string());
-                    row.add_cell(status.leader.leo.to_string());
-                    row.add_cell(status.leader.leo.to_string());
-                    row.add_cell(status.lsr.to_string());
-                    row.add_cell(format!("{:?}",status.replicas));
+                    row.add_cell(Cell::new(topic));
+                    row.add_cell(Cell::new(partition.to_string()));
+                    row.add_cell(Cell::new(spec.leader.to_string()));
+                    row.add_cell(Cell::new(format!("{:?}", spec.followers())));
+                    row.add_cell(Cell::new(format!("{:?}", status.resolution)));
+                    row.add_cell(Cell::new(printable_size));
+                    row.add_cell(Cell::new(status.leader.hw.to_string()));
+                    row.add_cell(Cell::new(status.leader.leo.to_string()));
+                    row.add_cell(Cell::new(status.leader.leo.to_string()));
+                    row.add_cell(Cell::new(status.lsr.to_string()));
+                    row.add_cell(Cell::new(format!("{:?}", status.replicas)));
+
+                    row
                 })
                 .collect()
         }

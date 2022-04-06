@@ -81,7 +81,7 @@ mod output {
     impl TableOutputHandler for ListTableFormats {
         /// tableformat header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS",]
+            Row::from(["NAME", "STATUS"])
         }
 
         /// return errors in string format
@@ -97,14 +97,13 @@ mod output {
                     let _spec = &r.spec;
                     let mut row = Row::new();
 
-                    row.add_cell(
-                        Cell::new_align(&r.name, CellAlignment::Right),
-                    );
+                    row.add_cell(Cell::new(&r.name).set_alignment(CellAlignment::Right));
 
                     row.add_cell(
-                        Cell::new_align(&r.status.to_string(), CellAlignment::Right),
+                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
                     );
 
+                    row
                 })
                 .collect()
         }

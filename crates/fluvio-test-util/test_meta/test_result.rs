@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::fmt::{self, Debug, Display, Formatter};
 
 use hdrhistogram::Histogram;
-use prettytable::{table, row, cell};
+use comfy_table::{Table, Row, Cell};
 
 #[derive(Debug, Clone)]
 pub struct TestResult {
@@ -53,11 +53,23 @@ impl Display for TestResult {
         let success_str = format!("{}", self.success);
         let duration_str = format!("{:?}", self.duration);
 
-        let basic_results_table = table!(
-            [b->"Test Results"],
-            ["Pass?", b->success_str],
-            ["Duration", duration_str]
-        );
+        let mut basic_results_table = Table::new();
+
+        basic_results_table.add_row(Row::from(vec![
+            Cell::new("success"),
+            Cell::new(success_str),
+        ]));
+
+        basic_results_table.add_row(Row::from(vec![
+            Cell::new("duration"),
+            Cell::new(duration_str),
+        ]));
+
+        // let basic_results_table = Table::new(
+        //     "Test Results"
+        //     ["Pass?", b->success_str],
+        //     ["Duration", duration_str]
+        // );
 
         //let topic_create_latency_avg = format!(
         //    "{:.2?}",

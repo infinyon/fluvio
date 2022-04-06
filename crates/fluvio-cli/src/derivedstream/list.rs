@@ -75,7 +75,7 @@ mod output {
     impl TableOutputHandler for ListDerivedStream {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS", "INPUT", "STEPS"]
+            Row::from(["NAME", "STATUS", "INPUT", "STEPS"])
         }
 
         /// return errors in string format
@@ -91,10 +91,19 @@ mod output {
                     let spec = &r.spec;
                     let mut row = Row::new();
 
-                    row.add_cell(Cell::new_align(&r.name, CellAlignment::Right));
-                    row.add_cell(Cell::new_align(&r.status.to_string(), CellAlignment::Right));
-                    row.add_cell(Cell::new_align(&spec.input.to_string(), CellAlignment::Right));
-                    row.add_cell(Cell::new_align(&spec.steps.to_string(), CellAlignment::Right));
+                    row.add_cell(Cell::new(&r.name).set_alignment(CellAlignment::Right));
+                    row.add_cell(
+                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
+                    );
+                    row.add_cell(
+                        Cell::new(&spec.input.to_string()).set_alignment(CellAlignment::Right),
+                    );
+                    
+                    row.add_cell(
+                        Cell::new(&spec.steps.to_string()).set_alignment(CellAlignment::Right),
+                    );
+
+                    row
                 })
                 .collect()
         }

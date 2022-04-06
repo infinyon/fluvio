@@ -714,17 +714,6 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "2.34.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0610544180c38b88101fecf2dd634b174a62eef6946f84dfc6a7127512b381c"
-dependencies = [
- "bitflags",
- "textwrap 0.11.0",
- "unicode-width",
-]
-
-[[package]]
-name = "clap"
 version = "3.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "71c47df61d9e16dc010b55dba1952a57d8c215dbb533fd13cdd13369aac73b1c"
@@ -734,7 +723,7 @@ dependencies = [
  "indexmap",
  "lazy_static",
  "os_str_bytes",
- "textwrap 0.15.0",
+ "textwrap",
 ]
 
 [[package]]
@@ -743,7 +732,7 @@ version = "3.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df6f3613c0a3cddfd78b41b10203eb322cb29b600cbdf808a7d3db95691b8e25"
 dependencies = [
- "clap 3.1.8",
+ "clap",
 ]
 
 [[package]]
@@ -1613,7 +1602,7 @@ name = "fluvio-channel"
 version = "0.0.0"
 dependencies = [
  "cfg-if",
- "clap 3.1.8",
+ "clap",
  "color-eyre",
  "dirs",
  "fluvio-types",
@@ -1630,7 +1619,7 @@ version = "0.0.0"
 dependencies = [
  "assert_cmd",
  "cfg-if",
- "clap 3.1.8",
+ "clap",
  "color-eyre",
  "colored",
  "dirs",
@@ -1650,7 +1639,7 @@ version = "0.0.0"
 dependencies = [
  "async-h1",
  "atty",
- "clap 3.1.8",
+ "clap",
  "clap_complete",
  "color-eyre",
  "colored",
@@ -1724,7 +1713,7 @@ dependencies = [
  "async-channel",
  "async-trait",
  "chrono",
- "clap 3.1.8",
+ "clap",
  "color-eyre",
  "colored",
  "comfy-table",
@@ -1845,6 +1834,7 @@ name = "fluvio-extension-common"
 version = "0.7.3"
 dependencies = [
  "async-trait",
+ "clap",
  "comfy-table",
  "fluvio",
  "fluvio-package-index",
@@ -1853,7 +1843,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "structopt",
  "thiserror",
  "tracing",
 ]
@@ -1944,7 +1933,7 @@ dependencies = [
 name = "fluvio-run"
 version = "0.0.0"
 dependencies = [
- "clap 3.1.8",
+ "clap",
  "fluvio-extension-common",
  "fluvio-future",
  "fluvio-sc",
@@ -1965,7 +1954,7 @@ dependencies = [
  "async-trait",
  "base64",
  "cfg-if",
- "clap 3.1.8",
+ "clap",
  "event-listener",
  "fluvio-auth",
  "fluvio-controlplane",
@@ -2103,7 +2092,7 @@ dependencies = [
  "async-trait",
  "bytes",
  "cfg-if",
- "clap 3.1.8",
+ "clap",
  "derive_builder",
  "event-listener",
  "flate2",
@@ -2159,7 +2148,7 @@ dependencies = [
  "async-trait",
  "blocking",
  "bytes",
- "clap 3.1.8",
+ "clap",
  "derive_builder",
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2222,7 +2211,7 @@ dependencies = [
  "async-std",
  "async-trait",
  "bytes",
- "clap 3.1.8",
+ "clap",
  "comfy-table",
  "crc",
  "crossbeam-channel",
@@ -2259,7 +2248,7 @@ dependencies = [
 name = "fluvio-test-derive"
 version = "0.0.0"
 dependencies = [
- "clap 3.1.8",
+ "clap",
  "crossbeam-channel",
  "fluvio",
  "fluvio-future",
@@ -2294,7 +2283,7 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "bytes",
- "clap 3.1.8",
+ "clap",
  "comfy-table",
  "dyn-clone",
  "fluvio",
@@ -4605,30 +4594,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
-name = "structopt"
-version = "0.3.26"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6b5c64445ba8094a6ab0c3cd2ad323e07171012d9c98b0b15651daf1787a10"
-dependencies = [
- "clap 2.34.0",
- "lazy_static",
- "structopt-derive",
-]
-
-[[package]]
-name = "structopt-derive"
-version = "0.4.18"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcb5ae327f9cc13b68763b5749770cb9e048a99bd9dfdfa58d0cf05d5f64afe0"
-dependencies = [
- "heck 0.3.3",
- "proc-macro-error",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "strum"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4777,15 +4742,6 @@ name = "termtree"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "507e9898683b6c43a9aa55b64259b721b52ba226e0f3779137e50ad114a4c90b"
-
-[[package]]
-name = "textwrap"
-version = "0.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d326610f408c7a4eb6f51c37c330e496b08506c9457c9d34287ecc38809fb060"
-dependencies = [
- "unicode-width",
-]
 
 [[package]]
 name = "textwrap"
