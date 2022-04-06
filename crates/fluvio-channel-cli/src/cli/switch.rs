@@ -6,27 +6,27 @@ use fluvio_channel::{
 use crate::install_channel_fluvio_bin;
 
 use std::path::PathBuf;
-use structopt::StructOpt;
+use clap::{Parser, IntoApp};
 use tracing::debug;
 
-#[derive(Debug, StructOpt, Clone, PartialEq)]
+#[derive(Debug, Clone, Parser, PartialEq)]
 pub struct SwitchOpt {
     /// Name of release channel
     channel: Option<String>,
 
     /// Path to alternate channel config
-    #[structopt(long)]
+    #[clap(long)]
     config: Option<PathBuf>,
 
     /// Display this help message
-    #[structopt(short, long)]
+    #[clap(short, long)]
     help: bool,
 }
 
 impl SwitchOpt {
     pub async fn process(&self) -> Result<()> {
         if self.help {
-            let _ = SwitchOpt::clap().print_help();
+            let _ = SwitchOpt::command().print_help();
             println!();
             return Ok(());
         }
@@ -126,7 +126,7 @@ impl SwitchOpt {
             Ok(())
         } else {
             println!("No channel name provided");
-            let _ = SwitchOpt::clap().print_help();
+            let _ = SwitchOpt::command().print_help();
             println!();
             Err(eyre!(""))
         }

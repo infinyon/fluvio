@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 use serde::Deserialize;
 use std::collections::BTreeMap;
@@ -26,40 +26,40 @@ use list::ListManagedConnectorsOpt;
 use logs::LogsManagedConnectorOpt;
 use crate::CliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum ManagedConnectorCmd {
     /// Create a new Managed Connector
-    #[structopt(
+    #[clap(
         name = "create",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Create(CreateManagedConnectorOpt),
 
     /// Update a Managed Connector
-    #[structopt(
+    #[clap(
         name = "update",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Update(UpdateManagedConnectorOpt),
 
     /// Delete a Managed Connector
-    #[structopt(
+    #[clap(
         name = "delete",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Delete(DeleteManagedConnectorOpt),
 
     /// Get the logs for a Managed Connector
-    #[structopt(
+    #[clap(
         name = "logs",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Logs(LogsManagedConnectorOpt),
 
     /// List all Managed Connectors
-    #[structopt(
+    #[clap(
         name = "list",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     List(ListManagedConnectorsOpt),
 }

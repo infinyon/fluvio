@@ -1,7 +1,7 @@
 use std::{fmt, str::FromStr};
 use std::path::PathBuf;
 use fluvio_controlplane_metadata::spg::{SpuConfig, StorageConfig};
-use structopt::StructOpt;
+use clap::Parser;
 use semver::Version;
 
 mod local;
@@ -45,10 +45,10 @@ impl FromStr for DefaultLogDirectory {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct SpuCliConfig {
     /// set spu storage size
-    #[structopt(long, default_value = "10")]
+    #[clap(long, default_value = "10")]
     pub spu_storage_size: u16,
 }
 
@@ -64,99 +64,99 @@ impl SpuCliConfig {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct K8Install {
     /// k8: use specific chart version
-    #[structopt(long)]
+    #[clap(long)]
     pub chart_version: Option<semver::Version>,
 
     /// k8: use specific image version
-    #[structopt(long)]
+    #[clap(long)]
     pub image_version: Option<String>,
 
     /// k8: use custom docker registry
-    #[structopt(long)]
+    #[clap(long)]
     pub registry: Option<String>,
 
     /// k8
-    #[structopt(long, default_value = "default")]
+    #[clap(long, default_value = "default")]
     pub namespace: String,
 
     /// k8
-    #[structopt(long, default_value = "main")]
+    #[clap(long, default_value = "main")]
     pub group_name: String,
 
     /// helm chart installation name
-    #[structopt(long, default_value = "fluvio")]
+    #[clap(long, default_value = "fluvio")]
     pub install_name: String,
 
     /// Local path to a helm chart to install
-    #[structopt(long)]
+    #[clap(long)]
     pub chart_location: Option<String>,
 
     /// chart values
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub chart_values: Vec<PathBuf>,
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct StartOpt {
     /// use local image
-    #[structopt(long)]
+    #[clap(long)]
     pub develop: bool,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub k8_config: K8Install,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub spu_config: SpuCliConfig,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub skip_profile_creation: bool,
 
     /// number of SPU
-    #[structopt(long, default_value = "1")]
+    #[clap(long, default_value = "1")]
     pub spu: u16,
 
     /// RUST_LOG options
-    #[structopt(long)]
+    #[clap(long)]
     pub rust_log: Option<String>,
 
     /// log dir
-    #[structopt(long, default_value)]
+    #[clap(long, default_value_t)]
     pub log_dir: DefaultLogDirectory,
 
-    #[structopt(long)]
+    #[clap(long)]
     /// installing/upgrade sys only
     sys_only: bool,
 
     /// install local spu/sc(custom)
-    #[structopt(long)]
+    #[clap(long)]
     local: bool,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub tls: TlsOpt,
 
-    #[structopt(long)]
+    #[clap(long)]
     pub authorization_config_map: Option<String>,
 
     /// Whether to skip pre-install checks, defaults to false
-    #[structopt(long)]
+    #[clap(long)]
     pub skip_checks: bool,
     /// Tries to setup necessary environment for cluster startup
-    #[structopt(long)]
+    #[clap(long)]
     pub setup: bool,
 
     /// Proxy address
-    #[structopt(long)]
+    #[clap(long)]
     pub proxy_addr: Option<String>,
 
     /// Service Type
-    #[structopt(long)]
+    #[clap(long)]
     pub service_type: Option<String>,
 
     /// Connector Prefix
-    #[structopt(long, name = "connector_prefix")]
+    #[clap(long, name = "connector_prefix")]
     pub connector_prefix: Vec<String>,
 }
 
@@ -182,9 +182,9 @@ impl StartOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct UpgradeOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub start: StartOpt,
 }
 

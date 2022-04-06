@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::debug;
 
 use fluvio::Fluvio;
@@ -20,10 +20,10 @@ use crate::Result;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListTopicsOpt {
     /// Output
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

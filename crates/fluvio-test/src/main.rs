@@ -7,7 +7,7 @@ use std::thread;
 use std::time::{SystemTime, Duration};
 
 use indicatif::{ProgressBar, ProgressStyle};
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio_test_util::test_meta::{BaseCli, TestCase, TestCli, TestOption};
@@ -27,7 +27,7 @@ use tracing::debug;
 //const CI_FAIL_FLAG: &str = "/tmp/CI_FLUVIO_TEST_FAIL";
 
 fn main() {
-    let option = BaseCli::from_args();
+    let option = BaseCli::parse();
 
     debug!("{:?}", option);
 
@@ -118,7 +118,7 @@ fn run_test(
                     root_process.kill_with(Signal::User2);
                     process::exit(1);
                 }
-            };
+            }
         }
         Err(_) => panic!("Fork failed"),
     };
@@ -281,28 +281,28 @@ mod tests {
     // CLI Tests
 
     use std::time::Duration;
-    use structopt::StructOpt;
+    use clap::Parser;
     use fluvio_test_util::test_meta::{BaseCli, TestCli};
     use fluvio_test_util::test_meta::environment::EnvDetail;
     use fluvio_test::tests::smoke::SmokeTestOption;
 
     #[test]
     fn valid_test_name() {
-        let args = BaseCli::from_iter_safe(vec!["fluvio-test", "smoke"]);
+        let args = BaseCli::try_parse_from(vec!["fluvio-test", "smoke"]);
 
         assert!(args.is_ok());
     }
 
     #[test]
     fn invalid_test_name() {
-        let args = BaseCli::from_iter_safe(vec!["fluvio-test", "testdoesnotexist"]);
+        let args = BaseCli::try_parse_from(vec!["fluvio-test", "testdoesnotexist"]);
 
         assert!(args.is_err());
     }
 
     #[test]
     fn extra_vars() {
-        let args = BaseCli::from_iter(vec![
+        let args = BaseCli::parse_from(vec![
             "fluvio-test",
             "smoke",
             "--",
@@ -315,7 +315,7 @@ mod tests {
             let mut subcommand = vec![args.environment.test_name.clone()];
             subcommand.extend(cmd);
 
-            let smoke_test_case = SmokeTestOption::from_iter(subcommand);
+            let smoke_test_case = SmokeTestOption::parse_from(subcommand);
 
             let expected = SmokeTestOption {
                 producer_iteration: 9000,
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn topic() {
-        let args = BaseCli::from_iter(vec![
+        let args = BaseCli::parse_from(vec![
             "fluvio-test",
             "smoke",
             "--topic-name",
@@ -346,14 +346,14 @@ mod tests {
 
     #[test]
     fn spu() {
-        let args = BaseCli::from_iter(vec!["fluvio-test", "smoke", "--spu", "5"]);
+        let args = BaseCli::parse_from(vec!["fluvio-test", "smoke", "--spu", "5"]);
 
         assert_eq!(args.environment.spu, 5);
     }
 
     #[test]
     fn timeout() {
-        let args = BaseCli::from_iter(vec!["fluvio-test", "smoke", "--timeout", "9000"]);
+        let args = BaseCli::parse_from(vec!["fluvio-test", "smoke", "--timeout", "9000"]);
 
         assert_eq!(args.environment.timeout(), Duration::from_secs(9000));
     }
@@ -375,7 +375,7 @@ mod tests {
     //    use fluvio_future::task::run_block_on;
 
     //    run_block_on(async {
-    //        let skip_cluster_delete_cmd = CliArgs::from_iter(vec![
+    //        let skip_cluster_delete_cmd = CliArgs::parse_from(vec![
     //            "fluvio-test",
     //            "smoke",
     //            "--keep-cluster",
@@ -392,7 +392,7 @@ mod tests {
     //        };
     //        cluster_cleanup(test_case).await;
 
-    //        let skip_cluster_start_cmd = CliArgs::from_iter(vec![
+    //        let skip_cluster_start_cmd = CliArgs::parse_from(vec![
     //            "fluvio-test",
     //            "smoke",
     //            "--disable-install",

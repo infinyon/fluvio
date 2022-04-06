@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use structopt::StructOpt;
+use clap::Parser;
 use crate::Result;
 use fluvio::Fluvio;
 use fluvio::metadata::smartmodule::{SmartModuleWasm, SmartModuleSpec};
@@ -7,15 +7,15 @@ use flate2::{Compression, bufread::GzEncoder};
 use std::io::Read;
 
 /// Create a new SmartModule with a given name
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct CreateSmartModuleOpt {
     /// The name of the SmartModule to create
     name: String,
     /// The path to a WASM binary to create the SmartModule from
-    #[structopt(long)]
+    #[clap(long)]
     wasm_file: PathBuf,
     /// The path to the source code for the SmartModule WASM
-    #[structopt(long)]
+    #[clap(long)]
     _source_file: Option<PathBuf>,
 }
 

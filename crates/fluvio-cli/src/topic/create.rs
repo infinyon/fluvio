@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use tracing::debug;
-use structopt::StructOpt;
+use clap::Parser;
 use humantime::parse_duration;
 
 use fluvio::metadata::topic::CleanupPolicy;
@@ -25,10 +25,10 @@ use fluvio::Fluvio;
 use fluvio::metadata::topic::TopicSpec;
 use crate::{Result, CliError};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct CreateTopicOpt {
     /// The name of the Topic to create
-    #[structopt(value_name = "name")]
+    #[clap(value_name = "name")]
     topic: String,
 
     /// The number of Partitions to give the Topic
@@ -38,8 +38,8 @@ pub struct CreateTopicOpt {
     /// partitions may be processed by separate SPUs on different computers. By
     /// dividing the load of a Topic evenly among partitions, you can increase the
     /// total throughput of the Topic.
-    #[structopt(
-        short = "p",
+    #[clap(
+        short = 'p',
         long = "partitions",
         value_name = "partitions",
         default_value = "1"
@@ -56,8 +56,8 @@ pub struct CreateTopicOpt {
     /// This applies to each Partition in the Topic. If we have
     /// 3 partitions and a replication factor of 2, then all 3
     /// of the partitions must exist on at least 2 SPUs.
-    #[structopt(
-        short = "r",
+    #[clap(
+        short = 'r',
         long = "replication",
         value_name = "integer",
         default_value = "1"
@@ -65,16 +65,16 @@ pub struct CreateTopicOpt {
     replication: i16,
 
     /// Ignore racks while computing replica assignment
-    #[structopt(
-        short = "i",
+    #[clap(
+        short = 'i',
         long = "ignore-rack-assignment",
-        conflicts_with = "replica_assignment"
+        conflicts_with = "replica-assignment"
     )]
     ignore_rack_assigment: bool,
 
     /// Replica assignment file
-    #[structopt(
-        short = "f",
+    #[clap(
+        short = 'f',
         long = "replica-assignment",
         value_name = "file.json",
         parse(from_os_str),
@@ -84,10 +84,10 @@ pub struct CreateTopicOpt {
     replica_assignment: Option<PathBuf>,
 
     /// Validates configuration, does not provision
-    #[structopt(short = "d", long)]
+    #[clap(short = 'd', long)]
     dry_run: bool,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     setting: TopicConfigOpt,
 }
 
@@ -164,19 +164,19 @@ impl CreateTopicOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct TopicConfigOpt {
     /// Retention time (round to seconds)
     /// Ex: '1h', '2d 10s', '7 days' (default)
-    #[structopt(long, value_name = "time",parse(try_from_str = parse_duration))]
+    #[clap(long, value_name = "time",parse(try_from_str = parse_duration))]
     retention_time: Option<Duration>,
 
     /// Segment size in bytes
-    #[structopt(long, value_name = "bytes")]
+    #[clap(long, value_name = "bytes")]
     segment_size: Option<u32>,
 
     /// Compression configuration for topic
-    #[structopt(long, value_name = "compression")]
+    #[clap(long, value_name = "compression")]
     compression_type: Option<CompressionAlgorithm>,
 }
 

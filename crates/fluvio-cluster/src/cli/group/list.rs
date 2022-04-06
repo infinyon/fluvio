@@ -4,7 +4,7 @@
 //!
 
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spg::SpuGroupSpec;
@@ -13,9 +13,9 @@ use crate::cli::common::output::Terminal;
 use crate::cli::common::OutputFormat;
 use crate::cli::ClusterCliError;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListManagedSpuGroupsOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

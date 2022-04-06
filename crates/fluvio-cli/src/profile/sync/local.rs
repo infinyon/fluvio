@@ -1,17 +1,17 @@
 use std::convert::TryInto;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::FluvioConfig;
 use fluvio::config::{ConfigFile, LOCAL_PROFILE, Profile};
 use crate::Result;
 use crate::common::tls::TlsClientOpt;
 
-#[derive(Debug, Default, StructOpt)]
+#[derive(Debug, Default, Parser)]
 pub struct LocalOpt {
-    #[structopt(value_name = "host:port", default_value = "localhost:9003")]
+    #[clap(value_name = "host:port", default_value = "localhost:9003")]
     pub local: String,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub tls: TlsClientOpt,
 }
 

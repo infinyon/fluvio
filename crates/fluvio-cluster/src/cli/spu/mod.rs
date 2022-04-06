@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 mod list;
 mod display;
@@ -16,26 +16,26 @@ use list::ListSpusOpt;
 use register::RegisterCustomSpuOpt;
 use unregister::UnregisterCustomSpuOpt;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum SpuCmd {
     /// Register a new custom SPU with the cluster
-    #[structopt(
+    #[clap(
         name = "register",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Register(RegisterCustomSpuOpt),
 
     /// Unregister a custom SPU from the cluster
-    #[structopt(
+    #[clap(
         name = "unregister",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     Unregister(UnregisterCustomSpuOpt),
 
     /// List all SPUs known by this cluster (managed AND custom)
-    #[structopt(
+    #[clap(
         name = "list",
-        template = COMMAND_TEMPLATE,
+        help_template = COMMAND_TEMPLATE,
     )]
     List(ListSpusOpt),
 }

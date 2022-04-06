@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 use crate::Result;
 use fluvio::metadata::smartmodule::SmartModuleSpec;
 use fluvio::Fluvio;
@@ -7,9 +7,9 @@ use crate::common::output::Terminal;
 use crate::common::OutputFormat;
 
 /// List all existing SmartModules
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListSmartModuleOpt {
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

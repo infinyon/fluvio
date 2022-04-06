@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::fs::{copy, write};
 
-use structopt::StructOpt;
+use clap::Parser;
 use serde::Serialize;
 use duct::cmd;
 use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt, PidExt};
@@ -14,7 +14,7 @@ use crate::cli::start::get_log_directory;
 
 type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 
-#[derive(StructOpt, Debug)]
+#[derive(Parser, Debug)]
 pub struct DiagnosticsOpt {}
 
 impl DiagnosticsOpt {

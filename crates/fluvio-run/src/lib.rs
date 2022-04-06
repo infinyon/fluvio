@@ -1,4 +1,4 @@
-use structopt::StructOpt;
+use clap::Parser;
 
 mod error;
 
@@ -10,21 +10,21 @@ use fluvio_extension_common::FluvioExtensionMetadata;
 
 const VERSION: &str = include_str!("../../../VERSION");
 
-#[derive(Debug, StructOpt)]
-#[structopt(version = crate::VERSION)]
+#[derive(Debug, Parser)]
+#[clap(version = crate::VERSION)]
 pub enum RunCmd {
     /// Run a new Streaming Processing Unit (SPU)
-    #[structopt(name = "spu")]
+    #[clap(name = "spu")]
     SPU(SpuOpt),
     /// Run a new Streaming Controller (SC)
-    #[structopt(name = "sc")]
+    #[clap(name = "sc")]
     SC(ScOpt),
     /// Return plugin metadata as JSON
-    #[structopt(name = "metadata")]
+    #[clap(name = "metadata")]
     Metadata(MetadataOpt),
 
     /// Print version information
-    #[structopt(name = "version")]
+    #[clap(name = "version")]
     Version(VersionOpt),
 }
 
@@ -48,7 +48,7 @@ impl RunCmd {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct MetadataOpt {}
 impl MetadataOpt {
     pub fn process(self) -> Result<()> {
@@ -68,7 +68,7 @@ impl MetadataOpt {
     }
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct VersionOpt {}
 
 impl VersionOpt {

@@ -1,5 +1,5 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 use crate::Result;
 use crate::common::output::Terminal;
 use fluvio::Fluvio;
@@ -14,7 +14,7 @@ use self::list::*;
 use self::describe::*;
 use self::delete::*;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub enum DerivedStreamCmd {
     Create(CreateDerivedStreamOpt),
     List(ListDerivedStreamOpt),

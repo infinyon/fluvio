@@ -1,13 +1,13 @@
 use color_eyre::{Result, eyre::eyre};
 use fluvio_channel::FluvioChannelConfig;
 use std::path::PathBuf;
-use structopt::StructOpt;
+use clap::{Parser, IntoApp};
 use tracing::debug;
 
-#[derive(Debug, StructOpt, Clone, PartialEq)]
+#[derive(Debug, Parser, Clone, PartialEq)]
 pub struct DeleteOpt {
     /// Path to alternate channel config
-    #[structopt(long)]
+    #[clap(long)]
     config: Option<PathBuf>,
     /// Name of release channel
     channel: Option<String>,
@@ -15,14 +15,14 @@ pub struct DeleteOpt {
     // extension-path
     // image_tag_strategy
     /// Display this help message
-    #[structopt(short, long)]
+    #[clap(short, long)]
     help: bool,
 }
 
 impl DeleteOpt {
     pub async fn process(&self) -> Result<()> {
         if self.help {
-            let _ = DeleteOpt::clap().print_help();
+            let _ = DeleteOpt::command().print_help();
             println!();
             return Ok(());
         }
@@ -73,7 +73,7 @@ impl DeleteOpt {
             }
         } else {
             println!("No channel name provided");
-            let _ = DeleteOpt::clap().print_help();
+            let _ = DeleteOpt::command().print_help();
             println!();
             Err(eyre!(""))
         }

@@ -1,8 +1,8 @@
-use structopt::StructOpt;
+use clap::Parser;
 use fluvio_run::RunCmd;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let cmd: RunCmd = RunCmd::from_args();
+    let cmd: RunCmd = RunCmd::parse();
 
     #[cfg(feature = "telemetry")]
     let _jaeger_guard = {

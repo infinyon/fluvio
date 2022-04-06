@@ -12,7 +12,7 @@ use std::fs::File;
 use std::io::Read;
 use std::collections::BTreeMap;
 
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::debug;
 use serde::{Deserialize};
 
@@ -50,24 +50,24 @@ impl From<TestCase> for SmokeTestCase {
     }
 }
 
-#[derive(Debug, Clone, StructOpt, Default, PartialEq)]
-#[structopt(name = "Fluvio Smoke Test")]
+#[derive(Debug, Clone, Parser, Default, PartialEq)]
+#[clap(name = "Fluvio Smoke Test")]
 pub struct SmokeTestOption {
-    #[structopt(long)]
+    #[clap(long)]
     pub use_cli: bool,
-    #[structopt(long, default_value = "1")]
+    #[clap(long, default_value = "1")]
     pub producer_iteration: u32,
-    #[structopt(long, default_value = "100")]
+    #[clap(long, default_value = "100")]
     pub producer_record_size: u32,
-    #[structopt(long)]
+    #[clap(long)]
     pub consumer_wait: bool,
-    #[structopt(long)]
+    #[clap(long)]
     pub connector_config: Option<PathBuf>,
-    #[structopt(long)]
+    #[clap(long)]
     pub table_format_config: Option<PathBuf>,
-    #[structopt(long)]
+    #[clap(long)]
     pub skip_consumer_validate: bool,
-    #[structopt(long)]
+    #[clap(long)]
     pub skip_test_connector: bool,
 }
 

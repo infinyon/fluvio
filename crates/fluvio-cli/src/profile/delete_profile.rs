@@ -1,14 +1,14 @@
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 use fluvio::config::ConfigFile;
 
 use crate::Result;
 use crate::common::output::Terminal;
 use crate::common::{t_println, t_print_cli_err};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteProfileOpt {
-    #[structopt(value_name = "profile name")]
+    #[clap(value_name = "profile name")]
     pub profile_name: String,
 }
 

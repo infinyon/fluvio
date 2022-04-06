@@ -5,7 +5,7 @@
 //!
 
 use fluvio::metadata::topic::ReplicaSpec;
-use structopt::StructOpt;
+use clap::Parser;
 use tracing::debug;
 
 use fluvio::{Fluvio, FluvioError};
@@ -24,10 +24,10 @@ use super::ConnectorConfig;
 // CLI Options
 // -----------------------------------
 
-#[derive(Debug, StructOpt, Default)]
+#[derive(Debug, Parser, Default)]
 pub struct UpdateManagedConnectorOpt {
     /// The configuration file for the update Managed Connector
-    #[structopt(short = "c", long = "config", value_name = "config", required(true))]
+    #[clap(short = 'c', long = "config", value_name = "config", required(true))]
     pub config: String,
 }
 

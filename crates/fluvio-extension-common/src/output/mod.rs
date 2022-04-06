@@ -60,7 +60,7 @@ mod output {
 
     use std::sync::Arc;
 
-    use structopt::clap::arg_enum;
+    use clap::ArgEnum;
     use serde::Serialize;
 
     use comfy_table::Table;
@@ -75,15 +75,12 @@ mod output {
     use super::SerializeType;
     use super::OutputError;
 
-    // Uses clap::arg_enum to choose possible variables
-    arg_enum! {
-        #[derive(Debug, Clone, PartialEq)]
-        #[allow(non_camel_case_types)]
-        pub enum OutputType {
-            table,
-            yaml,
-            json,
-        }
+    #[derive(ArgEnum, Debug, Clone, PartialEq)]
+    #[allow(non_camel_case_types)]
+    pub enum OutputType {
+        table,
+        yaml,
+        json,
     }
 
     /// OutputType defaults to table formatting

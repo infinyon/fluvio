@@ -1,9 +1,9 @@
-use structopt::StructOpt;
+use clap::Parser;
 use crate::Result;
 use fluvio::Fluvio;
 use fluvio::metadata::derivedstream::DerivedStreamSpec;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct DeleteDerivedStreamOpt {
     name: String,
 }

@@ -5,7 +5,7 @@
 //!
 
 use std::sync::Arc;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::Fluvio;
 use fluvio_controlplane_metadata::spu::SpuSpec;
@@ -17,13 +17,13 @@ use crate::cli::common::output::Terminal;
 use crate::cli::common::OutputFormat;
 use crate::cli::spu::display::format_spu_response_output;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 pub struct ListSpusOpt {
     /// Whether to list only custom SPUs
-    #[structopt(long)]
+    #[clap(long)]
     custom: bool,
     /// The output format to print the SPUs
-    #[structopt(flatten)]
+    #[clap(flatten)]
     output: OutputFormat,
 }
 

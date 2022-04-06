@@ -2,36 +2,36 @@ use std::path::PathBuf;
 use std::convert::TryFrom;
 
 use tracing::debug;
-use structopt::StructOpt;
+use clap::Parser;
 
 use fluvio::config::{TlsPolicy, TlsPaths};
 use crate::target::TargetError;
 
 /// Optional Tls Configuration to Client
-#[derive(Debug, StructOpt, Default, Clone)]
+#[derive(Debug, Parser, Default, Clone)]
 pub struct TlsClientOpt {
     /// Enable TLS
-    #[structopt(long)]
+    #[clap(long)]
     pub tls: bool,
 
     /// TLS: use client cert
-    #[structopt(long)]
+    #[clap(long)]
     pub enable_client_cert: bool,
 
     /// Required if client cert is used
-    #[structopt(long)]
+    #[clap(long)]
     pub domain: Option<String>,
 
     /// Path to TLS ca cert, required when client cert is enabled
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub ca_cert: Option<PathBuf>,
 
     /// Path to TLS client certificate
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub client_cert: Option<PathBuf>,
 
     /// Path to TLS client private key
-    #[structopt(long, parse(from_os_str))]
+    #[clap(long, parse(from_os_str))]
     pub client_key: Option<PathBuf>,
 }
 
@@ -83,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_from_opt() {
-        let tls_opt = TlsClientOpt::from_iter(vec![
+        let tls_opt = TlsClientOpt::parse_from(vec![
             "test", // First arg is treated as binary name
             "--tls",
             "--enable-client-cert",
@@ -112,7 +112,7 @@ mod tests {
 
     #[test]
     fn test_anonymous() {
-        let tls_opt: TlsClientOpt = TlsClientOpt::from_iter(vec![
+        let tls_opt: TlsClientOpt = TlsClientOpt::parse_from(vec![
             "test", // First arg is treated as binary name
             "--tls",
         ]);
@@ -126,7 +126,7 @@ mod tests {
 
     #[test]
     fn test_missing_opts() {
-        let tls_opt: TlsClientOpt = TlsClientOpt::from_iter(vec![
+        let tls_opt: TlsClientOpt = TlsClientOpt::parse_from(vec![
             "test", // First arg is treated as binary name
             "--tls",
             "--enable-client-cert",

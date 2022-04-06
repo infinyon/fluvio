@@ -106,7 +106,7 @@ pub fn fluvio_test(args: TokenStream, input: TokenStream) -> TokenStream {
     let output_fn = quote! {
 
         pub fn #validate_sub_fn_iden(subcmd: Vec<String>) -> Box<dyn fluvio_test_util::test_meta::TestOption> {
-            Box::new(#test_opt_ident::from_iter(subcmd))
+            Box::new(#test_opt_ident::parse_from(subcmd))
         }
 
         pub fn #requirements_fn_iden() -> fluvio_test_util::test_meta::derive_attr::TestRequirements {
