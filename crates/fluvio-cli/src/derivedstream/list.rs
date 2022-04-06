@@ -30,11 +30,9 @@ mod output {
     //!
     //! Format Smart Stream response based on output type
 
-    use prettytable::Row;
-    use prettytable::row;
-    use prettytable::Cell;
-    use prettytable::cell;
-    use prettytable::format::Alignment;
+    use comfy_table::{Row, Cell};
+
+    use comfy_table::CellAlignment;
     use tracing::debug;
     use serde::Serialize;
     use fluvio_extension_common::output::OutputType;
@@ -91,12 +89,12 @@ mod output {
                 .iter()
                 .map(|r| {
                     let spec = &r.spec;
-                    Row::new(vec![
-                        Cell::new_align(&r.name, Alignment::RIGHT),
-                        Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
-                        Cell::new_align(&spec.input.to_string(), Alignment::RIGHT),
-                        Cell::new_align(&spec.steps.to_string(), Alignment::RIGHT),
-                    ])
+                    let mut row = Row::new();
+
+                    row.add_cell(Cell::new_align(&r.name, CellAlignment::Right));
+                    row.add_cell(Cell::new_align(&r.status.to_string(), CellAlignment::Right));
+                    row.add_cell(Cell::new_align(&spec.input.to_string(), CellAlignment::Right));
+                    row.add_cell(Cell::new_align(&spec.steps.to_string(), CellAlignment::Right));
                 })
                 .collect()
         }

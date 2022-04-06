@@ -36,11 +36,8 @@ mod output {
     //!
     //! Format Managed Connectors response based on output type
 
-    use prettytable::Row;
-    use prettytable::row;
-    use prettytable::Cell;
-    use prettytable::cell;
-    use prettytable::format::Alignment;
+    use comfy_table::{Row, Cell};
+    use comfy_table::CellAlignment;
     use tracing::debug;
     use serde::Serialize;
     use fluvio_extension_common::output::OutputType;
@@ -98,12 +95,11 @@ mod output {
                 .iter()
                 .map(|r| {
                     let spec = &r.spec;
-                    Row::new(vec![
-                        Cell::new_align(&r.name, Alignment::LEFT),
-                        Cell::new_align(&spec.type_.to_string(), Alignment::LEFT),
-                        Cell::new_align(&spec.version(), Alignment::LEFT),
-                        Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
-                    ])
+                    let mut row = Row::new();
+                    row.add_cell(Cell::new_align(&r.name, Alignment::LEFT));
+                    row.add_cell(Cell::new_align(&spec.type_.to_string(), Alignment::LEFT));
+                    row.add_cell(Cell::new_align(&spec.version(), Alignment::LEFT));
+                    row.add_cell(Cell::new_align(&r.status.to_string(), Alignment::RIGHT));
                 })
                 .collect()
         }

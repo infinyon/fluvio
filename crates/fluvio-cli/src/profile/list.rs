@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use serde::Serialize;
 use structopt::StructOpt;
-use prettytable::{Row, row, cell};
+use pretty_table::{Row, Cell};
 
 use crate::Result;
 use fluvio::config::{ConfigFile, Config, TlsPolicy};

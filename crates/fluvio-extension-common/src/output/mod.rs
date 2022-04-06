@@ -62,10 +62,9 @@ mod output {
 
     use structopt::clap::arg_enum;
     use serde::Serialize;
-    use prettytable::format;
-    use prettytable::Table;
-    use prettytable::row;
-    use prettytable::cell;
+
+    use comfy_table::Table;
+    use comfy_table::{Row, Cell};
 
     use super::TableOutputHandler;
     use super::TableRenderer;
@@ -153,18 +152,24 @@ mod output {
 
             // Create the table
             let mut table = Table::new();
-            table.set_format(*format::consts::FORMAT_CLEAN);
-
+            
             for (key, val_opt) in kv_values {
+                let mut row = Row::new();
+
+
                 if let Some(val) = val_opt {
-                    table.add_row(row!(key, ":".to_owned(), val));
+                    row.add_cell(Cell::new(format!("{}{}{}", key, ":".to_owned(), val)));
+
                 } else {
-                    table.add_row(row!(key));
+                    row.add_cell(Cell::new(format!("{}", key)));
                 }
+
+                table.add_row(row);
             }
 
+
             // print table to stdout
-            table.printstd();
+            println!("{table}");
         }
     }
 }

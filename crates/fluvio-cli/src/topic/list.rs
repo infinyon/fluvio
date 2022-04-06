@@ -44,7 +44,7 @@ mod display {
     use std::time::Duration;
 
     use humantime::{format_duration};
-    use prettytable::*;
+    use comfy_table::{Row, Cell, CellAlignment};
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;

@@ -1,8 +1,7 @@
 use std::sync::Arc;
 
-use prettytable::format;
-use prettytable::Row;
-use prettytable::Table;
+use comfy_table::Row;
+use comfy_table::Table;
 
 use crate::t_println;
 use super::Terminal;
@@ -43,7 +42,7 @@ where
     }
 
     /// convert result to table output and print to screen
-    fn display_table<T>(&self, list: &T, indent: bool)
+    fn display_table<T>(&self, list: &T, _indent: bool)
     where
         T: TableOutputHandler,
     {
@@ -57,13 +56,9 @@ where
 
         // Create the table
         let mut table = Table::new();
-        let mut format = *format::consts::FORMAT_CLEAN;
-        let pad_left = if indent { 5 } else { 1 };
-        format.padding(pad_left, 1);
-        table.set_format(format);
 
         // add header
-        table.set_titles(header);
+        table.set_header(header);
 
         // add rows
         for row in content {
@@ -71,6 +66,6 @@ where
         }
 
         // print table to stdout
-        table.printstd();
+        println!("{table}");
     }
 }

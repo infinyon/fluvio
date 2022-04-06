@@ -40,11 +40,8 @@ mod output {
     //!
     //! Format SPU Group response based on output type
 
-    use prettytable::Row;
-    use prettytable::row;
-    use prettytable::Cell;
-    use prettytable::cell;
-    use prettytable::format::Alignment;
+    use comfy_table::{Cell, Row};
+    use comfy_table::CellAlignment;
     use tracing::debug;
     use serde::Serialize;
 

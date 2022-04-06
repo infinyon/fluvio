@@ -81,8 +81,8 @@ pub fn format_raw_record(record: &[u8]) -> String {
 /// Print table header if `print_header` is true
 /// Rows may not stay aligned with table header
 pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<String> {
-    use prettytable::{Row, cell, Cell, Slice};
-    use prettytable::format::{self, FormatBuilder};
+    use comfy_table::{Row, cell, Cell, Slice};
+    use comfy_table::format::{self, FormatBuilder};
 
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
@@ -120,13 +120,24 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
         })
         .collect();
 
-    let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
-    let entries: Row = Row::new(values_str.iter().map(|v| Cell::new(v)).collect());
+    let mut header: Row = Row::new();
+
+    for cell in keys_str.iter().map(|k| cell!(k.to_owned())).collect() {
+        header.add_cell(cell);
+
+    }
+
+    let mut entries: Row = Row::new();
+
+    for cell in values_str.iter().map(|v| Cell::new(v)).collect() {
+        entries.add_cell(cell);
+    }
+
 
     // Print the table
     let t_print = vec![header, entries];
 
-    let mut table = prettytable::Table::init(t_print);
+    let mut table = comfy_table::Table::init(t_print);
 
     let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
     let table_format = base_format;

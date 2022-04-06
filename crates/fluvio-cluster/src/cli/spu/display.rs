@@ -3,9 +3,7 @@
 //!
 //! Format SPU response based on output type
 //!
-use prettytable::Row;
-use prettytable::row;
-use prettytable::cell;
+use comfy_table::{Row, Cell};
 use serde::Serialize;
 
 use fluvio::metadata::objects::Metadata;
