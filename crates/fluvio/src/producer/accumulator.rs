@@ -155,8 +155,9 @@ impl ProducerBatch {
     /// Add a record to the batch.
     /// Return ProducerError::BatchFull if record does not fit in the batch, so
     /// the RecordAccumulator can create more batches if needed.
-    fn push_record(&mut self, record: Record) -> Option<PartialFutureRecordMetadata> {
+    fn push_record(&mut self, mut record: Record) -> Option<PartialFutureRecordMetadata> {
         let relative_offset = self.records.len() as i64;
+        record.preamble.set_offset_delta(relative_offset as Offset);
         let record_size = record.write_size(ENCODING_PROTOCOL_VERSION);
 
         if self.estimated_size() + record_size > self.write_limit {
@@ -188,6 +189,7 @@ impl ProducerBatch {
                 Compression::None => 1.0,
                 Compression::Gzip | Compression::Snappy | Compression::Lz4 => 0.5,
             }) as usize
+            + Batch::<RawRecords>::default().write_size(0)
     }
 }
 
@@ -197,15 +199,6 @@ impl TryFrom<ProducerBatch> for Batch<RawRecords> {
         let mut batch = Self::default();
         let compression = p_batch.compression();
         let records = p_batch.records;
-
-        let records: Vec<_> = records
-            .into_iter()
-            .enumerate()
-            .map(|(i, mut record)| {
-                record.preamble.set_offset_delta(i as Offset);
-                record
-            })
-            .collect();
 
         let len = records.len() as i32;
 
@@ -266,10 +259,14 @@ mod test {
     #[test]
     fn test_producer_batch_push_and_not_full() {
         let record = Record::from(("key", "value"));
+
         let size = record.write_size(ENCODING_PROTOCOL_VERSION);
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
-        let mut pb = ProducerBatch::new(size * 3 + 1, Compression::None);
+        let mut pb = ProducerBatch::new(
+            size * 3 + 1 + Batch::<RawRecords>::default().write_size(0),
+            Compression::None,
+        );
 
         assert!(pb.push_record(record.clone()).is_some());
         assert!(pb.push_record(record.clone()).is_some());
@@ -286,7 +283,10 @@ mod test {
         let size = record.write_size(ENCODING_PROTOCOL_VERSION);
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
-        let mut pb = ProducerBatch::new(size * 3, Compression::None);
+        let mut pb = ProducerBatch::new(
+            size * 3 + Batch::<RawRecords>::default().write_size(0),
+            Compression::None,
+        );
 
         assert!(pb.push_record(record.clone()).is_some());
         assert!(pb.push_record(record.clone()).is_some());
@@ -301,7 +301,11 @@ mod test {
     async fn test_record_accumulator() {
         let record = Record::from(("key", "value"));
         let size = record.write_size(ENCODING_PROTOCOL_VERSION);
-        let accumulator = RecordAccumulator::new(size * 3, 1, Compression::None);
+        let accumulator = RecordAccumulator::new(
+            size * 3 + Batch::<RawRecords>::default().write_size(0),
+            1,
+            Compression::None,
+        );
         let timeout = std::time::Duration::from_millis(200);
 
         let batches = accumulator

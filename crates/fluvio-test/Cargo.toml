@@ -49,3 +49,4 @@ dataplane = { path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane
 # Fluvio test framework Attribute macro
 fluvio-test-derive = { path = "../fluvio-test-derive" }
 fluvio-test-util = { path = "../fluvio-test-util" }
+fluvio-protocol = "0.7.4"

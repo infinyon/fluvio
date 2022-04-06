@@ -7,6 +7,7 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
+use fluvio_types::defaults::{STORAGE_MAX_BATCH_SIZE, FLUVIO_MAX_SIZE_TOPIC_NAME};
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
     LegacySmartModulePayload, SmartModuleWasmCompressed, WASM_MODULE_API, WASM_MODULE_V2_API,
@@ -575,8 +576,19 @@ mod publish_stream {
 /// MAX FETCH BYTES
 static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
     use std::env;
+    use fluvio_protocol::Encoder;
+    use crate::dataplane::fetch::FetchResponse;
+    use crate::dataplane::fetch::FetchableTopicResponse;
+    use crate::dataplane::fetch::FetchablePartitionResponse;
+    use crate::dataplane::batch::MemoryRecords;
     let var_value = env::var("FLV_CLIENT_MAX_FETCH_BYTES").unwrap_or_default();
-    let max_bytes: i32 = var_value.parse().unwrap_or(1000000);
+    let max_bytes: i32 = var_value.parse().unwrap_or_else(|_| {
+        FetchResponse::<MemoryRecords>::default().write_size(0) as i32
+            + FetchableTopicResponse::<MemoryRecords>::default().write_size(0) as i32
+            + FetchablePartitionResponse::<MemoryRecords>::default().write_size(0) as i32
+            + FLUVIO_MAX_SIZE_TOPIC_NAME as i32 // using max size of topic name
+            + STORAGE_MAX_BATCH_SIZE.try_into().unwrap_or(1048588)
+    });
     max_bytes
 });
 
