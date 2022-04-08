@@ -16,7 +16,7 @@ use fluvio_future::fs::File;
 use fluvio_future::fs::util as file_util;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::AsyncFileExtension;
-use dataplane::{Offset, Size};
+use dataplane::{Offset, Size, Size64};
 use tracing::error;
 use tracing::info;
 
@@ -29,13 +29,14 @@ use crate::StorageError;
 
 pub const MESSAGE_LOG_EXTENSION: &str = "log";
 
+#[allow(clippy::len_without_is_empty)]
 pub trait FileRecords {
     /// get clone of the file
     fn file(&self) -> File;
 
     fn get_base_offset(&self) -> Offset;
 
-    // fn get_file(&self) -> &File;
+    fn len(&self) -> Size64;
 
     fn get_path(&self) -> &Path;
 
@@ -50,7 +51,7 @@ pub struct FileRecordsSlice {
     file: File,
     path: PathBuf,
     len: u64,
-    last_modifed_time: SystemTime,
+    last_modified_time: SystemTime,
 }
 
 impl FileRecordsSlice {
@@ -75,7 +76,7 @@ impl FileRecordsSlice {
             file,
             path: log_path,
             len,
-            last_modifed_time,
+            last_modified_time: last_modifed_time,
         })
     }
 
@@ -97,11 +98,11 @@ impl FileRecordsSlice {
     }
 
     pub fn modified_time_elapsed(&self) -> Result<Duration, SystemTimeError> {
-        self.last_modifed_time.elapsed()
+        self.last_modified_time.elapsed()
     }
 
     pub(crate) fn is_expired(&self, expired_duration: &Duration) -> bool {
-        match self.last_modifed_time.elapsed() {
+        match self.last_modified_time.elapsed() {
             Ok(ref elapsed) => {
                 debug!(elapsed = %elapsed.as_secs(), path = %self.path.display(), "segment");
                 elapsed > expired_duration
@@ -128,9 +129,9 @@ impl FileRecords for FileRecordsSlice {
         self.base_offset
     }
 
-    // fn get_file(&self) -> &File {
-    //     &self.file
-    // }
+    fn len(&self) -> Size64 {
+        self.len
+    }
 
     fn get_path(&self) -> &Path {
         &self.path

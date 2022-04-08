@@ -211,6 +211,7 @@ impl TestDriver {
         // Topic segment size
         let storage = TopicStorageConfig {
             segment_size: Some(option.topic_segment_size),
+            max_partition_size: Some(option.topic_max_partition_size),
         };
         topic_spec.set_storage(storage);
 

@@ -6,19 +6,17 @@ use std::sync::atomic::AtomicI64;
 use std::time::Duration;
 
 use async_lock::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use tracing::{debug, trace, error, instrument};
+use tracing::{debug, trace, error, instrument, info};
 
-use dataplane::ErrorCode;
+use dataplane::{ErrorCode, Size64};
 use fluvio_future::file_slice::AsyncFileSlice;
-use fluvio_types::event::StickyEvent;
 
 use dataplane::Offset;
 
-use crate::config::{SharedReplicaConfig, StorageConfig};
+use crate::config::SharedReplicaConfig;
 use crate::segment::ReadSegment;
 use crate::StorageError;
 use crate::util::log_path_get_offset;
-use cleaner::Cleaner;
 
 const MEM_ORDER: std::sync::atomic::Ordering = std::sync::atomic::Ordering::SeqCst;
 
@@ -28,32 +26,19 @@ const MEM_ORDER: std::sync::atomic::Ordering = std::sync::atomic::Ordering::SeqC
 pub(crate) struct SharedSegments {
     inner: Arc<RwLock<SegmentList>>,
     min_offset: AtomicI64,
-    config: Arc<SharedReplicaConfig>,
-    end_event: Arc<StickyEvent>,
 }
 
 impl SharedSegments {
-    fn from(
-        list: SegmentList,
-        config: Arc<SharedReplicaConfig>,
-        clean_config: Arc<StorageConfig>,
-    ) -> Arc<Self> {
+    pub(crate) fn from(list: SegmentList) -> Arc<Self> {
         let min = list.min_offset;
-        let end_event = StickyEvent::shared();
-        let shared_segments = Arc::new(Self {
+        Arc::new(Self {
             inner: Arc::new(RwLock::new(list)),
             min_offset: AtomicI64::new(min),
-            config,
-            end_event: end_event.clone(),
-        });
-
-        Cleaner::start(clean_config, shared_segments.clone(), end_event);
-        shared_segments
+        })
     }
 
     pub async fn from_dir(
         option: Arc<SharedReplicaConfig>,
-        clean_config: Arc<StorageConfig>,
     ) -> Result<(Arc<SharedSegments>, Option<Offset>), StorageError> {
         let dirs = option.base_dir.read_dir()?;
         debug!("reading segments at: {:#?}", dirs);
@@ -102,7 +87,7 @@ impl SharedSegments {
             }
         }
 
-        let shared_segments = SharedSegments::from(segments, option, clean_config);
+        let shared_segments = SharedSegments::from(segments);
 
         Ok((shared_segments, last_offset))
     }
@@ -126,14 +111,10 @@ impl SharedSegments {
     }
 
     #[instrument(skip(self))]
-    async fn remove_segment(&self, base_offset: Offset) {
-        let mut write = self.write().await;
-
-        if let Some((old_segment, min_offset)) = write.remove_segment(&base_offset) {
-            self.min_offset.store(min_offset, MEM_ORDER);
-            if let Err(err) = old_segment.remove().await {
-                error!("failed to remove segment: {:#?}", err);
-            }
+    pub(crate) async fn remove_segments(&self, base_offsets: &[Offset]) {
+        for offset in base_offsets {
+            info!(offset, "removing segment");
+            self.remove_segment(offset).await;
         }
     }
 
@@ -162,9 +143,16 @@ impl SharedSegments {
         }
     }
 
-    /// perform any clean up such as shutdown of cleaner
-    pub fn clean(&self) {
-        self.end_event.notify();
+    #[instrument(skip(self))]
+    async fn remove_segment(&self, base_offset: &Offset) {
+        let mut write = self.write().await;
+
+        if let Some((old_segment, min_offset)) = write.remove_segment(base_offset) {
+            self.min_offset.store(min_offset, MEM_ORDER);
+            if let Err(err) = old_segment.remove().await {
+                error!("failed to remove segment: {:#?}", err);
+            }
+        }
     }
 }
 
@@ -194,6 +182,13 @@ impl SegmentList {
         self.segments
             .values()
             .map(|segment| segment.get_msg_log().get_len() as usize)
+            .sum()
+    }
+
+    pub fn occupied_memory(&self) -> Size64 {
+        self.segments
+            .values()
+            .map(ReadSegment::occupied_memory)
             .sum()
     }
 
@@ -260,7 +255,7 @@ impl SegmentList {
         }
     }
 
-    fn find_expired_segments(&self, expired_duration: &Duration) -> Vec<Offset> {
+    pub(crate) fn find_expired_segments(&self, expired_duration: &Duration) -> Vec<Offset> {
         self.segments
             .iter()
             .filter_map(|(base_offset, segment)| {
@@ -272,81 +267,10 @@ impl SegmentList {
             })
             .collect()
     }
-}
 
-mod cleaner {
-
-    use std::time::Duration;
-
-    use tracing::{debug, info};
-
-    use fluvio_future::task::spawn;
-    use fluvio_future::timer::sleep;
-
-    use crate::config::StorageConfig;
-    use super::{SharedSegments, StickyEvent};
-    use super::{Arc, instrument};
-
-    /// Replica cleaner.  This is a background task that periodically checks for expired segments and
-    /// removes them.  In the future, this may be done by a central cleaner pool instead of per a replica.
-    pub(crate) struct Cleaner {
-        config: Arc<StorageConfig>,
-        segments: Arc<SharedSegments>,
-    }
-
-    impl Cleaner {
-        pub(crate) fn start(
-            config: Arc<StorageConfig>,
-            segments: Arc<SharedSegments>,
-            end_event: Arc<StickyEvent>,
-        ) {
-            let cleaner = Cleaner { config, segments };
-
-            spawn(async move {
-                cleaner.clean(end_event).await;
-            });
-        }
-
-        #[instrument(skip(self, end_event))]
-        async fn clean(&self, end_event: Arc<StickyEvent>) {
-            use tokio::select;
-
-            let sleep_period = Duration::from_millis(self.config.cleaning_interval_ms as u64);
-
-            loop {
-                debug!(ms = self.config.cleaning_interval_ms, "sleeping");
-
-                if end_event.is_set() {
-                    info!("clear is terminated");
-                    break;
-                }
-
-                select! {
-                    _ = end_event.listen() => {
-                        info!("cleaner end event received");
-                        break;
-                    },
-                    _ = sleep(sleep_period) => {
-
-
-                        let retention_secs = Duration::from_secs(self.segments.config.retention_seconds.get() as u64);
-                        let read = self.segments.read().await;
-                        let expired_segments =
-                            read.find_expired_segments(&retention_secs);
-                        debug!(seconds = retention_secs.as_secs(),total = read.len(), expired = expired_segments.len(), "expired segments");
-                        drop(read);
-                        if !expired_segments.is_empty() {
-                            for base_offset in expired_segments {
-                                info!(base_offset, "removing segment");
-                                self.segments.remove_segment(base_offset).await;
-                            }
-                        }
-                    }
-                }
-            }
-
-            info!("cleaner end");
-        }
+    #[instrument(skip(self))]
+    pub(crate) fn find_first(&self, count: usize) -> Vec<Offset> {
+        self.segments.keys().take(count).copied().collect()
     }
 }
 
@@ -356,18 +280,13 @@ mod tests {
     use std::env::temp_dir;
     use std::path::PathBuf;
     use std::sync::Arc;
-    use std::time::Duration;
 
-    use tracing::debug;
-
-    use fluvio_future::timer::sleep;
     use flv_util::fixture::ensure_new_dir;
     use dataplane::fixture::create_batch;
     use dataplane::Offset;
 
     use crate::StorageError;
-    use crate::config::{SharedReplicaConfig, StorageConfig};
-    use crate::fixture::storage_config;
+    use crate::config::SharedReplicaConfig;
     use crate::segment::MutableSegment;
     use crate::segment::ReadSegment;
     use crate::config::ReplicaConfig;
@@ -403,9 +322,7 @@ mod tests {
         ensure_new_dir(&rep_dir).expect("new");
         let option = default_option(rep_dir).shared();
 
-        let (segments, last_segment) = SharedSegments::from_dir(option, storage_config())
-            .await
-            .expect("from");
+        let (segments, last_segment) = SharedSegments::from_dir(option).await.expect("from");
 
         let read = segments.read().await;
         assert_eq!(read.len(), 0); // 0,500,2000
@@ -537,23 +454,15 @@ mod tests {
     }
 
     #[fluvio_future::test]
-    async fn test_segment_delete() {
-        let rep_dir = temp_dir().join("segmentlist-delete");
+    async fn test_find_and_remove_many() {
+        //given
+        let rep_dir = temp_dir().join("segmentlist-remove-many");
         ensure_new_dir(&rep_dir).expect("new");
-
-        let mut config = default_option(rep_dir);
-        config.retention_seconds = 1;
-        let option = config.shared();
-
-        let clear_config = StorageConfig::builder()
-            .cleaning_interval_ms(200)
-            .build()
-            .expect("build");
-
-        let slist =
-            SharedSegments::from(SegmentList::new(), option.clone(), Arc::new(clear_config));
-
-        slist
+        let option = default_option(rep_dir).shared();
+        let (segments, _) = SharedSegments::from_dir(option.clone())
+            .await
+            .expect("from");
+        segments
             .add_segment(
                 create_segment(option.clone(), 100, 600)
                     .await
@@ -561,14 +470,7 @@ mod tests {
             )
             .await;
 
-        let read = slist.read().await;
-        assert_eq!(read.len(), 1);
-        assert_eq!(read.find_segment(100).expect("segment").0, &100);
-        assert_eq!(slist.min_offset(), 100);
-        drop(read);
-
-        sleep(Duration::from_millis(700)).await; // previous segment should not expire
-        slist
+        segments
             .add_segment(
                 create_segment(option.clone(), 600, 4000)
                     .await
@@ -576,22 +478,27 @@ mod tests {
             )
             .await;
 
-        let read = slist.read().await;
-        assert_eq!(read.len(), 2);
-        assert_eq!(read.find_segment(100).expect("segment").0, &100);
-        assert_eq!(read.find_segment(900).expect("segment").0, &600); // belong to 2nd segment
-        drop(read);
+        segments
+            .add_segment(
+                create_segment(option.clone(), 4000, 9000)
+                    .await
+                    .expect("create"),
+            )
+            .await;
 
-        sleep(Duration::from_millis(1000)).await; // enough time for cleaer should have deleted the first segment
-        let read = slist.read().await;
-        assert_eq!(read.len(), 1);
-        assert_eq!(slist.min_offset(), 600); // first segment should be deleted
-        debug!("droppping segment");
-        drop(read);
-        assert_eq!(Arc::strong_count(&slist), 2); // cleaner is pointing to shared segment
-        slist.clean(); // perform shutdown of cleaner
-        sleep(Duration::from_millis(200)).await;
-        assert_eq!(Arc::strong_count(&slist), 1); // cleaner is gone...
-        debug!("test done");
+        let list = segments.read().await;
+
+        assert!(list.find_first(0).is_empty());
+        assert_eq!(list.find_first(1), vec![100]);
+        assert_eq!(list.find_first(2), vec![100, 600]);
+        assert_eq!(list.find_first(10), vec![100, 600, 4000]);
+
+        //when
+        let offsets = list.find_first(10);
+        drop(list);
+        segments.remove_segments(&offsets).await;
+
+        //then
+        assert!(segments.read().await.find_first(10).is_empty());
     }
 }

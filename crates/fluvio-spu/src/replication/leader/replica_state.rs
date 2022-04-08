@@ -295,8 +295,7 @@ where
         let storage_reader = self.storage.read().await;
         let size = storage_reader
             .get_partition_size()
-            .await
-            .map(|e| e as i64)
+            .try_into()
             .unwrap_or(PartitionStatus::SIZE_ERROR);
 
         LrsRequest::new(self.id().to_owned(), leader, replicas, size)
@@ -763,8 +762,8 @@ mod test_leader {
         }
 
         // just return hw multiplied by 100.
-        async fn get_partition_size(&self) -> Result<u64, dataplane::ErrorCode> {
-            Ok((self.pos.hw * 100) as u64)
+        fn get_partition_size(&self) -> u64 {
+            (self.pos.hw * 100) as u64
         }
 
         async fn update_high_watermark(

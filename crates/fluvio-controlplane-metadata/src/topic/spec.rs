@@ -13,6 +13,7 @@ use std::ops::Deref;
 
 use fluvio_types::defaults::{
     STORAGE_RETENTION_SECONDS, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN, STORAGE_RETENTION_SECONDS_MIN,
+    SPU_PARTITION_MAX_BYTES_MIN, SPU_LOG_SEGMENT_MAX_BYTES,
 };
 use tracing::{trace, debug};
 use fluvio_types::{ReplicaMap, SpuId};
@@ -168,6 +169,21 @@ impl TopicSpec {
                     return Some(format!(
                         "segment_size {} is less than minimum {}",
                         segment_size, SPU_LOG_LOG_SEGMENT_MAX_BYTE_MIN
+                    ));
+                }
+            }
+            if let Some(max_partition_size) = storage.max_partition_size {
+                if max_partition_size < SPU_PARTITION_MAX_BYTES_MIN {
+                    return Some(format!(
+                        "max_partition_size {} is less than minimum {}",
+                        max_partition_size, SPU_PARTITION_MAX_BYTES_MIN
+                    ));
+                }
+                let segment_size = storage.segment_size.unwrap_or(SPU_LOG_SEGMENT_MAX_BYTES);
+                if max_partition_size < segment_size as u64 {
+                    return Some(format!(
+                        "max_partition_size {} is less than segment size {}",
+                        max_partition_size, segment_size
                     ));
                 }
             }
@@ -753,7 +769,8 @@ impl SegmentBasedPolicy {
     serde(rename_all = "camelCase")
 )]
 pub struct TopicStorageConfig {
-    pub segment_size: Option<u32>, // segment size
+    pub segment_size: Option<u32>,       // segment size
+    pub max_partition_size: Option<u64>, // max partition size
 }
 
 #[derive(Decoder, Encoder, Debug, Clone, PartialEq)]

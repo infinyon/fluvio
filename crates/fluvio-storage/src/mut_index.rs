@@ -231,6 +231,11 @@ impl MutLogIndex {
 
         Ok(())
     }
+
+    /// entries capacity in the index
+    fn entries(&self) -> Size {
+        self.cap() / INDEX_ENTRY_SIZE
+    }
 }
 
 impl Index for MutLogIndex {
@@ -253,6 +258,12 @@ impl Index for MutLogIndex {
     }
 
     fn len(&self) -> Size {
+        self.first_empty_slot
+            .checked_mul(INDEX_ENTRY_SIZE)
+            .expect("index size must not exceed u32::MAX")
+    }
+
+    fn cap(&self) -> Size {
         self.option.index_max_bytes.get()
     }
 }
@@ -262,7 +273,7 @@ impl Deref for MutLogIndex {
 
     #[inline]
     fn deref(&self) -> &[(Size, Size)] {
-        unsafe { slice::from_raw_parts(self.ptr(), (self.len() / INDEX_ENTRY_SIZE) as usize) }
+        unsafe { slice::from_raw_parts(self.ptr(), (self.cap() / INDEX_ENTRY_SIZE) as usize) }
     }
 }
 
@@ -270,7 +281,7 @@ impl DerefMut for MutLogIndex {
     #[inline]
     fn deref_mut(&mut self) -> &mut [(Size, Size)] {
         unsafe {
-            slice::from_raw_parts_mut(self.mut_ptr(), (self.len() / INDEX_ENTRY_SIZE) as usize)
+            slice::from_raw_parts_mut(self.mut_ptr(), (self.cap() / INDEX_ENTRY_SIZE) as usize)
         }
     }
 }
