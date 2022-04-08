@@ -87,20 +87,13 @@ mod output {
                 .iter()
                 .map(|r| {
                     let _spec = &r.spec;
-                    let mut row = Row::new();
 
-                    row.add_cell(Cell::new(&r.name).set_alignment(CellAlignment::Right));
-
-                    row.add_cell(
+                    Row::from([
+                        Cell::new(&r.name).set_alignment(CellAlignment::Right),
                         Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
-                    );
-
-                    row.add_cell(
                         Cell::new(&r.spec.wasm.payload.len().to_string())
-                            .set_alignment(CellAlignment::Right),
-                    );
-
-                    row
+                        .set_alignment(CellAlignment::Right),
+                    ])
                 })
                 .collect()
         }

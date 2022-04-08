@@ -120,25 +120,9 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
         })
         .collect();
 
-    let mut header: Row = Row::new();
-
-    for cell in keys_str
-        .iter()
-        .map(|k| Cell::new(k.to_owned()))
-        .collect::<Vec<Cell>>()
-    {
-        header.add_cell(cell);
-    }
-
-    let mut entries: Row = Row::new();
-
-    for cell in values_str
-        .iter()
-        .map(|v| Cell::new(v))
-        .collect::<Vec<Cell>>()
-    {
-        entries.add_cell(cell);
-    }
+        let header: Row = Row::from(keys_str.into_iter().map(|k| Cell::new(k)).collect::<Vec<_>>());
+        
+        let entries: Row = Row::from(values_str.into_iter().map(|k| Cell::new(k)).collect::<Vec<_>>());
 
     let mut table = Table::new();
     table.set_header(header);

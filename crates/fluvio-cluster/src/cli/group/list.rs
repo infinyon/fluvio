@@ -98,7 +98,7 @@ mod output {
                 .map(|r| {
                     let spec = &r.spec;
                     let storage_config = spec.spu_config.real_storage_config();
-                    Row::from(vec![
+                    Row::from([
                         Cell::new(&r.name).set_alignment(CellAlignment::Right),
                         Cell::new(&spec.replicas.to_string()).set_alignment(CellAlignment::Center),
                         Cell::new(&r.spec.min_id.to_string()).set_alignment(CellAlignment::Right),

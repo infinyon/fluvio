@@ -51,18 +51,15 @@ impl TableOutputHandler for ListSpus {
             .iter()
             .map(|metadata| {
                 let spu = &metadata.spec;
-                let mut row = Row::new();
-
-                row.add_cell(Cell::new(spu.id));
-
-                row.add_cell(Cell::new(metadata.name.to_string()));
-                row.add_cell(Cell::new(metadata.status.to_string()));
-                row.add_cell(Cell::new(spu.spu_type.to_string()));
-                row.add_cell(Cell::new((&spu.rack).as_ref().unwrap_or(&"-".to_string())));
-                row.add_cell(Cell::new(spu.public_endpoint.to_string()));
-                row.add_cell(Cell::new(spu.private_endpoint.to_string()));
-
-                row
+                Row::from([
+                    Cell::new(spu.id),
+                    Cell::new(metadata.name.to_string()),
+                    Cell::new(metadata.status.to_string()),
+                    Cell::new(spu.spu_type.to_string()),
+                    Cell::new((&spu.rack).as_ref().unwrap_or(&"-".to_string())),
+                    Cell::new(spu.public_endpoint.to_string()),
+                    Cell::new(spu.private_endpoint.to_string()),
+                ])
             })
             .collect()
     }

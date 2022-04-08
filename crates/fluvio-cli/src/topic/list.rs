@@ -103,22 +103,22 @@ mod display {
                 .iter()
                 .map(|metadata| -> Row {
                     let topic = &metadata.spec;
-                    let mut row = Row::new();
 
-                    row.add_cell(Cell::new(metadata.name.to_string()));
-                    row.add_cell(Cell::new(topic.type_label()));
-                    row.add_cell(Cell::new(topic.partitions_display()));
-                    row.add_cell(Cell::new(topic.replication_factor_display()));
-                    row.add_cell(Cell::new(format_duration(Duration::from_secs(
-                        topic.retention_secs() as u64,
-                    ))));
-                    row.add_cell(Cell::new(topic.get_compression_type()));
-                    row.add_cell(Cell::new(metadata.status.resolution.to_string()));
-                    row.add_cell(Cell::new(metadata.status.reason.to_string()));
-
-                    row
-                })
+                    Row::from([
+                        Cell::new(metadata.name.to_string()),
+                        Cell::new(topic.type_label()),
+                        Cell::new(topic.partitions_display()),
+                        Cell::new(topic.replication_factor_display()),
+                        Cell::new(format_duration(Duration::from_secs(
+                            topic.retention_secs() as u64,
+                        ))),
+                        Cell::new(topic.get_compression_type()),
+                        Cell::new(metadata.status.resolution.to_string()),
+                        Cell::new(metadata.status.reason.to_string()),
+                        ])
+                    })
                 .collect()
-        }
+
+            }
     }
 }
