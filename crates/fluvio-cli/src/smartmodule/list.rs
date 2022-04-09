@@ -92,7 +92,7 @@ mod output {
                         Cell::new(&r.name).set_alignment(CellAlignment::Right),
                         Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
                         Cell::new(&r.spec.wasm.payload.len().to_string())
-                        .set_alignment(CellAlignment::Right),
+                            .set_alignment(CellAlignment::Right),
                     ])
                 })
                 .collect()

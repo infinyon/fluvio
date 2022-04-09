@@ -102,7 +102,6 @@ mod output {
                         Cell::new(&spec.version()).set_alignment(CellAlignment::Left),
                         Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
                     ])
-
                 })
                 .collect()
         }

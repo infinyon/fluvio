@@ -96,8 +96,6 @@ mod output {
                         Cell::new(&spec.input.to_string()).set_alignment(CellAlignment::Right),
                         Cell::new(&spec.steps.to_string()).set_alignment(CellAlignment::Right),
                     ])
-
-                    
                 })
                 .collect()
         }

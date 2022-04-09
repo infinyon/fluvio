@@ -110,15 +110,14 @@ mod display {
                         Cell::new(topic.partitions_display()),
                         Cell::new(topic.replication_factor_display()),
                         Cell::new(format_duration(Duration::from_secs(
-                            topic.retention_secs() as u64,
+                            topic.retention_secs() as u64
                         ))),
                         Cell::new(topic.get_compression_type()),
                         Cell::new(metadata.status.resolution.to_string()),
                         Cell::new(metadata.status.reason.to_string()),
-                        ])
-                    })
+                    ])
+                })
                 .collect()
-
-            }
+        }
     }
 }

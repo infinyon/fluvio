@@ -149,21 +149,18 @@ mod output {
 
             // Create the table
             let mut table = Table::new();
-            
+
             for (key, val_opt) in kv_values {
                 let mut row = Row::new();
 
-
                 if let Some(val) = val_opt {
                     row.add_cell(Cell::new(format!("{}{}{}", key, ":".to_owned(), val)));
-
                 } else {
                     row.add_cell(Cell::new(format!("{}", key)));
                 }
 
                 table.add_row(row);
             }
-
 
             // print table to stdout
             println!("{table}");
