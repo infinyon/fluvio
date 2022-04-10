@@ -232,7 +232,7 @@ where
                 n = name.clone(),
                 d = spu.spec.id,
                 s = spu.status.resolution_label(),
-                t = spu.spec.spu_type.to_string(),
+                t = spu.spec.spu_type,
                 p = spu.spec.public_endpoint,
                 i = spu.spec.private_endpoint,
                 r = rack,

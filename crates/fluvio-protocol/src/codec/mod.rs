@@ -138,23 +138,23 @@ mod test {
             let mut len_buf = vec![];
             let message_size = data.write_size(0) as i32;
             message_size.encode(&mut len_buf, 0).expect("encoding len");
-            tcp_stream.write(&len_buf).await?;
+            tcp_stream.write_all(&len_buf).await?;
 
             let encoded_data = data.as_bytes(0).expect("encoding data");
-            tcp_stream.write(&encoded_data).await?;
+            tcp_stream.write_all(&encoded_data).await?;
 
             // Now trying partial send:
             // write message_size since we are not using the encoder
             let mut len_buf = vec![];
             let message_size = data.write_size(0) as i32;
             message_size.encode(&mut len_buf, 0).expect("encoding len");
-            tcp_stream.write(&len_buf).await?;
+            tcp_stream.write_all(&len_buf).await?;
 
             let mut encoded_data = data.as_bytes(0).expect("encoding data");
             let buf2 = encoded_data.split_off(3);
-            tcp_stream.write(&encoded_data).await?;
+            tcp_stream.write_all(&encoded_data).await?;
             fluvio_future::timer::sleep(time::Duration::from_millis(10)).await;
-            tcp_stream.write(&buf2).await?;
+            tcp_stream.write_all(&buf2).await?;
         }
         fluvio_future::timer::sleep(time::Duration::from_millis(50)).await;
         debug!("finishing. terminating server");
