@@ -178,7 +178,7 @@ impl Fluvio {
             return Err(FluvioError::TopicNotFound(topic));
         }
 
-        Ok(TopicProducer::new(topic, spu_pool, config).await?)
+        TopicProducer::new(topic, spu_pool, config).await
     }
 
     /// Creates a new `PartitionConsumer` for the given topic and partition

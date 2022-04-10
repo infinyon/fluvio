@@ -305,8 +305,6 @@ impl Segment<LogIndex, FileRecordsSlice> {
     }
 }
 
-impl Unpin for Segment<MutLogIndex, MutFileRecords> {}
-
 /// Implementation for Active segment
 impl Segment<MutLogIndex, MutFileRecords> {
     // create segment on base directory
