@@ -141,7 +141,7 @@ mod file {
                         self.get_mut_tcp_sink()
                             .get_mut()
                             .get_mut()
-                            .write(&bytes)
+                            .write_all(&bytes)
                             .await?;
                     }
                     StoreValue::FileSlice(f_slice) => {
@@ -266,7 +266,7 @@ mod tests {
         len.encode(&mut out, 0).expect("encode"); // codec len
         out.put_u16(TEXT_LEN as u16); // string message len
 
-        raw_tcp_sink.get_mut().get_mut().write(&out).await?;
+        raw_tcp_sink.get_mut().get_mut().write_all(&out).await?;
 
         // send out file
         debug!("sending out file contents");

@@ -215,7 +215,7 @@ impl PartitionStatus {
 }
 
 /// find status matching it,
-fn find_status(status: &mut Vec<ReplicaStatus>, spu: SpuId) -> Option<&'_ mut ReplicaStatus> {
+fn find_status(status: &mut [ReplicaStatus], spu: SpuId) -> Option<&'_ mut ReplicaStatus> {
     status.iter_mut().find(|status| status.spu == spu)
 }
 
