@@ -131,6 +131,8 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
         table.lines().skip(1).collect()
     };
 
+    table.load_preset(comfy_table::presets::NOTHING);
+
     Some(out.join("\n"))
 }
 

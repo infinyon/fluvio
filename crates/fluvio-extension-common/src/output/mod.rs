@@ -162,6 +162,8 @@ mod output {
                 table.add_row(row);
             }
 
+            table.load_preset(comfy_table::presets::NOTHING);
+
             // print table to stdout
             println!("{table}");
         }
