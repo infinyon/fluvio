@@ -156,7 +156,7 @@ mod output {
                 if let Some(val) = val_opt {
                     row.add_cell(Cell::new(format!("{}{}{}", key, ":".to_owned(), val)));
                 } else {
-                    row.add_cell(Cell::new(format!("{}", key)));
+                    row.add_cell(Cell::new(key.to_string()));
                 }
 
                 table.add_row(row);

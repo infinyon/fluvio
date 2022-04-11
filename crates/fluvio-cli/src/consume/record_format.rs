@@ -101,50 +101,35 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
 
     // This is the case where we don't provide any table info. We want to print a table w/ all top-level keys as headers
     // Think about how we might only select specific keys
-    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
+    let keys_str = obj.keys().map(|k| k.to_string());
 
     // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
-    let values_str: Vec<String> = obj
-        .values()
-        .map(|v| {
-            if v.is_string() {
-                if let Some(s) = v.as_str() {
-                    s.to_string()
-                } else {
-                    println!("error: Value in json not representable as str");
-                    String::new()
-                }
+    let values_str = obj.values().map(|v| {
+        if v.is_string() {
+            if let Some(s) = v.as_str() {
+                s.to_string()
             } else {
-                v.to_string()
+                println!("error: Value in json not representable as str");
+                String::new()
             }
-        })
-        .collect();
+        } else {
+            v.to_string()
+        }
+    });
 
-    let header: Row = Row::from(
-        keys_str
-            .into_iter()
-            .map(|k| Cell::new(k))
-            .collect::<Vec<_>>(),
-    );
+    let header: Row = Row::from(keys_str.into_iter().map(Cell::new).collect::<Vec<_>>());
 
-    let entries: Row = Row::from(
-        values_str
-            .into_iter()
-            .map(|k| Cell::new(k))
-            .collect::<Vec<_>>(),
-    );
+    let entries: Row = Row::from(values_str.into_iter().map(Cell::new).collect::<Vec<_>>());
 
     let mut table = Table::new();
     table.set_header(header);
     table.add_row(entries);
 
-    let mut out: Vec<String> = Vec::new();
-
-    if print_header {
-        out = table.lines().collect();
+    let out: Vec<String> = if print_header {
+        table.lines().collect()
     } else {
-        out = table.lines().skip(1).collect();
-    }
+        table.lines().skip(1).collect()
+    };
 
     Some(out.join("\n"))
 }
