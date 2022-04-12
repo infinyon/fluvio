@@ -75,8 +75,6 @@ impl VersionOpt {
         Some(format!("{:x}", &fluvio_cli_bin_sha256))
     }
 
-
-
     async fn format_platform_version(&self, target: ClusterTarget) -> String {
         // Attempt to connect to a Fluvio cluster to get platform version
         // Even if we fail to connect, we should not fail the other printouts

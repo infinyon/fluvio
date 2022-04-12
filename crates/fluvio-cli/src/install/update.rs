@@ -28,7 +28,6 @@ pub struct UpdateOpt {
     // The fluvio-channel binary changes less frequently
     // pub skip_fluvio_channel: bool,
     // pub develop_fluvio_channel: bool,
-
     /// (Optional) the name of one or more plugins to update
     plugins: Vec<PackageId>,
 }
