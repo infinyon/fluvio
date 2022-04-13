@@ -12,7 +12,8 @@ use fluvio_cli_common::install::{
 use crate::metadata::subcommand_metadata;
 use super::error_convert;
 
-const FLUVIO_PACKAGE_ID: &str = "fluvio/fluvio";
+const FLUVIO_CLI_PACKAGE_ID: &str = "fluvio/fluvio";
+const FLUVIO_CHANNEL_PACKAGE_ID: &str = "fluvio/fluvio-channel";
 
 #[derive(Parser, Debug)]
 pub struct UpdateOpt {
@@ -20,6 +21,13 @@ pub struct UpdateOpt {
     #[clap(long)]
     pub develop: bool,
 
+    /// Print output for update process but do not install updates
+    #[clap(long)]
+    pub dry_run: bool,
+
+    // The fluvio-channel binary changes less frequently
+    // pub skip_fluvio_channel: bool,
+    // pub develop_fluvio_channel: bool,
     /// (Optional) the name of one or more plugins to update
     plugins: Vec<PackageId>,
 }
@@ -53,7 +61,8 @@ impl UpdateOpt {
             }
         }
 
-        self.update_self(&agent).await?;
+        self.update_fluvio_cli(&agent).await?;
+        self.update_fluvio_channel(&agent).await?;
 
         if updates.is_empty() {
             println!("👍 No plugins to update, all done!");
@@ -78,9 +87,9 @@ impl UpdateOpt {
     }
 
     #[instrument(skip(self, agent))]
-    async fn update_self(&self, agent: &HttpAgent) -> Result<()> {
+    async fn update_fluvio_cli(&self, agent: &HttpAgent) -> Result<()> {
         let target = fluvio_index::package_target()?;
-        let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
+        let id: PackageId = FLUVIO_CLI_PACKAGE_ID.parse()?;
         debug!(%target, %id, "Fluvio CLI updating self:");
 
         // Find the latest version of this package
@@ -110,13 +119,75 @@ impl UpdateOpt {
         install_println("🔑 Downloaded and verified package file");
 
         // Install the update over the current executable
-        let fluvio_path = std::env::current_exe()?;
-        install_bin(&fluvio_path, &package_file)?;
-        install_println(format!(
-            "✅ Successfully updated {}",
-            &fluvio_path.display(),
-        ));
+        let fluvio_cli_path = std::env::current_exe()?;
 
+        if !self.dry_run {
+            install_bin(&fluvio_cli_path, &package_file)?;
+
+            install_println(format!(
+                "✅ Successfully updated {}",
+                &fluvio_cli_path.display(),
+            ));
+        } else {
+            install_println(format!(
+                "❎ (Dry run) Update installation skipped {}",
+                &fluvio_cli_path.display(),
+            ));
+        }
+
+        Ok(())
+    }
+
+    #[instrument(skip(self, agent))]
+    async fn update_fluvio_channel(&self, agent: &HttpAgent) -> Result<()> {
+        let target = fluvio_index::package_target()?;
+        let id: PackageId = FLUVIO_CHANNEL_PACKAGE_ID.parse()?;
+        debug!(%target, %id, "Fluvio frontend (fluvio-channel) updating self:");
+
+        // Find the latest version of this package
+        install_println("🎣 Fetching latest version for fluvio-channel...");
+        let latest_version = fetch_latest_version(agent, &id, &target, self.develop).await?;
+        let id = id.into_versioned(latest_version.into());
+
+        // Download the package file from the package registry
+        install_println(format!(
+            "⏳ Downloading fluvio-channel with latest version: {}...",
+            &id.version()
+        ));
+        let package_result = fetch_package_file(agent, &id, &target).await;
+        let package_file = match package_result {
+            Ok(pf) => pf,
+            Err(CommonCliError::PackageNotFound {
+                version, target, ..
+            }) => {
+                install_println(format!(
+                    "❕ fluvio-channel is not published at version {} for {}, skipping self-update",
+                    version, target
+                ));
+                return Ok(());
+            }
+            Err(other) => return Err(error_convert(other)),
+        };
+        install_println("🔑 Downloaded and verified package file");
+
+        // Install the update over the default fluvio frontend path
+        //let fluvio_channel_path = std::env::current_dir()?.join("fluvio");
+        let fluvio_cli_path = std::env::current_exe()?;
+        let mut fluvio_channel_path = fluvio_cli_path;
+        fluvio_channel_path.set_file_name("fluvio");
+
+        if !self.dry_run {
+            install_bin(&fluvio_channel_path, &package_file)?;
+            install_println(format!(
+                "✅ Successfully updated {}",
+                &fluvio_channel_path.display(),
+            ));
+        } else {
+            install_println(format!(
+                "❎ (Dry run) Update installation skipped {}",
+                &fluvio_channel_path.display(),
+            ));
+        }
         Ok(())
     }
 
@@ -136,8 +207,16 @@ impl UpdateOpt {
         let package_file = fetch_package_file(agent, &id, &target).await?;
         println!("🔑 Downloaded and verified package file");
 
-        println!("✅ Successfully updated {} at ({})", id, path.display());
-        install_bin(path, &package_file)?;
+        if !self.dry_run {
+            install_bin(path, &package_file)?;
+            println!("✅ Successfully updated {} at ({})", id, path.display());
+        } else {
+            println!(
+                "❎ (Dry run) Update installation skipped {} at ({})",
+                id,
+                path.display()
+            );
+        }
 
         Ok(())
     }
@@ -158,6 +237,7 @@ pub async fn check_update_required(agent: &HttpAgent) -> Result<bool> {
     Ok(index.metadata.update_required())
 }
 
+// TODO: This needs to check on fluvio-channel updates as well. If on latest channel, only update fluvio-channel when flag passed
 /// Check whether there is any newer version of the Fluvio CLI available
 #[instrument(
     skip(agent),
@@ -168,7 +248,7 @@ pub async fn check_update_available(
     prerelease: bool,
 ) -> Result<Option<Version>> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId = FLUVIO_CLI_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Checking for an available (not required) CLI update:");
 
     let request = agent.request_package(&id)?;
@@ -194,7 +274,7 @@ pub async fn check_update_available(
 )]
 pub async fn prompt_required_update(agent: &HttpAgent) -> Result<()> {
     let target = fluvio_index::package_target()?;
-    let id: PackageId = FLUVIO_PACKAGE_ID.parse()?;
+    let id: PackageId = FLUVIO_CLI_PACKAGE_ID.parse()?;
     debug!(%target, %id, "Fetching latest package version:");
     let latest_version = fetch_latest_version(agent, &id, &target, false).await?;
 
