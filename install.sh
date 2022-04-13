@@ -552,6 +552,11 @@ main() {
     _status=$?
     set -e
 
+    # If we did not find a version via a tag, use VERSION as the version itself
+    if [ $_status -ne 0 ]; then
+        _version="${VERSION}"
+    fi
+
     local _url="${FLUVIO_PREFIX}/packages/${FLUVIO_FRONTEND_PACKAGE}/${_version}/${_target}/fluvio-channel"
     local _install_file="${FLUVIO_BIN}/fluvio"
     say "⏳ Downloading Fluvio channel frontend ${_version} for ${_target}..."
