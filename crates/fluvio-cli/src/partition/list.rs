@@ -129,21 +129,19 @@ mod display {
                         _ => human_bytes::human_bytes(status.size as f64),
                     };
 
-                    let mut row = Row::new();
-
-                    row.add_cell(Cell::new(topic));
-                    row.add_cell(Cell::new(partition.to_string()));
-                    row.add_cell(Cell::new(spec.leader.to_string()));
-                    row.add_cell(Cell::new(format!("{:?}", spec.followers())));
-                    row.add_cell(Cell::new(format!("{:?}", status.resolution)));
-                    row.add_cell(Cell::new(printable_size));
-                    row.add_cell(Cell::new(status.leader.hw.to_string()));
-                    row.add_cell(Cell::new(status.leader.leo.to_string()));
-                    row.add_cell(Cell::new(status.leader.leo.to_string()));
-                    row.add_cell(Cell::new(status.lsr.to_string()));
-                    row.add_cell(Cell::new(format!("{:?}", status.replicas)));
-
-                    row
+                    Row::from([
+                        Cell::new(topic),
+                        Cell::new(partition.to_string()),
+                        Cell::new(spec.leader.to_string()),
+                        Cell::new(format!("{:?}", spec.followers())),
+                        Cell::new(format!("{:?}", status.resolution)),
+                        Cell::new(printable_size),
+                        Cell::new(status.leader.hw.to_string()),
+                        Cell::new(status.leader.leo.to_string()),
+                        Cell::new(status.leader.leo.to_string()),
+                        Cell::new(status.lsr.to_string()),
+                        Cell::new(format!("{:?}", status.replicas)),
+                    ])
                 })
                 .collect()
         }

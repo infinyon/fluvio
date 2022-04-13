@@ -12,6 +12,18 @@ pub trait TableOutputHandler {
     fn errors(&self) -> Vec<String>;
 }
 
+pub trait DisplayTable {
+    fn print_std(&self);
+}
+
+impl DisplayTable for Table {
+    fn print_std(&self) {
+        for line in self.to_string().split('\n') {
+            println!("  {}", line);
+        }
+    }
+}
+
 pub struct TableRenderer<O>(Arc<O>);
 
 impl<O> TableRenderer<O>
@@ -68,6 +80,6 @@ where
         table.load_preset(comfy_table::presets::NOTHING);
 
         // print table to stdout
-        println!("{table}");
+        table.print_std();
     }
 }

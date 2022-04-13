@@ -2,6 +2,7 @@ mod table;
 mod serde;
 mod describe;
 
+use comfy_table::Table;
 pub use output::Terminal;
 pub use output::OutputType;
 
@@ -55,6 +56,18 @@ mod error {
     }
 }
 
+pub trait DisplayTable {
+    fn print_std(&self);
+}
+
+impl DisplayTable for Table {
+    fn print_std(&self) {
+        for line in self.to_string().split('\n') {
+            println!("  {}", line);
+        }
+    }
+}
+
 #[allow(clippy::module_inception)]
 mod output {
 
@@ -66,7 +79,7 @@ mod output {
     use comfy_table::Table;
     use comfy_table::{Row, Cell};
 
-    use super::TableOutputHandler;
+    use super::{TableOutputHandler, DisplayTable};
     use super::TableRenderer;
     use super::SerdeRenderer;
     use super::DescribeObjectHandler;
@@ -165,7 +178,7 @@ mod output {
             table.load_preset(comfy_table::presets::NOTHING);
 
             // print table to stdout
-            println!("{table}");
+            table.print_std();
         }
     }
 }

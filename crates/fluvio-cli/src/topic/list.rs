@@ -44,7 +44,7 @@ mod display {
     use std::time::Duration;
 
     use humantime::{format_duration};
-    use comfy_table::{Row, Cell};
+    use comfy_table::{Row, Cell, CellAlignment};
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
@@ -107,7 +107,7 @@ mod display {
                     Row::from([
                         Cell::new(metadata.name.to_string()),
                         Cell::new(topic.type_label()),
-                        Cell::new(topic.partitions_display()).set_alignment(CellAlignment::Left);,
+                        Cell::new(topic.partitions_display()).set_alignment(CellAlignment::Left),
                         Cell::new(topic.replication_factor_display()),
                         Cell::new(format_duration(Duration::from_secs(
                             topic.retention_secs() as u64
