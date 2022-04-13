@@ -546,7 +546,12 @@ main() {
 
     # Install Fluvio channel
     # Download Fluvio-channel to a temporary file
-    _version=$(fetch_tag_version "stable" "${FLUVIO_FRONTEND_PACKAGE}")
+
+    set +e
+    _version=$(fetch_tag_version "${VERSION}" "${FLUVIO_FRONTEND_PACKAGE}")
+    _status=$?
+    set -e
+
     local _url="${FLUVIO_PREFIX}/packages/${FLUVIO_FRONTEND_PACKAGE}/${_version}/${_target}/fluvio-channel"
     local _install_file="${FLUVIO_BIN}/fluvio"
     say "⏳ Downloading Fluvio channel frontend ${_version} for ${_target}..."
