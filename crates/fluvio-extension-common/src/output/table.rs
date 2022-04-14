@@ -5,23 +5,12 @@ use comfy_table::Table;
 
 use crate::t_println;
 use super::Terminal;
+use crate::output::DisplayTable;
 
 pub trait TableOutputHandler {
     fn header(&self) -> Row;
     fn content(&self) -> Vec<Row>;
     fn errors(&self) -> Vec<String>;
-}
-
-pub trait DisplayTable {
-    fn print_std(&self);
-}
-
-impl DisplayTable for Table {
-    fn print_std(&self) {
-        for line in self.to_string().split('\n') {
-            println!("  {}", line);
-        }
-    }
 }
 
 pub struct TableRenderer<O>(Arc<O>);
@@ -80,6 +69,6 @@ where
         table.load_preset(comfy_table::presets::NOTHING);
 
         // print table to stdout
-        table.print_std();
+        table.print_std(2);
     }
 }

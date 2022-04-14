@@ -57,13 +57,13 @@ mod error {
 }
 
 pub trait DisplayTable {
-    fn print_std(&self);
+    fn print_std(&self, indent: u8);
 }
 
 impl DisplayTable for Table {
-    fn print_std(&self) {
+    fn print_std(&self, indent: u8) {
         for line in self.to_string().split('\n') {
-            println!("  {}", line);
+            println!("{}{}", " ".repeat(indent as usize), line);
         }
     }
 }
@@ -178,7 +178,7 @@ mod output {
             table.load_preset(comfy_table::presets::NOTHING);
 
             // print table to stdout
-            table.print_std();
+            table.print_std(2);
         }
     }
 }
