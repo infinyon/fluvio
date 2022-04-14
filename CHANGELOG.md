@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.24 - UNRELEASED
+* Storage: Enforce size based retention for topic ([#2179](https://github.com/infinyon/fluvio/issues/2179))
 
 ## Platform Version 0.9.23 - 2022-04-13
 * Add `TYPE` column to `fluvio connector list` ([#2218](https://github.com/infinyon/fluvio/issues/2218))
@@ -9,7 +10,6 @@
 * Disable versions from displaying in CLI subcommands ([#1805](https://github.com/infinyon/fluvio/issues/1805))
 * Increase default `MAX_FETCH_BYTES` in fluvio client ([#2259](https://github.com/infinyon/fluvio/issues/2259))
 * Add `fluvio-channel` to `fluvio update` process ([#2221](https://github.com/infinyon/fluvio/issues/2221))
-* Storage: Enforce size based retention for topic ([#2179](https://github.com/infinyon/fluvio/issues/2179))
 
 ## Platform Version 0.9.22 - 2022-03-25
 * Add topic level compression configuration ([#2249](https://github.com/infinyon/fluvio/issues/2249))
