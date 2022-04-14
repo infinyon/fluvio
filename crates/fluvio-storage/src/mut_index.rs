@@ -1,6 +1,5 @@
 use std::io::Error as IoError;
 use std::io::ErrorKind;
-use std::mem::size_of;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::slice;
@@ -14,16 +13,13 @@ use tracing::error;
 
 use fluvio_future::fs::File;
 use fluvio_future::fs::mmap::MemoryMappedMutFile;
-use dataplane::{Offset, Size};
+use dataplane::{Offset, Size, Size64};
 
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
-use crate::index::lookup_entry;
+use crate::index::{Entry, INDEX_ENTRY_SIZE, lookup_entry};
 use crate::index::Index;
 use crate::index::OffsetPosition;
-
-/// size of each memory mapped entry
-const INDEX_ENTRY_SIZE: Size = (size_of::<Size>() * 2) as Size;
 
 pub const EXTENSION: &str = "index";
 
@@ -138,7 +134,7 @@ impl MutLogIndex {
     // shrink index file to last know position
 
     pub async fn shrink(&mut self) -> Result<(), IoError> {
-        let target_len = (self.first_empty_slot * INDEX_ENTRY_SIZE) as u64;
+        let target_len = self.first_empty_slot as u64 * INDEX_ENTRY_SIZE;
         debug!(
             target_len,
             base_offset = self.base_offset,
@@ -231,13 +227,18 @@ impl MutLogIndex {
 
         Ok(())
     }
+
+    /// entries capacity in the index
+    fn entries(&self) -> Size {
+        (self.capacity() / INDEX_ENTRY_SIZE) as u32
+    }
 }
 
 impl Index for MutLogIndex {
     /// find offset indexes using relative offset
     /// returns (relative_offset, file_position)
     #[instrument(level = "trace",skip(self),fields(slot=self.first_empty_slot))]
-    fn find_offset(&self, relative_offset: Size) -> Option<(Size, Size)> {
+    fn find_offset(&self, relative_offset: Size) -> Option<Entry> {
         if self.first_empty_slot == 0 {
             trace!("no entries, returning none");
             return None;
@@ -252,25 +253,34 @@ impl Index for MutLogIndex {
         }
     }
 
-    fn len(&self) -> Size {
-        self.option.index_max_bytes.get()
+    /// Current memory size that the index uses.
+    fn len(&self) -> Size64 {
+        self.first_empty_slot as u64 * INDEX_ENTRY_SIZE
+    }
+
+    /// Max memory size that the index can store.
+    fn capacity(&self) -> Size64 {
+        self.option.index_max_bytes.get() as u64
     }
 }
 
 impl Deref for MutLogIndex {
-    type Target = [(Size, Size)];
+    type Target = [Entry];
 
     #[inline]
-    fn deref(&self) -> &[(Size, Size)] {
-        unsafe { slice::from_raw_parts(self.ptr(), (self.len() / INDEX_ENTRY_SIZE) as usize) }
+    fn deref(&self) -> &[Entry] {
+        unsafe { slice::from_raw_parts(self.ptr(), (self.capacity() / INDEX_ENTRY_SIZE) as usize) }
     }
 }
 
 impl DerefMut for MutLogIndex {
     #[inline]
-    fn deref_mut(&mut self) -> &mut [(Size, Size)] {
+    fn deref_mut(&mut self) -> &mut [Entry] {
         unsafe {
-            slice::from_raw_parts_mut(self.mut_ptr(), (self.len() / INDEX_ENTRY_SIZE) as usize)
+            slice::from_raw_parts_mut(
+                self.mut_ptr(),
+                (self.capacity() / INDEX_ENTRY_SIZE) as usize,
+            )
         }
     }
 }

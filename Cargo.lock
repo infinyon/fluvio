@@ -604,6 +604,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4872d67bab6358e59559027aa3b9157c53d9358c51423c17554809a8858e0f8"
 
 [[package]]
+name = "bytesize"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6c58ec36aac5066d5ca17df51b3e70279f5670a72102f5752cb7e7c856adfc70"
+dependencies = [
+ "serde",
+]
+
+[[package]]
 name = "cache-padded"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1600,7 +1609,7 @@ dependencies = [
  "fluvio-compression",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-sc-schema",
  "fluvio-smartengine",
  "fluvio-socket",
@@ -1630,7 +1639,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1684,6 +1693,7 @@ version = "0.0.0"
 dependencies = [
  "async-h1",
  "atty",
+ "bytesize",
  "clap",
  "clap_complete",
  "color-eyre",
@@ -1710,7 +1720,6 @@ dependencies = [
  "hex",
  "home",
  "http-types",
- "human_bytes",
  "humantime",
  "indicatif",
  "k8-client",
@@ -1828,7 +1837,7 @@ version = "0.0.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-types",
  "log",
  "tracing",
@@ -1836,13 +1845,13 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.15.1"
+version = "0.15.2"
 dependencies = [
  "async-trait",
  "base64",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1853,7 +1862,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -1864,7 +1873,7 @@ dependencies = [
  "fluvio-compression",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "flv-util",
  "futures-util",
@@ -1963,7 +1972,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.7.5"
+version = "0.7.6"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1977,7 +1986,7 @@ dependencies = [
 name = "fluvio-protocol-derive"
 version = "0.4.1"
 dependencies = [
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "proc-macro2",
  "quote",
  "syn",
@@ -2029,7 +2038,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-sc-schema",
  "fluvio-service",
  "fluvio-socket",
@@ -2062,7 +2071,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-types",
  "log",
  "paste",
@@ -2078,7 +2087,7 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "fluvio-types",
  "futures-util",
@@ -2136,7 +2145,7 @@ dependencies = [
  "cfg-if",
  "event-listener",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "futures-util",
  "once_cell",
  "pin-project",
@@ -2170,7 +2179,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-service",
  "fluvio-smartengine",
  "fluvio-socket",
@@ -2200,7 +2209,7 @@ dependencies = [
  "bytes",
  "flate2",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "log",
  "serde",
  "static_assertions",
@@ -2221,7 +2230,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "fluvio-storage",
  "fluvio-types",
@@ -2379,7 +2388,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "event-listener",
  "fluvio-future",
@@ -2891,12 +2900,6 @@ name = "httpdate"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4a1e36c821dbe04574f602848a19f742f4fb3c98d40449f11bcad18d6b17421"
-
-[[package]]
-name = "human_bytes"
-version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88a0d4dc39ec942e44c1c306aa196da67f2bd6a30dc7b4a475465c13ccf28817"
 
 [[package]]
 name = "humantime"

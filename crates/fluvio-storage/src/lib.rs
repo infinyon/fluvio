@@ -16,6 +16,7 @@ pub mod config;
 
 #[cfg(feature = "fixture")]
 pub mod fixture;
+mod cleaner;
 
 pub use crate::error::StorageError;
 pub use crate::records::FileRecordsSlice;
@@ -29,7 +30,7 @@ mod inner {
     use async_trait::async_trait;
 
     use dataplane::batch::BatchRecords;
-    use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey};
+    use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size64};
     use dataplane::record::RecordSet;
     use fluvio_controlplane_metadata::partition::Replica;
     use fluvio_future::file_slice::AsyncFileSlice;
@@ -114,37 +115,6 @@ mod inner {
         pub file_slice: Option<AsyncFileSlice>,
     }
 
-    /// output from storage is represented as slice
-    /*
-    pub trait SlicePartitionResponse {
-        fn set_hw(&mut self, offset: i64);
-
-        fn set_log_start_offset(&mut self, offset: i64);
-
-        fn set_slice(&mut self, slice: AsyncFileSlice);
-
-        fn set_error_code(&mut self, error: ErrorCode);
-    }
-
-    impl SlicePartitionResponse for FilePartitionResponse {
-        fn set_hw(&mut self, offset: i64) {
-            self.high_watermark = offset;
-        }
-
-        fn set_log_start_offset(&mut self, offset: i64) {
-            self.log_start_offset = offset;
-        }
-
-        fn set_slice(&mut self, slice: AsyncFileSlice) {
-            self.records = slice.into();
-        }
-
-        fn set_error_code(&mut self, error: ErrorCode) {
-            self.error_code = error;
-        }
-    }
-    */
-
     /// some storage configuration
     pub trait ReplicaStorageConfig {
         /// update values from replica config
@@ -179,7 +149,7 @@ mod inner {
             isolation: Isolation,
         ) -> Result<ReplicaSlice, ErrorCode>;
 
-        async fn get_partition_size(&self) -> Result<u64, ErrorCode>;
+        fn get_partition_size(&self) -> Size64;
 
         /// write record set
         async fn write_recordset<R: BatchRecords>(

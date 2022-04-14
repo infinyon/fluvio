@@ -5,6 +5,7 @@ use crate::derive::{Encoder, Decoder};
 
 pub type Offset = i64;
 pub type Size = u32;
+pub type Size64 = u64;
 
 #[derive(Debug, Encoder, Decoder, Clone)]
 #[fluvio(encode_discriminant)]

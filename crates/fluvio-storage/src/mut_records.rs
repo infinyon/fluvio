@@ -20,7 +20,7 @@ use async_channel::Sender;
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_future::fs::BoundedFileSinkError;
 use dataplane::batch::Batch;
-use dataplane::{Offset, Size};
+use dataplane::{Offset, Size, Size64};
 use dataplane::core::Encoder;
 
 use crate::config::SharedReplicaConfig;
@@ -303,6 +303,10 @@ impl FileRecords for MutFileRecords {
     //         &f_sink.inner().clone()
     //     })
     // }
+
+    fn len(&self) -> Size64 {
+        self.len as u64
+    }
 
     fn get_path(&self) -> &Path {
         &self.path

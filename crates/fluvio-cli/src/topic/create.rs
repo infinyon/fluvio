@@ -149,11 +149,15 @@ impl CreateTopicOpt {
             topic_spec.set_compression_type(compression_type);
         }
 
-        if self.setting.segment_size.is_some() {
+        if self.setting.segment_size.is_some() || self.setting.max_partition_size.is_some() {
             let mut storage = TopicStorageConfig::default();
 
             if let Some(segment_size) = self.setting.segment_size {
-                storage.segment_size = Some(segment_size);
+                storage.segment_size = Some(segment_size.as_u64() as u32);
+            }
+
+            if let Some(max_partition_size) = self.setting.max_partition_size {
+                storage.max_partition_size = Some(max_partition_size.as_u64());
             }
 
             topic_spec.set_storage(storage);
@@ -171,13 +175,19 @@ pub struct TopicConfigOpt {
     #[clap(long, value_name = "time",parse(try_from_str = parse_duration))]
     retention_time: Option<Duration>,
 
-    /// Segment size in bytes
+    /// Segment size (by default measured in bytes)
+    /// Ex: `2048`, '2 Ki', '10 MiB', `1 GB`
     #[clap(long, value_name = "bytes")]
-    segment_size: Option<u32>,
+    segment_size: Option<bytesize::ByteSize>,
 
     /// Compression configuration for topic
     #[clap(long, value_name = "compression")]
     compression_type: Option<CompressionAlgorithm>,
+
+    /// Max partition size (by default measured in bytes)
+    /// Ex: `2048`, '2 Ki', '10 MiB', `1 GB`
+    #[clap(long, value_name = "bytes")]
+    max_partition_size: Option<bytesize::ByteSize>,
 }
 
 /// module to load partitions maps from file
