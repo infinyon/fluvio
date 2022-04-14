@@ -1,5 +1,5 @@
 #!/bin/bash
-# set up sccache
+# Install Zig
 set -e
 MATRIX_OS=${1}
 echo "installing zig matrix.os=$MATRIX_OS"
