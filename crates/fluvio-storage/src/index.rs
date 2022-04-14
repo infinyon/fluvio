@@ -14,7 +14,7 @@ use tracing::trace;
 use pin_utils::unsafe_unpinned;
 
 use fluvio_future::fs::mmap::MemoryMappedFile;
-use dataplane::{Offset, Size};
+use dataplane::{Offset, Size, Size64};
 
 use crate::config::SharedReplicaConfig;
 use crate::util::generate_file_name;
@@ -24,7 +24,7 @@ use crate::config::ReplicaConfig;
 use crate::StorageError;
 
 /// size of the memory mapped isze
-const INDEX_ENTRY_SIZE: Size = size_of::<Entry>() as Size;
+pub const INDEX_ENTRY_SIZE: u64 = size_of::<Entry>() as u64;
 
 pub const EXTENSION: &str = "index";
 
@@ -43,10 +43,12 @@ pub trait Index {
     /// find_offset(1000) will return Some((500,6000))
     /// find_offset(10) will return None
     fn find_offset(&self, relative_offset: Size) -> Option<Entry>;
+
     /// Index actual size in bytes
-    fn len(&self) -> Size;
+    fn len(&self) -> Size64;
+
     /// Index capacity in bytes
-    fn cap(&self) -> Size;
+    fn capacity(&self) -> Size64;
 }
 
 pub trait OffsetPosition: Sized {
@@ -110,8 +112,7 @@ impl LogIndex {
         debug!(?index_file_path, "opening index");
 
         // make sure it is log file
-        let (m_file, file) =
-            MemoryMappedFile::open(&index_file_path, INDEX_ENTRY_SIZE as u64).await?;
+        let (m_file, file) = MemoryMappedFile::open(&index_file_path, INDEX_ENTRY_SIZE).await?;
 
         let len = (file.metadata().await?).len();
 
@@ -174,11 +175,12 @@ impl Index for LogIndex {
         lookup_entry(self, offset).map(|idx| self[idx].to_be())
     }
 
-    fn len(&self) -> Size {
-        self.len
+    fn len(&self) -> Size64 {
+        self.len as u64
     }
 
-    fn cap(&self) -> Size {
+    /// Index capacity in bytes. Since [LogIndex] is a read-only index capacity always equals length.
+    fn capacity(&self) -> Size64 {
         self.len()
     }
 }
@@ -188,7 +190,7 @@ impl Deref for LogIndex {
 
     #[inline]
     fn deref(&self) -> &[Entry] {
-        unsafe { slice::from_raw_parts(self.ptr(), (self.cap() / INDEX_ENTRY_SIZE) as usize) }
+        unsafe { slice::from_raw_parts(self.ptr(), (self.capacity() / INDEX_ENTRY_SIZE) as usize) }
     }
 }
 

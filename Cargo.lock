@@ -1609,7 +1609,7 @@ dependencies = [
  "fluvio-compression",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-sc-schema",
  "fluvio-smartengine",
  "fluvio-socket",
@@ -1639,7 +1639,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "fluvio-types",
  "flv-tls-proxy",
@@ -1837,7 +1837,7 @@ version = "0.0.0"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-types",
  "log",
  "tracing",
@@ -1851,7 +1851,7 @@ dependencies = [
  "base64",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-stream-model",
  "fluvio-types",
  "flv-util",
@@ -1862,7 +1862,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -1873,7 +1873,7 @@ dependencies = [
  "fluvio-compression",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "flv-util",
  "futures-util",
@@ -1972,7 +1972,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.7.5"
+version = "0.7.6"
 dependencies = [
  "bytes",
  "fluvio-future",
@@ -1986,7 +1986,7 @@ dependencies = [
 name = "fluvio-protocol-derive"
 version = "0.4.1"
 dependencies = [
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "proc-macro2",
  "quote",
  "syn",
@@ -2038,7 +2038,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-sc-schema",
  "fluvio-service",
  "fluvio-socket",
@@ -2071,7 +2071,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-types",
  "log",
  "paste",
@@ -2087,7 +2087,7 @@ version = "0.0.0"
 dependencies = [
  "async-trait",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "fluvio-types",
  "futures-util",
@@ -2145,7 +2145,7 @@ dependencies = [
  "cfg-if",
  "event-listener",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "futures-util",
  "once_cell",
  "pin-project",
@@ -2179,7 +2179,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-service",
  "fluvio-smartengine",
  "fluvio-socket",
@@ -2209,7 +2209,7 @@ dependencies = [
  "bytes",
  "flate2",
  "fluvio-dataplane-protocol",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "log",
  "serde",
  "static_assertions",
@@ -2230,7 +2230,7 @@ dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
  "fluvio-future",
- "fluvio-protocol 0.7.5",
+ "fluvio-protocol 0.7.6",
  "fluvio-socket",
  "fluvio-storage",
  "fluvio-types",
@@ -2388,7 +2388,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.3"
+version = "0.3.4"
 dependencies = [
  "event-listener",
  "fluvio-future",

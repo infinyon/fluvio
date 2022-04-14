@@ -92,8 +92,12 @@ impl Cleaner {
             if excess.rem(segment_size) > 0 {
                 count_to_remove += 1;
             }
-            info!("Replica size = {} bytes exceeded max partition size = {}. {} segments will be removed.",
-                                replica_size, max_partition_size, count_to_remove);
+            debug!(
+                replica_size,
+                max_partition_size,
+                segments_to_remove = count_to_remove,
+                "replica size exceeded max partition size"
+            );
             let segments_to_remove = self
                 .segments
                 .read()
@@ -252,7 +256,7 @@ mod tests {
         let mut mut_segment = MutableSegment::create(start, option).await?;
         mut_segment.append_batch(&mut create_batch()).await?;
         mut_segment.set_end_offset(end_offset);
-        Ok(mut_segment.convert_to_segment().await?)
+        mut_segment.convert_to_segment().await
     }
 
     fn default_option() -> ReplicaConfig {
