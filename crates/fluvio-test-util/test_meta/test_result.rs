@@ -56,12 +56,12 @@ impl Display for TestResult {
         let mut basic_results_table = Table::new();
 
         basic_results_table.add_row(Row::from(vec![
-            Cell::new("success"),
+            Cell::new("Pass?"),
             Cell::new(success_str),
         ]));
 
         basic_results_table.add_row(Row::from(vec![
-            Cell::new("duration"),
+            Cell::new("Duration"),
             Cell::new(duration_str),
         ]));
 

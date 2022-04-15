@@ -43,7 +43,7 @@ where
     }
 
     /// convert result to table output and print to screen
-    fn display_table<T>(&self, list: &T, _indent: bool)
+    fn display_table<T>(&self, list: &T, indent: bool)
     where
         T: TableOutputHandler,
     {
@@ -68,7 +68,10 @@ where
 
         table.load_preset(comfy_table::presets::NOTHING);
 
+        // generate table padding
+        let pad_left: u8 = if indent { 5 } else { 1 };
+
         // print table to stdout
-        table.print_std(2);
+        table.print_std(pad_left);
     }
 }
