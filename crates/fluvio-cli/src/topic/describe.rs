@@ -46,8 +46,7 @@ impl DescribeTopicsOpt {
 mod display {
 
     use fluvio::metadata::topic::ReplicaSpec;
-    use prettytable::Row;
-    use prettytable::row;
+    use comfy_table::Row;
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
@@ -99,7 +98,7 @@ mod display {
 
     impl TableOutputHandler for TopicMetadata {
         fn header(&self) -> Row {
-            row![]
+            Row::new()
         }
 
         fn errors(&self) -> Vec<String> {

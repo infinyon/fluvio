@@ -27,11 +27,9 @@ mod output {
     //!
     //! Format Smart Modules response based on output type
 
-    use prettytable::Row;
-    use prettytable::row;
-    use prettytable::Cell;
-    use prettytable::cell;
-    use prettytable::format::Alignment;
+    use comfy_table::{Cell, Row};
+    use comfy_table::CellAlignment;
+
     use tracing::debug;
     use serde::Serialize;
     use fluvio_extension_common::output::OutputType;
@@ -75,7 +73,7 @@ mod output {
     impl TableOutputHandler for ListSmartModules {
         /// table header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS", "SIZE"]
+            Row::from(["NAME", "STATUS", "SIZE"])
         }
 
         /// return errors in string format
@@ -89,10 +87,12 @@ mod output {
                 .iter()
                 .map(|r| {
                     let _spec = &r.spec;
-                    Row::new(vec![
-                        Cell::new_align(&r.name, Alignment::RIGHT),
-                        Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
-                        Cell::new_align(&r.spec.wasm.payload.len().to_string(), Alignment::RIGHT),
+
+                    Row::from([
+                        Cell::new(&r.name).set_alignment(CellAlignment::Right),
+                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
+                        Cell::new(&r.spec.wasm.payload.len().to_string())
+                            .set_alignment(CellAlignment::Right),
                     ])
                 })
                 .collect()

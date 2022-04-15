@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.7.3"
+version = "0.7.4"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"
@@ -16,8 +16,8 @@ target = ["fluvio"]
 
 [dependencies]
 tracing = "0.1.19"
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
-prettytable-rs = "0.8.0"
+clap = { version = "3.1.8", default-features = false }
+comfy-table = "5.0.1"
 serde = { version = "1.0.103", features = ['derive'] }
 serde_json = "1.0.39"
 serde_yaml = "0.8.8"

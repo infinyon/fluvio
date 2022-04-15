@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use prettytable::format;
-use prettytable::Row;
-use prettytable::Table;
+use comfy_table::Row;
+use comfy_table::Table;
 
 use crate::t_println;
 use super::Terminal;
+use crate::output::DisplayTable;
 
 pub trait TableOutputHandler {
     fn header(&self) -> Row;
@@ -57,20 +57,21 @@ where
 
         // Create the table
         let mut table = Table::new();
-        let mut format = *format::consts::FORMAT_CLEAN;
-        let pad_left = if indent { 5 } else { 1 };
-        format.padding(pad_left, 1);
-        table.set_format(format);
 
         // add header
-        table.set_titles(header);
+        table.set_header(header);
 
         // add rows
         for row in content {
             table.add_row(row);
         }
 
+        table.load_preset(comfy_table::presets::NOTHING);
+
+        // generate table padding
+        let pad_left: u8 = if indent { 5 } else { 1 };
+
         // print table to stdout
-        table.printstd();
+        table.print_std(pad_left);
     }
 }

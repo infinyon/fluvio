@@ -35,11 +35,9 @@ mod output {
     //! # Fluvio SC - output processing
     //!
 
-    use prettytable::Row;
-    use prettytable::row;
-    use prettytable::Cell;
-    use prettytable::cell;
-    use prettytable::format::Alignment;
+    use comfy_table::{Row, Cell};
+    use comfy_table::CellAlignment;
+
     use tracing::debug;
     use serde::Serialize;
     use fluvio_extension_common::output::OutputType;
@@ -83,7 +81,7 @@ mod output {
     impl TableOutputHandler for ListTableFormats {
         /// tableformat header implementation
         fn header(&self) -> Row {
-            row!["NAME", "STATUS",]
+            Row::from(["NAME", "STATUS"])
         }
 
         /// return errors in string format
@@ -97,9 +95,10 @@ mod output {
                 .iter()
                 .map(|r| {
                     let _spec = &r.spec;
-                    Row::new(vec![
-                        Cell::new_align(&r.name, Alignment::RIGHT),
-                        Cell::new_align(&r.status.to_string(), Alignment::RIGHT),
+
+                    Row::from([
+                        Cell::new(&r.name).set_alignment(CellAlignment::Right),
+                        Cell::new(&r.status.to_string()).set_alignment(CellAlignment::Right),
                     ])
                 })
                 .collect()

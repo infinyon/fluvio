@@ -41,9 +41,8 @@ mod display {
 
     use std::convert::TryInto;
 
-    use prettytable::Row;
-    use prettytable::row;
-    use prettytable::cell;
+    use comfy_table::{Row, Cell};
+
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
@@ -88,7 +87,7 @@ mod display {
     impl TableOutputHandler for ListSpus {
         /// table header implementation
         fn header(&self) -> Row {
-            row![
+            Row::from([
                 "TOPIC",
                 "PARTITION",
                 "LEADER",
@@ -98,8 +97,8 @@ mod display {
                 "HW",
                 "LEO",
                 "LRS",
-                "FOLLOWER OFFSETS"
-            ]
+                "FOLLOWER OFFSETS",
+            ])
         }
 
         /// return errors in string format
@@ -130,18 +129,19 @@ mod display {
                         _ => bytesize::ByteSize::b(status.size as u64).to_string(),
                     };
 
-                    row![
-                        l -> topic,
-                        l -> partition.to_string(),
-                        l -> spec.leader.to_string(),
-                        l -> format!("{:?}",spec.followers()),
-                        l -> format!("{:?}",status.resolution),
-                        l -> printable_size,
-                        l -> status.leader.hw.to_string(),
-                        l -> status.leader.leo.to_string(),
-                        l -> status.lsr.to_string(),
-                        l -> format!("{:?}",status.replicas)
-                    ]
+                    Row::from([
+                        Cell::new(topic),
+                        Cell::new(partition.to_string()),
+                        Cell::new(spec.leader.to_string()),
+                        Cell::new(format!("{:?}", spec.followers())),
+                        Cell::new(format!("{:?}", status.resolution)),
+                        Cell::new(printable_size),
+                        Cell::new(status.leader.hw.to_string()),
+                        Cell::new(status.leader.leo.to_string()),
+                        Cell::new(status.leader.leo.to_string()),
+                        Cell::new(status.lsr.to_string()),
+                        Cell::new(format!("{:?}", status.replicas)),
+                    ])
                 })
                 .collect()
         }

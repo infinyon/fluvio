@@ -3,9 +3,7 @@
 //!
 //! Format SPU response based on output type
 //!
-use prettytable::Row;
-use prettytable::row;
-use prettytable::cell;
+use comfy_table::{Row, Cell};
 use serde::Serialize;
 
 use fluvio::metadata::objects::Metadata;
@@ -40,7 +38,7 @@ where
 impl TableOutputHandler for ListSpus {
     /// table header implementation
     fn header(&self) -> Row {
-        row!["ID", "NAME", "STATUS", "TYPE", "RACK", "PUBLIC", "PRIVATE"]
+        Row::from(["ID", "NAME", "STATUS", "TYPE", "RACK", "PUBLIC", "PRIVATE"])
     }
 
     /// return errors in string format
@@ -53,16 +51,15 @@ impl TableOutputHandler for ListSpus {
             .iter()
             .map(|metadata| {
                 let spu = &metadata.spec;
-
-                row![
-                    r -> spu.id,
-                    l -> metadata.name,
-                    l -> metadata.status.to_string(),
-                    l -> spu.spu_type.to_string(),
-                    c -> (&spu.rack).as_ref().unwrap_or(&"-".to_string()),
-                    l -> spu.public_endpoint.to_string(),
-                    l -> spu.private_endpoint.to_string()
-                ]
+                Row::from([
+                    Cell::new(spu.id),
+                    Cell::new(metadata.name.to_string()),
+                    Cell::new(metadata.status.to_string()),
+                    Cell::new(spu.spu_type.to_string()),
+                    Cell::new((&spu.rack).as_ref().unwrap_or(&"-".to_string())),
+                    Cell::new(spu.public_endpoint.to_string()),
+                    Cell::new(spu.private_endpoint.to_string()),
+                ])
             })
             .collect()
     }

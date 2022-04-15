@@ -4,7 +4,8 @@
 //! Connects to server and fetches logs
 //!
 
-use fluvio::metadata::tableformat::TableFormatColumnConfig;
+use comfy_table::Table;
+use fluvio::{metadata::tableformat::TableFormatColumnConfig};
 use fluvio_extension_common::{bytes_to_hex_dump, hex_dump_separator};
 use super::TableModel;
 use std::collections::BTreeMap;
@@ -81,8 +82,7 @@ pub fn format_raw_record(record: &[u8]) -> String {
 /// Print table header if `print_header` is true
 /// Rows may not stay aligned with table header
 pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<String> {
-    use prettytable::{Row, cell, Cell, Slice};
-    use prettytable::format::{self, FormatBuilder};
+    use comfy_table::{Row, Cell};
 
     let maybe_json: serde_json::Value = match serde_json::from_slice(record) {
         Ok(value) => value,
@@ -101,50 +101,39 @@ pub fn format_basic_table_record(record: &[u8], print_header: bool) -> Option<St
 
     // This is the case where we don't provide any table info. We want to print a table w/ all top-level keys as headers
     // Think about how we might only select specific keys
-    let keys_str: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
+    let keys_str = obj.keys().map(|k| k.to_string());
 
     // serde_json's Value::String() gets wrapped in quotes if we use `to_string()`
-    let values_str: Vec<String> = obj
-        .values()
-        .map(|v| {
-            if v.is_string() {
-                if let Some(s) = v.as_str() {
-                    s.to_string()
-                } else {
-                    println!("error: Value in json not representable as str");
-                    String::new()
-                }
+    let values_str = obj.values().map(|v| {
+        if v.is_string() {
+            if let Some(s) = v.as_str() {
+                s.to_string()
             } else {
-                v.to_string()
+                println!("error: Value in json not representable as str");
+                String::new()
             }
-        })
-        .collect();
+        } else {
+            v.to_string()
+        }
+    });
 
-    let header: Row = Row::new(keys_str.iter().map(|k| cell!(k.to_owned())).collect());
-    let entries: Row = Row::new(values_str.iter().map(|v| Cell::new(v)).collect());
+    let header: Row = Row::from(keys_str.into_iter().map(Cell::new).collect::<Vec<_>>());
 
-    // Print the table
-    let t_print = vec![header, entries];
+    let entries: Row = Row::from(values_str.into_iter().map(Cell::new).collect::<Vec<_>>());
 
-    let mut table = prettytable::Table::init(t_print);
+    let mut table = Table::new();
+    table.set_header(header);
+    table.add_row(entries);
 
-    let base_format: FormatBuilder = (*format::consts::FORMAT_NO_BORDER_LINE_SEPARATOR).into();
-    let table_format = base_format;
-    table.set_format(table_format.build());
-
-    let mut out = Vec::new();
-    let res = if print_header {
-        table.print(&mut out)
+    let out: Vec<String> = if print_header {
+        table.lines().collect()
     } else {
-        let slice = table.slice(1..);
-        slice.print(&mut out)
+        table.lines().skip(1).collect()
     };
 
-    if res.is_ok() {
-        Some(String::from_utf8_lossy(&out).trim_end().to_string())
-    } else {
-        None
-    }
+    table.load_preset(comfy_table::presets::NOTHING);
+
+    Some(out.join("\n"))
 }
 
 // -----------------------------------

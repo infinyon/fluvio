@@ -44,7 +44,7 @@ mod display {
     use std::time::Duration;
 
     use humantime::{format_duration};
-    use prettytable::*;
+    use comfy_table::{Row, Cell, CellAlignment};
     use serde::Serialize;
 
     use fluvio::metadata::objects::Metadata;
@@ -80,7 +80,7 @@ mod display {
     impl TableOutputHandler for ListTopics {
         /// table header implementation
         fn header(&self) -> Row {
-            row![
+            Row::from([
                 "NAME",
                 "TYPE",
                 "PARTITIONS",
@@ -88,8 +88,8 @@ mod display {
                 "RETENTION TIME",
                 "COMPRESSION",
                 "STATUS",
-                "REASON"
-            ]
+                "REASON",
+            ])
         }
 
         /// return errors in string format
@@ -103,16 +103,19 @@ mod display {
                 .iter()
                 .map(|metadata| -> Row {
                     let topic = &metadata.spec;
-                    row![
-                        l -> metadata.name,
-                        c -> topic.type_label(),
-                        c -> topic.partitions_display(),
-                        c -> topic.replication_factor_display(),
-                        c -> format_duration(Duration::from_secs(topic.retention_secs() as u64)),
-                        c -> topic.get_compression_type(),
-                        c -> metadata.status.resolution.to_string(),
-                        l -> metadata.status.reason
-                    ]
+
+                    Row::from([
+                        Cell::new(metadata.name.to_string()),
+                        Cell::new(topic.type_label()),
+                        Cell::new(topic.partitions_display()).set_alignment(CellAlignment::Left),
+                        Cell::new(topic.replication_factor_display()),
+                        Cell::new(format_duration(Duration::from_secs(
+                            topic.retention_secs() as u64
+                        ))),
+                        Cell::new(topic.get_compression_type()),
+                        Cell::new(metadata.status.resolution.to_string()),
+                        Cell::new(metadata.status.reason.to_string()),
+                    ])
                 })
                 .collect()
         }

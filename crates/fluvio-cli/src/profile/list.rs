@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use serde::Serialize;
+use comfy_table::Row;
 use clap::Parser;
-use prettytable::{Row, row, cell};
 
 use crate::Result;
 use fluvio::config::{ConfigFile, Config, TlsPolicy};
@@ -49,7 +49,7 @@ fn format_tls(tls: &TlsPolicy) -> &'static str {
 
 impl TableOutputHandler for ListConfig<'_> {
     fn header(&self) -> Row {
-        row!["", "PROFILE", "CLUSTER", "ADDRESS", "TLS"]
+        Row::from(["", "PROFILE", "CLUSTER", "ADDRESS", "TLS"])
     }
 
     fn content(&self) -> Vec<Row> {
@@ -70,7 +70,7 @@ impl TableOutputHandler for ListConfig<'_> {
                     .map(|it| (&*profile.cluster, &*it.endpoint, format_tls(&it.tls)))
                     .unwrap_or(("", "", ""));
 
-                row![active, profile_name, cluster, addr, tls,]
+                Row::from([active, profile_name, cluster, addr, tls])
             })
             .collect()
     }
