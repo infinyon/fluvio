@@ -43,6 +43,9 @@ spec:
                     segmentSize:
                       type: integer
                       minimum: 1024
+                    maxPartitionSize:
+                      type: integer
+                      minimum: 2048
                 compressionType:
                   type: string
                   enum:
@@ -92,4 +95,8 @@ spec:
         type: string
         description: Follower Offsets
         jsonPath: .status.replicas
+      - name: Size
+        type: string
+        description: Size
+        jsonPath: .status.size
     

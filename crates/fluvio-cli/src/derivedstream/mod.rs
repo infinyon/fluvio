@@ -6,19 +6,16 @@ use fluvio::Fluvio;
 
 mod create;
 mod list;
-mod describe;
 mod delete;
 
 use self::create::*;
 use self::list::*;
-use self::describe::*;
 use self::delete::*;
 
 #[derive(Debug, Parser)]
 pub enum DerivedStreamCmd {
     Create(CreateDerivedStreamOpt),
     List(ListDerivedStreamOpt),
-    Describe(DescribeDerivedStreamOpt),
     Delete(DeleteDerivedStreamOpt),
 }
 
@@ -30,9 +27,6 @@ impl DerivedStreamCmd {
             }
             Self::List(opt) => {
                 opt.process(out, fluvio).await?;
-            }
-            Self::Describe(opt) => {
-                opt.process()?;
             }
             Self::Delete(opt) => {
                 opt.process(fluvio).await?;

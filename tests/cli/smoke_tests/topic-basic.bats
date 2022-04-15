@@ -61,3 +61,37 @@ setup_file() {
     assert_failure
     assert_output --partial "Topic not found"
 }
+
+# Create topic with max partition size (dry run)
+@test "Attempt to create topic with specified max partition size" {
+    run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)" --max-partition-size 10Gb --dry-run
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_success
+}
+
+# Create topic with segment size (dry run)
+@test "Attempt to create topic with specified segment size" {
+    run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)" --segment-size "2 Ki" --dry-run
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_success
+}
+
+# Create topic with too small max partition size (dry run) - Negative test
+@test "Attempt to create topic with too small max partition size" {
+    run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)" --max-partition-size "10" --dry-run
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_failure
+    assert_output --partial "max_partition_size 10 is less than minimum 2048"
+}
+
+# Create topic with max partition size is less than segment size (dry run) - Negative test
+@test "Attempt to create topic with max partition size smaller than segment size" {
+    run timeout 15s "$FLUVIO_BIN" topic create "$(random_string)" --segment-size "3 Ki" --max-partition-size "2 Ki" --dry-run
+    debug_msg "status: $status"
+    debug_msg "output: ${lines[0]}"
+    assert_failure
+    assert_output --partial "max_partition_size 2048 is less than segment size 3072"
+}

@@ -1,6 +1,7 @@
 use std::cmp::min;
 use std::mem;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use fluvio_future::file_slice::AsyncFileSlice;
 use fluvio_protocol::Encoder;
@@ -8,7 +9,7 @@ use tracing::{debug, trace, warn, instrument, info};
 use async_trait::async_trait;
 
 use fluvio_future::fs::{create_dir_all, remove_dir_all};
-use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size};
+use dataplane::{ErrorCode, Isolation, Offset, ReplicaKey, Size, Size64};
 use dataplane::batch::{Batch, BatchRecords};
 use dataplane::record::RecordSet;
 
@@ -18,6 +19,7 @@ use crate::segment::MutableSegment;
 use crate::config::{ReplicaConfig, SharedReplicaConfig, StorageConfig};
 use crate::ReplicaSlice;
 use crate::{StorageError, ReplicaStorage};
+use crate::cleaner::Cleaner;
 
 /// Replica is public abstraction for commit log which are distributed.
 /// Internally it is stored as list of segments.  Each segment contains finite sets of record batches.
@@ -32,6 +34,14 @@ pub struct FileReplica {
     active_segment: MutableSegment,
     prev_segments: Arc<SharedSegments>,
     commit_checkpoint: CheckPoint<Offset>,
+    cleaner: Arc<Cleaner>,
+    size: Arc<ReplicaSize>,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct ReplicaSize {
+    active_segment: AtomicU64,
+    prev_segments: AtomicU64,
 }
 
 impl Unpin for FileReplica {}
@@ -97,24 +107,17 @@ impl ReplicaStorage for FileReplica {
         }
     }
 
-    /// reads log file of the current partition
-    /// return the size in byte
+    /// return the size in bytes (includes index size and log size)
     #[instrument(skip(self))]
-    async fn get_partition_size(&self) -> Result<u64, ErrorCode> {
-        let active_len = self.active_segment.get_msg_log().get_pos();
-
+    fn get_partition_size(&self) -> Size64 {
+        let active_len = self.size.get_active();
         debug!(active_len, "Active segment length");
-        let total_prev_segments_len = {
-            let reader = self.prev_segments.read().await;
-            reader.get_total_logs_len() as u32
-        };
+        let total_prev_segments_len = self.size.get_prev();
         debug!(
             total_prev_segments_len,
             "Cumulated previous segments length"
         );
-        let total_len = active_len + total_prev_segments_len;
-
-        return Ok(total_len.into());
+        total_prev_segments_len + active_len
     }
 
     /// write records to this replica
@@ -171,7 +174,8 @@ impl ReplicaStorage for FileReplica {
         remove_dir_all(&self.option.base_dir)
             .await
             .map_err(StorageError::Io)?;
-        self.prev_segments.clean();
+
+        self.cleaner.shutdown();
         Ok(())
     }
 }
@@ -217,8 +221,7 @@ impl FileReplica {
 
         let shared_config: Arc<SharedReplicaConfig> = Arc::new(rep_option.into());
 
-        let (segments, last_offset_res) =
-            SharedSegments::from_dir(shared_config.clone(), storage_config).await?;
+        let (segments, last_offset_res) = SharedSegments::from_dir(shared_config.clone()).await?;
 
         let active_segment = if let Some(last_offset) = last_offset_res {
             debug!(last_offset, "last segment found, validating offsets");
@@ -240,6 +243,14 @@ impl FileReplica {
         let commit_checkpoint: CheckPoint<Offset> =
             CheckPoint::create(shared_config.clone(), "replication.chk", last_base_offset).await?;
 
+        let size = Arc::new(ReplicaSize::default());
+        let cleaner = Cleaner::start_new(
+            storage_config,
+            shared_config.clone(),
+            segments.clone(),
+            size.clone(),
+        );
+
         Ok(Self {
             option: shared_config,
             last_base_offset,
@@ -247,6 +258,8 @@ impl FileReplica {
             active_segment,
             prev_segments: segments,
             commit_checkpoint,
+            cleaner,
+            size,
         })
     }
 
@@ -365,10 +378,40 @@ impl FileReplica {
             let new_segment = MutableSegment::create(last_offset, self.option.clone()).await?;
             let old_mut_segment = mem::replace(&mut self.active_segment, new_segment);
             let old_segment = old_mut_segment.as_segment().await?;
+            self.size.add_prev(old_segment.occupied_memory());
             self.prev_segments.add_segment(old_segment).await;
             self.active_segment.append_batch(item).await?;
         }
+        self.size
+            .store_active(self.active_segment.occupied_memory());
         Ok(())
+    }
+}
+
+impl ReplicaSize {
+    pub(crate) fn get(&self) -> Size64 {
+        self.get_active() + self.get_prev()
+    }
+
+    pub(crate) fn store_prev(&self, prev_segments: Size64) {
+        self.prev_segments.store(prev_segments, Ordering::Release);
+    }
+
+    fn store_active(&self, active: Size64) {
+        self.active_segment.store(active, Ordering::Release);
+    }
+
+    fn get_active(&self) -> Size64 {
+        self.active_segment.load(Ordering::Acquire)
+    }
+
+    fn add_prev(&self, prev_segment: Size64) {
+        self.prev_segments
+            .fetch_add(prev_segment, Ordering::Release);
+    }
+
+    fn get_prev(&self) -> Size64 {
+        self.prev_segments.load(Ordering::Acquire)
     }
 }
 
@@ -395,7 +438,7 @@ mod tests {
     use dataplane::core::{Decoder, Encoder};
     use dataplane::record::{Record, RecordSet};
     use dataplane::batch::MemoryRecords;
-    use dataplane::fixture::{BatchProducer, create_batch};
+    use dataplane::fixture::{BatchProducer, create_batch, create_batch_with_producer};
     use dataplane::fixture::read_bytes_from_file;
     use flv_util::fixture::ensure_clean_dir;
 
@@ -666,7 +709,7 @@ mod tests {
 
         assert_eq!(replica.get_hw(), 2);
 
-        let size = replica.get_partition_size().await.expect("partition size");
+        let size = replica.get_partition_size();
         assert_eq!(size, 79);
 
         replica
@@ -674,7 +717,7 @@ mod tests {
             .await
             .expect("write");
 
-        let size = replica.get_partition_size().await.expect("partition size");
+        let size = replica.get_partition_size();
         assert_eq!(size, 79 * 2);
     }
 
@@ -692,17 +735,14 @@ mod tests {
 
         assert_eq!(replica.get_hw(), 2);
 
-        let size = replica.get_partition_size().await.expect("partition size");
+        let size = replica.get_partition_size();
         assert_eq!(size, 79);
 
         remove_dir_all(option.base_dir)
             .await
             .expect("delete base dir");
 
-        let size = replica
-            .get_partition_size()
-            .await
-            .expect("error partition size");
+        let size = replica.get_partition_size();
         assert_eq!(size, 79);
     }
 
@@ -939,5 +979,54 @@ mod tests {
         drop(new_replica);
         sleep(Duration::from_millis(300)).await; // clear should end
         assert_eq!(Arc::strong_count(&segments), 1);
+    }
+
+    #[fluvio_future::test]
+    async fn test_replica_size_enforced() {
+        //given
+        let storage_config = StorageConfig::builder()
+            .cleaning_interval_ms(200)
+            .build()
+            .expect("build");
+
+        let mut option = base_option("test_size");
+        let max_partition_size = 512;
+        let max_segment_size = 128;
+        option.max_partition_size = max_partition_size;
+        option.segment_max_bytes = max_segment_size;
+
+        let mut replica = FileReplica::create_or_load(
+            "test",
+            0,
+            START_OFFSET,
+            option.clone(),
+            Arc::new(storage_config),
+        )
+        .await
+        .expect("replica created");
+
+        let mut batch = create_batch_with_producer(12, 5);
+        for i in 1..=20 {
+            //at least 20*5*8 bytes to store these records
+            replica.write_batch(&mut batch).await.expect("batch sent");
+            assert_eq!(replica.get_leo(), START_OFFSET + 5 * i);
+        }
+
+        //when
+        sleep(Duration::from_millis(1000)).await; //Cleaner should have run
+
+        //then
+        let partition_size = replica.get_partition_size();
+        assert!(
+            partition_size < max_partition_size,
+            "replica size must not exceed max_partition_size config. Was {}",
+            partition_size
+        );
+        let prev_segments = replica.prev_segments.read().await.len();
+        assert_eq!(
+            prev_segments, 3,
+            "segments must be removed to enforce size. Was {}",
+            prev_segments
+        );
     }
 }

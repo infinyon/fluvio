@@ -295,6 +295,26 @@ impl Encoder for u32 {
     }
 }
 
+impl Encoder for u64 {
+    fn write_size(&self, _version: Version) -> usize {
+        8
+    }
+
+    fn encode<T>(&self, dest: &mut T, _version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        if dest.remaining_mut() < 8 {
+            return Err(Error::new(
+                ErrorKind::UnexpectedEof,
+                "not enough capacity for u64",
+            ));
+        }
+        dest.put_u64(*self);
+        Ok(())
+    }
+}
+
 impl Encoder for i64 {
     fn write_size(&self, _version: Version) -> usize {
         8
@@ -307,7 +327,7 @@ impl Encoder for i64 {
         if dest.remaining_mut() < 8 {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
-                "not enough capacity for i164",
+                "not enough capacity for i64",
             ));
         }
         dest.put_i64(*self);
@@ -458,6 +478,71 @@ mod test {
         assert_eq!(dest[1], 0x00);
         assert_eq!(dest[2], 0x10);
         assert_eq!(value.write_size(0), 3);
+    }
+
+    #[test]
+    fn test_encode_u32() {
+        let mut dest = vec![];
+        let value: u32 = 16;
+        let result = value.encode(&mut dest, 0);
+        assert!(result.is_ok());
+        assert_eq!(dest, vec![0x00, 0x00, 0x00, 0x10]);
+        assert_eq!(value.write_size(0), 4);
+    }
+
+    #[test]
+    fn test_encode_option_u32_none() {
+        let mut dest = vec![];
+        let value: Option<u32> = None;
+        let result = value.encode(&mut dest, 0);
+        assert!(result.is_ok());
+        assert_eq!(dest.len(), 1);
+        assert_eq!(dest[0], 0x00);
+        assert_eq!(value.write_size(0), 1);
+    }
+
+    #[test]
+    fn test_encode_option_u32_with_val() {
+        let mut dest = vec![];
+        let value: Option<u32> = Some(16);
+        let result = value.encode(&mut dest, 0);
+        assert!(result.is_ok());
+        assert_eq!(dest, vec![0x01, 0x00, 0x00, 0x00, 0x10]);
+        assert_eq!(value.write_size(0), 5);
+    }
+
+    #[test]
+    fn test_encode_u64() {
+        let mut dest = vec![];
+        let value: u64 = 16;
+        let result = value.encode(&mut dest, 0);
+        assert!(result.is_ok());
+        assert_eq!(dest, vec![0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10]);
+        assert_eq!(value.write_size(0), 8);
+    }
+
+    #[test]
+    fn test_encode_option_u64_none() {
+        let mut dest = vec![];
+        let value: Option<u64> = None;
+        let result = value.encode(&mut dest, 0);
+        assert!(result.is_ok());
+        assert_eq!(dest.len(), 1);
+        assert_eq!(dest[0], 0x00);
+        assert_eq!(value.write_size(0), 1);
+    }
+
+    #[test]
+    fn test_encode_option_u64_with_val() {
+        let mut dest = vec![];
+        let value: Option<u64> = Some(16);
+        let result = value.encode(&mut dest, 0);
+        assert!(result.is_ok());
+        assert_eq!(
+            dest,
+            vec![0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10]
+        );
+        assert_eq!(value.write_size(0), 9);
     }
 
     #[test]

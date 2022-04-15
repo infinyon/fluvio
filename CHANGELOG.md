@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.24 - UNRELEASED
+* Storage: Enforce size based retention for topic ([#2179](https://github.com/infinyon/fluvio/issues/2179))
 
 ## Platform Version 0.9.23 - 2022-04-13
 * Add `TYPE` column to `fluvio connector list` ([#2218](https://github.com/infinyon/fluvio/issues/2218))

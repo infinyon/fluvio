@@ -9,7 +9,7 @@ use tracing::{debug, trace, instrument, info, error};
 use fluvio_future::fs::remove_file;
 use fluvio_future::file_slice::AsyncFileSlice;
 use dataplane::batch::{Batch, BatchRecords};
-use dataplane::{Offset, Size, ErrorCode};
+use dataplane::{Offset, Size, ErrorCode, Size64};
 
 use crate::batch_header::{BatchHeaderStream, BatchHeaderPos};
 use crate::mut_index::MutLogIndex;
@@ -20,7 +20,7 @@ use crate::mut_records::MutFileRecords;
 use crate::records::FileRecordsSlice;
 use crate::config::{SharedReplicaConfig};
 use crate::validator::LogValidationError;
-use crate::{StorageError};
+use crate::StorageError;
 use crate::batch::FileBatchStream;
 use crate::index::OffsetPosition;
 
@@ -220,6 +220,10 @@ where
             }
         }
         Ok(None)
+    }
+
+    pub(crate) fn occupied_memory(&self) -> Size64 {
+        self.index.len() as u64 + self.msg_log.len()
     }
 }
 
@@ -450,16 +454,6 @@ impl Segment<MutLogIndex, MutFileRecords> {
         self.msg_log.flush().await.map_err(|err| err.into())
     }
 }
-
-/*
-/// compute total number of values in the default batch
-fn compute_batch_record_size(batch: &Batch) -> usize {
-    batch
-        .records()
-        .iter()
-        .fold(0, |acc, batch| acc + batch.value.len())
-}
-*/
 
 #[cfg(test)]
 mod tests {

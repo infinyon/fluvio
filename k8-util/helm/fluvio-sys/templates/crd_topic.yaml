@@ -150,7 +150,9 @@ spec:
                     segmentSize:
                       type: integer
                       minimum: 1024               
-
+                    maxPartitionSize:
+                      type: integer
+                      minimum: 2048
       subresources:
           status: {}
       additionalPrinterColumns:
@@ -170,6 +172,14 @@ spec:
             type: string
             description: Topic Status
             jsonPath: .status.resolution
+          - name: Segment Size
+            type: integer
+            description: Segment Size
+            jsonPath: .spec.storage.segmentSize
+          - name: Max Partition Size
+            type: integer
+            description: Max Partition Size
+            jsonPath: .spec.storage.maxPartitionSize
   conversion:
     # None conversion assumes the same schema for all versions and only sets the apiVersion
     # field of custom resources to the proper value

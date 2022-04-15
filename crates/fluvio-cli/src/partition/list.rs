@@ -126,7 +126,7 @@ mod display {
                     let printable_size = match status.size {
                         PartitionStatus::SIZE_NOT_SUPPORTED => "NA".to_string(),
                         PartitionStatus::SIZE_ERROR => "ERROR".to_string(),
-                        _ => human_bytes::human_bytes(status.size as f64),
+                        _ => bytesize::ByteSize::b(status.size as u64).to_string(),
                     };
 
                     Row::from([

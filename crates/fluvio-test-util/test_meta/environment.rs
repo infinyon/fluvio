@@ -174,6 +174,10 @@ pub struct EnvironmentSetup {
     #[clap(long, default_value = "1000000000")]
     pub topic_segment_size: u32,
 
+    /// Max partition size (bytes) per topic
+    #[clap(long, default_value = "10000000000")]
+    pub topic_max_partition_size: u64,
+
     /// Retention time per topic
     /// ex. 30s, 15m, 2h, 1w
     #[clap(long, default_value = "7d", parse(try_from_str = parse_duration))]

@@ -250,6 +250,21 @@ impl Decoder for u32 {
     }
 }
 
+impl Decoder for u64 {
+    fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
+    where
+        T: Buf,
+    {
+        if src.remaining() < 8 {
+            return Err(Error::new(ErrorKind::UnexpectedEof, "can't read u64"));
+        }
+        let value = src.get_u64();
+        trace!("u64: {:#x} => {}", &value, &value);
+        *self = value;
+        Ok(())
+    }
+}
+
 impl Decoder for i64 {
     fn decode<T>(&mut self, src: &mut T, _version: Version) -> Result<(), Error>
     where
@@ -454,7 +469,7 @@ mod test {
     fn test_decode_u16_not_enough() {
         let data = [0x11]; // only one value
 
-        let mut value: i16 = 0;
+        let mut value: u16 = 0;
         let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_err());
     }
@@ -487,6 +502,84 @@ mod test {
         let result = value.decode(&mut Cursor::new(&data), 0);
         assert!(result.is_ok());
         assert_eq!(value, Some(16));
+    }
+
+    #[test]
+    fn test_decode_u32_not_enough() {
+        let data = [0x11];
+
+        let mut value: u32 = 0;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_decode_u32() {
+        let data = [0x00, 0x00, 0x00, 0x05];
+
+        let mut value: u32 = 0;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_ok());
+        assert_eq!(value, 5);
+    }
+
+    #[test]
+    fn test_decode_option_u32_none() {
+        let data = [0x00];
+
+        let mut value: Option<u32> = None;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_ok());
+        assert_eq!(value, None);
+    }
+
+    #[test]
+    fn test_decode_option_u32_val() {
+        let data = [0x01, 0x00, 0x00, 0x01, 0x10];
+
+        let mut value: Option<u32> = None;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_ok());
+        assert_eq!(value, Some(272));
+    }
+
+    #[test]
+    fn test_decode_u64_not_enough() {
+        let data = [0x11];
+
+        let mut value: u64 = 0;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_decode_u64() {
+        let data = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05];
+
+        let mut value: u64 = 0;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_ok());
+        assert_eq!(value, 5);
+    }
+
+    #[test]
+    fn test_decode_option_u64_none() {
+        let data = [0x00];
+
+        let mut value: Option<u64> = None;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_ok());
+        assert_eq!(value, None);
+    }
+
+    #[test]
+    fn test_decode_option_u64_val() {
+        let data = [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x05];
+
+        let mut value: Option<u64> = None;
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_ok());
+        assert_eq!(value, Some(5));
     }
 
     #[test]
