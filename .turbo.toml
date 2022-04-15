@@ -1,0 +1,5 @@
+turbo = true
+turbo_id = "ba5aa5e6-fca7-4984-a58c-5195a71503ae"
+
+[build]
+sccache = "/home/tejas/.cargo/bin/sccache"

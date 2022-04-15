@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.24 - UNRELEASED
+* CLI: Migrate all fluvio crates to `comfy-table` from `prettytable-rs` ([#2285](https://github.com/infinyon/fluvio/pulls/2285))
 * Storage: Enforce size based retention for topic ([#2179](https://github.com/infinyon/fluvio/issues/2179))
 
 ## Platform Version 0.9.23 - 2022-04-13
