@@ -13,6 +13,11 @@ on:
  # pull_request:
  #   branches: [master]
   workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  K3D_VERSION: v5.4.1
+
 jobs:
 
   build_long_binaries:
@@ -101,7 +106,6 @@ jobs:
         topic_segment_bytes: [500000]  # 500KB
         topic_retention: [15s]
     env:
-      K3D_VERSION: v4.4.8
       TEST_BINARY: fluvio-test-x86_64-unknown-linux-musl
 
     steps:
