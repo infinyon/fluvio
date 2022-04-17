@@ -611,7 +611,7 @@ jobs:
         run: [r1]
         test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
         k8: [k3d, minikube]
-        spu: [2]
+        spu: [3]
     steps:
       - uses: actions/checkout@v2
       # Download artifacts
