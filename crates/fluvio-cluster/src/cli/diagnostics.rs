@@ -17,7 +17,7 @@ type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 #[derive(Parser, Debug)]
 pub struct DiagnosticsOpt {
     #[clap(long)]
-    verbose: bool,
+    omit: bool,
 }
 
 impl DiagnosticsOpt {
@@ -83,6 +83,7 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
+    // copy logs from spu
     fn copy_local_logs(&self, dest_dir: &Path) -> Result<()> {
         let logs_dir = std::fs::read_dir(get_log_directory())?;
         println!("reading local logs from {:?}", logs_dir);
@@ -99,6 +100,7 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
+    /// get logs from k8 pod
     fn copy_kubernetes_logs(&self, kubectl: &Path, dest_dir: &Path) -> Result<()> {
         let pods = cmd!(
             kubectl,
@@ -119,7 +121,7 @@ impl DiagnosticsOpt {
             let log = match log_result {
                 Ok(log) => log,
                 Err(_) => {
-                    if self.verbose {
+                    if !self.omit {
                         println!("Failed to collect log for {}, skipping", pod.trim());
                     }
                     continue;
@@ -133,6 +135,7 @@ impl DiagnosticsOpt {
         Ok(())
     }
 
+    /// get detail about k8 object
     fn copy_kubernetes_metadata(
         &self,
         kubectl: &Path,
@@ -161,11 +164,11 @@ impl DiagnosticsOpt {
                 .read();
             let meta = match result {
                 Ok(meta) => {
-                    println!("retrieved metadata for {ty}: {obj}");
+                    println!("retrieved k8 {ty}: {obj}");
                     meta
                 }
                 Err(_) => {
-                    if self.verbose {
+                    if !self.omit {
                         println!("failed to get metadata for {ty}: {obj}");
                     }
                     continue;
@@ -173,7 +176,7 @@ impl DiagnosticsOpt {
             };
 
             let dest = dest.join(format!("{}-{}.yaml", ty, obj));
-            write(dest, meta)?;
+            self.dump(ty, dest, &meta)?;
         }
         Ok(())
     }
@@ -188,7 +191,7 @@ impl DiagnosticsOpt {
 
         let write = |yaml, name| -> Result<()> {
             let path = dest.join(format!("admin-spec-{}.yml", name));
-            write(path, yaml)?;
+            self.dump(name, path, yaml)?;
             Ok(())
         };
 
@@ -216,7 +219,8 @@ impl DiagnosticsOpt {
         let path = dest_dir.join("helm-list.txt");
         match cmd!("helm", "list").read() {
             Ok(output) => {
-                write(path, output)?;
+                println!("writing helm list");
+                self.dump("helm", path, &output)?;
             }
             Err(err) => {
                 write(path, format!("Failed to collect helm list: {:#?}", err))?;
@@ -229,7 +233,7 @@ impl DiagnosticsOpt {
     fn write_system_info(&self, dest: &Path) -> Result<()> {
         let write = |yaml, name| -> Result<()> {
             let path = dest.join(format!("system-{}.yml", name));
-            write(path, yaml)?;
+            self.dump(name, path, yaml)?;
             Ok(())
         };
 
@@ -241,12 +245,12 @@ impl DiagnosticsOpt {
         let info = SystemInfo::load(&sys);
         let sys_string = serde_yaml::to_string(&info).unwrap();
         // println!("{}", sys_string);
-        write(&sys_string, "info")?;
+        write(&sys_string, "sysinfo")?;
 
-        let disks = DiskInfo::load(&sys);
-        let disk_string = serde_yaml::to_string(&disks).unwrap();
+        //let disks = DiskInfo::load(&sys);
+        //let disk_string = serde_yaml::to_string(&disks).unwrap();
         //println!("{}", disk_string);
-        write(&disk_string, "disk")?;
+        //  write(&disk_string, "disk")?;
 
         let networks = NetworkInfo::load(&sys);
         let network_string = serde_yaml::to_string(&networks).unwrap();
@@ -258,6 +262,20 @@ impl DiagnosticsOpt {
         write(&process_string, "processes")?;
         // println!("{}",process_string);
 
+        Ok(())
+    }
+
+    fn dump<P: AsRef<Path>>(&self, label: &str, path: P, contents: &str) -> Result<()> {
+        if !self.omit {
+            println!("{label}");
+            println!("------");
+        }
+        write(path, contents)?;
+        if !self.omit {
+            println!("{}", contents);
+            println!("------");
+            println!("");
+        }
         Ok(())
     }
 }
@@ -299,7 +317,7 @@ struct DiskInfo {
 }
 
 impl DiskInfo {
-    fn load(sys: &System) -> Vec<DiskInfo> {
+    fn _load(sys: &System) -> Vec<DiskInfo> {
         let mut disks = Vec::new();
 
         for disk in sys.disks() {
@@ -344,6 +362,7 @@ struct ProcessInfo {
     pid: u32,
     name: String,
     disk_usage: String,
+    cmd: String
 }
 
 impl ProcessInfo {
@@ -351,11 +370,14 @@ impl ProcessInfo {
         let mut processes = Vec::new();
 
         for (pid, process) in sys.processes() {
-            processes.push(ProcessInfo {
-                pid: pid.as_u32(),
-                name: process.name().to_string(),
-                disk_usage: format!("{:?}", process.disk_usage()),
-            });
+            if process.name().contains("fluvio") {
+                processes.push(ProcessInfo {
+                    pid: pid.as_u32(),
+                    name: process.name().to_string(),
+                    disk_usage: format!("{:?}", process.disk_usage()),
+                    cmd: format!("{:?}",process.cmd())
+                });
+            }
         }
 
         processes
