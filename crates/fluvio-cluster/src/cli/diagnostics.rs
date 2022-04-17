@@ -15,7 +15,10 @@ use crate::cli::start::get_log_directory;
 type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 
 #[derive(Parser, Debug)]
-pub struct DiagnosticsOpt {}
+pub struct DiagnosticsOpt {
+    #[clap(long)]
+    verbose: bool,
+}
 
 impl DiagnosticsOpt {
     pub async fn process(self) -> Result<()> {
@@ -116,7 +119,9 @@ impl DiagnosticsOpt {
             let log = match log_result {
                 Ok(log) => log,
                 Err(_) => {
-                    println!("Failed to collect log for {}, skipping", pod.trim());
+                    if self.verbose {
+                        println!("Failed to collect log for {}, skipping", pod.trim());
+                    }
                     continue;
                 }
             };
@@ -155,8 +160,16 @@ impl DiagnosticsOpt {
                 .stderr_capture()
                 .read();
             let meta = match result {
-                Ok(meta) => meta,
-                Err(_) => continue,
+                Ok(meta) => {
+                    println!("retrieved metadata for {ty}: {obj}");
+                    meta
+                }
+                Err(_) => {
+                    if self.verbose {
+                        println!("failed to get metadata for {ty}: {obj}");
+                    }
+                    continue;
+                }
             };
 
             let dest = dest.join(format!("{}-{}.yaml", ty, obj));
