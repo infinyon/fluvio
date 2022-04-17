@@ -26,7 +26,7 @@ on:
 
 env:
   USE_VERSION: ${{ github.event.inputs.alt_version }}
-  K3D_VERSION: v4.4.8
+  K3D_VERSION: v5.4.1
 
 jobs:
   # Perform E2E sanity checks
