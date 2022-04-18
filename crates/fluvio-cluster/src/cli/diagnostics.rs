@@ -1,5 +1,6 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::fs::{copy, write};
+use std::io::Error as IoError;
 
 use clap::Parser;
 use serde::Serialize;
@@ -8,9 +9,12 @@ use sysinfo::{System, SystemExt, NetworkExt, ProcessExt, DiskExt, PidExt};
 use which::which;
 
 use fluvio::config::ConfigFile;
+use fluvio::metadata::{topic::TopicSpec, partition::PartitionSpec, spg::SpuGroupSpec, spu::SpuSpec};
+use fluvio_sc_schema::objects::Metadata;
 
 use crate::cli::ClusterCliError;
 use crate::cli::start::get_log_directory;
+use crate::start::local::DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR;
 
 type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 
@@ -26,10 +30,17 @@ impl DiagnosticsOpt {
         let temp_dir = tempdir::TempDir::new("fluvio-diagnostics")?;
         let temp_path = temp_dir.path();
 
+        let spu_specs = self.copy_fluvio_specs(temp_path).await?;
+
+        // write internal fluvio cluster internal state
         match config.config().current_profile_name() {
             // Local cluster
             Some("local") => {
+                self.write_helm(temp_path)?;
                 self.copy_local_logs(temp_path)?;
+                for spu in spu_specs {
+                    self.spu_disk_usage(None, temp_path, &spu.spec)?;
+                }
             }
             // Cloud cluster
             Some(other) if other.contains("cloud") => {
@@ -45,6 +56,7 @@ impl DiagnosticsOpt {
                     }
                 };
 
+                self.write_helm(temp_path)?;
                 let _ = self.copy_kubernetes_logs(&kubectl, temp_path);
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "pod", true);
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "pvc", true);
@@ -55,10 +67,13 @@ impl DiagnosticsOpt {
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "spu", false);
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "topic", false);
                 let _ = self.copy_kubernetes_metadata(&kubectl, temp_path, "partition", false);
+
+                for spu in spu_specs {
+                    self.spu_disk_usage(Some(&kubectl), temp_path, &spu.spec)?;
+                }
             }
         }
-        let _ = self.copy_fluvio_specs(temp_path).await;
-        self.write_helm(temp_path)?;
+
         self.write_system_info(temp_path)?;
 
         let time = chrono::Local::now().format("%Y-%m-%d-%H-%M-%S").to_string();
@@ -91,7 +106,7 @@ impl DiagnosticsOpt {
             let to = dest_dir.join(entry.file_name());
             let file_name = entry.file_name();
             if file_name == "flv_sc.log" || file_name.to_string_lossy().starts_with("spu_log") {
-                println!("copying log file: {:?}", entry.path());
+                println!("copying local log file: {:?}", entry.path());
                 copy(entry.path(), &to)?;
             } else {
                 println!("skipping {:?}", file_name);
@@ -159,93 +174,73 @@ impl DiagnosticsOpt {
             .collect::<Vec<_>>();
 
         for &obj in &objects {
+            println!("getting k8: {ty} {obj}");
             let result = cmd!(kubectl, "get", ty, obj, "-o", "yaml")
                 .stderr_capture()
                 .read();
-            let meta = match result {
-                Ok(meta) => {
-                    println!("retrieved k8 {ty}: {obj}");
-                    meta
-                }
-                Err(_) => {
-                    if !self.omit {
-                        println!("failed to get metadata for {ty}: {obj}");
-                    }
-                    continue;
-                }
-            };
-
             let dest = dest.join(format!("{}-{}.yaml", ty, obj));
-            self.dump(ty, dest, &meta)?;
+            self.dump(&format!("k8: {ty}"), dest, result)?;
         }
         Ok(())
     }
 
-    async fn copy_fluvio_specs(&self, dest: &Path) -> Result<()> {
+    async fn copy_fluvio_specs(&self, dest: &Path) -> Result<Vec<Metadata<SpuSpec>>> {
         use fluvio::Fluvio;
-        use fluvio::metadata::{
-            topic::TopicSpec, partition::PartitionSpec, spu::SpuSpec, spg::SpuGroupSpec,
-        };
         let fluvio = Fluvio::connect().await?;
         let admin = fluvio.admin().await;
 
-        let write = |yaml, name| -> Result<()> {
+        let write_spec = |yaml, name| -> Result<()> {
             let path = dest.join(format!("admin-spec-{}.yml", name));
-            self.dump(name, path, yaml)?;
+            self.dump(name, path, Ok(yaml))?;
             Ok(())
         };
 
+        println!("getting topic spec");
         let topics = admin.list::<TopicSpec, _>([]).await?;
         let topics = serde_yaml::to_string(&topics).unwrap();
-        write(&topics, "topics")?;
+        write_spec(topics, "topics")?;
 
+        println!("getting partition spec");
         let partitions = admin.list::<PartitionSpec, _>([]).await?;
         let partitions = serde_yaml::to_string(&partitions).unwrap();
-        write(&partitions, "partitions")?;
+        write_spec(partitions, "partitions")?;
 
+        println!("getting spu spec");
         let spus = admin.list::<SpuSpec, _>([]).await?;
-        let spus = serde_yaml::to_string(&spus).unwrap();
-        write(&spus, "spus")?;
+        let spu_description = serde_yaml::to_string(&spus).unwrap();
+        write_spec(spu_description, "spus")?;
 
+        println!("getting spg spec");
         let spgs = admin.list::<SpuGroupSpec, _>([]).await?;
         let spgs = serde_yaml::to_string(&spgs).unwrap();
-        write(&spgs, "spgs")?;
+        write_spec(spgs, "spgs")?;
 
-        Ok(())
+        Ok(spus)
     }
 
     /// write helm and other basic stuff
     fn write_helm(&self, dest_dir: &Path) -> Result<()> {
         let path = dest_dir.join("helm-list.txt");
-        match cmd!("helm", "list").read() {
-            Ok(output) => {
-                println!("writing helm list");
-                self.dump("helm", path, &output)?;
-            }
-            Err(err) => {
-                write(path, format!("Failed to collect helm list: {:#?}", err))?;
-            }
-        }
-
+        println!("getting helm list");
+        self.dump("helm list", path, cmd!("helm", "list").read())?;
         Ok(())
     }
 
     fn write_system_info(&self, dest: &Path) -> Result<()> {
         let write = |yaml, name| -> Result<()> {
             let path = dest.join(format!("system-{}.yml", name));
-            self.dump(name, path, yaml)?;
+            self.dump(name, path, Ok(yaml))?;
             Ok(())
         };
 
         let mut sys = System::new_all();
 
         // First we update all information of our `System` struct.
+        println!("getting system info");
         sys.refresh_all();
 
         let info = SystemInfo::load(&sys);
-        let sys_string = serde_yaml::to_string(&info).unwrap();
-        // println!("{}", sys_string);
-        write(&sys_string, "sysinfo")?;
+        write(serde_yaml::to_string(&info).unwrap(), "sysinfo")?;
 
         //let disks = DiskInfo::load(&sys);
         //let disk_string = serde_yaml::to_string(&disks).unwrap();
@@ -253,29 +248,84 @@ impl DiagnosticsOpt {
         //  write(&disk_string, "disk")?;
 
         let networks = NetworkInfo::load(&sys);
-        let network_string = serde_yaml::to_string(&networks).unwrap();
-        write(&network_string, "networks")?;
-        //println!("{}", network_string);
+        write(serde_yaml::to_string(&networks).unwrap(), "networks")?;
 
         let processes = ProcessInfo::load(&sys);
-        let process_string = serde_yaml::to_string(&processes).unwrap();
-        write(&process_string, "processes")?;
-        // println!("{}",process_string);
+        write(serde_yaml::to_string(&processes).unwrap(), "processes")?;
 
         Ok(())
     }
 
-    fn dump<P: AsRef<Path>>(&self, label: &str, path: P, contents: &str) -> Result<()> {
+    /// find disk usage
+    fn spu_disk_usage(
+        &self,
+        kubectl: Option<&PathBuf>,
+        dest: &Path,
+        spu_spec: &SpuSpec,
+    ) -> Result<()> {
+        let spu = spu_spec.id;
+        let ls_cmd = match kubectl {
+            Some(kct) => {
+                let pod_id = format!("fluvio-spg-main-{spu}");
+                println!("retrieved k8 spu disk log {pod_id}");
+                cmd!(
+                    kct,
+                    "exec",
+                    pod_id,
+                    "--",
+                    "ls",
+                    "-lh",
+                    "-R",
+                    format!("/var/lib/fluvio/data/spu-logs-{spu}/")
+                )
+            }
+            None => {
+                let log_dir = (DEFAULT_LOCAL_DIR.to_owned())
+                    .unwrap()
+                    .join(format!("spu-logs-{spu}"));
+                println!("retrieved local spu disk log {:?}", log_dir);
+                cmd!("ls", "-lh", "-R", log_dir)
+            }
+        };
+
+        let result = ls_cmd.stderr_capture().read();
+        let dest = dest.join(format!("{spu}-disk.log"));
+        self.dump(&format!("spu disk: {spu}"), dest, result)?;
+
+        Ok(())
+    }
+
+    fn dump<P: AsRef<Path>>(
+        &self,
+        label: &str,
+        path: P,
+        contents: Result<String, IoError>,
+    ) -> Result<()> {
         if !self.omit {
-            println!("{label}");
-            println!("------");
+            println!("---------");
         }
-        write(path, contents)?;
+        match contents {
+            Ok(output) => {
+                if !self.omit {
+                    println!("{}", &output);
+                }
+                write(path, output)?;
+            }
+            Err(err) => {
+                let output_err = format!("Failed to collect {label} list: {:#?}", err);
+                if !self.omit {
+                    println!("{}", output_err);
+                }
+                write(path, &output_err)?;
+            }
+        }
+
         if !self.omit {
-            println!("{}", contents);
-            println!("------");
-            println!("");
+            println!("---------");
+            println!();
+            println!();
         }
+
         Ok(())
     }
 }
@@ -362,7 +412,7 @@ struct ProcessInfo {
     pid: u32,
     name: String,
     disk_usage: String,
-    cmd: String
+    cmd: String,
 }
 
 impl ProcessInfo {
@@ -375,7 +425,7 @@ impl ProcessInfo {
                     pid: pid.as_u32(),
                     name: process.name().to_string(),
                     disk_usage: format!("{:?}", process.disk_usage()),
-                    cmd: format!("{:?}",process.cmd())
+                    cmd: format!("{:?}", process.cmd()),
                 });
             }
         }
