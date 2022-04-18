@@ -20,7 +20,7 @@ use crate::Size;
 use crate::record::Record;
 
 pub const COMPRESSION_CODEC_MASK: i16 = 0x07;
-pub(crate) const NO_TIMESTAMP: i64 = -1;
+pub const NO_TIMESTAMP: i64 = -1;
 
 pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
     /// how many bytes does record wants to process
@@ -361,6 +361,14 @@ impl BatchHeader {
     pub fn set_compression(&mut self, compression: Compression) {
         let compression_bits = compression as i16 & COMPRESSION_CODEC_MASK;
         self.attributes = (self.attributes & !COMPRESSION_CODEC_MASK) | compression_bits;
+    }
+
+    pub fn set_first_timestamp(&mut self, timestamp: Timestamp) {
+        self.first_timestamp = timestamp;
+    }
+
+    pub fn set_max_time_stamp(&mut self, timestamp: Timestamp) {
+        self.max_time_stamp = timestamp;
     }
 }
 impl Default for BatchHeader {

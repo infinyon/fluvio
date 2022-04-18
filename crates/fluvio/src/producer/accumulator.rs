@@ -4,13 +4,13 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_channel::Sender;
 
-use dataplane::batch::{Batch, MemoryRecords, RawRecords};
+use dataplane::batch::{Batch, MemoryRecords, NO_TIMESTAMP, RawRecords};
 use fluvio_compression::Compression;
 use tracing::trace;
 
 use dataplane::{Offset, ErrorCode};
 use dataplane::record::Record;
-use fluvio_types::PartitionId;
+use fluvio_types::{PartitionId, Timestamp};
 use fluvio_protocol::Encoder;
 
 use crate::producer::record::{BatchMetadata, FutureRecordMetadata, PartialFutureRecordMetadata};
@@ -19,7 +19,7 @@ use crate::error::Result;
 
 use super::event::EventHandler;
 
-use instant::Instant;
+use instant::SystemTime;
 
 pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<Mutex<VecDeque<ProducerBatch>>>);
 
@@ -123,12 +123,12 @@ pub(crate) struct ProducerBatch {
     write_limit: usize,
     current_size_uncompressed: usize,
     is_full: bool,
-    create_time: Instant,
+    create_time: SystemTime,
     pub(crate) records: Vec<Record>,
 }
 impl ProducerBatch {
     fn new(write_limit: usize, compression: Compression) -> Self {
-        let now = Instant::now();
+        let now = SystemTime::now();
         let (sender, receiver) = async_channel::bounded(1);
         let batch_metadata = Arc::new(BatchMetadata::new(receiver));
 
@@ -139,7 +139,7 @@ impl ProducerBatch {
             is_full: false,
             write_limit,
             create_time: now,
-            current_size_uncompressed: 0,
+            current_size_uncompressed: Vec::<RawRecords>::default().write_size(0),
             records: vec![],
         }
     }
@@ -148,16 +148,15 @@ impl ProducerBatch {
         self.compression
     }
 
-    pub(crate) fn create_time(&self) -> &Instant {
-        &self.create_time
-    }
-
     /// Add a record to the batch.
     /// Return ProducerError::BatchFull if record does not fit in the batch, so
     /// the RecordAccumulator can create more batches if needed.
     fn push_record(&mut self, mut record: Record) -> Option<PartialFutureRecordMetadata> {
         let relative_offset = self.records.len() as i64;
         record.preamble.set_offset_delta(relative_offset as Offset);
+        let timestamp_delta = self.elapsed();
+        record.preamble.set_timestamp_delta(timestamp_delta);
+
         let record_size = record.write_size(ENCODING_PROTOCOL_VERSION);
 
         if self.estimated_size() + record_size > self.write_limit {
@@ -183,6 +182,37 @@ impl ProducerBatch {
         self.is_full || self.write_limit <= self.estimated_size()
     }
 
+    pub(crate) fn elapsed(&self) -> Timestamp {
+        self.create_time
+            .elapsed()
+            .unwrap_or_default()
+            .as_millis()
+            .try_into()
+            .unwrap_or(0)
+    }
+
+    pub(crate) fn timestamps(&self) -> (Timestamp, Timestamp) {
+        let first_timestamp = match self.create_time.duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(duration) => duration.as_millis().try_into().unwrap_or(NO_TIMESTAMP),
+            Err(_) => NO_TIMESTAMP,
+        };
+
+        let max_timestamp = if first_timestamp > NO_TIMESTAMP {
+            match self
+                .records
+                .last()
+                .map(|record| record.preamble.timestamp_delta())
+            {
+                Some(timestamp_delta) => first_timestamp + timestamp_delta,
+                None => NO_TIMESTAMP,
+            }
+        } else {
+            NO_TIMESTAMP
+        };
+
+        (first_timestamp, max_timestamp)
+    }
+
     fn estimated_size(&self) -> usize {
         (self.current_size_uncompressed as f32
             * match self.compression {
@@ -197,6 +227,7 @@ impl From<ProducerBatch> for Batch<MemoryRecords> {
     fn from(p_batch: ProducerBatch) -> Self {
         let mut batch = Self::default();
         let compression = p_batch.compression();
+        let (first_timestamp, max_timestamp) = p_batch.timestamps();
         let records = p_batch.records;
 
         let len = records.len() as i32;
@@ -205,6 +236,8 @@ impl From<ProducerBatch> for Batch<MemoryRecords> {
         header.last_offset_delta = if len > 0 { len - 1 } else { len };
 
         header.set_compression(compression);
+        header.set_first_timestamp(first_timestamp);
+        header.set_max_time_stamp(max_timestamp);
 
         *batch.mut_records() = records;
 
@@ -260,7 +293,10 @@ mod test {
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            size * 3 + 1 + Batch::<RawRecords>::default().write_size(0),
+            size * 3
+                + 1
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
         );
 
@@ -280,7 +316,9 @@ mod test {
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            size * 3 + Batch::<RawRecords>::default().write_size(0),
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
         );
 
@@ -293,12 +331,62 @@ mod test {
         assert!(pb.push_record(record).is_none());
     }
 
+    #[test]
+    fn test_timestamps_in_batch_and_records() {
+        let mut record = Record::from(("key", "value"));
+        record.preamble.set_timestamp_delta(200);
+
+        let size = record.write_size(ENCODING_PROTOCOL_VERSION);
+        // Producer batch that can store three instances of Record::from(("key", "value"))
+        let mut pb = ProducerBatch::new(
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
+            Compression::None,
+        );
+
+        assert!(pb.push_record(record.clone()).is_some());
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        assert!(pb.push_record(record.clone()).is_some());
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        assert!(pb.push_record(record).is_some());
+
+        let batch: Batch = pb.into();
+        assert!(batch.header.first_timestamp > 0);
+        assert!(
+            batch.header.first_timestamp < batch.header.max_time_stamp,
+            "first_timestamp: {}, max_time_stamp: {}",
+            batch.header.first_timestamp,
+            batch.header.max_time_stamp
+        );
+
+        let records_delta: Vec<_> = batch
+            .records()
+            .iter()
+            .map(|record| record.preamble.timestamp_delta())
+            .collect();
+        assert_eq!(records_delta[0], 0);
+        assert!(
+            (100..150).contains(&records_delta[1]),
+            "records_delta[1]: {}",
+            records_delta[1]
+        );
+        assert!(
+            (200..250).contains(&records_delta[2]),
+            "records_delta[2]: {}",
+            records_delta[2]
+        );
+    }
+
     #[fluvio_future::test]
     async fn test_record_accumulator() {
         let record = Record::from(("key", "value"));
+
         let size = record.write_size(ENCODING_PROTOCOL_VERSION);
         let accumulator = RecordAccumulator::new(
-            size * 3 + Batch::<RawRecords>::default().write_size(0),
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             1,
             Compression::None,
         );
@@ -330,19 +418,21 @@ mod test {
             .push_record(record.clone(), 0)
             .await
             .expect("failed push");
+
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_batch_full())
+                .await
+                .is_err()
+        );
         accumulator
             .push_record(record, 0)
             .await
             .expect("failed push");
+
         assert!(
             async_std::future::timeout(timeout, batches.listen_batch_full())
                 .await
                 .is_ok()
-        );
-        assert!(
-            async_std::future::timeout(timeout, batches.listen_new_batch())
-                .await
-                .is_err()
         );
     }
 }

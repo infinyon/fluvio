@@ -14,6 +14,7 @@ use bytes::BufMut;
 
 use crate::batch::BatchRecords;
 use crate::batch::MemoryRecords;
+use crate::batch::NO_TIMESTAMP;
 use crate::batch::RawRecords;
 use crate::core::{Encoder, Decoder};
 use crate::core::DecoderVarInt;
@@ -360,6 +361,14 @@ impl RecordHeader {
     pub fn offset_delta(&self) -> Offset {
         self.offset_delta
     }
+
+    pub fn set_timestamp_delta(&mut self, delta: Timestamp) {
+        self.timestamp_delta = delta;
+    }
+
+    pub fn timestamp_delta(&self) -> Timestamp {
+        self.timestamp_delta
+    }
 }
 
 #[derive(Default, Clone)]
@@ -422,6 +431,14 @@ impl Record {
             key,
             value: value.into(),
             ..Default::default()
+        }
+    }
+
+    pub fn timestamp(&self, batch_first_timestamp: Timestamp) -> Timestamp {
+        if batch_first_timestamp <= 0 {
+            NO_TIMESTAMP
+        } else {
+            batch_first_timestamp + self.preamble.timestamp_delta
         }
     }
 }
@@ -517,6 +534,8 @@ pub struct ConsumerRecord<B = DefaultRecord> {
     pub partition: i32,
     /// The Record contents
     pub record: B,
+    /// Record timestamp
+    pub timestamp: Timestamp,
 }
 
 impl<B> ConsumerRecord<B> {
@@ -538,6 +557,10 @@ impl<B> ConsumerRecord<B> {
     /// Returns a ref to the inner representation of the Record
     pub fn inner(&self) -> &B {
         &self.record
+    }
+
+    pub fn timestamp(&self) -> Timestamp {
+        self.timestamp
     }
 }
 
