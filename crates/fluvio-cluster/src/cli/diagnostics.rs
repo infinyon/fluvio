@@ -18,24 +18,41 @@ use crate::start::local::DEFAULT_DATA_DIR as DEFAULT_LOCAL_DIR;
 
 type Result<T, E = ClusterCliError> = core::result::Result<T, E>;
 
+#[derive(Debug)]
+enum ProfileType {
+    K8,
+    Local,
+    Cloud,
+}
+
 #[derive(Parser, Debug)]
 pub struct DiagnosticsOpt {
     #[clap(long)]
-    omit: bool,
+    quiet: bool,
+
+    #[clap(long)]
+    k8: bool,
+
+    #[clap(long)]
+    local: bool,
+
+    #[clap(long)]
+    cloud: bool,
 }
 
 impl DiagnosticsOpt {
     pub async fn process(self) -> Result<()> {
-        let config = ConfigFile::load_default_or_new()?;
+        let profile_ty = self.get_profile_ty()?;
+        println!("Using profile type: {:#?}", profile_ty);
         let temp_dir = tempdir::TempDir::new("fluvio-diagnostics")?;
         let temp_path = temp_dir.path();
 
         let spu_specs = self.copy_fluvio_specs(temp_path).await?;
 
         // write internal fluvio cluster internal state
-        match config.config().current_profile_name() {
+        match profile_ty {
             // Local cluster
-            Some("local") => {
+            ProfileType::Local => {
                 self.write_helm(temp_path)?;
                 self.copy_local_logs(temp_path)?;
                 for spu in spu_specs {
@@ -43,11 +60,11 @@ impl DiagnosticsOpt {
                 }
             }
             // Cloud cluster
-            Some(other) if other.contains("cloud") => {
+            ProfileType::Cloud => {
                 println!("Cannot collect logs from Cloud, skipping");
             }
             // Guess Kubernetes cluster
-            _ => {
+            ProfileType::K8 => {
                 let kubectl = match which("kubectl") {
                     Ok(kubectl) => kubectl,
                     Err(_) => {
@@ -84,6 +101,25 @@ impl DiagnosticsOpt {
 
         println!("Wrote diagnostics to {}", diagnostic_path.display());
         Ok(())
+    }
+
+    // get type of profile
+    fn get_profile_ty(&self) -> Result<ProfileType> {
+        if self.k8 {
+            Ok(ProfileType::K8)
+        } else if self.local {
+            Ok(ProfileType::Local)
+        } else if self.cloud {
+            Ok(ProfileType::Cloud)
+        } else {
+            let config = ConfigFile::load_default_or_new()?;
+            match config.config().current_profile_name() {
+                Some("local") => Ok(ProfileType::Local),
+                // Cloud cluster
+                Some(other) if other.contains("cloud") => Ok(ProfileType::Cloud),
+                _ => Ok(ProfileType::K8),
+            }
+        }
     }
 
     fn zip_files(&self, source: &Path, output: &mut std::fs::File) -> Result<(), std::io::Error> {
@@ -136,7 +172,7 @@ impl DiagnosticsOpt {
             let log = match log_result {
                 Ok(log) => log,
                 Err(_) => {
-                    if !self.omit {
+                    if !self.quiet {
                         println!("Failed to collect log for {}, skipping", pod.trim());
                     }
                     continue;
@@ -301,26 +337,26 @@ impl DiagnosticsOpt {
         path: P,
         contents: Result<String, IoError>,
     ) -> Result<()> {
-        if !self.omit {
+        if !self.quiet {
             println!("---------");
         }
         match contents {
             Ok(output) => {
-                if !self.omit {
+                if !self.quiet {
                     println!("{}", &output);
                 }
                 write(path, output)?;
             }
             Err(err) => {
                 let output_err = format!("Failed to collect {label} list: {:#?}", err);
-                if !self.omit {
+                if !self.quiet {
                     println!("{}", output_err);
                 }
                 write(path, &output_err)?;
             }
         }
 
-        if !self.omit {
+        if !self.quiet {
             println!("---------");
             println!();
             println!();
