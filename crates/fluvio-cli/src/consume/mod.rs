@@ -724,7 +724,7 @@ fn create_smartmodule(
     kind: SmartModuleKind,
     params: BTreeMap<String, String>,
 ) -> Result<SmartModuleInvocation> {
-    let wasm = if PathBuf::from(name_or_path).exists() {
+    let wasm = if PathBuf::from(name_or_path).is_file() {
         let raw_buffer = std::fs::read(name_or_path)?;
         debug!(len = raw_buffer.len(), "read wasm bytes");
         let mut encoder = GzEncoder::new(raw_buffer.as_slice(), Compression::default());

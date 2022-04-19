@@ -3,6 +3,7 @@
 ## Platform Version 0.9.24 - UNRELEASED
 * CLI: Migrate all fluvio crates to `comfy-table` from `prettytable-rs` ([#2285](https://github.com/infinyon/fluvio/issues/2263))
 * Storage: Enforce size based retention for topic ([#2179](https://github.com/infinyon/fluvio/issues/2179))
+* Don't try to use directories as smartmodule if passed as argument ([#2292](https://github.com/infinyon/fluvio/issues/2292))
 
 ## Platform Version 0.9.23 - 2022-04-13
 * Add `TYPE` column to `fluvio connector list` ([#2218](https://github.com/infinyon/fluvio/issues/2218))
