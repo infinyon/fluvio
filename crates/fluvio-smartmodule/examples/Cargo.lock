@@ -93,9 +93,9 @@ checksum = "56899898ce76aaf4a0f24d914c97ea6ed976d42fec6ad33fcbb0a1103e07b2b0"
 
 [[package]]
 name = "eyre"
-version = "0.6.5"
+version = "0.6.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "221239d1d5ea86bf5d6f91c9d6bc3646ffe471b08ff9b0f91c44f115ac969d2b"
+checksum = "4c2b6b5a29c02cdc822728b7d7b8ae1bab3e3b05d44522770ddd49722eeac7eb"
 dependencies = [
  "indenter",
  "once_cell",
@@ -126,7 +126,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.10.0"
+version = "0.10.1"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -159,7 +159,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.7.5"
+version = "0.7.6"
 dependencies = [
  "bytes",
  "fluvio-protocol-derive",
@@ -178,7 +178,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
