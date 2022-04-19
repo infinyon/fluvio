@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-smartmodule"
-version = "0.2.3"
+version = "0.2.4"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -14,7 +14,7 @@ description = "Fluvio SmartModule WASM library"
 crate-type = ['lib']
 
 [dependencies]
-eyre = { version = "0.6", default-features = false }
+eyre = { version = ">=0.6.8", default-features = false, features=["auto-install"] }
 fluvio-dataplane-protocol = { version = "0.10.0", path = "../fluvio-dataplane-protocol", default-features = false }
 fluvio-smartmodule-derive = { version = "0.2.0", path = "../fluvio-smartmodule-derive" }
 
