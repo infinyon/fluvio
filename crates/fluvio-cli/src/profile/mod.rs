@@ -75,7 +75,7 @@ pub enum ProfileCmd {
     #[clap(subcommand, name = "sync")]
     Sync(SyncCmd),
 
-    /// Export a profile
+    /// Export a profile for use in other applications
     #[clap(name = "export")]
     Export(ExportOpt),
 }

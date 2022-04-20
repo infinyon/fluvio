@@ -4,7 +4,7 @@ use clap::Parser;
 use serde::Serialize;
 
 use fluvio::config::{ConfigFile, TlsCerts, TlsPolicy, TlsConfig};
-use fluvio_extension_common::{Terminal, OutputFormat};
+use fluvio_extension_common::Terminal;
 use fluvio_extension_common::output::OutputType;
 
 use crate::Result;
@@ -13,18 +13,25 @@ use crate::error::CliError;
 #[derive(Parser, Debug)]
 pub struct ExportOpt {
     profile_name: Option<String>,
-    #[clap(flatten)]
-    output: OutputFormat,
+    #[clap(
+        default_value_t = OutputType::json,
+        short = 'O',
+        long = "output",
+        value_name = "type",
+        arg_enum,
+        ignore_case = true
+    )]
+    pub output_format: OutputType,
 }
 
 impl ExportOpt {
     pub fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
-        let output_format = match self.output.format {
+        let output_format = match self.output_format {
             OutputType::table => {
                 eprintln!("Table format is not supported, using JSON instead");
                 OutputType::json
             }
-            _ => self.output.format,
+            _ => self.output_format,
         };
 
         let config_file = match ConfigFile::load(None) {
