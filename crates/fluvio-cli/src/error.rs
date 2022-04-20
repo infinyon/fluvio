@@ -79,6 +79,12 @@ pub enum CliError {
     TableFormatNotFound(String),
     #[error(transparent)]
     FluvioInstall(#[from] fluvio_cli_common::error::CliError),
+    #[error("Not active profile set in config")]
+    NoActiveProfileInConfig,
+    #[error("Profile not found in config: {0}")]
+    ProfileNotFoundInConfig(String),
+    #[error("Cluster not found in config: {0}")]
+    ClusterNotFoundInConfig(String),
 }
 
 #[derive(thiserror::Error, Debug)]

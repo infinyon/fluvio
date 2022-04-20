@@ -1,0 +1,85 @@
+use std::sync::Arc;
+
+use clap::Parser;
+use serde::Serialize;
+
+use fluvio::config::{ConfigFile, TlsCerts, TlsPolicy, TlsConfig};
+use fluvio_extension_common::{Terminal, OutputFormat};
+use fluvio_extension_common::output::OutputType;
+
+use crate::Result;
+use crate::error::CliError;
+
+#[derive(Parser, Debug)]
+pub struct ExportOpt {
+    profile_name: Option<String>,
+    #[clap(flatten)]
+    output: OutputFormat,
+}
+
+impl ExportOpt {
+    pub fn process<O: Terminal>(self, out: Arc<O>) -> Result<()> {
+        let output_format = match self.output.format {
+            OutputType::table => {
+                eprintln!("Table format is not supported, using JSON instead");
+                OutputType::json
+            }
+            _ => self.output.format,
+        };
+
+        let config_file = match ConfigFile::load(None) {
+            Ok(config_file) => config_file,
+            Err(e) => {
+                eprintln!("Unable to find Fluvio config file");
+                return Err(e.into());
+            }
+        };
+
+        let cluster_name = if let Some(ref profile_name) = self.profile_name {
+            if let Some(profile) = config_file.config().profile(profile_name) {
+                profile.cluster.clone()
+            } else {
+                return Err(CliError::ProfileNotFoundInConfig(profile_name.to_owned()));
+            }
+        } else if let Ok(profile) = config_file.config().current_profile() {
+            profile.cluster.clone()
+        } else {
+            return Err(CliError::NoActiveProfileInConfig);
+        };
+
+        let profile_export = if let Some(cluster) = config_file.config().cluster(&cluster_name) {
+            let tls = match &cluster.tls {
+                TlsPolicy::Disabled => ProfileExportTls::Disabled,
+                TlsPolicy::Anonymous => ProfileExportTls::Anonymous,
+                TlsPolicy::Verified(tls_config) => ProfileExportTls::Verified(match tls_config {
+                    TlsConfig::Inline(tls_certs) => tls_certs.clone(),
+                    TlsConfig::Files(_) => {
+                        return Err(CliError::Other(format!("Cluster {} uses externals TLS certs. Only inline TLS certs are supported.", cluster_name)));
+                    }
+                }),
+            };
+            ProfileExport {
+                endpoint: cluster.endpoint.clone(),
+                tls,
+            }
+        } else {
+            return Err(CliError::ClusterNotFoundInConfig(cluster_name.to_owned()));
+        };
+
+        Ok(out.render_serde(&profile_export, output_format.into())?)
+    }
+}
+
+#[derive(Clone, Debug, Serialize)]
+struct ProfileExport {
+    endpoint: String,
+    tls: ProfileExportTls,
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(tag = "policy")]
+enum ProfileExportTls {
+    Disabled,
+    Anonymous,
+    Verified(TlsCerts),
+}
