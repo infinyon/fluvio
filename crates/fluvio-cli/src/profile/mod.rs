@@ -14,6 +14,7 @@ mod rename;
 mod delete_profile;
 mod delete_cluster;
 mod list;
+mod export;
 
 use crate::Result;
 use crate::common::output::Terminal;
@@ -24,6 +25,7 @@ use crate::profile::switch::SwitchOpt;
 use crate::profile::sync::SyncCmd;
 use crate::profile::list::ListOpt;
 use crate::profile::rename::RenameOpt;
+use crate::profile::export::ExportOpt;
 
 #[derive(Debug, Parser)]
 pub struct ProfileOpt {
@@ -72,6 +74,10 @@ pub enum ProfileCmd {
     /// Sync a profile from a cluster
     #[clap(subcommand, name = "sync")]
     Sync(SyncCmd),
+
+    /// Export a profile for use in other applications
+    #[clap(name = "export")]
+    Export(ExportOpt),
 }
 
 impl ProfileCmd {
@@ -97,6 +103,9 @@ impl ProfileCmd {
             }
             Self::Sync(sync) => {
                 sync.process().await?;
+            }
+            Self::Export(export) => {
+                export.process(out)?;
             }
         }
 

@@ -355,6 +355,11 @@ impl Config {
         Ok(profile)
     }
 
+    /// Returns a reference to the current Profile if there is one.
+    pub fn profile(&self, profile_name: &str) -> Option<&Profile> {
+        self.profile.get(profile_name)
+    }
+
     /// Returns a mutable reference to the current Profile if there is one.
     pub fn profile_mut(&mut self, profile_name: &str) -> Option<&mut Profile> {
         self.profile.get_mut(profile_name)
