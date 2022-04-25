@@ -34,3 +34,6 @@ pub type IgnoreRackAssignment = bool;
 // AuthToken
 pub type TokenName = String;
 pub type TokenSecret = String;
+
+// Time
+pub type Timestamp = i64;

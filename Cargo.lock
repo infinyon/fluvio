@@ -1830,6 +1830,7 @@ dependencies = [
  "fluvio-future",
  "fluvio-protocol 0.7.6",
  "fluvio-socket",
+ "fluvio-types",
  "flv-util",
  "futures-util",
  "once_cell",
@@ -2343,7 +2344,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.4"
+version = "0.3.5"
 dependencies = [
  "event-listener",
  "fluvio-future",

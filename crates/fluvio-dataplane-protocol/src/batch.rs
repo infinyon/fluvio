@@ -6,6 +6,7 @@ use fluvio_compression::CompressionError;
 use tracing::trace;
 
 use fluvio_compression::Compression;
+use fluvio_types::Timestamp;
 
 use crate::core::bytes::Buf;
 use crate::core::bytes::BufMut;
@@ -19,6 +20,7 @@ use crate::Size;
 use crate::record::Record;
 
 pub const COMPRESSION_CODEC_MASK: i16 = 0x07;
+pub(crate) const NO_TIMESTAMP: i64 = -1;
 
 pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
     /// how many bytes does record wants to process
@@ -175,7 +177,6 @@ impl TryFrom<Batch> for Batch<RawRecords> {
         f.records.encode(&mut buf, 0)?;
 
         let compression = f.get_compression()?;
-
         let compressed_records = compression.compress(&buf)?;
         let records = RawRecords(compressed_records);
 
@@ -344,8 +345,8 @@ pub struct BatchHeader {
     ///
     /// Adding this to the base_offset will give the offset of the last record in this batch
     pub last_offset_delta: i32,
-    pub first_timestamp: i64,
-    pub max_time_stamp: i64,
+    pub first_timestamp: Timestamp,
+    pub max_time_stamp: Timestamp,
     pub producer_id: i64,
     pub producer_epoch: i16,
     pub first_sequence: i32,
@@ -370,8 +371,8 @@ impl Default for BatchHeader {
             crc: 0,
             attributes: 0,
             last_offset_delta: -1,
-            first_timestamp: 0,
-            max_time_stamp: 0,
+            first_timestamp: NO_TIMESTAMP,
+            max_time_stamp: NO_TIMESTAMP,
             producer_id: -1,
             producer_epoch: -1,
             first_sequence: -1,
