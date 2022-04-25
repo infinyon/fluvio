@@ -22,7 +22,9 @@ use crate::core::Version;
 
 use crate::batch::Batch;
 use crate::Offset;
+
 use fluvio_compression::CompressionError;
+use fluvio_types::Timestamp;
 
 /// maximum text to display
 static MAX_STRING_DISPLAY: Lazy<usize> = Lazy::new(|| {
@@ -345,7 +347,7 @@ impl<R: BatchRecords> Encoder for RecordSet<R> {
 pub struct RecordHeader {
     attributes: i8,
     #[varint]
-    timestamp_delta: i64,
+    timestamp_delta: Timestamp,
     #[varint]
     offset_delta: Offset,
 }
