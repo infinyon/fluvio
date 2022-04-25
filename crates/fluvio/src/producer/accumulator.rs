@@ -4,8 +4,8 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_channel::Sender;
 
-use dataplane::batch::{RawRecords, Batch};
-use fluvio_compression::{Compression, CompressionError};
+use dataplane::batch::{Batch, MemoryRecords, RawRecords};
+use fluvio_compression::Compression;
 use tracing::trace;
 
 use dataplane::{Offset, ErrorCode};
@@ -193,9 +193,8 @@ impl ProducerBatch {
     }
 }
 
-impl TryFrom<ProducerBatch> for Batch<RawRecords> {
-    type Error = CompressionError;
-    fn try_from(p_batch: ProducerBatch) -> Result<Self, Self::Error> {
+impl From<ProducerBatch> for Batch<MemoryRecords> {
+    fn from(p_batch: ProducerBatch) -> Self {
         let mut batch = Self::default();
         let compression = p_batch.compression();
         let records = p_batch.records;
@@ -207,12 +206,9 @@ impl TryFrom<ProducerBatch> for Batch<RawRecords> {
 
         header.set_compression(compression);
 
-        let mut buf = vec![];
-        records.encode(&mut buf, 0)?;
-        let compressed_records = compression.compress(&buf)?;
-        *batch.mut_records() = RawRecords(compressed_records);
+        *batch.mut_records() = records;
 
-        Ok(batch)
+        batch
     }
 }
 pub(crate) struct BatchEvents {
@@ -254,7 +250,7 @@ impl BatchEvents {
 #[cfg(test)]
 mod test {
     use super::*;
-    use dataplane::record::Record;
+    use dataplane::{record::Record, batch::RawRecords};
 
     #[test]
     fn test_producer_batch_push_and_not_full() {

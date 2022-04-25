@@ -1547,7 +1547,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.12.9"
+version = "0.12.10"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1800,7 +1800,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.15.2"
+version = "0.15.3"
 dependencies = [
  "async-trait",
  "base64",
@@ -1817,7 +1817,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -2021,7 +2021,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.13.0"
+version = "0.13.1"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2053,7 +2053,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.2.7"
+version = "0.2.8"
 dependencies = [
  "anyhow",
  "flate2",
@@ -2071,7 +2071,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
@@ -2159,7 +2159,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-spu-schema"
-version = "0.9.3"
+version = "0.9.4"
 dependencies = [
  "bytes",
  "flate2",

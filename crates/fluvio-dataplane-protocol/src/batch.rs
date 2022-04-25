@@ -173,7 +173,12 @@ impl TryFrom<Batch> for Batch<RawRecords> {
     fn try_from(f: Batch) -> Result<Self, Self::Error> {
         let mut buf = Vec::new();
         f.records.encode(&mut buf, 0)?;
-        let records = RawRecords(buf);
+
+        let compression = f.get_compression()?;
+
+        let compressed_records = compression.compress(&buf)?;
+        let records = RawRecords(compressed_records);
+
         Ok(Batch {
             base_offset: f.base_offset,
             batch_len: f.batch_len,
