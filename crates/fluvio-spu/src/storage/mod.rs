@@ -131,7 +131,7 @@ where
         &self,
         records: &mut RecordSet<R>,
         hw_update: bool,
-    ) -> Result<i64, StorageError> {
+    ) -> Result<(Offset, Offset), StorageError> {
         debug!(
             replica = %self.id,
             leo = self.leo(),
@@ -146,7 +146,7 @@ where
         let base_offset = writer.get_leo();
 
         let now = Instant::now();
-        let _offset_updates = writer.write_recordset(records, hw_update).await?;
+        writer.write_recordset(records, hw_update).await?;
         debug!(write_time_ms = %now.elapsed().as_millis());
 
         let leo = writer.get_leo();
@@ -158,7 +158,7 @@ where
             self.hw.update(hw);
         }
 
-        Ok(base_offset)
+        Ok((base_offset, leo))
     }
 
     /// perform permanent remove

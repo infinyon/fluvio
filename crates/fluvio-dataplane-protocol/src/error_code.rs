@@ -35,6 +35,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 6)]
     #[error("the given SPU is not the leader for the partition")]
     NotLeaderForPartition,
+    #[fluvio(tag = 7)]
+    #[error("the request timed out.")]
+    RequestTimedOut,
     #[fluvio(tag = 10)]
     #[error("the message is too large to send")]
     MessageTooLarge,
@@ -255,6 +258,7 @@ mod test {
         assert_tag!(ErrorCode::None, 0, 0);
         assert_tag!(ErrorCode::OffsetOutOfRange, 1, 0);
         assert_tag!(ErrorCode::NotLeaderForPartition, 6, 0);
+        assert_tag!(ErrorCode::RequestTimedOut, 7, 0);
         assert_tag!(ErrorCode::MessageTooLarge, 10, 0);
         assert_tag!(ErrorCode::PermissionDenied, 13, 0);
         assert_tag!(ErrorCode::StorageError, 56, 0);
