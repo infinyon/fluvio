@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use async_lock::{Mutex, RwLock};
 use dataplane::ReplicaKey;
-use dataplane::batch::{Batch, MemoryRecords};
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
@@ -201,7 +200,7 @@ impl PartitionProducer {
 
         for p_batch in batches_ready {
             let notify = p_batch.notify.clone();
-            let batch: Batch<MemoryRecords> = p_batch.into();
+            let batch = p_batch.batch();
 
             let raw_batch = batch.try_into()?;
 

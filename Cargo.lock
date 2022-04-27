@@ -705,10 +705,12 @@ version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
 dependencies = [
+ "js-sys",
  "libc",
  "num-integer",
  "num-traits",
  "time 0.1.43",
+ "wasm-bindgen",
  "winapi",
 ]
 
@@ -1572,7 +1574,6 @@ dependencies = [
  "fluvio-types",
  "fluvio_ws_stream_wasm",
  "futures-util",
- "instant",
  "once_cell",
  "pin-project-lite",
  "semver 1.0.7",
@@ -1821,6 +1822,7 @@ version = "0.11.0"
 dependencies = [
  "bytes",
  "cfg-if",
+ "chrono",
  "content_inspector",
  "crc32c",
  "derive_builder",

@@ -160,11 +160,11 @@ where
             Err(e) => Either::Right(once(err(e))),
             Ok(batch) => {
                 let base_offset = batch.base_offset;
-                let batch_first_timestamp = batch.header.first_timestamp;
+                let first_timestamp = batch.header.first_timestamp;
                 let records = batch.own_records().into_iter().enumerate().filter_map(
                     move |(relative, record)| {
                         let record_offset = base_offset + relative as i64;
-                        let timestamp = record.timestamp(batch_first_timestamp);
+                        let timestamp = record.timestamp(first_timestamp);
                         if record_offset >= start_offset {
                             Some(Ok(Record {
                                 partition,
