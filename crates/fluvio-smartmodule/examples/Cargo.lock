@@ -126,7 +126,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.10.1"
+version = "0.11.0"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -136,6 +136,7 @@ dependencies = [
  "fluvio-compression",
  "fluvio-future",
  "fluvio-protocol",
+ "fluvio-types",
  "flv-util",
  "futures-util",
  "once_cell",
@@ -178,7 +179,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartmodule"
-version = "0.2.4"
+version = "0.2.5"
 dependencies = [
  "eyre",
  "fluvio-dataplane-protocol",
@@ -192,6 +193,14 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "fluvio-types"
+version = "0.3.5"
+dependencies = [
+ "thiserror",
+ "tracing",
 ]
 
 [[package]]

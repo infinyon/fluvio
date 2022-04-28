@@ -362,6 +362,7 @@ impl RecordHeader {
         self.offset_delta
     }
 
+    #[cfg(feature = "memory_batch")]
     pub(crate) fn set_timestamp_delta(&mut self, delta: Timestamp) {
         self.timestamp_delta = delta;
     }

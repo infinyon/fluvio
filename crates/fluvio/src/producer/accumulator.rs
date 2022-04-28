@@ -4,7 +4,7 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_channel::Sender;
 
-use dataplane::batch::{Batch, MemoryBatch};
+use dataplane::batch::{Batch, memory::MemoryBatch};
 use fluvio_compression::Compression;
 use tracing::trace;
 
