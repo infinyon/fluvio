@@ -22,7 +22,7 @@ use crate::{
 
 #[fluvio_future::test(ignore)]
 async fn test_produce_basic() {
-    let test_path = temp_dir().join("test_stream_fetch");
+    let test_path = temp_dir().join("produce_basic");
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
@@ -132,7 +132,7 @@ async fn test_produce_basic() {
 
 #[fluvio_future::test(ignore)]
 async fn test_produce_invalid_compression() {
-    let test_path = temp_dir().join("test_stream_fetch");
+    let test_path = temp_dir().join("produce_invalid_compression");
     ensure_clean_dir(&test_path);
     let port = portpicker::pick_unused_port().expect("No free ports left");
 
@@ -195,5 +195,192 @@ async fn test_produce_invalid_compression() {
     );
 
     server_end_event.notify();
+    debug!("terminated controller");
+}
+use crate::replication::test::TestConfig;
+use crate::services::create_internal_server;
+
+#[fluvio_future::test(ignore)]
+async fn test_produce_request_timed_out() {
+    let config = TestConfig::builder()
+        .followers(1_u16)
+        .base_port(14010_u16)
+        .generate("produce_request_timed_out");
+
+    let public_addr = config.leader_public_addr();
+
+    let (leader_ctx, _) = config.leader_replica().await;
+
+    let server_end_event = create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&public_addr).await.expect("connect"));
+    let topic = "test";
+
+    let records_per_request = 5;
+    let records = create_filter_records(records_per_request)
+        .try_into()
+        .expect("filter records");
+
+    let mut produce_request = DefaultProduceRequest {
+        acks: -1,
+        timeout_ms: 300,
+        ..Default::default()
+    };
+
+    let partition_produce = DefaultPartitionRequest {
+        partition_index: 0,
+        records,
+    };
+    let topic_produce_request = TopicProduceData {
+        name: topic.to_owned(),
+        partitions: vec![partition_produce],
+        ..Default::default()
+    };
+
+    produce_request.topics.push(topic_produce_request);
+
+    let produce_response = client_socket
+        .send_and_receive(RequestMessage::new_request(produce_request))
+        .await
+        .expect("send offset");
+
+    // Check error code
+    assert_eq!(produce_response.responses.len(), 1);
+    assert_eq!(produce_response.responses[0].partitions.len(), 1);
+    assert_eq!(
+        produce_response.responses[0].partitions[0].error_code,
+        ErrorCode::RequestTimedOut
+    );
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_produce_not_waiting_replication() {
+    let config = TestConfig::builder()
+        .followers(1_u16)
+        .base_port(14020_u16)
+        .generate("produce_request_timed_out");
+
+    let (leader_ctx, _) = config.leader_replica().await;
+    let public_addr = config.leader_public_addr();
+
+    let server_end_event = create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&public_addr).await.expect("connect"));
+    let topic = "test";
+
+    let records_per_request = 5;
+    let records = create_filter_records(records_per_request)
+        .try_into()
+        .expect("filter records");
+
+    let mut produce_request = DefaultProduceRequest {
+        acks: 1,
+        timeout_ms: 300,
+        ..Default::default()
+    };
+
+    let partition_produce = DefaultPartitionRequest {
+        partition_index: 0,
+        records,
+    };
+    let topic_produce_request = TopicProduceData {
+        name: topic.to_owned(),
+        partitions: vec![partition_produce],
+        ..Default::default()
+    };
+
+    produce_request.topics.push(topic_produce_request);
+
+    let produce_response = client_socket
+        .send_and_receive(RequestMessage::new_request(produce_request))
+        .await
+        .expect("send offset");
+
+    // Check error code
+    assert_eq!(produce_response.responses.len(), 1);
+    assert_eq!(produce_response.responses[0].partitions.len(), 1);
+    assert_eq!(
+        produce_response.responses[0].partitions[0].error_code,
+        ErrorCode::None
+    );
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_produce_waiting_replication() {
+    let config = TestConfig::builder()
+        .followers(1_u16)
+        .base_port(14030_u16)
+        .generate("produce_waiting_replication");
+
+    let (leader_ctx, _) = config.leader_replica().await;
+    let public_addr = config.leader_public_addr();
+
+    let public_server_end_event =
+        create_public_server(public_addr.clone(), leader_ctx.clone()).run();
+    let private_server_end_event =
+        create_internal_server(config.leader_addr(), leader_ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    debug!("starting follower replica controller");
+    config.follower_replica(0).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&public_addr).await.expect("connect"));
+    let topic = "test";
+
+    let records_per_request = 5;
+    let records = create_filter_records(records_per_request)
+        .try_into()
+        .expect("filter records");
+
+    let mut produce_request = DefaultProduceRequest {
+        acks: -1,
+        timeout_ms: 10000,
+        ..Default::default()
+    };
+
+    let partition_produce = DefaultPartitionRequest {
+        partition_index: 0,
+        records,
+    };
+    let topic_produce_request = TopicProduceData {
+        name: topic.to_owned(),
+        partitions: vec![partition_produce],
+        ..Default::default()
+    };
+
+    produce_request.topics.push(topic_produce_request);
+
+    let produce_response = client_socket
+        .send_and_receive(RequestMessage::new_request(produce_request))
+        .await
+        .expect("send offset");
+
+    // Check error code
+    assert_eq!(produce_response.responses.len(), 1);
+    assert_eq!(produce_response.responses[0].partitions.len(), 1);
+    assert_eq!(
+        produce_response.responses[0].partitions[0].error_code,
+        ErrorCode::None
+    );
+
+    public_server_end_event.notify();
+    private_server_end_event.notify();
     debug!("terminated controller");
 }
