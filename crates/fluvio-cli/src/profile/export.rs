@@ -3,7 +3,7 @@ use std::sync::Arc;
 use clap::Parser;
 use serde::Serialize;
 
-use fluvio::config::{ConfigFile, TlsCerts, TlsPolicy, TlsConfig};
+use fluvio::config::{ConfigFile, TlsPolicy, TlsConfig};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::output::OutputType;
 
@@ -59,7 +59,12 @@ impl ExportOpt {
                 TlsPolicy::Disabled => ProfileExportTls::Disabled,
                 TlsPolicy::Anonymous => ProfileExportTls::Anonymous,
                 TlsPolicy::Verified(tls_config) => ProfileExportTls::Verified(match tls_config {
-                    TlsConfig::Inline(tls_certs) => tls_certs.clone(),
+                    TlsConfig::Inline(tls_certs) => ProfileExportTlsCerts {
+                        domain: tls_certs.domain.to_owned(),
+                        key: tls_certs.key.to_owned(),
+                        cert: tls_certs.cert.to_owned(),
+                        ca_cert: tls_certs.ca_cert.to_owned(),
+                    },
                     TlsConfig::Files(_) => {
                         return Err(CliError::Other(format!("Cluster {} uses externals TLS certs. Only inline TLS certs are supported.", cluster_name)));
                     }
@@ -78,15 +83,25 @@ impl ExportOpt {
 }
 
 #[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ProfileExport {
     endpoint: String,
     tls: ProfileExportTls,
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[serde(tag = "policy")]
+#[serde(rename_all = "camelCase", tag = "policy")]
 enum ProfileExportTls {
     Disabled,
     Anonymous,
-    Verified(TlsCerts),
+    Verified(ProfileExportTlsCerts),
+}
+
+#[derive(Clone, Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ProfileExportTlsCerts {
+    pub domain: String,
+    pub key: String,
+    pub cert: String,
+    pub ca_cert: String,
 }
