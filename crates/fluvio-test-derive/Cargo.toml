@@ -28,7 +28,7 @@ fluvio = { path = "../fluvio" }
 tokio = { version = "1.4", features = ["macros"] }
 fluvio-future = { version = "0.3.0", features = ["task", "timer", "subscriber", "fixture"] }
 clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
-nix = "0.23"
+nix = "0.24"
 inventory = "0.1"
 tracing = "0.1"
 crossbeam-channel = "0.5"
