@@ -27,7 +27,7 @@ comfy-table = "5.0.1"
 hdrhistogram = "7.3.0"
 crc = "2.0"
 fork = "0.1"
-nix = "0.23"
+nix = "0.24"
 crossbeam-channel = "0.5"
 sysinfo = { version = "0.23.0" }
 signal-hook = "0.3.13"

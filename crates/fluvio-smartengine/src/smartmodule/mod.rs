@@ -157,11 +157,7 @@ impl SmartEngine {
             .imports()
             .next()
             .ok_or_else(|| Error::msg("At least one import is required"))?;
-        linker.func_wrap(
-            host_fn_import.module(),
-            host_fn_import.name().unwrap_or(""),
-            host_fn,
-        )?;
+        linker.func_wrap(host_fn_import.module(), host_fn_import.name(), host_fn)?;
         linker.instantiate(store, module)
     }
 }
