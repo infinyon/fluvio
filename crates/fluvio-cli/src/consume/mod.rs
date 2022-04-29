@@ -4,13 +4,11 @@
 //! CLI command for Consume operation
 //!
 
-use std::time::UNIX_EPOCH;
 use std::{io::Error as IoError, path::PathBuf};
 use std::io::{self, ErrorKind, Read, Stdout};
 use std::collections::{BTreeMap};
 use flate2::Compression;
 use flate2::bufread::GzEncoder;
-use fluvio::dataplane::batch::NO_TIMESTAMP;
 use fluvio::metadata::tableformat::{TableFormatSpec};
 use tracing::{debug, trace, instrument};
 use clap::{Parser, ArgEnum};
@@ -82,10 +80,8 @@ pub struct ConsumeOpt {
     /// Provide a template string to print records with a custom format.
     /// See --help for details.
     ///
-    /// Template strings may include the variables {{key}}, {{value}}, {{offset}}, {{partition}}, {{timestamp_humanize}} and {{timestamp}}
+    /// Template strings may include the variables {{key}}, {{value}}, {{offset}} and {{partition}}
     /// which will have each record's contents substituted in their place.
-    /// Note that timestamp is displayed using RFC3339, is always UTC and ignores system timezone.
-    ///
     /// For example, the following template string:
     ///
     /// Offset {{offset}} has key {{key}} and value {{value}}
@@ -588,48 +584,11 @@ impl ConsumeOpt {
             }
             (_, Some(templates)) => {
                 let value = String::from_utf8_lossy(record.value()).to_string();
-                let timestamp_rfc3339 = if record.timestamp() == NO_TIMESTAMP {
-                    "NA".to_string()
-                } else {
-                    format!(
-                        "{}",
-                        humantime::format_rfc3339_millis(
-                            UNIX_EPOCH
-                                + std::time::Duration::from_millis(
-                                    record.timestamp().try_into().unwrap_or_default()
-                                )
-                        )
-                    )
-                };
-
-                let human_readable_timestamp: String = if record.timestamp() == NO_TIMESTAMP {
-                    "NA".to_string()
-                } else {
-                    format!(
-                        "{}",
-                        humantime::format_duration(
-                            (UNIX_EPOCH
-                                + std::time::Duration::from_millis(
-                                    record.timestamp().try_into().unwrap_or_default()
-                                ))
-                            .elapsed()
-                            .unwrap_or_default()
-                        )
-                    )
-                    .split_whitespace()
-                    .take(3)
-                    .take_while(|s| !s.contains("us"))
-                    .collect::<Vec<&str>>()
-                    .join(" ")
-                };
-
                 let object = serde_json::json!({
                     "key": formatted_key,
                     "value": value,
                     "offset": record.offset(),
                     "partition": record.partition(),
-                    "timestamp": timestamp_rfc3339,
-                    "timestamp_humanize": human_readable_timestamp,
                 });
                 templates.render(USER_TEMPLATE, &object).ok()
             }

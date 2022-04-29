@@ -18,7 +18,7 @@ pub use fluvio_spu_schema::server::stream_fetch::{
 use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
-use dataplane::batch::Batch;
+use dataplane::batch::{Batch};
 use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
@@ -160,17 +160,14 @@ where
             Err(e) => Either::Right(once(err(e))),
             Ok(batch) => {
                 let base_offset = batch.base_offset;
-                let first_timestamp = batch.header.first_timestamp;
                 let records = batch.own_records().into_iter().enumerate().filter_map(
                     move |(relative, record)| {
                         let record_offset = base_offset + relative as i64;
-                        let timestamp = record.timestamp(first_timestamp);
                         if record_offset >= start_offset {
                             Some(Ok(Record {
                                 partition,
                                 offset: record_offset,
                                 record,
-                                timestamp,
                             }))
                         } else {
                             None

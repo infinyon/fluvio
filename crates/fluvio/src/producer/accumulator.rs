@@ -242,60 +242,6 @@ mod test {
         assert!(pb.push_record(record).is_none());
     }
 
-    #[test]
-    fn test_timestamps_in_batch_and_records() {
-        let record = Record::from(("key", "value"));
-        let size = record.write_size(0);
-
-        // Producer batch that can store three instances of Record::from(("key", "value"))
-        let mut pb = ProducerBatch::new(
-            size * 4
-                + Batch::<RawRecords>::default().write_size(0)
-                + Vec::<RawRecords>::default().write_size(0),
-            Compression::None,
-        );
-
-        assert!(pb.push_record(record).is_some());
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        let record = Record::from(("key", "value"));
-        assert!(pb.push_record(record).is_some());
-        std::thread::sleep(std::time::Duration::from_millis(100));
-        let record = Record::from(("key", "value"));
-        assert!(pb.push_record(record).is_some());
-
-        let batch: Batch = pb.batch();
-        let batch: Batch<RawRecords> = batch.try_into().expect("failed to convert");
-        assert!(
-            batch.header.first_timestamp > 0,
-            "first_timestamp is {}",
-            batch.header.first_timestamp
-        );
-        assert!(
-            batch.header.first_timestamp < batch.header.max_timestamp,
-            "first_timestamp: {}, max_time_stamp: {}",
-            batch.header.first_timestamp,
-            batch.header.max_timestamp
-        );
-
-        let records_delta: Vec<_> = batch
-            .memory_records()
-            .expect("failed to get records")
-            .iter()
-            .map(|record| record.timestamp_delta())
-            .collect();
-        assert_eq!(records_delta[0], 0);
-        assert!(
-            (100..150).contains(&records_delta[1]),
-            "records_delta[1]: {}",
-            records_delta[1]
-        );
-        assert!(
-            (200..250).contains(&records_delta[2]),
-            "records_delta[2]: {}",
-            records_delta[2]
-        );
-    }
-
     #[fluvio_future::test]
     async fn test_record_accumulator() {
         let record = Record::from(("key", "value"));

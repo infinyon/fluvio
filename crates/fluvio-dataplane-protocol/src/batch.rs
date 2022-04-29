@@ -172,12 +172,10 @@ impl TryFrom<Batch<RawRecords>> for Batch {
 impl TryFrom<Batch> for Batch<RawRecords> {
     type Error = CompressionError;
     fn try_from(f: Batch) -> Result<Self, Self::Error> {
-        let compression = f.get_compression()?;
-        let records = f.records;
-
         let mut buf = Vec::new();
-        records.encode(&mut buf, 0)?;
+        f.records.encode(&mut buf, 0)?;
 
+        let compression = f.get_compression()?;
         let compressed_records = compression.compress(&buf)?;
         let records = RawRecords(compressed_records);
 
@@ -323,7 +321,7 @@ where
         self.header.attributes.encode(buf, version)?;
         self.header.last_offset_delta.encode(buf, version)?;
         self.header.first_timestamp.encode(buf, version)?;
-        self.header.max_timestamp.encode(buf, version)?;
+        self.header.max_time_stamp.encode(buf, version)?;
         self.header.producer_id.encode(buf, version)?;
         self.header.producer_epoch.encode(buf, version)?;
         self.header.first_sequence.encode(buf, version)?;
@@ -347,7 +345,7 @@ pub struct BatchHeader {
     /// Adding this to the base_offset will give the offset of the last record in this batch
     pub last_offset_delta: i32,
     pub first_timestamp: Timestamp,
-    pub max_timestamp: Timestamp,
+    pub max_time_stamp: Timestamp,
     pub producer_id: i64,
     pub producer_epoch: i16,
     pub first_sequence: i32,
@@ -370,8 +368,8 @@ impl BatchHeader {
     }
 
     #[cfg(feature = "memory_batch")]
-    fn set_max_timestamp(&mut self, timestamp: Timestamp) {
-        self.max_timestamp = timestamp;
+    fn set_max_time_stamp(&mut self, timestamp: Timestamp) {
+        self.max_time_stamp = timestamp;
     }
 }
 impl Default for BatchHeader {
@@ -383,7 +381,7 @@ impl Default for BatchHeader {
             attributes: 0,
             last_offset_delta: -1,
             first_timestamp: NO_TIMESTAMP,
-            max_timestamp: NO_TIMESTAMP,
+            max_time_stamp: NO_TIMESTAMP,
             producer_id: -1,
             producer_epoch: -1,
             first_sequence: -1,
@@ -491,13 +489,13 @@ pub mod memory {
 
             let first_timestamp = p_batch.create_time;
 
-            let max_timestamp = records
+            let max_time_stamp = records
                 .last()
-                .map(|r| r.timestamp(first_timestamp))
+                .map(|r| first_timestamp + r.timestamp_delta())
                 .unwrap_or(0);
 
             header.set_first_timestamp(first_timestamp);
-            header.set_max_timestamp(max_timestamp);
+            header.set_max_time_stamp(max_time_stamp);
 
             header.set_compression(compression);
 
@@ -520,6 +518,7 @@ mod test {
     use crate::batch::Batch;
     use super::BatchHeader;
     use super::BATCH_HEADER_SIZE;
+    use super::memory::MemoryBatch;
 
     #[test]
     fn test_batch_size() {
@@ -537,7 +536,7 @@ mod test {
         let mut batch = Batch::<MemoryRecords>::default();
         batch.records.push(record);
         batch.header.first_timestamp = 1555478494747;
-        batch.header.max_timestamp = 1555478494747;
+        batch.header.max_time_stamp = 1555478494747;
 
         let bytes = batch.as_bytes(0)?;
         println!("batch raw bytes: {:#X?}", bytes.as_ref());
@@ -739,5 +738,56 @@ mod test {
         }
 
         assert_eq!(batch_created.last_offset_delta(), 2);
+    }
+
+    #[test]
+    fn test_memory_batch() {
+        let record = Record::from(("key", "value"));
+        let size = record.write_size(0);
+
+        let mut mb = MemoryBatch::new(
+            size * 4
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
+            Compression::None,
+        );
+
+        assert!(mb.push_record(record).is_some());
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let record = Record::from(("key", "value"));
+        assert!(mb.push_record(record).is_some());
+        std::thread::sleep(std::time::Duration::from_millis(100));
+        let record = Record::from(("key", "value"));
+        assert!(mb.push_record(record).is_some());
+
+        let batch: Batch<MemoryRecords> = mb.try_into().expect("failed to convert");
+        assert!(
+            batch.header.first_timestamp > 0,
+            "first_timestamp is {}",
+            batch.header.first_timestamp
+        );
+        assert!(
+            batch.header.first_timestamp < batch.header.max_time_stamp,
+            "first_timestamp: {}, max_time_stamp: {}",
+            batch.header.first_timestamp,
+            batch.header.max_time_stamp
+        );
+
+        let records_delta: Vec<_> = batch
+            .records()
+            .iter()
+            .map(|record| record.timestamp_delta())
+            .collect();
+        assert_eq!(records_delta[0], 0);
+        assert!(
+            (100..150).contains(&records_delta[1]),
+            "records_delta[1]: {}",
+            records_delta[1]
+        );
+        assert!(
+            (200..250).contains(&records_delta[2]),
+            "records_delta[2]: {}",
+            records_delta[2]
+        );
     }
 }
