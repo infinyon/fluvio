@@ -343,7 +343,7 @@ impl<R: BatchRecords> Encoder for RecordSet<R> {
     }
 }
 
-#[derive(Decoder, Encoder, Default, Debug, Clone)]
+#[derive(Decoder, Default, Encoder, Debug, Clone)]
 pub struct RecordHeader {
     attributes: i8,
     #[varint]
@@ -359,6 +359,11 @@ impl RecordHeader {
 
     pub fn offset_delta(&self) -> Offset {
         self.offset_delta
+    }
+
+    #[cfg(feature = "memory_batch")]
+    pub(crate) fn set_timestamp_delta(&mut self, delta: Timestamp) {
+        self.timestamp_delta = delta;
     }
 }
 
@@ -423,6 +428,10 @@ impl Record {
             value: value.into(),
             ..Default::default()
         }
+    }
+
+    pub(crate) fn timestamp_delta(&self) -> Timestamp {
+        self.preamble.timestamp_delta
     }
 }
 

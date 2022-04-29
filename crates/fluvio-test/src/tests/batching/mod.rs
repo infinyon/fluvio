@@ -122,7 +122,10 @@ pub async fn batching(
 
         let config = TopicProducerConfigBuilder::default()
             .linger(Duration::from_millis(600000))
-            .batch_size(17 + Batch::<RawRecords>::default().write_size(0))
+            .batch_size(
+                17 + Vec::<RawRecords>::default().write_size(0)
+                    + Batch::<RawRecords>::default().write_size(0),
+            )
             .build()
             .expect("failed to build config");
 

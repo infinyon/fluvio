@@ -4,14 +4,13 @@ use std::sync::Arc;
 use async_lock::Mutex;
 use async_channel::Sender;
 
-use dataplane::batch::{Batch, MemoryRecords, RawRecords};
+use dataplane::batch::{Batch, memory::MemoryBatch};
 use fluvio_compression::Compression;
 use tracing::trace;
 
 use dataplane::{Offset, ErrorCode};
 use dataplane::record::Record;
-use fluvio_types::PartitionId;
-use fluvio_protocol::Encoder;
+use fluvio_types::{PartitionId, Timestamp};
 
 use crate::producer::record::{BatchMetadata, FutureRecordMetadata, PartialFutureRecordMetadata};
 use crate::producer::ProducerError;
@@ -19,11 +18,7 @@ use crate::error::Result;
 
 use super::event::EventHandler;
 
-use instant::Instant;
-
 pub(crate) type BatchHandler = (Arc<BatchEvents>, Arc<Mutex<VecDeque<ProducerBatch>>>);
-
-const ENCODING_PROTOCOL_VERSION: i16 = 0;
 
 /// This struct acts as a queue that accumulates records into batches.
 /// It is used by the producer to buffer records before sending them to the SPU.
@@ -119,98 +114,47 @@ where {
 pub(crate) struct ProducerBatch {
     pub(crate) notify: Sender<(Offset, ErrorCode)>,
     batch_metadata: Arc<BatchMetadata>,
-    compression: Compression,
-    write_limit: usize,
-    current_size_uncompressed: usize,
-    is_full: bool,
-    create_time: Instant,
-    pub(crate) records: Vec<Record>,
+    batch: MemoryBatch,
 }
 impl ProducerBatch {
     fn new(write_limit: usize, compression: Compression) -> Self {
-        let now = Instant::now();
         let (sender, receiver) = async_channel::bounded(1);
         let batch_metadata = Arc::new(BatchMetadata::new(receiver));
+        let batch = MemoryBatch::new(write_limit, compression);
 
         Self {
             notify: sender,
             batch_metadata,
-            compression,
-            is_full: false,
-            write_limit,
-            create_time: now,
-            current_size_uncompressed: 0,
-            records: vec![],
+            batch,
         }
-    }
-
-    pub(crate) fn compression(&self) -> Compression {
-        self.compression
-    }
-
-    pub(crate) fn create_time(&self) -> &Instant {
-        &self.create_time
     }
 
     /// Add a record to the batch.
     /// Return ProducerError::BatchFull if record does not fit in the batch, so
     /// the RecordAccumulator can create more batches if needed.
-    fn push_record(&mut self, mut record: Record) -> Option<PartialFutureRecordMetadata> {
-        let relative_offset = self.records.len() as i64;
-        record.preamble.set_offset_delta(relative_offset as Offset);
-        let record_size = record.write_size(ENCODING_PROTOCOL_VERSION);
-
-        if self.estimated_size() + record_size > self.write_limit {
-            self.is_full = true;
-            return None;
+    fn push_record(&mut self, record: Record) -> Option<PartialFutureRecordMetadata> {
+        match self.batch.push_record(record) {
+            None => None,
+            Some(relative_offset) => Some(PartialFutureRecordMetadata::new(
+                relative_offset,
+                self.batch_metadata.clone(),
+            )),
         }
-
-        if self.estimated_size() + record_size == self.write_limit {
-            self.is_full = true;
-        }
-
-        self.current_size_uncompressed += record_size;
-
-        self.records.push(record);
-
-        Some(PartialFutureRecordMetadata::new(
-            relative_offset,
-            self.batch_metadata.clone(),
-        ))
     }
 
     pub(crate) fn is_full(&self) -> bool {
-        self.is_full || self.write_limit <= self.estimated_size()
+        self.batch.is_full()
     }
 
-    fn estimated_size(&self) -> usize {
-        (self.current_size_uncompressed as f32
-            * match self.compression {
-                Compression::None => 1.0,
-                Compression::Gzip | Compression::Snappy | Compression::Lz4 => 0.5,
-            }) as usize
-            + Batch::<RawRecords>::default().write_size(0)
+    pub(crate) fn elapsed(&self) -> Timestamp {
+        self.batch.elapsed()
     }
-}
 
-impl From<ProducerBatch> for Batch<MemoryRecords> {
-    fn from(p_batch: ProducerBatch) -> Self {
-        let mut batch = Self::default();
-        let compression = p_batch.compression();
-        let records = p_batch.records;
-
-        let len = records.len() as i32;
-
-        let header = batch.get_mut_header();
-        header.last_offset_delta = if len > 0 { len - 1 } else { len };
-
-        header.set_compression(compression);
-
-        *batch.mut_records() = records;
-
-        batch
+    pub(crate) fn batch(self) -> Batch {
+        self.batch.into()
     }
 }
+
 pub(crate) struct BatchEvents {
     batch_full: EventHandler,
     new_batch: EventHandler,
@@ -251,16 +195,19 @@ impl BatchEvents {
 mod test {
     use super::*;
     use dataplane::{record::Record, batch::RawRecords};
+    use fluvio_protocol::Encoder;
 
     #[test]
     fn test_producer_batch_push_and_not_full() {
         let record = Record::from(("key", "value"));
-
-        let size = record.write_size(ENCODING_PROTOCOL_VERSION);
+        let size = record.write_size(0);
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            size * 3 + 1 + Batch::<RawRecords>::default().write_size(0),
+            size * 3
+                + 1
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
         );
 
@@ -276,11 +223,13 @@ mod test {
     #[test]
     fn test_producer_batch_push_and_full() {
         let record = Record::from(("key", "value"));
-        let size = record.write_size(ENCODING_PROTOCOL_VERSION);
+        let size = record.write_size(0);
 
         // Producer batch that can store three instances of Record::from(("key", "value"))
         let mut pb = ProducerBatch::new(
-            size * 3 + Batch::<RawRecords>::default().write_size(0),
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
         );
 
@@ -296,9 +245,12 @@ mod test {
     #[fluvio_future::test]
     async fn test_record_accumulator() {
         let record = Record::from(("key", "value"));
-        let size = record.write_size(ENCODING_PROTOCOL_VERSION);
+
+        let size = record.write_size(0);
         let accumulator = RecordAccumulator::new(
-            size * 3 + Batch::<RawRecords>::default().write_size(0),
+            size * 3
+                + Batch::<RawRecords>::default().write_size(0)
+                + Vec::<RawRecords>::default().write_size(0),
             1,
             Compression::None,
         );
@@ -330,19 +282,21 @@ mod test {
             .push_record(record.clone(), 0)
             .await
             .expect("failed push");
+
+        assert!(
+            async_std::future::timeout(timeout, batches.listen_batch_full())
+                .await
+                .is_err()
+        );
         accumulator
             .push_record(record, 0)
             .await
             .expect("failed push");
+
         assert!(
             async_std::future::timeout(timeout, batches.listen_batch_full())
                 .await
                 .is_ok()
-        );
-        assert!(
-            async_std::future::timeout(timeout, batches.listen_new_batch())
-                .await
-                .is_err()
         );
     }
 }
