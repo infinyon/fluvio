@@ -14,6 +14,7 @@ use bytes::BufMut;
 
 use crate::batch::BatchRecords;
 use crate::batch::MemoryRecords;
+use crate::batch::NO_TIMESTAMP;
 use crate::batch::RawRecords;
 use crate::core::{Encoder, Decoder};
 use crate::core::DecoderVarInt;
@@ -526,6 +527,8 @@ pub struct ConsumerRecord<B = DefaultRecord> {
     pub partition: i32,
     /// The Record contents
     pub record: B,
+    /// Timestamp base of batch in which the records is present
+    pub(crate) timestamp_base: Timestamp,
 }
 
 impl<B> ConsumerRecord<B> {
@@ -559,6 +562,14 @@ impl ConsumerRecord<DefaultRecord> {
     /// Returns the contents of this Record's value
     pub fn value(&self) -> &[u8] {
         self.record.value().as_ref()
+    }
+    /// Return the timestamp of the Record
+    pub fn timestamp(&self) -> Timestamp {
+        if self.timestamp_base <= 0 {
+            NO_TIMESTAMP
+        } else {
+            self.timestamp_base + self.record.timestamp_delta()
+        }
     }
 }
 

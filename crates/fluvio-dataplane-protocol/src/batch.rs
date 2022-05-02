@@ -2,6 +2,7 @@ use std::io::Error;
 use std::mem::size_of;
 use std::fmt::Debug;
 use fluvio_compression::CompressionError;
+use fluvio_types::PartitionId;
 use tracing::trace;
 
 use fluvio_compression::Compression;
@@ -16,6 +17,7 @@ use crate::core::Version;
 
 use crate::Offset;
 use crate::Size;
+use crate::record::ConsumerRecord;
 use crate::record::Record;
 
 pub const COMPRESSION_CODEC_MASK: i16 = 0x07;
@@ -187,6 +189,7 @@ impl TryFrom<Batch> for Batch<RawRecords> {
         })
     }
 }
+
 impl<R> Batch<R>
 where
     R: Encoder,
@@ -225,6 +228,24 @@ impl Batch {
             record.preamble.set_offset_delta(index as Offset);
         }
         self.header.last_offset_delta = self.records().len() as i32 - 1;
+    }
+
+    pub fn into_consumer_records_iter(
+        self,
+        partition: PartitionId,
+    ) -> impl Iterator<Item = ConsumerRecord> {
+        let base_offset = self.base_offset;
+        let first_timestamp = self.header.first_timestamp;
+
+        self.records
+            .into_iter()
+            .enumerate()
+            .map(move |(relative, record)| ConsumerRecord {
+                partition,
+                offset: base_offset + relative as Offset,
+                timestamp_base: first_timestamp,
+                record,
+            })
     }
 }
 impl Batch<RawRecords> {
