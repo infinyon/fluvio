@@ -11,6 +11,7 @@ use fluvio::{
     Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
     ProduceOutput,
 };
+use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
@@ -63,6 +64,12 @@ pub struct ProduceOpt {
     /// Max amount of bytes accumulated before sending
     #[clap(long)]
     pub batch_size: Option<usize>,
+
+    /// Isolation level that producer must respect.
+    /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
+    /// read_uncommitted (ReadUncommitted) - just wait for leader to accept records.
+    #[clap(long)]
+    pub isolation: Option<Isolation>,
 }
 
 fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
@@ -99,6 +106,13 @@ impl ProduceOpt {
         // Batch size
         let config_builder = if let Some(batch_size) = self.batch_size {
             config_builder.batch_size(batch_size)
+        } else {
+            config_builder
+        };
+
+        // Isolation
+        let config_builder = if let Some(isolation) = self.isolation {
+            config_builder.isolation(isolation)
         } else {
             config_builder
         };

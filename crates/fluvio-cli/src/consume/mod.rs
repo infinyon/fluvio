@@ -42,6 +42,7 @@ use self::record_format::{
     format_json, format_basic_table_record, format_fancy_table_record,
 };
 use handlebars::{self, Handlebars};
+use fluvio::dataplane::Isolation;
 
 const DEFAULT_TAIL: u32 = 10;
 const USER_TEMPLATE: &str = "user_template";
@@ -170,6 +171,12 @@ pub struct ConsumeOpt {
     /// Eg. fluvio consume topic-name --filter filter.wasm -e foo=bar -e key=value -e one=1
     #[clap(short = 'e', long= "extra-params", parse(try_from_str = parse_key_val), number_of_values = 1)]
     pub extra_params: Option<Vec<(String, String)>>,
+
+    /// Isolation level that consumer must respect.
+    /// Supported values: read_committed (ReadCommitted) - consume only committed records,
+    /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
+    #[clap(long)]
+    pub isolation: Option<Isolation>,
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String)> {
@@ -347,6 +354,10 @@ impl ConsumeOpt {
                     );
                 }
             }
+        }
+
+        if let Some(isolation) = self.isolation {
+            builder.isolation(isolation);
         }
 
         let consume_config = builder.build()?;

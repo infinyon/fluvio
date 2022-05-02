@@ -1,12 +1,14 @@
 use std::time::Duration;
 
 use derive_builder::Builder;
+use dataplane::Isolation;
 
 use fluvio_compression::Compression;
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
 const DEFAULT_LINGER_MS: u64 = 100;
+const DEFAULT_TIMEOUT_MS: u64 = 1500;
 const DEFAULT_BATCH_SIZE_BYTES: usize = 16_384;
 
 fn default_batch_size() -> usize {
@@ -19,6 +21,14 @@ fn default_linger_duration() -> Duration {
 
 fn default_partitioner() -> Box<dyn Partitioner + Send + Sync> {
     Box::new(SiphashRoundRobinPartitioner::new())
+}
+
+fn default_timeout() -> Duration {
+    Duration::from_millis(DEFAULT_TIMEOUT_MS)
+}
+
+fn default_isolation() -> Isolation {
+    Isolation::default()
 }
 
 /// Options used to adjust the behavior of the Producer.
@@ -43,6 +53,17 @@ pub struct TopicProducerConfig {
     /// initialization will fail.
     #[builder(setter(into, strip_option), default)]
     pub(crate) compression: Option<Compression>,
+
+    /// Max time duration that the server is allowed to process the batch.
+    #[builder(default = "default_timeout()")]
+    pub(crate) timeout: Duration,
+
+    /// [`Isolation`] level that the producer must respect.
+    /// [`Isolation::ReadCommitted`] waits for messages to be committed (replicated) before
+    /// sending the response to the caller.
+    /// [`Isolation::ReadUncommitted`] just waits for the leader to accept the message.
+    #[builder(default = "default_isolation()")]
+    pub(crate) isolation: Isolation,
 }
 
 impl Default for TopicProducerConfig {
@@ -52,6 +73,8 @@ impl Default for TopicProducerConfig {
             batch_size: default_batch_size(),
             partitioner: default_partitioner(),
             compression: None,
+            timeout: default_timeout(),
+            isolation: default_isolation(),
         }
     }
 }

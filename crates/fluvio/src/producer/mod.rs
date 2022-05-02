@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 
 use async_lock::RwLock;
 
@@ -29,7 +28,7 @@ pub use dataplane::record::{RecordKey, RecordData};
 use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
-use crate::producer::partitioning::{Partitioner, PartitionerConfig};
+use crate::producer::partitioning::PartitionerConfig;
 
 use self::accumulator::{BatchHandler};
 pub use self::config::{
@@ -64,10 +63,10 @@ struct ProducerPool {
 
 impl ProducerPool {
     fn new(
+        config: Arc<TopicProducerConfig>,
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        linger: Duration,
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
@@ -79,11 +78,11 @@ impl ProducerPool {
             let error = Arc::new(RwLock::new(None));
 
             PartitionProducer::start(
+                config.clone(),
                 replica,
                 spu_pool.clone(),
                 batch_list.clone(),
                 batch_events.clone(),
-                linger,
                 error.clone(),
                 end_event.clone(),
                 flush_event.clone(),
@@ -100,12 +99,12 @@ impl ProducerPool {
     }
 
     fn shared(
+        config: Arc<TopicProducerConfig>,
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        linger: Duration,
     ) -> Arc<Self> {
-        Arc::new(ProducerPool::new(topic, spu_pool, batches, linger))
+        Arc::new(ProducerPool::new(config, topic, spu_pool, batches))
     }
 
     async fn flush_all_batches(&self) -> Result<()> {
@@ -151,9 +150,9 @@ impl Drop for ProducerPool {
     }
 }
 struct InnerTopicProducer {
+    config: Arc<TopicProducerConfig>,
     topic: String,
     spu_pool: Arc<SpuPool>,
-    partitioner: Box<dyn Partitioner + Send + Sync>,
     record_accumulator: RecordAccumulator,
     producer_pool: Arc<ProducerPool>,
 }
@@ -177,7 +176,10 @@ impl InnerTopicProducer {
 
         let key = record.key.as_ref().map(|k| k.as_ref());
         let value = record.value.as_ref();
-        let partition = self.partitioner.partition(&partition_config, key, value);
+        let partition = self
+            .config
+            .partitioner
+            .partition(&partition_config, key, value);
 
         if let Some(error) = self.producer_pool.last_error(partition).await {
             return Err(error.into());
@@ -282,7 +284,7 @@ impl TopicProducer {
         spu_pool: Arc<SpuPool>,
         config: TopicProducerConfig,
     ) -> Result<Self> {
-        let partitioner = config.partitioner;
+        let config = Arc::new(config);
         let topics = spu_pool.metadata.topics();
         let topic_spec = topics
             .lookup_by_key(&topic)
@@ -324,17 +326,17 @@ impl TopicProducer {
         let record_accumulator =
             RecordAccumulator::new(config.batch_size, partition_count, compression);
         let producer_pool = ProducerPool::shared(
+            config.clone(),
             topic.clone(),
             spu_pool.clone(),
             record_accumulator.batches(),
-            config.linger,
         );
 
         Ok(Self {
             inner: Arc::new(InnerTopicProducer {
+                config,
                 topic,
                 spu_pool,
-                partitioner,
                 producer_pool,
                 record_accumulator,
             }),

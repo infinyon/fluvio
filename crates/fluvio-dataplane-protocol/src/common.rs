@@ -1,5 +1,6 @@
 use std::convert::TryFrom;
 use std::fmt;
+use std::str::FromStr;
 
 use crate::derive::{Encoder, Decoder};
 
@@ -7,7 +8,7 @@ pub type Offset = i64;
 pub type Size = u32;
 pub type Size64 = u64;
 
-#[derive(Debug, Encoder, Decoder, Clone)]
+#[derive(Debug, Encoder, Decoder, Clone, Copy)]
 #[fluvio(encode_discriminant)]
 #[repr(u8)]
 pub enum Isolation {
@@ -19,6 +20,25 @@ impl Default for Isolation {
     fn default() -> Self {
         Isolation::ReadUncommitted
     }
+}
+
+impl FromStr for Isolation {
+    type Err = IsolationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
+        match s.as_str() {
+            "read_committed" | "readcommitted" => Ok(Self::ReadCommitted),
+            "read_uncommitted" | "readuncommitted" => Ok(Self::ReadUncommitted),
+            _ => Err(Self::Err::UnrecognizedIsolation(s)),
+        }
+    }
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum IsolationError {
+    #[error("unrecognized isolation: {0}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)")]
+    UnrecognizedIsolation(String),
 }
 
 #[derive(Hash, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Encoder, Decoder)]
