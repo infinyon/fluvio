@@ -37,6 +37,7 @@ use crossterm::{
 use crate::render::ProgressRenderer;
 use crate::{CliError, Result};
 use crate::common::FluvioExtensionMetadata;
+use crate::parse_isolation;
 use self::record_format::{
     format_text_record, format_binary_record, format_dynamic_record, format_raw_record,
     format_json, format_basic_table_record, format_fancy_table_record,
@@ -175,7 +176,7 @@ pub struct ConsumeOpt {
     /// Isolation level that consumer must respect.
     /// Supported values: read_committed (ReadCommitted) - consume only committed records,
     /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
-    #[clap(long)]
+    #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
 }
 

@@ -19,6 +19,7 @@ mod derivedstream;
 mod render;
 
 pub(crate) use error::{Result, CliError};
+use fluvio::dataplane::Isolation;
 
 use fluvio_extension_common as common;
 
@@ -451,5 +452,13 @@ mod root {
         }
 
         Ok(())
+    }
+}
+
+pub(crate) fn parse_isolation(s: &str) -> Result<Isolation, String> {
+    match s {
+        "read_committed" | "ReadCommitted" | "readCommitted" | "readcommitted" => Ok(Isolation::ReadCommitted),
+        "read_uncommitted" | "ReadUncommitted" | "readUncommitted" | "readuncommitted" => Ok(Isolation::ReadUncommitted),
+        _ => Err(format!("unrecognized isolation: {}. Supported: read_committed (ReadCommitted), read_uncommitted (ReadUncommitted)", s)),
     }
 }

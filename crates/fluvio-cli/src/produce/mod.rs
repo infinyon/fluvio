@@ -15,6 +15,7 @@ use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
 use crate::common::FluvioExtensionMetadata;
 use crate::Result;
+use crate::parse_isolation;
 
 // -----------------------------------
 // CLI Options
@@ -68,7 +69,7 @@ pub struct ProduceOpt {
     /// Isolation level that producer must respect.
     /// Supported values: read_committed (ReadCommitted) - wait for records to be committed before response,
     /// read_uncommitted (ReadUncommitted) - just wait for leader to accept records.
-    #[clap(long)]
+    #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
 }
 
