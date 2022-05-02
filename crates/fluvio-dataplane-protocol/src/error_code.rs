@@ -253,7 +253,7 @@ mod test {
                 fluvio_protocol::Encoder::encode(&$variant, &mut data, $version)
                     .expect(&format!("Failed to encode {}", stringify!($variant)));
                 assert_eq!(
-                    data,
+                    data[..2],
                     ($tag as i16).to_be_bytes(),
                     "Data check failed for {}",
                     stringify!($variant)
@@ -277,7 +277,14 @@ mod test {
         assert_tag!(ErrorCode::None, 0, 0);
         assert_tag!(ErrorCode::OffsetOutOfRange, 1, 0);
         assert_tag!(ErrorCode::NotLeaderForPartition, 6, 0);
-        assert_tag!(ErrorCode::RequestTimedOut, 7, 0);
+        assert_tag!(
+            ErrorCode::RequestTimedOut {
+                kind: RequestKind::Produce,
+                timeout_ms: 1
+            },
+            7,
+            0
+        );
         assert_tag!(ErrorCode::MessageTooLarge, 10, 0);
         assert_tag!(ErrorCode::PermissionDenied, 13, 0);
         assert_tag!(ErrorCode::StorageError, 56, 0);
