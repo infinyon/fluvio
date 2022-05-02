@@ -4,6 +4,7 @@
 //! Error code definitions described here.
 //!
 
+use std::fmt::{Display, Formatter};
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 use fluvio_protocol::{Encoder, Decoder};
 use crate::smartmodule::SmartModuleRuntimeError;
@@ -36,8 +37,8 @@ pub enum ErrorCode {
     #[error("the given SPU is not the leader for the partition")]
     NotLeaderForPartition,
     #[fluvio(tag = 7)]
-    #[error("the request timed out.")]
-    RequestTimedOut,
+    #[error("the request '{kind}' exceeded the timeout {timeout_ms} ms")]
+    RequestTimedOut { timeout_ms: i32, kind: RequestKind },
     #[fluvio(tag = 10)]
     #[error("the message is too large to send")]
     MessageTooLarge,
@@ -213,6 +214,24 @@ pub enum LegacySmartModuleError {
 impl Default for LegacySmartModuleError {
     fn default() -> Self {
         Self::Runtime(Default::default())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[non_exhaustive]
+pub enum RequestKind {
+    Produce,
+}
+
+impl Default for RequestKind {
+    fn default() -> Self {
+        RequestKind::Produce
+    }
+}
+
+impl Display for RequestKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
     }
 }
 

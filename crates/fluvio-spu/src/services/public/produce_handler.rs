@@ -7,7 +7,7 @@ use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
 use tracing::instrument;
 
-use dataplane::{ErrorCode, Isolation, Offset};
+use dataplane::{ErrorCode, Isolation, Offset, RequestKind};
 use dataplane::produce::{
     ProduceResponse, TopicProduceResponse, PartitionProduceResponse, PartitionProduceData,
     DefaultProduceRequest, DefaultTopicRequest,
@@ -222,7 +222,10 @@ async fn wait_for_acks(
                     },
                     _ = timer => {
                         debug!(?partition.replica_id, "response timeout exceeded");
-                        partition.error_code = ErrorCode::RequestTimedOut;
+                        partition.error_code = ErrorCode::RequestTimedOut {
+                            kind: RequestKind::Produce,
+                            timeout_ms
+                        };
                     },
                 }
             }

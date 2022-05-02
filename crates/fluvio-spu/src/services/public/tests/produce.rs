@@ -5,7 +5,7 @@ use dataplane::{
         DefaultProduceRequest, DefaultPartitionRequest, TopicProduceData, PartitionProduceData,
     },
     api::RequestMessage,
-    ErrorCode,
+    ErrorCode, RequestKind,
 };
 use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
 use fluvio_future::timer::sleep;
@@ -253,7 +253,10 @@ async fn test_produce_request_timed_out() {
     assert_eq!(produce_response.responses[0].partitions.len(), 1);
     assert_eq!(
         produce_response.responses[0].partitions[0].error_code,
-        ErrorCode::RequestTimedOut
+        ErrorCode::RequestTimedOut {
+            timeout_ms: 300,
+            kind: RequestKind::Produce
+        }
     );
 
     server_end_event.notify();
@@ -326,7 +329,7 @@ async fn test_produce_waiting_replication() {
         .base_port(14030_u16)
         .generate("produce_waiting_replication");
 
-    let (leader_ctx, _) = config.leader_replica().await;
+    let (leader_ctx, leader_replica) = config.leader_replica().await;
     let public_addr = config.leader_public_addr();
 
     let public_server_end_event =
@@ -379,6 +382,9 @@ async fn test_produce_waiting_replication() {
         produce_response.responses[0].partitions[0].error_code,
         ErrorCode::None
     );
+    assert_eq!(produce_response.responses[0].partitions[0].base_offset, 0);
+    assert_eq!(leader_replica.hw(), 5);
+    assert_eq!(leader_replica.leo(), 5);
 
     public_server_end_event.notify();
     private_server_end_event.notify();
