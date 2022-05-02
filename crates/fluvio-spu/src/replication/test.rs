@@ -12,7 +12,7 @@ use fluvio_future::timer::sleep;
 use flv_util::fixture::ensure_clean_dir;
 use fluvio_types::SpuId;
 use fluvio_controlplane_metadata::partition::{Replica};
-use fluvio_controlplane_metadata::spu::{SpuSpec};
+use fluvio_controlplane_metadata::spu::{IngressAddr, IngressPort, SpuSpec};
 use dataplane::fixture::{create_recordset};
 
 use crate::core::{DefaultSharedGlobalContext, GlobalContext};
@@ -42,7 +42,7 @@ static MAX_WAIT_REPLICATION: Lazy<u64> = Lazy::new(|| {
 });
 
 #[derive(Builder, Debug)]
-struct TestConfig {
+pub(crate) struct TestConfig {
     #[builder(setter(into), default = "5001")]
     base_id: SpuId,
     #[builder(setter(into), default = "1")]
@@ -82,9 +82,13 @@ impl TestConfig {
         self.base_port
     }
 
+    fn leader_public_port(&self) -> u16 {
+        self.base_port + 1
+    }
+
     fn follower_port(&self, follower_index: u16) -> u16 {
         assert!(follower_index < self.followers);
-        self.base_port + 1 + follower_index
+        self.base_port + 2 + follower_index
     }
 
     fn follower_id(&self, follower_index: u16) -> SpuId {
@@ -93,11 +97,14 @@ impl TestConfig {
     }
 
     fn spu_specs(&self) -> Vec<SpuSpec> {
-        let mut specs = vec![SpuSpec::new_private_addr(
-            self.base_id,
-            self.leader_port(),
-            HOST.to_owned(),
-        )];
+        let mut leader_spec =
+            SpuSpec::new_private_addr(self.base_id, self.leader_port(), HOST.to_owned());
+        leader_spec.public_endpoint = IngressPort {
+            port: self.leader_public_port(),
+            ingress: vec![IngressAddr::from_host(HOST.to_owned())],
+            ..Default::default()
+        };
+        let mut specs = vec![leader_spec];
 
         for i in 0..self.followers {
             specs.push(SpuSpec::new_private_addr(
@@ -119,7 +126,11 @@ impl TestConfig {
     }
 
     pub fn leader_addr(&self) -> String {
-        format!("{}:{}", HOST, self.base_port)
+        format!("{}:{}", HOST, self.leader_port())
+    }
+
+    pub fn leader_public_addr(&self) -> String {
+        format!("{}:{}", HOST, self.leader_public_port())
     }
 
     /// create new context with SPU populated
@@ -140,6 +151,8 @@ impl TestConfig {
         let replica = self.replica();
 
         let gctx = self.leader_ctx().await;
+        gctx.replica_localstore().sync_all(vec![replica.clone()]);
+
         let leader_replica = gctx
             .leaders_state()
             .add_leader_replica(&gctx, replica.clone(), gctx.status_update_owned())
@@ -166,6 +179,8 @@ impl TestConfig {
     ) {
         let replica = self.replica();
         let gctx = self.follower_ctx(follower_index).await;
+        gctx.replica_localstore().sync_all(vec![replica.clone()]);
+
         gctx.followers_state_owned()
             .add_replica(&gctx, replica.clone())
             .await
@@ -182,7 +197,7 @@ impl TestConfig {
 }
 
 impl TestConfigBuilder {
-    fn generate(&mut self, test_dir: &str) -> TestConfig {
+    pub(crate) fn generate(&mut self, test_dir: &str) -> TestConfig {
         let mut test_config = self.build().unwrap();
         let test_path = test_config.base_dir.join(test_dir);
         ensure_clean_dir(&test_path);
@@ -559,8 +574,8 @@ async fn test_replication2_promote() {
 async fn test_replication_dispatch_in_sequence() {
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13020_u16)
-        .generate("replication2_new");
+        .base_port(13060_u16)
+        .generate("replication_dispatch_in_sequence");
 
     let leader_gctx = builder.leader_ctx().await;
 
@@ -632,8 +647,8 @@ async fn test_replication_dispatch_out_of_sequence() {
     //std::env::set_var("FLV_SHORT_RECONCILLATION", "1");
     let builder = TestConfig::builder()
         .followers(1_u16)
-        .base_port(13020_u16)
-        .generate("replication2_new");
+        .base_port(13070_u16)
+        .generate("replication_dispatch_out_of_sequence");
 
     let replica = builder.replica();
 

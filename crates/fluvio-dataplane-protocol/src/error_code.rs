@@ -4,6 +4,7 @@
 //! Error code definitions described here.
 //!
 
+use std::fmt::{Display, Formatter};
 use flv_util::string_helper::upper_cammel_case_to_sentence;
 use fluvio_protocol::{Encoder, Decoder};
 use crate::smartmodule::SmartModuleRuntimeError;
@@ -35,6 +36,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 6)]
     #[error("the given SPU is not the leader for the partition")]
     NotLeaderForPartition,
+    #[fluvio(tag = 7)]
+    #[error("the request '{kind}' exceeded the timeout {timeout_ms} ms")]
+    RequestTimedOut { timeout_ms: i32, kind: RequestKind },
     #[fluvio(tag = 10)]
     #[error("the message is too large to send")]
     MessageTooLarge,
@@ -213,6 +217,24 @@ impl Default for LegacySmartModuleError {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Encoder, Decoder)]
+#[non_exhaustive]
+pub enum RequestKind {
+    Produce,
+}
+
+impl Default for RequestKind {
+    fn default() -> Self {
+        RequestKind::Produce
+    }
+}
+
+impl Display for RequestKind {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 // -----------------------------------
 // Unit Tests
 // -----------------------------------
@@ -231,7 +253,7 @@ mod test {
                 fluvio_protocol::Encoder::encode(&$variant, &mut data, $version)
                     .expect(&format!("Failed to encode {}", stringify!($variant)));
                 assert_eq!(
-                    data,
+                    data[..2],
                     ($tag as i16).to_be_bytes(),
                     "Data check failed for {}",
                     stringify!($variant)
@@ -255,6 +277,14 @@ mod test {
         assert_tag!(ErrorCode::None, 0, 0);
         assert_tag!(ErrorCode::OffsetOutOfRange, 1, 0);
         assert_tag!(ErrorCode::NotLeaderForPartition, 6, 0);
+        assert_tag!(
+            ErrorCode::RequestTimedOut {
+                kind: RequestKind::Produce,
+                timeout_ms: 1
+            },
+            7,
+            0
+        );
         assert_tag!(ErrorCode::MessageTooLarge, 10, 0);
         assert_tag!(ErrorCode::PermissionDenied, 13, 0);
         assert_tag!(ErrorCode::StorageError, 56, 0);

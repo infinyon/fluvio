@@ -8,6 +8,7 @@ use crate::derive::FluvioDefault;
 
 use crate::api::Request;
 use crate::record::RecordSet;
+use crate::Isolation;
 
 use super::ProduceResponse;
 
@@ -29,12 +30,27 @@ where
     /// leader and -1 for the full ISR.
     pub acks: i16,
 
-    /// The timeout to await a response in miliseconds.
+    /// The timeout to await a response in milliseconds.
     pub timeout_ms: i32,
 
     /// Each topic to produce to.
     pub topics: Vec<TopicProduceData<R>>,
     pub data: PhantomData<R>,
+}
+
+impl<R> ProduceRequest<R>
+where
+    R: Encoder + Decoder + Default + Debug,
+{
+    /// Get isolation from `acks`. Possible `acks` values: -1, 0, 1.
+    /// -1 is mapped to `ReadCommitted`.
+    /// 0, 1 are mapped to `ReadUncommitted`.
+    pub fn isolation(&self) -> Isolation {
+        match self.acks {
+            acks if acks < 0 => Isolation::ReadCommitted,
+            _ => Isolation::ReadUncommitted,
+        }
+    }
 }
 
 impl<R> Request for ProduceRequest<R>

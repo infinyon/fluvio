@@ -315,8 +315,8 @@ where
         &self,
         records: &mut RecordSet<R>,
         notifiers: &FollowerNotifier,
-    ) -> Result<i64, StorageError> {
-        let base_offset = self
+    ) -> Result<(Offset, Offset), StorageError> {
+        let offsets = self
             .storage
             .write_record_set(records, self.in_sync_replica == 1)
             .await?;
@@ -324,7 +324,7 @@ where
         self.notify_followers(notifiers).await;
         self.update_status().await;
 
-        Ok(base_offset)
+        Ok(offsets)
     }
 
     async fn notify_followers(&self, notifier: &FollowerNotifier) {
