@@ -539,7 +539,6 @@ mod test {
     use crate::batch::Batch;
     use super::BatchHeader;
     use super::BATCH_HEADER_SIZE;
-    use super::memory::MemoryBatch;
 
     #[test]
     fn test_batch_size() {
@@ -762,7 +761,34 @@ mod test {
     }
 
     #[test]
+    fn test_into_consumer_records_iter() {
+        let mut batch = Batch::from(vec![
+            Record::default(),
+            Record::default(),
+            Record::default(),
+        ]);
+
+        batch.header.first_timestamp = 1_500_000_000;
+        let partition_id = 1;
+
+        let consumer_records = batch
+            .into_consumer_records_iter(partition_id)
+            .collect::<Vec<ConsumerRecord>>();
+        assert_eq!(consumer_records.len(), 3);
+        assert_eq!(consumer_records[0].offset(), 0);
+        assert_eq!(consumer_records[1].offset(), 1);
+        assert_eq!(consumer_records[2].offset(), 2);
+
+        consumer_records.iter().for_each(|record| {
+            assert_eq!(record.timestamp(), 1_500_000_000);
+            assert_eq!(record.partition, partition_id);
+        });
+    }
+
+    #[test]
     fn test_memory_batch() {
+        use super::memory::MemoryBatch;
+
         let record = Record::from(("key", "value"));
         let size = record.write_size(0);
 

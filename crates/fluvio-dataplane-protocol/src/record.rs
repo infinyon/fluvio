@@ -711,6 +711,46 @@ mod test {
         );
         assert!(decoded.key.is_none());
     }
+
+    #[test]
+    fn test_consumer_record_no_timestamp() {
+        let record = ConsumerRecord::<Record<RecordData>> {
+            timestamp_base: NO_TIMESTAMP,
+            offset: 0,
+            partition: 0,
+            record: Default::default(),
+        };
+
+        assert_eq!(record.timestamp(), NO_TIMESTAMP);
+        let record = ConsumerRecord::<Record<RecordData>> {
+            timestamp_base: 0,
+            offset: 0,
+            partition: 0,
+            record: Default::default(),
+        };
+        assert_eq!(record.timestamp(), NO_TIMESTAMP);
+    }
+
+    #[test]
+    fn test_consumer_record_timestamp() {
+        let record = ConsumerRecord::<Record<RecordData>> {
+            timestamp_base: 1_000_000_000,
+            offset: 0,
+            partition: 0,
+            record: Default::default(),
+        };
+
+        assert_eq!(record.timestamp(), 1_000_000_000);
+        let mut memory_record = Record::<RecordData>::default();
+        memory_record.preamble.timestamp_delta = 800;
+        let record = ConsumerRecord::<Record<RecordData>> {
+            timestamp_base: 1_000_000_000,
+            record: memory_record,
+            offset: 0,
+            partition: 0,
+        };
+        assert_eq!(record.timestamp(), 1_000_000_800);
+    }
 }
 
 #[cfg(feature = "file")]
