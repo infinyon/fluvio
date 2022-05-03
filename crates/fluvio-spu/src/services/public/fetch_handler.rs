@@ -104,7 +104,7 @@ async fn handle_fetch_partition(
         .read_records(
             fetch_offset,
             fetch_request.max_bytes as u32,
-            fetch_request.isolation_level.clone(),
+            fetch_request.isolation_level,
         )
         .await
     {

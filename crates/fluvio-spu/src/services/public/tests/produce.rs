@@ -5,7 +5,7 @@ use dataplane::{
         DefaultProduceRequest, DefaultPartitionRequest, TopicProduceData, PartitionProduceData,
     },
     api::RequestMessage,
-    ErrorCode, RequestKind,
+    ErrorCode, RequestKind, Isolation,
 };
 use fluvio_controlplane_metadata::{partition::Replica, topic::CompressionAlgorithm};
 use fluvio_future::timer::sleep;
@@ -226,8 +226,8 @@ async fn test_produce_request_timed_out() {
         .expect("filter records");
 
     let mut produce_request = DefaultProduceRequest {
-        acks: -1,
-        timeout_ms: 300,
+        isolation: Isolation::ReadCommitted,
+        timeout: Duration::from_millis(300),
         ..Default::default()
     };
 
@@ -288,8 +288,8 @@ async fn test_produce_not_waiting_replication() {
         .expect("filter records");
 
     let mut produce_request = DefaultProduceRequest {
-        acks: 1,
-        timeout_ms: 300,
+        isolation: Isolation::ReadUncommitted,
+        timeout: Duration::from_millis(300),
         ..Default::default()
     };
 
@@ -353,8 +353,8 @@ async fn test_produce_waiting_replication() {
         .expect("filter records");
 
     let mut produce_request = DefaultProduceRequest {
-        acks: -1,
-        timeout_ms: 10000,
+        isolation: Isolation::ReadCommitted,
+        timeout: Duration::from_millis(10000),
         ..Default::default()
     };
 

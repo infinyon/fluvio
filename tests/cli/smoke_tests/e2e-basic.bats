@@ -41,6 +41,14 @@ setup_file() {
     export TOPIC_NAME_8
     debug_msg "Topic name: $TOPIC_NAME_8"
 
+    TOPIC_NAME_9=$(random_string)
+    export TOPIC_NAME_9
+    debug_msg "Topic name: $TOPIC_NAME_9"
+
+    TOPIC_NAME_10=$(random_string)
+    export TOPIC_NAME_10
+    debug_msg "Topic name: $TOPIC_NAME_10"
+
     MESSAGE="$(random_string 7)"
     export MESSAGE
     debug_msg "$MESSAGE"
@@ -65,6 +73,12 @@ setup_file() {
 
     BATCH_MESSAGE="$MESSAGE-BATCH_MESSAGE"
     export BATCH_MESSAGE
+
+    READ_COMMITTED_MESSAGE="$MESSAGE-READ_COMMITTED_MESSAGE"
+    export READ_COMMITTED_MESSAGE
+
+    READ_UNCOMMITTED_MESSAGE="$MESSAGE-READ_UNCOMMITTED_MESSAGE"
+    export READ_UNCOMMITTED_MESSAGE
 }
 
 teardown_file() {
@@ -90,6 +104,10 @@ teardown_file() {
     assert_success
     run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_8"
     assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_9"
+    assert_success
+    run timeout 15s "$FLUVIO_BIN" topic create "$TOPIC_NAME_10"
+    assert_success
 }
 
 # Produce message 
@@ -109,6 +127,10 @@ teardown_file() {
     run bash -c 'echo -e "$LINGER_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_7" --linger 0s'
     assert_success
     run bash -c 'echo -e "$BATCH_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_8" --batch-size 100'
+    assert_success
+    run bash -c 'echo -e "$READ_COMMITTED_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_9" --isolation read_committed'
+    assert_success
+    run bash -c 'echo -e "$READ_UNCOMMITTED_MESSAGE" | timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME_10" --isolation ReadUncommitted'
     assert_success
 }
 
@@ -157,3 +179,30 @@ teardown_file() {
     assert_success
 }
 
+@test "ReadCommitted Consume ReadCommitted message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_9" -B -d --isolation read_committed
+
+    assert_output --partial "$READ_COMMITTED_MESSAGE"
+    assert_success
+}
+
+@test "ReadUncommitted Consume ReadCommitted message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_9" -B -d --isolation read_uncommitted
+
+    assert_output --partial "$READ_COMMITTED_MESSAGE"
+    assert_success
+}
+
+@test "ReadCommitted Consume ReadUncommitted message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_10" -B -d --isolation ReadCommitted
+
+    assert_output --partial "$READ_UNCOMMITTED_MESSAGE"
+    assert_success
+}
+
+@test "ReadUncommitted Consume ReadUncommitted message" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_10" -B -d --isolation ReadUncommitted
+
+    assert_output --partial "$READ_UNCOMMITTED_MESSAGE"
+    assert_success
+}

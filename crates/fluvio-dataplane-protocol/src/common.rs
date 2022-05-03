@@ -7,7 +7,7 @@ pub type Offset = i64;
 pub type Size = u32;
 pub type Size64 = u64;
 
-#[derive(Debug, Encoder, Decoder, Clone)]
+#[derive(Debug, Encoder, Decoder, Clone, Copy, Eq, PartialEq)]
 #[fluvio(encode_discriminant)]
 #[repr(u8)]
 pub enum Isolation {

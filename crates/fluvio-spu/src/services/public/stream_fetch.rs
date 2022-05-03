@@ -399,11 +399,7 @@ impl StreamFetchHandler {
         // This describes the range of records that can be read in this request
         let read_end_offset = match self
             .leader_state
-            .read_records(
-                starting_offset,
-                self.max_fetch_bytes,
-                self.isolation.clone(),
-            )
+            .read_records(starting_offset, self.max_fetch_bytes, self.isolation)
             .await
         {
             Ok(slice) => {

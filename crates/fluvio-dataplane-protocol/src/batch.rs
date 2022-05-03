@@ -785,6 +785,7 @@ mod test {
         });
     }
 
+    #[cfg(feature = "memory_batch")]
     #[test]
     fn test_memory_batch() {
         use super::memory::MemoryBatch;
