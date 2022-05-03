@@ -82,7 +82,7 @@ pub struct ConsumeOpt {
     /// Provide a template string to print records with a custom format.
     /// See --help for details.
     ///
-    /// Template strings may include the variables {{key}}, {{value}}, {{offset}}, {{partition}} and {{timestamp}}
+    /// Template strings may include the variables {{key}}, {{value}}, {{offset}}, {{partition}} and {{time}}
     /// which will have each record's contents substituted in their place.
     /// Note that timestamp is displayed using RFC3339, is always UTC and ignores system timezone.
     ///
@@ -607,7 +607,7 @@ impl ConsumeOpt {
                     "value": value,
                     "offset": record.offset(),
                     "partition": record.partition(),
-                    "timestamp": timestamp_rfc3339,
+                    "time": timestamp_rfc3339,
                 });
                 templates.render(USER_TEMPLATE, &object).ok()
             }

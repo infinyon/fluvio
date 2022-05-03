@@ -133,7 +133,7 @@ teardown_file() {
 }
 
 @test "Consume message display timestamp using format" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{timestamp}}" -B -d
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{time}}" -B -d
     assert_output --partial "$CURRENT_DATE"
     assert_success
 }
