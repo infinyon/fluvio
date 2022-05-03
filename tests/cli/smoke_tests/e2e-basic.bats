@@ -9,6 +9,9 @@ load "$TEST_HELPER_DIR"/bats-support/load.bash
 load "$TEST_HELPER_DIR"/bats-assert/load.bash
 
 setup_file() {
+    CURRENT_DATE=$(date +%Y-%m)
+    export CURRENT_DATE
+
     TOPIC_NAME=$(random_string)
     export TOPIC_NAME
     debug_msg "Topic name: $TOPIC_NAME"
@@ -150,6 +153,13 @@ teardown_file() {
     assert_output "$MESSAGE_W_HTML_STR"
     assert_success
 }
+
+@test "Consume message display timestamp using format" {
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME_2" --format "{{time}}" -B -d
+    assert_output --partial "$CURRENT_DATE"
+    assert_success
+}
+
 
 # Validate that consume --tail 1, returns only the last record
 @test "Consume with tail" {
