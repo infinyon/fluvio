@@ -22,8 +22,6 @@ use fluvio_future::timer::sleep;
 
 use crate::core::DefaultSharedGlobalContext;
 
-const MAX_TIMEOUT: Duration = Duration::from_secs(30);
-
 struct TopicWriteResult {
     topic: String,
     partitions: Vec<PartitionWriteResult>,
@@ -51,15 +49,14 @@ pub async fn handle_produce_request(
     let (header, produce_request) = request.get_header_request();
     trace!("Handling ProduceRequest: {:#?}", produce_request);
 
-    let isolation = produce_request.isolation();
     let mut topic_results = Vec::with_capacity(produce_request.topics.len());
     for topic_request in produce_request.topics.into_iter() {
         let topic_result = handle_produce_topic(&ctx, topic_request).await;
         topic_results.push(topic_result);
     }
     wait_for_acks(
-        isolation,
-        produce_request.timeout_ms,
+        produce_request.isolation,
+        produce_request.timeout,
         &mut topic_results,
         &ctx,
     )
@@ -171,13 +168,13 @@ fn validate_records<R: BatchRecords>(
     }
 }
 /// For isolation = ReadCommitted wait until the replica's `hw` includes written records offsets or
-/// until `timeout_ms` passes. In case of timeout, the partition response returns `RequestTimedOut`
+/// until `timeout` passes. In case of timeout, the partition response returns `RequestTimedOut`
 /// error code. The timeout is not shared between partitions.
 ///
 /// For isolation = ReadUncommitted - it's no op.
 async fn wait_for_acks(
     isolation: Isolation,
-    timeout_ms: i32,
+    timeout: Duration,
     results: &mut [TopicWriteResult],
     ctx: &DefaultSharedGlobalContext,
 ) {
@@ -212,9 +209,6 @@ async fn wait_for_acks(
                         }
                     }
                 };
-                let timeout = u64::try_from(timeout_ms)
-                    .map(Duration::from_millis)
-                    .unwrap_or(MAX_TIMEOUT);
                 let timer = sleep(timeout);
                 select! {
                     _ = wait_future => {
@@ -224,7 +218,7 @@ async fn wait_for_acks(
                         debug!(?partition.replica_id, "response timeout exceeded");
                         partition.error_code = ErrorCode::RequestTimedOut {
                             kind: RequestKind::Produce,
-                            timeout_ms
+                            timeout_ms: timeout.as_millis() as u64
                         };
                     },
                 }

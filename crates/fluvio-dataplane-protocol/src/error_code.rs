@@ -38,7 +38,7 @@ pub enum ErrorCode {
     NotLeaderForPartition,
     #[fluvio(tag = 7)]
     #[error("the request '{kind}' exceeded the timeout {timeout_ms} ms")]
-    RequestTimedOut { timeout_ms: i32, kind: RequestKind },
+    RequestTimedOut { timeout_ms: u64, kind: RequestKind },
     #[fluvio(tag = 10)]
     #[error("the message is too large to send")]
     MessageTooLarge,

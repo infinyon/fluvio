@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::collections::VecDeque;
 
 use async_lock::{Mutex, RwLock};
-use dataplane::{Isolation, ReplicaKey};
+use dataplane::ReplicaKey;
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
@@ -210,11 +210,8 @@ impl PartitionProducer {
         }
 
         topic_request.partitions.push(partition_request);
-        request.acks = match self.config.isolation {
-            Isolation::ReadUncommitted => 1,
-            Isolation::ReadCommitted => -1,
-        };
-        request.timeout_ms = i32::try_from(self.config.timeout.as_millis()).unwrap_or_default();
+        request.isolation = self.config.isolation;
+        request.timeout = self.config.timeout;
         request.topics.push(topic_request);
         let response = spu_socket.send_receive(request).await?;
 
