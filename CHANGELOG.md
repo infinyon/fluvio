@@ -3,6 +3,7 @@
 ## Platform Version 0.9.25 - UNRELEASED
 * Set timestamp in Records while producing. ([#2288](https://github.com/infinyon/fluvio/issues/2288))
 * Support `ReadCommitted` isolation in SPU for Produce requests [#2336](https://github.com/infinyon/fluvio/pull/2336)
+* Improve error messages and add `--fix` option to `fluvio cluster check` to autofix recoverable errors ([#2308](https://github.com/infinyon/fluvio/issues/2308))
 
 ## Platform Version 0.9.24 - 2022-04-21
 * CLI: Migrate all fluvio crates to `comfy-table` from `prettytable-rs` ([#2285](https://github.com/infinyon/fluvio/issues/2263))
