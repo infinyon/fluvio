@@ -46,7 +46,12 @@ pub enum ClusterCmd {
     #[clap(name = "delete")]
     Delete(DeleteOpt),
 
-    /// Check that all requirements for cluster startup are met
+    /// Check that all requirements for cluster startup are met.
+    ///
+    /// This command is useful to check if user has all the required dependencies and permissions to run
+    /// fluvio on the current Kubernetes context.
+    ///
+    /// It is not intended to be used in scenarios where user does not have access to Kubernetes resources (eg. Cloud)
     #[clap(name = "check")]
     Check(CheckOpt),
 

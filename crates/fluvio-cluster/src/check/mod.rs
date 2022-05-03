@@ -233,6 +233,9 @@ pub enum UnrecoverableCheckStatus {
     #[error("Local Fluvio component still exists")]
     ExistingLocalCluster,
 
+    #[error("Helm client error")]
+    HelmClientError,
+
     /// Other misc
     #[error("Other failure: {0}")]
     Other(String),
@@ -476,9 +479,18 @@ impl ClusterCheck for SysChartCheck {
 
         let helm = HelmClient::new()?;
         // check installed system chart version
-        let sys_charts = helm
+        let sys_charts = match helm
             .get_installed_chart_by_name(SYS_CHART_NAME, None)
-            .map_err(ClusterCheckError::HelmError)?;
+            .map_err(ClusterCheckError::HelmError)
+        {
+            Ok(charts) => charts,
+            Err(helm_error) => {
+                debug!(?helm_error, "helm client error");
+                return Ok(CheckStatus::Unrecoverable(
+                    UnrecoverableCheckStatus::HelmClientError,
+                ));
+            }
+        };
         debug!(charts = sys_charts.len(), "sys charts count");
         if sys_charts.is_empty() {
             Ok(CheckStatus::AutoFixableError {
@@ -862,6 +874,12 @@ impl ClusterChecker {
                                 }
                             }
                         } else {
+                            pb.println(pad_format!(format!(
+                                "{} {} check failed and is auto-fixable but fixer is disabled. Use `--fix` to enable it.",
+                                "❌".bold(),
+                                check.label().italic(),
+                            )));
+
                             failed = true;
                         }
                     }
@@ -871,12 +889,14 @@ impl ClusterChecker {
                     }
                     CheckStatus::Unrecoverable(err) => {
                         debug!("failed: {}", err);
+
                         pb.println(pad_format!(format!(
                             "{} Check {} failed {}",
                             "❌",
                             check.label().italic(),
                             err.to_string().red()
                         )));
+
                         failed = true;
                     }
                 }
