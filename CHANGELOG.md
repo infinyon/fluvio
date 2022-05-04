@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.25 - UNRELEASED
+## Platform Version 0.9.26 - UNRELEASED
+
+## Platform Version 0.9.25 - 2022-05-04
 * Set timestamp in Records while producing. ([#2288](https://github.com/infinyon/fluvio/issues/2288))
 * Support `ReadCommitted` isolation in SPU for Produce requests [#2336](https://github.com/infinyon/fluvio/pull/2336)
 * Improve error messages and add `--fix` option to `fluvio cluster check` to autofix recoverable errors ([#2308](https://github.com/infinyon/fluvio/issues/2308))
