@@ -3,6 +3,7 @@ use std::mem::size_of;
 use std::fmt::Debug;
 use fluvio_compression::CompressionError;
 use fluvio_types::PartitionId;
+use fluvio_compression::CompressionLevel;
 use tracing::trace;
 
 use fluvio_compression::Compression;
@@ -20,7 +21,9 @@ use crate::Size;
 use crate::record::ConsumerRecord;
 use crate::record::Record;
 
-pub const COMPRESSION_CODEC_MASK: i16 = 0x07;
+pub const COMPRESSION_CODEC_MASK: i16 = 0b0000111;
+pub const COMPRESSION_LEVEL_MASK: i16 = 0b1111000;
+pub const COMPRESSION_LEVEL_SHIFT: i8 = 3;
 pub const NO_TIMESTAMP: i64 = -1;
 
 pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
@@ -144,6 +147,10 @@ impl<R> Batch<R> {
         self.get_header().get_compression()
     }
 
+    pub fn get_compression_level(&self) -> Result<CompressionLevel, CompressionError> {
+        self.get_header().get_compression_level()
+    }
+
     /// decode from buf stored in the file
     /// read all excluding records
     pub fn decode_from_file_buf<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
@@ -178,7 +185,8 @@ impl TryFrom<Batch> for Batch<RawRecords> {
         f.records.encode(&mut buf, 0)?;
 
         let compression = f.get_compression()?;
-        let compressed_records = compression.compress(&buf)?;
+        let compression_level = f.get_compression_level()?;
+        let compressed_records = compression.compress(&buf, compression_level)?;
         let records = RawRecords(compressed_records);
 
         Ok(Batch {
@@ -392,7 +400,18 @@ impl BatchHeader {
     fn set_max_time_stamp(&mut self, timestamp: Timestamp) {
         self.max_time_stamp = timestamp;
     }
+
+    fn get_compression_level(&self) -> Result<CompressionLevel, CompressionError> {
+        let level_bits = (self.attributes & COMPRESSION_LEVEL_MASK) >> COMPRESSION_LEVEL_SHIFT;
+        CompressionLevel::try_from(level_bits as i8)
+    }
+
+    pub fn set_compression_level(&mut self, level: CompressionLevel) {
+        let level_bits = ((level as i16) << COMPRESSION_LEVEL_SHIFT) & COMPRESSION_LEVEL_MASK;
+        self.attributes = (self.attributes & !COMPRESSION_LEVEL_MASK) | level_bits;
+    }
 }
+
 impl Default for BatchHeader {
     fn default() -> Self {
         BatchHeader {
@@ -427,17 +446,24 @@ pub mod memory {
     use chrono::Utc;
     pub struct MemoryBatch {
         compression: Compression,
+        compression_level: CompressionLevel,
         write_limit: usize,
         current_size_uncompressed: usize,
         is_full: bool,
         create_time: Timestamp,
         records: Vec<Record>,
     }
+
     impl MemoryBatch {
-        pub fn new(write_limit: usize, compression: Compression) -> Self {
+        pub fn new(
+            write_limit: usize,
+            compression: Compression,
+            compression_level: CompressionLevel,
+        ) -> Self {
             let now = Utc::now().timestamp_millis();
             Self {
                 compression,
+                compression_level,
                 is_full: false,
                 write_limit,
                 create_time: now,
@@ -448,6 +474,10 @@ pub mod memory {
 
         pub(crate) fn compression(&self) -> Compression {
             self.compression
+        }
+
+        pub(crate) fn compression_level(&self) -> CompressionLevel {
+            self.compression_level
         }
 
         /// Add a record to the batch.
@@ -501,6 +531,7 @@ pub mod memory {
         fn from(p_batch: MemoryBatch) -> Self {
             let mut batch = Self::default();
             let compression = p_batch.compression();
+            let compression_level = p_batch.compression_level();
             let records = p_batch.records;
 
             let len = records.len() as i32;
@@ -519,6 +550,7 @@ pub mod memory {
             header.set_max_time_stamp(max_time_stamp);
 
             header.set_compression(compression);
+            header.set_compression_level(compression_level);
 
             *batch.mut_records() = records;
 
@@ -798,6 +830,7 @@ mod test {
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
+            CompressionLevel::default(),
         );
 
         assert!(mb.push_record(record).is_some());
@@ -836,6 +869,25 @@ mod test {
             (200..250).contains(&records_delta[2]),
             "records_delta[2]: {}",
             records_delta[2]
+        );
+    }
+
+    #[test]
+    fn test_encode_decode_compression_config_in_batch_header() {
+        let mut header = BatchHeader::default();
+        header.set_compression(Compression::Gzip);
+        assert_eq!(header.get_compression().unwrap(), Compression::Gzip);
+        header.set_compression(Compression::Snappy);
+        assert_eq!(header.get_compression().unwrap(), Compression::Snappy);
+        header.set_compression_level(CompressionLevel::Level1);
+        assert_eq!(
+            header.get_compression_level().unwrap(),
+            CompressionLevel::Level1
+        );
+        header.set_compression_level(CompressionLevel::Level9);
+        assert_eq!(
+            header.get_compression_level().unwrap(),
+            CompressionLevel::Level9
         );
     }
 }

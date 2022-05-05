@@ -323,8 +323,12 @@ impl TopicProducer {
                 },
             };
 
-        let record_accumulator =
-            RecordAccumulator::new(config.batch_size, partition_count, compression);
+        let record_accumulator = RecordAccumulator::new(
+            config.batch_size,
+            partition_count,
+            compression,
+            config.compression_level.unwrap_or_default(),
+        );
         let producer_pool = ProducerPool::shared(
             config.clone(),
             topic.clone(),

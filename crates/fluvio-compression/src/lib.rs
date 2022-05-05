@@ -58,10 +58,14 @@ impl FromStr for Compression {
 
 impl Compression {
     /// Compress the given data, returning the compressed data
-    pub fn compress(&self, src: &[u8]) -> Result<Vec<u8>, CompressionError> {
+    pub fn compress(
+        &self,
+        src: &[u8],
+        level: CompressionLevel,
+    ) -> Result<Vec<u8>, CompressionError> {
         match *self {
             Compression::None => Ok(src.to_vec()),
-            Compression::Gzip => gzip::compress(src),
+            Compression::Gzip => gzip::compress(src, level),
             Compression::Snappy => snappy::compress(src),
             Compression::Lz4 => lz4::compress(src),
         }
@@ -93,6 +97,107 @@ impl std::fmt::Display for Compression {
             Compression::Gzip => write!(f, "gzip"),
             Compression::Snappy => write!(f, "snappy"),
             Compression::Lz4 => write!(f, "lz4"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[repr(i8)]
+pub enum CompressionLevel {
+    Default = 0,
+    Level1 = 1,
+    Level2 = 2,
+    Level3 = 3,
+    Level4 = 4,
+    Level5 = 5,
+    Level6 = 6,
+    Level7 = 7,
+    Level8 = 8,
+    Level9 = 9,
+}
+
+impl FromStr for CompressionLevel {
+    type Err = CompressionError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use CompressionLevel::*;
+        match s {
+            "0" => Ok(Default),
+            "1" => Ok(Level1),
+            "2" => Ok(Level2),
+            "3" => Ok(Level3),
+            "4" => Ok(Level4),
+            "5" => Ok(Level5),
+            "6" => Ok(Level6),
+            "7" => Ok(Level7),
+            "8" => Ok(Level8),
+            "9" => Ok(Level9),
+            _ => Err(CompressionError::UnknownCompressionLevel(s.into())),
+        }
+    }
+}
+
+impl Default for CompressionLevel {
+    fn default() -> Self {
+        CompressionLevel::Default
+    }
+}
+
+impl TryFrom<i8> for CompressionLevel {
+    type Error = CompressionError;
+
+    fn try_from(v: i8) -> Result<Self, CompressionError> {
+        use CompressionLevel::*;
+        match v {
+            0 => Ok(Default),
+            1 => Ok(Level1),
+            2 => Ok(Level2),
+            3 => Ok(Level3),
+            4 => Ok(Level4),
+            5 => Ok(Level5),
+            6 => Ok(Level6),
+            7 => Ok(Level7),
+            8 => Ok(Level8),
+            9 => Ok(Level9),
+            _ => Err(CompressionError::UnknownCompressionFormat(format!(
+                "i8 representation: {}",
+                v
+            ))),
+        }
+    }
+}
+
+impl TryFrom<CompressionLevel> for flate2::Compression {
+    type Error = CompressionError;
+
+    fn try_from(level: CompressionLevel) -> Result<Self, Self::Error> {
+        let int_level = level as u32;
+        match int_level {
+            int_level if int_level == 0 => Ok(flate2::Compression::default()),
+            int_level if int_level >= 1 && int_level <= 9 => {
+                Ok(flate2::Compression::new(int_level))
+            }
+            _ => Err(CompressionError::UnknownCompressionLevel(format!(
+                "Gzip supports compression levels 0..9, supplied level: {int_level}"
+            ))),
+        }
+    }
+}
+
+impl std::fmt::Display for CompressionLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use CompressionLevel::*;
+        match *self {
+            Default => write!(f, "0"),
+            Level1 => write!(f, "1"),
+            Level2 => write!(f, "2"),
+            Level3 => write!(f, "3"),
+            Level4 => write!(f, "4"),
+            Level5 => write!(f, "5"),
+            Level6 => write!(f, "6"),
+            Level7 => write!(f, "7"),
+            Level8 => write!(f, "8"),
+            Level9 => write!(f, "9"),
         }
     }
 }

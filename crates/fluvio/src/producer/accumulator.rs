@@ -5,7 +5,7 @@ use async_lock::Mutex;
 use async_channel::Sender;
 
 use dataplane::batch::{Batch, memory::MemoryBatch};
-use fluvio_compression::Compression;
+use fluvio_compression::{Compression, CompressionLevel};
 use tracing::trace;
 
 use dataplane::{Offset, ErrorCode};
@@ -27,10 +27,16 @@ pub(crate) struct RecordAccumulator {
     batch_size: usize,
     batches: Arc<HashMap<PartitionId, BatchHandler>>,
     compression: Compression,
+    compression_level: CompressionLevel,
 }
 
 impl RecordAccumulator {
-    pub(crate) fn new(batch_size: usize, partition_n: i32, compression: Compression) -> Self {
+    pub(crate) fn new(
+        batch_size: usize,
+        partition_n: i32,
+        compression: Compression,
+        compression_level: CompressionLevel,
+    ) -> Self {
         let mut batches = HashMap::default();
         for i in 0..partition_n {
             batches.insert(
@@ -42,6 +48,7 @@ impl RecordAccumulator {
             batches: Arc::new(batches),
             batch_size,
             compression,
+            compression_level,
         }
     }
 
@@ -75,7 +82,8 @@ impl RecordAccumulator {
             "Batch is full. Creating a new batch for partition"
         );
 
-        let mut batch = ProducerBatch::new(self.batch_size, self.compression);
+        let mut batch =
+            ProducerBatch::new(self.batch_size, self.compression, self.compression_level);
 
         match batch.push_record(record) {
             Some(push_record) => {
@@ -116,11 +124,16 @@ pub(crate) struct ProducerBatch {
     batch_metadata: Arc<BatchMetadata>,
     batch: MemoryBatch,
 }
+
 impl ProducerBatch {
-    fn new(write_limit: usize, compression: Compression) -> Self {
+    fn new(
+        write_limit: usize,
+        compression: Compression,
+        compression_level: CompressionLevel,
+    ) -> Self {
         let (sender, receiver) = async_channel::bounded(1);
         let batch_metadata = Arc::new(BatchMetadata::new(receiver));
-        let batch = MemoryBatch::new(write_limit, compression);
+        let batch = MemoryBatch::new(write_limit, compression, compression_level);
 
         Self {
             notify: sender,
@@ -209,6 +222,7 @@ mod test {
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
+            CompressionLevel::default(),
         );
 
         assert!(pb.push_record(record.clone()).is_some());
@@ -231,6 +245,7 @@ mod test {
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
+            CompressionLevel::default(),
         );
 
         assert!(pb.push_record(record.clone()).is_some());
@@ -253,6 +268,7 @@ mod test {
                 + Vec::<RawRecords>::default().write_size(0),
             1,
             Compression::None,
+            CompressionLevel::default(),
         );
         let timeout = std::time::Duration::from_millis(200);
 

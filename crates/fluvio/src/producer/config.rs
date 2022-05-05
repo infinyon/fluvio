@@ -3,7 +3,7 @@ use std::time::Duration;
 use derive_builder::Builder;
 use dataplane::Isolation;
 
-use fluvio_compression::Compression;
+use fluvio_compression::{Compression, CompressionLevel};
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
@@ -64,6 +64,11 @@ pub struct TopicProducerConfig {
     /// [`Isolation::ReadUncommitted`] just waits for the leader to accept the message.
     #[builder(default = "default_isolation()")]
     pub(crate) isolation: Isolation,
+    /// Compression level used by Fluvio producer to compress data.
+    /// If there is a topic level compression and it is not compatible with this setting, the producer
+    /// initialization will fail.
+    #[builder(setter(into, strip_option), default)]
+    pub(crate) compression_level: Option<CompressionLevel>,
 }
 
 impl Default for TopicProducerConfig {
@@ -75,6 +80,7 @@ impl Default for TopicProducerConfig {
             compression: None,
             timeout: default_timeout(),
             isolation: default_isolation(),
+            compression_level: None,
         }
     }
 }
