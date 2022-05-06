@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.26 - UNRELEASED
+* Increase default `STORAGE_MAX_BATCH_SIZE` ([#2342](https://github.com/infinyon/fluvio/issues/2342))
 
 ## Platform Version 0.9.25 - 2022-05-04
 * Set timestamp in Records while producing. ([#2288](https://github.com/infinyon/fluvio/issues/2288))
