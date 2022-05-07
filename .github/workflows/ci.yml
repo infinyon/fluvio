@@ -855,7 +855,7 @@ jobs:
 
   k8_cli_cross_compat:
     name: ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} Cluster
-    needs: build_binaries
+    needs: build_image
     #if: false
     runs-on: ${{ matrix.os }}
     strategy:
