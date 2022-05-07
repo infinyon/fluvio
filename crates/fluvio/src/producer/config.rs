@@ -49,10 +49,16 @@ pub struct TopicProducerConfig {
     pub(crate) partitioner: Box<dyn Partitioner + Send + Sync>,
 
     /// Compression algorithm used by Fluvio producer to compress data.
-    /// If there is a topic level compression and it is not compatible with this setting, the producer
-    /// initialization will fail.
+    /// If there is a topic level compression and it is not compatible with this setting,
+    /// the producer initialization will fail.
     #[builder(setter(into, strip_option), default)]
     pub(crate) compression: Option<Compression>,
+
+    /// Compression level used by Fluvio producer to compress data.
+    /// Supported levels: 0 (compression algorithm's default level) or 1-9.
+    /// Only Gzip supports setting a compression level.
+    #[builder(setter(into, strip_option), default)]
+    pub(crate) compression_level: Option<CompressionLevel>,
 
     /// Max time duration that the server is allowed to process the batch.
     #[builder(default = "default_timeout()")]
@@ -64,11 +70,6 @@ pub struct TopicProducerConfig {
     /// [`Isolation::ReadUncommitted`] just waits for the leader to accept the message.
     #[builder(default = "default_isolation()")]
     pub(crate) isolation: Isolation,
-    /// Compression level used by Fluvio producer to compress data.
-    /// If there is a topic level compression and it is not compatible with this setting, the producer
-    /// initialization will fail.
-    #[builder(setter(into, strip_option), default)]
-    pub(crate) compression_level: Option<CompressionLevel>,
 }
 
 impl Default for TopicProducerConfig {
