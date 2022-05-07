@@ -897,7 +897,6 @@ jobs:
   k8_cli_cross_compat:
     name: Latest CLI vs Stable Cluster
     needs: build_binaries
-    if: false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
