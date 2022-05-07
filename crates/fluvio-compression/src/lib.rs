@@ -186,18 +186,6 @@ impl TryFrom<CompressionLevel> for flate2::Compression {
 
 impl std::fmt::Display for CompressionLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use CompressionLevel::*;
-        match *self {
-            Default => write!(f, "0"),
-            Level1 => write!(f, "1"),
-            Level2 => write!(f, "2"),
-            Level3 => write!(f, "3"),
-            Level4 => write!(f, "4"),
-            Level5 => write!(f, "5"),
-            Level6 => write!(f, "6"),
-            Level7 => write!(f, "7"),
-            Level8 => write!(f, "8"),
-            Level9 => write!(f, "9"),
-        }
+        write!(f, "{}", *self as u8)
     }
 }
