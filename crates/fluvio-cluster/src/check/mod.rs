@@ -704,7 +704,7 @@ impl ClusterCheck for LocalClusterCheck {
                 }
             }
             Err(err) => Err(ClusterCheckError::Other(format!(
-                "unabel to check local cluster: {:#?}",
+                "unable to check local cluster: {:#?}",
                 err
             ))),
         }

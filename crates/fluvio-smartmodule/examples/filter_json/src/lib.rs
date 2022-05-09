@@ -23,7 +23,7 @@
 //! {"level":"debug","message":"Deserializing request from client"}
 //! {"level":"debug","message":"Client request deserialized"}
 //! {"level":"debug","message":"Connecting to database"}
-//! {"level":"warn","message":"Client dropped connnection"}
+//! {"level":"warn","message":"Client dropped connection"}
 //! {"level":"info","message":"Accepted incoming connection"}
 //! {"level":"debug","message":"Deserializing request from client"}
 //! {"level":"debug","message":"Client request deserialized"}
@@ -40,7 +40,7 @@
 //! $ fluvio consume application-logs -B --smart-stream=target/wasm32-unknown-unknown/release/fluvio-smartmodule-filter-json.wasm
 //! {"level":"info","message":"Server listening on 0.0.0.0:8000"}
 //! {"level":"info","message":"Accepted incoming connection"}
-//! {"level":"warn","message":"Client dropped connnection"}
+//! {"level":"warn","message":"Client dropped connection}
 //! {"level":"info","message":"Accepted incoming connection"}
 //! {"level":"error","message":"Unable to connect to database"}
 //! ```

@@ -18,7 +18,7 @@ use crate::sockets::Versions;
 
 const DEFAULT_STREAM_QUEUE_SIZE: usize = 10;
 
-/// used for connectiong to spu
+/// used for connecting to spu
 #[cfg_attr(target_arch = "wasm32", async_trait(?Send))]
 #[cfg_attr(not(target_arch = "wasm32"), async_trait)]
 pub trait SpuDirectory {

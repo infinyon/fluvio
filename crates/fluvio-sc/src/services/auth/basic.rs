@@ -68,7 +68,7 @@ impl AuthContext for BasicAuthContext {
 }
 
 /// basic policy module
-/// does imple subtitution
+/// does impl substitution
 mod policy {
 
     use std::fs::read;

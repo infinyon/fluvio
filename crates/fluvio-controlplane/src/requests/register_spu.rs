@@ -66,7 +66,12 @@ impl RegisterSpuResponse {
         }
     }
 
+    #[deprecated = "Replace by failed_registration"]
     pub fn failed_registeration() -> Self {
+        Self::failed_registration()
+    }
+
+    pub fn failed_registration() -> Self {
         RegisterSpuResponse {
             error_code: ErrorCode::SpuRegisterationFailed,
             error_message: None,

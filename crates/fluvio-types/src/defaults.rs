@@ -9,7 +9,9 @@ pub const FLUVIO_CLIENT_MAX_FETCH_BYTES: i32 = 1_048_588;
 // SPU/SC Server Path
 pub const SERVER_CONFIG_BASE_PATH: &str = "/etc";
 pub const SERVER_CONFIG_DIR: &str = "fluvio";
-pub const CONFIG_FILE_EXTENTION: &str = "toml";
+#[deprecated = "Replace by CONFIG_FILE_EXTENSION"]
+pub const CONFIG_FILE_EXTENTION: &str = CONFIG_FILE_EXTENSION;
+pub const CONFIG_FILE_EXTENSION: &str = "toml";
 
 // SC defaults
 pub const SC_DEFAULT_ID: i32 = 1;

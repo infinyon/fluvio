@@ -64,19 +64,19 @@ impl FileRecordsSlice {
         let file = file_util::open(&log_path).await?;
         let metadata = file.metadata().await?;
         let len = metadata.len();
-        let last_modifed_time = metadata.modified()?;
+        let last_modified_time = metadata.modified()?;
 
         debug!(
             path = %log_path.display(),
             len,
-            seconds = last_modifed_time.elapsed().map_err(|err| StorageError::Other(format!("Other: {:#?}",err)))?. as_secs(),
+            seconds = last_modified_time.elapsed().map_err(|err| StorageError::Other(format!("Other: {:#?}",err)))?. as_secs(),
             "opened read only records");
         Ok(FileRecordsSlice {
             base_offset,
             file,
             path: log_path,
             len,
-            last_modified_time: last_modifed_time,
+            last_modified_time,
         })
     }
 

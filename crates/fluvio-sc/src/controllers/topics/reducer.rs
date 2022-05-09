@@ -100,10 +100,10 @@ impl TopicReducer {
 
         // if foregroundDeletion is the finalizer, then we can mark it as delete
         if topic.ctx().item().is_being_deleted() {
-            // set to delte if not it set
+            // set to delete if not it set
             if !topic.status.resolution().is_being_deleted() {
                 debug!(
-                    "topic has forground delete but delet status is not set: {}",
+                    "topic has foreground delete but delete status is not set: {}",
                     topic.key()
                 );
                 let mut status = topic.status().clone();

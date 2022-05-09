@@ -4,7 +4,7 @@ Provide TCP socket wrapper for Fluvio protocol
 
 # build fluvio send utility
 
-build fluvio-send utilty
+build fluvio-send utility
 
 ```cargo build --all-features```
 

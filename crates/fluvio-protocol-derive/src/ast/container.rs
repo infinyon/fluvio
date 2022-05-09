@@ -6,7 +6,7 @@ pub struct ContainerAttributes {
     pub varint: bool,
     pub default: bool,
 
-    /// Encodes a numeric enum by the value of its descriminant
+    /// Encodes a numeric enum by the value of its discriminant
     ///
     /// # Example
     ///

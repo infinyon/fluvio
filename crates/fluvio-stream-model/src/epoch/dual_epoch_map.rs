@@ -228,7 +228,7 @@ where
 
     /// updates the metadata if it is different from existing value
     //  if this return some then it means replace
-    //  otherwise change occured
+    //  otherwise change occurred
     pub fn update(&mut self, key: K, new_value: V) -> Option<ChangeFlag>
     where
         K: Clone,

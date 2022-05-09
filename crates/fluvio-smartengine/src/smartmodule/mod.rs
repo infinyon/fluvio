@@ -309,7 +309,7 @@ impl dyn SmartModuleInstance + '_ {
         join_last_record: Option<&Record>,
     ) -> Result<(Batch, Option<SmartModuleRuntimeError>), Error> {
         let mut smartmodule_batch = Batch::<MemoryRecords>::default();
-        smartmodule_batch.base_offset = -1; // indicate this is unitialized
+        smartmodule_batch.base_offset = -1; // indicate this is uninitialized
         smartmodule_batch.set_offset_delta(-1); // make add_to_offset_delta correctly
 
         let mut total_bytes = 0;

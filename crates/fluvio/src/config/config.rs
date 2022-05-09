@@ -395,7 +395,7 @@ impl Config {
 
     /// look up replica config
     /// this will iterate and find all configuration that can resolve config
-    /// 1) match all config that matches criteria including asterik
+    /// 1) match all config that matches criteria including asterisk
     /// 2) apply in terms of precedent
     pub fn resolve_replica_config(&self, _topic_name: &str, _partition: i32) -> Replica {
         /*

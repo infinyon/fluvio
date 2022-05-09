@@ -401,7 +401,7 @@ impl<B: Default> Record<B> {
         self.value
     }
 
-    /// Consumes this record, returning the inner key if it esists
+    /// Consumes this record, returning the inner key if it exists
     pub fn into_key(self) -> Option<B> {
         self.key
     }
@@ -504,7 +504,7 @@ where
         if (src.remaining() as i64) < len {
             return Err(Error::new(
                 ErrorKind::UnexpectedEof,
-                "not enought for record",
+                "not enough for record",
             ));
         }
         self.preamble.decode(src, version)?;
@@ -591,7 +591,7 @@ mod test {
 
     #[test]
     fn test_decode_encode_record() -> Result<(), IoError> {
-        /* Below is how you generate the vec<u8> for the `data` varible below.
+        /* Below is how you generate the vec<u8> for the `data` variable below.
         let mut record = Record::from(String::from("dog"));
         record.preamble.set_offset_delta(1);
         let mut out = vec![];

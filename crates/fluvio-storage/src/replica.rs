@@ -837,15 +837,15 @@ mod tests {
             .await
             .expect("writing records");
 
-        let mut larget_batch = BatchProducer::builder()
+        let mut largest_batch = BatchProducer::builder()
             .per_record_bytes(200)
             .build()
             .expect("batch")
             .records();
-        assert!(larget_batch.write_size(0) > 100); // ensure we are writing more than 100
+        assert!(largest_batch.write_size(0) > 100); // ensure we are writing more than 100
         assert!(matches!(
             replica
-                .write_recordset(&mut larget_batch, true)
+                .write_recordset(&mut largest_batch, true)
                 .await
                 .unwrap_err(),
             StorageError::BatchTooBig(_)

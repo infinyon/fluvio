@@ -75,7 +75,7 @@ pub async fn try_connect_to_sc(
             elapsed.as_secs()
         ));
         if let Some(fluvio) = try_connect_sc(config, platform_version).await {
-            debug!("Connection to sc suceed!");
+            debug!("Connection to sc succeed!");
             return Some(fluvio);
         } else if attempt < *MAX_SC_LOOP - 1 {
             debug!("Connection failed.  sleeping 10 seconds");

@@ -68,7 +68,7 @@ pub struct FetchablePartitionResponse<R>
 where
     R: Encoder + Decoder + Default + Debug,
 {
-    /// The partiiton index.
+    /// The partition index.
     pub partition_index: i32,
 
     /// The error code, or 0 if there was no fetch error
@@ -78,7 +78,7 @@ where
     pub high_watermark: i64,
 
     /// next offset to fetch in case of filter
-    /// consumer should return that back to SPU, othewise SPU will re-turn same filter records
+    /// consumer should return that back to SPU, otherwise SPU will re-turn same filter records
     #[fluvio(min_version = 11, ignorable)]
     pub next_filter_offset: i64,
 

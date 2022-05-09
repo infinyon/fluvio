@@ -280,7 +280,7 @@ mod object_macro {
 
     /// Macro to convert request with generic signature with ObjectAPI which is non generic which then can be transported
     /// over network.
-    /// This conversion is possible because ObjectAPI (ex: ObjectApiListRequst) is built on Enum with matching object
+    /// This conversion is possible because ObjectAPI (ex: ObjectApiListRequest) is built on Enum with matching object
     /// which make it possible to convert ListRequest<TopicSpec> => ObjectApiListRequest::Topic(req)
     /// This should generate code such as:
     /// impl From<WatchRequest<TopicSpec>> for ObjectApiWatchRequest {

@@ -267,7 +267,7 @@
 * Fix stream fetch ([#769](https://github.com/infinyon/fluvio/pull/769))
 * Limit for batchsize ([#787](https://github.com/infinyon/fluvio/pull/787))
 * Protocol updates ([#752](https://github.com/infinyon/fluvio/pull/752))
-* Socket close events propigate to client ([infinyon/fluvio-socket#22](https://github.com/infinyon/fluvio-socket/pull/22))
+* Socket close events propagate to client ([infinyon/fluvio-socket#22](https://github.com/infinyon/fluvio-socket/pull/22))
 * Fix sha256 has in `fluvio version` ([#740](https://github.com/infinyon/fluvio/pull/740))
 * Implement flush policy to flush on a delay time after writes ([#694](https://github.com/infinyon/fluvio/pull/694))
 * Create basedir during `fluvio install` if missing ([#739](https://github.com/infinyon/fluvio/pull/739))
@@ -313,7 +313,7 @@
 * Pluggable Authorization Framework with simple RBAC
 * TLS endpoint for SC and SPU
 * Connection multiplexing
-* Support Rasberry Pi
+* Support Raspberry Pi
 * Use tracing instead of logger
 * Github Action to test Platform
 * K8: Enforce resource limit on Kubernetes

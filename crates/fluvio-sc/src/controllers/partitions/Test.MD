@@ -11,7 +11,7 @@
   - Topic should have replica map with 2 replicas.
     - Resolution should be Ok
   - 1 Partition should be created.
-    - Should have Spec wiht leader and 2 replicas.
+    - Should have Spec with leader and 2 replicas.
     - Status 
       - should be Offline
       - should have Leader with offset of -1
@@ -38,7 +38,7 @@
   - Statu's Replica should have value of leader
 
 * Follower up:
-  - Parition with 2 replicas. 
+  - Partition with 2 replicas.
   - Shutdown all SPU. This should set partition status to ElectionNoLeaderFounded
   - Bring up follower SPU.
   - It should do election (doesn't)

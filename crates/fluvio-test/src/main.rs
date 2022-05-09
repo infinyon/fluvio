@@ -186,7 +186,7 @@ fn kill_child_processes(root_process: &Process) {
     sys2.refresh_processes();
     let g_id = root_process.gid;
 
-    let proceses = sys2.processes();
+    let processes = sys2.processes();
 
     fn is_root(process: &Process, r_id: Pid, processes: &HashMap<Pid, Process>) -> bool {
         if let Some(parent_id) = process.parent() {
@@ -202,8 +202,8 @@ fn kill_child_processes(root_process: &Process) {
         }
     }
 
-    for (pid, process) in proceses {
-        if pid != &root_pid && process.gid == g_id && is_root(process, root_pid, proceses) {
+    for (pid, process) in processes {
+        if pid != &root_pid && process.gid == g_id && is_root(process, root_pid, processes) {
             println!("killing child test pid {} name {}", pid, process.name());
             process.kill();
         }

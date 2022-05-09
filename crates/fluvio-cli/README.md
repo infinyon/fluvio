@@ -16,7 +16,7 @@ Fluvio CLI uses Profile files to store most common parameters. This approach off
 
 ## Produce CLI
 
-Produce CLI can ingest one or more log records in a single session. Topic and Partitions are mandatory parmameters, others are optional.
+Produce CLI can ingest one or more log records in a single session. Topic and Partitions are mandatory parameters, others are optional.
 
 ```
 Write log records to a topic/partition
@@ -40,7 +40,7 @@ OPTIONS:
 
 Produce Topic/Partition command should be sent to SC to look-up the location of SPU that hosts the leader. Log records are then sent directly to the SPU.
 
-Produce command can also send log messages to Kafka. Choose any Broker addresss and the system will identify the Broker that hosts the leader and forwards log record accordingly.
+Produce command can also send log messages to Kafka. Choose any Broker address and the system will identify the Broker that hosts the leader and forwards log record accordingly.
 
 Log records sent directly to the SPU and are accepted if SPU is the leader for Topic/Partition; rejected otherwise.
 

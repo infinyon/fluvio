@@ -70,7 +70,7 @@ pub trait ApiMessage: Sized + Default {
         if src.remaining() < size as usize {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
-                "not enought bytes for request message",
+                "not enough bytes for request message",
             ));
         }
 

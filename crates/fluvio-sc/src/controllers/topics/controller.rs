@@ -41,7 +41,7 @@ impl TopicController {
         spawn(controller.dispatch_loop());
     }
 
-    #[instrument(name = "TopicControler", skip(self))]
+    #[instrument(name = "TopicController", skip(self))]
     async fn dispatch_loop(mut self) {
         use std::time::Duration;
 

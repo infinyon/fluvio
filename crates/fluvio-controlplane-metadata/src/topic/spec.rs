@@ -537,7 +537,7 @@ impl From<Vec<(i32, Vec<i32>)>> for PartitionMaps {
 
 impl std::fmt::Display for PartitionMaps {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "partiton map:{})", self.maps.len())
+        write!(f, "partition map:{})", self.maps.len())
     }
 }
 

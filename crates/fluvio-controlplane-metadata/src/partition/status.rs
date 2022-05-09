@@ -147,7 +147,7 @@ impl PartitionStatus {
     where
         P: ElectionPolicy,
     {
-        let mut candiate_spu = None;
+        let mut candidate_spu = None;
         let mut best_score = 0;
 
         for candidate in &self.replicas {
@@ -156,19 +156,19 @@ impl PartitionStatus {
                 if let ElectionScoring::Score(score) =
                     policy.potential_leader_score(candidate, &self.leader)
                 {
-                    if candiate_spu.is_some() {
+                    if candidate_spu.is_some() {
                         if score < best_score {
                             best_score = score;
-                            candiate_spu = Some(candidate.spu);
+                            candidate_spu = Some(candidate.spu);
                         }
                     } else {
                         best_score = score;
-                        candiate_spu = Some(candidate.spu);
+                        candidate_spu = Some(candidate.spu);
                     }
                 }
             }
         }
-        candiate_spu
+        candidate_spu
     }
 
     /// merge status from spu

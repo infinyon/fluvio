@@ -69,11 +69,11 @@ impl ScDispatcher<FileReplica> {
             );
 
             // register and exit on error
-            let status = match self.send_spu_registeration(&mut socket).await {
+            let status = match self.send_spu_registration(&mut socket).await {
                 Ok(status) => status,
                 Err(err) => {
                     print_cli_err!(format!(
-                        "spu registeration failed with sc due to error: {}",
+                        "spu registration failed with sc due to error: {}",
                         err
                     ));
                     false
@@ -212,7 +212,7 @@ impl ScDispatcher<FileReplica> {
         skip(self),
         fields(socket = socket.id())
     )]
-    async fn send_spu_registeration(
+    async fn send_spu_registration(
         &self,
         socket: &mut FluvioSocket,
     ) -> Result<bool, InternalServerError> {

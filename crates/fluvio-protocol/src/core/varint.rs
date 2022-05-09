@@ -39,7 +39,7 @@ where
     Ok(((num >> 1) ^ -(num & 1), shift / 7))
 }
 
-// store varaint
+// store varint
 pub fn variant_encode<T>(buf: &mut T, num: i64) -> Result<(), Error>
 where
     T: BufMut,

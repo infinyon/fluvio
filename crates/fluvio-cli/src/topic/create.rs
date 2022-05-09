@@ -70,7 +70,7 @@ pub struct CreateTopicOpt {
         long = "ignore-rack-assignment",
         conflicts_with = "replica-assignment"
     )]
-    ignore_rack_assigment: bool,
+    ignore_rack_assignment: bool,
 
     /// Replica assignment file
     #[clap(
@@ -126,7 +126,7 @@ impl CreateTopicOpt {
             ReplicaSpec::Computed(TopicReplicaParam {
                 partitions: self.partitions,
                 replication_factor: self.replication as i32,
-                ignore_rack_assignment: self.ignore_rack_assigment,
+                ignore_rack_assignment: self.ignore_rack_assignment,
             })
         };
 
