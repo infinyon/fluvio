@@ -429,7 +429,7 @@ impl Segment<MutLogIndex, MutFileRecords> {
         );
 
         let (write_success, batch_len, end_file_pos) = self.msg_log.write_batch(batch).await?;
-        info!(
+        debug!(
             write_success,
             batch_len, end_file_pos, next_end_offset, "batch written"
         );
