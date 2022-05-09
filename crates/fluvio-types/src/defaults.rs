@@ -3,6 +3,9 @@ pub const PRODUCT_NAME: &str = "fluvio";
 // Fluvio
 pub const FLUVIO_MAX_SIZE_TOPIC_NAME: u8 = 255;
 
+// Client
+pub const FLUVIO_CLIENT_MAX_FETCH_BYTES: i32 = 1_048_588;
+
 // SPU/SC Server Path
 pub const SERVER_CONFIG_BASE_PATH: &str = "/etc";
 pub const SERVER_CONFIG_DIR: &str = "fluvio";
@@ -43,7 +46,7 @@ pub const STORAGE_RETENTION_SECONDS: u32 = 7 * 24 * 3600;
 pub const STORAGE_RETENTION_SECONDS_MIN: u32 = 10; // crd
 pub const STORAGE_FLUSH_WRITE_COUNT: u32 = 1;
 pub const STORAGE_FLUSH_IDLE_MSEC: u32 = 0;
-pub const STORAGE_MAX_BATCH_SIZE: u32 = 2_097_152;
+pub const STORAGE_MAX_BATCH_SIZE: u32 = 33_554_432;
 
 // CLI config
 pub const CLI_PROFILES_DIR: &str = "profiles";

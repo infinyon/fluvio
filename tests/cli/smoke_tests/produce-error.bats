@@ -35,7 +35,7 @@ teardown_file() {
 
 # This should fail due to batch too big
 @test "Produce message with SPU error code" {
-    run bash -c "yes a | tr -d "\n" |head -c 10000000 > $TOPIC_NAME.txt"
+    run bash -c "yes a | tr -d "\n" |head -c 40000000 > $TOPIC_NAME.txt"
     run bash -c 'timeout 15s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 50000000 --raw --file $TOPIC_NAME.txt'
     assert_failure
 }
