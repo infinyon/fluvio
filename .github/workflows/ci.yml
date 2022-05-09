@@ -854,7 +854,7 @@ jobs:
           retention-days: 1
 
   k8_cli_cross_compat:
-    name: ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} Cluster
+    name: CLI x Cluster compatibility - ${{ matrix.cli_version }} vs ${{ matrix.cluster_version }}
     needs: build_image
     #if: false
     runs-on: ${{ matrix.os }}
@@ -937,7 +937,7 @@ jobs:
           ~/.fluvio/bin/fluvio version switch stable
 
       - name: Switch to dev CLI
-        if: matrix.cluster_version == 'dev'
+        if: matrix.cli_version == 'dev'
         run: |
           ~/.fluvio/bin/fluvio version switch dev
 
