@@ -40,7 +40,7 @@ pub async fn handle_offset_update(
                 );
                 OffsetUpdateStatus {
                     session_id: update.session_id,
-                    error: ErrorCode::FetchSessionNotFoud,
+                    error: ErrorCode::FetchSessionNotFound,
                 }
             }
         };

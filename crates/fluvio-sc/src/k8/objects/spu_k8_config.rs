@@ -217,7 +217,7 @@ mod extended {
                                     .with_context(ctx),
                             )
                         }
-                        Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
+                        Err(err) => Err(K8ConvertError::KeyConversionError(IoError::new(
                             ErrorKind::InvalidData,
                             format!("error converting metadata: {:#?}", err),
                         ))),

@@ -379,7 +379,9 @@ mod convert {
                         debug!("skipping: {} {}", S::LABEL, obj.metadata.name);
                         continue;
                     }
-                    K8ConvertError::KeyConvertionError(err) => return Err(err.into()),
+                    #[allow(deprecated)]
+                    K8ConvertError::KeyConversionError(err)
+                    | K8ConvertError::KeyConvertionError(err) => return Err(err.into()),
                     K8ConvertError::Other(err) => return Err(err.into()),
                 },
             };

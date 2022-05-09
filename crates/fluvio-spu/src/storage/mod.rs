@@ -79,8 +79,8 @@ where
     /// listen to offset based on isolation
     pub fn offset_listener(&self, isolation: &Isolation) -> OffsetChangeListener {
         match isolation {
-            Isolation::ReadCommitted => self.hw.change_listner(),
-            Isolation::ReadUncommitted => self.leo.change_listner(),
+            Isolation::ReadCommitted => self.hw.change_listener(),
+            Isolation::ReadUncommitted => self.leo.change_listener(),
         }
     }
 

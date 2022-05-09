@@ -211,7 +211,7 @@ impl TlsConfig {
             info!("using tls anonymous access");
             TlsAcceptor::builder().map_err(|err| err.into_io_error())?
         })
-        .with_certifiate_and_key_from_pem_files(server_crt_path, server_key_path)
+        .with_certificate_and_key_from_pem_files(server_crt_path, server_key_path)
         .map_err(|err| err.into_io_error())?;
 
         Ok(builder.build())

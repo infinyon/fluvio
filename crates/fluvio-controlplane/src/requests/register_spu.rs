@@ -73,7 +73,7 @@ impl RegisterSpuResponse {
 
     pub fn failed_registration() -> Self {
         RegisterSpuResponse {
-            error_code: ErrorCode::SpuRegisterationFailed,
+            error_code: ErrorCode::SpuRegistrationFailed,
             error_message: None,
         }
     }

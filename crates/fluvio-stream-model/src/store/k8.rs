@@ -148,7 +148,10 @@ where
     /// skip, this object, it is not considered valid object  
     Skip(K8Obj<S>),
     /// Converting error
+    #[deprecated = "Replace by KeyConversionError"]
     KeyConvertionError(IoError),
+    /// Converting error
+    KeyConversionError(IoError),
     Other(IoError),
 }
 
@@ -192,13 +195,13 @@ where
                     Ok(MetadataStoreObject::new(key, local_spec, local_status)
                         .with_context(MetadataContext::new(ctx_item, owner)))
                 }
-                Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
+                Err(err) => Err(K8ConvertError::KeyConversionError(IoError::new(
                     ErrorKind::InvalidData,
                     format!("error converting metadata: {:#?}", err),
                 ))),
             }
         }
-        Err(err) => Err(K8ConvertError::KeyConvertionError(IoError::new(
+        Err(err) => Err(K8ConvertError::KeyConversionError(IoError::new(
             ErrorKind::InvalidData,
             format!("error converting key: {:#?}", err),
         ))),

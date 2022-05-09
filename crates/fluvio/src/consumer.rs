@@ -359,7 +359,7 @@ where
                 );
 
                 let publisher = OffsetPublisher::shared(0);
-                let mut listener = publisher.change_listner();
+                let mut listener = publisher.change_listener();
 
                 // update stream with received offsets
                 spawn(async move {

@@ -61,7 +61,7 @@ pub enum ErrorCode {
     SpuError,
     #[fluvio(tag = 1001)]
     #[error("failed to register an SPU")]
-    SpuRegisterationFailed,
+    SpuRegistrationFailed,
     #[fluvio(tag = 1002)]
     #[error("the SPU is offline")]
     SpuOffline,
@@ -106,7 +106,7 @@ pub enum ErrorCode {
     // Stream Fetch error
     #[fluvio(tag = 3002)]
     #[error("the fetch session was not found")]
-    FetchSessionNotFoud,
+    FetchSessionNotFound,
 
     // Legacy SmartModule errors
     #[deprecated(since = "0.9.13")]
@@ -291,7 +291,7 @@ mod test {
 
         // Spu errors
         assert_tag!(ErrorCode::SpuError, 1000, 0);
-        assert_tag!(ErrorCode::SpuRegisterationFailed, 1001, 0);
+        assert_tag!(ErrorCode::SpuRegistrationFailed, 1001, 0);
         assert_tag!(ErrorCode::SpuOffline, 1002, 0);
         assert_tag!(ErrorCode::SpuNotFound, 1003, 0);
         assert_tag!(ErrorCode::SpuAlreadyExists, 1004, 0);
@@ -309,7 +309,7 @@ mod test {
         assert_tag!(ErrorCode::PartitionNotLeader, 3001, 0);
 
         // Stream Fetch error
-        assert_tag!(ErrorCode::FetchSessionNotFoud, 3002, 0);
+        assert_tag!(ErrorCode::FetchSessionNotFound, 3002, 0);
     }
 
     #[test]

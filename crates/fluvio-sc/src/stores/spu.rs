@@ -65,7 +65,7 @@ mod health_check {
         }
 
         pub fn listener(&self) -> OffsetChangeListener {
-            self.event.change_listner()
+            self.event.change_listener()
         }
 
         /// update health check

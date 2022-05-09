@@ -38,7 +38,7 @@
   - Statu's Replica should have value of leader
 
 * Follower up:
-  - Partition with 2 replicas.
+  - Partition with 2 replicas. 
   - Shutdown all SPU. This should set partition status to ElectionNoLeaderFounded
   - Bring up follower SPU.
   - It should do election (doesn't)

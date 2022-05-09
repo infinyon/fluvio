@@ -43,7 +43,7 @@ mod context {
             &0
         }
 
-        /// always return true, this should be changed
+        /// always return tru, this should be changed
         fn is_newer(&self, _another: &Self) -> bool {
             true
         }

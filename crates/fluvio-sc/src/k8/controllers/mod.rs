@@ -97,7 +97,7 @@ mod k8_operator {
                 global_ctx.spgs().clone(),
             );
         });
-        whitelist!(config, "k8_managed_connector_delpoyment", {
+        whitelist!(config, "k8_managed_connector_deployment", {
             ManagedConnectorDeploymentController::start(
                 global_ctx.managed_connectors().clone(),
                 managed_connector_deployments_ctx,
