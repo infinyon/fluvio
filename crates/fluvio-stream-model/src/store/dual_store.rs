@@ -619,7 +619,7 @@ mod test {
             .is_none());
         assert_eq!(topic_store.epoch().await, 1);
 
-        // update spec shold result in increase epoch
+        // update spec should result in increase epoch
         let topic2 =
             DefaultTest::new("t1", TestSpec::default(), TestStatus { up: true }).with_context(3);
         let changes = topic_store
@@ -706,14 +706,14 @@ mod test_notify {
 
             debug!("entering loop");
 
-            let mut spec_listner = self.store.change_listener();
+            let mut spec_listener = self.store.change_listener();
 
             loop {
-                self.sync(&mut spec_listner).await;
+                self.sync(&mut spec_listener).await;
 
                 select! {
-                    _ = spec_listner.listen() => {
-                        debug!("spec change occur: {}",spec_listner.last_change());
+                    _ = spec_listener.listen() => {
+                        debug!("spec change occur: {}",spec_listener.last_change());
                         continue;
                     },
                     _ = self.shutdown.listen() => {
@@ -724,9 +724,9 @@ mod test_notify {
             }
         }
 
-        async fn sync(&mut self, spec_listner: &mut ChangeListener<TestSpec, TestMeta>) {
+        async fn sync(&mut self, spec_listener: &mut ChangeListener<TestSpec, TestMeta>) {
             debug!("sync start");
-            let (update, _delete) = spec_listner.sync_spec_changes().await.parts();
+            let (update, _delete) = spec_listener.sync_spec_changes().await.parts();
             // assert!(update.len() > 0);
             debug!("changes: {}", update.len());
             sleep(Duration::from_millis(10)).await;

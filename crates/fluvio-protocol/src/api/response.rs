@@ -73,7 +73,7 @@ where
         if src.remaining() < size as usize {
             return Err(IoError::new(
                 ErrorKind::UnexpectedEof,
-                "not enought for response",
+                "not enough for response",
             ));
         }
         Self::decode_from(&mut src, version)

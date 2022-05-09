@@ -1,13 +1,13 @@
 [package]
 name = "fluvio-smartengine"
-version = "0.2.9"
+version = "0.2.10"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 keywords = ["streaming", "stream", "queue"]
 categories = ["encoding", "api-bindings"]
 repository = "https://github.com/infinyon/fluvio"
-description = "The offical Fluvio SmartEngine"
+description = "The official Fluvio SmartEngine"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

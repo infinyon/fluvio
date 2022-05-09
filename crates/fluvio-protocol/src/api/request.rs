@@ -64,7 +64,7 @@ where
         Self { header, request }
     }
 
-    /// create from request, header is implicilty created from key in the request
+    /// create from request, header is implicitly created from key in the request
     #[allow(unused)]
     pub fn new_request(request: R) -> Self {
         let mut header = RequestHeader::new(R::API_KEY);
@@ -236,7 +236,7 @@ mod test {
         // API key: API Versions (18)
         // API version: 1
         // correlation id: 1,
-        // strng length 10
+        // string length 10
         // client id: consumer-1
         let data = [
             0x00, 0x12, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00, 0x0a, 0x63, 0x6f, 0x6e, 0x73,

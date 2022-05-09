@@ -54,7 +54,7 @@ fluvio-test <test-name> [FLAGS] [OPTIONS] -- [SUBCOMMAND OPTIONS]
 
 Test runner can be a running in two ways:
 - Create new cluster (local or k8) and run test
-- Run tests againts existing cluster
+- Run tests against existing cluster
 
 > Expected behavior of local clusters that fluvio-test start:
 >

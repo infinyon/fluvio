@@ -243,7 +243,7 @@ impl<T> PackageId<T> {
     /// to see whether they refer to the same package entity, regardless
     /// of version.
     ///
-    /// # Exmaple
+    /// # Example
     ///
     /// ```
     /// # use fluvio_index::{PackageId, MaybeVersion, WithVersion};

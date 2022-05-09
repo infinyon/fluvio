@@ -111,7 +111,7 @@ impl Encoder for ObjectCreateRequest {
 
 // We implement decode signature even thought this will be never called.
 // RequestMessage use decode_object.  But in order to provide backward compatibility, we pretend
-// to provide decode implementation but shoudl be never called
+// to provide decode implementation but should be never called
 impl dataplane::core::Decoder for ObjectCreateRequest {
     fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), std::io::Error>
     where

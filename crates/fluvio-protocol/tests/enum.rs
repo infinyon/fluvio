@@ -463,6 +463,6 @@ impl Default for TestErrorCode {
 #[test]
 fn test_error_code_from_conversion2() {
     let val: i16 = 0;
-    let erro_code: TestErrorCode = val.try_into().expect("convert");
-    assert_eq!(erro_code, TestErrorCode::None);
+    let error_code: TestErrorCode = val.try_into().expect("convert");
+    assert_eq!(error_code, TestErrorCode::None);
 }

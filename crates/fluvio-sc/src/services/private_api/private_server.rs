@@ -70,7 +70,7 @@ impl FluvioService for ScInternalService {
                 } else {
                     status = false;
                     debug!(spu_id,"spu validation failed");
-                    RegisterSpuResponse::failed_registeration()
+                    RegisterSpuResponse::failed_registration()
                 };
 
                 let response = req_msg.new_response(register_res);

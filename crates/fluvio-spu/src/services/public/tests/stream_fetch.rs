@@ -197,7 +197,7 @@ async fn test_stream_fetch_basic() {
             let partition = &response.partition;
             assert_eq!(partition.error_code, ErrorCode::None);
             assert_eq!(partition.high_watermark, 2);
-            assert_eq!(partition.next_offset_for_fetch(), Some(2)); // shoule be same as HW
+            assert_eq!(partition.next_offset_for_fetch(), Some(2)); // should be same as HW
 
             // we got whole batch rather than individual batches
             assert_eq!(partition.records.batches.len(), 1);
@@ -462,7 +462,7 @@ async fn test_stream_fetch_filter(
 
     debug!("first filter fetch");
     let response = stream.next().await.expect("first").expect("response");
-    //debug!("respose: {:#?}", response);
+    //debug!("response: {:#?}", response);
     let stream_id = response.stream_id;
     {
         debug!("received first message");
@@ -471,7 +471,7 @@ async fn test_stream_fetch_filter(
         let partition = &response.partition;
         assert_eq!(partition.error_code, ErrorCode::None);
         assert_eq!(partition.high_watermark, 2);
-        assert_eq!(partition.next_offset_for_fetch(), Some(2)); // shoule be same as HW
+        assert_eq!(partition.next_offset_for_fetch(), Some(2)); // should be same as HW
 
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
@@ -496,7 +496,7 @@ async fn test_stream_fetch_filter(
 
     drop(response);
 
-    // firt write 2 non filterable records
+    // first write 2 non filterable records
     let mut records = RecordSet::default().add(create_batch());
     replica
         .write_record_set(&mut records, ctx.follower_notifier())
@@ -538,7 +538,7 @@ async fn test_stream_fetch_filter(
         let partition = &response.partition;
         assert_eq!(partition.error_code, ErrorCode::None);
         assert_eq!(partition.high_watermark, 10);
-        assert_eq!(partition.next_offset_for_fetch(), Some(10)); // shoule be same as HW
+        assert_eq!(partition.next_offset_for_fetch(), Some(10)); // should be same as HW
 
         // we got whole batch rather than individual batches
         assert_eq!(partition.records.batches.len(), 1);
@@ -918,7 +918,7 @@ async fn test_stream_filter_max(
         .expect("create stream");
 
     let response = stream.next().await.expect("first").expect("response");
-    debug!("respose: {:#?}", response);
+    debug!("response: {:#?}", response);
 
     // received partial because we exceed max bytes
     let stream_id = response.stream_id;
@@ -929,7 +929,7 @@ async fn test_stream_filter_max(
         let partition = &response.partition;
         assert_eq!(partition.error_code, ErrorCode::None);
         assert_eq!(partition.high_watermark, 30);
-        assert_eq!(partition.next_offset_for_fetch(), Some(20)); // shoule be same as HW
+        assert_eq!(partition.next_offset_for_fetch(), Some(20)); // should be same as HW
 
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
@@ -966,7 +966,7 @@ async fn test_stream_filter_max(
         let partition = &response.partition;
         assert_eq!(partition.error_code, ErrorCode::None);
         assert_eq!(partition.high_watermark, 30);
-        assert_eq!(partition.next_offset_for_fetch(), Some(30)); // shoule be same as HW
+        assert_eq!(partition.next_offset_for_fetch(), Some(30)); // should be same as HW
 
         // we got whole batch rather than individual batches
         assert_eq!(partition.records.batches.len(), 1);
@@ -1238,7 +1238,7 @@ async fn test_stream_aggregate_fetch_single_batch(
         let partition = &response.partition;
         assert_eq!(partition.error_code, ErrorCode::None);
         assert_eq!(partition.high_watermark, 5);
-        assert_eq!(partition.next_offset_for_fetch(), Some(5)); // shoule be same as HW
+        assert_eq!(partition.next_offset_for_fetch(), Some(5)); // should be same as HW
 
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];
@@ -1399,7 +1399,7 @@ async fn test_stream_aggregate_fetch_multiple_batch(
         let partition = &response.partition;
         assert_eq!(partition.error_code, ErrorCode::None);
         assert_eq!(partition.high_watermark, 6);
-        assert_eq!(partition.next_offset_for_fetch(), Some(6)); // shoule be same as HW
+        assert_eq!(partition.next_offset_for_fetch(), Some(6)); // should be same as HW
 
         assert_eq!(partition.records.batches.len(), 1);
         let batch = &partition.records.batches[0];

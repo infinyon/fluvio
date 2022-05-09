@@ -223,7 +223,7 @@ impl MutFileRecords {
                 // to end then exit the task
                 while !rx.is_closed() {
                     if let Ok(wt) = rx.recv().await {
-                        // always grab inital write time, but also
+                        // always grab initial write time, but also
                         // guarantee a wait on a write time for flush
                         // for wait times after the first delay runs
                         write_time = wt;
@@ -240,7 +240,7 @@ impl MutFileRecords {
                     // Update to latest accumulated write time
 
                     // could use a mutex for last write time instead?
-                    // could bundle write time with f_sink inside a stuct
+                    // could bundle write time with f_sink inside a struct
                     // held by the existing mutex, but that's more invasive
                     while let Ok(wt) = rx.try_recv() {
                         write_time = wt;
@@ -568,10 +568,10 @@ mod tests {
     // and checks to see when the flush occurs relative to the write count
 
     // Until the flush counts in the delay flush task are sent back to the
-    // main mut_records context, the test is verifid by inspection of the trace
+    // main mut_records context, the test is verified by inspection of the trace
     // RUST_LOG=debug cargo test test_write_records_idle_delay
 
-    // The test still verifies that flushes on writes have occured within the
+    // The test still verifies that flushes on writes have occurred within the
     // expected timeframe
     #[cfg(not(target_os = "macos"))]
     #[allow(unused)]

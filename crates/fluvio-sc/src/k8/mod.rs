@@ -59,7 +59,7 @@ pub fn main_k8_loop(opt: ScOpt) {
 
         println!("Streaming Controller started successfully");
 
-        // do inifinite loop
+        // do infinite loop
         loop {
             sleep(Duration::from_secs(60)).await;
         }

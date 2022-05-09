@@ -1,4 +1,4 @@
-To run dns lookup utiltiy, first set up DNS pod by
+To run dns lookup utility, first set up DNS pod by
 ```kubectl apply -f busybox.yaml```
 
 To get dns entries,

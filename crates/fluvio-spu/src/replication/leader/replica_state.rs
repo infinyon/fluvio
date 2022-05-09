@@ -793,7 +793,7 @@ mod test_leader {
         };
 
         let replica: ReplicaKey = ("test", 1).into();
-        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        // inserting new replica state, this should set follower offset to -1,-1 as initial state
         let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5000]),
             &leader_config,
@@ -815,7 +815,7 @@ mod test_leader {
         let notifier = FollowerNotifier::shared();
 
         let replica: ReplicaKey = ("test", 1).into();
-        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        // inserting new replica state, this should set follower offset to -1,-1 as initial state
         let state: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica, 5000, vec![5001, 5002]),
             &leader_config,
@@ -910,7 +910,7 @@ mod test_leader {
         assert!(notifier.get(&5000).await.is_none());
 
         let replica: ReplicaKey = ("test", 1).into();
-        // inserting new replica state, this should set follower offset to -1,-1 as inital state
+        // inserting new replica state, this should set follower offset to -1,-1 as initial state
         let leader: LeaderReplicaState<MockStorage> = LeaderReplicaState::create(
             Replica::new(replica.clone(), 5000, vec![5000, 5001, 5002]),
             gctx.config(),

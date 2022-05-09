@@ -200,7 +200,7 @@ where
             }
             Some(entry) => entry.position(),
         };
-        debug!(file_postition = position, "found file pos");
+        debug!(file_position = position, "found file pos");
 
         let mut header_stream = self.open_batch_header_stream(position).await?;
         while let Some(batch_pos) = header_stream.next().await {

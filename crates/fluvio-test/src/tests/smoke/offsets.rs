@@ -42,7 +42,7 @@ async fn last_leo(admin: &mut FluvioAdmin, topic: &str) -> i64 {
             .name
             .clone()
             .try_into()
-            .expect("canot parse partition");
+            .expect("cannot parse partition");
 
         if replica.topic == topic && replica.partition == 0 {
             return partition.status.leader.leo;

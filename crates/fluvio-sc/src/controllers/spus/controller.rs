@@ -211,7 +211,7 @@ mod tests {
         let metadata = controller.metadata();
         debug!("metadata: {:#?}", metadata);
 
-        // metdata should container new spu
+        // metadata should container new spu
         assert!(metadata.spus().spu("spu-5000").is_some());
 
 

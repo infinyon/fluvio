@@ -37,7 +37,7 @@ impl SpuStatus {
         }
     }
 
-    /// Checks if resoultion is marked online. true for online, false otherwise
+    /// Checks if resolution is marked online. true for online, false otherwise
     pub fn is_online(&self) -> bool {
         self.resolution == SpuStatusResolution::Online
     }

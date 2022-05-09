@@ -70,7 +70,7 @@ impl FollowerNotifier {
             debug!(
                 spu,
                 %replica,
-                "add notifer");
+                "add notifier");
             spu_ref.add(replica).await;
         } else {
             warn!(spu, "invalid spu");

@@ -132,7 +132,7 @@ impl FluvioAdmin {
                 metadata,
             })
         } else {
-            Err(FluvioError::Other("WatchApi versio not found".to_string()))
+            Err(FluvioError::Other("WatchApi version not found".to_string()))
         }
     }
 
