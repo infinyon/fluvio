@@ -7,7 +7,8 @@ use futures_util::future::{Either, err, join_all};
 use futures_util::stream::{StreamExt, once, iter};
 use futures_util::FutureExt;
 
-use fluvio_types::defaults::{STORAGE_MAX_BATCH_SIZE, FLUVIO_MAX_SIZE_TOPIC_NAME};
+use fluvio_types::defaults::{FLUVIO_CLIENT_MAX_FETCH_BYTES, FLUVIO_MAX_SIZE_TOPIC_NAME};
+use fluvio_types::event::offsets::OffsetPublisher;
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, DefaultStreamFetchResponse, GZIP_WASM_API, SMART_MODULE_API,
     LegacySmartModulePayload, SmartModuleWasmCompressed, WASM_MODULE_API, WASM_MODULE_V2_API,
@@ -19,7 +20,6 @@ use dataplane::Isolation;
 use dataplane::ReplicaKey;
 use dataplane::ErrorCode;
 use dataplane::batch::Batch;
-use fluvio_types::event::offsets::OffsetPublisher;
 
 use crate::FluvioError;
 use crate::offset::{Offset, fetch_offsets};
@@ -582,7 +582,7 @@ static MAX_FETCH_BYTES: Lazy<i32> = Lazy::new(|| {
             + FetchableTopicResponse::<MemoryRecords>::default().write_size(0) as i32
             + FetchablePartitionResponse::<MemoryRecords>::default().write_size(0) as i32
             + FLUVIO_MAX_SIZE_TOPIC_NAME as i32 // using max size of topic name
-            + STORAGE_MAX_BATCH_SIZE.try_into().unwrap_or(1048588)
+            + FLUVIO_CLIENT_MAX_FETCH_BYTES
     });
     max_bytes
 });

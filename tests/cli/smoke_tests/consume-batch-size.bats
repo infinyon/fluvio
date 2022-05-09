@@ -26,15 +26,15 @@ teardown_file() {
 }
 
 @test "Produce message with batch large" {
-    run bash -c "yes abc |head -c 1500000 > $TOPIC_NAME.txt"
-    run bash -c 'timeout 50s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 2097152 --file $TOPIC_NAME.txt --linger 5s'
+    run bash -c "yes abcdefghijklmnopqrstuvwxyz |head -c 15000000 > $TOPIC_NAME.txt"
+    run bash -c 'timeout 65s "$FLUVIO_BIN" produce "$TOPIC_NAME" --batch-size 15000000 --file $TOPIC_NAME.txt --linger 30s'
     assert_success
 }
 
 # Consume message and compare message
 @test "Consume message" {
-    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d
-    assert_output --partial "abc"
+    run timeout 15s "$FLUVIO_BIN" consume "$TOPIC_NAME" -B -d --maxbytes 16000000
+    assert_output --partial "abcdefghijklmnopqrstuvwxyz"
     assert_success
 }
 
