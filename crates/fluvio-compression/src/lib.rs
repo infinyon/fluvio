@@ -26,9 +26,9 @@ impl Default for Compression {
     }
 }
 
-impl TryFrom<i8> for Compression {
+impl TryFrom<u8> for Compression {
     type Error = CompressionError;
-    fn try_from(v: i8) -> Result<Self, CompressionError> {
+    fn try_from(v: u8) -> Result<Self, CompressionError> {
         match v {
             0 => Ok(Compression::None),
             1 => Ok(Compression::Gzip(GzipLevel::default())),
@@ -149,7 +149,7 @@ impl Default for GzipLevel {
     }
 }
 
-impl TryFrom<i8> for CompressionLevel {
+impl TryFrom<i8> for GzipLevel {
     type Error = CompressionError;
 
     fn try_from(v: i8) -> Result<Self, CompressionError> {
