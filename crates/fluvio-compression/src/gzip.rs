@@ -7,7 +7,7 @@ use crate::GzipLevel;
 use crate::error::CompressionError;
 
 pub fn compress(src: &[u8], level: GzipLevel) -> Result<Vec<u8>, CompressionError> {
-    let flate2_level: flate2::Compression = level.try_into()?;
+    let flate2_level: flate2::Compression = level.into();
     let mut encoder = GzEncoder::new(Vec::new(), flate2_level);
     encoder.write_all(src)?;
     Ok(encoder.finish()?)

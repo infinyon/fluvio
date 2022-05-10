@@ -172,20 +172,13 @@ impl TryFrom<i8> for GzipLevel {
     }
 }
 
-impl TryFrom<GzipLevel> for flate2::Compression {
-    type Error = CompressionError;
-
-    fn try_from(level: GzipLevel) -> Result<Self, Self::Error> {
+impl From<GzipLevel> for flate2::Compression {
+    fn from(level: GzipLevel) -> Self {
         let int_level = level as u32;
-        match int_level {
-            int_level if int_level == 0 => Ok(flate2::Compression::default()),
-            int_level if int_level >= 1 && int_level <= 9 => {
-                Ok(flate2::Compression::new(int_level))
-            }
-            _ => Err(CompressionError::UnknownGzipLevel(format!(
-                "Gzip supports compression levels 1..9, supplied level: {int_level}"
-            ))),
+        if int_level < 1 || int_level > 9 {
+            panic!("Invalid GzipLevel discriminant: {int_level}")
         }
+        flate2::Compression::new(int_level)
     }
 }
 
