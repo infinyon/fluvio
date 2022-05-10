@@ -775,47 +775,6 @@ jobs:
           path: diagnostics*.gz
           retention-days: 1
 
-  k8_cli_backward_compat:
-    name: Latest CLI vs Stable Cluster
-    needs: build_image
-    # if: false
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        cluster_version: [stable]
-        cli_version: [latest]
-    steps:
-      - uses: actions/checkout@v2
-      - name: Setup BATS
-        uses: mig4/setup-bats@v1
-        with:
-          bats-version: ${{ env.BATS_VERSION }}
-      - name: Install K3d
-        run: |
-          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | TAG=${{ env.K3D_VERSION }} bash
-          ./k8-util/cluster/reset-k3d.sh
-      - name: Install stable CLI and start Fluvio cluster
-        timeout-minutes: 10
-        run: |
-          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
-          ~/.fluvio/bin/fluvio cluster start
-      - name: Download current fluvio
-        uses: actions/download-artifact@v2
-        with:
-          name: fluvio-x86_64-unknown-linux-musl
-          path: ~/bin
-
-      - name: Print artifacts and mark executable
-        run: |
-          chmod +x ~/bin/fluvio && ~/bin/fluvio version
-          echo "~/bin" >> $GITHUB_PATH
-      - name: Test ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} cluster
-        timeout-minutes: 5
-        run: |
-          make FLUVIO_BIN=~/bin/fluvio SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} cli-platform-cross-version-test
-
   k8_cli_smoke:
     name: CLI smoke tests
     needs: build_image
@@ -893,6 +852,98 @@ jobs:
           name: k8-cli-smoke_log
           path: diagnostics*.gz
           retention-days: 1
+
+  k8_cli_cross_compat:
+    name: CLI x Cluster compatibility - ${{ matrix.cli_version }} vs ${{ matrix.cluster_version }}
+    needs: build_image
+    #if: false
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        cluster_version: [stable, dev]
+        cli_version: [stable, dev]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup BATS
+        uses: mig4/setup-bats@v1
+        with:
+          bats-version: 1.2.1
+      - name: Install K3d
+        run: |
+          curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+          ./k8-util/cluster/reset-k3d.sh
+
+      # Install CLI
+      - name: Install stable CLI and start Fluvio cluster
+        run: |
+          curl -fsS https://packages.fluvio.io/v1/install.sh | bash
+
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-x86_64-unknown-linux-musl
+          path: .
+
+      - name: Print artifacts and mark executable
+        run: |
+          ls -la . && chmod +x ./fluvio && ./fluvio version
+          mv ./fluvio ~/.fluvio/bin/fluvio-dev
+          ~/.fluvio/bin/fluvio version create dev ~/.fluvio/bin/fluvio-dev ~/.fluvio/extensions git
+
+      # Setup cluster
+      ## Latest
+      - name: Download Docker Image as Artifact
+        if: matrix.cluster_version == 'dev'
+        uses: actions/download-artifact@v2
+        with:
+          name: infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          path: /tmp
+
+      ### Retag image to remove arch from tag
+      - name: Load Fluvio Docker Image
+        if: matrix.cluster_version == 'dev'
+        run: |
+          ls -la /tmp
+          docker image load --input /tmp/infinyon-fluvio-x86_64-unknown-linux-musl.tar
+          docker image tag infinyon/fluvio:${{ github.sha }}-x86_64-unknown-linux-musl infinyon/fluvio:${{ github.sha }}
+          docker image ls -a
+
+      - name: Export Docker Image to tarball
+        if: matrix.cluster_version == 'dev'
+        run: docker image save infinyon/fluvio:${{ github.sha }} --output /tmp/infinyon-fluvio.tar
+
+      - name: Load image into K3d
+        if: matrix.cluster_version == 'dev'
+        run: k3d image import -k /tmp/infinyon-fluvio.tar -c fluvio
+
+      - name: Switch to dev channel to start cluster
+        if: matrix.cluster_version == 'dev'
+        run: |
+          ~/.fluvio/bin/fluvio version switch dev
+          ~/.fluvio/bin/fluvio cluster start
+
+      ## Stable
+      - name: Install stable CLI and start Fluvio cluster
+        if: matrix.cluster_version == 'stable'
+        run: |
+          ~/.fluvio/bin/fluvio cluster start
+
+      # CLI
+      - name: Switch to stable CLI
+        if: matrix.cli_version == 'stable'
+        run: |
+          ~/.fluvio/bin/fluvio version switch stable
+
+      - name: Switch to dev CLI
+        if: matrix.cli_version == 'dev'
+        run: |
+          ~/.fluvio/bin/fluvio version switch dev
+
+      - name: Test ${{ matrix.cli_version }} CLI vs ${{ matrix.cluster_version }} cluster
+        run: |
+          make SKIP_SETUP=true CLI_VERSION=${{ matrix.cli_version }} CLUSTER_VERSION=${{ matrix.cluster_version }} FLUVIO_BIN=${{ env.FLUVIO_BIN }} cli-platform-cross-version-test
 
   # Ensure all checks, tests are perform and all binaries are built
   # After this, we are committed for release
