@@ -8,7 +8,7 @@ use std::time::Duration;
 use humantime::parse_duration;
 
 use fluvio::{
-    Compression, CompressionLevel, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder,
+    Compression, GzipLevel, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder,
     RecordKey, ProduceOutput,
 };
 use fluvio::dataplane::Isolation;
@@ -54,10 +54,10 @@ pub struct ProduceOpt {
     pub compression: Option<Compression>,
 
     /// Level of compression to use when sending records.
-    /// Supported levels: 0 (compression algorithm's default level) or 1-9.
+    /// Supported levels: 1-9.
     /// Only Gzip supports setting a compression level.
     #[clap(long)]
-    pub compression_level: Option<CompressionLevel>,
+    pub gzip_level: Option<GzipLevel>,
 
     /// Path to a file to produce to the topic. If absent, producer will read stdin.
     #[clap(short, long)]
@@ -97,15 +97,13 @@ impl ProduceOpt {
         };
 
         // Compression
-        let config_builder = if let Some(compression) = self.compression {
+        let config_builder = if let Some(mut compression) = self.compression {
+            if let Compression::Gzip(_) = compression {
+                if let Some(gzip_level) = self.gzip_level {
+                    compression = Compression::Gzip(gzip_level);
+                }
+            }
             config_builder.compression(compression)
-        } else {
-            config_builder
-        };
-
-        // Compression level
-        let config_builder = if let Some(compression_level) = self.compression_level {
-            config_builder.compression_level(compression_level)
         } else {
             config_builder
         };

@@ -3,7 +3,6 @@ use std::mem::size_of;
 use std::fmt::Debug;
 use fluvio_compression::CompressionError;
 use fluvio_types::PartitionId;
-use fluvio_compression::CompressionLevel;
 use tracing::trace;
 
 use fluvio_compression::Compression;
@@ -76,7 +75,6 @@ pub struct Batch<R = MemoryRecords> {
     pub base_offset: Offset,
     pub batch_len: i32, // only for decoding
     pub header: BatchHeader,
-    compression_level: CompressionLevel,
     records: R,
 }
 
@@ -146,10 +144,6 @@ impl<R> Batch<R> {
         self.get_header().get_compression()
     }
 
-    pub fn get_compression_level(&self) -> CompressionLevel {
-        self.compression_level
-    }
-
     /// decode from buf stored in the file
     /// read all excluding records
     pub fn decode_from_file_buf<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
@@ -172,7 +166,6 @@ impl TryFrom<Batch<RawRecords>> for Batch {
             base_offset: batch.base_offset,
             batch_len: (BATCH_HEADER_SIZE + records.write_size(0)) as i32,
             header: batch.header,
-            compression_level: Default::default(),
             records,
         })
     }
@@ -185,15 +178,13 @@ impl TryFrom<Batch> for Batch<RawRecords> {
         f.records.encode(&mut buf, 0)?;
 
         let compression = f.get_compression()?;
-        let compression_level = f.get_compression_level();
-        let compressed_records = compression.compress(&buf, compression_level)?;
+        let compressed_records = compression.compress(&buf)?;
         let records = RawRecords(compressed_records);
 
         Ok(Batch {
             base_offset: f.base_offset,
             batch_len: f.batch_len,
             header: f.header,
-            compression_level,
             records,
         })
     }
@@ -437,7 +428,6 @@ pub mod memory {
     use chrono::Utc;
     pub struct MemoryBatch {
         compression: Compression,
-        compression_level: CompressionLevel,
         write_limit: usize,
         current_size_uncompressed: usize,
         is_full: bool,
@@ -446,15 +436,10 @@ pub mod memory {
     }
 
     impl MemoryBatch {
-        pub fn new(
-            write_limit: usize,
-            compression: Compression,
-            compression_level: CompressionLevel,
-        ) -> Self {
+        pub fn new(write_limit: usize, compression: Compression) -> Self {
             let now = Utc::now().timestamp_millis();
             Self {
                 compression,
-                compression_level,
                 is_full: false,
                 write_limit,
                 create_time: now,
@@ -465,10 +450,6 @@ pub mod memory {
 
         pub(crate) fn compression(&self) -> Compression {
             self.compression
-        }
-
-        pub(crate) fn compression_level(&self) -> CompressionLevel {
-            self.compression_level
         }
 
         /// Add a record to the batch.
@@ -512,7 +493,7 @@ pub mod memory {
             (self.current_size_uncompressed as f32
                 * match self.compression {
                     Compression::None => 1.0,
-                    Compression::Gzip | Compression::Snappy | Compression::Lz4 => 0.5,
+                    Compression::Gzip(_) | Compression::Snappy | Compression::Lz4 => 0.5,
                 }) as usize
                 + Batch::<RawRecords>::default().write_size(0)
         }
@@ -522,7 +503,6 @@ pub mod memory {
         fn from(p_batch: MemoryBatch) -> Self {
             let mut batch = Self::default();
             let compression = p_batch.compression();
-            let compression_level = p_batch.compression_level();
             let records = p_batch.records;
 
             let len = records.len() as i32;
@@ -541,7 +521,6 @@ pub mod memory {
             header.set_max_time_stamp(max_time_stamp);
 
             header.set_compression(compression);
-            batch.compression_level = compression_level;
 
             *batch.mut_records() = records;
 
@@ -821,7 +800,6 @@ mod test {
                 + Batch::<RawRecords>::default().write_size(0)
                 + Vec::<RawRecords>::default().write_size(0),
             Compression::None,
-            CompressionLevel::default(),
         );
 
         assert!(mb.push_record(record).is_some());

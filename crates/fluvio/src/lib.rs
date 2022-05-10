@@ -110,7 +110,7 @@ pub use crate::admin::FluvioAdmin;
 pub use crate::fluvio::Fluvio;
 
 pub use fluvio_compression::Compression;
-pub use fluvio_compression::CompressionLevel;
+pub use fluvio_compression::GzipLevel;
 
 pub(crate) mod built_info {
     include!(concat!(env!("OUT_DIR"), "/built.rs"));

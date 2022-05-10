@@ -1,7 +1,7 @@
 use std::io::{Error, ErrorKind};
 
 use dataplane::batch::BatchRecords;
-use fluvio::{Compression};
+use fluvio::{Compression, GzipLevel};
 use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
 use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
@@ -154,7 +154,9 @@ fn validate_records<R: BatchRecords>(
         match compression {
             CompressionAlgorithm::Any => true,
             CompressionAlgorithm::None => batch_compression == Compression::None,
-            CompressionAlgorithm::Gzip => batch_compression == Compression::Gzip,
+            CompressionAlgorithm::Gzip => {
+                batch_compression == Compression::Gzip(GzipLevel::default())
+            }
             CompressionAlgorithm::Snappy => batch_compression == Compression::Snappy,
             CompressionAlgorithm::Lz4 => batch_compression == Compression::Lz4,
         }

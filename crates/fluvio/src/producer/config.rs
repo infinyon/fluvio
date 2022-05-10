@@ -3,7 +3,7 @@ use std::time::Duration;
 use derive_builder::Builder;
 use dataplane::Isolation;
 
-use fluvio_compression::{Compression, CompressionLevel};
+use fluvio_compression::Compression;
 
 use crate::producer::partitioning::{Partitioner, SiphashRoundRobinPartitioner};
 
@@ -54,12 +54,6 @@ pub struct TopicProducerConfig {
     #[builder(setter(into, strip_option), default)]
     pub(crate) compression: Option<Compression>,
 
-    /// Compression level used by Fluvio producer to compress data.
-    /// Supported levels: 0 (compression algorithm's default level) or 1-9.
-    /// Only Gzip supports setting a compression level.
-    #[builder(setter(into, strip_option), default)]
-    pub(crate) compression_level: Option<CompressionLevel>,
-
     /// Max time duration that the server is allowed to process the batch.
     #[builder(default = "default_timeout()")]
     pub(crate) timeout: Duration,
@@ -81,7 +75,6 @@ impl Default for TopicProducerConfig {
             compression: None,
             timeout: default_timeout(),
             isolation: default_isolation(),
-            compression_level: None,
         }
     }
 }

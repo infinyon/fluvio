@@ -14,10 +14,10 @@ use serde::{Serialize, Deserialize};
 #[serde(rename_all = "lowercase")]
 #[repr(i8)]
 pub enum Compression {
-    None = 0,
-    Gzip = 1,
-    Snappy = 2,
-    Lz4 = 3,
+    None,
+    Gzip(GzipLevel),
+    Snappy,
+    Lz4,
 }
 
 impl Default for Compression {
@@ -31,13 +31,25 @@ impl TryFrom<i8> for Compression {
     fn try_from(v: i8) -> Result<Self, CompressionError> {
         match v {
             0 => Ok(Compression::None),
-            1 => Ok(Compression::Gzip),
+            1 => Ok(Compression::Gzip(GzipLevel::default())),
             2 => Ok(Compression::Snappy),
             3 => Ok(Compression::Lz4),
             _ => Err(CompressionError::UnknownCompressionFormat(format!(
-                "i8 representation: {}",
+                "u8 representation: {}",
                 v
             ))),
+        }
+    }
+}
+
+impl From<Compression> for u8 {
+    fn from(compression: Compression) -> Self {
+        use Compression::*;
+        match compression {
+            None => 0,
+            Gzip(_) => 1,
+            Snappy => 2,
+            Lz4 => 3,
         }
     }
 }
@@ -48,7 +60,7 @@ impl FromStr for Compression {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "none" => Ok(Compression::None),
-            "gzip" => Ok(Compression::Gzip),
+            "gzip" => Ok(Compression::Gzip(GzipLevel::default())),
             "snappy" => Ok(Compression::Snappy),
             "lz4" => Ok(Compression::Lz4),
             _ => Err(CompressionError::UnknownCompressionFormat(s.into())),
@@ -58,14 +70,10 @@ impl FromStr for Compression {
 
 impl Compression {
     /// Compress the given data, returning the compressed data
-    pub fn compress(
-        &self,
-        src: &[u8],
-        level: CompressionLevel,
-    ) -> Result<Vec<u8>, CompressionError> {
+    pub fn compress(&self, src: &[u8]) -> Result<Vec<u8>, CompressionError> {
         match *self {
             Compression::None => Ok(src.to_vec()),
-            Compression::Gzip => gzip::compress(src, level),
+            Compression::Gzip(level) => gzip::compress(src, level),
             Compression::Snappy => snappy::compress(src),
             Compression::Lz4 => lz4::compress(src),
         }
@@ -75,7 +83,7 @@ impl Compression {
     pub fn uncompress(&self, src: &[u8]) -> Result<Option<Vec<u8>>, CompressionError> {
         match *self {
             Compression::None => Ok(None),
-            Compression::Gzip => {
+            Compression::Gzip(_) => {
                 let output = gzip::uncompress(src)?;
                 Ok(Some(output))
             }
@@ -94,7 +102,7 @@ impl std::fmt::Display for Compression {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match *self {
             Compression::None => write!(f, "none"),
-            Compression::Gzip => write!(f, "gzip"),
+            Compression::Gzip(_) => write!(f, "gzip"),
             Compression::Snappy => write!(f, "snappy"),
             Compression::Lz4 => write!(f, "lz4"),
         }
@@ -103,8 +111,7 @@ impl std::fmt::Display for Compression {
 
 #[derive(Copy, Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[repr(i8)]
-pub enum CompressionLevel {
-    Default = 0,
+pub enum GzipLevel {
     Level1 = 1,
     Level2 = 2,
     Level3 = 3,
@@ -116,13 +123,12 @@ pub enum CompressionLevel {
     Level9 = 9,
 }
 
-impl FromStr for CompressionLevel {
+impl FromStr for GzipLevel {
     type Err = CompressionError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        use CompressionLevel::*;
+        use GzipLevel::*;
         match s {
-            "0" => Ok(Default),
             "1" => Ok(Level1),
             "2" => Ok(Level2),
             "3" => Ok(Level3),
@@ -132,14 +138,14 @@ impl FromStr for CompressionLevel {
             "7" => Ok(Level7),
             "8" => Ok(Level8),
             "9" => Ok(Level9),
-            _ => Err(CompressionError::UnknownCompressionLevel(s.into())),
+            _ => Err(CompressionError::UnknownGzipLevel(s.into())),
         }
     }
 }
 
-impl Default for CompressionLevel {
+impl Default for GzipLevel {
     fn default() -> Self {
-        CompressionLevel::Default
+        GzipLevel::Level6
     }
 }
 
@@ -147,9 +153,8 @@ impl TryFrom<i8> for CompressionLevel {
     type Error = CompressionError;
 
     fn try_from(v: i8) -> Result<Self, CompressionError> {
-        use CompressionLevel::*;
+        use GzipLevel::*;
         match v {
-            0 => Ok(Default),
             1 => Ok(Level1),
             2 => Ok(Level2),
             3 => Ok(Level3),
@@ -167,24 +172,24 @@ impl TryFrom<i8> for CompressionLevel {
     }
 }
 
-impl TryFrom<CompressionLevel> for flate2::Compression {
+impl TryFrom<GzipLevel> for flate2::Compression {
     type Error = CompressionError;
 
-    fn try_from(level: CompressionLevel) -> Result<Self, Self::Error> {
+    fn try_from(level: GzipLevel) -> Result<Self, Self::Error> {
         let int_level = level as u32;
         match int_level {
             int_level if int_level == 0 => Ok(flate2::Compression::default()),
             int_level if int_level >= 1 && int_level <= 9 => {
                 Ok(flate2::Compression::new(int_level))
             }
-            _ => Err(CompressionError::UnknownCompressionLevel(format!(
-                "Gzip supports compression levels 0..9, supplied level: {int_level}"
+            _ => Err(CompressionError::UnknownGzipLevel(format!(
+                "Gzip supports compression levels 1..9, supplied level: {int_level}"
             ))),
         }
     }
 }
 
-impl std::fmt::Display for CompressionLevel {
+impl std::fmt::Display for GzipLevel {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", *self as u8)
     }
