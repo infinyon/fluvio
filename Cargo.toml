@@ -63,3 +63,9 @@ debug-assertions = true
 overflow-checks = true
 incremental = false
 codegen-units = 256
+
+[patch.crates-io]
+k8-client = {git = 'https://github.com/tjtelan/k8-api.git', branch = "add_gcp_support"}
+k8-config = {git = 'https://github.com/tjtelan/k8-api.git', branch = "add_gcp_support"}
+k8-metadata-client = {git = 'https://github.com/tjtelan/k8-api.git', branch = "add_gcp_support"}
+k8-types = {git = 'https://github.com/tjtelan/k8-api.git', branch = "add_gcp_support"}
