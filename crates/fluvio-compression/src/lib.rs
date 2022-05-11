@@ -174,10 +174,17 @@ impl TryFrom<i8> for GzipLevel {
 
 impl From<GzipLevel> for flate2::Compression {
     fn from(level: GzipLevel) -> Self {
-        let int_level = level as u32;
-        if int_level < 1 || int_level > 9 {
-            panic!("Invalid GzipLevel discriminant: {int_level}")
-        }
+        let int_level = match level {
+            GzipLevel::Level1 => 1,
+            GzipLevel::Level2 => 2,
+            GzipLevel::Level3 => 3,
+            GzipLevel::Level4 => 4,
+            GzipLevel::Level5 => 5,
+            GzipLevel::Level6 => 6,
+            GzipLevel::Level7 => 7,
+            GzipLevel::Level8 => 8,
+            GzipLevel::Level9 => 9,
+        };
         flate2::Compression::new(int_level)
     }
 }
