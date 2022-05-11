@@ -154,9 +154,7 @@ fn validate_records<R: BatchRecords>(
         match compression {
             CompressionAlgorithm::Any => true,
             CompressionAlgorithm::None => batch_compression == Compression::None,
-            CompressionAlgorithm::Gzip => {
-                batch_compression == Compression::Gzip(GzipLevel::default())
-            }
+            CompressionAlgorithm::Gzip => matches!(batch_compression, Compression::Gzip(_)),
             CompressionAlgorithm::Snappy => batch_compression == Compression::Snappy,
             CompressionAlgorithm::Lz4 => batch_compression == Compression::Lz4,
         }
