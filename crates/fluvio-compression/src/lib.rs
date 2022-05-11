@@ -31,7 +31,7 @@ impl TryFrom<u8> for Compression {
     fn try_from(v: u8) -> Result<Self, CompressionError> {
         match v {
             0 => Ok(Compression::None),
-            1 => Ok(Compression::Gzip(GzipLevel::default())),
+            1 => Ok(Compression::Gzip(Default::default())),
             2 => Ok(Compression::Snappy),
             3 => Ok(Compression::Lz4),
             _ => Err(CompressionError::UnknownCompressionFormat(format!(
@@ -60,7 +60,7 @@ impl FromStr for Compression {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "none" => Ok(Compression::None),
-            "gzip" => Ok(Compression::Gzip(GzipLevel::default())),
+            "gzip" => Ok(Compression::Gzip(Default::default())),
             "snappy" => Ok(Compression::Snappy),
             "lz4" => Ok(Compression::Lz4),
             _ => Err(CompressionError::UnknownCompressionFormat(s.into())),

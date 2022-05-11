@@ -6,7 +6,7 @@ use async_lock::RwLock;
 use dataplane::ReplicaKey;
 use dataplane::record::Record;
 
-use fluvio_compression::{Compression, GzipLevel};
+use fluvio_compression::Compression;
 use fluvio_sc_schema::topic::CompressionAlgorithm;
 #[cfg(feature = "smartengine")]
 use fluvio_smartengine::SmartModuleInstance;
@@ -297,7 +297,7 @@ impl TopicProducer {
             match topic_spec.get_compression_type() {
                 CompressionAlgorithm::Any => config.compression.unwrap_or_default(),
                 CompressionAlgorithm::Gzip => match config.compression {
-                    None => Compression::Gzip(GzipLevel::default()),
+                    None => Compression::Gzip(Default::default()),
                     Some(Compression::Gzip(level)) => Compression::Gzip(level),
                     Some(compression_config) => return Err(FluvioError::Producer(ProducerError::InvalidConfiguration(
                         format!("Compression in the producer ({}) does not match with topic level compression (gzip)",

@@ -1,7 +1,7 @@
 use std::io::{Error, ErrorKind};
 
 use dataplane::batch::BatchRecords;
-use fluvio::{Compression, GzipLevel};
+use fluvio::Compression;
 use fluvio_controlplane_metadata::topic::CompressionAlgorithm;
 use fluvio_storage::StorageError;
 use tracing::{debug, trace, error};
