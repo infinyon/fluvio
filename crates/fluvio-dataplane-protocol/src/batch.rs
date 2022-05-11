@@ -20,7 +20,7 @@ use crate::Size;
 use crate::record::ConsumerRecord;
 use crate::record::Record;
 
-pub const COMPRESSION_CODEC_MASK: u16 = 0x07;
+pub const COMPRESSION_CODEC_MASK: i16 = 0x07;
 pub const NO_TIMESTAMP: i64 = -1;
 
 pub trait BatchRecords: Default + Debug + Encoder + Decoder + Send + Sync {
@@ -360,7 +360,7 @@ pub struct BatchHeader {
     pub partition_leader_epoch: i32,
     pub magic: i8,
     pub crc: u32,
-    pub attributes: u16,
+    pub attributes: i16,
     /// Indicates the count from the beginning of the batch to the end
     ///
     /// Adding this to the base_offset will give the offset of the last record in this batch
@@ -379,7 +379,7 @@ impl BatchHeader {
     }
 
     pub fn set_compression(&mut self, compression: Compression) {
-        let compression_bits = u8::from(compression) as u16 & COMPRESSION_CODEC_MASK;
+        let compression_bits = u8::from(compression) as i16 & COMPRESSION_CODEC_MASK;
         self.attributes = (self.attributes & !COMPRESSION_CODEC_MASK) | compression_bits;
     }
 
@@ -415,7 +415,7 @@ pub const BATCH_HEADER_SIZE: usize =
           size_of::<i32>()      // partition leader epoch
         + size_of::<u8>()       // magic
         + size_of::<i32>()      // crc
-        + size_of::<u16>()      // u16
+        + size_of::<i16>()      // attributes
         + size_of::<i32>()      // last offset delta
         + size_of::<i64>()      // first_timestamp
         + size_of::<i64>()      // max_time_stamp
