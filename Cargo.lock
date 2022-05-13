@@ -3101,7 +3101,8 @@ dependencies = [
 [[package]]
 name = "k8-client"
 version = "6.0.0"
-source = "git+https://github.com/tjtelan/k8-api.git?branch=add_gcp_support#664566a2fd35f2fed5f15d40ddb446d8be4f26a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3e11ae48c036f03be54f5ebcfdd64c51b75572d235740969200d36ef629bae9"
 dependencies = [
  "async-trait",
  "base64",
@@ -3127,7 +3128,8 @@ dependencies = [
 [[package]]
 name = "k8-config"
 version = "2.0.0"
-source = "git+https://github.com/tjtelan/k8-api.git?branch=add_gcp_support#664566a2fd35f2fed5f15d40ddb446d8be4f26a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "609ad86e094cea1739cd6caf462ee5d55b7d8143afc3a49962e35aaac560e7de"
 dependencies = [
  "dirs",
  "hostfile",
@@ -3141,16 +3143,19 @@ dependencies = [
 [[package]]
 name = "k8-diff"
 version = "0.1.2"
-source = "git+https://github.com/tjtelan/k8-api.git?branch=add_gcp_support#664566a2fd35f2fed5f15d40ddb446d8be4f26a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef435d912eeb448129d7ae11d3c497691f1f383d2d2ff1dff4365a81c7bd4f3b"
 dependencies = [
  "serde",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
 name = "k8-metadata-client"
 version = "3.4.0"
-source = "git+https://github.com/tjtelan/k8-api.git?branch=add_gcp_support#664566a2fd35f2fed5f15d40ddb446d8be4f26a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "50d01177a9cd1c9400742277496528ea1f5a7f13ef8c1c9d7281b851920e735a"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -3165,7 +3170,8 @@ dependencies = [
 [[package]]
 name = "k8-types"
 version = "0.5.2"
-source = "git+https://github.com/tjtelan/k8-api.git?branch=add_gcp_support#664566a2fd35f2fed5f15d40ddb446d8be4f26a7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0728e18a0784829b97808fc21c667d6ff78e58e8150b75e2d7de90b6d8787bdb"
 dependencies = [
  "serde",
  "serde_json",
