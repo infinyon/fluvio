@@ -22,29 +22,25 @@ use fluvio_compression::CompressionError;
 use fluvio_spu_schema::server::stream_fetch::{
     DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
 };
-use fluvio_types::event::offsets::OffsetChangeListener;
 use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
 use dataplane::smartmodule::SmartModuleRuntimeError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
-use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
+use crate::services::public::stream_fetch::publishers::{INIT_OFFSET, SharedStreamPublisher};
 use crate::smartengine::SmartModuleContext;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
-    ctx: DefaultSharedGlobalContext,
-    replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,
     max_fetch_bytes: u32,
     header: RequestHeader,
     sink: ExclusiveFlvSink,
     end_event: Arc<StickyEvent>,
-    consumer_offset_listener: OffsetChangeListener,
     leader_state: SharedFileLeaderState,
-    stream_id: u32,
+    stream_handle: SharedStreamPublisher,
 }
 
 impl StreamFetchHandler {
@@ -59,49 +55,45 @@ impl StreamFetchHandler {
         let replica = ReplicaKey::new(msg.topic.clone(), msg.partition);
 
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
-            let (stream_id, offset_publisher) =
-                ctx.stream_publishers().create_new_publisher().await;
-            let consumer_offset_listener = offset_publisher.change_listner();
-
-            spawn(async move {
-                if let Err(err) = StreamFetchHandler::fetch(
-                    ctx,
-                    sink,
-                    end_event.clone(),
-                    leader_state,
-                    stream_id,
-                    header,
-                    replica,
-                    consumer_offset_listener,
-                    msg,
-                )
+            match ctx
+                .stream_publishers()
+                .create_new_publisher(replica.clone(), msg.consumer_id)
                 .await
-                {
-                    error!("error starting stream fetch handler: {:#?}", err);
-                    end_event.notify();
+            {
+                Ok(handle) => {
+                    spawn(async move {
+                        if let Err(err) = StreamFetchHandler::fetch(
+                            ctx.clone(),
+                            sink,
+                            end_event.clone(),
+                            leader_state,
+                            handle.clone(),
+                            header,
+                            msg,
+                        )
+                        .await
+                        {
+                            error!("error starting stream fetch handler: {:#?}", err);
+                            end_event.notify();
+                        }
+                        ctx.stream_publishers().remove_publisher(handle).await
+                    });
                 }
-            });
+                Err(error_code) => {
+                    debug!(topic = %replica.topic," stream publisher not created, returning");
+                    send_back_error(&sink, &replica, &header, 0, error_code).await?;
+                }
+            }
         } else {
             debug!(topic = %replica.topic," no leader founded, returning");
-            let response = StreamFetchResponse {
-                topic: replica.topic,
-                stream_id: 0,
-                partition: FilePartitionResponse {
-                    partition_index: replica.partition,
-                    error_code: ErrorCode::NotLeaderForPartition,
-                    ..Default::default()
-                },
-            };
-
-            let response_msg =
-                RequestMessage::<FileStreamFetchRequest>::response_with_header(&header, response);
-
-            trace!("sending back file fetch response msg: {:#?}", response_msg);
-
-            let mut inner_sink = sink.lock().await;
-            inner_sink
-                .send_response(&response_msg, header.api_version())
-                .await?;
+            send_back_error(
+                &sink,
+                &replica,
+                &header,
+                0,
+                ErrorCode::NotLeaderForPartition,
+            )
+            .await?;
         }
 
         Ok(())
@@ -109,9 +101,9 @@ impl StreamFetchHandler {
 
     #[allow(clippy::too_many_arguments)]
     #[instrument(
-        skip(ctx,replica,end_event,leader_state,header,msg,consumer_offset_listener),
+        skip(ctx,end_event,leader_state,header,msg,stream_handle),
         fields(
-            replica = %replica,
+            replica = %stream_handle.replica,
             sink = sink.id()
         ))
     ]
@@ -120,14 +112,14 @@ impl StreamFetchHandler {
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
         leader_state: SharedFileLeaderState,
-        stream_id: u32,
+        stream_handle: SharedStreamPublisher,
         header: RequestHeader,
-        replica: ReplicaKey,
-        consumer_offset_listener: OffsetChangeListener,
         msg: StreamFetchRequest<FileRecordSet>,
     ) -> Result<(), SocketError> {
         debug!("request: {:#?}", msg);
         let version = header.api_version();
+        let stream_id = stream_handle.stream_id;
+        let replica = stream_handle.replica.clone();
 
         let derivedstream_ctx = match SmartModuleContext::extract(
             msg.wasm_payload,
@@ -166,17 +158,14 @@ impl StreamFetchHandler {
             "stream fetch");
 
         let handler = Self {
-            ctx: ctx.clone(),
             isolation,
-            replica: replica.clone(),
             max_bytes,
             sink: sink.clone(),
             end_event,
             header: header.clone(),
-            consumer_offset_listener,
-            stream_id,
             leader_state,
             max_fetch_bytes,
+            stream_handle,
         };
 
         if let Err(err) = handler.process(starting_offset, derivedstream_ctx).await {
@@ -245,6 +234,7 @@ impl StreamFetchHandler {
         let mut last_known_consumer_offset: Option<Offset> =
             (!consumer_wait).then(|| last_partition_offset);
 
+        let mut consumer_offset_listener = self.stream_handle.change_listener();
         loop {
             counter += 1;
             debug!(
@@ -283,7 +273,7 @@ impl StreamFetchHandler {
 
 
                 // Received offset update from consumer, i.e. consumer acknowledged to this offset
-                consumer_offset_update = self.consumer_offset_listener.listen() => {
+                consumer_offset_update = consumer_offset_listener.listen() => {
                     if consumer_offset_update == INIT_OFFSET {
                         continue;
                     }
@@ -366,11 +356,6 @@ impl StreamFetchHandler {
         }
 
         debug!("done with stream fetch loop exiting");
-        self.ctx
-            .stream_publishers()
-            .remove_publisher(self.stream_id)
-            .await;
-
         Ok(())
     }
 
@@ -379,7 +364,7 @@ impl StreamFetchHandler {
     //  consumer wait flag tells that there are records send back to consumer
     #[instrument(
         skip(self, smartmodule_instance, join_last_record),
-        fields(stream_id = self.stream_id)
+        fields(stream_id = self.stream_handle.stream_id)
     )]
     async fn send_back_records(
         &mut self,
@@ -390,7 +375,7 @@ impl StreamFetchHandler {
         let now = Instant::now();
 
         let mut file_partition_response = FilePartitionResponse {
-            partition_index: self.replica.partition,
+            partition_index: self.stream_handle.replica.partition,
             ..Default::default()
         };
 
@@ -469,8 +454,8 @@ impl StreamFetchHandler {
                 debug!("No SmartModule, sending back entire log");
 
                 let response = StreamFetchResponse {
-                    topic: self.replica.topic.clone(),
-                    stream_id: self.stream_id,
+                    topic: self.stream_handle.replica.topic.clone(),
+                    stream_id: self.stream_handle.stream_id,
                     partition: file_partition_response,
                 };
 
@@ -535,7 +520,7 @@ impl StreamFetchHandler {
 
         let records = RecordSet::default().add(batch);
         let partition_response = DefaultPartitionResponse {
-            partition_index: self.replica.partition,
+            partition_index: self.stream_handle.replica.partition,
             error_code,
             high_watermark: file_partition_response.high_watermark,
             log_start_offset: file_partition_response.log_start_offset,
@@ -546,8 +531,8 @@ impl StreamFetchHandler {
         };
 
         let stream_response = StreamFetchResponse {
-            topic: self.replica.topic.clone(),
-            stream_id: self.stream_id,
+            topic: self.stream_handle.replica.topic.clone(),
+            stream_id: self.stream_handle.stream_id,
             partition: partition_response,
         };
 
@@ -634,56 +619,91 @@ pub mod publishers {
 
     use async_lock::Mutex;
     use tracing::debug;
+    use dataplane::{ErrorCode, ReplicaKey};
+    use fluvio_types::event::offsets::OffsetChangeListener;
 
     use super::{OffsetPublisher};
 
     pub const INIT_OFFSET: i64 = -1;
 
     pub struct StreamPublishers {
-        publishers: Mutex<HashMap<u32, Arc<OffsetPublisher>>>,
-        stream_id: AtomicU32,
+        publishers: Mutex<HashMap<u32, SharedStreamPublisher>>,
+        stream_id_seq: AtomicU32,
     }
 
     impl Debug for StreamPublishers {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "stream {}", self.stream_id.load(SeqCst))
+            write!(f, "stream {}", self.stream_id_seq.load(SeqCst))
         }
+    }
+
+    pub type SharedStreamPublisher = Arc<StreamPublisher>;
+
+    pub struct StreamPublisher {
+        pub replica: ReplicaKey,
+        pub consumer_id: u32,
+        pub stream_id: u32,
+        offset_publisher: Arc<OffsetPublisher>,
     }
 
     impl StreamPublishers {
         pub fn new() -> Self {
             Self {
                 publishers: Mutex::new(HashMap::new()),
-                stream_id: AtomicU32::new(0),
+                stream_id_seq: AtomicU32::new(0),
             }
         }
 
         // get next stream id
         fn next_stream_id(&self) -> u32 {
-            self.stream_id.fetch_add(1, SeqCst)
+            self.stream_id_seq.fetch_add(1, SeqCst)
         }
 
-        pub async fn create_new_publisher(&self) -> (u32, Arc<OffsetPublisher>) {
+        pub async fn create_new_publisher(
+            &self,
+            replica: ReplicaKey,
+            consumer_id: u32,
+        ) -> Result<SharedStreamPublisher, ErrorCode> {
             let stream_id = self.next_stream_id();
             let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
             let mut publisher_lock = self.publishers.lock().await;
-            publisher_lock.insert(stream_id, offset_publisher.clone());
-            (stream_id, offset_publisher)
+            if publisher_lock.values().any(|publisher| {
+                publisher.consumer_id.eq(&consumer_id) && publisher.replica.eq(&replica)
+            }) {
+                return Err(ErrorCode::FetchSessionAlreadyExists(consumer_id));
+            }
+            let publisher = Arc::new(StreamPublisher {
+                replica,
+                consumer_id,
+                stream_id,
+                offset_publisher: offset_publisher.clone(),
+            });
+            publisher_lock.insert(stream_id, publisher.clone());
+            Ok(publisher)
         }
 
         /// get publisher with stream id
         pub async fn get_publisher(&self, stream_id: u32) -> Option<Arc<OffsetPublisher>> {
             let publisher_lock = self.publishers.lock().await;
-            publisher_lock.get(&stream_id).cloned()
+            publisher_lock
+                .get(&stream_id)
+                .map(|s| s.offset_publisher.clone())
         }
 
-        pub async fn remove_publisher(&self, stream_id: u32) {
+        pub async fn remove_publisher(&self, handle: SharedStreamPublisher) {
+            let stream_id = handle.stream_id;
             let mut publisher_lock = self.publishers.lock().await;
             if publisher_lock.remove(&stream_id).is_some() {
                 debug!(stream_id, "removed stream publisher");
             } else {
                 debug!(stream_id, "no stream publisher founded");
             }
+        }
+    }
+
+    impl StreamPublisher {
+        pub fn change_listener(&self) -> OffsetChangeListener {
+            self.offset_publisher.change_listner()
         }
     }
 }

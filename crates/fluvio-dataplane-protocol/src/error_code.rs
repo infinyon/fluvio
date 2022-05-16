@@ -107,6 +107,9 @@ pub enum ErrorCode {
     #[fluvio(tag = 3002)]
     #[error("the fetch session was not found")]
     FetchSessionNotFoud,
+    #[fluvio(tag = 3003)]
+    #[error("the fetch session already exists for customer_id {0}")]
+    FetchSessionAlreadyExists(u32),
 
     // Legacy SmartModule errors
     #[deprecated(since = "0.9.13")]
