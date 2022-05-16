@@ -14,8 +14,10 @@ function cargo_publish_dry_run_all() {
         echo "$crate";
         pushd crates/"$crate";
 
-        #cargo check
-        cargo publish --dry-run
+        # Using `cargo check` instead of `cargo publish --dry-run`
+        # because dry-run will only utilize published dependencies.
+        # So unpublished dependencies will cause test fail
+        cargo check
         result="$?";
 
         # cargo publish exit codes:
