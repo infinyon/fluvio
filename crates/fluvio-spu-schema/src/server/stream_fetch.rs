@@ -43,6 +43,9 @@ pub const ARRAY_MAP_WASM_API: i16 = 15;
 // version for persistent SmartModule
 pub const SMART_MODULE_API: i16 = 16;
 
+// version for supplied consumer ID's
+pub const CONSUMER_ID_API: i16 = 17;
+
 /// Fetch records continuously
 /// Output will be send back as stream
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -66,6 +69,8 @@ where
     pub smartmodule: Option<SmartModuleInvocation>,
     #[fluvio(min_version = 16)]
     pub derivedstream: Option<DerivedStreamInvocation>,
+    #[fluvio(min_version = 17)]
+    pub consumer_id: u32,
     pub data: PhantomData<R>,
 }
 
@@ -74,7 +79,7 @@ where
     R: Debug + Decoder + Encoder,
 {
     const API_KEY: u16 = SpuServerApiKey::StreamFetch as u16;
-    const DEFAULT_API_VERSION: i16 = SMART_MODULE_API;
+    const DEFAULT_API_VERSION: i16 = CONSUMER_ID_API;
     type Response = StreamFetchResponse<R>;
 }
 
