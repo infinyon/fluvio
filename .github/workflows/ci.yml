@@ -700,8 +700,6 @@ jobs:
           date
           sleep 15
           make ${{ matrix.test }}
-        env:
-          SKIP_TEST_CONNECTOR: true
       - name: Run diagnostics
         if: ${{ !success() }}
         timeout-minutes: 5
