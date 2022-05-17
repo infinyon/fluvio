@@ -87,7 +87,7 @@ pub struct FollowerSpuPendingUpdates {
 
 impl FollowerSpuPendingUpdates {
     pub fn listener(&self) -> OffsetChangeListener {
-        self.event.change_listner()
+        self.event.change_listener()
     }
 
     ///  add replica to be updated

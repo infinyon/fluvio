@@ -189,7 +189,7 @@ mod inner {
             let (mut sink, mut stream) = socket.split();
             let mut api_stream = stream.api_stream::<FollowerPeerRequest, FollowerPeerApiEnum>();
 
-            let mut event_listener = self.group.events.change_listner();
+            let mut event_listener = self.group.events.change_listener();
 
             // starts initial sync
             debug!("performing initial offset sync to leader");

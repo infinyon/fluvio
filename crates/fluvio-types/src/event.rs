@@ -102,7 +102,12 @@ pub mod offsets {
             self.update(self.current_value() + 1);
         }
 
+        #[deprecated = "Replace by change_listener"]
         pub fn change_listner(self: &Arc<Self>) -> OffsetChangeListener {
+            self.change_listener()
+        }
+
+        pub fn change_listener(self: &Arc<Self>) -> OffsetChangeListener {
             OffsetChangeListener::new(self.clone())
         }
     }
@@ -238,7 +243,7 @@ mod test {
     #[fluvio_future::test]
     async fn test_offset_listener_no_wait() {
         let publisher = OffsetPublisher::shared(0);
-        let listener = publisher.change_listner();
+        let listener = publisher.change_listener();
         let status = Arc::new(AtomicBool::new(false));
 
         TestController::start(listener, status.clone());
@@ -265,7 +270,7 @@ mod test {
     #[fluvio_future::test]
     async fn test_offset_listener_wait() {
         let publisher = OffsetPublisher::shared(0);
-        let listener = publisher.change_listner();
+        let listener = publisher.change_listener();
         let status = Arc::new(AtomicBool::new(false));
 
         TestController::start(listener, status.clone());
