@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.27 - UNRELEASED
+* Support installing clusters on Google Kubernetes Engine ([#2364](https://github.com/infinyon/fluvio/issues/2364))
 
 ## Platform Version 0.9.26 - 2022-05-10
 * Increase default `STORAGE_MAX_BATCH_SIZE` ([#2342](https://github.com/infinyon/fluvio/issues/2342))
