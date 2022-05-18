@@ -144,6 +144,8 @@ remind_path() {
     say '      For bash: echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'
     # shellcheck disable=SC2016
     say '      For zsh : echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'
+    # shellcheck disable=SC2016
+    say '      For fish : fish_add_path "$HOME/.fluvio/bin"'
     say ""
     say "    To use Fluvio you'll need to restart your shell or run the following:"
     # shellcheck disable=SC2016
