@@ -55,6 +55,7 @@ jobs:
     name: Primary build ${{ matrix.binary }} for ${{ matrix.rust-target }} on (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         rust-target:
           - x86_64-unknown-linux-musl
@@ -124,6 +125,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         rust-target:
           - aarch64-apple-darwin
