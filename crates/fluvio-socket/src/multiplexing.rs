@@ -281,10 +281,11 @@ pub struct AsyncResponse<R> {
 impl<R> PinnedDrop for AsyncResponse<R> {
     fn drop(self: Pin<&mut Self>) {
         let session_id = self.correlation_id;
-        run_block_on(async {
+        let sink = self.sink.clone();
+        run_block_on(async move {
             //stream dropped, notify spu
             let request = RequestMessage::new_request(CloseSessionRequest { session_id });
-            match self.sink.send_request(&request).await {
+            match sink.send_request(&request).await {
                 Ok(_) => {
                     trace!(%session_id, "close session request sent");
                 }
