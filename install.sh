@@ -141,12 +141,12 @@ remind_path() {
     say "💡 You'll need to add '~/.fluvio/bin/' to your PATH variable"
     say "    You can run the following to set your PATH on shell startup:"
     
-    # shellcheck disable=SC2016
-    local bash_hint='echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'
-    # shellcheck disable=SC2016
-    local zsh_hint='echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'
-    # shellcheck disable=SC2016
-    local fish_hint='fish_add_path "$HOME/.fluvio/bin"'
+    # shellcheck disable=SC2016,SC2155
+    local bash_hint="$(tput bold)"'echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'"$(tput sgr0)"
+    # shellcheck disable=SC2016,SC2155
+    local zsh_hint="$(tput bold)"'echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'"$(tput sgr0)"
+    # shellcheck disable=SC2016,SC2155
+    local fish_hint="$(tput bold)"'fish_add_path "$HOME/.fluvio/bin"'"$(tput sgr0)"
 
     case "$(basename "${SHELL}")" in
         bash)
