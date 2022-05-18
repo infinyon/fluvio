@@ -140,16 +140,30 @@ verify_checksum() {
 remind_path() {
     say "💡 You'll need to add '~/.fluvio/bin/' to your PATH variable"
     say "    You can run the following to set your PATH on shell startup:"
+    
     # shellcheck disable=SC2016
-    say '      For bash: echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'
+    local bash_hint='echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.bashrc'
     # shellcheck disable=SC2016
-    say '      For zsh : echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'
+    local zsh_hint='echo '\''export PATH="${HOME}/.fluvio/bin:${PATH}"'\'' >> ~/.zshrc'
     # shellcheck disable=SC2016
-    say '      For fish : fish_add_path "$HOME/.fluvio/bin"'
-    say ""
-    say "    To use Fluvio you'll need to restart your shell or run the following:"
-    # shellcheck disable=SC2016
-    say '      export PATH="${HOME}/.fluvio/bin:${PATH}"'
+    local fish_hint='fish_add_path "$HOME/.fluvio/bin"'
+
+    case "$(basename "${SHELL}")" in
+        bash)
+            say "      ${bash_hint}"
+            ;;
+        zsh)
+            say "      ${zsh_hint}"
+            ;;
+        fish)
+            say "      ${fish_hint}"
+            ;;
+        *)
+            say "      For bash: ${bash_hint}"
+            say "      For zsh : ${zsh_hint}"
+            say "      For fish : ${fish_hint}"
+            ;;
+    esac
 }
 
 ############################################################
