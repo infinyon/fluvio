@@ -55,9 +55,10 @@ impl StreamFetchHandler {
         let replica = ReplicaKey::new(msg.topic.clone(), msg.partition);
 
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
+            let session_id = header.correlation_id();
             match ctx
                 .stream_publishers()
-                .create_new_publisher(replica.clone(), msg.consumer_id)
+                .create_new_publisher(replica.clone(), msg.consumer_id, session_id)
                 .await
             {
                 Ok(handle) => {
@@ -76,7 +77,7 @@ impl StreamFetchHandler {
                             error!("error starting stream fetch handler: {:#?}", err);
                             end_event.notify();
                         }
-                        ctx.stream_publishers().remove_publisher(handle).await
+                        ctx.stream_publishers().remove_publisher(session_id).await
                     });
                 }
                 Err(error_code) => {
@@ -250,7 +251,10 @@ impl StreamFetchHandler {
                     break;
                 },
 
-
+                _ = self.stream_handle.drop_event.listen() => {
+                    debug!("drop event has been received, terminating");
+                    break;
+                },
 
                 record = async {  right_consumer_stream.as_mut().expect("Unexpected crash").next().await }, if right_consumer_stream.is_some() =>  {
                     debug!("Updated right stream");
@@ -618,9 +622,9 @@ pub mod publishers {
     use std::fmt::Debug;
 
     use async_lock::Mutex;
-    use tracing::debug;
     use dataplane::{ErrorCode, ReplicaKey};
     use fluvio_types::event::offsets::OffsetChangeListener;
+    use fluvio_types::event::StickyEvent;
 
     use super::{OffsetPublisher};
 
@@ -643,6 +647,8 @@ pub mod publishers {
         pub replica: ReplicaKey,
         pub consumer_id: u32,
         pub stream_id: u32,
+        pub drop_event: Arc<StickyEvent>,
+        session_id: i32,
         offset_publisher: Arc<OffsetPublisher>,
     }
 
@@ -663,6 +669,7 @@ pub mod publishers {
             &self,
             replica: ReplicaKey,
             consumer_id: u32,
+            session_id: i32,
         ) -> Result<SharedStreamPublisher, ErrorCode> {
             let stream_id = self.next_stream_id();
             let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
@@ -676,7 +683,9 @@ pub mod publishers {
                 replica,
                 consumer_id,
                 stream_id,
+                drop_event: StickyEvent::shared(),
                 offset_publisher: offset_publisher.clone(),
+                session_id,
             });
             publisher_lock.insert(stream_id, publisher.clone());
             Ok(publisher)
@@ -690,14 +699,16 @@ pub mod publishers {
                 .map(|s| s.offset_publisher.clone())
         }
 
-        pub async fn remove_publisher(&self, handle: SharedStreamPublisher) {
-            let stream_id = handle.stream_id;
-            let mut publisher_lock = self.publishers.lock().await;
-            if publisher_lock.remove(&stream_id).is_some() {
-                debug!(stream_id, "removed stream publisher");
-            } else {
-                debug!(stream_id, "no stream publisher founded");
-            }
+        /// shutdown and remove publisher by session_id
+        pub async fn remove_publisher(&self, session_id: i32) -> Option<()> {
+            let mut publishers = self.publishers.lock().await;
+            let stream_id = publishers
+                .values()
+                .find(|p| p.session_id.eq(&session_id))
+                .map(|p| p.stream_id)?;
+            let removed = publishers.remove(&stream_id)?;
+            removed.drop_event.notify();
+            Some(())
         }
     }
 
