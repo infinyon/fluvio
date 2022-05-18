@@ -16,6 +16,7 @@ use dataplane::api::RequestMessage;
 use dataplane::produce::DefaultProduceRequest;
 
 use dataplane::fetch::FileFetchRequest;
+use fluvio_protocol::api::CloseSessionRequest;
 
 use crate::ApiVersionsRequest;
 use super::SpuServerApiKey;
@@ -36,6 +37,7 @@ pub enum SpuServerRequest {
     FetchOffsetsRequest(RequestMessage<FetchOffsetsRequest>),
     FileStreamFetchRequest(RequestMessage<FileStreamFetchRequest>),
     UpdateOffsetsRequest(RequestMessage<UpdateOffsetsRequest>),
+    CloseSessionRequest(RequestMessage<CloseSessionRequest>),
 }
 
 impl fmt::Display for SpuServerRequest {
@@ -47,6 +49,7 @@ impl fmt::Display for SpuServerRequest {
             Self::FetchOffsetsRequest(_) => write!(f, "FetchOffsetsRequest"),
             Self::FileStreamFetchRequest(_) => write!(f, "FileStreamFetchRequest"),
             Self::UpdateOffsetsRequest(_) => write!(f, "UpdateOffsetsRequest"),
+            Self::CloseSessionRequest(_) => write!(f, "CloseSessionRequest"),
         }
     }
 }
@@ -79,6 +82,9 @@ impl ApiMessage for SpuServerRequest {
             SpuServerApiKey::FetchOffsets => api_decode!(Self, FetchOffsetsRequest, src, header),
             SpuServerApiKey::StreamFetch => api_decode!(Self, FileStreamFetchRequest, src, header),
             SpuServerApiKey::UpdateOffsets => api_decode!(Self, UpdateOffsetsRequest, src, header),
+            SpuServerApiKey::CloseSessionRequest => {
+                api_decode!(Self, CloseSessionRequest, src, header)
+            }
         }
     }
 }

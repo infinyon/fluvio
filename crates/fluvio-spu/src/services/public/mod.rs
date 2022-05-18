@@ -4,6 +4,7 @@ mod fetch_handler;
 mod offset_request;
 mod offset_update;
 mod stream_fetch;
+mod drop_stream;
 
 #[cfg(test)]
 mod tests;
@@ -25,6 +26,7 @@ use self::produce_handler::handle_produce_request;
 use self::fetch_handler::handle_fetch_request;
 use self::offset_request::handle_offset_request;
 use self::offset_update::handle_offset_update;
+use self::drop_stream::handle_drop_stream_request;
 use self::stream_fetch::StreamFetchHandler;
 pub use stream_fetch::publishers::StreamPublishers;
 
@@ -119,6 +121,9 @@ impl FluvioService for PublicService {
                             shared_sink,
                             "UpdateOffsetsRequest"
                         ),
+                        SpuServerRequest::CloseSessionRequest(request) => {
+                            handle_drop_stream_request(request, context.clone()).await?
+                        }
                     }
                 }
                 Some(Err(e)) => {

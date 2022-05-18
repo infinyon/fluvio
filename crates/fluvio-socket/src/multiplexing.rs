@@ -19,16 +19,18 @@ use async_lock::Mutex;
 use bytes::{Bytes};
 use event_listener::Event;
 use fluvio_future::net::ConnectionFd;
+use fluvio_future::task::run_block_on;
 use futures_util::stream::{Stream, StreamExt};
 use pin_project::{pin_project, pinned_drop};
 use tokio::select;
-use tracing::info;
+use tracing::{info, warn};
 use tracing::{debug, error, trace, instrument};
 
 use fluvio_future::timer::sleep;
 use fluvio_protocol::api::Request;
 use fluvio_protocol::api::RequestHeader;
 use fluvio_protocol::api::RequestMessage;
+use fluvio_protocol::api::CloseSessionRequest;
 use fluvio_protocol::Decoder;
 
 use crate::SocketError;
@@ -40,6 +42,8 @@ pub type SharedMultiplexerSocket = Arc<MultiplexerSocket>;
 
 type SharedMsg = (Arc<Mutex<Option<Bytes>>>, Arc<Event>);
 
+type CorrelationId = i32;
+
 /// Handle different way to multiplex
 enum SharedSender {
     /// Serial socket
@@ -48,7 +52,7 @@ enum SharedSender {
     Queue(Sender<Option<Bytes>>),
 }
 
-type Senders = Arc<Mutex<HashMap<i32, SharedSender>>>;
+type Senders = Arc<Mutex<HashMap<CorrelationId, SharedSender>>>;
 
 /// Socket that can multiplex connections
 pub struct MultiplexerSocket {
@@ -115,7 +119,7 @@ impl MultiplexerSocket {
     }
 
     /// get next available correlation to use
-    fn next_correlation_id(&self) -> i32 {
+    fn next_correlation_id(&self) -> CorrelationId {
         self.correlation_id_counter.fetch_add(1, SeqCst)
     }
 
@@ -255,6 +259,7 @@ impl MultiplexerSocket {
             receiver,
             header: req_msg.header,
             correlation_id,
+            sink: self.sink.clone(),
             data: PhantomData,
         })
     }
@@ -267,13 +272,27 @@ pub struct AsyncResponse<R> {
     #[pin]
     receiver: Receiver<Option<Bytes>>,
     header: RequestHeader,
-    correlation_id: i32,
+    correlation_id: CorrelationId,
+    sink: ExclusiveFlvSink,
     data: PhantomData<R>,
 }
 
 #[pinned_drop]
 impl<R> PinnedDrop for AsyncResponse<R> {
     fn drop(self: Pin<&mut Self>) {
+        let session_id = self.correlation_id;
+        run_block_on(async {
+            //stream dropped, notify spu
+            let request = RequestMessage::new_request(CloseSessionRequest { session_id });
+            match self.sink.send_request(&request).await {
+                Ok(_) => {
+                    trace!(%session_id, "close session request sent");
+                }
+                Err(err) => {
+                    error!(%session_id, "close session request err: {:?}", err);
+                }
+            }
+        });
         self.receiver.close();
         debug!("multiplexer stream: {} closed", self.correlation_id);
     }

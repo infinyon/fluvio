@@ -8,9 +8,11 @@ use tracing::{debug, trace};
 
 mod request;
 mod response;
+mod session;
 
 pub use self::response::*;
 pub use self::request::*;
+pub use self::session::*;
 use crate::{Encoder, Decoder};
 
 pub const MAX_BYTES: i32 = 52428800;

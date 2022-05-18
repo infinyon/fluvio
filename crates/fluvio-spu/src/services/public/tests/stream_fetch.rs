@@ -2017,6 +2017,8 @@ async fn test_stream_fetch_filter_with_params(
         ..Default::default()
     };
 
+    drop(stream);
+
     let mut stream = client_socket
         .create_stream(RequestMessage::new_request(stream_request), 11)
         .await
