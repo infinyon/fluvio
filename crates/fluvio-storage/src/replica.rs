@@ -88,6 +88,9 @@ impl ReplicaStorage for FileReplica {
             min_base_offset
         }
     }
+    fn get_last_offset(&self) -> Option<Offset> {
+        None
+    }
 
     /// read partition slice
     /// return leo, hw
@@ -185,9 +188,9 @@ impl FileReplica {
 
     /// Construct a new replica with specified topic and partition.
     /// It can start with arbitrary offset.  However, for normal replica,
-    /// it is usually starts with 0.  
+    /// it is usually starts with 0.
     ///
-    /// Replica is minimum unit of logs that will can be replicated.  
+    /// Replica is minimum unit of logs that will can be replicated.
     /// It is a unique pair of (topic,partition)
     ///
     /// Replica will use base directory to create it's own directory.

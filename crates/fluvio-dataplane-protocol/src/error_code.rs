@@ -109,7 +109,7 @@ pub enum ErrorCode {
     FetchSessionNotFoud,
     #[fluvio(tag = 3003)]
     #[error("the fetch session already exists for customer_id {0}")]
-    FetchSessionAlreadyExists(u32),
+    FetchSessionAlreadyExists(String),
 
     // Legacy SmartModule errors
     #[deprecated(since = "0.9.13")]

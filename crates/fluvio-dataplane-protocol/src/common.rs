@@ -25,6 +25,7 @@ impl Default for Isolation {
 pub struct ReplicaKey {
     pub topic: String,
     pub partition: i32,
+    pub consumer_id: Option<String>,
 }
 
 impl fmt::Debug for ReplicaKey {
@@ -46,6 +47,7 @@ impl ReplicaKey {
         ReplicaKey {
             topic: topic.into(),
             partition: partition.into(),
+            consumer_id: None,
         }
     }
 

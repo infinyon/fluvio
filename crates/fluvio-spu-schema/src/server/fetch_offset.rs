@@ -31,13 +31,14 @@ impl Request for FetchOffsetsRequest {
 
 impl FetchOffsetsRequest {
     /// create request with a single topic and partition
-    pub fn new(topic: String, partition: i32) -> Self {
+    pub fn new(topic: String, partition: i32, consumer_id: Option<String>) -> Self {
         Self {
             topics: vec![FetchOffsetTopic {
                 name: topic,
                 partitions: vec![FetchOffsetPartition {
                     partition_index: partition,
                 }],
+                consumer_id,
             }],
         }
     }
@@ -50,6 +51,8 @@ pub struct FetchOffsetTopic {
 
     /// Each partition in the request.
     pub partitions: Vec<FetchOffsetPartition>,
+
+    pub consumer_id: Option<String>,
 }
 
 #[derive(Decoder, Encoder, Default, Debug)]
@@ -106,6 +109,8 @@ pub struct FetchOffsetPartitionResponse {
 
     /// Last readable offset
     pub last_stable_offset: i64,
+
+    pub last_consumed_offset: Option<i64>,
 }
 
 impl fmt::Display for FetchOffsetPartitionResponse {

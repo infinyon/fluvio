@@ -117,7 +117,7 @@ impl FluvioService for PublicService {
                         }
                         SpuServerRequest::UpdateOffsetsRequest(request) => call_service!(
                             request,
-                            handle_offset_update(&context, request),
+                            handle_offset_update(request, &context),
                             shared_sink,
                             "UpdateOffsetsRequest"
                         ),

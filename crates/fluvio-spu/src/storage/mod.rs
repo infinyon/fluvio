@@ -95,9 +95,13 @@ where
     }
 
     /// get start offset and hw
-    pub async fn start_offset_info(&self) -> (Offset, Offset) {
+    pub async fn start_offset_info(&self) -> (Offset, Offset, Option<Offset>) {
         let reader = self.read().await;
-        (reader.get_log_start_offset(), reader.get_hw())
+        (
+            reader.get_log_start_offset(),
+            reader.get_hw(),
+            reader.get_last_offset(),
+        )
     }
 
     /// read records into partition response

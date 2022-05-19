@@ -39,10 +39,12 @@ pub async fn handle_offset_request(
             let rep_id = ReplicaKey::new(topic.clone(), *partition);
             if let Some(ref replica) = ctx.leaders_state().get(&rep_id).await {
                 trace!("offset fetch request for replica found: {}", rep_id);
-                let (start_offset, hw) = replica.start_offset_info().await;
+                let (start_offset, hw, last_offset) = replica.start_offset_info().await;
                 partition_response.error_code = ErrorCode::None;
                 partition_response.start_offset = start_offset;
                 partition_response.last_stable_offset = hw;
+
+                partition_response.last_consumed_offset = last_offset;
             } else {
                 trace!("offset fetch request is not found: {}", rep_id);
                 partition_response.error_code = ErrorCode::PartitionNotLeader;

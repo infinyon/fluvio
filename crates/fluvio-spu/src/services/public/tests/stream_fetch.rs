@@ -185,6 +185,7 @@ async fn test_stream_fetch_basic() {
                 offsets: vec![OffsetUpdate {
                     offset: 1,
                     session_id: stream_id,
+                    consumer_id: None,
                 }],
             }))
             .await
@@ -231,6 +232,7 @@ async fn test_stream_fetch_basic() {
                 offsets: vec![OffsetUpdate {
                     offset: 2,
                     session_id: stream_id,
+                    consumer_id: None,
                 }],
             }))
             .await
@@ -526,6 +528,7 @@ async fn test_stream_fetch_filter(
             offsets: vec![OffsetUpdate {
                 offset: 2,
                 session_id: stream_id,
+                consumer_id: None,
             }],
         }))
         .await
@@ -954,6 +957,7 @@ async fn test_stream_filter_max(
             offsets: vec![OffsetUpdate {
                 offset: 20,
                 session_id: stream_id,
+                consumer_id: None,
             }],
         }))
         .await
@@ -1261,6 +1265,7 @@ async fn test_stream_aggregate_fetch_single_batch(
             offsets: vec![OffsetUpdate {
                 offset: 20,
                 session_id: stream_id,
+                consumer_id: None,
             }],
         }))
         .await
@@ -1424,6 +1429,7 @@ async fn test_stream_aggregate_fetch_multiple_batch(
             offsets: vec![OffsetUpdate {
                 offset: 20,
                 session_id: stream_id,
+                consumer_id: None,
             }],
         }))
         .await
@@ -2191,7 +2197,7 @@ async fn test_stream_fetch_join(
     ///        0  1  2  3  4  5  6
     ///  ----------------------
     /// left   11  22   33 44        55  66
-    /// right        9           22   
+    /// right        9           22
     /// joined       20 31 42 53     77  88
     use fluvio::metadata::spu::SpuSpec;
     ensure_clean_dir(&test_path);
@@ -2323,6 +2329,7 @@ async fn test_stream_fetch_join(
             offsets: vec![OffsetUpdate {
                 offset: 2,
                 session_id: stream_id,
+                consumer_id: None,
             }],
         }))
         .await
@@ -2366,6 +2373,7 @@ async fn test_stream_fetch_join(
             offsets: vec![OffsetUpdate {
                 offset: 4,
                 session_id: stream_id,
+                consumer_id: None,
             }],
         }))
         .await
@@ -2448,11 +2456,11 @@ async fn test_stream_fetch_one_stream_per_consumer_id() {
         .await;
 
     let partition = test_id.partition;
-    let consumer_id = 1;
+    let consumer_id = Some("1".to_string());
     let stream_request1 = DefaultStreamFetchRequest {
         topic: topic.clone(),
         partition,
-        consumer_id,
+        consumer_id: consumer_id.clone(),
         max_bytes: 1000,
         ..Default::default()
     };
@@ -2481,7 +2489,7 @@ async fn test_stream_fetch_one_stream_per_consumer_id() {
     let stream_request2 = DefaultStreamFetchRequest {
         topic: topic.clone(),
         partition,
-        consumer_id,
+        consumer_id: consumer_id.clone(),
         max_bytes: 1000,
         ..Default::default()
     };
@@ -2500,7 +2508,7 @@ async fn test_stream_fetch_one_stream_per_consumer_id() {
         let partition_response = &response.partition;
         assert_eq!(
             partition_response.error_code,
-            ErrorCode::FetchSessionAlreadyExists(consumer_id)
+            ErrorCode::FetchSessionAlreadyExists(consumer_id.clone().unwrap())
         );
         assert_eq!(partition_response.partition_index, partition);
     }
@@ -2508,7 +2516,7 @@ async fn test_stream_fetch_one_stream_per_consumer_id() {
     let stream_request3 = DefaultStreamFetchRequest {
         topic: topic.clone(),
         partition,
-        consumer_id,
+        consumer_id: consumer_id.clone(),
         max_bytes: 1000,
         ..Default::default()
     };

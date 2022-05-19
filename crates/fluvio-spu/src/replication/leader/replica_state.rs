@@ -368,13 +368,13 @@ where
 ///
 /// // case 2:  follower offset is same as previous
 /// //          leader: leo: 2, hw: 2,  follower: leo: 1, hw: 1
-/// //          Input:  leo: 1, hw:1,  
+/// //          Input:  leo: 1, hw:1,
 /// //          Expect, no status but follower sync
 /// //
 /// // case 3:  different follower offset
 /// //          leader: leo: 3, hw: 3,  follower: leo: 1, hw: 1
 /// //          Input:  leo: 2, hw: 2,
-/// //          Expect, status change, follower sync  
+/// //          Expect, status change, follower sync
 ///
 ///  Simple HW mark calculation (assume LRS = 2) which is find minimum offset values that satisfy
 ///     Assume: Leader leo = 10, hw = 2,
@@ -777,6 +777,9 @@ mod test_leader {
         type ReplicaConfig = MockConfig;
 
         fn get_log_start_offset(&self) -> Offset {
+            todo!()
+        }
+        fn get_last_offset(&self) -> Option<Offset> {
             todo!()
         }
 

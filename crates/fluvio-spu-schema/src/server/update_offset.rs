@@ -13,6 +13,7 @@ use super::SpuServerApiKey;
 pub struct OffsetUpdate {
     pub offset: Offset,
     pub session_id: u32,
+    pub consumer_id: Option<String>,
 }
 
 /// send out current offset to SPU

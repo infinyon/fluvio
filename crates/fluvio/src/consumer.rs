@@ -287,9 +287,9 @@ where
 
         let replica = ReplicaKey::new(&self.topic, self.partition);
         let mut serial_socket = self.pool.create_serial_socket(&replica).await?;
-        let offsets = fetch_offsets(&mut serial_socket, &replica).await?;
+        let offsets = fetch_offsets(&mut serial_socket, &replica, config.consumer_id).await?;
 
-        let start_absolute_offset = offset.resolve(&offsets).await?;
+        let start_absolute_offset = offset.resolve(&offsets)?;
         let end_absolute_offset = offsets.last_stable_offset;
         let record_count = end_absolute_offset - start_absolute_offset;
 
@@ -381,6 +381,7 @@ where
                                 offsets: vec![OffsetUpdate {
                                     offset: fetch_last_value,
                                     session_id: stream_id,
+                                    consumer_id: offset.consumer_id(),
                                 }],
                             };
                             debug!(?request, "Sending offset update request:");
@@ -603,6 +604,8 @@ pub struct ConsumerConfig {
     pub(crate) smartmodule: Option<SmartModuleInvocation>,
     #[builder(default)]
     pub(crate) derivedstream: Option<DerivedStreamInvocation>,
+    #[builder(default)]
+    pub(crate) consumer_id: Option<String>,
 }
 
 impl ConsumerConfig {

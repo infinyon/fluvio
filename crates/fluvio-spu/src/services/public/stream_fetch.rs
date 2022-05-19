@@ -58,7 +58,7 @@ impl StreamFetchHandler {
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
             let session_id = header.correlation_id();
             let consumer_id = if header.api_version() >= CONSUMER_ID_API {
-                Some(msg.consumer_id)
+                msg.consumer_id.clone()
             } else {
                 None
             };
@@ -651,7 +651,7 @@ pub mod publishers {
 
     pub struct StreamPublisher {
         pub replica: ReplicaKey,
-        pub consumer_id: Option<u32>,
+        pub consumer_id: Option<String>,
         pub stream_id: u32,
         pub drop_event: Arc<StickyEvent>,
         session_id: i32,
@@ -674,17 +674,18 @@ pub mod publishers {
         pub async fn create_new_publisher(
             &self,
             replica: ReplicaKey,
-            consumer_id: Option<u32>,
+            consumer_id: Option<String>,
             session_id: i32,
         ) -> Result<SharedStreamPublisher, ErrorCode> {
             let stream_id = self.next_stream_id();
             let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
             let mut publisher_lock = self.publishers.lock().await;
-            if let Some(consumer_id) = consumer_id {
+            if let Some(ref consumer_id) = consumer_id {
                 if publisher_lock.values().any(|publisher| {
-                    publisher.consumer_id.eq(&Some(consumer_id)) && publisher.replica.eq(&replica)
+                    publisher.consumer_id.eq(&Some(consumer_id.clone()))
+                        && publisher.replica.eq(&replica)
                 }) {
-                    return Err(ErrorCode::FetchSessionAlreadyExists(consumer_id));
+                    return Err(ErrorCode::FetchSessionAlreadyExists(consumer_id.clone()));
                 }
             }
             let publisher = Arc::new(StreamPublisher {

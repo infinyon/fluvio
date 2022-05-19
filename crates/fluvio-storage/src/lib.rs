@@ -140,6 +140,8 @@ mod inner {
 
         fn get_log_start_offset(&self) -> Offset;
 
+        fn get_last_offset(&self) -> Option<Offset>;
+
         /// read partition slice
         /// return hw and leo
         async fn read_partition_slice(

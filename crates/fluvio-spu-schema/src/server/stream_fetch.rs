@@ -70,7 +70,7 @@ where
     #[fluvio(min_version = 16)]
     pub derivedstream: Option<DerivedStreamInvocation>,
     #[fluvio(min_version = 17)]
-    pub consumer_id: u32,
+    pub consumer_id: Option<String>,
     pub data: PhantomData<R>,
 }
 

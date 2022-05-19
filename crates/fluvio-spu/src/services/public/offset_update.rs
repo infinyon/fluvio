@@ -10,8 +10,8 @@ use crate::core::DefaultSharedGlobalContext;
 
 #[instrument(skip(ctx, request))]
 pub async fn handle_offset_update(
-    ctx: &DefaultSharedGlobalContext,
     request: RequestMessage<UpdateOffsetsRequest>,
+    ctx: &DefaultSharedGlobalContext,
 ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
     debug!("received stream updates");
     let (header, updates) = request.get_header_request();

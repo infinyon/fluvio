@@ -14,6 +14,10 @@ pub(crate) enum OffsetInner {
     Absolute(i64),
     FromBeginning(i64),
     FromEnd(i64),
+    FromLastRead {
+        consumer_id: String,
+        relative_offset: i64,
+    },
 }
 
 impl OffsetInner {
@@ -27,6 +31,17 @@ impl OffsetInner {
             Self::FromEnd(offset) => {
                 let resolved = offsets.last_stable_offset - offset;
                 resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
+            }
+            Self::FromLastRead {
+                consumer_id: _,
+                relative_offset,
+            } => {
+                if let Some(last_offset) = offsets.last_consumed_offset {
+                    let resolved = last_offset + relative_offset;
+                    resolved.clamp(offsets.start_offset, offsets.last_stable_offset)
+                } else {
+                    offsets.start_offset
+                }
             }
         }
     }
@@ -288,7 +303,7 @@ impl Offset {
     ///
     /// Note that calculating relative offsets requires connecting to Fluvio, and
     /// therefore it is `async` and returns a `Result`.
-    pub(crate) async fn resolve(
+    pub(crate) fn resolve(
         &self,
         offsets: &FetchOffsetPartitionResponse,
     ) -> Result<i64, FluvioError> {
@@ -298,11 +313,30 @@ impl Offset {
         let offset = offset.max(0);
         Ok(offset)
     }
+
+    pub fn from_last_offset(consumer_id: String) -> Offset {
+        Self {
+            inner: OffsetInner::FromLastRead {
+                consumer_id,
+                relative_offset: 0,
+            },
+        }
+    }
+    pub fn consumer_id(&self) -> Option<String> {
+        match &self.inner {
+            OffsetInner::FromLastRead {
+                consumer_id,
+                relative_offset: _,
+            } => Some(consumer_id.clone()),
+            _ => None,
+        }
+    }
 }
 
 pub(crate) async fn fetch_offsets(
     client: &mut VersionedSerialSocket,
     replica: &ReplicaKey,
+    consumer_id: Option<String>,
 ) -> Result<FetchOffsetPartitionResponse, FluvioError> {
     debug!("fetching offset for replica: {}", replica);
 
@@ -310,6 +344,7 @@ pub(crate) async fn fetch_offsets(
         .send_receive(FetchOffsetsRequest::new(
             replica.topic.to_owned(),
             replica.partition,
+            consumer_id,
         ))
         .await?;
 
@@ -343,6 +378,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
@@ -357,6 +393,7 @@ mod tests {
             partition_index: 0,
             start_offset: 5,
             last_stable_offset: 10,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(3);
@@ -371,6 +408,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
@@ -385,6 +423,7 @@ mod tests {
             partition_index: 0,
             start_offset: 5,
             last_stable_offset: 10,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromBeginning(15);
@@ -399,6 +438,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromEnd(3);
@@ -413,6 +453,7 @@ mod tests {
             partition_index: 0,
             start_offset: 6,
             last_stable_offset: 10,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromEnd(6);
@@ -427,6 +468,7 @@ mod tests {
             partition_index: 0,
             start_offset: 0,
             last_stable_offset: 10,
+            ..Default::default()
         };
 
         let offset_inner = OffsetInner::FromEnd(100);
