@@ -5,7 +5,9 @@ use std::io::Error as IoError;
 
 use tracing::{debug};
 
-use fluvio_protocol::api::{api_decode, ApiMessage, Request, RequestHeader, RequestMessage};
+use fluvio_protocol::api::{
+    api_decode, ApiMessage, CloseSessionRequest, Request, RequestHeader, RequestMessage,
+};
 use fluvio_protocol::bytes::Buf;
 use fluvio_protocol::derive::{Decoder, Encoder};
 
@@ -15,6 +17,8 @@ use fluvio_protocol::derive::{Decoder, Encoder};
 pub enum TestKafkaApiEnum {
     Echo = 1000,
     Status = 1001,
+
+    CloseSessionRequest = 10_000,
 }
 
 impl Default for TestKafkaApiEnum {
@@ -65,6 +69,7 @@ pub struct AsyncStatusResponse {
 pub enum TestApiRequest {
     EchoRequest(RequestMessage<EchoRequest>),
     AsyncStatusRequest(RequestMessage<AsyncStatusRequest>),
+    CloseSessionRequest(RequestMessage<CloseSessionRequest>),
     Noop(bool),
 }
 
@@ -90,6 +95,9 @@ impl ApiMessage for TestApiRequest {
             TestKafkaApiEnum::Echo => api_decode!(TestApiRequest, EchoRequest, src, header),
             TestKafkaApiEnum::Status => {
                 api_decode!(TestApiRequest, AsyncStatusRequest, src, header)
+            }
+            TestKafkaApiEnum::CloseSessionRequest => {
+                api_decode!(TestApiRequest, CloseSessionRequest, src, header)
             }
         }
     }

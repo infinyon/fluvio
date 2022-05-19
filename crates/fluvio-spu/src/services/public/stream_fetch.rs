@@ -20,7 +20,8 @@ use dataplane::{Offset, Isolation, ReplicaKey};
 use dataplane::fetch::FilePartitionResponse;
 use fluvio_compression::CompressionError;
 use fluvio_spu_schema::server::stream_fetch::{
-    DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest, StreamFetchResponse,
+    CONSUMER_ID_API, DefaultStreamFetchRequest, FileStreamFetchRequest, StreamFetchRequest,
+    StreamFetchResponse,
 };
 use fluvio_smartengine::file_batch::FileBatchIterator;
 use dataplane::batch::Batch;
@@ -56,9 +57,14 @@ impl StreamFetchHandler {
 
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
             let session_id = header.correlation_id();
+            let consumer_id = if header.api_version() >= CONSUMER_ID_API {
+                Some(msg.consumer_id)
+            } else {
+                None
+            };
             match ctx
                 .stream_publishers()
-                .create_new_publisher(replica.clone(), msg.consumer_id, session_id)
+                .create_new_publisher(replica.clone(), consumer_id, session_id)
                 .await
             {
                 Ok(handle) => {
@@ -68,7 +74,7 @@ impl StreamFetchHandler {
                             sink,
                             end_event.clone(),
                             leader_state,
-                            handle.clone(),
+                            handle,
                             header,
                             msg,
                         )
@@ -645,7 +651,7 @@ pub mod publishers {
 
     pub struct StreamPublisher {
         pub replica: ReplicaKey,
-        pub consumer_id: u32,
+        pub consumer_id: Option<u32>,
         pub stream_id: u32,
         pub drop_event: Arc<StickyEvent>,
         session_id: i32,
@@ -668,16 +674,18 @@ pub mod publishers {
         pub async fn create_new_publisher(
             &self,
             replica: ReplicaKey,
-            consumer_id: u32,
+            consumer_id: Option<u32>,
             session_id: i32,
         ) -> Result<SharedStreamPublisher, ErrorCode> {
             let stream_id = self.next_stream_id();
             let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
             let mut publisher_lock = self.publishers.lock().await;
-            if publisher_lock.values().any(|publisher| {
-                publisher.consumer_id.eq(&consumer_id) && publisher.replica.eq(&replica)
-            }) {
-                return Err(ErrorCode::FetchSessionAlreadyExists(consumer_id));
+            if let Some(consumer_id) = consumer_id {
+                if publisher_lock.values().any(|publisher| {
+                    publisher.consumer_id.eq(&Some(consumer_id)) && publisher.replica.eq(&replica)
+                }) {
+                    return Err(ErrorCode::FetchSessionAlreadyExists(consumer_id));
+                }
             }
             let publisher = Arc::new(StreamPublisher {
                 replica,

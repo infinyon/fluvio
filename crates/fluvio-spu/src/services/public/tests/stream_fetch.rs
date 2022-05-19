@@ -27,7 +27,7 @@ use fluvio_spu_schema::server::{
     stream_fetch::{SmartModuleInvocation, SmartModuleInvocationWasm, SmartModuleKind},
     update_offset::{UpdateOffsetsRequest, OffsetUpdate},
 };
-use fluvio_spu_schema::server::stream_fetch::SmartModuleWasmCompressed;
+use fluvio_spu_schema::server::stream_fetch::{CONSUMER_ID_API, SmartModuleWasmCompressed};
 use fluvio_spu_schema::server::stream_fetch::LegacySmartModulePayload;
 use fluvio_spu_schema::server::stream_fetch::{DefaultStreamFetchRequest};
 use crate::{core::GlobalContext, services::public::tests::create_filter_records};
@@ -2416,4 +2416,210 @@ async fn test_stream_fetch_join_adhoc() {
         test_stream_fetch_join,
     )
     .await;
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_one_stream_per_consumer_id() {
+    let test_path = temp_dir().join("test_stream_fetch_one_stream_per_consumer_id");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{}", port);
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    let topic = "test".to_owned();
+    let test = Replica::new((topic.clone(), 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state()
+        .insert(test_id.clone(), replica.clone())
+        .await;
+
+    let partition = test_id.partition;
+    let consumer_id = 1;
+    let stream_request1 = DefaultStreamFetchRequest {
+        topic: topic.clone(),
+        partition,
+        consumer_id,
+        max_bytes: 1000,
+        ..Default::default()
+    };
+
+    let mut stream1 = client_socket
+        .create_stream(RequestMessage::new_request(stream_request1), 1)
+        .await
+        .expect("created stream 1");
+
+    let mut records = RecordSet::default().add(create_batch());
+    replica
+        .write_record_set(&mut records, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    {
+        let response = stream1.next().await.expect("first").expect("response");
+        debug!("response: {:#?}", response);
+        assert_eq!(response.topic, topic);
+
+        let partition_response = &response.partition;
+        assert_eq!(partition_response.error_code, ErrorCode::None);
+        assert_eq!(partition_response.partition_index, partition);
+    }
+
+    let stream_request2 = DefaultStreamFetchRequest {
+        topic: topic.clone(),
+        partition,
+        consumer_id,
+        max_bytes: 1000,
+        ..Default::default()
+    };
+
+    // stream 2 will not fetch data because stream 1 has not been dropped yet
+    let mut stream2 = client_socket
+        .create_stream(RequestMessage::new_request(stream_request2), 10)
+        .await
+        .expect("created stream 2");
+
+    {
+        let response = stream2.next().await.expect("first").expect("response");
+        debug!("response: {:#?}", response);
+        assert_eq!(response.topic, topic);
+
+        let partition_response = &response.partition;
+        assert_eq!(
+            partition_response.error_code,
+            ErrorCode::FetchSessionAlreadyExists(consumer_id)
+        );
+        assert_eq!(partition_response.partition_index, partition);
+    }
+
+    let stream_request3 = DefaultStreamFetchRequest {
+        topic: topic.clone(),
+        partition,
+        consumer_id,
+        max_bytes: 1000,
+        ..Default::default()
+    };
+
+    drop(stream1); //drop stream cleans resources on spu so consumer can create another one
+
+    let mut stream3 = client_socket
+        .create_stream(RequestMessage::new_request(stream_request3), 10)
+        .await
+        .expect("created stream 3");
+
+    {
+        let response = stream3.next().await.expect("first").expect("response");
+        debug!("response: {:#?}", response);
+        assert_eq!(response.topic, topic);
+
+        let partition_response = &response.partition;
+        assert_eq!(partition_response.error_code, ErrorCode::None);
+        assert_eq!(partition_response.partition_index, partition);
+    }
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+#[fluvio_future::test(ignore)]
+async fn test_stream_fetch_one_stream_per_consumer_id_old_api() {
+    let test_path = temp_dir().join("test_stream_fetch_one_stream_per_consumer_id");
+    ensure_clean_dir(&test_path);
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{}", port);
+    let mut spu_config = SpuConfig::default();
+    spu_config.log.base_dir = test_path;
+    let ctx = GlobalContext::new_shared_context(spu_config);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    let topic = "test".to_owned();
+    let test = Replica::new((topic.clone(), 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state()
+        .insert(test_id.clone(), replica.clone())
+        .await;
+
+    let partition = test_id.partition;
+    let stream_request1 = DefaultStreamFetchRequest {
+        topic: topic.clone(),
+        partition,
+        max_bytes: 1000,
+        ..Default::default()
+    };
+
+    let mut request1 = RequestMessage::new_request(stream_request1);
+    request1.header.set_api_version(CONSUMER_ID_API - 1);
+    let mut stream1 = client_socket
+        .create_stream(request1, 1)
+        .await
+        .expect("created stream 1");
+
+    let mut records = RecordSet::default().add(create_batch());
+    replica
+        .write_record_set(&mut records, ctx.follower_notifier())
+        .await
+        .expect("write");
+
+    {
+        let response = stream1.next().await.expect("first").expect("response");
+        debug!("response: {:#?}", response);
+        assert_eq!(response.topic, topic);
+
+        let partition_response = &response.partition;
+        assert_eq!(partition_response.error_code, ErrorCode::None);
+        assert_eq!(partition_response.partition_index, partition);
+    }
+
+    let stream_request2 = DefaultStreamFetchRequest {
+        topic: topic.clone(),
+        partition,
+        max_bytes: 1000,
+        ..Default::default()
+    };
+
+    let mut request2 = RequestMessage::new_request(stream_request2);
+    request2.header.set_api_version(CONSUMER_ID_API - 1);
+    let mut stream2 = client_socket
+        .create_stream(request2, 10)
+        .await
+        .expect("created stream 2");
+
+    {
+        let response = stream2.next().await.expect("first").expect("response");
+        debug!("response: {:#?}", response);
+        assert_eq!(response.topic, topic);
+
+        let partition_response = &response.partition;
+        assert_eq!(partition_response.error_code, ErrorCode::None);
+        assert_eq!(partition_response.partition_index, partition);
+    }
+
+    drop(stream1);
+    drop(stream2);
+    server_end_event.notify();
+    debug!("terminated controller");
 }

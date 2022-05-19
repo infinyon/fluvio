@@ -506,7 +506,7 @@ impl MultiPlexingResponseDispatcher {
 
 #[cfg(test)]
 mod tests {
-
+    use std::collections::HashSet;
     use std::time::Duration;
 
     use async_trait::async_trait;
@@ -569,8 +569,9 @@ mod tests {
         let shared_sink = ExclusiveFlvSink::new(sink);
 
         let mut api_stream = stream.api_stream::<TestApiRequest, TestKafkaApiEnum>();
+        let mut sessions = HashSet::new();
 
-        for i in 0..3u16 {
+        for i in 0..4u16 {
             debug!("server: waiting for next msg: {}", i);
             let msg = api_stream.next().await.expect("msg").expect("unwrap");
             debug!("server: msg received: {:#?}", msg);
@@ -606,6 +607,7 @@ mod tests {
                 }
                 TestApiRequest::AsyncStatusRequest(status_request) => {
                     debug!("server: received async status msg");
+                    sessions.insert(status_request.header.correlation_id());
                     let mut reply_sink = shared_sink.clone();
                     spawn(async move {
                         sleep(Duration::from_millis(30)).await;
@@ -628,10 +630,14 @@ mod tests {
                         debug!("server: send back status second");
                     });
                 }
+                TestApiRequest::CloseSessionRequest(close_session_request) => {
+                    debug!("server: received close session request");
+                    sessions.remove(&close_session_request.request.session_id);
+                }
                 _ => panic!("no echo request"),
             }
         }
-
+        assert!(sessions.is_empty(), "all sessions must be closed");
         debug!("server: finish sending out"); // finish ok
     }
 
