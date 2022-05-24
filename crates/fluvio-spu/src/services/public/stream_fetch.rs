@@ -61,7 +61,7 @@ impl StreamFetchHandler {
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
             let (stream_id, offset_publisher) =
                 ctx.stream_publishers().create_new_publisher().await;
-            let consumer_offset_listener = offset_publisher.change_listner();
+            let consumer_offset_listener = offset_publisher.change_listener();
 
             spawn(async move {
                 if let Err(err) = StreamFetchHandler::fetch(
