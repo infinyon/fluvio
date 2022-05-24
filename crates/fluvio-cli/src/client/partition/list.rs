@@ -96,7 +96,7 @@ mod display {
                 "SIZE",
                 "HW",
                 "LEO",
-                "LRS",
+                "LSR",
                 "FOLLOWER OFFSETS",
             ])
         }
