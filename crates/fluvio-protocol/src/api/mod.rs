@@ -3,6 +3,7 @@ use std::path::Path;
 use std::fs::File;
 use std::io::{Cursor, Error as IoError, ErrorKind, Read};
 use std::convert::TryFrom;
+use std::ops::Deref;
 use bytes::Buf;
 use tracing::{debug, trace};
 
@@ -76,6 +77,11 @@ pub trait ApiMessage: Sized + Default {
 
         Self::decode_from(&mut src)
     }
+}
+
+impl<T: Request, D: Deref<Target = T> + Debug + Encoder + Decoder> Request for D {
+    const API_KEY: u16 = T::API_KEY;
+    type Response = T::Response;
 }
 
 pub trait ApiKey: Sized + Encoder + Decoder + TryFrom<u16> {}

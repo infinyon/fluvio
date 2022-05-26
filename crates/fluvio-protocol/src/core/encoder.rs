@@ -4,6 +4,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Write;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use bytes::BufMut;
 use bytes::Bytes;
@@ -401,11 +402,28 @@ where
     }
 }
 
+impl<M> Encoder for Arc<M>
+where
+    M: Encoder,
+{
+    fn write_size(&self, version: Version) -> usize {
+        M::write_size(self, version)
+    }
+
+    fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: BufMut,
+    {
+        M::encode(self, dest, version)
+    }
+}
+
 #[cfg(test)]
 mod test {
 
     use bytes::BufMut;
     use std::io::Error as IoError;
+    use std::sync::Arc;
 
     use crate::Encoder;
     use crate::Version;
@@ -651,6 +669,24 @@ mod test {
         assert_eq!(dest.len(), 257 + 4);
         assert_eq!(dest[4..257 + 4], vec![0x10; 257]);
         assert_eq!(value.write_size(0), dest.len());
+    }
+
+    #[test]
+    fn test_encode_arc() {
+        let mut dest_arc = vec![];
+        let mut dest_u8 = vec![];
+        let value_arc = Arc::new(11u8);
+        let value_u8 = 11u8;
+        let result_arc = value_arc.encode(&mut dest_arc, 0);
+        let result_u8 = value_u8.encode(&mut dest_u8, 0);
+        assert!(result_arc.is_ok());
+        assert!(result_u8.is_ok());
+
+        assert_eq!(dest_arc.len(), 1);
+        assert_eq!(dest_arc, dest_u8);
+
+        assert_eq!(value_arc.write_size(0), dest_arc.len());
+        assert_eq!(value_u8.write_size(0), dest_u8.len());
     }
 
     #[derive(Default)]

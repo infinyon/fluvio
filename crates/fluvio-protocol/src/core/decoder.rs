@@ -4,6 +4,7 @@ use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Read;
 use std::marker::PhantomData;
+use std::sync::Arc;
 
 use bytes::Buf;
 use bytes::BufMut;
@@ -400,6 +401,21 @@ impl DecoderVarInt for Option<Vec<u8>> {
     }
 }
 
+impl<M> Decoder for Arc<M>
+where
+    M: Decoder,
+{
+    fn decode<T>(&mut self, src: &mut T, version: Version) -> Result<(), Error>
+    where
+        T: Buf,
+    {
+        let mut_ref = Arc::get_mut(self).ok_or_else(|| {
+            Error::new(ErrorKind::Other, "not exclusive reference is being decoded")
+        })?;
+        M::decode(mut_ref, src, version)
+    }
+}
+
 #[cfg(test)]
 mod test {
 
@@ -409,6 +425,7 @@ mod test {
     use bytes::Buf;
     use std::io::Cursor;
     use std::io::Error;
+    use std::sync::Arc;
 
     #[test]
     fn test_decode_i18_not_enough() {
@@ -781,6 +798,22 @@ mod test {
         let array = value.unwrap();
         assert_eq!(array.len(), 3);
         assert_eq!(array[0], 0x64);
+    }
+
+    #[test]
+    fn test_decode_arc() {
+        let data = [0x12];
+        let mut value = Arc::new(0u8);
+        let result = value.decode(&mut Cursor::new(&data), 0);
+        assert!(result.is_ok());
+        assert_eq!(*value, 18u8);
+    }
+
+    #[test]
+    fn test_decode_from_arc() {
+        let data = [0x12];
+        let result: u8 = Decoder::decode_from(&mut Cursor::new(&data), 0).expect("decoded");
+        assert_eq!(result, 18u8);
     }
 
     #[derive(Default)]
