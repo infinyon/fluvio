@@ -417,6 +417,9 @@ impl LocalInstaller {
         pb.println(InstallProgressMessage::ScLaunched.msg());
         pb.finish_and_clear();
 
+        // set profile as long as sc is up
+        self.set_profile()?;
+
         let pb = self.pb_factory.create();
         self.launch_spu_group(client.clone(), &pb).await?;
         self.confirm_spu(self.config.spu_replicas, &fluvio, &pb)
@@ -425,7 +428,6 @@ impl LocalInstaller {
         pb.finish_and_clear();
         drop(pb);
 
-        self.set_profile()?;
 
         self.pb_factory
             .println("🎯 Successfully installed Local Fluvio cluster");
