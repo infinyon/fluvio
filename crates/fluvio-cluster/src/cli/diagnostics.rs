@@ -47,7 +47,13 @@ impl DiagnosticsOpt {
         let temp_dir = tempdir::TempDir::new("fluvio-diagnostics")?;
         let temp_path = temp_dir.path();
 
-        let spu_specs = self.copy_fluvio_specs(temp_path).await?;
+        let spu_specs = match self.copy_fluvio_specs(temp_path).await {
+            Ok(specs) => specs,
+            Err(err) => {
+                eprintln!("error copying fluivo specs: {:#?}", err);
+                vec![]
+            }
+        };
 
         // write internal fluvio cluster internal state
         match profile_ty {
@@ -222,6 +228,8 @@ impl DiagnosticsOpt {
 
     async fn copy_fluvio_specs(&self, dest: &Path) -> Result<Vec<Metadata<SpuSpec>>> {
         use fluvio::Fluvio;
+
+        println!("start copying fluvio specs from...");
         let fluvio = Fluvio::connect().await?;
         let admin = fluvio.admin().await;
 
