@@ -23,6 +23,8 @@ use crate::stores::spg::{SpuGroupSpec};
 
 /// Update SPU from changes in SPU Group and SPU Services
 /// This is only place where we make changes to SPU
+/// For each SPU Group, we create children SPUs so it's 1:M parent-child relationship
+/// For each SPU Service, we create SPUs so it's 1:M parent-child relationship
 pub struct K8SpuController {
     services: StoreContext<SpuServiceSpec>,
     groups: StoreContext<SpuGroupSpec>,
