@@ -428,7 +428,6 @@ impl LocalInstaller {
         pb.finish_and_clear();
         drop(pb);
 
-
         self.pb_factory
             .println("🎯 Successfully installed Local Fluvio cluster");
 
