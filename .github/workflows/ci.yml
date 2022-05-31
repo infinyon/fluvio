@@ -547,13 +547,13 @@ jobs:
         run: |
           make batching-test
       - name: Run diagnostics
-#        if: ${{ !success() }}
+        if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics --local
       - name: Upload diagnostics
         uses: actions/upload-artifact@v2
         timeout-minutes: 5
-#        if: ${{ !success() }}
+        if: ${{ !success() }}
         with:
           name: local-${{ matrix.run }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
