@@ -251,10 +251,9 @@ where
                 };
                 drop(read_guard);
                 debug!(
-                    "{} begin update status key: {}, revision: {}",
-                    S::LABEL,
-                    key,
-                    meta.resource_version
+                    key = %key,
+                    version = %meta.resource_version,
+                    "update status begin",
                 );
                 match self
                     .ws_update_service
@@ -267,11 +266,10 @@ where
                         use crate::store::actions::LSUpdate;
 
                         debug!(
-                            "{} K8 update Status: {}, rev: {},stats: {:#?}",
-                            S::LABEL,
-                            item.metadata.name,
-                            item.metadata.resource_version,
-                            item.status,
+                            name = %item.metadata.name,
+                            version = %item.metadata.resource_version,
+                            status = ?item.status,
+                            "update status success"
                         );
 
                         match convert::k8_obj_to_kv_obj(item) {
