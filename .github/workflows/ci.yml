@@ -30,7 +30,7 @@ env:
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
-  MAX_PROVISION_TIME_SEC: 600
+  FLV_CLUSTER_PROVISION_TIMEOUT: 600
 
 jobs:
   # this job set up dynamic configuration shared among jobs

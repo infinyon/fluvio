@@ -557,6 +557,10 @@ impl LocalInstaller {
         let pb = self.pb_factory.create();
         let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
         let time = SystemTime::now();
+        pb.set_message(format!(
+            "🖥️ Waiting for SPUs to be ready and have ingress... (timeout: {}s)",
+            timeout = *MAX_PROVISION_TIME_SEC
+        ));
         // wait for list of spu
         while time.elapsed().unwrap() < timeout_duration {
             let spus = admin.list::<SpuSpec, _>(vec![]).await?;
