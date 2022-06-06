@@ -18,7 +18,7 @@ use crate::stores::spu::*;
 pub struct SpuController {
     spus: StoreContext<SpuSpec>,
     health_check: SharedHealthCheck,
-    counter: u64,       // how many time we have been sync
+    counter: u64, // how many time we have been sync
 }
 
 impl SpuController {
