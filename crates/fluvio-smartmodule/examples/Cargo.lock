@@ -126,7 +126,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-dataplane-protocol"
-version = "0.11.0"
+version = "0.11.1"
 dependencies = [
  "bytes",
  "cfg-if",
@@ -160,7 +160,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol"
-version = "0.7.6"
+version = "0.7.7"
 dependencies = [
  "bytes",
  "fluvio-protocol-derive",
@@ -169,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-protocol-derive"
-version = "0.4.1"
+version = "0.4.2"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -197,7 +197,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-types"
-version = "0.3.5"
+version = "0.3.7"
 dependencies = [
  "thiserror",
  "tracing",
@@ -696,9 +696,9 @@ dependencies = [
 
 [[package]]
 name = "regex"
-version = "1.5.4"
+version = "1.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d07a8629359eb56f1e2fb1652bb04212c072a87ba68546a04065d525673ac461"
+checksum = "1a11647b6b25ff05a515cb92c365cec08801e83423a235b51e231e1808747286"
 dependencies = [
  "aho-corasick",
  "memchr",
