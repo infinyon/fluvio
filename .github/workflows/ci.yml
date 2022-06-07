@@ -437,7 +437,7 @@ jobs:
       UNINSTALL: noclean
       FLUVIO_BIN: ~/bin/fluvio
       TEST_BIN: ~/bin/fluvio-test
-      SERVER_LOG: fluvio=debug,k8_client=debug
+      SERVER_LOG: fluvio=debug
     strategy:
       fail-fast: false
       matrix:
