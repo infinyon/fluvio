@@ -30,7 +30,7 @@ env:
   TLS_ARGS: --tls --domain fluvio.local --server-key ./tls/certs/server.key --server-cert ./tls/certs/server.crt --ca-cert ./tls/certs/ca.crt --client-cert ./tls/certs/client-root.crt --client-key ./tls/certs/client-root.key
   AUTH_FILE: crates/fluvio-sc/test-data/auth_config/policy.json
   X509_SCOPE_FILE: crates/fluvio-sc/test-data/auth_config/scopes.json
-  MAX_PROVISION_TIME_SEC: 600
+  FLV_CLUSTER_PROVISION_TIMEOUT: 600
 
 jobs:
   # this job set up dynamic configuration shared among jobs
@@ -66,20 +66,11 @@ jobs:
       RUST_BACKTRACE: full
       RUSTV: ${{ matrix.rust }}
       TARGET: ${{ matrix.rust-target }}
-      RUST_BIN_DIR: target/${{ matrix.rust-target }}/debug
-      RELEASE_NAME: debug
+      RUST_BIN_DIR: target/${{ matrix.rust-target }}/release
+      RELEASE_NAME: release
+      RELEASE: true
     steps:
       - uses: actions/checkout@v2
-
-      # If this job is being run by Bors (it was pushed to staging),
-      # then build and run in release mode
-      - name: Set RELEASE mode
-        if: github.event_name == 'push' && github.ref == 'refs/heads/staging'
-        shell: bash
-        run: |
-          echo "RELEASE=true" | tee -a $GITHUB_ENV
-          echo "RELEASE_NAME=release" | tee -a $GITHUB_ENV
-          echo "RUST_BIN_DIR=target/${{ matrix.rust-target }}/release" | tee -a $GITHUB_ENV
 
       - name: Print env
         run: |

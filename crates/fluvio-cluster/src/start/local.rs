@@ -417,6 +417,9 @@ impl LocalInstaller {
         pb.println(InstallProgressMessage::ScLaunched.msg());
         pb.finish_and_clear();
 
+        // set profile as long as sc is up
+        self.set_profile()?;
+
         let pb = self.pb_factory.create();
         self.launch_spu_group(client.clone(), &pb).await?;
         self.confirm_spu(self.config.spu_replicas, &fluvio, &pb)
@@ -424,8 +427,6 @@ impl LocalInstaller {
         pb.println(format!("✅ {} SPU launched", self.config.spu_replicas));
         pb.finish_and_clear();
         drop(pb);
-
-        self.set_profile()?;
 
         self.pb_factory
             .println("🎯 Successfully installed Local Fluvio cluster");
@@ -556,6 +557,10 @@ impl LocalInstaller {
         let pb = self.pb_factory.create();
         let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
         let time = SystemTime::now();
+        pb.set_message(format!(
+            "🖥️ Waiting for SPUs to be ready and have ingress... (timeout: {}s)",
+            timeout = *MAX_PROVISION_TIME_SEC
+        ));
         // wait for list of spu
         while time.elapsed().unwrap() < timeout_duration {
             let spus = admin.list::<SpuSpec, _>(vec![]).await?;

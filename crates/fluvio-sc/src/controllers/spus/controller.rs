@@ -18,6 +18,7 @@ use crate::stores::spu::*;
 pub struct SpuController {
     spus: StoreContext<SpuSpec>,
     health_check: SharedHealthCheck,
+    counter: u64, // how many time we have been sync
 }
 
 impl SpuController {
@@ -25,6 +26,7 @@ impl SpuController {
         let controller = Self {
             spus: ctx.spus().clone(),
             health_check: ctx.health().clone(),
+            counter: 0,
         };
 
         debug!("starting spu controller");
@@ -52,19 +54,19 @@ impl SpuController {
         let _ = spu_listener.wait_for_initial_sync().await;
 
         let mut health_listener = self.health_check.listener();
-        debug!("initializing listeners");
+        debug!("finished initializing listeners");
 
         loop {
             self.sync_store().await?;
 
             select! {
                 _ = spu_listener.listen() => {
-                    debug!("detected events in spu store");
+                    debug!("detected changes in spu store");
                     spu_listener.load_last();
 
                 },
                 _ = health_listener.listen() => {
-                    debug!("detected check events");
+                    debug!("detected changes in health listener");
 
                 },
             }
@@ -72,7 +74,7 @@ impl SpuController {
     }
 
     /// sync spu status with store
-    #[instrument(skip(self))]
+    #[instrument(skip(self),fields(counter=self.counter))]
     async fn sync_store(&self) -> Result<(), IoError> {
         // first get status values
         let spus = self.spus.store().clone_values().await;

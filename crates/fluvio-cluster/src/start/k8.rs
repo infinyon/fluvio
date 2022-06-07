@@ -972,10 +972,10 @@ impl ClusterInstaller {
         let expected_spu = self.config.spu_replicas as usize;
         let timeout_duration = Duration::from_secs(*MAX_PROVISION_TIME_SEC as u64);
         let time = SystemTime::now();
-        debug!(
-            timeout = *MAX_PROVISION_TIME_SEC,
-            "waiting for SPU with timeout"
-        );
+        pb.set_message(format!(
+            "🖥️ Waiting for SPUs to be ready and have ingress... (timeout: {}s)",
+            timeout = *MAX_PROVISION_TIME_SEC
+        ));
 
         while time.elapsed().unwrap() < timeout_duration {
             debug!("retrieving spu specs");
