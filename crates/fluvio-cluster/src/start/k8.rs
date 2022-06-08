@@ -1139,7 +1139,7 @@ impl ClusterInstaller {
         let lists = admin.list::<SpuGroupSpec, _>([]).await?;
         if lists.is_empty() {
             pb.set_message(format!(
-                "🤖 Creatng SPU Group: {} with replicas: {}",
+                "🤖 Creating SPU Group: {} with replicas: {}",
                 spg_name, self.config.spu_replicas
             ));
 
