@@ -395,7 +395,12 @@ impl LocalInstaller {
         debug!("using log dir: {}", self.config.log_dir.display());
         pb.set_message("Creating log directory");
         if !self.config.log_dir.exists() {
-            create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
+            create_dir_all(&self.config.log_dir).map_err(|e| {
+                LocalInstallError::LogDirectoryError {
+                    path: self.config.log_dir.clone(),
+                    source: e,
+                }
+            })?;
         }
 
         pb.set_message("Sync files");

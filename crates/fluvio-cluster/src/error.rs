@@ -93,6 +93,12 @@ pub enum K8InstallError {
 /// Errors that may occur while trying to install Fluvio locally
 #[derive(thiserror::Error, Debug)]
 pub enum LocalInstallError {
+    /// An IO error occured during log dir creation
+    #[error("An error occurred creating the cluster log directory {path:?}")]
+    LogDirectoryError {
+        path: std::path::PathBuf,
+        source: IoError,
+    },
     /// An IO error occurred, such as opening a file or running a command.
     #[error(transparent)]
     IoError(#[from] IoError),
