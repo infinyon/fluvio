@@ -159,7 +159,7 @@ jobs:
       - name: Start Fluvio Cluster
         run: |
           fluvio version
-          RUST_LOG=fluvio=debug fluvio cluster start
+          fluvio cluster start
 
       # Disabled for now bc data load is unstable in CI
       #- name: Look for longevity data
