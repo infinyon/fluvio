@@ -1705,7 +1705,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.2",
  "static_assertions",
- "sysinfo",
+ "sysinfo 0.23.13",
  "tempdir",
  "thiserror",
  "tracing",
@@ -1772,7 +1772,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sysinfo",
+ "sysinfo 0.24.3",
  "tar",
  "tempdir",
  "tempfile",
@@ -2033,7 +2033,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_yaml",
- "sysinfo",
+ "sysinfo 0.23.13",
  "tokio",
  "tracing",
  "tracing-futures",
@@ -2170,7 +2170,7 @@ dependencies = [
  "regex",
  "serde",
  "serde_json",
- "sysinfo",
+ "sysinfo 0.23.13",
  "thiserror",
  "tokio",
  "toml",
@@ -2291,7 +2291,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "signal-hook",
- "sysinfo",
+ "sysinfo 0.23.13",
  "tokio",
  "tracing",
  "uuid",
@@ -4741,6 +4741,20 @@ dependencies = [
  "ntapi",
  "once_cell",
  "rayon",
+ "winapi",
+]
+
+[[package]]
+name = "sysinfo"
+version = "0.24.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e6241cec618592e5d52f7ed0c8abba0cd1969a5aa4be7b5351281d922113e1d"
+dependencies = [
+ "cfg-if",
+ "core-foundation-sys",
+ "libc",
+ "ntapi",
+ "once_cell",
  "winapi",
 ]
 
