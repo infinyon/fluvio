@@ -25,11 +25,13 @@ pub struct CreateRequest<S: CreatableAdminSpec> {
 pub struct CommonCreateRequest {
     pub name: String,
     pub dry_run: bool,
+    #[fluvio(min_version = 7)]
+    pub timeout: Option<u32>, // timeout in milliseconds
 }
 
 impl Request for ObjectApiCreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
-    const DEFAULT_API_VERSION: i16 = 6;
+    const DEFAULT_API_VERSION: i16 = 7;
     type Response = Status;
 }
 

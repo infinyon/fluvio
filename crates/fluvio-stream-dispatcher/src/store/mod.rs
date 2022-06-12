@@ -249,8 +249,10 @@ mod context {
             let mut timer = sleep(timeout);
 
             let debug_action = action.to_string();
+            let mut loop_count: u16 = 0;
             match self.sender.send(action).await {
                 Ok(_) => loop {
+                    // check if we can find updates to object
                     if let Some(new_value) = self.store.value(key).await {
                         if let Some(old_value) = &current_value {
                             if new_value.is_newer(old_value) {
@@ -263,13 +265,13 @@ mod context {
                         }
                     }
 
-                    trace!("{} store, waiting for create event", S::LABEL);
+                    trace!(SPEC = %S::LABEL, "waiting");
 
                     select! {
                         _ = &mut timer => {
                             return Err(IoError::new(
                                 ErrorKind::TimedOut,
-                                format!("store timed out: {}  timer: {} ms", debug_action, timeout.as_millis()),
+                                format!("store timed out: {debug_action} loop: {loop_count}, timer: {} ms", timeout.as_millis()),
                             ));
                         },
 
@@ -278,6 +280,8 @@ mod context {
                             trace!("{} received changes: {:#?}",S::LABEL,changes);
                         }
                     }
+
+                    loop_count += 1;
                 },
                 Err(err) => {
                     error!("{}, error sending to store: {}", S::LABEL, err);

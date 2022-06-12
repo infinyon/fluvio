@@ -66,7 +66,7 @@ fluvio-extension-common = { path = "../fluvio-extension-common", optional = true
 fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", features = [
     "k8",
 ] }
-fluvio-sc-schema = { path = "../fluvio-sc-schema", default-features = false, optional = true }
+fluvio-sc-schema = { path = "../fluvio-sc-schema", default-features = false}
 flv-util = "0.5.2"
 k8-config = { version = "2.0.0" }
 k8-client = { version = "6.0.0" }
