@@ -393,7 +393,7 @@ impl SystemInfo {
             kernel_version: sys.kernel_version().unwrap_or_default(),
             os_version: sys.os_version().unwrap_or_default(),
             host_name: sys.host_name().unwrap_or_default(),
-            processors: sys.processors().len(),
+            processors: sys.cpus().len(),
             total_memory: sys.total_memory(),
             total_swap: sys.total_swap(),
             used_swap: sys.used_swap(),
