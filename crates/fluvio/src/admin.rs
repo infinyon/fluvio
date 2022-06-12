@@ -151,9 +151,26 @@ impl FluvioAdmin {
         S: CreatableAdminSpec + Sync + Send,
         ObjectApiCreateRequest: From<(CommonCreateRequest, S)>,
     {
-        let common_request = CommonCreateRequest { name, dry_run };
+        let common_request = CommonCreateRequest {
+            name,
+            dry_run,
+            ..Default::default()
+        };
 
-        let create_request: ObjectApiCreateRequest = (common_request, spec).into();
+        self.create_with_config(common_request, spec).await
+    }
+
+    #[instrument(skip(self, config, spec))]
+    pub async fn create_with_config<S>(
+        &self,
+        config: CommonCreateRequest,
+        spec: S,
+    ) -> Result<(), FluvioError>
+    where
+        S: CreatableAdminSpec + Sync + Send,
+        ObjectApiCreateRequest: From<(CommonCreateRequest, S)>,
+    {
+        let create_request: ObjectApiCreateRequest = (config, spec).into();
 
         debug!("sending create request: {:#?}", create_request);
 

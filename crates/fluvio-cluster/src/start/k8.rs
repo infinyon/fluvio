@@ -11,6 +11,7 @@ use std::time::SystemTime;
 use derive_builder::Builder;
 use fluvio::FluvioAdmin;
 use fluvio_controlplane_metadata::spg::SpuConfig;
+use fluvio_sc_schema::objects::CommonCreateRequest;
 use k8_client::SharedK8Client;
 use k8_client::load_and_share;
 use tracing::{warn, debug, instrument};
@@ -1149,7 +1150,16 @@ impl ClusterInstaller {
                 spu_config: self.config.spu_config.clone(),
             };
 
-            admin.create(spg_name.clone(), false, spu_spec).await?;
+            admin
+                .create_with_config(
+                    CommonCreateRequest {
+                        name: spg_name.clone(),
+                        timeout: Some(*MAX_PROVISION_TIME_SEC as u32 * 1000),
+                        ..Default::default()
+                    },
+                    spu_spec,
+                )
+                .await?;
             pb.set_message(format!("🤖 Spu Group {} started", spg_name));
         } else {
             pb.set_message("SPU Group Exists,skipping");
