@@ -602,7 +602,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         rust-target: [x86_64-unknown-linux-musl]
-        run: [r1]
+        run: [r1,r2,r3,r4,r5,r6,r7,r8,r9,r10]
         test: [smoke-test-k8, smoke-test-k8-tls, smoke-test-k8-tls-root-unclean]
         k8: [k3d, minikube]
         spu: [3]
