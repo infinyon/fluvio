@@ -1,6 +1,6 @@
 [package]
 name = "fluvio"
-version = "0.12.14"
+version = "0.12.13"
 edition = "2021"
 license = "Apache-2.0"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
@@ -54,7 +54,9 @@ fluvio-types = { version = "0.3.7", features = [
 fluvio-sc-schema = { version = "0.14.0", path = "../fluvio-sc-schema", default-features = false }
 fluvio-socket = { path = "../fluvio-socket", version = "0.11.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
-dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", features = ["memory_batch"], package = "fluvio-dataplane-protocol" }
+dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", features = [
+    "memory_batch",
+], package = "fluvio-dataplane-protocol" }
 fluvio-compression = { version = "0.1.0", path = "../fluvio-compression" }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
