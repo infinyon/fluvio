@@ -2,7 +2,7 @@ use std::convert::TryFrom;
 use std::sync::Arc;
 
 use fluvio_sc_schema::objects::ObjectApiWatchRequest;
-use tracing::{debug};
+use tracing::{debug, info};
 use tokio::sync::OnceCell;
 
 use fluvio_socket::{SharedMultiplexerSocket, MultiplexerSocket};
@@ -71,6 +71,11 @@ impl Fluvio {
     /// ```
     pub async fn connect_with_config(config: &FluvioConfig) -> Result<Self, FluvioError> {
         let connector = DomainConnector::try_from(config.tls.clone())?;
+        info!(
+            fluvio_crate_version = env!("CARGO_PKG_VERSION"),
+            fluvio_git_hash = env!("GIT_HASH"),
+            "Connecting to Fluvio cluster"
+        );
         Self::connect_with_connector(connector, config).await
     }
 
