@@ -33,7 +33,7 @@ impl SmartModuleCmd {
             }
             Self::Delete(opt) => {
                 opt.process(fluvio).await?;
-            },
+            }
             Self::Generate(opt) => {
                 opt.process(fluvio).await?;
             }

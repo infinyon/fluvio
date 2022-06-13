@@ -1,0 +1,23 @@
+[package]
+name = "{{project-name}}"
+version = "0.1.0"
+authors = ["{{authors}}"]
+edition = "2021"
+
+[lib]
+crate-type = ['cdylib']
+
+[dependencies]
+fluvio-smartmodule = { version = "0.2" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# We can make this crate have its own workspace.
+# This is needed to enable `profile.relesae.lto` below.
+# If your crate will belong to another workspace,
+# consider enabling lto in that workspace instead
+[workspace]
+members = ["."]
+
+[profile.release]
+lto = true
