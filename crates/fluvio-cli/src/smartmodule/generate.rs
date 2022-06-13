@@ -15,7 +15,7 @@ pub struct GenerateSmartModuleOpt {
 impl GenerateSmartModuleOpt {
     pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
         // generate a simple template
-        cmd!("cargo", "generate").run()?;
+        cmd!("cargo", "generate","--path","crates/fluvio-cli/templates","-n","test2","-d","smartmodule-type=filter","-d","smartmodule-params=false").run()?;
 
         Ok(())
     }
