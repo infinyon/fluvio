@@ -1676,6 +1676,7 @@ dependencies = [
  "crossterm 0.23.2",
  "ctrlc",
  "dirs",
+ "duct",
  "eyre",
  "flate2",
  "fluvio",
