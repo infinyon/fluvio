@@ -1696,6 +1696,7 @@ dependencies = [
  "home",
  "http-types",
  "humantime",
+ "include_dir",
  "indicatif",
  "k8-client",
  "k8-config",
