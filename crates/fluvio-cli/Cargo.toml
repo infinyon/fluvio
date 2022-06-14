@@ -28,17 +28,16 @@ consumer = [
     "fluvio-future",
     "fluvio-sc-schema",
 ]
-k8s = [
-    "k8-client",
-    "k8-config",
-    "fluvio-cluster",
-]
+k8s = ["k8-client", "k8-config", "fluvio-cluster"]
 
 [dependencies]
 tracing = "0.1.19"
 url = "2.1.1"
 semver = "1.0.0"
-clap = { version = "3.1.8", features = ["std", "derive"], default-features = false }
+clap = { version = "3.1.8", features = [
+    "std",
+    "derive",
+], default-features = false }
 clap_complete = "3.1.1"
 dirs = "4.0.0"
 async-h1 = "2.1.2"
@@ -63,7 +62,7 @@ colored = "2"
 handlebars = "4"
 content_inspector = { version = "0.2.4", optional = true }
 flate2 = "1.0.22"
-crossterm = { version = "0.23.0", features = ['event-stream']}
+crossterm = { version = "0.23.0", features = ['event-stream'] }
 tui = { version = "0.17.0", default-features = false, features = ['crossterm'] }
 futures = "0.3"
 humantime = "2.1.0"
@@ -71,26 +70,39 @@ humantime-serde = "1.1.1"
 bytesize = { version = "1.1.0", features = ['serde'] }
 duct = { version = "0.13", default-features = false }
 include_dir = "0.7.2"
+indicatif = "0.16.2"
 
 # Fluvio dependencies
 k8-config = { version = "2.0.0", optional = true }
-k8-client = { version = "7.0.0", optional = true }
-k8-types = { version = "0.6.0", features = ["core"] }
-fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = ["cli"], optional = true }
+k8-client = { version = "6.0.0", optional = true }
+k8-types = { version = "0.5.0", features = ["core"] }
+fluvio-cluster = { path = "../fluvio-cluster", default-features = false, features = [
+    "cli",
+], optional = true }
 
 fluvio = { path = "../fluvio", default-features = false }
 fluvio-socket = { path = "../fluvio-socket" }
 fluvio-command = { version = "0.2.0" }
 fluvio-package-index = { path = "../fluvio-package-index" }
-fluvio-extension-common = { path = "../fluvio-extension-common", features = ["target"] }
+fluvio-extension-common = { path = "../fluvio-extension-common", features = [
+    "target",
+] }
 fluvio-channel = { path = "../fluvio-channel" }
 fluvio-cli-common = { path = "../fluvio-cli-common" }
 
 # Optional Fluvio dependencies
 fluvio-types = { path = "../fluvio-types", optional = true }
-fluvio-future = { version = "0.3.14", features = ["fs", "io", "subscriber", "native2_tls"], optional = true }
-fluvio-sc-schema = { path = "../fluvio-sc-schema", features = ["use_serde"], optional = true }
-indicatif = "0.16.2"
+fluvio-future = { version = "0.3.14", features = [
+    "fs",
+    "io",
+    "subscriber",
+    "native2_tls",
+], optional = true }
+fluvio-sc-schema = { path = "../fluvio-sc-schema", features = [
+    "use_serde",
+], optional = true }
+fluvio-spu-schema = { path = "../fluvio-spu-schema" }
+fluvio-smartengine = { path = "../fluvio-smartengine" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.14", features = ["fixture"] }

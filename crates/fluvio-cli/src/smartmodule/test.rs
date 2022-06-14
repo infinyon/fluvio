@@ -1,8 +1,21 @@
+use std::collections::BTreeMap;
+
+use fluvio_smartengine::SmartEngine;
+use fluvio_spu_schema::server::stream_fetch::{LegacySmartModulePayload, SmartModuleWasmCompressed};
 use tracing::debug;
 use clap::Parser;
 use duct::{cmd};
 
-use fluvio::Fluvio;
+use fluvio::{
+    Fluvio,
+    consumer::{SmartModuleKind},
+    FluvioError,
+    dataplane::{
+        smartmodule::SmartModuleInput,
+        record::{RecordData, Record},
+    },
+    RecordKey,
+};
 
 use crate::Result;
 use super::fluvio_smart_dir;
@@ -44,6 +57,24 @@ impl TestSmartModuleOpt {
         let raw = std::fs::read(wasm_file)?;
         println!("loading {} wasm bytes", raw.len());
 
+        let payload = LegacySmartModulePayload {
+            wasm: SmartModuleWasmCompressed::Raw(raw),
+            kind: SmartModuleKind::Map,
+            params: BTreeMap::new().into(),
+        };
+
+        let engine = SmartEngine::default();
+        let mut smartmodule = engine
+            .create_module_from_payload(payload, None)
+            .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+
+        let sample_input: Vec<u8> = vec![];
+
+        let record_value: RecordData = sample_input.into();
+        let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
+        let output = smartmodule
+            .process(SmartModuleInput::try_from(entries)?)
+            .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
         Ok(())
     }
 }
