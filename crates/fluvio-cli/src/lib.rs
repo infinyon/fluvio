@@ -160,14 +160,14 @@ mod root {
         ///
         /// Used with the consumer output type `full_table` to
         /// describe how to render JSON data in a tabular form
-        #[clap(subcommand, name = "table-format", aliases = &["tf"])]
+        #[clap(subcommand, name = "table-format", visible_alias = "tf")]
         TableFormat(TableFormatCmd),
 
         /// Create and manage DerivedStreams
         ///
         /// Use topics, SmartModules or other DerivedStreams
         /// to build a customized stream to consume
-        #[clap(subcommand, name = "derived-stream", aliases = &["ds"])]
+        #[clap(subcommand, name = "derived-stream", visible_alias = "ds")]
         DerivedStream(DerivedStreamCmd),
 
         #[clap(external_subcommand)]
@@ -281,7 +281,7 @@ mod root {
         /// Create and manage SmartModules
         ///
         /// SmartModules are compiled WASM modules used to create SmartModules.
-        #[clap(subcommand, name = "smart-module", aliases = &["sm"])]
+        #[clap(subcommand, name = "smart-module", visible_alias = "sm")]
         SmartModule(SmartModuleCmd),
     }
 
