@@ -10,7 +10,8 @@ use crate::error::{Result, CliError};
 
 pub const FLUVIO_DIR: &str = "FLUVIO_DIR";
 
-fn fluvio_base_dir() -> Result<PathBuf> {
+/// Returns the path to the Fluvio directory.
+pub fn fluvio_base_dir() -> Result<PathBuf> {
     if let Ok(dir) = std::env::var(FLUVIO_DIR) {
         // Assume this is like `~/.fluvio
         let path = PathBuf::from(dir);
