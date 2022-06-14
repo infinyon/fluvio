@@ -9,18 +9,9 @@ use fluvio::Fluvio;
 use fluvio_cli_common::install::fluvio_base_dir;
 
 use crate::Result;
+use super::fluvio_smart_dir;
 
 const TEMPLATE_DIR: Dir = include_dir!("$CARGO_MANIFEST_DIR/templates");
-
-fn fluvio_smart_dir() -> Result<PathBuf> {
-    let base_dir = fluvio_base_dir()?;
-    let path = base_dir.join("sm");
-    if !path.exists() {
-        info!(log = ?path,"creating smart module directory");
-        std::fs::create_dir(&path)?;
-    }
-    Ok(path)
-}
 
 /// return template directory for each CLI version
 /// if it doesn't exists, create template directory and unpack from inline template
