@@ -301,9 +301,10 @@ impl ManagedConnectorDeploymentController {
             image, args
         );
         let template = TemplateSpec {
-            metadata: Some(
-                TemplateMeta::default().set_labels(vec![("app", Self::DEFAULT_CONNECTOR_NAME)]),
-            ),
+            metadata: Some(TemplateMeta::default().set_labels(vec![
+                ("app", Self::DEFAULT_CONNECTOR_NAME),
+                ("connectorName", &mc_spec.name),
+            ])),
             spec: PodSpec {
                 termination_grace_period_seconds: Some(10),
                 security_context: Some(PodSecurityContext {
@@ -328,6 +329,7 @@ impl ManagedConnectorDeploymentController {
 
         let mut match_labels = HashMap::new();
         match_labels.insert("app".to_owned(), Self::DEFAULT_CONNECTOR_NAME.to_owned());
+        match_labels.insert("connectorName".to_owned(), mc_spec.name.clone());
 
         Some(K8DeploymentSpec {
             template,
