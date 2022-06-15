@@ -11,13 +11,26 @@ use fluvio_smartmodule::{smartmodule, Result, Record, RecordData};
 
 #[smartmodule(map{%if smartmodule-params  %}, params{% endif %})]
 pub fn map(record: &Record{%if smartmodule-params  %}, _params: &SmartModuleOpt{% endif %}) -> Result<(Option<RecordData>, RecordData)> {
-    let key = record.key.clone();
+    use serde_json::{json,from_value};
+    use fluvio_jolt::{transform,TransformSpec};
 
-    let string = std::str::from_utf8(record.value.as_ref())?;
-    let int = string.parse::<i32>()?;
-    let value = (int * 2).to_string();
+    let spec: TransformSpec = from_value(json!(
+        [
+            {
+              "operation": "shift",
+              "spec": {
+                "a": "a_new",
+                "c": "c_new"
+              }
+            }
+        ]
+    ))
+    .expect("parsed spec");
 
-    Ok((key, value.into()))
+    let input = serde_json::from_slice(record.value.as_ref())?;
+    let result = transform(input, &spec);
+    let serialized_output = serde_json::to_vec(&result)?;
+    Ok((None, RecordData::from(serialized_output)))
 }
 {% elsif smartmodule-type == "filter-map" %}
 use fluvio_smartmodule::{smartmodule, Record, RecordData, Result};
