@@ -25,6 +25,9 @@ use super::fluvio_smart_dir;
 pub struct TestSmartModuleOpt {
     /// The name of the SmartModule to generate
     name: String,
+
+    // json value
+    json: String,
 }
 
 impl TestSmartModuleOpt {
@@ -68,13 +71,19 @@ impl TestSmartModuleOpt {
             .create_module_from_payload(payload, None)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-        let sample_input: Vec<u8> = vec![];
 
-        let record_value: RecordData = sample_input.into();
+        // turn json string into raw
+        let json_raw = self.json.as_bytes();
+        let record_value: RecordData = json_raw.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
         let output = smartmodule
             .process(SmartModuleInput::try_from(entries)?)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+
+        let output_record = output.successes.first().unwrap();
+        let output_value = output_record.value.as_str().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+        println!("{}", output_value);
+        
         Ok(())
     }
 }
