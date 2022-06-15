@@ -6,6 +6,7 @@
 * Add timeout when creating SPG ([#2364](https://github.com/infinyon/fluvio/issues/2411))
 * Log fluvio version and git rev on client creation ([#2403](https://github.com/infinyon/fluvio/issues/2403))
 * Display multi-word subcommand aliases in CLI help info ([#2033](https://github.com/infinyon/fluvio/issues/2033))
+* Add filter-map support to SmartProducer ([#2418](https://github.com/infinyon/fluvio/issues/2418))
 
 ## Platform Version 0.9.27 - 2022-05-25
 * Support installing clusters on Google Kubernetes Engine ([#2364](https://github.com/infinyon/fluvio/issues/2364))
