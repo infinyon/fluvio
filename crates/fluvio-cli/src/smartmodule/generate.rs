@@ -47,7 +47,7 @@ impl GenerateSmartModuleOpt {
             "-n",
             self.name,
             "-d",
-            "smartmodule-type=filter",
+            "smartmodule-type=map",
             "-d",
             "smartmodule-params=false"
         )
