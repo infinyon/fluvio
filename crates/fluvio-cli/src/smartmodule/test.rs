@@ -71,7 +71,6 @@ impl TestSmartModuleOpt {
             .create_module_from_payload(payload, None)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-
         // turn json string into raw
         let json_raw = self.json.as_bytes();
         let record_value: RecordData = json_raw.into();
@@ -81,9 +80,12 @@ impl TestSmartModuleOpt {
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
         let output_record = output.successes.first().unwrap();
-        let output_value = output_record.value.as_str().map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+        let output_value = output_record
+            .value
+            .as_str()
+            .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
         println!("{}", output_value);
-        
+
         Ok(())
     }
 }

@@ -3,6 +3,7 @@ use std::process::Command;
 fn main() {
     // Copy VERSION file. Do not fail e.g. when built via `cargo publish`
     println!("cargo:rerun-if-changed=../../VERSION");
+    println!("cargo:rerun-if-changed=templates");
 
     // Fetch current git hash to print version output
     let git_version_output = Command::new("git")

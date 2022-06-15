@@ -31,12 +31,13 @@ fn fluvio_template_dir() -> Result<PathBuf> {
 pub struct GenerateSmartModuleOpt {
     /// The name of the SmartModule to generate
     name: String,
+    jolt: String,
 }
 
 impl GenerateSmartModuleOpt {
     pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
         let sm_dir = fluvio_smart_dir()?;
-        let template_dir = fluvio_template_dir()?;
+        let template_dir = fluvio_template_dir()?.join("jolt-map");
 
         // generate a simple template
         cmd!(
@@ -47,11 +48,12 @@ impl GenerateSmartModuleOpt {
             "-n",
             self.name,
             "-d",
-            "smartmodule-type=map",
-            "-d",
-            "smartmodule-params=false"
+            "smartmodule-params=false",
+            //    "-d",
+            //   "jolt={}"
         )
         .dir(sm_dir)
+        .env("CARGO_GENERATE_VALUE_JOLT", self.jolt)
         .run()?;
 
         Ok(())
