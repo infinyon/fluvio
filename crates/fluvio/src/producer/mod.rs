@@ -228,6 +228,21 @@ cfg_if::cfg_if! {
                 Ok(self)
             }
 
+            /// Adds a SmartModule FilterMap to this TopicProducer
+            pub fn with_filter_map<T: Into<Vec<u8>>>(
+                mut self,
+                map: T,
+                params: BTreeMap<String, String>,
+            ) -> Result<Self, FluvioError> {
+                let smart_payload = LegacySmartModulePayload {
+                    wasm: SmartModuleWasmCompressed::Raw(map.into()),
+                    kind: SmartModuleKind::FilterMap,
+                    params: params.into(),
+                };
+                self.init_engine(smart_payload)?;
+                Ok(self)
+            }
+
             /// Adds a SmartModule map to this TopicProducer
             pub fn with_map<T: Into<Vec<u8>>>(
                 mut self,
