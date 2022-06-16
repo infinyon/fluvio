@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use tracing::info;
-use clap::Parser;
+use clap::{Parser, ArgEnum};
 use duct::{cmd};
 use include_dir::{Dir, include_dir};
 
@@ -26,35 +26,89 @@ fn fluvio_template_dir() -> Result<PathBuf> {
     Ok(template_path)
 }
 
+#[derive(ArgEnum, Debug, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum DataType {
+    json,
+}
+
+impl Default for DataType {
+    fn default() -> Self {
+        DataType::json
+    }
+}
+
+#[derive(ArgEnum, Debug, Clone, PartialEq)]
+#[allow(non_camel_case_types)]
+pub enum ModuleType {
+    filter,
+    map,
+}
+
+impl Default for ModuleType {
+    fn default() -> Self {
+        ModuleType::map
+    }
+}
+
 /// Create a new SmartModule with a given name
 #[derive(Debug, Parser)]
 pub struct GenerateSmartModuleOpt {
     /// The name of the SmartModule to generate
     name: String,
-    jolt: String,
+
+    #[clap(default_value_t, value_name = "type", arg_enum, ignore_case = true)]
+    ty: ModuleType,
+
+    #[clap(
+        default_value_t,
+        short = 'i',
+        long,
+        value_name = "data-type",
+        arg_enum,
+        ignore_case = true
+    )]
+    input: DataType,
+
+    #[clap(
+        default_value_t,
+        short = 'o',
+        long,
+        value_name = "data-type",
+        arg_enum,
+        ignore_case = true
+    )]
+    output: DataType,
+
+    #[clap(long)]
+    jolt: Option<String>,
 }
 
 impl GenerateSmartModuleOpt {
     pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
-        let sm_dir = fluvio_smart_dir()?;
-        let template_dir = fluvio_template_dir()?.join("jolt-map");
+        if let Some(jolt) = self.jolt {
+            let sm_dir = fluvio_smart_dir()?;
+            let template_dir = fluvio_template_dir()?.join("jolt-map");
 
-        // generate a simple template
-        cmd!(
-            "cargo",
-            "generate",
-            "--path",
-            template_dir,
-            "-n",
-            self.name,
-            "-d",
-            "smartmodule-params=false",
-            //    "-d",
-            //   "jolt={}"
-        )
-        .dir(sm_dir)
-        .env("CARGO_GENERATE_VALUE_JOLT", self.jolt)
-        .run()?;
+            // generate a simple template
+            cmd!(
+                "cargo",
+                "generate",
+                "--path",
+                template_dir,
+                "-n",
+                self.name,
+                "-d",
+                "smartmodule-params=false",
+            )
+            .dir(sm_dir)
+            .env("CARGO_GENERATE_VALUE_JOLT", jolt)
+            .run()?;
+        } else {
+            println!(
+                "no smart module is generated. please use --jolt option to generate a smart module"
+            );
+        }
 
         Ok(())
     }
