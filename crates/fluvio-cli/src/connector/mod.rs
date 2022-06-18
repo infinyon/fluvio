@@ -92,12 +92,67 @@ pub struct ConnectorConfig {
     name: String,
     #[serde(rename = "type")]
     type_: String,
+
     pub(crate) topic: String,
     pub(crate) version: Option<String>,
+
     #[serde(default)]
-    parameters: BTreeMap<String, String>,
+    parameters: BTreeMap<String, YamlParameter>,
+
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
+}
+use serde::{Deserializer};
+
+#[derive(Debug, Clone)]
+pub struct YamlParameter {
+    context: Vec<String>,
+}
+impl<'de> Deserialize<'de> for YamlParameter {
+    fn deserialize<D>(deserializer: D) -> Result<YamlParameter, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+		deserializer.deserialize_any(YamlParameterVisitor)
+    }
+}
+use serde::de::{self, Visitor, SeqAccess};
+
+struct YamlParameterVisitor;
+
+    use std::fmt;
+impl<'de> Visitor<'de> for YamlParameterVisitor
+{
+    type Value = YamlParameter;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("string or map")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<YamlParameter, E>
+    where
+        E: de::Error,
+    {
+        Ok(YamlParameter{ context: vec![value.to_string()] })
+    }
+
+    fn visit_seq<A>(self, seq: A) -> Result<YamlParameter, A::Error>
+        where A: SeqAccess<'de>,
+    {
+        Deserialize::deserialize(de::value::SeqAccessDeserializer::new(seq))
+    }
+
+}
+
+use std::str::FromStr;
+impl FromStr for YamlParameter {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(YamlParameter {
+            context: vec![s.to_string()],
+        })
+    }
 }
 
 impl ConnectorConfig {
@@ -112,11 +167,15 @@ impl ConnectorConfig {
 
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
+        let mut parameters = BTreeMap::new();
+        for (key, value) in config.parameters.iter() {
+            parameters.insert(key.clone(), value.context.clone());
+        }
         ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
             topic: config.topic,
-            parameters: config.parameters,
+            parameters,
             secrets: config.secrets,
             version: config.version,
         }
@@ -125,7 +184,8 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
 
 #[test]
 fn config_test() {
-    let _: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/test-config.yaml")
+    let out: ManagedConnectorSpec = ConnectorConfig::from_file("test-data/test-config.yaml")
         .expect("Failed to load test config")
         .into();
+    println!("{:?}", out);
 }

@@ -347,7 +347,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
             topic: config.topic,
-            parameters: config.parameters,
+            parameters: todo!(), //config.parameters,
             secrets: config.secrets,
             version: config.version,
         }

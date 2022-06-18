@@ -42,7 +42,7 @@ pub struct K8ManagedConnectorSpec {
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack
     pub topic: String,
-    pub parameters: BTreeMap<String, String>,
+    pub parameters: BTreeMap<String, Vec<String>>,
     pub secrets: BTreeMap<String, SecretString>,
 }
 mod convert {

@@ -5,8 +5,10 @@ topic: my-mqtt
 create_topic: false
 direction: source
 parameters:
-  mqtt-url: "mqtt.hsl.fi"
-  mqtt-topic: "/hfp/v2/journey/#"
-  fluvio-topic: "my-mqtt"
+  param_1: "mqtt.hsl.fi"
+  header:
+    - "auth: foo"
+  test:
+     auth: "foo"
 secrets:
   foo: bar
