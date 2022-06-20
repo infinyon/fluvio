@@ -2,7 +2,7 @@ use std::sync::Arc;
 use clap::Parser;
 
 use serde::{Deserializer, Deserialize};
-use serde::de::{self, Visitor, SeqAccess};
+use serde::de::{self, Visitor, SeqAccess, MapAccess};
 use std::fmt;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -115,9 +115,9 @@ pub struct ConnectorConfig {
 fn config_test() {
     let connector_cfg = ConnectorConfig::from_file("test-data/test-config.yaml")
         .expect("Failed to load test config");
-    println!("{:?}", connector_cfg);
+    println!("{:#?}", connector_cfg);
     let out: ManagedConnectorSpec = connector_cfg.into();
-    println!("{:?}", out);
+    println!("{:#?}", out);
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -218,13 +218,26 @@ impl<'de> Visitor<'de> for YamlParameterVisitor {
             context: vec![value.to_string()],
         })
     }
+    fn visit_map<M>(self, mut map: M) -> Result<YamlParameter, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut yaml_param = YamlParameter { context: vec![] };
+        while let Some((key, value)) = map.next_entry::<String, String>()? {
+            let param = format!("{}:{}", key.clone(), value.clone());
+            yaml_param.context.push(param);
+        }
 
-    fn visit_seq<A>(self, seq: A) -> Result<YamlParameter, A::Error>
+        Ok(yaml_param)
+    }
+    fn visit_seq<A>(self, mut seq: A) -> Result<YamlParameter, A::Error>
     where
         A: SeqAccess<'de>,
     {
-        Ok(YamlParameter { context: vec![] })
-
-        //Deserialize::deserialize(de::value::SeqAccessDeserializer::new(seq))
+        let mut yaml_param = YamlParameter { context: vec![] };
+        while let Some(param) = seq.next_element::<String>()? {
+            yaml_param.context.push(param);
+        }
+        Ok(yaml_param)
     }
 }

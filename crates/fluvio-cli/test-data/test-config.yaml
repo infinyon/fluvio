@@ -6,14 +6,16 @@ create_topic: false
 direction: source
 parameters:
   param_1: "mqtt.hsl.fi"
-  header:
-    "auth: foo" # This is broken
+  param_2:
+    foo: bar
+    bar: foo
+  param_3:
+    - "baz"
 secrets:
   foo: bar
 producer:
   linger: 1ms
   batch_size: 44
   compression: gzip
-
 consumer:
   partition: 10
