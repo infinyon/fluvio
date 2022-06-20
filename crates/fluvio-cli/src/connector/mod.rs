@@ -8,6 +8,8 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::Read;
+use std::time::Duration;
+use bytesize::ByteSize;
 
 use fluvio::{Fluvio, Compression};
 use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString};
@@ -157,7 +159,6 @@ pub struct ConsumerParameters {
     #[serde(default)]
     partition: Option<i32>,
 }
-use std::time::Duration;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProducerParameters {
@@ -166,7 +167,7 @@ pub struct ProducerParameters {
 
     compression: Option<Compression>,
 
-    batch_size: Option<usize>,
+    batch_size: Option<ByteSize>,
 }
 
 impl ConnectorConfig {
