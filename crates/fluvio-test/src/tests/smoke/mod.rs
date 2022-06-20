@@ -315,7 +315,7 @@ pub struct ConnectorConfig {
     #[serde(default)]
     pub(crate) create_topic: bool,
     #[serde(default)]
-    parameters: BTreeMap<String, String>,
+    parameters: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
 }
@@ -347,7 +347,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
             topic: config.topic,
-            parameters: todo!(), //config.parameters,
+            parameters: config.parameters,
             secrets: config.secrets,
             version: config.version,
         }

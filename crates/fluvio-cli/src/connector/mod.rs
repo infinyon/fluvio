@@ -1,10 +1,7 @@
 use std::sync::Arc;
 use clap::Parser;
 
-use serde::{
-    Deserializer,
-    Deserialize,
-};
+use serde::{Deserializer, Deserialize};
 use serde::de::{self, Visitor, SeqAccess};
 use std::fmt;
 use std::collections::BTreeMap;
@@ -12,10 +9,7 @@ use std::path::PathBuf;
 use std::fs::File;
 use std::io::Read;
 
-use fluvio::{
-    Fluvio,
-    Compression,
-};
+use fluvio::{Fluvio, Compression};
 use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
@@ -129,7 +123,7 @@ fn config_test() {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConsumerParameters {
     #[serde(default)]
-    partition: Option<i32>
+    partition: Option<i32>,
 }
 use std::time::Duration;
 
@@ -142,7 +136,6 @@ pub struct ProducerParameters {
 
     batch_size: Option<usize>,
 }
-
 
 impl ConnectorConfig {
     pub fn from_file<P: Into<PathBuf>>(path: P) -> Result<Self, CliError> {
@@ -210,8 +203,7 @@ impl<'de> Deserialize<'de> for YamlParameter {
 
 struct YamlParameterVisitor;
 
-impl<'de> Visitor<'de> for YamlParameterVisitor
-{
+impl<'de> Visitor<'de> for YamlParameterVisitor {
     type Value = YamlParameter;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -222,15 +214,17 @@ impl<'de> Visitor<'de> for YamlParameterVisitor
     where
         E: de::Error,
     {
-        Ok(YamlParameter{ context: vec![value.to_string()] })
+        Ok(YamlParameter {
+            context: vec![value.to_string()],
+        })
     }
 
     fn visit_seq<A>(self, seq: A) -> Result<YamlParameter, A::Error>
-        where A: SeqAccess<'de>,
+    where
+        A: SeqAccess<'de>,
     {
-        Ok(YamlParameter{ context: vec![] })
+        Ok(YamlParameter { context: vec![] })
 
-       //Deserialize::deserialize(de::value::SeqAccessDeserializer::new(seq))
+        //Deserialize::deserialize(de::value::SeqAccessDeserializer::new(seq))
     }
-
 }
