@@ -7,8 +7,13 @@ direction: source
 parameters:
   param_1: "mqtt.hsl.fi"
   header:
-    - "auth: foo"
-  test:
-     auth: "foo"
+    "auth: foo" # This is broken
 secrets:
   foo: bar
+producer:
+  linger: 1ms
+  batch_size: 44
+  compression: gzip
+
+consumer:
+  partition: 10
