@@ -115,9 +115,23 @@ pub struct ConnectorConfig {
 fn config_test() {
     let connector_cfg = ConnectorConfig::from_file("test-data/test-config.yaml")
         .expect("Failed to load test config");
-    println!("{:#?}", connector_cfg);
+    let expected_params = BTreeMap::from([
+        ("param_1".to_string(), YamlParameter{ context: vec!["mqtt.hsl.fi".to_string()] }),
+        ("param_2".to_string(), YamlParameter{ context: vec!["foo:bar".to_string(), "bar:foo".to_string()] }),
+        ("param_3".to_string(), YamlParameter{ context: vec!["baz".to_string()] })
+    ]);
+    assert_eq!(connector_cfg.parameters, expected_params);
     let out: ManagedConnectorSpec = connector_cfg.into();
-    println!("{:#?}", out);
+    let expected_params = BTreeMap::from([
+        ("consumer-partition".to_string(), vec!["10".to_string()]),
+        ("param_1".to_string(), vec!["mqtt.hsl.fi".to_string()]),
+        ("param_2".to_string(), vec!["foo:bar".to_string(), "bar:foo".to_string()]),
+        ("param_3".to_string(), vec!["baz".to_string()]),
+        ("producer-batch-size".to_string(), vec!["44".to_string()]),
+        ("producer-compression".to_string(), vec!["Gzip".to_string()]),
+        ("producer-linger".to_string(), vec!["1ms".to_string()]),
+    ]);
+    assert_eq!(out.parameters, expected_params);
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -188,7 +202,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct YamlParameter {
     context: Vec<String>,
 }
