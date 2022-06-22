@@ -113,50 +113,6 @@ pub struct ConnectorConfig {
     consumer: Option<ConsumerParameters>,
 }
 
-#[test]
-fn config_test() {
-    let connector_cfg = ConnectorConfig::from_file("test-data/test-config.yaml")
-        .expect("Failed to load test config");
-    let expected_params = BTreeMap::from([
-        (
-            "param_1".to_string(),
-            YamlParameter {
-                context: vec!["mqtt.hsl.fi".to_string()],
-            },
-        ),
-        (
-            "param_2".to_string(),
-            YamlParameter {
-                context: vec!["foo:bar".to_string(), "bar:foo".to_string()],
-            },
-        ),
-        (
-            "param_3".to_string(),
-            YamlParameter {
-                context: vec!["baz".to_string()],
-            },
-        ),
-    ]);
-    assert_eq!(connector_cfg.parameters, expected_params);
-    let out: ManagedConnectorSpec = connector_cfg.into();
-    let expected_params = BTreeMap::from([
-        ("consumer-partition".to_string(), vec!["10".to_string()]),
-        ("param_1".to_string(), vec!["mqtt.hsl.fi".to_string()]),
-        (
-            "param_2".to_string(),
-            vec!["foo:bar".to_string(), "bar:foo".to_string()],
-        ),
-        ("param_3".to_string(), vec!["baz".to_string()]),
-        (
-            "producer-batch-size".to_string(),
-            vec!["44.0 MB".to_string()],
-        ),
-        ("producer-compression".to_string(), vec!["Gzip".to_string()]),
-        ("producer-linger".to_string(), vec!["1ms".to_string()]),
-    ]);
-    assert_eq!(out.parameters, expected_params);
-    println!("{:?}", out.parameters);
-}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConsumerParameters {
@@ -167,13 +123,16 @@ pub struct ConsumerParameters {
 #[derive(Debug, Clone, Deserialize)]
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
+    #[serde(default)]
     linger: Option<Duration>,
 
+    #[serde(default)]
     compression: Option<Compression>,
 
     // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
     // feature to populate `batch_size`.
-    #[serde(rename = "batch_size")]
+    #[serde(rename = "batch-size")]
+    #[serde(default)]
     batch_size_string: Option<String>,
 
     #[serde(skip)]
@@ -294,4 +253,69 @@ impl<'de> Visitor<'de> for YamlParameterVisitor {
         }
         Ok(yaml_param)
     }
+}
+
+
+#[test]
+fn full_yaml_test() {
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
+        .expect("Failed to load test config");
+    let expected_params = BTreeMap::from([
+        (
+            "param_1".to_string(),
+            YamlParameter {
+                context: vec!["mqtt.hsl.fi".to_string()],
+            },
+        ),
+        (
+            "param_2".to_string(),
+            YamlParameter {
+                context: vec!["foo:bar".to_string(), "bar:foo".to_string()],
+            },
+        ),
+        (
+            "param_3".to_string(),
+            YamlParameter {
+                context: vec!["baz".to_string()],
+            },
+        ),
+    ]);
+    assert_eq!(connector_cfg.parameters, expected_params);
+    let out: ManagedConnectorSpec = connector_cfg.into();
+    let expected_params = BTreeMap::from([
+        ("consumer-partition".to_string(), vec!["10".to_string()]),
+        ("param_1".to_string(), vec!["mqtt.hsl.fi".to_string()]),
+        (
+            "param_2".to_string(),
+            vec!["foo:bar".to_string(), "bar:foo".to_string()],
+        ),
+        ("param_3".to_string(), vec!["baz".to_string()]),
+        (
+            "producer-batch-size".to_string(),
+            vec!["44.0 MB".to_string()],
+        ),
+        ("producer-compression".to_string(), vec!["Gzip".to_string()]),
+        ("producer-linger".to_string(), vec!["1ms".to_string()]),
+    ]);
+    assert_eq!(out.parameters, expected_params);
+}
+
+#[test]
+fn simple_yaml_test() {
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/simple.yaml")
+        .expect("Failed to load test config");
+    let out: ManagedConnectorSpec = connector_cfg.into();
+    let expected_params = BTreeMap::new();
+    assert_eq!(out.parameters, expected_params);
+}
+
+#[test]
+fn error_yaml_tests() {
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-linger.yaml").expect_err("This yaml should error");
+    assert_eq!("ConnectorConfig(Message(\"invalid value: string \\\"1\\\", expected a duration\", Some(Pos { marker: Marker { index: 118, line: 8, col: 10 }, path: \"producer.linger\" })))", format!("{:?}", connector_cfg));
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-compression.yaml").expect_err("This yaml should error");
+    assert_eq!("ConnectorConfig(Message(\"unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`\", Some(Pos { marker: Marker { index: 123, line: 8, col: 15 }, path: \"producer.compression\" })))", format!("{:?}", connector_cfg));
+
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml").expect_err("This yaml should error");
+    assert_eq!("Other(\"couldn't parse \\\"aoeu\\\" into a known SI unit, couldn't parse unit of \\\"aoeu\\\"\")", format!("{:?}", connector_cfg));
 }
