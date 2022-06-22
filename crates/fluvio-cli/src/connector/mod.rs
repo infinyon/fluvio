@@ -193,7 +193,7 @@ impl ConnectorConfig {
             if let Some(batch_size_string) = &producer.batch_size_string {
                 let batch_size = batch_size_string
                     .parse::<ByteSize>()
-                    .map_err(|e| CliError::Other(e))?;
+                    .map_err(CliError::Other)?;
                 producer.batch_size = Some(batch_size);
             }
         }
