@@ -147,17 +147,21 @@ impl SmartEngine {
 
     fn instantiate<Params, Args>(
         &self,
-        store: &mut wasmtime::Store<State>,
+        store: &mut Store<State>,
         module: &Module,
         host_fn: impl IntoFunc<State, Params, Args>,
     ) -> Result<Instance, Error> {
         let mut linker = wasmtime::Linker::new(&self.0);
         wasmtime_wasi::add_to_linker(&mut linker, |c| c)?;
-        let host_fn_import = module
+        let copy_records_fn_import = module
             .imports()
-            .next()
+            .find(|import| import.name().eq("copy_records"))
             .ok_or_else(|| Error::msg("At least one import is required"))?;
-        linker.func_wrap(host_fn_import.module(), host_fn_import.name(), host_fn)?;
+        linker.func_wrap(
+            copy_records_fn_import.module(),
+            copy_records_fn_import.name(),
+            host_fn,
+        )?;
         linker.instantiate(store, module)
     }
 }
