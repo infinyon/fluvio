@@ -48,7 +48,7 @@ fn build_smartmodule_example(name: &str, target: &str) -> Result<PathBuf, Box<dy
     let ws = Workspace::new(&manifest_path, &cfg)?;
     let mut options = CompileOptions::new(&cfg, CompileMode::Build)?;
     options.build_config.requested_kinds =
-        CompileKind::from_requested_targets(&cfg, &vec![target.to_string()])?;
+        CompileKind::from_requested_targets(&cfg, &[target.to_string()])?;
     options.build_config.requested_profile = InternedString::from("release");
     let Compilation { mut cdylibs, .. } = ops::compile(&ws, &options)?;
     Ok(cdylibs.remove(0).path)
