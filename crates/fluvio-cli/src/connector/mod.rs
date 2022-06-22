@@ -147,11 +147,15 @@ fn config_test() {
             vec!["foo:bar".to_string(), "bar:foo".to_string()],
         ),
         ("param_3".to_string(), vec!["baz".to_string()]),
-        ("producer-batch-size".to_string(), vec!["44".to_string()]),
+        (
+            "producer-batch-size".to_string(),
+            vec!["44.0 MB".to_string()],
+        ),
         ("producer-compression".to_string(), vec!["Gzip".to_string()]),
         ("producer-linger".to_string(), vec!["1ms".to_string()]),
     ]);
     assert_eq!(out.parameters, expected_params);
+    println!("{:?}", out.parameters);
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -167,6 +171,12 @@ pub struct ProducerParameters {
 
     compression: Option<Compression>,
 
+    // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
+    // feature to populate `batch_size`.
+    #[serde(rename = "batch_size")]
+    batch_size_string: Option<String>,
+
+    #[serde(skip)]
     batch_size: Option<ByteSize>,
 }
 
@@ -175,7 +185,18 @@ impl ConnectorConfig {
         let mut file = File::open(path.into())?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let connector_config: Self = serde_yaml::from_str(&contents)?;
+        let mut connector_config: Self = serde_yaml::from_str(&contents)?;
+
+        // This is needed because we want to use a human readable version of `BatchSize` but the
+        // serde support for BatchSize serializes and deserializes as bytes.
+        if let Some(ref mut producer) = &mut connector_config.producer {
+            if let Some(batch_size_string) = &producer.batch_size_string {
+                let batch_size = batch_size_string
+                    .parse::<ByteSize>()
+                    .map_err(|e| CliError::Other(e))?;
+                producer.batch_size = Some(batch_size);
+            }
+        }
         Ok(connector_config)
     }
 }
