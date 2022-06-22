@@ -113,7 +113,6 @@ pub struct ConnectorConfig {
     consumer: Option<ConsumerParameters>,
 }
 
-
 #[derive(Debug, Clone, Deserialize)]
 pub struct ConsumerParameters {
     #[serde(default)]
@@ -255,7 +254,6 @@ impl<'de> Visitor<'de> for YamlParameterVisitor {
     }
 }
 
-
 #[test]
 fn full_yaml_test() {
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
@@ -311,11 +309,14 @@ fn simple_yaml_test() {
 
 #[test]
 fn error_yaml_tests() {
-    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-linger.yaml").expect_err("This yaml should error");
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-linger.yaml")
+        .expect_err("This yaml should error");
     assert_eq!("ConnectorConfig(Message(\"invalid value: string \\\"1\\\", expected a duration\", Some(Pos { marker: Marker { index: 118, line: 8, col: 10 }, path: \"producer.linger\" })))", format!("{:?}", connector_cfg));
-    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-compression.yaml").expect_err("This yaml should error");
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
+        .expect_err("This yaml should error");
     assert_eq!("ConnectorConfig(Message(\"unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`\", Some(Pos { marker: Marker { index: 123, line: 8, col: 15 }, path: \"producer.compression\" })))", format!("{:?}", connector_cfg));
 
-    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml").expect_err("This yaml should error");
+    let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
+        .expect_err("This yaml should error");
     assert_eq!("Other(\"couldn't parse \\\"aoeu\\\" into a known SI unit, couldn't parse unit of \\\"aoeu\\\"\")", format!("{:?}", connector_cfg));
 }
