@@ -1,9 +1,9 @@
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, path::PathBuf};
+
+use clap::Parser;
 
 use fluvio_smartengine::SmartEngine;
 use fluvio_spu_schema::server::stream_fetch::{LegacySmartModulePayload, SmartModuleWasmCompressed};
-use tracing::debug;
-use clap::Parser;
 
 use fluvio::{
     Fluvio,
@@ -16,28 +16,31 @@ use fluvio::{
     RecordKey,
 };
 
-use crate::Result;
-
+use crate::{Result, error::CliError};
 
 /// Create a new SmartModule with a given name
 #[derive(Debug, Parser)]
 pub struct TestSmartModuleOpt {
-    /// The name of the SmartModule to generate
-    name: String,
-
     // json value
-    json: String,
+    #[clap(long)]
+    json: Option<String>,
+
+    // arbitrary file
+    #[clap(long)]
+    file: Option<PathBuf>,
+
+    #[clap(long)]
+    wasm_file: PathBuf,
 }
 
 impl TestSmartModuleOpt {
     pub async fn process(self, _fluvio: &Fluvio) -> Result<()> {
-        
-        // todo load from files
-        let raw = vec![];
+        // load wasm file
+        let raw = std::fs::read(self.wasm_file)?;
 
         let payload = LegacySmartModulePayload {
             wasm: SmartModuleWasmCompressed::Raw(raw),
-            kind: SmartModuleKind::Map,
+            kind: SmartModuleKind::ArrayMap,
             params: BTreeMap::new().into(),
         };
 
@@ -46,8 +49,17 @@ impl TestSmartModuleOpt {
             .create_module_from_payload(payload, None)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-        // turn json string into raw
-        let json_raw = self.json.as_bytes();
+        // get raw json in one of other ways
+        let json_raw = if let Some(json) = self.json {
+            json.as_bytes().to_vec()
+        } else {
+            if let Some(json_file) = &self.file {
+                std::fs::read(json_file)?
+            } else {
+                return Err(CliError::Other("No json provided".to_string()));
+            }
+        };
+
         let record_value: RecordData = json_raw.into();
         let entries = vec![Record::new_key_value(RecordKey::NULL, record_value)];
         let output = smartmodule
