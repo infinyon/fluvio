@@ -66,12 +66,15 @@ impl TestSmartModuleOpt {
             .process(SmartModuleInput::try_from(entries)?)
             .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
 
-        let output_record = output.successes.first().unwrap();
-        let output_value = output_record
-            .value
-            .as_str()
-            .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
-        println!("{}", output_value);
+        println!("{:?} records", output.successes.len());
+        for output_record in output.successes {
+            let output_value = output_record
+                .value
+                .as_str()
+                .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
+            println!("{}", output_value);
+        }
+        
 
         Ok(())
     }
