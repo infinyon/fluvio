@@ -1,7 +1,0 @@
-[placeholders.smartmodule-params]
-type = "bool"
-prompt = "Want to use SmartModule parameters?"
-default = false
-[placeholders.jolt]
-type = "string"
-prompt = "Jolt"
