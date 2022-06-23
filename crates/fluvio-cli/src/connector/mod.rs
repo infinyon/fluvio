@@ -311,11 +311,14 @@ fn simple_yaml_test() {
 fn error_yaml_tests() {
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-linger.yaml")
         .expect_err("This yaml should error");
+    #[cfg(unix)]
     assert_eq!("ConnectorConfig(Message(\"invalid value: string \\\"1\\\", expected a duration\", Some(Pos { marker: Marker { index: 118, line: 8, col: 10 }, path: \"producer.linger\" })))", format!("{:?}", connector_cfg));
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-compression.yaml")
         .expect_err("This yaml should error");
+    #[cfg(unix)]
     assert_eq!("ConnectorConfig(Message(\"unknown variant `gzipaoeu`, expected one of `none`, `gzip`, `snappy`, `lz4`\", Some(Pos { marker: Marker { index: 123, line: 8, col: 15 }, path: \"producer.compression\" })))", format!("{:?}", connector_cfg));
 
+    #[cfg(unix)]
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/error-batchsize.yaml")
         .expect_err("This yaml should error");
     assert_eq!("Other(\"couldn't parse \\\"aoeu\\\" into a known SI unit, couldn't parse unit of \\\"aoeu\\\"\")", format!("{:?}", connector_cfg));
