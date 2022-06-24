@@ -315,7 +315,7 @@ pub struct ConnectorConfig {
     #[serde(default)]
     pub(crate) create_topic: bool,
     #[serde(default)]
-    parameters: BTreeMap<String, String>,
+    parameters: BTreeMap<String, Vec<String>>,
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
 }

@@ -22,7 +22,7 @@ pub struct ManagedConnectorSpec {
     pub type_: String, // syslog, github star, slack
 
     pub topic: String,
-    pub parameters: BTreeMap<String, String>,
+    pub parameters: BTreeMap<String, Vec<String>>,
     pub secrets: BTreeMap<String, SecretString>,
 }
 

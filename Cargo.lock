@@ -1882,6 +1882,7 @@ dependencies = [
  "home",
  "http-types",
  "humantime",
+ "humantime-serde",
  "indicatif",
  "k8-client",
  "k8-config",
@@ -2005,7 +2006,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-controlplane-metadata"
-version = "0.15.4"
+version = "0.16.0"
 dependencies = [
  "async-trait",
  "base64",
@@ -2228,7 +2229,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-sc-schema"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "fluvio-controlplane-metadata",
  "fluvio-dataplane-protocol",
@@ -2260,7 +2261,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio-smartengine"
-version = "0.2.11"
+version = "0.2.12"
 dependencies = [
  "anyhow",
  "cargo",
