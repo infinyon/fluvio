@@ -236,7 +236,7 @@ jobs:
           log_dir="/obviously/not/a/writable/path"
           stderr="$(mktemp)"
           echo "Starting cluster with '--log-dir=${log_dir}'"
-          fluvio cluster start --local --develop --log-dir "${log_dir}" 2>$stderr
+          fluvio cluster start --local --develop --skip-checks --log-dir "${log_dir}" 2>$stderr
           [ $? -eq 0 ] && { echo "Expected nonzero exit code, got $?"; exit 2; }
           grep -qF "${log_dir}" $stderr || { echo "Expected to find '${log_dir}' in stderr"; exit 3; }
 
