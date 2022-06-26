@@ -230,6 +230,14 @@ jobs:
           echo "~/bin" >> $GITHUB_PATH
           echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
           echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+      - name: Print version
+        run: fluvio version
+      - name: Set up Docker for Mac
+        uses: docker-practice/actions-setup-docker@master
+      - name: Install and start Kind
+        run: |
+          brew install kind
+          kind create cluster --config k8-util/cluster/kind.yaml
       - name: Start local fluvio cluster with bad --log-dir
         timeout-minutes: 1
         run: |
