@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.28 - UNRELEASED
+## Platform Version 0.9.29 - UNRELEASED
+
+## Platform Version 0.9.28 - 2022-06-26
 * Upgrade to Wasmtime 0.37 ([#2400](https://github.com/infinyon/fluvio/pull/2400))
 * Allow Cluster diagnostics to continue even if profile doesn't exist  ([#2400](https://github.com/infinyon/fluvio/pull/2402))
 * Add timeout when creating SPG ([#2364](https://github.com/infinyon/fluvio/issues/2411))
