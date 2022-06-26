@@ -189,6 +189,56 @@ jobs:
           name: local-${{ matrix.run }}-${{ matrix.test }}-diag
           path: diagnostics*.gz
 
+  verify_cli_errors:
+    name: Verify error message output under CLI error condition
+    needs:
+      - build_primary_binaries
+      - config
+    runs-on: ${{ matrix.os }}
+    env:
+      UNINSTALL: noclean
+      FLUVIO_BIN: ~/bin/fluvio
+      TEST_BIN: ~/bin/fluvio-test
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-12]
+        rust-target: [x86_64-apple-darwin]
+        run: [r1]
+        spu: [1]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Download artifact - fluvio
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Download artifact - fluvio-run
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-run-${{ matrix.rust-target }}
+          path: ~/.fluvio/extensions
+      - run: chmod +x ~/.fluvio/extensions/fluvio-run
+      - name: Download artifact - fluvio-test
+        uses: actions/download-artifact@v2
+        with:
+          name: fluvio-test-${{ matrix.rust-target }}
+          path: ~/bin
+      - name: Set up Fluvio binaries
+        run: |
+          chmod +x ~/bin/fluvio ~/bin/fluvio-test ~/.fluvio/extensions/fluvio-run
+          echo "~/bin" >> $GITHUB_PATH
+          echo "DEFAULT_SPU=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+          echo "REPL=${{ matrix.spu }}" | tee -a $GITHUB_ENV
+      - name: Start local fluvio cluster with bad --log-dir
+        timeout-minutes: 1
+        run: |
+          log_dir="/obviously/not/a/writable/path"
+          stderr="$(mktemp)"
+          echo "Starting cluster with '--log-dir=${log_dir}'"
+          fluvio cluster start --local --develop --log-dir "${log_dir}" 2>$stderr
+          [ $? -eq 0 ] && { echo "Expected nonzero exit code, got $?"; exit 2; }
+          grep -qF "${log_dir}" $stderr || { echo "Expected to find '${log_dir}' in stderr"; exit 3; }
 
  # same as in ci.yaml except no aa64
   build_image:
