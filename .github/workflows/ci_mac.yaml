@@ -233,6 +233,7 @@ jobs:
       - name: Start local fluvio cluster with bad --log-dir
         timeout-minutes: 1
         run: |
+          set +e
           log_dir="/obviously/not/a/writable/path"
           stderr="$(mktemp)"
           echo "Starting cluster with '--log-dir=${log_dir}'"
