@@ -225,13 +225,7 @@ impl ManagedConnectorDeploymentController {
         let parameters: Vec<String> = parameters
             .keys()
             .zip(parameters.values())
-            .flat_map(|(key, values)| {
-                let mut args = Vec::new();
-                for value in values.iter() {
-                    args.push(format!("--{}={}", key.replace('_', "-"), value))
-                }
-                args
-            })
+            .flat_map(|(key, value)| [format!("--{}={}", key.replace('_', "-"), value)])
             .collect::<Vec<_>>();
 
         // Prefixing the args with a "--" passed to the container is needed for an unclear reason.
