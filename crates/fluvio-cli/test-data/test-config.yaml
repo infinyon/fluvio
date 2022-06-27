@@ -1,0 +1,12 @@
+version: 0.1.0
+name: my-test-mqtt
+type: mqtt
+topic: my-mqtt
+create_topic: false
+direction: source
+parameters:
+  mqtt-url: "mqtt.hsl.fi"
+  mqtt-topic: "/hfp/v2/journey/#"
+  fluvio-topic: "my-mqtt"
+secrets:
+  foo: bar

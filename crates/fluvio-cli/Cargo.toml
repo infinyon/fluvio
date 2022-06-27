@@ -67,7 +67,6 @@ crossterm = { version = "0.23.0", features = ['event-stream']}
 tui = { version = "0.17.0", default-features = false, features = ['crossterm'] }
 futures = "0.3"
 humantime = "2.1.0"
-humantime-serde = "1.1.1"
 bytesize = { version = "1.1.0", features = ['serde'] }
 
 # Fluvio dependencies
