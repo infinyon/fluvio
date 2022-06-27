@@ -1,6 +1,8 @@
 # Release Notes
 
-## Platform Version 0.9.29 - UNRELEASED
+## Platform Version 0.9.30 - UNRELEASED
+
+## Platform Version 0.9.29 - 2022-06-27 
 * Revert 0.9.28 updates to Connector yaml config ([#2436](https://github.com/infinyon/fluvio/pull/2436))
 
 ## Platform Version 0.9.28 - 2022-06-26
