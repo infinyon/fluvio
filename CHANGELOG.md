@@ -1,6 +1,7 @@
 # Release Notes
 
 ## Platform Version 0.9.29 - UNRELEASED
+* Revert 0.9.28 updates to Connector yaml config ([#2436](https://github.com/infinyon/fluvio/pull/2436))
 
 ## Platform Version 0.9.28 - 2022-06-26
 * Upgrade to Wasmtime 0.37 ([#2400](https://github.com/infinyon/fluvio/pull/2400))
@@ -10,6 +11,8 @@
 * Display multi-word subcommand aliases in CLI help info ([#2033](https://github.com/infinyon/fluvio/issues/2033))
 * Add filter-map support to SmartProducer ([#2418](https://github.com/infinyon/fluvio/issues/2418))
 * Fix `wasi` functions binding relying on order ([#2428](https://github.com/infinyon/fluvio/pull/2428))
+* Add top level `producer` and `consumer` entries to connector yaml configurations. ([#2426](https://github.com/infinyon/fluvio/issues/2426))
+* Allow string, dictionaries and lists as options to `parameters` section in connector yaml. ([#2426](https://github.com/infinyon/fluvio/issues/2426))
 
 ## Platform Version 0.9.27 - 2022-05-25
 * Support installing clusters on Google Kubernetes Engine ([#2364](https://github.com/infinyon/fluvio/issues/2364))
