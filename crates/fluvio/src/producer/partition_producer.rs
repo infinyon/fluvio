@@ -191,34 +191,37 @@ impl PartitionProducer {
             name: self.replica.topic.to_string(),
             ..Default::default()
         };
-        let mut partition_request = DefaultPartitionRequest {
-            partition_index: self.replica.partition,
-            ..Default::default()
-        };
 
         let mut batch_notifiers = vec![];
 
         for p_batch in batches_ready {
+            let mut partition_request = DefaultPartitionRequest {
+                partition_index: self.replica.partition,
+                ..Default::default()
+            };
             let notify = p_batch.notify.clone();
             let batch = p_batch.batch();
 
             let raw_batch = batch.try_into()?;
-
             partition_request.records.batches.push(raw_batch);
-
             batch_notifiers.push(notify);
+            topic_request.partitions.push(partition_request);
         }
 
-        topic_request.partitions.push(partition_request);
         request.isolation = self.config.isolation;
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
+
         let response = spu_socket.send_receive(request).await?;
 
-        for (batch_notifier, response) in batch_notifiers.into_iter().zip(response.responses.iter())
-        {
-            let base_offset = response.partitions[0].base_offset;
-            let fluvio_error = response.partitions[0].error_code.clone();
+        for (batch_notifier, partition_response) in batch_notifiers.into_iter().zip(
+            response
+                .responses
+                .into_iter()
+                .flat_map(|response| response.partitions),
+        ) {
+            let base_offset = partition_response.base_offset;
+            let fluvio_error = partition_response.error_code.clone();
             if let Err(_e) = batch_notifier
                 .send((base_offset, fluvio_error.clone()))
                 .await
