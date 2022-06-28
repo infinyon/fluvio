@@ -81,7 +81,7 @@ pub async fn produce_batch(
     let value = "a".repeat(5000);
     let result: Result<_, FluvioError> = (|| async move {
         let mut results = Vec::new();
-        for i in 0..1000 {
+        for _ in 0..1000 {
             let result = producer.send(RecordKey::NULL, value.clone()).await?;
             results.push(result);
         }
