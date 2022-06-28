@@ -385,18 +385,23 @@ impl LocalInstaller {
 
         let pb = self.pb_factory.create();
 
+        debug!("using log dir: {}", self.config.log_dir.display());
+        pb.set_message("Creating log directory");
+        if !self.config.log_dir.exists() {
+            create_dir_all(&self.config.log_dir).map_err(|e| {
+                LocalInstallError::LogDirectoryError {
+                    path: self.config.log_dir.clone(),
+                    source: e,
+                }
+            })?;
+        }
+
         let client = load_and_share()?;
 
         pb.set_message("Ensure CRDs are installed");
         // before we do let's try make sure SPU are installed.
         check_crd(client.clone()).await?;
         pb.set_message("CRD Checked");
-
-        debug!("using log dir: {}", self.config.log_dir.display());
-        pb.set_message("Creating log directory");
-        if !self.config.log_dir.exists() {
-            create_dir_all(&self.config.log_dir).map_err(LocalInstallError::IoError)?;
-        }
 
         pb.set_message("Sync files");
         // ensure we sync files before we launch servers
