@@ -307,7 +307,6 @@ impl StreamFetchHandler {
                         "Consumer offset updated and is behind, need to send records",
                     );
                     let (offset, wait) = self.send_back_records(consumer_offset_update, smartmodule_instance.as_mut(), join_record.as_ref()).await?;
-                    // NOTE: last_partition_offset should not be changed to a smaller value here:
                     last_partition_offset = offset;
                     if wait {
                         last_known_consumer_offset = None;

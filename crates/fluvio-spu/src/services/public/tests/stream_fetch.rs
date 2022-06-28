@@ -1116,11 +1116,7 @@ async fn test_stream_fetch_map(
         .await
         .expect("send offset");
 
-    let response = async_std::future::timeout(std::time::Duration::from_secs(3), stream.next())
-        .await
-        .expect("timeout")
-        .expect("third")
-        .expect("response");
+    let response = stream.next().await.expect("third").expect("response");
 
     assert_eq!(response.partition.records.batches.len(), 1);
     let records = response.partition.records.batches[0]

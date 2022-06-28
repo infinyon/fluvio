@@ -2329,7 +2329,6 @@ dependencies = [
  "async-io",
  "async-lock",
  "async-rwlock",
- "async-std",
  "async-trait",
  "bytes",
  "cfg-if",
