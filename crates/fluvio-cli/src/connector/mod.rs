@@ -125,6 +125,9 @@ pub struct ConnectorConfig {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     consumer: Option<ConsumerParameters>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    smartmodule: Option<SmartModuleParameters>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
@@ -150,6 +153,41 @@ pub struct ProducerParameters {
 
     #[serde(skip)]
     batch_size: Option<ByteSize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+enum SmartModuleType {
+    Filter,
+    Map,
+    ArrayMap,
+    Aggregate,
+    FilterMap,
+}
+
+impl ToString for SmartModuleType {
+    fn to_string(&self) -> String {
+        match self {
+            SmartModuleType::Filter => "filter",
+            SmartModuleType::Map => "map",
+            SmartModuleType::ArrayMap => "array-map",
+            SmartModuleType::Aggregate => "aggregate",
+            SmartModuleType::FilterMap => "filter-map",
+        }
+        .to_string()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
+pub struct SmartModuleParameters {
+    #[serde(default)]
+    name: String,
+    #[serde(rename = "type", default, skip_serializing_if = "Option::is_none")]
+    type_: Option<SmartModuleType>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    aggregate_initial_value: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    parameters: Option<BTreeMap<String, String>>,
 }
 
 impl ConnectorConfig {
@@ -200,6 +238,29 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
                 parameters.insert("consumer-partition".to_string(), partition.into());
             }
         }
+
+        if let Some(smartmodule) = config.smartmodule {
+            // Backwards compatibility for the `type` field.
+            if let Some(smartmodule_type) = smartmodule.type_ {
+                parameters.insert(smartmodule_type.to_string(), smartmodule.name.into());
+            } else {
+                parameters.insert("smartmodule-name".to_string(), smartmodule.name.into());
+            }
+            // Backwards compatibility for the `aggregate-initial-value` field.
+            if let Some(aggregate_initial_value) = smartmodule.aggregate_initial_value {
+                parameters.insert(
+                    "aggregate-initial-value".to_string(),
+                    aggregate_initial_value.into(),
+                );
+            }
+            if let Some(smartmodule_parameters) = smartmodule.parameters {
+                parameters.insert(
+                    "smartmodule-parameters".into(),
+                    smartmodule_parameters.into(),
+                );
+            }
+        }
+
         ManagedConnectorSpec {
             name: config.name,
             type_: config.type_,
@@ -259,6 +320,69 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
         } else {
             None
         };
+
+        let (smartmodule_name, smartmodule_type) = if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(smartmodule_name),
+        )) = parameters.remove("smartmodule-name")
+        {
+            (Some(smartmodule_name), None)
+        } else if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(smartmodule_name),
+        )) = parameters.remove("filter")
+        {
+            (Some(smartmodule_name), Some(SmartModuleType::Filter))
+        } else if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(smartmodule_name),
+        )) = parameters.remove("map")
+        {
+            (Some(smartmodule_name), Some(SmartModuleType::Map))
+        } else if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(smartmodule_name),
+        )) = parameters.remove("aggregate")
+        {
+            (Some(smartmodule_name), Some(SmartModuleType::Aggregate))
+        } else if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(smartmodule_name),
+        )) = parameters.remove("array_map")
+        {
+            (Some(smartmodule_name), Some(SmartModuleType::ArrayMap))
+        } else if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(smartmodule_name),
+        )) = parameters.remove("filter_map")
+        {
+            (Some(smartmodule_name), Some(SmartModuleType::FilterMap))
+        } else {
+            (None, None)
+        };
+
+        let smartmodule = if let Some(smartmodule_name) = smartmodule_name {
+            let aggregate_initial_value = if let Some(ManageConnectorParameterValue(
+                ManageConnectorParameterValueInner::String(agrgate_initial_value),
+            )) = parameters.remove("aggregate-initial-value")
+            {
+                Some(agrgate_initial_value)
+            } else {
+                None
+            };
+
+            let smartmodule_parameters = if let Some(ManageConnectorParameterValue(
+                ManageConnectorParameterValueInner::Map(map),
+            )) = parameters.remove("smartmodule-parameters")
+            {
+                Some(map)
+            } else {
+                None
+            };
+            Some(SmartModuleParameters {
+                name: smartmodule_name,
+                type_: smartmodule_type,
+                aggregate_initial_value,
+                parameters: smartmodule_parameters,
+            })
+        } else {
+            None
+        };
+
         ConnectorConfig {
             name: spec.name,
             type_: spec.type_,
@@ -268,6 +392,7 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             secrets: spec.secrets,
             producer,
             consumer,
+            smartmodule,
         }
     }
 }
@@ -317,6 +442,20 @@ fn full_yaml_test() {
         (
             "param_6".to_string(),
             vec!["-10".to_string(), "-10.0".to_string()].into(),
+        ),
+        ("aggregate".to_string(), "myaggregate".to_string().into()),
+        (
+            "aggregate-initial-value".to_string(),
+            "something".to_string().into(),
+        ),
+        (
+            "smartmodule-parameters".to_string(),
+            BTreeMap::from([
+                ("key_1".to_string(), "value_1".to_string()),
+                ("key_2".to_string(), "value_2".to_string()),
+                ("key_3".to_string(), "10".to_string()),
+            ])
+            .into(),
         ),
     ]);
     assert_eq!(out.parameters, expected_params);

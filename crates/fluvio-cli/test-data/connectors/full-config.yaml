@@ -1,4 +1,4 @@
-version: 0.1.0
+version: 0.2.0
 name: my-test-mqtt
 type: mqtt
 topic: my-mqtt
@@ -19,6 +19,7 @@ parameters:
   - -10
   - -10.0
 
+
 secrets:
   foo: bar
 producer:
@@ -27,3 +28,11 @@ producer:
   compression: gzip
 consumer:
   partition: 10
+smartmodule:
+  name: myaggregate
+  type: aggregate
+  aggregate_initial_value: something
+  parameters:
+    key_1: value_1
+    key_2: value_2
+    key_3: 10
