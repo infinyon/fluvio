@@ -1,6 +1,6 @@
 use std::any::Any;
 
-use fluvio::{RecordKey, TopicProducer, FluvioAdmin, FluvioError};
+use fluvio::{RecordKey, TopicProducer, TopicProducerConfigBuilder, FluvioAdmin, FluvioError};
 use fluvio_controlplane_metadata::partition::PartitionSpec;
 use clap::Parser;
 
@@ -47,7 +47,14 @@ pub async fn produce_batch(
     println!("Starting produce_batch test");
 
     let topic_name = test_case.environment.base_topic_name();
-    let producer: TopicProducer = test_driver.create_producer(&topic_name).await;
+    let config = TopicProducerConfigBuilder::default()
+        .linger(std::time::Duration::from_millis(10))
+        .build()
+        .expect("failed to build config");
+
+    let producer: TopicProducer = test_driver
+        .create_producer_with_config(&topic_name, config)
+        .await;
 
     println!("Created producer");
 
