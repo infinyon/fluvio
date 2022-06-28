@@ -2,6 +2,7 @@
 
 ## Platform Version 0.9.30 - UNRELEASED
 * Improve CLI error output when log_dir isn't writable ([#2425](https://github.com/infinyon/fluvio/pull/2425))
+* Fix bug in `last_partition_offset` update when handling smartmodules on SPU ([#2432](https://github.com/infinyon/fluvio/pull/2432))
 
 ## Platform Version 0.9.29 - 2022-06-27 
 * Revert 0.9.28 updates to Connector yaml config ([#2436](https://github.com/infinyon/fluvio/pull/2436))
