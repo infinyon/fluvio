@@ -1752,7 +1752,7 @@ dependencies = [
 
 [[package]]
 name = "fluvio"
-version = "0.12.13"
+version = "0.12.14"
 dependencies = [
  "async-channel",
  "async-lock",
@@ -1881,6 +1881,7 @@ dependencies = [
  "home",
  "http-types",
  "humantime",
+ "humantime-serde",
  "indicatif",
  "k8-client",
  "k8-config",
