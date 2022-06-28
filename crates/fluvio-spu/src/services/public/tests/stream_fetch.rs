@@ -991,6 +991,144 @@ async fn test_stream_filter_max(
 const FLUVIO_WASM_MAP_DOUBLE: &str = "fluvio_wasm_map_double";
 
 #[fluvio_future::test(ignore)]
+async fn test_stream_fetch_map_adhoc() {
+    adhoc_test(
+        "test_stream_fetch_map_error_adhoc",
+        FLUVIO_WASM_MAP_DOUBLE,
+        SmartModuleKind::Map,
+        test_stream_fetch_map,
+    )
+    .await;
+}
+
+async fn test_stream_fetch_map(
+    ctx: Arc<GlobalContext<FileReplica>>,
+    test_path: PathBuf,
+    wasm_payload: Option<LegacySmartModulePayload>,
+    smartmodule: Option<SmartModuleInvocation>,
+) {
+    ensure_clean_dir(&test_path);
+
+    let port = portpicker::pick_unused_port().expect("No free ports left");
+
+    let addr = format!("127.0.0.1:{}", port);
+
+    let server_end_event = create_public_server(addr.to_owned(), ctx.clone()).run();
+
+    // wait for stream controller async to start
+    sleep(Duration::from_millis(100)).await;
+
+    let client_socket =
+        MultiplexerSocket::new(FluvioSocket::connect(&addr).await.expect("connect"));
+
+    // perform for two versions
+
+    let topic = "test_map_error";
+    let test = Replica::new((topic.to_owned(), 0), 5001, vec![5001]);
+    let test_id = test.id.clone();
+    let replica = LeaderReplicaState::create(test, ctx.config(), ctx.status_update_owned())
+        .await
+        .expect("replica");
+    ctx.leaders_state().insert(test_id, replica.clone()).await;
+
+    let stream_request = DefaultStreamFetchRequest {
+        topic: topic.to_owned(),
+        partition: 0,
+        fetch_offset: 0,
+        isolation: Isolation::ReadUncommitted,
+        max_bytes: 300,
+        wasm_module: Vec::new(),
+        wasm_payload,
+        smartmodule,
+        ..Default::default()
+    };
+
+    let mut stream = client_socket
+        .create_stream(RequestMessage::new_request(stream_request), 11)
+        .await
+        .expect("create stream");
+
+    for _ in 0..10 {
+        let mut records = BatchProducer::builder()
+            .records(20_u16)
+            .record_generator(Arc::new(|i, _| Record::new(i.to_string())))
+            .build()
+            .expect("batch")
+            .records();
+
+        replica
+            .write_record_set(&mut records, ctx.follower_notifier())
+            .await
+            .expect("write");
+    }
+
+    debug!("first map fetch");
+
+    let response = stream.next().await.expect("first").expect("response");
+    let stream_id = response.stream_id;
+
+    assert_eq!(response.partition.records.batches.len(), 1);
+    let records = response.partition.records.batches[0]
+        .memory_records()
+        .expect("records");
+    assert_eq!(records.len(), 20);
+    assert_eq!(records[0].value.as_ref(), "0".as_bytes());
+    assert_eq!(records[1].value.as_ref(), "2".as_bytes());
+    let partition = &response.partition;
+    assert_eq!(partition.error_code, ErrorCode::None);
+    assert_eq!(partition.high_watermark, 200);
+    assert_eq!(partition.next_filter_offset, 20);
+    assert_eq!(partition.next_offset_for_fetch(), Some(20));
+
+    // consumer can send back to same offset to read back again
+    debug!("send back offset ack to SPU");
+    client_socket
+        .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
+            offsets: vec![OffsetUpdate {
+                offset: 20,
+                session_id: stream_id,
+            }],
+        }))
+        .await
+        .expect("send offset");
+
+    let response = stream.next().await.expect("second").expect("response");
+    assert_eq!(response.partition.records.batches.len(), 1);
+    let records = response.partition.records.batches[0]
+        .memory_records()
+        .expect("records");
+    assert_eq!(records.len(), 20);
+    assert_eq!(records[0].value.as_ref(), "0".as_bytes());
+    assert_eq!(records[1].value.as_ref(), "2".as_bytes());
+    let partition = &response.partition;
+    assert_eq!(partition.error_code, ErrorCode::None);
+    assert_eq!(partition.high_watermark, 200);
+    assert_eq!(partition.next_filter_offset, 40);
+    assert_eq!(partition.next_offset_for_fetch(), Some(40));
+
+    client_socket
+        .send_and_receive(RequestMessage::new_request(UpdateOffsetsRequest {
+            offsets: vec![OffsetUpdate {
+                offset: 40,
+                session_id: stream_id,
+            }],
+        }))
+        .await
+        .expect("send offset");
+
+    let response = stream.next().await.expect("third").expect("response");
+
+    assert_eq!(response.partition.records.batches.len(), 1);
+    let records = response.partition.records.batches[0]
+        .memory_records()
+        .expect("records");
+    assert_eq!(records.len(), 20);
+
+    server_end_event.notify();
+    debug!("terminated controller");
+}
+
+#[fluvio_future::test(ignore)]
 async fn test_stream_fetch_map_error_legacy() {
     legacy_test(
         "test_stream_fetch_map_error_legacy",
@@ -1004,7 +1142,7 @@ async fn test_stream_fetch_map_error_legacy() {
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_map_error_adhoc() {
     adhoc_test(
-        "test_stream_fetch_map_error_legacy",
+        "test_stream_fetch_map_error_adhoc",
         FLUVIO_WASM_MAP_DOUBLE,
         SmartModuleKind::Map,
         test_stream_fetch_map_error,
@@ -1015,7 +1153,7 @@ async fn test_stream_fetch_map_error_adhoc() {
 #[fluvio_future::test(ignore)]
 async fn test_stream_fetch_map_error_predefined() {
     predefined_test(
-        "test_stream_fetch_map_error_legacy",
+        "test_stream_fetch_map_error_predefined",
         FLUVIO_WASM_MAP_DOUBLE,
         SmartModuleKind::Map,
         test_stream_fetch_map_error,

@@ -500,7 +500,7 @@ impl StreamFetchHandler {
     async fn send_processed_response(
         &self,
         file_partition_response: FilePartitionResponse,
-        mut next_offset: Offset,
+        next_offset: Offset,
         batch: Batch,
         smartmodule_error: Option<SmartModuleRuntimeError>,
     ) -> Result<(Offset, bool), StreamFetchError> {
@@ -520,10 +520,12 @@ impl StreamFetchHandler {
             return Ok((next_offset, false));
         }
 
-        if has_records {
+        let next_filter_offset = if has_records {
             trace!(?batch, "SmartModule batch:");
-            next_offset = batch.get_last_offset() + 1;
-        }
+            batch.get_last_offset() + 1
+        } else {
+            next_offset
+        };
 
         debug!(
             next_offset,
@@ -540,7 +542,7 @@ impl StreamFetchHandler {
             high_watermark: file_partition_response.high_watermark,
             log_start_offset: file_partition_response.log_start_offset,
             records: records.try_into()?,
-            next_filter_offset: next_offset,
+            next_filter_offset,
             // we mark last offset in the response that we should sync up
             ..Default::default()
         };
