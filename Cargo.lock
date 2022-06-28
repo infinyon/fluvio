@@ -1882,6 +1882,7 @@ dependencies = [
  "home",
  "http-types",
  "humantime",
+ "humantime-serde",
  "indicatif",
  "k8-client",
  "k8-config",

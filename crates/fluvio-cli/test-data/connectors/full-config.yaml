@@ -1,0 +1,16 @@
+version: 0.1.0
+name: my-test-mqtt
+type: mqtt
+topic: my-mqtt
+create_topic: false
+direction: source
+parameters:
+  param_1: "mqtt.hsl.fi"
+secrets:
+  foo: bar
+producer:
+  linger: 1ms
+  batch-size: '44 MB'
+  compression: gzip
+consumer:
+  partition: 10
