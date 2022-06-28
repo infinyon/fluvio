@@ -1122,6 +1122,12 @@ async fn test_stream_fetch_map(
         .expect("third")
         .expect("response");
 
+    assert_eq!(response.partition.records.batches.len(), 1);
+    let records = response.partition.records.batches[0]
+        .memory_records()
+        .expect("records");
+    assert_eq!(records.len(), 20);
+
     server_end_event.notify();
     debug!("terminated controller");
 }
