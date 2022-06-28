@@ -78,10 +78,11 @@ pub async fn produce_batch(
 
     println!("Got cluster manager");
 
+    let value = "a".repeat(5000);
     let result: Result<_, FluvioError> = (|| async move {
         let mut results = Vec::new();
         for i in 0..1000 {
-            let result = producer.send(RecordKey::NULL, i.to_string()).await?;
+            let result = producer.send(RecordKey::NULL, value.clone()).await?;
             results.push(result);
         }
         println!("Send 1000");
