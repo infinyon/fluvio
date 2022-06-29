@@ -238,17 +238,26 @@ fn full_yaml_test() {
             "param_2".to_string(),
             ManageConnectorParameterValue::from(vec!["foo:baz".to_string(), "bar".to_string()]),
         ),
-        ("param_3".to_string(), ManageConnectorParameterValue::from(
-            BTreeMap::from(
-                [
+        (
+            "param_3".to_string(),
+            ManageConnectorParameterValue::from(BTreeMap::from([
                 ("bar".to_string(), "10.0".to_string()),
                 ("foo".to_string(), "bar".to_string()),
-                ("linger.ms".to_string(), "10".to_string())
-                ]
-                ))),
-        ("param_4".to_string(), ManageConnectorParameterValue::from("true".to_string())),
-        ("param_5".to_string(), ManageConnectorParameterValue::from("10".to_string())),
-        ("param_6".to_string(), ManageConnectorParameterValue::from(vec!["-10".to_string(), "-10.0".to_string()])),
+                ("linger.ms".to_string(), "10".to_string()),
+            ])),
+        ),
+        (
+            "param_4".to_string(),
+            ManageConnectorParameterValue::from("true".to_string()),
+        ),
+        (
+            "param_5".to_string(),
+            ManageConnectorParameterValue::from("10".to_string()),
+        ),
+        (
+            "param_6".to_string(),
+            ManageConnectorParameterValue::from(vec!["-10".to_string(), "-10.0".to_string()]),
+        ),
     ]);
     assert_eq!(out.parameters, expected_params);
 }
