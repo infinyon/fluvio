@@ -45,6 +45,7 @@ pub struct K8ManagedConnectorSpec {
     pub parameters: BTreeMap<String, VecOrString>,
     pub secrets: BTreeMap<String, SecretString>,
 }
+
 mod convert {
 
     use crate::connector::*;
@@ -53,24 +54,36 @@ mod convert {
 
     impl From<K8ManagedConnectorSpec> for ManagedConnectorSpec {
         fn from(spec: K8ManagedConnectorSpec) -> Self {
+            let mut parameters_old = BTreeMap::new();
+            let parameters = spec.parameters;
+            for (key, value) in &parameters {
+                if let VecOrString::String(ref value) = value {
+                    parameters_old.insert(key.clone(), value.clone());
+                }
+            }
             Self {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                parameters: spec.parameters,
+                parameters,
                 secrets: spec.secrets,
                 version: spec.version,
+                parameters_old,
             }
         }
     }
 
     impl From<ManagedConnectorSpec> for K8ManagedConnectorSpec {
         fn from(spec: ManagedConnectorSpec) -> Self {
+            let mut parameters = spec.parameters;
+            for (key, value) in spec.parameters_old {
+                parameters.insert(key, VecOrString::String(value));
+            }
             Self {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                parameters: spec.parameters,
+                parameters,
                 secrets: spec.secrets,
                 version: spec.version,
             }

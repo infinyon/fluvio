@@ -350,6 +350,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             parameters: config.parameters,
             secrets: config.secrets,
             version: config.version,
+            ..Default::default()
         }
     }
 }

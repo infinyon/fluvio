@@ -7,10 +7,8 @@ direction: source
 parameters:
   param_1: "mqtt.hsl.fi"
   param_2:
-    foo: bar
-    bar: foo
-  param_3:
-    - "baz"
+    - "foo:baz"
+    - "bar"
 secrets:
   foo: bar
 producer:

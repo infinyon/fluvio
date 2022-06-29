@@ -1,9 +1,7 @@
 use std::sync::Arc;
 use clap::Parser;
 
-use serde::{Deserializer, Deserialize};
-use serde::de::{self, Visitor, SeqAccess, MapAccess};
-use std::fmt;
+use serde::Deserialize;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::fs::File;
@@ -101,8 +99,8 @@ pub struct ConnectorConfig {
     pub(crate) version: Option<String>,
 
     #[serde(default)]
-    parameters: BTreeMap<String, YamlParameter>,
-    //parameters: BTreeMap<String, String>,
+    parameters: BTreeMap<String, VecOrString>,
+
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
 
@@ -161,10 +159,7 @@ impl ConnectorConfig {
 
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
-        let mut parameters = BTreeMap::new();
-        for (key, value) in config.parameters.iter() {
-            parameters.insert(key.clone(), VecOrString::Vec(value.context.clone()));
-        }
+        let mut parameters = config.parameters;
 
         // Producer arguments are prefixed with `producer`
         if let Some(producer) = config.producer {
@@ -208,61 +203,8 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             parameters,
             secrets: config.secrets,
             version: config.version,
+            ..Default::default()
         }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct YamlParameter {
-    context: Vec<String>,
-}
-impl<'de> Deserialize<'de> for YamlParameter {
-    fn deserialize<D>(deserializer: D) -> Result<YamlParameter, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(YamlParameterVisitor)
-    }
-}
-
-struct YamlParameterVisitor;
-
-impl<'de> Visitor<'de> for YamlParameterVisitor {
-    type Value = YamlParameter;
-
-    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-        formatter.write_str("string or map")
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<YamlParameter, E>
-    where
-        E: de::Error,
-    {
-        Ok(YamlParameter {
-            context: vec![value.to_string()],
-        })
-    }
-    fn visit_map<M>(self, mut map: M) -> Result<YamlParameter, M::Error>
-    where
-        M: MapAccess<'de>,
-    {
-        let mut yaml_param = YamlParameter { context: vec![] };
-        while let Some((key, value)) = map.next_entry::<String, String>()? {
-            let param = format!("{}:{}", key.clone(), value.clone());
-            yaml_param.context.push(param);
-        }
-
-        Ok(yaml_param)
-    }
-    fn visit_seq<A>(self, mut seq: A) -> Result<YamlParameter, A::Error>
-    where
-        A: SeqAccess<'de>,
-    {
-        let mut yaml_param = YamlParameter { context: vec![] };
-        while let Some(param) = seq.next_element::<String>()? {
-            yaml_param.context.push(param);
-        }
-        Ok(yaml_param)
     }
 }
 
@@ -270,27 +212,6 @@ impl<'de> Visitor<'de> for YamlParameterVisitor {
 fn full_yaml_test() {
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
         .expect("Failed to load test config");
-    let expected_params = BTreeMap::from([
-        (
-            "param_1".to_string(),
-            YamlParameter {
-                context: vec!["mqtt.hsl.fi".to_string()],
-            },
-        ),
-        (
-            "param_2".to_string(),
-            YamlParameter {
-                context: vec!["foo:bar".to_string(), "bar:foo".to_string()],
-            },
-        ),
-        (
-            "param_3".to_string(),
-            YamlParameter {
-                context: vec!["baz".to_string()],
-            },
-        ),
-    ]);
-    assert_eq!(connector_cfg.parameters, expected_params);
     let out: ManagedConnectorSpec = connector_cfg.into();
     let expected_params = BTreeMap::from([
         (
@@ -299,15 +220,11 @@ fn full_yaml_test() {
         ),
         (
             "param_1".to_string(),
-            VecOrString::Vec(vec!["mqtt.hsl.fi".to_string()]),
+            VecOrString::String("mqtt.hsl.fi".to_string()),
         ),
         (
             "param_2".to_string(),
-            VecOrString::Vec(vec!["foo:bar".to_string(), "bar:foo".to_string()]),
-        ),
-        (
-            "param_3".to_string(),
-            VecOrString::Vec(vec!["baz".to_string()]),
+            VecOrString::Vec(vec!["foo:baz".to_string(), "bar".to_string()]),
         ),
         (
             "producer-batch-size".to_string(),

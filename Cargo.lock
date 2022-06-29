@@ -2016,6 +2016,7 @@ dependencies = [
  "fluvio-types",
  "flv-util",
  "serde",
+ "serde_yaml",
  "thiserror",
  "tracing",
 ]

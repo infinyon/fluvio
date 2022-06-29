@@ -22,15 +22,38 @@ pub struct ManagedConnectorSpec {
     pub type_: String, // syslog, github star, slack
 
     pub topic: String,
+
+    #[fluvio(max_version = 7)]
+    pub parameters_old: BTreeMap<String, String>,
+
+    #[fluvio(min_version = 8)]
     pub parameters: BTreeMap<String, VecOrString>,
+
     pub secrets: BTreeMap<String, SecretString>,
+}
+
+#[test]
+fn deserialize_test() {
+    let yaml = r#"
+name: kafka-out
+parameters:
+  param_1: "param_str"
+  param_2:
+   - item_1
+   - item_2
+secrets: {}
+topic: poc1
+type: kafka-sink
+"#;
+    let connector_spec: ManagedConnectorSpec =
+        serde_yaml::from_str(&yaml).expect("Failed to deserialize");
 }
 
 #[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(rename_all = "camelCase")
+    serde(rename_all = "camelCase", untagged)
 )]
 pub enum VecOrString {
     String(String),
