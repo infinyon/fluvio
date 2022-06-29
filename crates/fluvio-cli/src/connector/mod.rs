@@ -10,7 +10,7 @@ use std::time::Duration;
 use bytesize::ByteSize;
 
 use fluvio::{Fluvio, Compression};
-use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString, VecOrString};
+use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString, ManageConnectorParameterValue};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -99,7 +99,7 @@ pub struct ConnectorConfig {
     pub(crate) version: Option<String>,
 
     #[serde(default)]
-    parameters: BTreeMap<String, VecOrString>,
+    parameters: BTreeMap<String, ManageConnectorParameterValue>,
 
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
@@ -167,21 +167,21 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
                 let linger = humantime::format_duration(linger).to_string();
                 parameters.insert(
                     "producer-linger".to_string(),
-                    VecOrString::Vec(vec![linger]),
+                    ManageConnectorParameterValue::from(vec![linger]),
                 );
             }
             if let Some(compression) = producer.compression {
                 let compression = format!("{:?}", compression);
                 parameters.insert(
                     "producer-compression".to_string(),
-                    VecOrString::Vec(vec![compression]),
+                    ManageConnectorParameterValue::from(vec![compression]),
                 );
             }
             if let Some(batch_size) = producer.batch_size {
                 let batch_size = format!("{}", batch_size);
                 parameters.insert(
-                    "producer-batch-size".to_string(),
-                    VecOrString::Vec(vec![batch_size]),
+                    "producer.batch-size".to_string(),
+                    ManageConnectorParameterValue::from(vec![batch_size]),
                 );
             }
         }
@@ -192,7 +192,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
                 let partition = format!("{}", partition);
                 parameters.insert(
                     "consumer-partition".to_string(),
-                    VecOrString::Vec(vec![partition]),
+                    ManageConnectorParameterValue::from(vec![partition]),
                 );
             }
         }
@@ -216,27 +216,27 @@ fn full_yaml_test() {
     let expected_params = BTreeMap::from([
         (
             "consumer-partition".to_string(),
-            VecOrString::Vec(vec!["10".to_string()]),
+            ManageConnectorParameterValue::from(vec!["10".to_string()]),
         ),
         (
             "param_1".to_string(),
-            VecOrString::String("mqtt.hsl.fi".to_string()),
+            ManageConnectorParameterValue::from("mqtt.hsl.fi".to_string()),
         ),
         (
             "param_2".to_string(),
-            VecOrString::Vec(vec!["foo:baz".to_string(), "bar".to_string()]),
+            ManageConnectorParameterValue::from(vec!["foo:baz".to_string(), "bar".to_string()]),
         ),
         (
             "producer-batch-size".to_string(),
-            VecOrString::Vec(vec!["44.0 MB".to_string()]),
+            ManageConnectorParameterValue::from(vec!["44.0 MB".to_string()]),
         ),
         (
             "producer-compression".to_string(),
-            VecOrString::Vec(vec!["Gzip".to_string()]),
+            ManageConnectorParameterValue::from(vec!["Gzip".to_string()]),
         ),
         (
             "producer-linger".to_string(),
-            VecOrString::Vec(vec!["1ms".to_string()]),
+            ManageConnectorParameterValue::from(vec!["1ms".to_string()]),
         ),
     ]);
     assert_eq!(out.parameters, expected_params);

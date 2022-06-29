@@ -6,7 +6,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use super::super::{ManagedConnectorStatus, SecretString, VecOrString};
+use super::super::{ManagedConnectorStatus, SecretString, ManageConnectorParameterValue};
 use crate::k8_types::{Spec, Crd, DefaultHeader};
 use std::collections::BTreeMap;
 
@@ -42,7 +42,7 @@ pub struct K8ManagedConnectorSpec {
     #[cfg_attr(feature = "use_serde", serde(rename = "type"))]
     pub type_: String, // syslog, github star, slack
     pub topic: String,
-    pub parameters: BTreeMap<String, VecOrString>,
+    pub parameters: BTreeMap<String, ManageConnectorParameterValue>,
     pub secrets: BTreeMap<String, SecretString>,
 }
 
@@ -54,36 +54,24 @@ mod convert {
 
     impl From<K8ManagedConnectorSpec> for ManagedConnectorSpec {
         fn from(spec: K8ManagedConnectorSpec) -> Self {
-            let mut parameters_old = BTreeMap::new();
-            let parameters = spec.parameters;
-            for (key, value) in &parameters {
-                if let VecOrString::String(ref value) = value {
-                    parameters_old.insert(key.clone(), value.clone());
-                }
-            }
             Self {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                parameters,
+                parameters: spec.parameters,
                 secrets: spec.secrets,
                 version: spec.version,
-                parameters_old,
             }
         }
     }
 
     impl From<ManagedConnectorSpec> for K8ManagedConnectorSpec {
         fn from(spec: ManagedConnectorSpec) -> Self {
-            let mut parameters = spec.parameters;
-            for (key, value) in spec.parameters_old {
-                parameters.insert(key, VecOrString::String(value));
-            }
             Self {
                 name: spec.name,
                 type_: spec.type_,
                 topic: spec.topic,
-                parameters,
+                parameters: spec.parameters,
                 secrets: spec.secrets,
                 version: spec.version,
             }

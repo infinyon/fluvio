@@ -9,6 +9,10 @@ parameters:
   param_2:
     - "foo:baz"
     - "bar"
+  param_3:
+    foo: bar
+    linger.ms: 10
+
 secrets:
   foo: bar
 producer:

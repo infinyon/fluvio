@@ -25,7 +25,7 @@ use fluvio_cli::tableformat::TableFormatConfig;
 use fluvio_controlplane_metadata::tableformat::{TableFormatSpec};
 use fluvio::metadata::{
     topic::{TopicSpec, TopicReplicaParam, ReplicaSpec},
-    connector::{ManagedConnectorSpec, VecOrString, SecretString},
+    connector::{ManagedConnectorSpec, ManageConnectorParameterValue, SecretString},
 };
 use fluvio_future::timer::sleep;
 
@@ -315,7 +315,7 @@ pub struct ConnectorConfig {
     #[serde(default)]
     pub(crate) create_topic: bool,
     #[serde(default)]
-    parameters: BTreeMap<String, VecOrString>,
+    parameters: BTreeMap<String, ManageConnectorParameterValue>,
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
 }

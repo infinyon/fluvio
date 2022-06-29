@@ -2009,6 +2009,7 @@ version = "0.15.4"
 dependencies = [
  "async-trait",
  "base64",
+ "bytes",
  "fluvio-dataplane-protocol",
  "fluvio-future",
  "fluvio-protocol 0.7.7",
