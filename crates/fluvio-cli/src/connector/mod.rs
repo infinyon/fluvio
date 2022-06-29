@@ -167,21 +167,21 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
                 let linger = humantime::format_duration(linger).to_string();
                 parameters.insert(
                     "producer-linger".to_string(),
-                    ManageConnectorParameterValue::from(vec![linger]),
+                    ManageConnectorParameterValue::from(linger),
                 );
             }
             if let Some(compression) = producer.compression {
                 let compression = format!("{:?}", compression);
                 parameters.insert(
                     "producer-compression".to_string(),
-                    ManageConnectorParameterValue::from(vec![compression]),
+                    ManageConnectorParameterValue::from(compression),
                 );
             }
             if let Some(batch_size) = producer.batch_size {
                 let batch_size = format!("{}", batch_size);
                 parameters.insert(
                     "producer-batch-size".to_string(),
-                    ManageConnectorParameterValue::from(vec![batch_size]),
+                    ManageConnectorParameterValue::from(batch_size),
                 );
             }
         }
@@ -192,7 +192,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
                 let partition = format!("{}", partition);
                 parameters.insert(
                     "consumer-partition".to_string(),
-                    ManageConnectorParameterValue::from(vec![partition]),
+                    ManageConnectorParameterValue::from(partition),
                 );
             }
         }
@@ -216,19 +216,19 @@ fn full_yaml_test() {
     let expected_params = BTreeMap::from([
         (
             "consumer-partition".to_string(),
-            ManageConnectorParameterValue::from(vec!["10".to_string()]),
+            ManageConnectorParameterValue::from("10".to_string()),
         ),
         (
             "producer-linger".to_string(),
-            ManageConnectorParameterValue::from(vec!["1ms".to_string()]),
+            ManageConnectorParameterValue::from("1ms".to_string()),
         ),
         (
             "producer-batch-size".to_string(),
-            ManageConnectorParameterValue::from(vec!["44.0 MB".to_string()]),
+            ManageConnectorParameterValue::from("44.0 MB".to_string()),
         ),
         (
             "producer-compression".to_string(),
-            ManageConnectorParameterValue::from(vec!["Gzip".to_string()]),
+            ManageConnectorParameterValue::from("Gzip".to_string()),
         ),
         (
             "param_1".to_string(),
