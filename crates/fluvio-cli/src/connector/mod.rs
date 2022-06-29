@@ -180,7 +180,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             if let Some(batch_size) = producer.batch_size {
                 let batch_size = format!("{}", batch_size);
                 parameters.insert(
-                    "producer.batch-size".to_string(),
+                    "producer-batch-size".to_string(),
                     ManageConnectorParameterValue::from(vec![batch_size]),
                 );
             }
@@ -209,7 +209,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
 
 #[test]
 fn full_yaml_test() {
-    use pretty_assertions::{assert_eq};
+    use pretty_assertions::assert_eq;
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
         .expect("Failed to load test config");
     let out: ManagedConnectorSpec = connector_cfg.into();
