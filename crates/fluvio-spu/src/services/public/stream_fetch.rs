@@ -29,12 +29,12 @@ use dataplane::smartmodule::SmartModuleRuntimeError;
 
 use crate::core::DefaultSharedGlobalContext;
 use crate::replication::leader::SharedFileLeaderState;
+use crate::services::public::conn_context::ConnectionContext;
 use crate::services::public::stream_fetch::publishers::INIT_OFFSET;
 use crate::smartengine::SmartModuleContext;
 
 /// Fetch records as stream
 pub struct StreamFetchHandler {
-    ctx: DefaultSharedGlobalContext,
     replica: ReplicaKey,
     isolation: Isolation,
     max_bytes: u32,
@@ -49,9 +49,10 @@ pub struct StreamFetchHandler {
 
 impl StreamFetchHandler {
     /// handle fluvio continuous fetch request
-    pub async fn start(
+    pub(crate) async fn start(
         request: RequestMessage<FileStreamFetchRequest>,
         ctx: DefaultSharedGlobalContext,
+        conn_ctx: &mut ConnectionContext,
         sink: ExclusiveFlvSink,
         end_event: Arc<StickyEvent>,
     ) -> Result<(), SocketError> {
@@ -59,8 +60,10 @@ impl StreamFetchHandler {
         let replica = ReplicaKey::new(msg.topic.clone(), msg.partition);
 
         if let Some(leader_state) = ctx.leaders_state().get(&replica).await {
-            let (stream_id, offset_publisher) =
-                ctx.stream_publishers().create_new_publisher().await;
+            let (stream_id, offset_publisher) = conn_ctx
+                .stream_publishers_mut()
+                .create_new_publisher()
+                .await;
             let consumer_offset_listener = offset_publisher.change_listener();
 
             spawn(async move {
@@ -166,7 +169,6 @@ impl StreamFetchHandler {
             "stream fetch");
 
         let handler = Self {
-            ctx: ctx.clone(),
             isolation,
             replica: replica.clone(),
             max_bytes,
@@ -366,10 +368,6 @@ impl StreamFetchHandler {
         }
 
         debug!("done with stream fetch loop exiting");
-        self.ctx
-            .stream_publishers()
-            .remove_publisher(self.stream_id)
-            .await;
 
         Ok(())
     }
@@ -627,65 +625,49 @@ impl From<CompressionError> for StreamFetchError {
 }
 pub mod publishers {
 
-    use std::{
-        collections::HashMap,
-        sync::{Arc, atomic::AtomicU32},
-    };
-    use std::sync::atomic::Ordering::SeqCst;
+    use std::{collections::HashMap, sync::Arc};
     use std::fmt::Debug;
-
-    use async_lock::Mutex;
-    use tracing::debug;
+    use std::ops::AddAssign;
 
     use super::{OffsetPublisher};
 
     pub const INIT_OFFSET: i64 = -1;
 
     pub struct StreamPublishers {
-        publishers: Mutex<HashMap<u32, Arc<OffsetPublisher>>>,
-        stream_id: AtomicU32,
+        publishers: HashMap<u32, Arc<OffsetPublisher>>,
+        stream_id_seq: u32,
     }
 
     impl Debug for StreamPublishers {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "stream {}", self.stream_id.load(SeqCst))
+            write!(f, "stream {}", self.stream_id_seq)
         }
     }
 
     impl StreamPublishers {
-        pub fn new() -> Self {
+        pub(crate) fn new() -> Self {
             Self {
-                publishers: Mutex::new(HashMap::new()),
-                stream_id: AtomicU32::new(0),
+                publishers: HashMap::new(),
+                stream_id_seq: 0,
             }
         }
 
         // get next stream id
-        fn next_stream_id(&self) -> u32 {
-            self.stream_id.fetch_add(1, SeqCst)
+        fn next_stream_id(&mut self) -> u32 {
+            self.stream_id_seq.add_assign(1);
+            self.stream_id_seq
         }
 
-        pub async fn create_new_publisher(&self) -> (u32, Arc<OffsetPublisher>) {
+        pub async fn create_new_publisher(&mut self) -> (u32, Arc<OffsetPublisher>) {
             let stream_id = self.next_stream_id();
             let offset_publisher = OffsetPublisher::shared(INIT_OFFSET);
-            let mut publisher_lock = self.publishers.lock().await;
-            publisher_lock.insert(stream_id, offset_publisher.clone());
+            self.publishers.insert(stream_id, offset_publisher.clone());
             (stream_id, offset_publisher)
         }
 
         /// get publisher with stream id
         pub async fn get_publisher(&self, stream_id: u32) -> Option<Arc<OffsetPublisher>> {
-            let publisher_lock = self.publishers.lock().await;
-            publisher_lock.get(&stream_id).cloned()
-        }
-
-        pub async fn remove_publisher(&self, stream_id: u32) {
-            let mut publisher_lock = self.publishers.lock().await;
-            if publisher_lock.remove(&stream_id).is_some() {
-                debug!(stream_id, "removed stream publisher");
-            } else {
-                debug!(stream_id, "no stream publisher founded");
-            }
+            self.publishers.get(&stream_id).cloned()
         }
     }
 }
