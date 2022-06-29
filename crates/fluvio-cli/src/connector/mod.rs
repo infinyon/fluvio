@@ -203,13 +203,13 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
             parameters,
             secrets: config.secrets,
             version: config.version,
-            ..Default::default()
         }
     }
 }
 
 #[test]
 fn full_yaml_test() {
+    use pretty_assertions::{assert_eq};
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
         .expect("Failed to load test config");
     let out: ManagedConnectorSpec = connector_cfg.into();
@@ -219,12 +219,8 @@ fn full_yaml_test() {
             ManageConnectorParameterValue::from(vec!["10".to_string()]),
         ),
         (
-            "param_1".to_string(),
-            ManageConnectorParameterValue::from("mqtt.hsl.fi".to_string()),
-        ),
-        (
-            "param_2".to_string(),
-            ManageConnectorParameterValue::from(vec!["foo:baz".to_string(), "bar".to_string()]),
+            "producer-linger".to_string(),
+            ManageConnectorParameterValue::from(vec!["1ms".to_string()]),
         ),
         (
             "producer-batch-size".to_string(),
@@ -235,9 +231,24 @@ fn full_yaml_test() {
             ManageConnectorParameterValue::from(vec!["Gzip".to_string()]),
         ),
         (
-            "producer-linger".to_string(),
-            ManageConnectorParameterValue::from(vec!["1ms".to_string()]),
+            "param_1".to_string(),
+            ManageConnectorParameterValue::from("mqtt.hsl.fi".to_string()),
         ),
+        (
+            "param_2".to_string(),
+            ManageConnectorParameterValue::from(vec!["foo:baz".to_string(), "bar".to_string()]),
+        ),
+        ("param_3".to_string(), ManageConnectorParameterValue::from(
+            BTreeMap::from(
+                [
+                ("bar".to_string(), "10.0".to_string()),
+                ("foo".to_string(), "bar".to_string()),
+                ("linger.ms".to_string(), "10".to_string())
+                ]
+                ))),
+        ("param_4".to_string(), ManageConnectorParameterValue::from("true".to_string())),
+        ("param_5".to_string(), ManageConnectorParameterValue::from("10".to_string())),
+        ("param_6".to_string(), ManageConnectorParameterValue::from(vec!["-10".to_string(), "-10.0".to_string()])),
     ]);
     assert_eq!(out.parameters, expected_params);
 }

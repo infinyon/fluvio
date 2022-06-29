@@ -1,7 +1,6 @@
 #![allow(clippy::assign_op_pattern)]
 
-use dataplane::core::{Encoder, Decoder, Version,
-};
+use dataplane::core::{Encoder, Decoder, Version};
 use std::convert::Infallible;
 use std::ops::Deref;
 use std::str::FromStr;
@@ -32,39 +31,16 @@ pub struct ManagedConnectorSpec {
     pub secrets: BTreeMap<String, SecretString>,
 }
 
-#[test]
-fn deserialize_test() {
-    let yaml = r#"
-name: kafka-out
-parameters:
-  param_1: "param_str"
-  param_2:
-   - item_1
-   - item_2
-   - "10"
-  param_3:
-    arg1: val1
-    arg2: "10"
-  param_4: "10"
-secrets: {}
-topic: poc1
-type: kafka-sink
-"#;
-    let connector_spec: ManagedConnectorSpec =
-        serde_yaml::from_str(&yaml).expect("Failed to deserialize");
-    println!("{:?}", connector_spec);
-}
-
 #[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
-    derive(serde::Serialize, serde::Deserialize),
+    derive(serde::Serialize),
     serde(rename_all = "camelCase", untagged)
 )]
 pub enum ManageConnectorParameterValueInner {
-    String(String),
     Vec(Vec<String>),
     Map(BTreeMap<String, String>),
+    String(String),
 }
 
 impl Default for ManageConnectorParameterValueInner {
@@ -73,19 +49,163 @@ impl Default for ManageConnectorParameterValueInner {
     }
 }
 
+#[cfg(feature = "use_serde")]
+mod always_string_serialize {
+    use super::ManageConnectorParameterValueInner;
+    use serde::{Deserializer, Deserialize};
+    use serde::de::{self, Visitor, SeqAccess, MapAccess};
+    use std::fmt;
+    use std::collections::BTreeMap;
+    struct ParameterValueVisitor;
+    impl<'de> Deserialize<'de> for ManageConnectorParameterValueInner {
+        fn deserialize<D>(deserializer: D) -> Result<ManageConnectorParameterValueInner, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            deserializer.deserialize_any(ParameterValueVisitor)
+        }
+    }
+
+    impl<'de> Visitor<'de> for ParameterValueVisitor {
+        type Value = ManageConnectorParameterValueInner;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("string or map")
+        }
+
+        fn visit_none<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str("null")
+        }
+        fn visit_unit<E>(self) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str("null")
+        }
+
+        fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str(&v.to_string())
+        }
+        fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str(&v.to_string())
+        }
+
+        fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str(&v.to_string())
+        }
+
+        fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            self.visit_str(&v.to_string())
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<Self::Value, E>
+        where
+            E: de::Error,
+        {
+            Ok(ManageConnectorParameterValueInner::String(
+                value.to_string(),
+            ))
+        }
+
+        fn visit_map<M>(self, mut map: M) -> Result<Self::Value, M::Error>
+        where
+            M: MapAccess<'de>,
+        {
+            let mut inner = BTreeMap::new();
+            while let Some((key, value)) = map.next_entry::<String, String>()? {
+                inner.insert(key.clone(), value.clone());
+            }
+
+            Ok(ManageConnectorParameterValueInner::Map(inner))
+        }
+
+        fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: SeqAccess<'de>,
+        {
+            let mut vec_inner = Vec::new();
+            while let Some(param) = seq.next_element::<String>()? {
+                vec_inner.push(param);
+            }
+            Ok(ManageConnectorParameterValueInner::Vec(vec_inner))
+        }
+    }
+
+    #[test]
+    fn deserialize_test() {
+        let yaml = r#"
+name: kafka-out
+parameters:
+  param_1: "param_str"
+  param_2:
+   - item_1
+   - item_2
+   - 10
+   - 10.0
+   - true
+   - On
+   - Off
+   - null
+  param_3:
+    arg1: val1
+    arg2: 10
+    arg3: -10
+    arg4: false
+    arg5: 1.0
+    arg6: null
+    arg7: On
+    arg8: Off
+  param_4: 10
+  param_5: 10.0
+  param_6: -10
+  param_7: True
+  param_8: 0xf1
+  param_9: null
+  param_10: 12.3015e+05
+  param_11: [On, Off]
+  param_12: true
+secrets: {}
+topic: poc1
+type: kafka-sink
+"#;
+        use super::ManagedConnectorSpec;
+        let connector_spec: ManagedConnectorSpec =
+            serde_yaml::from_str(&yaml).expect("Failed to deserialize");
+        println!("{:?}", connector_spec);
+    }
+}
+
 #[derive(Default, Debug, PartialEq, Clone)]
 #[cfg_attr(
     feature = "use_serde",
     derive(serde::Serialize, serde::Deserialize),
-    serde(transparent),
+    serde(transparent)
 )]
-pub struct ManageConnectorParameterValue (
-    pub ManageConnectorParameterValueInner
-);
+pub struct ManageConnectorParameterValue(pub ManageConnectorParameterValueInner);
 
 impl From<Vec<String>> for ManageConnectorParameterValue {
     fn from(vec: Vec<String>) -> ManageConnectorParameterValue {
         ManageConnectorParameterValue(ManageConnectorParameterValueInner::Vec(vec))
+    }
+}
+impl From<BTreeMap<String, String>> for ManageConnectorParameterValue {
+    fn from(map: BTreeMap<String, String>) -> ManageConnectorParameterValue {
+        ManageConnectorParameterValue(ManageConnectorParameterValueInner::Map(map))
     }
 }
 impl From<String> for ManageConnectorParameterValue {
@@ -112,29 +232,22 @@ impl Encoder for ManageConnectorParameterValue {
             self.0.write_size(version)
         } else {
             match &self.0 {
-                ManageConnectorParameterValueInner::String(ref inner) => {
-                    inner.write_size(version)
-                },
-                _ => {
-                    String::new().write_size(version)
-                }
+                ManageConnectorParameterValueInner::String(ref inner) => inner.write_size(version),
+                _ => String::new().write_size(version),
             }
         }
     }
 
     /// encoding contents for buffer
-    fn encode<T: BufMut>(&self, dest: &mut T, version: Version) -> Result<(), std::io::Error>
-    {
+    fn encode<T: BufMut>(&self, dest: &mut T, version: Version) -> Result<(), std::io::Error> {
         if version >= 8 {
             self.0.encode(dest, version)
         } else {
             match &self.0 {
                 ManageConnectorParameterValueInner::String(ref inner) => {
                     inner.encode(dest, version)
-                },
-                _ => {
-                    String::new().encode(dest, version)
                 }
+                _ => String::new().encode(dest, version),
             }
         }
     }

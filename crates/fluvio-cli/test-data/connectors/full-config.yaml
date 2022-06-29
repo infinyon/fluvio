@@ -11,7 +11,13 @@ parameters:
     - "bar"
   param_3:
     foo: bar
+    bar: 10.0
     linger.ms: 10
+  param_4: true
+  param_5: 10.0
+  param_6:
+  - -10
+  - -10.0
 
 secrets:
   foo: bar

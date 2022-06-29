@@ -17,7 +17,8 @@ use fluvio_stream_dispatcher::store::K8ChangeListener;
 use crate::stores::{
     StoreContext,
     connector::{
-        ManagedConnectorSpec, ManageConnectorParameterValueInner, ManagedConnectorStatus, ManagedConnectorStatusResolution,
+        ManagedConnectorSpec, ManageConnectorParameterValueInner, ManagedConnectorStatus,
+        ManagedConnectorStatusResolution,
     },
     k8::K8MetaItem,
     MetadataStoreObject,
@@ -241,7 +242,12 @@ impl ManagedConnectorDeploymentController {
                 ManageConnectorParameterValueInner::Map(map) => {
                     let mut args = Vec::new();
                     for (sub_key, value) in map.iter() {
-                        args.push(format!("--{}-{}={}", key.replace('_', "-"), sub_key.replace('_', "-"), value));
+                        args.push(format!(
+                            "--{}-{}={}",
+                            key.replace('_', "-"),
+                            sub_key.replace('_', "-"),
+                            value
+                        ));
                     }
                     args
                 }
