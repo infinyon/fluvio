@@ -16,7 +16,7 @@ smartmodule = ["fluvio-controlplane-metadata", "flate2"]
 wasi = ["wasmtime-wasi"]
 
 [dependencies]
-wasmtime = "0.37.0"
+wasmtime = "0.38.1"
 wasmtime-wasi = {version="0.37.0", optional = true}
 nix = "0.24"
 tracing = "0.1.27"
