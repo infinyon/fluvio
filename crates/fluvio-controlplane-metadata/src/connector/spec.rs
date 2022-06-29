@@ -22,8 +22,24 @@ pub struct ManagedConnectorSpec {
     pub type_: String, // syslog, github star, slack
 
     pub topic: String,
-    pub parameters: BTreeMap<String, String>,
+    pub parameters: BTreeMap<String, VecOrString>,
     pub secrets: BTreeMap<String, SecretString>,
+}
+
+#[derive(Encoder, Decoder, Debug, PartialEq, Clone)]
+#[cfg_attr(
+    feature = "use_serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+pub enum VecOrString {
+    String(String),
+    Vec(Vec<String>),
+}
+impl Default for VecOrString {
+    fn default() -> Self {
+        Self::Vec(Vec::new())
+    }
 }
 
 impl ManagedConnectorSpec {

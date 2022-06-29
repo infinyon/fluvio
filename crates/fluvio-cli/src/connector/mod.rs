@@ -1,7 +1,9 @@
 use std::sync::Arc;
 use clap::Parser;
 
-use serde::Deserialize;
+use serde::{Deserializer, Deserialize};
+use serde::de::{self, Visitor, SeqAccess, MapAccess};
+use std::fmt;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::fs::File;
@@ -10,7 +12,7 @@ use std::time::Duration;
 use bytesize::ByteSize;
 
 use fluvio::{Fluvio, Compression};
-use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString};
+use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString, VecOrString};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -99,7 +101,8 @@ pub struct ConnectorConfig {
     pub(crate) version: Option<String>,
 
     #[serde(default)]
-    parameters: BTreeMap<String, String>,
+    parameters: BTreeMap<String, YamlParameter>,
+    //parameters: BTreeMap<String, String>,
 
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
@@ -159,21 +162,24 @@ impl ConnectorConfig {
 
 impl From<ConnectorConfig> for ManagedConnectorSpec {
     fn from(config: ConnectorConfig) -> ManagedConnectorSpec {
-        let mut parameters = config.parameters;
+        let mut parameters = BTreeMap::new();
+        for (key, value) in config.parameters.iter() {
+            parameters.insert(key.clone(), VecOrString::Vec(value.context.clone()));
+        }
 
         // Producer arguments are prefixed with `producer`
         if let Some(producer) = config.producer {
             if let Some(linger) = producer.linger {
                 let linger = humantime::format_duration(linger).to_string();
-                parameters.insert("producer-linger".to_string(), linger);
+                parameters.insert("producer-linger".to_string(), VecOrString::Vec(vec![linger]));
             }
             if let Some(compression) = producer.compression {
                 let compression = format!("{:?}", compression);
-                parameters.insert("producer-compression".to_string(), compression);
+                parameters.insert("producer-compression".to_string(), VecOrString::Vec(vec![compression]));
             }
             if let Some(batch_size) = producer.batch_size {
                 let batch_size = format!("{}", batch_size);
-                parameters.insert("producer-batch-size".to_string(), batch_size);
+                parameters.insert("producer-batch-size".to_string(), VecOrString::Vec(vec![batch_size]));
             }
         }
 
@@ -181,7 +187,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
         if let Some(consumer) = config.consumer {
             if let Some(partition) = consumer.partition {
                 let partition = format!("{}", partition);
-                parameters.insert("consumer-partition".to_string(), partition);
+                parameters.insert("consumer-partition".to_string(), VecOrString::Vec(vec![partition]));
             }
         }
         ManagedConnectorSpec {
@@ -195,19 +201,95 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
     }
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct YamlParameter {
+    context: Vec<String>,
+}
+impl<'de> Deserialize<'de> for YamlParameter {
+    fn deserialize<D>(deserializer: D) -> Result<YamlParameter, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_any(YamlParameterVisitor)
+    }
+}
+
+struct YamlParameterVisitor;
+
+impl<'de> Visitor<'de> for YamlParameterVisitor {
+    type Value = YamlParameter;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("string or map")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<YamlParameter, E>
+    where
+        E: de::Error,
+    {
+        Ok(YamlParameter {
+            context: vec![value.to_string()],
+        })
+    }
+    fn visit_map<M>(self, mut map: M) -> Result<YamlParameter, M::Error>
+    where
+        M: MapAccess<'de>,
+    {
+        let mut yaml_param = YamlParameter { context: vec![] };
+        while let Some((key, value)) = map.next_entry::<String, String>()? {
+            let param = format!("{}:{}", key.clone(), value.clone());
+            yaml_param.context.push(param);
+        }
+
+        Ok(yaml_param)
+    }
+    fn visit_seq<A>(self, mut seq: A) -> Result<YamlParameter, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut yaml_param = YamlParameter { context: vec![] };
+        while let Some(param) = seq.next_element::<String>()? {
+            yaml_param.context.push(param);
+        }
+        Ok(yaml_param)
+    }
+}
+
 #[test]
 fn full_yaml_test() {
     let connector_cfg = ConnectorConfig::from_file("test-data/connectors/full-config.yaml")
         .expect("Failed to load test config");
-    let expected_params = BTreeMap::from([("param_1".to_string(), "mqtt.hsl.fi".to_string())]);
+    let expected_params = BTreeMap::from([
+        (
+            "param_1".to_string(),
+            YamlParameter {
+                context: vec!["mqtt.hsl.fi".to_string()],
+            },
+        ),
+        (
+            "param_2".to_string(),
+            YamlParameter {
+                context:
+                    vec!["foo:bar".to_string(), "bar:foo".to_string()],
+            },
+        ),
+        (
+            "param_3".to_string(),
+            YamlParameter {
+                context: vec!["baz".to_string()],
+            },
+        ),
+    ]);
     assert_eq!(connector_cfg.parameters, expected_params);
     let out: ManagedConnectorSpec = connector_cfg.into();
     let expected_params = BTreeMap::from([
-        ("consumer-partition".to_string(), "10".to_string()),
-        ("param_1".to_string(), "mqtt.hsl.fi".to_string()),
-        ("producer-batch-size".to_string(), "44.0 MB".to_string()),
-        ("producer-compression".to_string(), "Gzip".to_string()),
-        ("producer-linger".to_string(), "1ms".to_string()),
+        ("consumer-partition".to_string(),   VecOrString::Vec(vec!["10".to_string()])),
+        ("param_1".to_string(),              VecOrString::Vec(vec!["mqtt.hsl.fi".to_string()])),
+        ("param_2".to_string(),              VecOrString::Vec(vec!["foo:bar".to_string(), "bar:foo".to_string()])),
+        ("param_3".to_string(),              VecOrString::Vec(vec!["baz".to_string()])),
+        ("producer-batch-size".to_string(),  VecOrString::Vec(vec!["44.0 MB".to_string()])),
+        ("producer-compression".to_string(), VecOrString::Vec(vec!["Gzip".to_string()])),
+        ("producer-linger".to_string(),      VecOrString::Vec(vec!["1ms".to_string()])),
     ]);
     assert_eq!(out.parameters, expected_params);
 }
