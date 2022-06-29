@@ -16,7 +16,9 @@ use fluvio_stream_dispatcher::store::K8ChangeListener;
 
 use crate::stores::{
     StoreContext,
-    connector::{ManagedConnectorSpec, VecOrString, ManagedConnectorStatus, ManagedConnectorStatusResolution},
+    connector::{
+        ManagedConnectorSpec, VecOrString, ManagedConnectorStatus, ManagedConnectorStatusResolution,
+    },
     k8::K8MetaItem,
     MetadataStoreObject,
     actions::WSAction,
@@ -225,18 +227,16 @@ impl ManagedConnectorDeploymentController {
         let parameters: Vec<String> = parameters
             .keys()
             .zip(parameters.values())
-            .flat_map(|(key, values)| {
-                match values {
-                    VecOrString::String(value) => {
-                        vec![format!("--{}={}", key.replace('_', "-"), value)]
+            .flat_map(|(key, values)| match values {
+                VecOrString::String(value) => {
+                    vec![format!("--{}={}", key.replace('_', "-"), value)]
+                }
+                VecOrString::Vec(values) => {
+                    let mut args = Vec::new();
+                    for value in values.iter() {
+                        args.push(format!("--{}={}", key.replace('_', "-"), value))
                     }
-                    VecOrString::Vec(values) => {
-                        let mut args = Vec::new();
-                        for value in values.iter() {
-                            args.push(format!("--{}={}", key.replace('_', "-"), value))
-                        }
-                        args
-                    }
+                    args
                 }
             })
             .collect::<Vec<_>>();

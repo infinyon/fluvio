@@ -103,7 +103,6 @@ pub struct ConnectorConfig {
     #[serde(default)]
     parameters: BTreeMap<String, YamlParameter>,
     //parameters: BTreeMap<String, String>,
-
     #[serde(default)]
     secrets: BTreeMap<String, SecretString>,
 
@@ -171,15 +170,24 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
         if let Some(producer) = config.producer {
             if let Some(linger) = producer.linger {
                 let linger = humantime::format_duration(linger).to_string();
-                parameters.insert("producer-linger".to_string(), VecOrString::Vec(vec![linger]));
+                parameters.insert(
+                    "producer-linger".to_string(),
+                    VecOrString::Vec(vec![linger]),
+                );
             }
             if let Some(compression) = producer.compression {
                 let compression = format!("{:?}", compression);
-                parameters.insert("producer-compression".to_string(), VecOrString::Vec(vec![compression]));
+                parameters.insert(
+                    "producer-compression".to_string(),
+                    VecOrString::Vec(vec![compression]),
+                );
             }
             if let Some(batch_size) = producer.batch_size {
                 let batch_size = format!("{}", batch_size);
-                parameters.insert("producer-batch-size".to_string(), VecOrString::Vec(vec![batch_size]));
+                parameters.insert(
+                    "producer-batch-size".to_string(),
+                    VecOrString::Vec(vec![batch_size]),
+                );
             }
         }
 
@@ -187,7 +195,10 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
         if let Some(consumer) = config.consumer {
             if let Some(partition) = consumer.partition {
                 let partition = format!("{}", partition);
-                parameters.insert("consumer-partition".to_string(), VecOrString::Vec(vec![partition]));
+                parameters.insert(
+                    "consumer-partition".to_string(),
+                    VecOrString::Vec(vec![partition]),
+                );
             }
         }
         ManagedConnectorSpec {
@@ -269,8 +280,7 @@ fn full_yaml_test() {
         (
             "param_2".to_string(),
             YamlParameter {
-                context:
-                    vec!["foo:bar".to_string(), "bar:foo".to_string()],
+                context: vec!["foo:bar".to_string(), "bar:foo".to_string()],
             },
         ),
         (
@@ -283,13 +293,34 @@ fn full_yaml_test() {
     assert_eq!(connector_cfg.parameters, expected_params);
     let out: ManagedConnectorSpec = connector_cfg.into();
     let expected_params = BTreeMap::from([
-        ("consumer-partition".to_string(),   VecOrString::Vec(vec!["10".to_string()])),
-        ("param_1".to_string(),              VecOrString::Vec(vec!["mqtt.hsl.fi".to_string()])),
-        ("param_2".to_string(),              VecOrString::Vec(vec!["foo:bar".to_string(), "bar:foo".to_string()])),
-        ("param_3".to_string(),              VecOrString::Vec(vec!["baz".to_string()])),
-        ("producer-batch-size".to_string(),  VecOrString::Vec(vec!["44.0 MB".to_string()])),
-        ("producer-compression".to_string(), VecOrString::Vec(vec!["Gzip".to_string()])),
-        ("producer-linger".to_string(),      VecOrString::Vec(vec!["1ms".to_string()])),
+        (
+            "consumer-partition".to_string(),
+            VecOrString::Vec(vec!["10".to_string()]),
+        ),
+        (
+            "param_1".to_string(),
+            VecOrString::Vec(vec!["mqtt.hsl.fi".to_string()]),
+        ),
+        (
+            "param_2".to_string(),
+            VecOrString::Vec(vec!["foo:bar".to_string(), "bar:foo".to_string()]),
+        ),
+        (
+            "param_3".to_string(),
+            VecOrString::Vec(vec!["baz".to_string()]),
+        ),
+        (
+            "producer-batch-size".to_string(),
+            VecOrString::Vec(vec!["44.0 MB".to_string()]),
+        ),
+        (
+            "producer-compression".to_string(),
+            VecOrString::Vec(vec!["Gzip".to_string()]),
+        ),
+        (
+            "producer-linger".to_string(),
+            VecOrString::Vec(vec!["1ms".to_string()]),
+        ),
     ]);
     assert_eq!(out.parameters, expected_params);
 }
