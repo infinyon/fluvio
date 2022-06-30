@@ -134,7 +134,7 @@ where
     }
 
     pub async fn delete(&self, meta: K8MetaItem) -> Result<(), C::MetadataClientError> {
-        use k8_metadata_client::k8_types::options::{DeleteOptions, PropogationPolicy};
+        use k8_types::options::{DeleteOptions, PropogationPolicy};
 
         let options = if S::DELETE_WAIT_DEPENDENTS {
             Some(DeleteOptions {
