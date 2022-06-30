@@ -16,7 +16,10 @@ use fluvio_stream_dispatcher::store::K8ChangeListener;
 
 use crate::stores::{
     StoreContext,
-    connector::{ManagedConnectorSpec, ManagedConnectorStatus, ManagedConnectorStatusResolution},
+    connector::{
+        ManagedConnectorSpec, ManageConnectorParameterValueInner, ManagedConnectorStatus,
+        ManagedConnectorStatusResolution,
+    },
     k8::K8MetaItem,
     MetadataStoreObject,
     actions::WSAction,
@@ -225,7 +228,30 @@ impl ManagedConnectorDeploymentController {
         let parameters: Vec<String> = parameters
             .keys()
             .zip(parameters.values())
-            .flat_map(|(key, value)| [format!("--{}={}", key.replace('_', "-"), value)])
+            .flat_map(|(key, values)| match &values.0 {
+                ManageConnectorParameterValueInner::String(value) => {
+                    vec![format!("--{}={}", key.replace('_', "-"), value)]
+                }
+                ManageConnectorParameterValueInner::Vec(values) => {
+                    let mut args = Vec::new();
+                    for value in values.iter() {
+                        args.push(format!("--{}={}", key.replace('_', "-"), value))
+                    }
+                    args
+                }
+                ManageConnectorParameterValueInner::Map(map) => {
+                    let mut args = Vec::new();
+                    for (sub_key, value) in map.iter() {
+                        args.push(format!(
+                            "--{}={}:{}",
+                            key.replace('_', "-"),
+                            sub_key.replace('_', "-"),
+                            value
+                        ));
+                    }
+                    args
+                }
+            })
             .collect::<Vec<_>>();
 
         // Prefixing the args with a "--" passed to the container is needed for an unclear reason.

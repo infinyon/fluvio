@@ -92,3 +92,4 @@ indicatif = "0.16.2"
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.14", features = ["fixture"] }
+pretty_assertions = "1.2.1"

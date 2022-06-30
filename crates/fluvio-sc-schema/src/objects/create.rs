@@ -31,7 +31,7 @@ pub struct CommonCreateRequest {
 
 impl Request for ObjectApiCreateRequest {
     const API_KEY: u16 = AdminPublicApiKey::Create as u16;
-    const DEFAULT_API_VERSION: i16 = 7;
+    const DEFAULT_API_VERSION: i16 = 8;
     type Response = Status;
 }
 

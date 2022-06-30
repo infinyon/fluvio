@@ -29,6 +29,8 @@ fluvio-stream-model = { path = "../fluvio-stream-model", version = "0.7.0" }
 fluvio-protocol = { path = "../fluvio-protocol", version = "0.7" }
 dataplane = { version = "0.11.0", path = "../fluvio-dataplane-protocol", package = "fluvio-dataplane-protocol" }
 base64 = "0.13.0"
+bytes = { version = "1" }
 
 [dev-dependencies]
 fluvio-future = { version = "0.3.0", features = ["fixture"] }
+serde_yaml = "0.8.24"
