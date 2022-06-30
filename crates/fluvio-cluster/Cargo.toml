@@ -69,9 +69,9 @@ fluvio-controlplane-metadata = { path = "../fluvio-controlplane-metadata", featu
 fluvio-sc-schema = { path = "../fluvio-sc-schema", default-features = false}
 flv-util = "0.5.2"
 k8-config = { version = "2.0.0" }
-k8-client = { version = "6.0.0" }
-k8-metadata-client = { version = "3.2.0" }
-k8-types = { version = "0.5.2", features = ["app"] }
+k8-client = { version = "7.0.0" }
+k8-metadata-client = { version = "4.0.0" }
+k8-types = { version = "0.6.0", features = ["app"] }
 fluvio-types = { path = "../fluvio-types" }
 fluvio-channel = { path = "../fluvio-channel" }
 
