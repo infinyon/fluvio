@@ -185,7 +185,7 @@ type: kafka-sink
 "#;
         use super::ManagedConnectorSpec;
         let connector_spec: ManagedConnectorSpec =
-            serde_yaml::from_str(&yaml).expect("Failed to deserialize");
+            serde_yaml::from_str(yaml).expect("Failed to deserialize");
         println!("{:?}", connector_spec);
     }
 }
