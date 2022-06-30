@@ -243,7 +243,7 @@ impl ManagedConnectorDeploymentController {
                     let mut args = Vec::new();
                     for (sub_key, value) in map.iter() {
                         args.push(format!(
-                            "--{}-{}={}",
+                            "--{}={}:{}",
                             key.replace('_', "-"),
                             sub_key.replace('_', "-"),
                             value

@@ -165,24 +165,15 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
         if let Some(producer) = config.producer {
             if let Some(linger) = producer.linger {
                 let linger = humantime::format_duration(linger).to_string();
-                parameters.insert(
-                    "producer-linger".to_string(),
-                    ManageConnectorParameterValue::from(linger),
-                );
+                parameters.insert("producer-linger".to_string(), linger.into());
             }
             if let Some(compression) = producer.compression {
                 let compression = format!("{:?}", compression);
-                parameters.insert(
-                    "producer-compression".to_string(),
-                    ManageConnectorParameterValue::from(compression),
-                );
+                parameters.insert("producer-compression".to_string(), compression.into());
             }
             if let Some(batch_size) = producer.batch_size {
                 let batch_size = format!("{}", batch_size);
-                parameters.insert(
-                    "producer-batch-size".to_string(),
-                    ManageConnectorParameterValue::from(batch_size),
-                );
+                parameters.insert("producer-batch-size".to_string(), batch_size.into());
             }
         }
 
@@ -190,10 +181,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
         if let Some(consumer) = config.consumer {
             if let Some(partition) = consumer.partition {
                 let partition = format!("{}", partition);
-                parameters.insert(
-                    "consumer-partition".to_string(),
-                    ManageConnectorParameterValue::from(partition),
-                );
+                parameters.insert("consumer-partition".to_string(), partition.into());
             }
         }
         ManagedConnectorSpec {
@@ -214,49 +202,35 @@ fn full_yaml_test() {
         .expect("Failed to load test config");
     let out: ManagedConnectorSpec = connector_cfg.into();
     let expected_params = BTreeMap::from([
-        (
-            "consumer-partition".to_string(),
-            ManageConnectorParameterValue::from("10".to_string()),
-        ),
-        (
-            "producer-linger".to_string(),
-            ManageConnectorParameterValue::from("1ms".to_string()),
-        ),
+        ("consumer-partition".to_string(), "10".to_string().into()),
+        ("producer-linger".to_string(), "1ms".to_string().into()),
         (
             "producer-batch-size".to_string(),
-            ManageConnectorParameterValue::from("44.0 MB".to_string()),
+            "44.0 MB".to_string().into(),
         ),
         (
             "producer-compression".to_string(),
-            ManageConnectorParameterValue::from("Gzip".to_string()),
+            "Gzip".to_string().into(),
         ),
-        (
-            "param_1".to_string(),
-            ManageConnectorParameterValue::from("mqtt.hsl.fi".to_string()),
-        ),
+        ("param_1".to_string(), "mqtt.hsl.fi".to_string().into()),
         (
             "param_2".to_string(),
-            ManageConnectorParameterValue::from(vec!["foo:baz".to_string(), "bar".to_string()]),
+            vec!["foo:baz".to_string(), "bar".to_string()].into(),
         ),
         (
             "param_3".to_string(),
-            ManageConnectorParameterValue::from(BTreeMap::from([
+            BTreeMap::from([
                 ("bar".to_string(), "10.0".to_string()),
                 ("foo".to_string(), "bar".to_string()),
                 ("linger.ms".to_string(), "10".to_string()),
-            ])),
+            ])
+            .into(),
         ),
-        (
-            "param_4".to_string(),
-            ManageConnectorParameterValue::from("true".to_string()),
-        ),
-        (
-            "param_5".to_string(),
-            ManageConnectorParameterValue::from("10".to_string()),
-        ),
+        ("param_4".to_string(), "true".to_string().into()),
+        ("param_5".to_string(), "10".to_string().into()),
         (
             "param_6".to_string(),
-            ManageConnectorParameterValue::from(vec!["-10".to_string(), "-10.0".to_string()]),
+            vec!["-10".to_string(), "-10.0".to_string()].into(),
         ),
     ]);
     assert_eq!(out.parameters, expected_params);

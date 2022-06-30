@@ -70,7 +70,7 @@ mod always_string_serialize {
         type Value = ManageConnectorParameterValueInner;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-            formatter.write_str("string or map")
+            formatter.write_str("string, map or sequence")
         }
 
         fn visit_none<E>(self) -> Result<Self::Value, E>
