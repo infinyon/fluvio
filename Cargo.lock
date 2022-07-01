@@ -1894,9 +1894,9 @@ dependencies = [
  "humantime-serde",
  "include_dir",
  "indicatif",
- "k8-client 6.1.0",
+ "k8-client",
  "k8-config",
- "k8-types 0.5.3",
+ "k8-types",
  "pretty_assertions",
  "semver 1.0.11",
  "serde",
@@ -1961,10 +1961,10 @@ dependencies = [
  "futures-util",
  "include_dir",
  "indicatif",
- "k8-client 7.0.0",
+ "k8-client",
  "k8-config",
- "k8-metadata-client 4.0.0",
- "k8-types 0.6.0",
+ "k8-metadata-client",
+ "k8-types",
  "once_cell",
  "rand 0.8.5",
  "semver 1.0.11",
@@ -2224,9 +2224,9 @@ dependencies = [
  "flv-tls-proxy",
  "flv-util",
  "futures-util",
- "k8-client 7.0.0",
- "k8-metadata-client 4.0.0",
- "k8-types 0.6.0",
+ "k8-client",
+ "k8-metadata-client",
+ "k8-types",
  "once_cell",
  "rand 0.8.5",
  "regex",
@@ -2436,8 +2436,8 @@ dependencies = [
  "fluvio-stream-model",
  "fluvio-types",
  "futures-lite",
- "k8-metadata-client 4.0.0",
- "k8-types 0.6.0",
+ "k8-metadata-client",
+ "k8-types",
  "once_cell",
  "serde",
  "serde_json",
@@ -2452,7 +2452,7 @@ dependencies = [
  "async-rwlock",
  "event-listener",
  "fluvio-future",
- "k8-types 0.6.0",
+ "k8-types",
  "once_cell",
  "serde",
  "tokio",
@@ -3418,33 +3418,6 @@ dependencies = [
 
 [[package]]
 name = "k8-client"
-version = "6.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29eaa30f8b28e2d41d5530d45576b443ca21e05641bf660bf42c5dcc2ccb1ae7"
-dependencies = [
- "async-trait",
- "base64",
- "bytes",
- "cfg-if",
- "fluvio-future",
- "futures-util",
- "http",
- "hyper",
- "k8-config",
- "k8-diff",
- "k8-metadata-client 3.4.0",
- "k8-types 0.5.3",
- "pin-utils",
- "rand 0.8.5",
- "serde",
- "serde_json",
- "serde_qs 0.8.5",
- "tokio",
- "tracing",
-]
-
-[[package]]
-name = "k8-client"
 version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3807003ac1d68b31c1cccc9dd0375f2c582ac2f8bb8f35ff581a3b8ed52d9b4"
@@ -3459,8 +3432,8 @@ dependencies = [
  "hyper",
  "k8-config",
  "k8-diff",
- "k8-metadata-client 4.0.0",
- "k8-types 0.6.0",
+ "k8-metadata-client",
+ "k8-types",
  "pin-utils",
  "rand 0.8.5",
  "serde",
@@ -3498,22 +3471,6 @@ dependencies = [
 
 [[package]]
 name = "k8-metadata-client"
-version = "3.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "50d01177a9cd1c9400742277496528ea1f5a7f13ef8c1c9d7281b851920e735a"
-dependencies = [
- "async-trait",
- "futures-util",
- "k8-diff",
- "k8-types 0.5.3",
- "pin-utils",
- "serde",
- "serde_json",
- "tracing",
-]
-
-[[package]]
-name = "k8-metadata-client"
 version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "14b5e61b295e6ba9428a64a6a8aee6b05626e8cbe6d4dbcd00617603a7fc8dfa"
@@ -3521,22 +3478,11 @@ dependencies = [
  "async-trait",
  "futures-util",
  "k8-diff",
- "k8-types 0.6.0",
+ "k8-types",
  "pin-utils",
  "serde",
  "serde_json",
  "tracing",
-]
-
-[[package]]
-name = "k8-types"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02a7326c5c0ba55ac57e1726cf75f5f347954b38018a44393ef7add6d335eb0e"
-dependencies = [
- "serde",
- "serde_json",
- "serde_qs 0.8.5",
 ]
 
 [[package]]

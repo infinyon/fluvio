@@ -74,7 +74,6 @@ impl TestSmartModuleOpt {
                 .map_err(|e| FluvioError::Other(format!("SmartEngine - {:?}", e)))?;
             println!("{}", output_value);
         }
-        
 
         Ok(())
     }
