@@ -220,7 +220,7 @@ fn cluster_cleanup(option: EnvironmentSetup) {
             },
             "cluster_cleanup"
         );
-        let _ = cluster_cleanup_wait
+        cluster_cleanup_wait
             .join()
             .expect("Cluster cleanup wait failed");
     }
@@ -254,7 +254,7 @@ fn cluster_setup(option: &EnvironmentSetup) -> Result<(), ()> {
         "cluster setup"
     );
 
-    let _ = cluster_setup_wait
+    cluster_setup_wait
         .join()
         .expect("Cluster setup wait failed");
 

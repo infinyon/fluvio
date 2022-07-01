@@ -7,6 +7,8 @@
 /// Takes a u8 array of bytes and converts to hex dump
 #[allow(clippy::needless_range_loop)]
 pub fn bytes_to_hex_dump(record: &[u8]) -> String {
+    use std::fmt::Write;
+
     let cols = 16;
     let record_cnt = record.len();
     let mut result = String::new();
@@ -15,7 +17,7 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
     for row_idx in 0..record_cnt {
         // column index
         if row_idx % cols == 0 {
-            result.push_str(&format!("{:08x}", row_idx));
+            write!(result, "{:08x}", row_idx).unwrap();
         }
 
         // spacing half way
@@ -27,11 +29,11 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
         collector.push_str(&byte_to_string(&record[row_idx]));
 
         // push binary
-        result.push_str(&format!(" {:02x}", record[row_idx]));
+        write!(result, " {:02x}", record[row_idx]).unwrap();
 
         // push characters
         if (row_idx + 1) % cols == 0 {
-            result.push_str(&format!("  |{}|\n", collector));
+            writeln!(result, "  |{}|", collector).unwrap();
             collector = String::new();
         }
     }
@@ -47,7 +49,7 @@ pub fn bytes_to_hex_dump(record: &[u8]) -> String {
             result.push_str("   ");
         }
 
-        result.push_str(&format!("  |{}|\n", collector));
+        writeln!(result, "  |{}|", collector).unwrap();
     }
 
     result

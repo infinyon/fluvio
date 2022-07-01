@@ -487,11 +487,9 @@ mod convert {
         S: K8ExtendedSpec,
         <S as Spec>::Owner: K8ExtendedSpec,
     {
-        S::convert_from_k8(k8_obj)
-            .map(|val| {
-                trace!("converted val: {:#?}", val);
-                val
-            })
-            .map_err(|err| err)
+        S::convert_from_k8(k8_obj).map(|val| {
+            trace!("converted val: {:#?}", val);
+            val
+        })
     }
 }

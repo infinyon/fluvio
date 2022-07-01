@@ -43,7 +43,7 @@ mod encoding {
         type Error = std::io::Error;
         fn try_from(records: Vec<Record>) -> Result<Self, Self::Error> {
             let mut record_data = Vec::new();
-            let _ = records.encode(&mut record_data, 0)?;
+            records.encode(&mut record_data, 0)?;
             Ok(SmartModuleInput {
                 record_data,
                 ..Default::default()
