@@ -178,7 +178,7 @@ mod tests {
         let mut ck: CheckPoint<u64> = CheckPoint::create(option.clone(), "test.chk", 0)
             .await
             .expect("create");
-        let _ = ck.read().await.expect("do initial read");
+        ck.read().await.expect("do initial read");
         assert_eq!(*ck.get_offset(), 0);
         ck.write(10).await.expect("first write");
         ck.write(40).await.expect("2nd write");

@@ -564,9 +564,12 @@ impl PartitionMaps {
     }
 
     fn partition_map_string(&self) -> String {
+        use std::fmt::Write;
+
         let mut res = String::new();
         for partition in &self.maps {
-            res.push_str(&format!("{}:{:?}, ", partition.id, partition.replicas));
+            write!(res, "{}:{:?}, ", partition.id, partition.replicas).unwrap();
+            // ok to unwrap since this will not fail
         }
         if !res.is_empty() {
             res.truncate(res.len() - 2);

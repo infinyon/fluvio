@@ -46,9 +46,7 @@ impl DeleteOpt {
 
             if let Ok(mut load_config) = FluvioChannelConfig::from_file(cli_config_path) {
                 debug!("Loaded channel config");
-                let _ = if let Ok(Some(channel_info)) =
-                    load_config.remove_channel(channel_name.clone())
-                {
+                if let Ok(Some(channel_info)) = load_config.remove_channel(channel_name.clone()) {
                     load_config.save()?;
 
                     debug!(
