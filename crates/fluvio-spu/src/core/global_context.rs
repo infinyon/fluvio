@@ -18,7 +18,6 @@ use crate::replication::follower::SharedFollowersState;
 use crate::replication::leader::{
     SharedReplicaLeadersState, ReplicaLeadersState, FollowerNotifier, SharedSpuUpdates,
 };
-use crate::services::public::StreamPublishers;
 use crate::control_plane::{StatusMessageSink, SharedStatusUpdate};
 use fluvio_smartengine::SmartEngine;
 
@@ -44,7 +43,6 @@ pub struct GlobalContext<S> {
     derivedstream_localstore: SharedStreamStreamLocalStore,
     leaders_state: SharedReplicaLeadersState<S>,
     followers_state: SharedFollowersState<S>,
-    stream_publishers: StreamPublishers,
     spu_followers: SharedSpuUpdates,
     status_update: SharedStatusUpdate,
     sm_engine: SmartEngine,
@@ -75,7 +73,6 @@ where
             config: Arc::new(spu_config),
             leaders_state: ReplicaLeadersState::new_shared(),
             followers_state: FollowersState::new_shared(),
-            stream_publishers: StreamPublishers::new(),
             spu_followers: FollowerNotifier::shared(),
             status_update: StatusMessageSink::shared(),
             sm_engine: SmartEngine::default(),
@@ -126,10 +123,6 @@ where
 
     pub fn config_owned(&self) -> SharedSpuConfig {
         self.config.clone()
-    }
-
-    pub fn stream_publishers(&self) -> &StreamPublishers {
-        &self.stream_publishers
     }
 
     pub fn follower_notifier(&self) -> &FollowerNotifier {

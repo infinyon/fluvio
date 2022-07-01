@@ -7,6 +7,7 @@ mod stream_fetch;
 
 #[cfg(test)]
 mod tests;
+mod conn_context;
 
 use std::sync::Arc;
 use async_trait::async_trait;
@@ -25,8 +26,8 @@ use self::produce_handler::handle_produce_request;
 use self::fetch_handler::handle_fetch_request;
 use self::offset_request::handle_offset_request;
 use self::offset_update::handle_offset_update;
-use self::stream_fetch::StreamFetchHandler;
-pub use stream_fetch::publishers::StreamPublishers;
+use self::stream_fetch::{StreamFetchHandler, publishers::StreamPublishers};
+use self::conn_context::ConnectionContext;
 
 pub(crate) type SpuPublicServer =
     FluvioApiServer<SpuServerRequest, SpuServerApiKey, DefaultSharedGlobalContext, PublicService>;
@@ -70,6 +71,7 @@ impl FluvioService for PublicService {
         let api_stream = stream.api_stream::<SpuServerRequest, SpuServerApiKey>();
         let shutdown = StickyEvent::shared();
         let mut event_stream = api_stream.take_until(shutdown.listen_pinned());
+        let mut conn_ctx = ConnectionContext::new();
 
         loop {
             let event = event_stream.next().await;
@@ -108,6 +110,7 @@ impl FluvioService for PublicService {
                             StreamFetchHandler::start(
                                 request,
                                 context.clone(),
+                                &mut conn_ctx,
                                 shared_sink.clone(),
                                 shutdown.clone(),
                             )
@@ -115,7 +118,7 @@ impl FluvioService for PublicService {
                         }
                         SpuServerRequest::UpdateOffsetsRequest(request) => call_service!(
                             request,
-                            handle_offset_update(&context, request),
+                            handle_offset_update(request, &mut conn_ctx),
                             shared_sink,
                             "UpdateOffsetsRequest"
                         ),

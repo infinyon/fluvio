@@ -6,16 +6,16 @@ use fluvio_spu_schema::server::update_offset::{
 };
 use dataplane::ErrorCode;
 use dataplane::api::{ResponseMessage, RequestMessage};
-use crate::core::DefaultSharedGlobalContext;
+use crate::services::public::conn_context::ConnectionContext;
 
-#[instrument(skip(ctx, request))]
-pub async fn handle_offset_update(
-    ctx: &DefaultSharedGlobalContext,
+#[instrument(skip(conn_ctx, request))]
+pub(crate) async fn handle_offset_update(
     request: RequestMessage<UpdateOffsetsRequest>,
+    conn_ctx: &mut ConnectionContext,
 ) -> Result<ResponseMessage<UpdateOffsetsResponse>, IoError> {
     debug!("received stream updates");
     let (header, updates) = request.get_header_request();
-    let publishers = ctx.stream_publishers();
+    let publishers = conn_ctx.stream_publishers();
     let mut status_list = vec![];
 
     for update in updates.offsets {
