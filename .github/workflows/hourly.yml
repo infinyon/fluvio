@@ -232,7 +232,7 @@ jobs:
           path: diagnostics*.gz
       - name: Slack Notification
         uses: 8398a7/action-slack@v3
- #       if: ${{ !success() }}
+        if: ${{ !success() }}
         with:
           channel: '#fix_hourly_failure'
           status: ${{ job.status }}
@@ -241,3 +241,17 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
           MATRIX_CONTEXT: ${{ toJson(matrix) }}
       
+  test_slack:
+    name: Hourly Longevity test 
+    runs-on: ubuntu-latest
+    steps:
+      - name: Slack Notification
+        uses: 8398a7/action-slack@v3
+ #       if: ${{ !success() }}
+        with:
+          channel: '#fix_hourly_failure'
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          MATRIX_CONTEXT: ${{ toJson(matrix) }}
