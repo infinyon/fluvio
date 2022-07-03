@@ -170,7 +170,7 @@ impl MultiplexerSocket {
 
                 Err(IoError::new(
                     ErrorKind::TimedOut,
-                    format!("Timed out waiting for response. API_KEY={}, CorrelationId={}", R::API_KEY, correlation_id),
+                    format!("Timed out: {} secs waiting for response. API_KEY={}, CorrelationId={}", *MAX_WAIT_TIME,R::API_KEY, correlation_id),
                 ).into())
             },
 
