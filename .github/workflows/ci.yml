@@ -694,12 +694,12 @@ jobs:
         env:
           SKIP_TEST_CONNECTOR: true
       - name: Run diagnostics
-     #   if: ${{ !success() }}
+        if: ${{ !success() }}
         timeout-minutes: 5
         run: fluvio cluster diagnostics --k8
       - name: Upload diagnostics
         timeout-minutes: 5
-     #   if: ${{ !success() }}
+        if: ${{ !success() }}
         uses: actions/upload-artifact@v2
         with:
           name: k8_${{ matrix.run }}-${{ matrix.test }}-log
