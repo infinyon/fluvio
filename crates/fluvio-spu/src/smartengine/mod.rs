@@ -86,7 +86,11 @@ impl SmartModuleContext {
             SmartModuleKind::JoinStream {
                 topic: ref _topic,
                 derivedstream: ref derivedstream_name,
-            } => {
+            }
+            | SmartModuleKind::Generic(SmartModuleContextData::JoinStream {
+                topic: ref _topic,
+                derivedstream: ref derivedstream_name,
+            }) => {
                 // first ensure derivedstream exists
                 if let Some(derivedstream) = ctx.derivedstream_store().spec(derivedstream_name) {
                     // find input which has topic

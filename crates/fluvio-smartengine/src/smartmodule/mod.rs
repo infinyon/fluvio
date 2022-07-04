@@ -19,7 +19,9 @@ use dataplane::core::{Encoder, Decoder};
 use dataplane::smartmodule::{SmartModuleInput, SmartModuleOutput, SmartModuleRuntimeError};
 use crate::smartmodule::file_batch::FileBatchIterator;
 use dataplane::batch::{Batch, MemoryRecords};
-use fluvio_spu_schema::server::stream_fetch::{SmartModuleKind, LegacySmartModulePayload};
+use fluvio_spu_schema::server::stream_fetch::{
+    SmartModuleKind, LegacySmartModulePayload, SmartModuleContextData,
+};
 
 mod memory;
 pub mod filter;
@@ -44,7 +46,7 @@ type State = ();
 
 use self::join_stream::SmartModuleJoinStream;
 
-const DEFAULT_SMARTENGINE_VERSION: i16 = 16;
+const DEFAULT_SMARTENGINE_VERSION: i16 = 17;
 
 #[derive(Default, Clone)]
 pub struct SmartEngine(pub(crate) Engine);
@@ -113,6 +115,9 @@ impl SmartEngine {
                 accumulator.clone(),
                 version,
             )?),
+            SmartModuleKind::Generic(context) => {
+                smartmodule.create_smartmodule(smart_payload.params, version, context)?
+            }
         };
         Ok(smartmodule_instance)
     }
@@ -232,6 +237,43 @@ impl SmartModuleWithEngine {
     ) -> Result<SmartModuleAggregate> {
         let aggregate = SmartModuleAggregate::new(self, params, accumulator, version)?;
         Ok(aggregate)
+    }
+
+    fn create_smartmodule(
+        &self,
+        params: SmartModuleExtraParams,
+        version: i16,
+        context: &SmartModuleContextData,
+    ) -> Result<Box<dyn SmartModuleInstance>> {
+        if let Ok(filter) = self.create_filter(params.clone(), version) {
+            return Ok(Box::new(filter));
+        }
+        if let Ok(map) = self.create_map(params.clone(), version) {
+            return Ok(Box::new(map));
+        }
+        if let Ok(filter_map) = self.create_filter_map(params.clone(), version) {
+            return Ok(Box::new(filter_map));
+        }
+        if let Ok(array_map) = self.create_array_map(params.clone(), version) {
+            return Ok(Box::new(array_map));
+        }
+        let accumulator = match context {
+            SmartModuleContextData::Aggregate { accumulator } => accumulator.clone(),
+            _ => vec![],
+        };
+
+        if let Ok(aggregate) = self.create_aggregate(params.clone(), accumulator, version) {
+            return Ok(Box::new(aggregate));
+        }
+
+        if let Ok(join) = self.create_join(params.clone(), version) {
+            return Ok(Box::new(join));
+        }
+        if let Ok(join_stream) = self.create_join_stream(params, version) {
+            return Ok(Box::new(join_stream));
+        }
+
+        Err(Error::msg("Unable to initialize generic smartmodule"))
     }
 }
 
