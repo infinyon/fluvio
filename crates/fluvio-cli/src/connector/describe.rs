@@ -31,25 +31,25 @@ impl DescribeManagedConnectorOpt {
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;
         let connector_name = self.connector_name;
-        let connector_list = admin.list::<ManagedConnectorSpec, _>(vec![connector_name.clone()]).await?;
+        let connector_list = admin
+            .list::<ManagedConnectorSpec, _>(vec![connector_name.clone()])
+            .await?;
         let connector = connector_list.first();
         let connector = if let Some(connector) = connector {
             connector.spec.clone()
         } else {
             return Err(CliError::ConnectorNotFound(connector_name));
         };
-        let connector : ConnectorConfig = connector.into();
-        let connector  = serde_yaml::to_string(&connector)?;
+        let connector: ConnectorConfig = connector.into();
+        let connector = serde_yaml::to_string(&connector)?;
 
         if let Some(path) = self.out_file {
             let mut file = File::create(path)?;
             write!(file, "{}", connector)?;
-
         } else {
             t_println!(out, "{}", connector);
         }
 
         Ok(())
-
     }
 }

@@ -11,7 +11,10 @@ use std::str::FromStr;
 use bytesize::ByteSize;
 
 use fluvio::{Fluvio, Compression};
-use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString, ManageConnectorParameterValue, ManageConnectorParameterValueInner};
+use fluvio::metadata::connector::{
+    ManagedConnectorSpec, SecretString, ManageConnectorParameterValue,
+    ManageConnectorParameterValueInner,
+};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -210,29 +213,40 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
 impl From<ManagedConnectorSpec> for ConnectorConfig {
     fn from(spec: ManagedConnectorSpec) -> ConnectorConfig {
         let mut parameters = spec.parameters;
-        let mut producer : ProducerParameters = ProducerParameters {
+        let mut producer: ProducerParameters = ProducerParameters {
             linger: None,
             compression: None,
             batch_size_string: None,
             batch_size: None,
         };
-        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(linger))) = parameters.remove("producer-linger") {
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+            linger,
+        ))) = parameters.remove("producer-linger")
+        {
             producer.linger = humantime::parse_duration(&linger).ok();
         }
-        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(compression))) = parameters.remove("producer-compression") {
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+            compression,
+        ))) = parameters.remove("producer-compression")
+        {
             producer.compression = Compression::from_str(&compression).ok();
         }
-        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(batch_size_string))) = parameters.remove("producer-batch-size") {
-            let batch_size = batch_size_string
-                .parse::<ByteSize>().ok();
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(
+            batch_size_string,
+        ))) = parameters.remove("producer-batch-size")
+        {
+            let batch_size = batch_size_string.parse::<ByteSize>().ok();
             producer.batch_size_string = Some(batch_size_string);
             producer.batch_size = batch_size;
         }
 
-        let consumer = if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(partition))) = parameters.remove("consumer-partition") {
-                Some(ConsumerParameters {
-                    partition: partition.parse::<i32>().ok()
-                })
+        let consumer = if let Some(ManageConnectorParameterValue(
+            ManageConnectorParameterValueInner::String(partition),
+        )) = parameters.remove("consumer-partition")
+        {
+            Some(ConsumerParameters {
+                partition: partition.parse::<i32>().ok(),
+            })
         } else {
             None
         };
@@ -252,10 +266,10 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
 fn full_yaml_in_and_out() {
     use pretty_assertions::assert_eq;
     let path = "test-data/connectors/full-config.yaml";
-    let connector_input = ConnectorConfig::from_file(path.clone())
-        .expect("Failed to load test config");
+    let connector_input =
+        ConnectorConfig::from_file(path.clone()).expect("Failed to load test config");
     let spec_middle: ManagedConnectorSpec = connector_input.clone().into();
-    let connector_output : ConnectorConfig = spec_middle.into();
+    let connector_output: ConnectorConfig = spec_middle.into();
     assert_eq!(connector_input, connector_output);
 }
 
