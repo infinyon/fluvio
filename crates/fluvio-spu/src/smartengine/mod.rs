@@ -196,9 +196,16 @@ impl SmartModuleContext {
                     error = err.to_string().as_str(),
                     "Error Instantiating SmartModule"
                 );
-                ErrorCode::SmartModuleInvalidExports {
-                    kind: format!("{:?}", kind),
-                    error: err.to_string(),
+                if let SmartModuleKind::Generic(_) = kind {
+                    ErrorCode::SmartModuleInvalid {
+                        error: err.to_string(),
+                        name: None,
+                    }
+                } else {
+                    ErrorCode::SmartModuleInvalidExports {
+                        kind: format!("{}", kind),
+                        error: err.to_string(),
+                    }
                 }
             })
     }

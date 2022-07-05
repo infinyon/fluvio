@@ -273,7 +273,9 @@ impl SmartModuleWithEngine {
             return Ok(Box::new(join_stream));
         }
 
-        Err(Error::msg("Unable to initialize generic smartmodule"))
+        Err(Error::msg(
+            "Unable to initialize smartmodule. Make sure that the wasm module includes the correct imports.",
+        ))
     }
 }
 

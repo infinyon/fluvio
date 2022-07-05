@@ -1834,7 +1834,7 @@ async fn test_stream_fetch_invalid_wasm_module(
     assert_eq!(
         response.partition.error_code,
         ErrorCode::SmartModuleInvalidExports {
-            kind: "Filter".to_owned(),
+            kind: "filter".to_owned(),
             error: "failed to parse WebAssembly module".to_owned()
         }
     );
@@ -2424,7 +2424,7 @@ async fn test_stream_fetch_invalid_smartmodule(
 
     match response.partition.error_code {
         ErrorCode::SmartModuleInvalidExports { error: _, kind } => {
-            assert_eq!(kind, "Filter");
+            assert_eq!(kind, "filter");
         }
         _ => panic!("expected an InvalidSmartModule error"),
     }

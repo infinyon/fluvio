@@ -146,6 +146,22 @@ pub enum SmartModuleKind {
     Generic(SmartModuleContextData),
 }
 
+impl std::fmt::Display for SmartModuleKind {
+    fn fmt(&self, out: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        let name = match self {
+            SmartModuleKind::Filter => "filter",
+            SmartModuleKind::Map => "map",
+            SmartModuleKind::ArrayMap => "array_map",
+            SmartModuleKind::Aggregate { .. } => "aggregate",
+            SmartModuleKind::FilterMap => "filter_map",
+            SmartModuleKind::Join(..) => "join",
+            SmartModuleKind::JoinStream { .. } => "join_stream",
+            SmartModuleKind::Generic(..) => "smartmodule",
+        };
+        out.write_str(name)
+    }
+}
+
 #[derive(Debug, Clone, Encoder, Decoder)]
 pub enum SmartModuleContextData {
     None,
