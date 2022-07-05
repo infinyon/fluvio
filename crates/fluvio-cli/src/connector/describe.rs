@@ -38,7 +38,7 @@ impl DescribeManagedConnectorOpt {
         let connector = if let Some(connector) = connector {
             connector.spec.clone()
         } else {
-            return Err(CliError::ConnectorNotFound(connector_name))
+            return Err(CliError::ConnectorNotFound(connector_name));
         };
         let connector: ConnectorConfig = connector.into();
         let connector = serde_yaml::to_string(&connector)?;
