@@ -117,35 +117,35 @@ pub struct ConnectorConfig {
     #[serde(default)]
     parameters: BTreeMap<String, ManageConnectorParameterValue>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     secrets: BTreeMap<String, SecretString>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     producer: Option<ProducerParameters>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     consumer: Option<ConsumerParameters>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     partition: Option<i32>,
 }
 
 #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     linger: Option<Duration>,
 
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     compression: Option<Compression>,
 
     // This is needed because `ByteSize` serde deserializes as bytes. We need to use the parse
     // feature to populate `batch_size`.
     #[serde(rename = "batch-size")]
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     batch_size_string: Option<String>,
 
     #[serde(skip)]
@@ -240,6 +240,15 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             producer.batch_size = batch_size;
         }
 
+        let producer = if producer.linger.is_none()
+            && producer.compression.is_none()
+            && producer.batch_size_string.is_none()
+        {
+            None
+        } else {
+            Some(producer)
+        };
+
         let consumer = if let Some(ManageConnectorParameterValue(
             ManageConnectorParameterValueInner::String(partition),
         )) = parameters.remove("consumer-partition")
@@ -257,7 +266,7 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
             version: spec.version,
             parameters,
             secrets: spec.secrets,
-            producer: Some(producer),
+            producer,
             consumer,
         }
     }
@@ -271,6 +280,8 @@ fn full_yaml_in_and_out() {
     let spec_middle: ManagedConnectorSpec = connector_input.clone().into();
     let connector_output: ConnectorConfig = spec_middle.into();
     assert_eq!(connector_input, connector_output);
+    let connector_out =
+        serde_yaml::to_string(&connector_output).expect("Failed to stringify connector yaml");
 }
 
 #[test]
