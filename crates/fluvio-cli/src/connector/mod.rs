@@ -257,11 +257,6 @@ fn full_yaml_in_and_out() {
     let spec_middle: ManagedConnectorSpec = connector_input.clone().into();
     let connector_output : ConnectorConfig = spec_middle.into();
     assert_eq!(connector_input, connector_output);
-    let connector_out  = serde_yaml::to_string(&connector_output).expect("Failed to stringify connector yaml");
-    let mut file = File::open(path).expect("Failed to open test yaml");
-    let mut connector_in = String::new();
-    file.read_to_string(&mut connector_in).expect("Failed to read test yaml");
-    assert_eq!(connector_in, connector_out);
 }
 
 #[test]
