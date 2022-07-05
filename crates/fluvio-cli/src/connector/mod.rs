@@ -1,16 +1,17 @@
 use std::sync::Arc;
 use clap::Parser;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::Read;
 use std::time::Duration;
+use std::str::FromStr;
 use bytesize::ByteSize;
 
 use fluvio::{Fluvio, Compression};
-use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString, ManageConnectorParameterValue};
+use fluvio::metadata::connector::{ManagedConnectorSpec, SecretString, ManageConnectorParameterValue, ManageConnectorParameterValueInner};
 use fluvio_extension_common::Terminal;
 use fluvio_extension_common::COMMAND_TEMPLATE;
 
@@ -19,6 +20,7 @@ mod update;
 mod delete;
 mod list;
 mod logs;
+mod describe;
 
 use crate::Result;
 use create::CreateManagedConnectorOpt;
@@ -26,6 +28,7 @@ use update::UpdateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
 use logs::LogsManagedConnectorOpt;
+use describe::DescribeManagedConnectorOpt;
 use crate::CliError;
 
 #[derive(Debug, Parser)]
@@ -64,6 +67,13 @@ pub enum ManagedConnectorCmd {
         help_template = COMMAND_TEMPLATE,
     )]
     List(ListManagedConnectorsOpt),
+
+    /// Show the connector spec
+    #[clap(
+        name = "describe",
+        help_template = COMMAND_TEMPLATE,
+    )]
+    Describe(DescribeManagedConnectorOpt),
 }
 
 impl ManagedConnectorCmd {
@@ -84,12 +94,15 @@ impl ManagedConnectorCmd {
             Self::List(list) => {
                 list.process(out, fluvio).await?;
             }
+            Self::Describe(describe) => {
+                describe.process(out, fluvio).await?;
+            }
         }
         Ok(())
     }
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ConnectorConfig {
     name: String,
     #[serde(rename = "type")]
@@ -111,13 +124,13 @@ pub struct ConnectorConfig {
     consumer: Option<ConsumerParameters>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ConsumerParameters {
     #[serde(default)]
     partition: Option<i32>,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
 pub struct ProducerParameters {
     #[serde(with = "humantime_serde")]
     #[serde(default)]
@@ -168,7 +181,7 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
                 parameters.insert("producer-linger".to_string(), linger.into());
             }
             if let Some(compression) = producer.compression {
-                let compression = format!("{:?}", compression);
+                let compression = format!("{:?}", compression).to_lowercase();
                 parameters.insert("producer-compression".to_string(), compression.into());
             }
             if let Some(batch_size) = producer.batch_size {
@@ -194,6 +207,62 @@ impl From<ConnectorConfig> for ManagedConnectorSpec {
         }
     }
 }
+impl From<ManagedConnectorSpec> for ConnectorConfig {
+    fn from(spec: ManagedConnectorSpec) -> ConnectorConfig {
+        let mut parameters = spec.parameters;
+        let mut producer : ProducerParameters = ProducerParameters {
+            linger: None,
+            compression: None,
+            batch_size_string: None,
+            batch_size: None,
+        };
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(linger))) = parameters.remove("producer-linger") {
+            producer.linger = humantime::parse_duration(&linger).ok();
+        }
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(compression))) = parameters.remove("producer-compression") {
+            producer.compression = Compression::from_str(&compression).ok();
+        }
+        if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(batch_size_string))) = parameters.remove("producer-batch-size") {
+            let batch_size = batch_size_string
+                .parse::<ByteSize>().ok();
+            producer.batch_size_string = Some(batch_size_string);
+            producer.batch_size = batch_size;
+        }
+
+        let consumer = if let Some(ManageConnectorParameterValue(ManageConnectorParameterValueInner::String(partition))) = parameters.remove("consumer-partition") {
+                Some(ConsumerParameters {
+                    partition: partition.parse::<i32>().ok()
+                })
+        } else {
+            None
+        };
+        ConnectorConfig {
+            name: spec.name,
+            type_: spec.type_,
+            topic: spec.topic,
+            version: spec.version,
+            parameters,
+            secrets: spec.secrets,
+            producer: Some(producer),
+            consumer,
+        }
+    }
+}
+#[test]
+fn full_yaml_in_and_out() {
+    use pretty_assertions::assert_eq;
+    let path = "test-data/connectors/full-config.yaml";
+    let connector_input = ConnectorConfig::from_file(path.clone())
+        .expect("Failed to load test config");
+    let spec_middle: ManagedConnectorSpec = connector_input.clone().into();
+    let connector_output : ConnectorConfig = spec_middle.into();
+    assert_eq!(connector_input, connector_output);
+    let connector_out  = serde_yaml::to_string(&connector_output).expect("Failed to stringify connector yaml");
+    let mut file = File::open(path).expect("Failed to open test yaml");
+    let mut connector_in = String::new();
+    file.read_to_string(&mut connector_in).expect("Failed to read test yaml");
+    assert_eq!(connector_in, connector_out);
+}
 
 #[test]
 fn full_yaml_test() {
@@ -210,7 +279,7 @@ fn full_yaml_test() {
         ),
         (
             "producer-compression".to_string(),
-            "Gzip".to_string().into(),
+            "gzip".to_string().into(),
         ),
         ("param_1".to_string(), "mqtt.hsl.fi".to_string().into()),
         (

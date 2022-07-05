@@ -23,7 +23,7 @@ secrets:
   foo: bar
 producer:
   linger: 1ms
-  batch-size: '44 MB'
+  batch-size: '44.0 MB'
   compression: gzip
 consumer:
   partition: 10

@@ -85,6 +85,9 @@ pub enum CliError {
     ProfileNotFoundInConfig(String),
     #[error("Cluster not found in config: {0}")]
     ClusterNotFoundInConfig(String),
+
+    #[error("Connector not found: {0}")]
+    ConnectorNotFound(String),
 }
 
 #[derive(thiserror::Error, Debug)]
