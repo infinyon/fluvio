@@ -274,14 +274,11 @@ impl From<ManagedConnectorSpec> for ConnectorConfig {
 #[test]
 fn full_yaml_in_and_out() {
     use pretty_assertions::assert_eq;
-    let path = "test-data/connectors/full-config.yaml";
     let connector_input =
-        ConnectorConfig::from_file(path.clone()).expect("Failed to load test config");
+        ConnectorConfig::from_file("test-data/connectors/full-config.yaml").expect("Failed to load test config");
     let spec_middle: ManagedConnectorSpec = connector_input.clone().into();
     let connector_output: ConnectorConfig = spec_middle.into();
     assert_eq!(connector_input, connector_output);
-    let connector_out =
-        serde_yaml::to_string(&connector_output).expect("Failed to stringify connector yaml");
 }
 
 #[test]
