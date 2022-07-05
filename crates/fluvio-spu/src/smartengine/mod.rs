@@ -9,6 +9,7 @@ use fluvio::{
 use fluvio_smartengine::SmartModuleInstance;
 use fluvio_spu_schema::server::stream_fetch::{
     SmartModuleInvocationWasm, LegacySmartModulePayload, SmartModuleWasmCompressed,
+    SmartModuleContextData,
 };
 use futures_util::{StreamExt, stream::BoxStream};
 
@@ -69,7 +70,8 @@ impl SmartModuleContext {
         // check for right consumer stream exists, this only happens for join type
         let right_consumer_stream = match invocation.kind {
             // for join, create consumer stream
-            SmartModuleKind::Join(ref topic) => {
+            SmartModuleKind::Join(ref topic)
+            | SmartModuleKind::Generic(SmartModuleContextData::Join(ref topic)) => {
                 let consumer = ctx.leaders().partition_consumer(topic.to_owned(), 0).await;
 
                 Some(
