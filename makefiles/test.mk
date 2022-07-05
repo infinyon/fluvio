@@ -1,8 +1,8 @@
 TEST_BIN?=$(if $(TARGET),./target/$(TARGET)/$(BUILD_PROFILE)/fluvio-test,./target/$(BUILD_PROFILE)/fluvio-test)
 CLIENT_LOG?=warn
 SERVER_LOG?=info
-DEFAULT_SPU?=2
-REPL?=2
+DEFAULT_SPU?=1
+REPL?=1
 DEFAULT_ITERATION?=1000
 SPU_DELAY?=5
 SC_AUTH_CONFIG?=./crates/fluvio-sc/test-data/auth_config

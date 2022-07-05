@@ -366,10 +366,11 @@ We have 3 types of tests:
 
 ### Running local smoke test
 
-Perform smoke test using local cluster mode:
+To perform smoke test using local cluster mode:
 
 ```
-make smoke-test-local
+flvd cluster start --local --develop
+make smoke-test-local UNINSTALL=noclean 
 ```
 
 This results in message such as:
@@ -385,18 +386,12 @@ deleting cluster
 
 ### Running Kubernetes smoke test
 
-Perform smoke test as Kubernetes objects:
+To perform smoke test as Kubernetes objects:
 ```
-make smoke-test-k8
+flvd cluster start --develop
+make smoke-test-k8 UNINSTALL=noclean
 ```
 
-### Running CLI smoke test
-
-Perform CLI smoke test against your running cluster (Kubernetes or local)
-
-```
-make cli-smoke
-```
 
 ## Troubleshooting
 
