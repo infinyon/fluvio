@@ -3,19 +3,14 @@ use std::collections::VecDeque;
 
 use async_lock::{Mutex, RwLock};
 use dataplane::ReplicaKey;
-use dataplane::batch::{RawRecords, Batch, BATCH_FILE_HEADER_SIZE};
-use dataplane::produce::{
-    DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest, ProduceRequest,
-    ProduceResponse,
-};
-use dataplane::record::RecordSet;
+use dataplane::batch::{RawRecords, Batch};
+use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
 use tracing::{debug, info, instrument, error, trace};
 
 use crate::error::{Result, FluvioError};
-use crate::sockets::VersionedSerialSocket;
 use crate::spu::SpuPool;
 use crate::TopicProducerConfig;
 
@@ -23,12 +18,10 @@ use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
-use crate::stats::{ClientStatsUpdate, SharedClientStats};
-use std::time::Instant;
+use crate::stats::{ClientStats, ClientStatsUpdate, SharedClientStats};
 
 use quantities::prelude::*;
 use quantities::datavolume::BYTE;
-use quantities::duration::SECOND;
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
@@ -49,7 +42,7 @@ impl PartitionProducer {
         batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
-        maybe_client_stats: Option<SharedClientStats>,
+        client_stats: Option<SharedClientStats>,
     ) -> Self {
         Self {
             config,
@@ -58,7 +51,7 @@ impl PartitionProducer {
             batches_lock,
             batch_events,
             last_error,
-            client_stats: maybe_client_stats,
+            client_stats,
         }
     }
 
@@ -69,7 +62,7 @@ impl PartitionProducer {
         batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
-        maybe_client_stats: Option<SharedClientStats>,
+        client_stats: Option<SharedClientStats>,
     ) -> Arc<Self> {
         Arc::new(PartitionProducer::new(
             config,
@@ -78,7 +71,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             error,
-            maybe_client_stats,
+            client_stats,
         ))
     }
 
@@ -233,7 +226,7 @@ impl PartitionProducer {
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
             if self.client_stats.is_some() {
-                flush_total_bytes += BATCH_FILE_HEADER_SIZE + raw_batch.records().0.len();
+                flush_total_bytes += raw_batch.batch_len;
             }
 
             partition_request.records.batches.push(raw_batch);
@@ -245,8 +238,11 @@ impl PartitionProducer {
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
 
-        let (response, stats_update) = if self.client_stats.is_some() {
-            Self::measure_send_receive(&spu_socket, request).await?
+        let (response, stats_update) = if let Some(shared) = self.client_stats.as_ref() {
+            shared
+                .load()
+                .measure_send_receive(&spu_socket, request)
+                .await?
         } else {
             (
                 spu_socket.send_receive(request).await?,
@@ -254,9 +250,10 @@ impl PartitionProducer {
             )
         };
 
+        let mut base_offset = 0;
         for (batch_notifier, response) in batch_notifiers.into_iter().zip(response.responses.iter())
         {
-            let base_offset = response.partitions[0].base_offset;
+            base_offset = response.partitions[0].base_offset;
             let fluvio_error = response.partitions[0].error_code.clone();
 
             if let Err(_e) = batch_notifier
@@ -269,58 +266,27 @@ impl PartitionProducer {
             if fluvio_error.is_error() {
                 return Err(FluvioError::from(ProducerError::from(fluvio_error)));
             }
+        }
 
-            // Update stats
-            if let Some(client_stats) = &self.client_stats {
-                // Type conversion for `quantities` crate
+        // Update stats
+        if let Some(client_stats) = self.client_stats.as_ref() {
+            // Type conversion for `quantities` crate
 
-                #[cfg(not(target_arch = "wasm32"))]
-                let scratch: AmountT = flush_total_bytes as f64;
-                #[cfg(target_arch = "wasm32")]
-                let scratch: AmountT = flush_total_bytes as f32;
+            #[cfg(not(target_arch = "wasm32"))]
+            let scratch: AmountT = flush_total_bytes as f64;
+            #[cfg(target_arch = "wasm32")]
+            let scratch: AmountT = flush_total_bytes as f32;
 
-                let flush_total_bytes = Some(scratch * BYTE);
+            let flush_total_bytes = Some(scratch * BYTE);
 
-                client_stats.rcu(|inner| {
-                    if let Some(s) = inner.clone() {
-                        let mut stats = *s;
-
-                        stats.update(
-                            stats_update
-                                .bytes(flush_total_bytes)
-                                .offset(Some(base_offset as i32)),
-                        );
-
-                        Some(Arc::new(stats))
-                    } else {
-                        None
-                    }
-                });
-            }
+            ClientStats::shared_update(
+                client_stats,
+                stats_update
+                    .bytes(flush_total_bytes)
+                    .offset(Some(base_offset as i32)),
+            );
         }
 
         Ok(())
-    }
-
-    async fn measure_send_receive(
-        socket: &VersionedSerialSocket,
-        request: ProduceRequest<RecordSet<RawRecords>>,
-    ) -> Result<(ProduceResponse, ClientStatsUpdate)> {
-        let send_start_time = Instant::now();
-
-        let response = socket.send_receive(request).await?;
-
-        let send_latency = send_start_time.elapsed();
-
-        #[cfg(not(target_arch = "wasm32"))]
-        let scratch = send_latency.as_secs_f64();
-        #[cfg(target_arch = "wasm32")]
-        let scratch = send_latency.as_secs_f32();
-
-        let send_latency = Some(scratch * SECOND);
-
-        let stats_update = ClientStatsUpdate::new().latency(send_latency);
-
-        Ok((response, stats_update))
     }
 }

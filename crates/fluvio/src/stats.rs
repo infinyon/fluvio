@@ -15,12 +15,16 @@ use quantities::datavolume::{DataVolume, BYTE, KILOBYTE, MEGABYTE, GIGABYTE, TER
 use quantities::duration::{
     Duration as QuantDuration, MINUTE, SECOND, MILLISECOND, MICROSECOND, NANOSECOND,
 };
+use crate::sockets::VersionedSerialSocket;
+use dataplane::produce::{ProduceRequest, ProduceResponse};
+use dataplane::record::RecordSet;
+use dataplane::batch::RawRecords;
 
-use crate::FluvioError;
+use crate::error::{Result, FluvioError};
 use sysinfo::{SystemExt, ProcessExt};
-use arc_swap::ArcSwapOption;
+use arc_swap::ArcSwap;
 
-pub type SharedClientStats = Arc<ArcSwapOption<ClientStats>>;
+pub type SharedClientStats = Arc<ArcSwap<ClientStats>>;
 
 // This struct is heavily utilizing
 // `quantities` crate for managing human readable unit conversions
@@ -68,7 +72,7 @@ impl ClientStats {
     }
 
     pub fn new_shared() -> SharedClientStats {
-        Arc::new(ArcSwapOption::new(Some(Arc::new(Self::new()))))
+        Arc::new(ArcSwap::new(Arc::new(Self::new())))
     }
 
     /// Run system resource data sampling in the background
@@ -125,19 +129,15 @@ impl ClientStats {
                     let cpu_used = Some(cpu_used_sample / cpu_cores);
 
                     shared.rcu(|inner| {
-                        if let Some(s) = inner.clone() {
-                            let mut stats = *s;
+                        let mut stats = *inner.clone();
 
-                            stats.update(
-                                ClientStatsUpdate::new()
-                                .cpu(cpu_used)
-                                .mem(mem_used)
-                            );
+                        stats.update(
+                            ClientStatsUpdate::new()
+                            .cpu(cpu_used)
+                            .mem(mem_used)
+                        );
 
-                            Some(Arc::new(stats))
-                        } else {
-                            None
-                        }
+                        Arc::new(stats)
                     });
 
                     system_poll_time = Some(fluvio_future::timer::sleep(Duration::from_millis(REFRESH_RATE_MILLIS)));
@@ -174,6 +174,16 @@ impl ClientStats {
         }
 
         self.last_updated = Utc::now();
+    }
+
+    /// Helper function to update `SharedClientStats`
+    pub fn shared_update(client_stats: &SharedClientStats, update: ClientStatsUpdate) {
+        client_stats.rcu(|inner| {
+            let mut stats = *inner.clone();
+
+            stats.update(update);
+            Arc::new(stats)
+        });
     }
 
     /// Returns the `ClientStats` with updates applied without modifying the underlying struct
@@ -249,6 +259,30 @@ impl ClientStats {
     /// Returns the number of records transferred
     pub fn records(&self) -> u64 {
         self.num_records
+    }
+
+    /// Record the latency of a producer request
+    pub async fn measure_send_receive(
+        &self,
+        socket: &VersionedSerialSocket,
+        request: ProduceRequest<RecordSet<RawRecords>>,
+    ) -> Result<(ProduceResponse, ClientStatsUpdate)> {
+        let send_start_time = Instant::now();
+
+        let response = socket.send_receive(request).await?;
+
+        let send_latency = send_start_time.elapsed();
+
+        #[cfg(not(target_arch = "wasm32"))]
+        let scratch = send_latency.as_secs_f64();
+        #[cfg(target_arch = "wasm32")]
+        let scratch = send_latency.as_secs_f32();
+
+        let send_latency = Some(scratch * SECOND);
+
+        let stats_update = ClientStatsUpdate::new().latency(send_latency);
+
+        Ok((response, stats_update))
     }
 
     fn convert_to_largest_time_unit(ref_value: QuantDuration) -> QuantDuration {

@@ -184,7 +184,8 @@ impl ProduceOpt {
             produce_output.wait().await?;
         } else {
             // Read input line-by-line and send as individual records
-            self.produce_lines(&producer, &maybe_stats_bar).await?;
+            self.produce_lines(&producer, maybe_stats_bar.as_ref())
+                .await?;
         };
 
         if self.stats {
@@ -204,7 +205,7 @@ impl ProduceOpt {
     async fn produce_lines(
         &self,
         producer: &TopicProducer,
-        maybe_stats_bar: &Option<ProgressBar>,
+        maybe_stats_bar: Option<&ProgressBar>,
     ) -> Result<()> {
         match &self.file {
             Some(path) => {
@@ -257,7 +258,7 @@ impl ProduceOpt {
         &self,
         producer: &TopicProducer,
         line: &str,
-        maybe_stats_bar: &Option<ProgressBar>,
+        maybe_stats_bar: Option<&ProgressBar>,
     ) -> Result<Option<ProduceOutput>> {
         let produce_output = if let Some(separator) = &self.key_separator {
             self.produce_key_value(producer, line, separator).await?
@@ -333,15 +334,15 @@ async fn format_current_stats(client_stats: ClientStats) -> String {
 /// Return String with a formatted summary of the current stats
 async fn format_summary_stats(client_stats: ClientStats) -> String {
     format!(
-            "total throughput: {:<15.3} total data: {:<10.3} records transferred: {:<10} uptime: {:<10.3}",
-            client_stats.total_throughput(),
-            client_stats.total_bytes(),
-            client_stats.records(),
-            client_stats.uptime(),
-        )
+         "total throughput: {:<15.3} total data: {:<10.3} records transferred: {:<10} uptime: {:<10.3}",
+         client_stats.total_throughput(),
+         client_stats.total_bytes(),
+         client_stats.records(),
+         client_stats.uptime(),
+     )
 }
 
-/// Initialize Ctrl-C event handler
+/// Initialize Ctrl-C event handler to print session summary when we are collecting stats
 async fn init_ctrlc(producer: Arc<TopicProducer>, stats_bar: ProgressBar) -> Result<()> {
     let result = ctrlc::set_handler(move || {
         fluvio_future::task::run_block_on(async {
@@ -362,11 +363,11 @@ async fn init_ctrlc(producer: Arc<TopicProducer>, stats_bar: ProgressBar) -> Res
     Ok(())
 }
 
+/// Report the producer summary to stdout with the `ProgressBar`
 async fn producer_summary(producer: Arc<TopicProducer>, stats_bar: &ProgressBar) {
     if let Some(producer_stats) = producer.stats().await {
-        // The progress bar will render these in reverse order
-        stats_bar.set_message(format_summary_stats(producer_stats.snapshot()).await);
-        stats_bar.println(format_current_stats(producer_stats.snapshot()).await);
+        stats_bar.println(format_current_stats(producer_stats).await);
         stats_bar.println(" ");
+        stats_bar.set_message(format_summary_stats(producer_stats).await);
     }
 }
