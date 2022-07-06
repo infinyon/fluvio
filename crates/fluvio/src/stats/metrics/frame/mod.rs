@@ -19,7 +19,7 @@ use quantities::duration::{
 };
 
 /// This is a complete collection of client data being collected for the session:
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Serialize, Deserialize)]
 pub struct ClientStatsDataFrame {
     /// Start time when struct was created
     /// This is Unix Epoch time, in nanoseconds

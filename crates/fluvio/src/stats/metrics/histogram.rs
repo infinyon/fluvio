@@ -1,6 +1,4 @@
 use hdrhistogram::{Histogram, CreationError};
-use quantities::duration::NANOSECOND;
-use quantities::LinearScaledUnit;
 use crate::error::{Result, FluvioError};
 use super::{ClientStatsMetric, ClientStatsMetricRaw, ClientStatsDataFrame};
 use std::collections::VecDeque;
@@ -43,7 +41,6 @@ impl ClientStatsHistogram {
             self.second_window.push_back(dataframe);
             let _ = self.second_window.pop_front();
         }
-        //self.second_window.push_back(dataframe);
 
         let _ = self.total.push_back(dataframe);
     }
@@ -53,9 +50,6 @@ impl ClientStatsHistogram {
         if !self.second_marked {
             self.second_marked = true
         }
-        //else {
-        //    self.second_window = VecDeque::new();
-        //}
     }
 
     pub fn get_agg_stats_update(&self) -> Result<Vec<ClientStatsMetricRaw>, FluvioError> {
@@ -63,64 +57,29 @@ impl ClientStatsHistogram {
         let mut bytes_per_second = 0; // AKA Throughput
         let mut records_per_second = 0;
         let mut batches_per_second = 0;
-        let mut throughput_per_second = 0;
 
         for n in &self.second_window {
             latency_per_second += n.get(ClientStatsMetric::LastLatency).as_u64();
             bytes_per_second += n.get(ClientStatsMetric::LastBytes).as_u64();
             records_per_second += n.get(ClientStatsMetric::LastRecords).as_u64();
             batches_per_second += n.get(ClientStatsMetric::LastBatches).as_u64();
-            throughput_per_second += n.get(ClientStatsMetric::LastThroughput).as_u64();
         }
 
         let mut total_latency = 0;
-        let mut total_bytes = 0; // AKA Throughput
-        let mut total_records = 0;
-        let mut total_batches = 0;
         let mut total_throughput = 0;
-        //let mut max_throughput = 0;
 
         for n in &self.total {
             total_latency += n.get(ClientStatsMetric::LastLatency).as_u64();
-            total_bytes += n.get(ClientStatsMetric::LastBytes).as_u64();
-            total_records += n.get(ClientStatsMetric::LastRecords).as_u64();
-            total_batches += n.get(ClientStatsMetric::LastBatches).as_u64();
-
-            //let t = n.get(ClientStatsMetric::LastThroughput).as_u64();
-            //if t > max_throughput {
-            //    max_throughput = t;
-            //}
             total_throughput += n.get(ClientStatsMetric::LastThroughput).as_u64();
         }
 
-        //let uptime = if let Some(up) = self.total.back() {
-        //    #[cfg(not(target_arch = "wasm32"))]
-        //    let uptime_seconds =
-        //        up.get(ClientStatsMetric::Uptime).as_u64() as f64 * NANOSECOND.scale();
-
-        //    #[cfg(target_arch = "wasm32")]
-        //    let uptime_seconds =
-        //        up.get(ClientStatsMetric::Uptime).as_u64() as f32 * NANOSECOND.scale();
-        //    uptime_seconds
-        //} else {
-        //    0.0
-        //};
-
-        //let second_frame = ClientStatsHistogram::load_histogram(&self.second_window)?;
-
-        //let mean_latency_per_second = second_frame.latency.mean();
         let mean_latency_per_second = latency_per_second / self.second_window.len() as u64;
-        //let mean_throughput_per_second = second_frame.throughput.mean();
         let mean_throughput_per_second = bytes_per_second / self.second_window.len() as u64;
-        //let mean_throughput_per_second = throughput_per_second / self.second_window.len() as u64;
 
         let total_frame = ClientStatsHistogram::load_histogram(&self.total)?;
 
-        //let mean_latency = total_frame.latency.mean();
         let mean_latency = (total_latency as f64 / self.total.len() as f64) as u64;
-        //let mean_throughput = total_frame.throughput.mean();
         let mean_throughput = total_throughput / self.total.len() as u64;
-        //let max_throughput = total_frame.throughput.max();
         let mut max_throughput = 0;
 
         if let Some(m) = &self

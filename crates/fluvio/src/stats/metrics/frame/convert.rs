@@ -425,8 +425,7 @@ mod test {
             metrics.push(metric);
         }
 
-        // Choosing None so Cpu and Mem values will not update
-        let stats_collect = ClientStatsDataCollect::None;
+        let stats_collect = ClientStatsDataCollect::All;
 
         let client_stats = ClientStats::new(stats_collect);
 
