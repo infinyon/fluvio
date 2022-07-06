@@ -724,12 +724,12 @@ impl ClusterInstaller {
             let (np_addr_fd, np_conf_path) = NamedTempFile::new()?.into_parts();
             chart_values.push(np_conf_path.to_path_buf());
 
-            let external_addr = if let Some(addr) = &self.config.proxy_addr {
+            let access_addr = if let Some(addr) = &self.config.proxy_addr {
                 debug!(?addr, "use proxying");
                 addr.to_owned()
             } else {
                 debug!("Using NodePort service type");
-                debug!("Getting external IP from K8s node");
+                debug!("Getting access IP from K8s node"); // could be external or internal
                 let kube_client = &self.kube_client;
 
                 debug!("Trying to query for Nodes");
@@ -744,17 +744,26 @@ impl ClusterInstaller {
                 }
 
                 debug!("Node Addresses: {:#?}", node_addr);
-
-                node_addr
-                    .into_iter()
-                    .find(|a| a.r#type == "InternalIP")
-                    .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?
-                    .address
+                let anode = match node_addr.iter().find(|a| a.r#type == "ExternalIP") {
+                    Some(anode) => anode,
+                    None => {
+                        debug!("  no externalIPs found, searching internalIPs");
+                        node_addr
+                            .iter()
+                            .find(|a| a.r#type == "InternalIP")
+                            .ok_or_else(|| {
+                                K8InstallError::Other(
+                                    "No nodes with ExternalIP or InternalIP set".into(),
+                                )
+                            })?
+                    }
+                };
+                anode.address.clone()
             };
 
             // Set this annotation w/ the external address by overriding this Helm chart value:
             let mut ingress_address = BTreeMap::new();
-            ingress_address.insert("fluvio.io/ingress-address", external_addr);
+            ingress_address.insert("fluvio.io/ingress-address", access_addr);
 
             let mut service_annotation = BTreeMap::new();
             service_annotation.insert("serviceAnnotations", ingress_address);
@@ -924,9 +933,18 @@ impl ClusterInstaller {
                                                 }
 
                                                 // Return the first node with type "InternalIP"
-                                                let external_addr = node_addr.into_iter().find(|a| a.r#type == "InternalIP")
-                                                .ok_or_else(|| K8InstallError::Other("No nodes with InternalIP set".into()))?;
-                                                external_addr.address
+                                                let access_addr = match node_addr.iter().find(|a| a.r#type == "ExternalIP")
+                                                {
+                                                    Some(anode) => &anode.address,
+                                                    None => {
+                                                        debug!("  no externalIPs found, searching internalIPs");
+                                                        &node_addr.iter()
+                                                            .find(|a| a.r#type == "InternalIP")
+                                                            .ok_or_else(|| K8InstallError::Other("No nodes with ExternalIP or InternalIP set".into()))?
+                                                            .address
+                                                    }
+                                                };
+                                                access_addr.clone()
                                             };
 
                                             return Ok((host_addr,node_port))
