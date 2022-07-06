@@ -18,7 +18,9 @@ use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
-use crate::stats::{ClientStats, ClientStatsUpdate, ClientStatsDataCollect, ClientStatsMetricRaw};
+use crate::stats::{
+    ClientStats, ClientStatsUpdateBuilder, ClientStatsDataCollect, ClientStatsMetricRaw,
+};
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
@@ -210,7 +212,7 @@ impl PartitionProducer {
 
         let mut batch_notifiers = vec![];
 
-        let mut client_stats_update = ClientStatsUpdate::default();
+        let mut client_stats_update = ClientStatsUpdateBuilder::default();
         let mut total_batch_len = 0;
 
         client_stats_update.push(ClientStatsMetricRaw::Batches(batches_ready.len() as u64));

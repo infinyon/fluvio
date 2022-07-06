@@ -1,6 +1,8 @@
 use std::sync::Arc;
 use std::time::Duration;
-use crate::stats::{ClientStats, ClientStatsDataCollect, ClientStatsUpdate, ClientStatsMetricRaw};
+use crate::stats::{
+    ClientStats, ClientStatsDataCollect, ClientStatsUpdateBuilder, ClientStatsMetricRaw,
+};
 use tracing::{debug, error};
 use crate::FluvioError;
 use sysinfo::{self, SystemExt, ProcessExt};
@@ -41,7 +43,7 @@ async fn system_resource_sampler(stats: Arc<ClientStats>) -> Result<(), FluvioEr
         select! {
             _ = async { system_poll_time.as_mut().expect("unexpected failure").await }, if system_poll_time.is_some() => {
 
-                let mut data_sample_update = ClientStatsUpdate::default();
+                let mut data_sample_update = ClientStatsUpdateBuilder::default();
 
                 debug!("Updating Client resource usage");
                 sysinfo.refresh_process(pid);

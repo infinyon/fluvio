@@ -1,14 +1,16 @@
-mod data_point;
-mod update;
-mod histogram;
-mod event;
-pub use event::ClientStatsEvent;
+mod update_builder;
 mod monitor;
-pub use histogram::ClientStatsHistogram;
-pub use data_point::{ClientStatsDataPoint, ClientStatsMetric};
+pub use monitor::ClientStatsEvent;
+pub mod metrics;
+pub use metrics::{
+    ClientStatsMetric, ClientStatsMetricRaw, ClientStatsMetricFormat, ClientStatsDataFrame,
+    ClientStatsHistogram,
+};
+use quantities::LinearScaledUnit;
+use quantities::duration::NANOSECOND;
 use serde::{Serialize, Deserialize};
-pub use update::ClientStatsUpdate;
-use strum::{Display, EnumIter, IntoEnumIterator};
+pub use update_builder::ClientStatsUpdateBuilder;
+use strum::IntoEnumIterator;
 
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU32, AtomicU64, AtomicI64, AtomicI32, Ordering};
@@ -65,218 +67,6 @@ impl ClientStatsDataCollect {
     }
 }
 
-#[derive(Clone, Copy, Debug, Display, EnumIter)]
-pub enum ClientStatsMetricRaw {
-    #[strum(serialize = "start_time_ns")]
-    StartTime(i64),
-    #[strum(serialize = "uptime_ns")]
-    Uptime(i64),
-    #[strum(serialize = "pid")]
-    Pid(u32),
-    #[strum(serialize = "offset")]
-    Offset(i32),
-    #[strum(serialize = "last_batches")]
-    LastBatches(u64),
-    #[strum(serialize = "last_bytes")]
-    LastBytes(u64),
-    #[strum(serialize = "last_latency_ns")]
-    LastLatency(u64),
-    #[strum(serialize = "last_records")]
-    LastRecords(u64),
-    #[strum(serialize = "last_throughput_byte_p_ns")]
-    LastThroughput(u64),
-    #[strum(serialize = "last_updated_ns")]
-    LastUpdated(i64),
-    #[strum(serialize = "batches")]
-    Batches(u64),
-    #[strum(serialize = "bytes")]
-    Bytes(u64),
-    #[strum(serialize = "cpu_pct_x_1000")]
-    Cpu(u32),
-    #[strum(serialize = "mem_kb")]
-    Mem(u64),
-    #[strum(serialize = "latency_ns")]
-    Latency(u64),
-    #[strum(serialize = "records")]
-    Records(u64),
-    #[strum(serialize = "throughput_byte_p_ns")]
-    Throughput(u64),
-    #[strum(serialize = "batches_p_sec")]
-    SecondBatches(u64),
-    #[strum(serialize = "latency_p_sec")]
-    SecondLatency(u64),
-    #[strum(serialize = "records_p_sec")]
-    SecondRecords(u64),
-    #[strum(serialize = "throughput_bytes_p_sec")]
-    SecondThroughput(u64),
-    #[strum(serialize = "avg_latency_ns_p_sec")]
-    SecondMeanLatency(u64),
-    #[strum(serialize = "avg_throughput_byte_p_sec")]
-    SecondMeanThroughput(u64),
-    #[strum(serialize = "max_throughput_byte_p_sec")]
-    MaxThroughput(u64),
-    #[strum(serialize = "mean_throughput_byte_p_sec")]
-    MeanThroughput(u64),
-    #[strum(serialize = "mean_latency_ns")]
-    MeanLatency(u64),
-    #[strum(serialize = "std_dev_latency_ns")]
-    StdDevLatency(u64),
-    #[strum(serialize = "p50_latency_ns")]
-    P50Latency(u64),
-    #[strum(serialize = "p90_latency_ns")]
-    P90Latency(u64),
-    #[strum(serialize = "p99_latency_ns")]
-    P99Latency(u64),
-    #[strum(serialize = "p999_latency_ns")]
-    P999Latency(u64),
-}
-
-impl ClientStatsMetricRaw {
-    pub fn value_to_string(&self) -> String {
-        match self {
-            Self::StartTime(n) => n.to_string(),
-            Self::Uptime(n) => n.to_string(),
-            Self::Pid(n) => n.to_string(),
-            Self::Offset(n) => n.to_string(),
-            Self::LastBatches(n) => n.to_string(),
-            Self::LastBytes(n) => n.to_string(),
-            Self::LastLatency(n) => n.to_string(),
-            Self::LastRecords(n) => n.to_string(),
-            Self::LastThroughput(n) => n.to_string(),
-            Self::LastUpdated(n) => n.to_string(),
-            Self::Batches(n) => n.to_string(),
-            Self::Bytes(n) => n.to_string(),
-            Self::Cpu(n) => n.to_string(),
-            Self::Mem(n) => n.to_string(),
-            Self::Latency(n) => n.to_string(),
-            Self::Records(n) => n.to_string(),
-            Self::Throughput(n) => n.to_string(),
-            Self::SecondBatches(n) => n.to_string(),
-            Self::SecondLatency(n) => n.to_string(),
-            Self::SecondRecords(n) => n.to_string(),
-            Self::SecondThroughput(n) => n.to_string(),
-            Self::SecondMeanLatency(n) => n.to_string(),
-            Self::SecondMeanThroughput(n) => n.to_string(),
-            Self::MaxThroughput(n) => n.to_string(),
-            Self::MeanThroughput(n) => n.to_string(),
-            Self::MeanLatency(n) => n.to_string(),
-            Self::StdDevLatency(n) => n.to_string(),
-            Self::P50Latency(n) => n.to_string(),
-            Self::P90Latency(n) => n.to_string(),
-            Self::P99Latency(n) => n.to_string(),
-            Self::P999Latency(n) => n.to_string(),
-        }
-    }
-
-    pub fn as_u32(&self) -> u32 {
-        match self {
-            Self::StartTime(n) => *n as u32,
-            Self::Uptime(n) => *n as u32,
-            Self::Pid(n) => *n as u32,
-            Self::Offset(n) => *n as u32,
-            Self::LastBatches(n) => *n as u32,
-            Self::LastBytes(n) => *n as u32,
-            Self::LastLatency(n) => *n as u32,
-            Self::LastRecords(n) => *n as u32,
-            Self::LastThroughput(n) => *n as u32,
-            Self::LastUpdated(n) => *n as u32,
-            Self::Batches(n) => *n as u32,
-            Self::Bytes(n) => *n as u32,
-            Self::Cpu(n) => *n as u32,
-            Self::Mem(n) => *n as u32,
-            Self::Latency(n) => *n as u32,
-            Self::Records(n) => *n as u32,
-            Self::Throughput(n) => *n as u32,
-            Self::SecondBatches(n) => *n as u32,
-            Self::SecondLatency(n) => *n as u32,
-            Self::SecondRecords(n) => *n as u32,
-            Self::SecondThroughput(n) => *n as u32,
-            Self::SecondMeanLatency(n) => *n as u32,
-            Self::SecondMeanThroughput(n) => *n as u32,
-            Self::MaxThroughput(n) => *n as u32,
-            Self::MeanThroughput(n) => *n as u32,
-            Self::MeanLatency(n) => *n as u32,
-            Self::StdDevLatency(n) => *n as u32,
-            Self::P50Latency(n) => *n as u32,
-            Self::P90Latency(n) => *n as u32,
-            Self::P99Latency(n) => *n as u32,
-            Self::P999Latency(n) => *n as u32,
-        }
-    }
-
-    pub fn as_u64(&self) -> u64 {
-        match self {
-            Self::StartTime(n) => *n as u64,
-            Self::Uptime(n) => *n as u64,
-            Self::Pid(n) => *n as u64,
-            Self::Offset(n) => *n as u64,
-            Self::LastBatches(n) => *n as u64,
-            Self::LastBytes(n) => *n as u64,
-            Self::LastLatency(n) => *n as u64,
-            Self::LastRecords(n) => *n as u64,
-            Self::LastThroughput(n) => *n as u64,
-            Self::LastUpdated(n) => *n as u64,
-            Self::Batches(n) => *n as u64,
-            Self::Bytes(n) => *n as u64,
-            Self::Cpu(n) => *n as u64,
-            Self::Mem(n) => *n as u64,
-            Self::Latency(n) => *n as u64,
-            Self::Records(n) => *n as u64,
-            Self::Throughput(n) => *n as u64,
-            Self::SecondBatches(n) => *n as u64,
-            Self::SecondLatency(n) => *n as u64,
-            Self::SecondRecords(n) => *n as u64,
-            Self::SecondThroughput(n) => *n as u64,
-            Self::SecondMeanLatency(n) => *n as u64,
-            Self::SecondMeanThroughput(n) => *n as u64,
-            Self::MaxThroughput(n) => *n as u64,
-            Self::MeanThroughput(n) => *n as u64,
-            Self::MeanLatency(n) => *n as u64,
-            Self::StdDevLatency(n) => *n as u64,
-            Self::P50Latency(n) => *n as u64,
-            Self::P90Latency(n) => *n as u64,
-            Self::P99Latency(n) => *n as u64,
-            Self::P999Latency(n) => *n as u64,
-        }
-    }
-
-    pub fn as_i64(&self) -> i64 {
-        match self {
-            Self::StartTime(n) => *n as i64,
-            Self::Uptime(n) => *n as i64,
-            Self::Pid(n) => *n as i64,
-            Self::Offset(n) => *n as i64,
-            Self::LastBatches(n) => *n as i64,
-            Self::LastBytes(n) => *n as i64,
-            Self::LastLatency(n) => *n as i64,
-            Self::LastRecords(n) => *n as i64,
-            Self::LastThroughput(n) => *n as i64,
-            Self::LastUpdated(n) => *n as i64,
-            Self::Batches(n) => *n as i64,
-            Self::Bytes(n) => *n as i64,
-            Self::Cpu(n) => *n as i64,
-            Self::Mem(n) => *n as i64,
-            Self::Latency(n) => *n as i64,
-            Self::Records(n) => *n as i64,
-            Self::Throughput(n) => *n as i64,
-            Self::SecondBatches(n) => *n as i64,
-            Self::SecondLatency(n) => *n as i64,
-            Self::SecondRecords(n) => *n as i64,
-            Self::SecondThroughput(n) => *n as i64,
-            Self::SecondMeanLatency(n) => *n as i64,
-            Self::SecondMeanThroughput(n) => *n as i64,
-            Self::MaxThroughput(n) => *n as i64,
-            Self::MeanThroughput(n) => *n as i64,
-            Self::MeanLatency(n) => *n as i64,
-            Self::StdDevLatency(n) => *n as i64,
-            Self::P50Latency(n) => *n as i64,
-            Self::P90Latency(n) => *n as i64,
-            Self::P99Latency(n) => *n as i64,
-            Self::P999Latency(n) => *n as i64,
-        }
-    }
-}
-
 /// Main struct for recording client stats
 #[derive(Debug)]
 pub struct ClientStats {
@@ -295,7 +85,7 @@ pub struct ClientStats {
     last_latency: AtomicU64,
     /// The number of records in the last transfer
     last_records: AtomicU64,
-    /// Throughput the last transfer, in bytes per nanosecond
+    /// Throughput the last transfer, in bytes per second
     last_throughput: AtomicU64,
     /// Last time any struct values were updated
     /// This is Unix Epoch time, in nanoseconds
@@ -349,7 +139,7 @@ pub struct ClientStats {
 }
 
 /// Helper function. Get Unix Epoch time for Utc timezone, in nanoseconds
-fn unix_timestamp_nanos() -> i64 {
+pub(crate) fn unix_timestamp_nanos() -> i64 {
     Utc::now().timestamp_nanos()
 }
 
@@ -421,24 +211,44 @@ impl ClientStats {
                 && (self.stats_collect == option)
     }
 
-    /// Return the start time in nanoseconds
-    pub fn start_time(&self) -> i64 {
-        self.start_time.load(STATS_MEM_ORDER)
-    }
-
-    /// Return the last updated time in nanoseconds
-    pub fn last_updated(&self) -> i64 {
-        self.last_updated.load(STATS_MEM_ORDER)
-    }
-
     /// Return configured collection option
     pub fn stats_collect(&self) -> ClientStatsDataCollect {
         self.stats_collect
     }
 
     // Do an update w/ a batch event
-    pub async fn update_batch(&self, update: ClientStatsUpdate) -> Result<(), FluvioError> {
-        self.update(update.clone())?;
+    pub async fn update_batch(&self, update: ClientStatsUpdateBuilder) -> Result<(), FluvioError> {
+        // Find the bytes and latency (convert to seconds)
+
+        let latency = update.data.iter().find_map(|d| {
+            if let ClientStatsMetricRaw::Latency(l) = d {
+                // Convert Nanoseconds to seconds
+                #[cfg(not(target_arch = "wasm32"))]
+                let seconds = *l as f64 * NANOSECOND.scale();
+                #[cfg(target_arch = "wasm32")]
+                let seconds = *l as f32 * NANOSECOND.scale();
+
+                Some(seconds)
+            } else {
+                None
+            }
+        });
+
+        let bytes = update.data.iter().find_map(|d| {
+            if let ClientStatsMetricRaw::Bytes(b) = d {
+                Some(*b as f64)
+            } else {
+                None
+            }
+        });
+
+        // then calculate the throughput
+        let mut batch_stats = update.clone();
+        if let (Some(l), Some(b)) = (latency, bytes) {
+            batch_stats.push(ClientStatsMetricRaw::Throughput((b / l) as u64));
+        }
+
+        self.update(batch_stats)?;
         self.event_handler.notify_batch_event().await.unwrap();
         Ok(())
     }
@@ -491,12 +301,28 @@ impl ClientStats {
                 let total_latency = if let ClientStatsMetricRaw::Latency(l) =
                     self.get(ClientStatsMetric::Latency)
                 {
-                    l
+                    // Convert Nanoseconds to seconds
+                    #[cfg(not(target_arch = "wasm32"))]
+                    let seconds = l as f64 * NANOSECOND.scale();
+                    #[cfg(target_arch = "wasm32")]
+                    let seconds = *l as f32 * NANOSECOND.scale();
+
+                    Some(seconds)
                 } else {
-                    0
+                    None
                 };
-                ClientStatsMetricRaw::Throughput(if total_latency != 0 {
-                    self.bytes.load(STATS_MEM_ORDER) / total_latency as u64
+
+                #[cfg(not(target_arch = "wasm32"))]
+                let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f64;
+                #[cfg(target_arch = "wasm32")]
+                let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f32;
+
+                ClientStatsMetricRaw::Throughput(if let Some(latency) = total_latency {
+                    if latency != 0.0 {
+                        (total_bytes / latency) as u64
+                    } else {
+                        0
+                    }
                 } else {
                     0
                 })
@@ -546,8 +372,8 @@ impl ClientStats {
         }
     }
 
-    /// Update the instance with values from `ClientStatsUpdate`
-    pub fn update(&self, update: ClientStatsUpdate) -> Result<(), FluvioError> {
+    /// Update the instance with values from `ClientStatsUpdateBuilder`
+    pub fn update(&self, update: ClientStatsUpdateBuilder) -> Result<(), FluvioError> {
         //println!("update: {update:#?}");
 
         let _: Vec<_> = update
@@ -664,12 +490,12 @@ impl ClientStats {
         self.last_updated
             .store(unix_timestamp_nanos(), STATS_MEM_ORDER);
 
-        //println!("{:#?}", &self);
+        println!("{:#?}", &self);
         Ok(())
     }
 
-    /// Return the current `ClientStats` as `ClientStatsDataPoint`
-    pub fn get_datapoint(&self) -> ClientStatsDataPoint {
+    /// Return the current `ClientStats` as `ClientStatsDataFrame`
+    pub fn get_dataframe(&self) -> ClientStatsDataFrame {
         self.into()
     }
 
@@ -684,14 +510,14 @@ impl ClientStats {
         socket: &VersionedSerialSocket,
         request: ProduceRequest<RecordSet<RawRecords>>,
         batch_bytes: u64,
-    ) -> Result<(ProduceResponse, ClientStatsUpdate)> {
+    ) -> Result<(ProduceResponse, ClientStatsUpdateBuilder)> {
         let send_start_time = Instant::now();
 
         let response = socket.send_receive(request).await?;
 
         let send_latency = send_start_time.elapsed().as_nanos() as u64;
 
-        let mut stats_update = ClientStatsUpdate::new();
+        let mut stats_update = ClientStatsUpdateBuilder::new();
         stats_update.push(ClientStatsMetricRaw::Latency(send_latency));
 
         if batch_bytes > 0 {

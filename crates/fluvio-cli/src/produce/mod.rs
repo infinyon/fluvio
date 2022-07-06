@@ -23,7 +23,7 @@ use crate::Result;
 use crate::parse_isolation;
 
 mod stats_reporting;
-use stats_reporting::{start_csv_report, write_csv_datapoint, format_current_stats, producer_summary};
+use stats_reporting::{start_csv_report, write_csv_dataframe, format_current_stats, producer_summary};
 
 // -----------------------------------
 // CLI Options
@@ -243,7 +243,7 @@ impl ProduceOpt {
         };
 
         // Avoid writing duplicate data to disk
-        let mut stats_datapoint_check = String::new();
+        let mut stats_dataframe_check = String::new();
 
         match &self.file {
             Some(path) => {
@@ -262,9 +262,9 @@ impl ProduceOpt {
                                 .await;
                         }
 
-                        stats_datapoint_check = write_csv_datapoint(
+                        stats_dataframe_check = write_csv_dataframe(
                             &producer,
-                            stats_datapoint_check.as_str(),
+                            stats_dataframe_check.as_str(),
                             maybe_stats_file.as_mut(),
                         )
                         .await?;
@@ -301,9 +301,9 @@ impl ProduceOpt {
                                 .await;
                         }
 
-                        stats_datapoint_check = write_csv_datapoint(
+                        stats_dataframe_check = write_csv_dataframe(
                             &producer,
-                            stats_datapoint_check.as_str(),
+                            stats_dataframe_check.as_str(),
                             maybe_stats_file.as_mut(),
                         )
                         .await?;

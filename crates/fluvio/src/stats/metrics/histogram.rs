@@ -1,19 +1,18 @@
 use hdrhistogram::{Histogram, CreationError};
 use crate::error::{Result, FluvioError};
-use super::{ClientStatsMetric, ClientStatsMetricRaw};
+use super::{ClientStatsMetric, ClientStatsMetricRaw, ClientStatsDataFrame};
 use std::collections::VecDeque;
-use super::ClientStatsDataPoint;
 
 #[derive(Debug, Default)]
 pub struct ClientStatsHistogram {
-    second_window: VecDeque<ClientStatsDataPoint>,
+    second_window: VecDeque<ClientStatsDataFrame>,
     second_marked: bool,
-    total: VecDeque<ClientStatsDataPoint>,
+    total: VecDeque<ClientStatsDataFrame>,
 }
 
 struct LoadedHistograms {
     pub latency: Histogram<u64>,
-    pub bytes_sent: Histogram<u64>,
+    pub bytes_transferred: Histogram<u64>,
     pub throughput: Histogram<u64>,
     pub records: Histogram<u64>,
 }
@@ -21,7 +20,7 @@ struct LoadedHistograms {
 impl LoadedHistograms {
     fn new() -> Result<Self, CreationError> {
         Ok(Self {
-            bytes_sent: Histogram::<u64>::new(2)?,
+            bytes_transferred: Histogram::<u64>::new(2)?,
             latency: Histogram::<u64>::new(2)?,
             throughput: Histogram::<u64>::new(2)?,
             records: Histogram::<u64>::new(2)?,
@@ -34,27 +33,30 @@ impl ClientStatsHistogram {
         Self::default()
     }
 
-    pub fn record(&mut self, datapoint: ClientStatsDataPoint) {
+    pub fn record(&mut self, dataframe: ClientStatsDataFrame) {
         // Set the max length of the queue when we mark the second
         if !self.second_marked {
-            self.second_window.push_back(datapoint);
+            self.second_window.push_back(dataframe);
         } else {
-            self.second_window.push_back(datapoint);
+            self.second_window.push_back(dataframe);
             let _ = self.second_window.pop_front();
         }
+        //self.second_window.push_back(dataframe);
 
-        let _ = self.total.push_back(datapoint);
+        let _ = self.total.push_back(dataframe);
     }
 
     // this is maybe a hack way to achieve a sliding window
-    pub fn mark_second(&mut self) {
-        self.second_marked = true
+    pub fn tick(&mut self) {
+        if !self.second_marked {
+            self.second_marked = true
+        }
+        //else {
+        //    self.second_window = VecDeque::new();
+        //}
     }
 
     pub fn get_agg_stats_update(&self) -> Result<Vec<ClientStatsMetricRaw>, FluvioError> {
-        let second_frame = ClientStatsHistogram::load_histogram(&self.second_window)?;
-        let total_frame = ClientStatsHistogram::load_histogram(&self.total)?;
-
         let mut latency_per_second = 0;
         let mut bytes_per_second = 0; // AKA Throughput
         let mut records_per_second = 0;
@@ -67,8 +69,12 @@ impl ClientStatsHistogram {
             batches_per_second += n.get(ClientStatsMetric::LastBatches).as_u64();
         }
 
+        let second_frame = ClientStatsHistogram::load_histogram(&self.second_window)?;
+
         let mean_latency_per_second = second_frame.latency.mean();
         let mean_throughput_per_second = second_frame.throughput.mean();
+
+        let total_frame = ClientStatsHistogram::load_histogram(&self.total)?;
 
         let mean_latency = total_frame.latency.mean();
         let mean_throughput = total_frame.throughput.mean();
@@ -100,15 +106,18 @@ impl ClientStatsHistogram {
     }
 
     fn load_histogram(
-        data: &VecDeque<ClientStatsDataPoint>,
+        data: &VecDeque<ClientStatsDataFrame>,
     ) -> Result<LoadedHistograms, FluvioError> {
         let mut histogram = LoadedHistograms::new().map_err(|_| {
-            FluvioError::Other("Problem adding datapoint into histogram".to_string())
+            FluvioError::Other("Problem adding dataframe into histogram".to_string())
         })?;
 
+        // Fill the histogram
         let _: Vec<_> = data
             .iter()
             .map(|n| {
+                // Walk over each data point and grab the last recorded values we want aggregate stats
+
                 let last_latency = if let ClientStatsMetricRaw::LastLatency(l) =
                     n.get(ClientStatsMetric::LastLatency)
                 {
@@ -138,23 +147,24 @@ impl ClientStatsHistogram {
                     0
                 };
 
+                // Load the data into their respective histogram
+                // Stuff all the Result into a vec so we can use it
                 vec![
-                    histogram.latency.record(last_latency as u64).map_err(|_| {
-                        FluvioError::Other("Problem adding datapoint into histogram".to_string())
+                    histogram.latency.record(last_latency).map_err(|_| {
+                        FluvioError::Other(
+                            "Problem adding latency dataframe into histogram".to_string(),
+                        )
                     }),
-                    histogram.bytes_sent.record(last_bytes as u64).map_err(|_| {
-                        FluvioError::Other("Problem adding datapoint into histogram".to_string())
+                    histogram.bytes_transferred.record(last_bytes).map_err(|_| {
+                        FluvioError::Other(
+                            "Problem adding bytes dataframe into histogram".to_string(),
+                        )
                     }),
-                    histogram
-                        .throughput
-                        .record(last_throughput as u64)
-                        .map_err(|_| {
-                            FluvioError::Other(
-                                "Problem adding datapoint into histogram".to_string(),
-                            )
-                        }),
+                    histogram.throughput.record(last_throughput).map_err(|_| {
+                        FluvioError::Other("Problem adding dataframe into histogram".to_string())
+                    }),
                     histogram.records.record(last_records).map_err(|_| {
-                        FluvioError::Other("Problem adding datapoint into histogram".to_string())
+                        FluvioError::Other("Problem adding dataframe into histogram".to_string())
                     }),
                 ]
             })

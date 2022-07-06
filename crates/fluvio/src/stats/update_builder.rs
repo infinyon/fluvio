@@ -2,15 +2,15 @@ use std::ops::{Add, AddAssign};
 
 use super::ClientStatsMetricRaw;
 
-/// Update builder for `ClientStats` to allow
-/// for update staging for multiple values to apply
+/// Update builder for `ClientStats`
+/// A buffer for `ClientStats::update() for updating multiple metrics
 #[derive(Debug, Default, Clone)]
-pub struct ClientStatsUpdate {
+pub struct ClientStatsUpdateBuilder {
     pub data: Vec<ClientStatsMetricRaw>,
 }
 
-///// Make it easy to combine multiple updates
-impl Add for ClientStatsUpdate {
+/// Make it easy to combine multiple updates
+impl Add for ClientStatsUpdateBuilder {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -23,14 +23,14 @@ impl Add for ClientStatsUpdate {
     }
 }
 
-impl AddAssign for ClientStatsUpdate {
+impl AddAssign for ClientStatsUpdateBuilder {
     fn add_assign(&mut self, other: Self) {
         self.data.extend(other.data);
     }
 }
 
-impl ClientStatsUpdate {
-    /// Create a new `ClientStatsUpdate`
+impl ClientStatsUpdateBuilder {
+    /// Create a new `ClientStatsUpdateBuilder`
     pub fn new() -> Self {
         Self::default()
     }

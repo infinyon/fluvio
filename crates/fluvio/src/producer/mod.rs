@@ -29,7 +29,7 @@ use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::PartitionerConfig;
-use crate::stats::{ClientStats, ClientStatsDataPoint, ClientStatsDataCollect};
+use crate::stats::{ClientStats, ClientStatsDataCollect, metrics::ClientStatsDataFrame};
 
 use self::accumulator::{BatchHandler};
 pub use self::config::{
@@ -483,10 +483,10 @@ impl TopicProducer {
         self.inner.clear_errors().await;
     }
 
-    /// Return a `ClientStatsDataPoint` to represent the current recorded client stats
-    pub async fn stats(&self) -> Option<ClientStatsDataPoint> {
+    /// Return a `ClientStatsDataFrame` to represent the current recorded client stats
+    pub async fn stats(&self) -> Option<ClientStatsDataFrame> {
         if self.inner.client_stats.stats_collect() != ClientStatsDataCollect::None {
-            Some(self.inner.client_stats.get_datapoint())
+            Some(self.inner.client_stats.get_dataframe())
         } else {
             None
         }

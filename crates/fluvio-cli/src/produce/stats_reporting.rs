@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use comfy_table::{Table, Row, Cell, CellAlignment};
-use fluvio::stats::{ClientStatsDataCollect, ClientStatsDataPoint, ClientStatsMetric};
+use fluvio::stats::{ClientStatsDataCollect, ClientStatsDataFrame, ClientStatsMetric};
 use indicatif::ProgressBar;
 use fluvio::TopicProducer;
 use crate::Result;
@@ -37,26 +37,26 @@ pub(crate) async fn start_csv_report(
 
 /// Writes a row of CSV data to stats report file
 /// Header contents dependent on what stats producer configured to collect
-pub(crate) async fn write_csv_datapoint(
+pub(crate) async fn write_csv_dataframe(
     producer: &Arc<TopicProducer>,
-    datapoint_check: &str,
+    dataframe_check: &str,
     maybe_stats_file: Option<&mut BufWriter<File>>,
 ) -> Result<String, CliError> {
-    let datapoint = if let Some(datapoint_sample) = &producer.stats().await {
-        let datapoint =
-            datapoint_sample.csv_datapoint(&datapoint_sample.stats_collect().to_metrics())?;
+    let dataframe = if let Some(dataframe_sample) = &producer.stats().await {
+        let dataframe =
+            dataframe_sample.csv_dataframe(&dataframe_sample.stats_collect().to_metrics())?;
 
-        if datapoint != *datapoint_check {
-            write_line_to_file(maybe_stats_file, datapoint.as_bytes())?;
-            datapoint
+        if dataframe != *dataframe_check {
+            write_line_to_file(maybe_stats_file, dataframe.as_bytes())?;
+            dataframe
         } else {
-            datapoint_check.to_string()
+            dataframe_check.to_string()
         }
     } else {
-        datapoint_check.to_string()
+        dataframe_check.to_string()
     };
 
-    Ok(datapoint)
+    Ok(dataframe)
 }
 
 /// Helper function for writing CSV data to file
@@ -73,8 +73,8 @@ fn write_line_to_file(
 /// Format current stats into `comfy_table` for alignment purposes
 /// Table contents dependent on what stats producer configured to collect
 /// Resulting `String` is printed by `indicatif::ProgressBar`
-pub(crate) async fn format_current_stats(client_stats: ClientStatsDataPoint) -> String {
-    //println!("Datapoint: {:#?}", client_stats);
+pub(crate) async fn format_current_stats(client_stats: ClientStatsDataFrame) -> String {
+    //println!("dataframe: {:#?}", client_stats);
     //println!(
     //    "T: {}",
     //    client_stats
@@ -94,7 +94,7 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataPoint) -> 
             .add_cell(
                 Cell::new(
                     client_stats
-                        .get_format(ClientStatsMetric::LastThroughput)
+                        .get_format(ClientStatsMetric::SecondThroughput)
                         .value_to_string(),
                 )
                 .set_alignment(CellAlignment::Right),
@@ -103,7 +103,7 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataPoint) -> 
             .add_cell(
                 Cell::new(
                     client_stats
-                        .get_format(ClientStatsMetric::LastLatency)
+                        .get_format(ClientStatsMetric::SecondLatency)
                         .value_to_string(),
                 )
                 .set_alignment(CellAlignment::Right),
@@ -141,7 +141,7 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataPoint) -> 
 /// Format summary stats into `comfy_table` for alignment purposes
 /// Table contents dependent on what stats producer configured to collect
 /// Resulting `String` is printed by `indicatif::ProgressBar`
-pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataPoint) -> String {
+pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataFrame) -> String {
     let mut t = Table::new();
     t.load_preset(comfy_table::presets::NOTHING);
 
