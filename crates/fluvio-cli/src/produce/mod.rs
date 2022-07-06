@@ -80,21 +80,25 @@ pub struct ProduceOpt {
     #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
 
-    /// Collect basic producer session statistics and print in stats bar
+    /// Experimental: Collect basic producer session statistics and print in stats bar
     #[clap(long)]
     pub stats: bool,
 
-    /// Collect all producer session statistics and print in stats bar (Implies --stats)
+    /// Experimental: Collect all producer session statistics and print in stats bar (Implies --stats)
     #[clap(long)]
     pub stats_plus: bool,
 
-    /// Save producer session stats to file. The resulting file formatted for spreadsheet, as comma-separated values
+    /// Experimental: Save producer session stats to file. The resulting file formatted for spreadsheet, as comma-separated values
     #[clap(long)]
     pub stats_path: Option<PathBuf>,
 
-    /// Don't display stats bar when using `--stats` or `--stats-plus`
+    /// Experimental: Don't display stats bar when using `--stats` or `--stats-plus`. Use with `--stats-path`.
     #[clap(long)]
     pub no_stats_bar: bool,
+
+    /// Experimental: Only print the stats summary. Implies `--stats` and `--no-stats-bar`
+    #[clap(long)]
+    pub stats_summary: bool,
 }
 
 fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
@@ -143,9 +147,11 @@ impl ProduceOpt {
         };
 
         // Stats
-        let config_builder = match (self.stats, self.stats_plus) {
-            (_, true) => config_builder.stats_collect(ClientStatsDataCollect::All),
-            (true, false) => config_builder.stats_collect(ClientStatsDataCollect::Data),
+        let config_builder = match (self.stats, self.stats_summary, self.stats_plus) {
+            (_, _, true) => config_builder.stats_collect(ClientStatsDataCollect::All),
+            (true, _, false) | (_, true, false) => {
+                config_builder.stats_collect(ClientStatsDataCollect::Data)
+            }
             _ => config_builder,
         };
 
@@ -157,18 +163,23 @@ impl ProduceOpt {
                 .await?,
         );
 
-        let maybe_stats_bar = if io::stdout().is_tty() && !self.no_stats_bar {
+        let maybe_stats_bar = if io::stdout().is_tty() {
             if self.is_stats_collect() {
-                let stats_bar = indicatif::ProgressBar::with_draw_target(
-                    100,
-                    indicatif::ProgressDrawTarget::stderr(),
-                );
-                stats_bar.set_style(indicatif::ProgressStyle::default_bar().template("{msg}"));
+                let stats_bar = if self.is_print_live_stats() {
+                    let s = indicatif::ProgressBar::with_draw_target(
+                        100,
+                        indicatif::ProgressDrawTarget::stderr(),
+                    );
+                    s.set_style(indicatif::ProgressStyle::default_bar().template("{msg}"));
+                    Some(s)
+                } else {
+                    None
+                };
 
                 // Handle ctrl+c to print summary stats
-                init_ctrlc(producer.clone(), stats_bar.clone()).await?;
+                init_ctrlc(producer.clone(), stats_bar.clone(), self.stats_summary).await?;
 
-                Some(stats_bar)
+                stats_bar
             } else {
                 None
             }
@@ -192,7 +203,7 @@ impl ProduceOpt {
 
             produce_output.wait().await?;
 
-            if self.is_stats_collect() {
+            if self.is_stats_collect() && self.is_print_live_stats() {
                 self.update_stats_bar(maybe_stats_bar.as_ref(), &producer, "")
                     .await;
             }
@@ -202,10 +213,8 @@ impl ProduceOpt {
                 .await?;
         };
 
-        if self.is_stats_collect() && !self.no_stats_bar {
-            if let Some(stats_bar) = &maybe_stats_bar {
-                producer_summary(&producer, stats_bar).await;
-            }
+        if self.is_stats_collect() {
+            producer_summary(&producer, maybe_stats_bar.as_ref(), self.stats_summary).await;
         }
 
         producer.flush().await?;
@@ -248,8 +257,10 @@ impl ProduceOpt {
                     }
 
                     if self.is_stats_collect() {
-                        self.update_stats_bar(maybe_stats_bar, &producer, &line)
-                            .await;
+                        if self.is_print_live_stats() {
+                            self.update_stats_bar(maybe_stats_bar, &producer, &line)
+                                .await;
+                        }
 
                         stats_datapoint_check = write_csv_datapoint(
                             &producer,
@@ -285,8 +296,10 @@ impl ProduceOpt {
                     }
 
                     if self.is_stats_collect() {
-                        self.update_stats_bar(maybe_stats_bar, &producer, &line)
-                            .await;
+                        if self.is_print_live_stats() {
+                            self.update_stats_bar(maybe_stats_bar, &producer, &line)
+                                .await;
+                        }
 
                         stats_datapoint_check = write_csv_datapoint(
                             &producer,
@@ -306,10 +319,6 @@ impl ProduceOpt {
 
         if let Some(file) = maybe_stats_file.as_mut() {
             file.flush()?;
-        }
-
-        if let Some(stats_bar) = maybe_stats_bar {
-            producer_summary(&producer, stats_bar).await;
         }
 
         Ok(())
@@ -360,7 +369,11 @@ impl ProduceOpt {
     }
 
     fn is_stats_collect(&self) -> bool {
-        self.stats || self.stats_plus
+        self.stats || self.stats_plus || self.stats_summary
+    }
+
+    fn is_print_live_stats(&self) -> bool {
+        !self.no_stats_bar && !self.stats_summary
     }
 
     async fn update_stats_bar(
@@ -369,7 +382,7 @@ impl ProduceOpt {
         producer: &Arc<TopicProducer>,
         line: &str,
     ) {
-        if !self.no_stats_bar {
+        if self.is_print_live_stats() {
             if let (Some(stats_bar), Some(producer_stats)) =
                 (maybe_stats_bar, producer.stats().await)
             {
@@ -393,10 +406,14 @@ impl ProduceOpt {
 }
 
 /// Initialize Ctrl-C event handler to print session summary when we are collecting stats
-async fn init_ctrlc(producer: Arc<TopicProducer>, stats_bar: ProgressBar) -> Result<()> {
+async fn init_ctrlc(
+    producer: Arc<TopicProducer>,
+    maybe_stats_bar: Option<ProgressBar>,
+    force_print_summary: bool,
+) -> Result<()> {
     let result = ctrlc::set_handler(move || {
         fluvio_future::task::run_block_on(async {
-            producer_summary(&producer, &stats_bar).await;
+            producer_summary(&producer, maybe_stats_bar.as_ref(), force_print_summary).await;
         });
 
         debug!("detected control c, setting end");

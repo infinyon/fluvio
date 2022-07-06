@@ -151,9 +151,20 @@ pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataPoint) -> 
 }
 
 /// Report the producer summary to stdout with the `ProgressBar`
-pub(crate) async fn producer_summary(producer: &Arc<TopicProducer>, stats_bar: &ProgressBar) {
+pub(crate) async fn producer_summary(
+    producer: &Arc<TopicProducer>,
+    maybe_stats_bar: Option<&ProgressBar>,
+    force_print_stats: bool,
+) {
     if let Some(producer_stats) = producer.stats().await {
-        stats_bar.set_message(format_summary_stats(producer_stats).await);
-        stats_bar.println(" ");
+        if let Some(stats_bar) = maybe_stats_bar {
+            stats_bar.set_message(format_summary_stats(producer_stats).await);
+            stats_bar.println(" ");
+        } else if force_print_stats {
+            println!("{}", format_summary_stats(producer_stats).await);
+            println!("");
+        }
+    } else if force_print_stats {
+        println!("Stats were not collected for summary")
     }
 }
