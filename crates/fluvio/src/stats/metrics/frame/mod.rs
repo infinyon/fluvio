@@ -18,14 +18,14 @@ use quantities::duration::{
     Duration as QuantDuration, MINUTE, SECOND, MILLISECOND, MICROSECOND, NANOSECOND,
 };
 
-/// This is a complete collection of client data being collected for the session
+/// This is a complete collection of client data being collected for the session:
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct ClientStatsDataFrame {
     /// Start time when struct was created
     /// This is Unix Epoch time, in nanoseconds
     start_time: i64,
-    /// This is the elapsed time in nanoseconds
-    uptime: i64,
+    /// This is the elapsed time of when the frame was created, in nanoseconds
+    run_time: i64,
     /// PID of the client process
     pid: u32,
     /// Offset from last batch seen
@@ -49,6 +49,8 @@ pub struct ClientStatsDataFrame {
     bytes: u64,
     /// Last polled CPU usage in percent, adjusted for host system's # of CPU cores
     cpu: f32,
+    /// Total time spent waiting for data transfer, in nanoseconds
+    latency: u64,
     /// Last polled memory usage of client process, in kilobytes
     mem: u64,
     /// Total number of records processed
@@ -91,7 +93,7 @@ impl ClientStatsDataFrame {
     pub fn get(&self, stat: ClientStatsMetric) -> ClientStatsMetricRaw {
         match stat {
             ClientStatsMetric::StartTime => ClientStatsMetricRaw::StartTime(self.start_time),
-            ClientStatsMetric::Uptime => ClientStatsMetricRaw::Uptime(self.start_time),
+            ClientStatsMetric::RunTime => ClientStatsMetricRaw::RunTime(self.run_time),
             ClientStatsMetric::Pid => ClientStatsMetricRaw::Pid(self.pid),
             ClientStatsMetric::Offset => ClientStatsMetricRaw::Offset(self.offset),
             ClientStatsMetric::LastBatches => ClientStatsMetricRaw::LastBatches(self.last_batches),
@@ -150,10 +152,8 @@ impl ClientStatsDataFrame {
         //println!("Bytes {} Throughput {}", self.bytes, self.throughput);
         match stat {
             ClientStatsMetric::StartTime => ClientStatsMetricFormat::StartTime(self.start_time),
-            ClientStatsMetric::Uptime => ClientStatsMetricFormat::Uptime(
-                // This works too
-                Self::format_duration_from_nanos((unix_timestamp_nanos() - self.start_time) as u64),
-                //Self::format_duration_from_nanos(self.uptime as u64),
+            ClientStatsMetric::RunTime => ClientStatsMetricFormat::RunTime(
+                Self::format_duration_from_nanos(self.run_time as u64),
             ),
             ClientStatsMetric::Pid => ClientStatsMetricFormat::Pid(self.pid),
             ClientStatsMetric::Offset => ClientStatsMetricFormat::Offset(self.offset),
@@ -284,10 +284,11 @@ impl ClientStatsDataFrame {
 
     /// Format time units for Display
     fn format_duration_from_nanos(nanoseconds: u64) -> QuantDuration {
+        //println!("at fn call: {}", nanoseconds);
         #[cfg(not(target_arch = "wasm32"))]
-        let scalar: AmountT = (nanoseconds as u32).into();
+        let scalar: AmountT = (nanoseconds as f64).into();
         #[cfg(target_arch = "wasm32")]
-        let scalar: AmountT = (nanoseconds as u16).into();
+        let scalar: AmountT = (nanoseconds as f32).into();
         //println!("Pre format: {}", scalar);
         //println!("Pre convert: {}", (scalar * NANOSECOND));
         let convert = ClientStatsDataFrame::convert_to_largest_time_unit(scalar * NANOSECOND);

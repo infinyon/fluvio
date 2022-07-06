@@ -14,8 +14,8 @@ use strum::EnumIter;
 pub enum ClientStatsMetric {
     #[strum(serialize = "start_time")]
     StartTime,
-    #[strum(serialize = "uptime")]
-    Uptime,
+    #[strum(serialize = "run_time")]
+    RunTime,
     #[strum(serialize = "pid")]
     Pid,
     #[strum(serialize = "offset")]

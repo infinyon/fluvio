@@ -6,11 +6,11 @@ pub use metrics::{
     ClientStatsMetric, ClientStatsMetricRaw, ClientStatsMetricFormat, ClientStatsDataFrame,
     ClientStatsHistogram,
 };
+mod config;
+pub use config::ClientStatsDataCollect;
 use quantities::LinearScaledUnit;
 use quantities::duration::NANOSECOND;
-use serde::{Serialize, Deserialize};
 pub use update_builder::ClientStatsUpdateBuilder;
-use strum::IntoEnumIterator;
 
 use std::fmt::Debug;
 use std::sync::atomic::{AtomicU32, AtomicU64, AtomicI64, AtomicI32, Ordering};
@@ -28,130 +28,6 @@ use crate::error::{Result, FluvioError};
 
 /// Ordering used by `std::sync::atomic` operations
 pub(crate) const STATS_MEM_ORDER: Ordering = Ordering::Relaxed;
-
-/// Used for configuring the type of data to collect
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum ClientStatsDataCollect {
-    /// Collect all available stats
-    All,
-    /// Do not collect stats
-    None,
-    /// Collect measurements for throughput and latency
-    Data,
-    /// Collect measurements for CPU and memory usage
-    System,
-}
-
-impl Default for ClientStatsDataCollect {
-    fn default() -> Self {
-        ClientStatsDataCollect::None
-    }
-}
-
-impl ClientStatsDataCollect {
-    pub fn to_metrics(&self) -> Vec<ClientStatsMetric> {
-        match self {
-            Self::All => ClientStatsMetric::iter().collect(),
-            Self::None => {
-                vec![]
-            }
-            Self::Data => {
-                vec![
-                    ClientStatsMetric::StartTime,
-                    ClientStatsMetric::LastUpdated,
-                    ClientStatsMetric::Uptime,
-                    ClientStatsMetric::Pid,
-                    ClientStatsMetric::Offset,
-                    ClientStatsMetric::Records,
-                    ClientStatsMetric::LastRecords,
-                    ClientStatsMetric::LastBytes,
-                    ClientStatsMetric::LastLatency,
-                    ClientStatsMetric::LastThroughput,
-                    ClientStatsMetric::MaxThroughput,
-                    ClientStatsMetric::SecondThroughput,
-                    ClientStatsMetric::SecondRecords,
-                    ClientStatsMetric::P50Latency,
-                    ClientStatsMetric::P90Latency,
-                    ClientStatsMetric::P99Latency,
-                    ClientStatsMetric::P999Latency,
-                ]
-            }
-            Self::System => {
-                vec![
-                    ClientStatsMetric::StartTime,
-                    ClientStatsMetric::LastUpdated,
-                    ClientStatsMetric::Uptime,
-                    ClientStatsMetric::Pid,
-                    ClientStatsMetric::Cpu,
-                    ClientStatsMetric::Mem,
-                ]
-            }
-        }
-    }
-}
-
-//    #[strum(serialize = "start_time")]
-//    StartTime,
-//    #[strum(serialize = "uptime")]
-//    Uptime,
-//    #[strum(serialize = "pid")]
-//    Pid,
-//    #[strum(serialize = "offset")]
-//    Offset,
-//    #[strum(serialize = "last_batches")]
-//    LastBatches,
-//    #[strum(serialize = "last_bytes")]
-//    LastBytes,
-//    #[strum(serialize = "last_latency")]
-//    LastLatency,
-//    #[strum(serialize = "last_records")]
-//    LastRecords,
-//    #[strum(serialize = "last_throughput")]
-//    LastThroughput,
-//    #[strum(serialize = "last_updated")]
-//    LastUpdated,
-//    #[strum(serialize = "batches")]
-//    Batches,
-//    #[strum(serialize = "bytes")]
-//    Bytes,
-//    #[strum(serialize = "cpu")]
-//    Cpu,
-//    #[strum(serialize = "mem")]
-//    Mem,
-//    #[strum(serialize = "latency")]
-//    Latency,
-//    #[strum(serialize = "records")]
-//    Records,
-//    #[strum(serialize = "throughput")]
-//    Throughput,
-//    #[strum(serialize = "second_batches")]
-//    SecondBatches,
-//    #[strum(serialize = "second_latency")]
-//    SecondLatency,
-//    #[strum(serialize = "second_records")]
-//    SecondRecords,
-//    #[strum(serialize = "second_throughput")]
-//    SecondThroughput,
-//    #[strum(serialize = "second_mean_latency")]
-//    SecondMeanLatency,
-//    #[strum(serialize = "second_mean_throughput")]
-//    SecondMeanThroughput,
-//    #[strum(serialize = "max_throughput")]
-//    MaxThroughput,
-//    #[strum(serialize = "mean_throughput")]
-//    MeanThroughput,
-//    #[strum(serialize = "mean_latency")]
-//    MeanLatency,
-//    #[strum(serialize = "std_dev_latency")]
-//    StdDevLatency,
-//    #[strum(serialize = "p50_latency")]
-//    P50Latency,
-//    #[strum(serialize = "p90_latency")]
-//    P90Latency,
-//    #[strum(serialize = "p99_latency")]
-//    P99Latency,
-//    #[strum(serialize = "p999_latency")]
-//    P999Latency,
 
 /// Main struct for recording client stats
 #[derive(Debug)]
@@ -344,7 +220,7 @@ impl ClientStats {
             ClientStatsMetric::StartTime => {
                 ClientStatsMetricRaw::StartTime(self.start_time.load(STATS_MEM_ORDER))
             }
-            ClientStatsMetric::Uptime => ClientStatsMetricRaw::Uptime(
+            ClientStatsMetric::RunTime => ClientStatsMetricRaw::RunTime(
                 unix_timestamp_nanos() - self.start_time.load(STATS_MEM_ORDER),
             ),
             ClientStatsMetric::Pid => ClientStatsMetricRaw::Pid(self.pid.load(STATS_MEM_ORDER)),
@@ -384,19 +260,20 @@ impl ClientStats {
                 ClientStatsMetricRaw::Records(self.records.load(STATS_MEM_ORDER))
             }
             ClientStatsMetric::Throughput => {
-                let uptime =
-                    if let ClientStatsMetricRaw::Uptime(u) = self.get(ClientStatsMetric::Uptime) {
-                        // Convert Nanoseconds to seconds
-                        #[cfg(not(target_arch = "wasm32"))]
-                        let seconds = u as f64 * NANOSECOND.scale();
-                        #[cfg(target_arch = "wasm32")]
-                        let seconds = *u as f32 * NANOSECOND.scale();
+                let run_time = if let ClientStatsMetricRaw::RunTime(u) =
+                    self.get(ClientStatsMetric::RunTime)
+                {
+                    // Convert Nanoseconds to seconds
+                    #[cfg(not(target_arch = "wasm32"))]
+                    let seconds = u as f64 * NANOSECOND.scale();
+                    #[cfg(target_arch = "wasm32")]
+                    let seconds = *u as f32 * NANOSECOND.scale();
 
-                        //println!("seconds {seconds}");
-                        Some(seconds)
-                    } else {
-                        None
-                    };
+                    //println!("seconds {seconds}");
+                    Some(seconds)
+                } else {
+                    None
+                };
 
                 #[cfg(not(target_arch = "wasm32"))]
                 let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f64;
@@ -404,9 +281,9 @@ impl ClientStats {
                 let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f32;
 
                 //println!("total_bytes {total_bytes}");
-                //println!("Throughput {}", total_bytes / uptime.clone().unwrap());
+                //println!("Throughput {}", total_bytes / run_time.clone().unwrap());
 
-                ClientStatsMetricRaw::Throughput(if let Some(up) = uptime {
+                ClientStatsMetricRaw::Throughput(if let Some(up) = run_time {
                     if up != 0.0 {
                         (total_bytes / up) as u64
                     } else {
@@ -470,7 +347,7 @@ impl ClientStats {
             .into_iter()
             .map(|data| match data {
                 ClientStatsMetricRaw::StartTime(_)
-                | ClientStatsMetricRaw::Uptime(_)
+                | ClientStatsMetricRaw::RunTime(_)
                 | ClientStatsMetricRaw::Pid(_)
                 | ClientStatsMetricRaw::LastBatches(_)
                 | ClientStatsMetricRaw::LastBytes(_)
@@ -579,7 +456,7 @@ impl ClientStats {
         self.last_updated
             .store(unix_timestamp_nanos(), STATS_MEM_ORDER);
 
-        println!("After update: {:#?}", &self);
+        //println!("After update: {:#?}", &self);
         Ok(())
     }
 
@@ -590,8 +467,8 @@ impl ClientStats {
         frame
     }
 
-    /// Returns the current uptime of the client in nanoseconds
-    pub fn uptime(&self) -> i64 {
+    /// Returns the current running time of the client in nanoseconds
+    pub fn run_time(&self) -> i64 {
         unix_timestamp_nanos() - self.start_time.load(STATS_MEM_ORDER)
     }
 

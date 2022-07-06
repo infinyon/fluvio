@@ -5,7 +5,7 @@ use quantities::duration::{Duration as QuantDuration};
 #[derive(Debug, Clone, Copy)]
 pub enum ClientStatsMetricFormat {
     StartTime(i64),
-    Uptime(QuantDuration),
+    RunTime(QuantDuration),
     Pid(u32),
     Offset(i32),
     LastBatches(u64),
@@ -41,7 +41,7 @@ impl ClientStatsMetricFormat {
     pub fn value_to_string(&self) -> String {
         match self {
             Self::StartTime(n) => n.to_string(),
-            Self::Uptime(n) => format!("{:<15.3}", n),
+            Self::RunTime(n) => format!("{:<15.3}", n),
             Self::Pid(n) => n.to_string(),
             Self::Offset(n) => n.to_string(),
             Self::LastBatches(n) => n.to_string(),

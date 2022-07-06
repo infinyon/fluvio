@@ -179,11 +179,16 @@ pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataFrame) -> 
             );
     }
 
-    r.add_cell(Cell::new("uptime").set_alignment(CellAlignment::Center))
+    use fluvio::stats::ClientStatsMetricRaw;
+    if let ClientStatsMetricRaw::RunTime(t) = client_stats.get(ClientStatsMetric::RunTime) {
+        println!("raw runtime: {t}")
+    };
+
+    r.add_cell(Cell::new("run time").set_alignment(CellAlignment::Center))
         .add_cell(
             Cell::new(
                 client_stats
-                    .get_format(ClientStatsMetric::Uptime)
+                    .get_format(ClientStatsMetric::RunTime)
                     .value_to_string(),
             )
             .set_alignment(CellAlignment::Right),
