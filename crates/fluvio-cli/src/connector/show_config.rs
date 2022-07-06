@@ -17,7 +17,7 @@ use crate::CliError;
 use super::ConnectorConfig;
 
 #[derive(Debug, Parser)]
-pub struct DescribeManagedConnectorOpt {
+pub struct GetConfigManagedConnectorOpt {
     #[clap(name = "connector-name")]
     pub connector_name: String,
 
@@ -26,7 +26,7 @@ pub struct DescribeManagedConnectorOpt {
 }
 use fluvio_extension_common::t_println;
 
-impl DescribeManagedConnectorOpt {
+impl GetConfigManagedConnectorOpt {
     /// Process list connectors cli request
     pub async fn process<O: Terminal>(self, out: Arc<O>, fluvio: &Fluvio) -> Result<(), CliError> {
         let admin = fluvio.admin().await;

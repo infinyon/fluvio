@@ -23,7 +23,7 @@ mod update;
 mod delete;
 mod list;
 mod logs;
-mod describe;
+mod show_config;
 
 use crate::Result;
 use create::CreateManagedConnectorOpt;
@@ -31,7 +31,7 @@ use update::UpdateManagedConnectorOpt;
 use delete::DeleteManagedConnectorOpt;
 use list::ListManagedConnectorsOpt;
 use logs::LogsManagedConnectorOpt;
-use describe::DescribeManagedConnectorOpt;
+use show_config::GetConfigManagedConnectorOpt;
 use crate::CliError;
 
 #[derive(Debug, Parser)]
@@ -73,10 +73,10 @@ pub enum ManagedConnectorCmd {
 
     /// Show the connector spec
     #[clap(
-        name = "describe",
+        name = "config",
         help_template = COMMAND_TEMPLATE,
     )]
-    Describe(DescribeManagedConnectorOpt),
+    Config(GetConfigManagedConnectorOpt),
 }
 
 impl ManagedConnectorCmd {
@@ -97,7 +97,7 @@ impl ManagedConnectorCmd {
             Self::List(list) => {
                 list.process(out, fluvio).await?;
             }
-            Self::Describe(describe) => {
+            Self::Config(describe) => {
                 describe.process(out, fluvio).await?;
             }
         }
