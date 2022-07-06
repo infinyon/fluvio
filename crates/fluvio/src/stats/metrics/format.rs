@@ -41,8 +41,7 @@ impl ClientStatsMetricFormat {
     pub fn value_to_string(&self) -> String {
         match self {
             Self::StartTime(n) => n.to_string(),
-            //Self::Uptime(n) => format!("{:<15.3}", n),
-            Self::Uptime(n) => format!("{n}"),
+            Self::Uptime(n) => format!("{:<15.3}", n),
             Self::Pid(n) => n.to_string(),
             Self::Offset(n) => n.to_string(),
             Self::LastBatches(n) => n.to_string(),

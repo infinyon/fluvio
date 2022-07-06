@@ -18,7 +18,7 @@ pub enum ClientStatsMetricRaw {
     LastLatency(u64),
     #[strum(serialize = "last_records")]
     LastRecords(u64),
-    #[strum(serialize = "last_throughput_byte_p_ns")]
+    #[strum(serialize = "last_throughput_byte_p_s")]
     LastThroughput(u64),
     #[strum(serialize = "last_updated_ns")]
     LastUpdated(i64),
@@ -34,7 +34,7 @@ pub enum ClientStatsMetricRaw {
     Latency(u64),
     #[strum(serialize = "records")]
     Records(u64),
-    #[strum(serialize = "throughput_byte_p_ns")]
+    #[strum(serialize = "throughput_byte_p_s")]
     Throughput(u64),
     #[strum(serialize = "batches_p_sec")]
     SecondBatches(u64),

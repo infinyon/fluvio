@@ -1,4 +1,6 @@
 use hdrhistogram::{Histogram, CreationError};
+use quantities::duration::NANOSECOND;
+use quantities::LinearScaledUnit;
 use crate::error::{Result, FluvioError};
 use super::{ClientStatsMetric, ClientStatsMetricRaw, ClientStatsDataFrame};
 use std::collections::VecDeque;
@@ -61,24 +63,76 @@ impl ClientStatsHistogram {
         let mut bytes_per_second = 0; // AKA Throughput
         let mut records_per_second = 0;
         let mut batches_per_second = 0;
+        let mut throughput_per_second = 0;
 
         for n in &self.second_window {
             latency_per_second += n.get(ClientStatsMetric::LastLatency).as_u64();
             bytes_per_second += n.get(ClientStatsMetric::LastBytes).as_u64();
             records_per_second += n.get(ClientStatsMetric::LastRecords).as_u64();
             batches_per_second += n.get(ClientStatsMetric::LastBatches).as_u64();
+            throughput_per_second += n.get(ClientStatsMetric::LastThroughput).as_u64();
         }
 
-        let second_frame = ClientStatsHistogram::load_histogram(&self.second_window)?;
+        let mut total_latency = 0;
+        let mut total_bytes = 0; // AKA Throughput
+        let mut total_records = 0;
+        let mut total_batches = 0;
+        let mut total_throughput = 0;
+        //let mut max_throughput = 0;
 
-        let mean_latency_per_second = second_frame.latency.mean();
-        let mean_throughput_per_second = second_frame.throughput.mean();
+        for n in &self.total {
+            total_latency += n.get(ClientStatsMetric::LastLatency).as_u64();
+            total_bytes += n.get(ClientStatsMetric::LastBytes).as_u64();
+            total_records += n.get(ClientStatsMetric::LastRecords).as_u64();
+            total_batches += n.get(ClientStatsMetric::LastBatches).as_u64();
+
+            //let t = n.get(ClientStatsMetric::LastThroughput).as_u64();
+            //if t > max_throughput {
+            //    max_throughput = t;
+            //}
+            total_throughput += n.get(ClientStatsMetric::LastThroughput).as_u64();
+        }
+
+        //let uptime = if let Some(up) = self.total.back() {
+        //    #[cfg(not(target_arch = "wasm32"))]
+        //    let uptime_seconds =
+        //        up.get(ClientStatsMetric::Uptime).as_u64() as f64 * NANOSECOND.scale();
+
+        //    #[cfg(target_arch = "wasm32")]
+        //    let uptime_seconds =
+        //        up.get(ClientStatsMetric::Uptime).as_u64() as f32 * NANOSECOND.scale();
+        //    uptime_seconds
+        //} else {
+        //    0.0
+        //};
+
+        //let second_frame = ClientStatsHistogram::load_histogram(&self.second_window)?;
+
+        //let mean_latency_per_second = second_frame.latency.mean();
+        let mean_latency_per_second = latency_per_second / self.second_window.len() as u64;
+        //let mean_throughput_per_second = second_frame.throughput.mean();
+        let mean_throughput_per_second = bytes_per_second / self.second_window.len() as u64;
+        //let mean_throughput_per_second = throughput_per_second / self.second_window.len() as u64;
 
         let total_frame = ClientStatsHistogram::load_histogram(&self.total)?;
 
-        let mean_latency = total_frame.latency.mean();
-        let mean_throughput = total_frame.throughput.mean();
-        let max_throughput = total_frame.throughput.max();
+        //let mean_latency = total_frame.latency.mean();
+        let mean_latency = (total_latency as f64 / self.total.len() as f64) as u64;
+        //let mean_throughput = total_frame.throughput.mean();
+        let mean_throughput = total_throughput / self.total.len() as u64;
+        //let max_throughput = total_frame.throughput.max();
+        let mut max_throughput = 0;
+
+        if let Some(m) = &self
+            .total
+            .clone()
+            .into_iter()
+            .map(|x| x.get(ClientStatsMetric::Throughput).as_u64())
+            .max()
+        {
+            max_throughput = *m;
+        }
+
         let std_dev_latency = total_frame.latency.stdev();
         let p50_latency = total_frame.latency.value_at_percentile(0.50);
         let p90_latency = total_frame.latency.value_at_percentile(0.90);
@@ -112,71 +166,52 @@ impl ClientStatsHistogram {
             FluvioError::Other("Problem adding dataframe into histogram".to_string())
         })?;
 
-        // Fill the histogram
-        let _: Vec<_> = data
-            .iter()
-            .map(|n| {
-                // Walk over each data point and grab the last recorded values we want aggregate stats
-
-                let last_latency = if let ClientStatsMetricRaw::LastLatency(l) =
-                    n.get(ClientStatsMetric::LastLatency)
-                {
-                    l
-                } else {
-                    0
-                };
-                let last_bytes = if let ClientStatsMetricRaw::LastBytes(b) =
-                    n.get(ClientStatsMetric::LastBytes)
-                {
+        for n in data {
+            let last_latency = if let ClientStatsMetricRaw::LastLatency(l) =
+                n.get(ClientStatsMetric::LastLatency)
+            {
+                l
+            } else {
+                0
+            };
+            let last_bytes =
+                if let ClientStatsMetricRaw::LastBytes(b) = n.get(ClientStatsMetric::LastBytes) {
                     b
                 } else {
                     0
                 };
-                let last_throughput = if let ClientStatsMetricRaw::LastThroughput(t) =
-                    n.get(ClientStatsMetric::LastThroughput)
-                {
-                    t
-                } else {
-                    0
-                };
-                let last_records = if let ClientStatsMetricRaw::LastRecords(r) =
-                    n.get(ClientStatsMetric::LastRecords)
-                {
-                    r
-                } else {
-                    0
-                };
+            let last_throughput = if let ClientStatsMetricRaw::LastThroughput(t) =
+                n.get(ClientStatsMetric::LastThroughput)
+            {
+                t
+            } else {
+                0
+            };
+            let last_records = if let ClientStatsMetricRaw::LastRecords(r) =
+                n.get(ClientStatsMetric::LastRecords)
+            {
+                r
+            } else {
+                0
+            };
 
-                // Load the data into their respective histogram
-                // Stuff all the Result into a vec so we can use it
-                vec![
-                    histogram.latency.record(last_latency).map_err(|_| {
-                        FluvioError::Other(
-                            "Problem adding latency dataframe into histogram".to_string(),
-                        )
-                    }),
-                    histogram.bytes_transferred.record(last_bytes).map_err(|_| {
-                        FluvioError::Other(
-                            "Problem adding bytes dataframe into histogram".to_string(),
-                        )
-                    }),
-                    histogram.throughput.record(last_throughput).map_err(|_| {
-                        FluvioError::Other("Problem adding dataframe into histogram".to_string())
-                    }),
-                    histogram.records.record(last_records).map_err(|_| {
-                        FluvioError::Other("Problem adding dataframe into histogram".to_string())
-                    }),
-                ]
-            })
-            .map(|f| {
-                f.into_iter()
-                    .map(|x| {
-                        let _ = x.as_ref().ok();
-                    })
-                    .collect::<Vec<()>>()
-            })
-            .collect();
-
+            // Load the data into their respective histogram
+            histogram.latency.record(last_latency).map_err(|_| {
+                FluvioError::Other("Problem adding latency into histogram".to_string())
+            })?;
+            histogram
+                .bytes_transferred
+                .record(last_bytes)
+                .map_err(|_| {
+                    FluvioError::Other("Problem adding bytes into histogram".to_string())
+                })?;
+            histogram.throughput.record(last_throughput).map_err(|_| {
+                FluvioError::Other("Problem adding throughput into histogram".to_string())
+            })?;
+            histogram.records.record(last_records).map_err(|_| {
+                FluvioError::Other("Problem adding records into histogram".to_string())
+            })?;
+        }
         Ok(histogram)
     }
 }

@@ -1,8 +1,5 @@
-use crate::stats::{
-    ClientStats, ClientStatsMetricRaw, ClientStatsDataFrame, ClientStatsMetric, NANOSECOND,
-};
+use crate::stats::{ClientStats, ClientStatsMetricRaw, ClientStatsDataFrame, ClientStatsMetric};
 use strum::IntoEnumIterator;
-use quantities::LinearScaledUnit;
 
 /// This copies from `ClientStats` passes values through to its respective field.
 /// The exceptions to value pass-through are:
@@ -108,12 +105,13 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                             0
                         };
 
-                    #[cfg(not(target_arch = "wasm32"))]
-                    let bytes_per_second = (last_throughput as f64 * NANOSECOND.scale()) as u64;
-                    #[cfg(target_arch = "wasm32")]
-                    let bytes_per_second = (last_throughput as f32 * NANOSECOND.scale()) as u64;
+                    //#[cfg(not(target_arch = "wasm32"))]
+                    //let bytes_per_second = (last_throughput as f64 * NANOSECOND.scale()) as u64;
+                    //#[cfg(target_arch = "wasm32")]
+                    //let bytes_per_second = (last_throughput as f32 * NANOSECOND.scale()) as u64;
 
-                    data_point.last_throughput = bytes_per_second;
+                    //data_point.last_throughput = bytes_per_second;
+                    data_point.last_throughput = last_throughput;
                 }
                 ClientStatsMetric::LastUpdated => {
                     let last_updated = if let ClientStatsMetricRaw::LastUpdated(last_updated) =
@@ -166,15 +164,16 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                     };
                     data_point.mem = mem;
                 }
+                // Why don't I have this?
                 ClientStatsMetric::Latency => {
-                    let last_latency = if let ClientStatsMetricRaw::Latency(last_latency) =
+                    let latency = if let ClientStatsMetricRaw::Latency(latency) =
                         current.get(ClientStatsMetric::Latency)
                     {
-                        last_latency
+                        latency
                     } else {
                         0
                     };
-                    data_point.last_latency = last_latency;
+                    //data_point.latency = latency;
                 }
                 ClientStatsMetric::Records => {
                     let records = if let ClientStatsMetricRaw::Records(records) =
@@ -195,12 +194,7 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                         0
                     };
 
-                    #[cfg(not(target_arch = "wasm32"))]
-                    let bytes_per_second = (throughput as f64 * NANOSECOND.scale()) as u64;
-                    #[cfg(target_arch = "wasm32")]
-                    let bytes_per_second = (throughput as f32 * NANOSECOND.scale()) as u64;
-
-                    data_point.last_throughput = bytes_per_second;
+                    data_point.throughput = throughput;
                 }
                 ClientStatsMetric::SecondBatches => {
                     let second_batches =
@@ -289,12 +283,12 @@ impl From<&ClientStats> for ClientStatsDataFrame {
                             0
                         };
 
-                    #[cfg(not(target_arch = "wasm32"))]
-                    let bytes_per_second = (mean_throughput as f64 * NANOSECOND.scale()) as u64;
-                    #[cfg(target_arch = "wasm32")]
-                    let bytes_per_second = (mean_throughput as f32 * NANOSECOND.scale()) as u64;
+                    //#[cfg(not(target_arch = "wasm32"))]
+                    //let bytes_per_second = (mean_throughput as f64 * NANOSECOND.scale()) as u64;
+                    //#[cfg(target_arch = "wasm32")]
+                    //let bytes_per_second = (mean_throughput as f32 * NANOSECOND.scale()) as u64;
 
-                    data_point.last_throughput = bytes_per_second;
+                    data_point.mean_throughput = mean_throughput;
                 }
                 ClientStatsMetric::MeanLatency => {
                     let mean_latency = if let ClientStatsMetricRaw::MeanLatency(mean_latency) =

@@ -55,17 +55,103 @@ impl ClientStatsDataCollect {
             Self::None => {
                 vec![]
             }
-            // TODO: Add standard list of metrics for data mode
             Self::Data => {
-                vec![]
+                vec![
+                    ClientStatsMetric::StartTime,
+                    ClientStatsMetric::LastUpdated,
+                    ClientStatsMetric::Uptime,
+                    ClientStatsMetric::Pid,
+                    ClientStatsMetric::Offset,
+                    ClientStatsMetric::Records,
+                    ClientStatsMetric::LastRecords,
+                    ClientStatsMetric::LastBytes,
+                    ClientStatsMetric::LastLatency,
+                    ClientStatsMetric::LastThroughput,
+                    ClientStatsMetric::MaxThroughput,
+                    ClientStatsMetric::SecondThroughput,
+                    ClientStatsMetric::SecondRecords,
+                    ClientStatsMetric::P50Latency,
+                    ClientStatsMetric::P90Latency,
+                    ClientStatsMetric::P99Latency,
+                    ClientStatsMetric::P999Latency,
+                ]
             }
-            // TODO: Add standard list of metrics for system mode
             Self::System => {
-                vec![]
+                vec![
+                    ClientStatsMetric::StartTime,
+                    ClientStatsMetric::LastUpdated,
+                    ClientStatsMetric::Uptime,
+                    ClientStatsMetric::Pid,
+                    ClientStatsMetric::Cpu,
+                    ClientStatsMetric::Mem,
+                ]
             }
         }
     }
 }
+
+//    #[strum(serialize = "start_time")]
+//    StartTime,
+//    #[strum(serialize = "uptime")]
+//    Uptime,
+//    #[strum(serialize = "pid")]
+//    Pid,
+//    #[strum(serialize = "offset")]
+//    Offset,
+//    #[strum(serialize = "last_batches")]
+//    LastBatches,
+//    #[strum(serialize = "last_bytes")]
+//    LastBytes,
+//    #[strum(serialize = "last_latency")]
+//    LastLatency,
+//    #[strum(serialize = "last_records")]
+//    LastRecords,
+//    #[strum(serialize = "last_throughput")]
+//    LastThroughput,
+//    #[strum(serialize = "last_updated")]
+//    LastUpdated,
+//    #[strum(serialize = "batches")]
+//    Batches,
+//    #[strum(serialize = "bytes")]
+//    Bytes,
+//    #[strum(serialize = "cpu")]
+//    Cpu,
+//    #[strum(serialize = "mem")]
+//    Mem,
+//    #[strum(serialize = "latency")]
+//    Latency,
+//    #[strum(serialize = "records")]
+//    Records,
+//    #[strum(serialize = "throughput")]
+//    Throughput,
+//    #[strum(serialize = "second_batches")]
+//    SecondBatches,
+//    #[strum(serialize = "second_latency")]
+//    SecondLatency,
+//    #[strum(serialize = "second_records")]
+//    SecondRecords,
+//    #[strum(serialize = "second_throughput")]
+//    SecondThroughput,
+//    #[strum(serialize = "second_mean_latency")]
+//    SecondMeanLatency,
+//    #[strum(serialize = "second_mean_throughput")]
+//    SecondMeanThroughput,
+//    #[strum(serialize = "max_throughput")]
+//    MaxThroughput,
+//    #[strum(serialize = "mean_throughput")]
+//    MeanThroughput,
+//    #[strum(serialize = "mean_latency")]
+//    MeanLatency,
+//    #[strum(serialize = "std_dev_latency")]
+//    StdDevLatency,
+//    #[strum(serialize = "p50_latency")]
+//    P50Latency,
+//    #[strum(serialize = "p90_latency")]
+//    P90Latency,
+//    #[strum(serialize = "p99_latency")]
+//    P99Latency,
+//    #[strum(serialize = "p999_latency")]
+//    P999Latency,
 
 /// Main struct for recording client stats
 #[derive(Debug)]
@@ -298,28 +384,31 @@ impl ClientStats {
                 ClientStatsMetricRaw::Records(self.records.load(STATS_MEM_ORDER))
             }
             ClientStatsMetric::Throughput => {
-                let total_latency = if let ClientStatsMetricRaw::Latency(l) =
-                    self.get(ClientStatsMetric::Latency)
-                {
-                    // Convert Nanoseconds to seconds
-                    #[cfg(not(target_arch = "wasm32"))]
-                    let seconds = l as f64 * NANOSECOND.scale();
-                    #[cfg(target_arch = "wasm32")]
-                    let seconds = *l as f32 * NANOSECOND.scale();
+                let uptime =
+                    if let ClientStatsMetricRaw::Uptime(u) = self.get(ClientStatsMetric::Uptime) {
+                        // Convert Nanoseconds to seconds
+                        #[cfg(not(target_arch = "wasm32"))]
+                        let seconds = u as f64 * NANOSECOND.scale();
+                        #[cfg(target_arch = "wasm32")]
+                        let seconds = *u as f32 * NANOSECOND.scale();
 
-                    Some(seconds)
-                } else {
-                    None
-                };
+                        //println!("seconds {seconds}");
+                        Some(seconds)
+                    } else {
+                        None
+                    };
 
                 #[cfg(not(target_arch = "wasm32"))]
                 let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f64;
                 #[cfg(target_arch = "wasm32")]
                 let total_bytes = self.bytes.load(STATS_MEM_ORDER) as f32;
 
-                ClientStatsMetricRaw::Throughput(if let Some(latency) = total_latency {
-                    if latency != 0.0 {
-                        (total_bytes / latency) as u64
+                //println!("total_bytes {total_bytes}");
+                //println!("Throughput {}", total_bytes / uptime.clone().unwrap());
+
+                ClientStatsMetricRaw::Throughput(if let Some(up) = uptime {
+                    if up != 0.0 {
+                        (total_bytes / up) as u64
                     } else {
                         0
                     }
@@ -490,13 +579,15 @@ impl ClientStats {
         self.last_updated
             .store(unix_timestamp_nanos(), STATS_MEM_ORDER);
 
-        println!("{:#?}", &self);
+        println!("After update: {:#?}", &self);
         Ok(())
     }
 
     /// Return the current `ClientStats` as `ClientStatsDataFrame`
     pub fn get_dataframe(&self) -> ClientStatsDataFrame {
-        self.into()
+        let frame = self.into();
+        //println!("Internal Dataframe: {frame:#?}");
+        frame
     }
 
     /// Returns the current uptime of the client in nanoseconds

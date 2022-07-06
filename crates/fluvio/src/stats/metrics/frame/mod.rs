@@ -18,6 +18,7 @@ use quantities::duration::{
     Duration as QuantDuration, MINUTE, SECOND, MILLISECOND, MICROSECOND, NANOSECOND,
 };
 
+/// This is a complete collection of client data being collected for the session
 #[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
 pub struct ClientStatsDataFrame {
     /// Start time when struct was created
@@ -146,13 +147,13 @@ impl ClientStatsDataFrame {
     }
 
     pub fn get_format(&self, stat: ClientStatsMetric) -> ClientStatsMetricFormat {
+        //println!("Bytes {} Throughput {}", self.bytes, self.throughput);
         match stat {
             ClientStatsMetric::StartTime => ClientStatsMetricFormat::StartTime(self.start_time),
-            //ClientStatsMetric::Uptime => ClientStatsMetricFormat::Uptime(
-            //    Self::format_duration_from_nanos(self.uptime as u64),
-            //),
             ClientStatsMetric::Uptime => ClientStatsMetricFormat::Uptime(
+                // This works too
                 Self::format_duration_from_nanos((unix_timestamp_nanos() - self.start_time) as u64),
+                //Self::format_duration_from_nanos(self.uptime as u64),
             ),
             ClientStatsMetric::Pid => ClientStatsMetricFormat::Pid(self.pid),
             ClientStatsMetric::Offset => ClientStatsMetricFormat::Offset(self.offset),
@@ -168,35 +169,9 @@ impl ClientStatsDataFrame {
             ClientStatsMetric::LastRecords => {
                 ClientStatsMetricFormat::LastRecords(self.last_records)
             }
-            ClientStatsMetric::LastThroughput => {
-                //let bytes = if let ClientStatsMetricFormat::LastBytes(bytes) =
-                //    self.get_format(ClientStatsMetric::LastBytes)
-                //{
-                //    bytes
-                //} else {
-                //    AMNT_ZERO * BYTE
-                //};
-                //let latency = if let ClientStatsMetricFormat::LastLatency(latency) =
-                //    self.get_format(ClientStatsMetric::LastLatency)
-                //{
-                //    latency
-                //} else {
-                //    AMNT_ZERO * SECOND
-                //};
-
-                println!(
-                    "Last throughput in bytes per second: {}",
-                    self.last_throughput
-                );
-                println!(
-                    "Last throughput in bytes per second: {}",
-                    self.last_throughput
-                );
-
-                ClientStatsMetricFormat::LastThroughput(Self::format_throughput(
-                    self.last_throughput,
-                ))
-            }
+            ClientStatsMetric::LastThroughput => ClientStatsMetricFormat::LastThroughput(
+                Self::format_throughput(self.last_throughput),
+            ),
             ClientStatsMetric::LastUpdated => {
                 ClientStatsMetricFormat::LastUpdated(self.last_updated)
             }
@@ -211,21 +186,6 @@ impl ClientStatsDataFrame {
             ),
             ClientStatsMetric::Records => ClientStatsMetricFormat::Records(self.records),
             ClientStatsMetric::Throughput => {
-                //let bytes = if let ClientStatsMetricFormat::Bytes(bytes) =
-                //    self.get_format(ClientStatsMetric::Bytes)
-                //{
-                //    bytes
-                //} else {
-                //    AMNT_ZERO * BYTE
-                //};
-                //let latency = if let ClientStatsMetricFormat::Latency(latency) =
-                //    self.get_format(ClientStatsMetric::Latency)
-                //{
-                //    latency
-                //} else {
-                //    AMNT_ZERO * SECOND
-                //};
-
                 ClientStatsMetricFormat::Throughput(Self::format_throughput(self.throughput))
             }
             ClientStatsMetric::SecondBatches => {
@@ -328,7 +288,11 @@ impl ClientStatsDataFrame {
         let scalar: AmountT = (nanoseconds as u32).into();
         #[cfg(target_arch = "wasm32")]
         let scalar: AmountT = (nanoseconds as u16).into();
-        ClientStatsDataFrame::convert_to_largest_time_unit(scalar * NANOSECOND)
+        //println!("Pre format: {}", scalar);
+        //println!("Pre convert: {}", (scalar * NANOSECOND));
+        let convert = ClientStatsDataFrame::convert_to_largest_time_unit(scalar * NANOSECOND);
+        //println!("Post format: {}", convert);
+        convert
     }
 
     /// Convert given time quantity into largest divisible unit type of `second`

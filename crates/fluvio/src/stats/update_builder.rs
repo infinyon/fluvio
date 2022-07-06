@@ -14,9 +14,8 @@ impl Add for ClientStatsUpdateBuilder {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        let mut add = Vec::new();
+        let mut add = self.data.clone();
 
-        add.extend(&self.data);
         add.extend(other.data);
 
         Self { data: add }

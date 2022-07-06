@@ -90,7 +90,7 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataFrame) -> 
     if client_stats.stats_collect() == ClientStatsDataCollect::All
         || client_stats.stats_collect() == ClientStatsDataCollect::Data
     {
-        r.add_cell(Cell::new("throughput").set_alignment(CellAlignment::Center))
+        r.add_cell(Cell::new("throughput/s").set_alignment(CellAlignment::Center))
             .add_cell(
                 Cell::new(
                     client_stats
@@ -99,11 +99,11 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataFrame) -> 
                 )
                 .set_alignment(CellAlignment::Right),
             );
-        r.add_cell(Cell::new("latency").set_alignment(CellAlignment::Center))
+        r.add_cell(Cell::new("avg latency/s").set_alignment(CellAlignment::Center))
             .add_cell(
                 Cell::new(
                     client_stats
-                        .get_format(ClientStatsMetric::SecondLatency)
+                        .get_format(ClientStatsMetric::SecondMeanLatency)
                         .value_to_string(),
                 )
                 .set_alignment(CellAlignment::Right),
