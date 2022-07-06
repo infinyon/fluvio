@@ -182,6 +182,10 @@ pub struct ConsumeOpt {
     /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
     #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
+
+    /// Print out client stats
+    #[clap(long)]
+    pub stats: bool,
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String)> {
@@ -473,6 +477,8 @@ impl ConsumeOpt {
                                 &pb,
                             );
 
+                            //println!("{:?}", consumer.stats());
+
                             if let Some(potential_offset) = maybe_potential_offset {
                                 if record.offset >= potential_offset {
                                     eprintln!("End-offset has been reached; exiting");
@@ -638,6 +644,11 @@ impl ConsumeOpt {
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
             }
+
+            // Print stats
+            // if self.stats {
+            // consumer.stats()
+            //}
         } else if let Some(term) = terminal {
             if let Some(table) = table_model {
                 table.render(term);

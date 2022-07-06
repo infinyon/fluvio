@@ -71,6 +71,10 @@ pub struct ProduceOpt {
     /// read_uncommitted (ReadUncommitted) - just wait for leader to accept records.
     #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
+
+    /// Print out client stats
+    #[clap(long)]
+    pub stats: bool,
 }
 
 fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
@@ -143,6 +147,7 @@ impl ProduceOpt {
         producer.flush().await?;
         if self.interactive_mode() {
             print_cli_ok!();
+            // I should print the client stats here
         }
 
         Ok(())
@@ -183,6 +188,9 @@ impl ProduceOpt {
                     }
                     if self.interactive_mode() {
                         print_cli_ok!();
+                        if self.stats {
+                            println!("{:?}", producer.stats().await);
+                        }
                         eprint!("> ");
                     }
                 }

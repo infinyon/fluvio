@@ -29,6 +29,7 @@ use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::PartitionerConfig;
+use crate::stats::ClientStats;
 
 use self::accumulator::{BatchHandler};
 pub use self::config::{
@@ -59,6 +60,8 @@ struct ProducerPool {
     flush_events: Vec<(Arc<EventHandler>, Arc<EventHandler>)>,
     end_events: Vec<Arc<StickyEvent>>,
     errors: Vec<Arc<RwLock<Option<ProducerError>>>>,
+    client_stats: Arc<RwLock<ClientStats>>,
+    // Maybe I need to keep track of stats here?
 }
 
 impl ProducerPool {
@@ -67,6 +70,7 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
+        client_stats: Arc<RwLock<ClientStats>>,
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
@@ -86,6 +90,7 @@ impl ProducerPool {
                 error.clone(),
                 end_event.clone(),
                 flush_event.clone(),
+                client_stats.clone(),
             );
             errors.push(error);
             end_events.push(end_event);
@@ -95,6 +100,7 @@ impl ProducerPool {
             end_events,
             flush_events,
             errors,
+            client_stats,
         }
     }
 
@@ -103,8 +109,15 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
+        client_stats: Arc<RwLock<ClientStats>>,
     ) -> Arc<Self> {
-        Arc::new(ProducerPool::new(config, topic, spu_pool, batches))
+        Arc::new(ProducerPool::new(
+            config,
+            topic,
+            spu_pool,
+            batches,
+            client_stats,
+        ))
     }
 
     async fn flush_all_batches(&self) -> Result<()> {
@@ -155,6 +168,9 @@ struct InnerTopicProducer {
     spu_pool: Arc<SpuPool>,
     record_accumulator: RecordAccumulator,
     producer_pool: Arc<ProducerPool>,
+    client_stats: Arc<RwLock<ClientStats>>,
+    // Or perhaps ClientStats goes here, so I can track # records.
+    // I don't know how to keep track of flush though
 }
 
 impl InnerTopicProducer {
@@ -338,6 +354,8 @@ impl TopicProducer {
                 },
             };
 
+        let client_stats = ClientStats::new_shared();
+
         let record_accumulator =
             RecordAccumulator::new(config.batch_size, partition_count, compression);
         let producer_pool = ProducerPool::shared(
@@ -345,6 +363,7 @@ impl TopicProducer {
             topic.clone(),
             spu_pool.clone(),
             record_accumulator.batches(),
+            client_stats.clone(),
         );
 
         Ok(Self {
@@ -354,6 +373,7 @@ impl TopicProducer {
                 spu_pool,
                 producer_pool,
                 record_accumulator,
+                client_stats,
             }),
             #[cfg(feature = "smartengine")]
             smartmodule_instance: Default::default(),
@@ -454,5 +474,11 @@ impl TopicProducer {
     /// This is needed once an error is present in order to send new records again.
     pub async fn clear_errors(&self) {
         self.inner.clear_errors().await;
+    }
+
+    /// Return the stats from the last batch sent
+    pub async fn stats(&self) -> ClientStats {
+        let stats_handle = self.inner.client_stats.read().await;
+        stats_handle.snapshot()
     }
 }

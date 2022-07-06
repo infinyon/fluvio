@@ -1777,6 +1777,7 @@ dependencies = [
  "built",
  "bytes",
  "cfg-if",
+ "chrono",
  "derive_builder",
  "dirs",
  "event-listener",
@@ -1797,6 +1798,7 @@ dependencies = [
  "serde",
  "serde_json",
  "siphasher",
+ "sysinfo 0.24.5",
  "thiserror",
  "tokio",
  "toml",
@@ -5243,6 +5245,7 @@ dependencies = [
  "libc",
  "ntapi",
  "once_cell",
+ "rayon",
  "winapi",
 ]
 

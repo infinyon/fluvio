@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 
 use async_lock::{Mutex, RwLock};
 use dataplane::ReplicaKey;
+use dataplane::batch::RawRecords;
 use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
@@ -17,6 +18,12 @@ use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
+use crate::dataplane::batch::Batch;
+use crate::stats::{ClientStats, ClientStatsUpdate};
+use std::time::{Instant, Duration};
+
+use sysinfo::{SystemExt, ProcessExt};
+
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
     config: Arc<TopicProducerConfig>,
@@ -25,6 +32,7 @@ pub(crate) struct PartitionProducer {
     batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
+    client_stats: Arc<RwLock<ClientStats>>,
 }
 
 impl PartitionProducer {
@@ -35,6 +43,7 @@ impl PartitionProducer {
         batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
+        client_stats: Arc<RwLock<ClientStats>>,
     ) -> Self {
         Self {
             config,
@@ -43,6 +52,7 @@ impl PartitionProducer {
             batches_lock,
             batch_events,
             last_error,
+            client_stats,
         }
     }
 
@@ -53,6 +63,7 @@ impl PartitionProducer {
         batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
+        client_stats: Arc<RwLock<ClientStats>>,
     ) -> Arc<Self> {
         Arc::new(PartitionProducer::new(
             config,
@@ -61,6 +72,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             error,
+            client_stats,
         ))
     }
 
@@ -74,9 +86,17 @@ impl PartitionProducer {
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
+        client_stats: Arc<RwLock<ClientStats>>,
     ) {
-        let producer =
-            PartitionProducer::shared(config, replica, spu_pool, batches, batch_events, error);
+        let producer = PartitionProducer::shared(
+            config,
+            replica,
+            spu_pool,
+            batches,
+            batch_events,
+            error,
+            client_stats,
+        );
         fluvio_future::task::spawn(async move {
             producer.run(end_event, flush_event).await;
         });
@@ -158,6 +178,7 @@ impl PartitionProducer {
         Ok(partition_spec.leader)
     }
 
+    // This is where I want to add the instrumenting
     /// Flush all the batches that are full or have reached the linger time.
     /// If force is set to true, flush all batches regardless of linger time.
     pub(crate) async fn flush(&self, force: bool) -> Result<()> {
@@ -167,6 +188,8 @@ impl PartitionProducer {
             .spu_pool
             .create_serial_socket_from_leader(leader)
             .await?;
+
+        let mut batch_size: usize = 0;
 
         let mut batches_ready = vec![];
         let mut batches = self.batches_lock.lock().await;
@@ -194,6 +217,9 @@ impl PartitionProducer {
 
         let mut batch_notifiers = vec![];
 
+        // This is for stats
+        let mut batch_size_track = VecDeque::new();
+
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
                 partition_index: self.replica.partition,
@@ -202,7 +228,13 @@ impl PartitionProducer {
             let notify = p_batch.notify.clone();
             let batch = p_batch.batch();
 
-            let raw_batch = batch.try_into()?;
+            let raw_batch: Batch<RawRecords> = batch.try_into()?;
+
+            //let batch_size = batch.batch_len;
+
+            // This doesn't get what I want. I need the header + payload (compressed or uncompressed, which ever the setting)
+            batch_size_track.push_back((batch_size, raw_batch.records_len() as u64));
+
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
             topic_request.partitions.push(partition_request);
@@ -212,25 +244,74 @@ impl PartitionProducer {
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
 
-        let response = spu_socket.send_receive(request).await?;
+        // Record the time it takes to send
+        // Maybe I need a sampling shortcut
+        // Take a cpu/memory sample here
 
-        for (batch_notifier, partition_response) in batch_notifiers.into_iter().zip(
-            response
-                .responses
-                .into_iter()
-                .flat_map(|response| response.partitions),
-        ) {
-            let base_offset = partition_response.base_offset;
-            let fluvio_error = partition_response.error_code.clone();
+        let mut sysinfo = sysinfo::System::new();
+        let pid = sysinfo::get_current_pid().map_err(|e| FluvioError::Other(e.to_string()))?;
+        let cpu_cores = sysinfo.physical_core_count().ok_or(FluvioError::Other(
+            "Unable to get number of CPU cores".to_string(),
+        ))? as f32;
+
+        sysinfo.refresh_process(pid);
+
+        let send_start_time = Instant::now();
+        // TODO: Wrap this call in a closure so this is easier to read
+        let response = spu_socket.send_receive(request).await?;
+        let send_latency = Instant::now().duration_since(send_start_time);
+
+        sysinfo.refresh_process(pid);
+
+        let proc = sysinfo.process(pid.clone()).ok_or(FluvioError::Other(
+            "Unable to read current process".to_string(),
+        ))?;
+        // Take a cpu/memory sample here
+        let mem_used = Some(proc.memory());
+
+        // FIXME: This is occasionally zero, which is unlikely to be the case
+        let cpu_used = Some(proc.cpu_usage() / cpu_cores);
+
+        for (i, (batch_notifier, response)) in batch_notifiers
+            .into_iter()
+            .zip(response.responses.iter())
+            .enumerate()
+        {
+            let base_offset = response.partitions[0].base_offset;
+            let fluvio_error = response.partitions[0].error_code.clone();
+
+            // How do I get the batch size?
+            // I think this is specifically where the sending occurs. What do I write to for saving?
             if let Err(_e) = batch_notifier
                 .send((base_offset, fluvio_error.clone()))
                 .await
             {
                 trace!("Failed to notify produce result because receiver was dropped");
             }
+
             if fluvio_error.is_error() {
                 return Err(FluvioError::from(ProducerError::from(fluvio_error)));
             }
+
+            let (batch_size, num_records) =
+                if let Some((batch_size, num_records)) = batch_size_track.pop_front() {
+                    (Some(batch_size), Some(num_records))
+                } else {
+                    (None, None)
+                };
+
+            // Update stats
+            // I need: size of batch, # of records, latency of send
+            let mut stats_handle = self.client_stats.write().await;
+            stats_handle.update(
+                ClientStatsUpdate::new()
+                    .latency(Some(send_latency))
+                    .bytes(batch_size)
+                    .records(num_records)
+                    .mem(mem_used)
+                    .cpu(cpu_used),
+            );
+            drop(stats_handle);
         }
 
         Ok(())
