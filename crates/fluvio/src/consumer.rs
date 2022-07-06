@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use async_lock::RwLock;
 use futures_util::stream::{Stream, select_all};
 use tracing::{debug, error, trace, instrument, info};
 use once_cell::sync::Lazy;
@@ -24,6 +25,7 @@ use dataplane::batch::Batch;
 use crate::FluvioError;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
+use crate::stats::ClientStats;
 use derive_builder::Builder;
 
 pub use dataplane::record::ConsumerRecord as Record;
@@ -39,6 +41,7 @@ pub struct PartitionConsumer<P = SpuPool> {
     topic: String,
     partition: i32,
     pool: Arc<P>,
+    client_stats: Arc<RwLock<ClientStats>>,
 }
 
 impl<P> PartitionConsumer<P>
@@ -50,6 +53,21 @@ where
             topic,
             partition,
             pool,
+            client_stats: ClientStats::new_shared(),
+        }
+    }
+
+    pub fn new_w_stats(
+        topic: String,
+        partition: i32,
+        pool: Arc<P>,
+        client_stats: Arc<RwLock<ClientStats>>,
+    ) -> Self {
+        Self {
+            topic,
+            partition,
+            pool,
+            client_stats,
         }
     }
 
@@ -651,11 +669,16 @@ impl PartitionSelectionStrategy {
 pub struct MultiplePartitionConsumer {
     strategy: PartitionSelectionStrategy,
     pool: Arc<SpuPool>,
+    client_stats: Arc<RwLock<ClientStats>>,
 }
 
 impl MultiplePartitionConsumer {
     pub(crate) fn new(strategy: PartitionSelectionStrategy, pool: Arc<SpuPool>) -> Self {
-        Self { strategy, pool }
+        Self {
+            strategy,
+            pool,
+            client_stats: ClientStats::new_shared(),
+        }
     }
 
     /// Continuously streams events from a particular offset in the selected partitions
@@ -752,7 +775,14 @@ impl MultiplePartitionConsumer {
             .selection(self.pool.clone())
             .await?
             .into_iter()
-            .map(|(topic, partition)| PartitionConsumer::new(topic, partition, self.pool.clone()))
+            .map(|(topic, partition)| {
+                PartitionConsumer::new_w_stats(
+                    topic,
+                    partition,
+                    self.pool.clone(),
+                    self.client_stats.clone(),
+                )
+            })
             .collect::<Vec<_>>();
 
         let streams_future = consumers
@@ -764,6 +794,12 @@ impl MultiplePartitionConsumer {
         let streams = streams_result.into_iter().collect::<Result<Vec<_>, _>>()?;
 
         Ok(select_all(streams))
+    }
+
+    /// Return the stats from the last batch sent
+    pub async fn stats(&self) -> ClientStats {
+        let stats_handle = self.client_stats.read().await;
+        stats_handle.snapshot()
     }
 }
 

@@ -3,14 +3,20 @@ use std::collections::VecDeque;
 
 use async_lock::{Mutex, RwLock};
 use dataplane::ReplicaKey;
-use dataplane::batch::RawRecords;
-use dataplane::produce::{DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest};
+use dataplane::batch::{RawRecords, Batch, BATCH_FILE_HEADER_SIZE};
+use dataplane::produce::{
+    DefaultPartitionRequest, DefaultTopicRequest, DefaultProduceRequest, ProduceRequest,
+    ProduceResponse,
+};
+use dataplane::record::RecordSet;
 use fluvio_future::timer::sleep;
 use fluvio_types::SpuId;
 use fluvio_types::event::StickyEvent;
+use fluvio_socket::SocketError;
 use tracing::{debug, info, instrument, error, trace};
 
 use crate::error::{Result, FluvioError};
+use crate::sockets::VersionedSerialSocket;
 use crate::spu::SpuPool;
 use crate::TopicProducerConfig;
 
@@ -18,9 +24,8 @@ use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
-use crate::dataplane::batch::Batch;
 use crate::stats::{ClientStats, ClientStatsUpdate};
-use std::time::{Instant, Duration};
+use std::time::Instant;
 
 use sysinfo::{SystemExt, ProcessExt};
 
@@ -189,8 +194,6 @@ impl PartitionProducer {
             .create_serial_socket_from_leader(leader)
             .await?;
 
-        let mut batch_size: usize = 0;
-
         let mut batches_ready = vec![];
         let mut batches = self.batches_lock.lock().await;
         while !batches.is_empty() {
@@ -217,8 +220,7 @@ impl PartitionProducer {
 
         let mut batch_notifiers = vec![];
 
-        // This is for stats
-        let mut batch_size_track = VecDeque::new();
+        let mut flush_total_bytes = 0;
 
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
@@ -230,10 +232,7 @@ impl PartitionProducer {
 
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
-            //let batch_size = batch.batch_len;
-
-            // This doesn't get what I want. I need the header + payload (compressed or uncompressed, which ever the setting)
-            batch_size_track.push_back((batch_size, raw_batch.records_len() as u64));
+            flush_total_bytes += BATCH_FILE_HEADER_SIZE + &raw_batch.records().0.len();
 
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
@@ -244,33 +243,7 @@ impl PartitionProducer {
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
 
-        // Record the time it takes to send
-        // Maybe I need a sampling shortcut
-        // Take a cpu/memory sample here
-
-        let mut sysinfo = sysinfo::System::new();
-        let pid = sysinfo::get_current_pid().map_err(|e| FluvioError::Other(e.to_string()))?;
-        let cpu_cores = sysinfo.physical_core_count().ok_or(FluvioError::Other(
-            "Unable to get number of CPU cores".to_string(),
-        ))? as f32;
-
-        sysinfo.refresh_process(pid);
-
-        let send_start_time = Instant::now();
-        // TODO: Wrap this call in a closure so this is easier to read
-        let response = spu_socket.send_receive(request).await?;
-        let send_latency = Instant::now().duration_since(send_start_time);
-
-        sysinfo.refresh_process(pid);
-
-        let proc = sysinfo.process(pid.clone()).ok_or(FluvioError::Other(
-            "Unable to read current process".to_string(),
-        ))?;
-        // Take a cpu/memory sample here
-        let mem_used = Some(proc.memory());
-
-        // FIXME: This is occasionally zero, which is unlikely to be the case
-        let cpu_used = Some(proc.cpu_usage() / cpu_cores);
+        let (response, stats_update) = Self::measure_send_receive(&spu_socket, request).await?;
 
         for (i, (batch_notifier, response)) in batch_notifiers
             .into_iter()
@@ -280,8 +253,6 @@ impl PartitionProducer {
             let base_offset = response.partitions[0].base_offset;
             let fluvio_error = response.partitions[0].error_code.clone();
 
-            // How do I get the batch size?
-            // I think this is specifically where the sending occurs. What do I write to for saving?
             if let Err(_e) = batch_notifier
                 .send((base_offset, fluvio_error.clone()))
                 .await
@@ -293,27 +264,50 @@ impl PartitionProducer {
                 return Err(FluvioError::from(ProducerError::from(fluvio_error)));
             }
 
-            let (batch_size, num_records) =
-                if let Some((batch_size, num_records)) = batch_size_track.pop_front() {
-                    (Some(batch_size), Some(num_records))
-                } else {
-                    (None, None)
-                };
-
             // Update stats
-            // I need: size of batch, # of records, latency of send
             let mut stats_handle = self.client_stats.write().await;
-            stats_handle.update(
-                ClientStatsUpdate::new()
-                    .latency(Some(send_latency))
-                    .bytes(batch_size)
-                    .records(num_records)
-                    .mem(mem_used)
-                    .cpu(cpu_used),
-            );
+            stats_handle.update(stats_update.bytes(Some(flush_total_bytes)));
             drop(stats_handle);
         }
 
         Ok(())
+    }
+
+    async fn measure_send_receive(
+        socket: &VersionedSerialSocket,
+        request: ProduceRequest<RecordSet<RawRecords>>,
+    ) -> Result<(ProduceResponse, ClientStatsUpdate)> {
+        let mut sysinfo = sysinfo::System::new();
+        let pid = sysinfo::get_current_pid().map_err(|e| FluvioError::Other(e.to_string()))?;
+        let cpu_cores = sysinfo.physical_core_count().ok_or(FluvioError::Other(
+            "Unable to get number of CPU cores".to_string(),
+        ))? as f32;
+
+        sysinfo.refresh_process(pid);
+
+        let send_start_time = Instant::now();
+
+        let response = socket.send_receive(request).await?;
+
+        let send_latency = Some(send_start_time.elapsed());
+
+        sysinfo.refresh_process(pid);
+
+        let proc = sysinfo.process(pid.clone()).ok_or(FluvioError::Other(
+            "Unable to read current process".to_string(),
+        ))?;
+
+        // Take a cpu/memory sample here
+        let mem_used = Some(proc.memory());
+
+        // FIXME: This is occasionally zero, which is unlikely to be the case
+        let cpu_used = Some(proc.cpu_usage() / cpu_cores);
+
+        let stats_update = ClientStatsUpdate::new()
+            .cpu(cpu_used)
+            .mem(mem_used)
+            .latency(send_latency);
+
+        Ok((response, stats_update))
     }
 }

@@ -163,6 +163,10 @@ impl ProduceOpt {
                     if let Some(produce_output) = produce_output {
                         produce_outputs.push(produce_output);
                     }
+
+                    if self.stats {
+                        println!("{:#?}", producer.stats().await);
+                    }
                 }
 
                 // ensure all records were properly sent
@@ -174,6 +178,10 @@ impl ProduceOpt {
                 .await
                 .into_iter()
                 .collect::<Result<Vec<_>, _>>()?;
+
+                if self.stats {
+                    println!("{:?}", producer.stats().await);
+                }
             }
             None => {
                 let mut lines = BufReader::new(std::io::stdin()).lines();
@@ -189,9 +197,13 @@ impl ProduceOpt {
                     if self.interactive_mode() {
                         print_cli_ok!();
                         if self.stats {
-                            println!("{:?}", producer.stats().await);
+                            println!("{:#?}", producer.stats().await);
                         }
                         eprint!("> ");
+                    } else {
+                        if self.stats {
+                            println!("{:#?}", producer.stats().await);
+                        }
                     }
                 }
             }

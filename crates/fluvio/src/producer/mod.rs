@@ -42,6 +42,7 @@ use self::partition_producer::PartitionProducer;
 pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
 use crate::error::Result;
+use crate::stats::ClientStatsUpdate;
 
 /// An interface for producing events to a particular topic
 ///
@@ -60,8 +61,6 @@ struct ProducerPool {
     flush_events: Vec<(Arc<EventHandler>, Arc<EventHandler>)>,
     end_events: Vec<Arc<StickyEvent>>,
     errors: Vec<Arc<RwLock<Option<ProducerError>>>>,
-    client_stats: Arc<RwLock<ClientStats>>,
-    // Maybe I need to keep track of stats here?
 }
 
 impl ProducerPool {
@@ -100,7 +99,6 @@ impl ProducerPool {
             end_events,
             flush_events,
             errors,
-            client_stats,
         }
     }
 
@@ -205,6 +203,10 @@ impl InnerTopicProducer {
             .record_accumulator
             .push_record(record, partition)
             .await?;
+
+        // Increase record count stat
+        let mut stats_handle = self.client_stats.write().await;
+        stats_handle.update(ClientStatsUpdate::new().records(Some(1)));
 
         Ok(push_record)
     }

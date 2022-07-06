@@ -436,6 +436,8 @@ impl ConsumeOpt {
         // Without TTY, we panic when attempting to read from EventStream
         // In CI, we do not have a TTY, so we need this check to avoid reading EventStream
         // EventStream is only used by Tui+Crossterm to interact with table
+
+        // FIXME: The progress bar eats the last printed record. It needs to linefeed before updating
         if io::stdout().is_tty() {
             // This needs to know if it is a tty before opening this
             let mut user_input_reader = EventStream::new();
@@ -477,7 +479,9 @@ impl ConsumeOpt {
                                 &pb,
                             );
 
-                            //println!("{:?}", consumer.stats());
+                            if self.stats {
+                                println!("{:?}\n", consumer.stats().await);
+                            }
 
                             if let Some(potential_offset) = maybe_potential_offset {
                                 if record.offset >= potential_offset {
@@ -531,6 +535,10 @@ impl ConsumeOpt {
                     &mut None,
                     &pb,
                 );
+
+                if self.stats {
+                    println!("{:?}\n", consumer.stats().await);
+                }
 
                 if let Some(potential_offset) = maybe_potential_offset {
                     if record.offset >= potential_offset {
@@ -644,11 +652,6 @@ impl ConsumeOpt {
                 // (Some(_), None) only if JSON cannot be printed, so skip.
                 _ => debug!("Skipping record that cannot be formatted"),
             }
-
-            // Print stats
-            // if self.stats {
-            // consumer.stats()
-            //}
         } else if let Some(term) = terminal {
             if let Some(table) = table_model {
                 table.render(term);
