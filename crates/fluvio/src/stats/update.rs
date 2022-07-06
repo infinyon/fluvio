@@ -12,7 +12,7 @@ pub struct ClientStatsUpdate {
     latency: Option<u64>,
     /// Memory usage of process, in kilobytes
     mem: Option<u64>,
-    /// Number of records tranferred
+    /// Number of records transferred
     records: Option<u64>,
     /// Last offset
     offset: Option<i32>,

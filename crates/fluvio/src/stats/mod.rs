@@ -1,5 +1,7 @@
 mod data_point;
 mod update;
+mod histogram;
+pub use histogram::ClientStatsHistogram;
 pub use data_point::ClientStatsDataPoint;
 pub use update::ClientStatsUpdate;
 
@@ -7,6 +9,7 @@ use std::sync::atomic::{AtomicU32, AtomicU64, AtomicI64, AtomicI32, Ordering};
 use std::{
     time::{Duration, Instant},
 };
+use async_channel::{unbounded, Sender, Receiver};
 use chrono::Utc;
 use std::sync::Arc;
 use sysinfo::{self, PidExt};
@@ -53,6 +56,8 @@ pub struct ClientStats {
     last_latency: AtomicU64,
     /// Data volume of last data transfer, in bytes
     last_bytes: AtomicU64,
+    /// The number of records in the last batch
+    last_batch_records: AtomicU64,
     /// Total number of records processed since struct created
     num_records: AtomicU64,
     /// Data volume of all data transferred, in bytes
@@ -91,6 +96,7 @@ impl Default for ClientStats {
             last_updated: AtomicI64::new(unix_epoch),
             last_latency: AtomicU64::new(0),
             last_bytes: AtomicU64::new(0),
+            last_batch_records: AtomicU64::new(0),
             num_records: AtomicU64::new(0),
             total_bytes: AtomicU64::new(0),
             last_mem: AtomicU64::new(0),
@@ -200,7 +206,7 @@ impl ClientStats {
     /// Update the instance with values from `ClientStatsUpdate`
     pub fn update(&self, update: ClientStatsUpdate) {
         if let Some(bytes) = update.bytes() {
-            self.last_bytes.fetch_add(bytes, STATS_MEM_ORDER);
+            self.last_bytes.store(bytes, STATS_MEM_ORDER);
             self.total_bytes.fetch_add(bytes, STATS_MEM_ORDER);
         }
 
@@ -217,6 +223,7 @@ impl ClientStats {
         }
 
         if let Some(records) = update.records() {
+            self.last_batch_records.store(records, STATS_MEM_ORDER);
             self.num_records.fetch_add(records, STATS_MEM_ORDER);
         }
 
@@ -275,7 +282,12 @@ impl ClientStats {
         unix_timestamp_nanos() - self.start_time.load(STATS_MEM_ORDER)
     }
 
-    /// Returns the number of records transferred
+    /// Returns the number of records transferred in last batch
+    pub fn last_records(&self) -> u64 {
+        self.num_records.load(STATS_MEM_ORDER)
+    }
+
+    /// Returns the number of records transferred total
     pub fn records(&self) -> u64 {
         self.num_records.load(STATS_MEM_ORDER)
     }

@@ -28,6 +28,8 @@ pub struct ClientStatsDataPoint {
     last_latency: QuantDuration,
     /// Data volume of last data transfer
     last_bytes: DataVolume,
+    /// Total number of records in last batch
+    last_batch_records: u64,
     /// Total number of records processed since struct created
     num_records: u64,
     /// Data volume of all data transferred
@@ -65,6 +67,7 @@ impl From<&ClientStats> for ClientStatsDataPoint {
                 let scalar: AmountT = (current.last_bytes() as u16).into();
                 Self::convert_to_largest_data_unit(scalar * BYTE)
             },
+            last_batch_records: current.last_records(),
             num_records: current.records(),
             total_bytes: {
                 #[cfg(not(target_arch = "wasm32"))]
@@ -154,7 +157,12 @@ impl ClientStatsDataPoint {
         Self::convert_to_largest_time_unit(scalar * NANOSECOND)
     }
 
-    /// Returns the number of records transferred
+    /// Returns the number of records transferred in last batch
+    pub fn last_records(&self) -> u64 {
+        self.last_batch_records
+    }
+
+    /// Returns the number of records transferred in total
     pub fn records(&self) -> u64 {
         self.num_records
     }
@@ -175,10 +183,11 @@ impl ClientStatsDataPoint {
 
         let data_related = vec![
             "offset".to_string(),
+            "last_records".to_string(),
             "total_records".to_string(),
+            "last_bytes".to_string(),
             "total_bytes".to_string(),
             "last_latency_ns".to_string(),
-            "last_bytes".to_string(),
             "throughput_kbps".to_string(),
         ];
 
@@ -217,10 +226,11 @@ impl ClientStatsDataPoint {
 
         let data_related = vec![
             self.offset().to_string(),
+            self.last_records().to_string(),
             self.records().to_string(),
+            (self.last_bytes().equiv_amount(BYTE) as u64).to_string(),
             (self.total_bytes().equiv_amount(BYTE) as u64).to_string(),
             self.last_latency().equiv_amount(NANOSECOND).to_string(),
-            (self.last_bytes().equiv_amount(BYTE) as u64).to_string(),
             format!("{:.2}", self.throughput().equiv_amount(KILOBYTE_PER_SECOND)),
         ];
 
