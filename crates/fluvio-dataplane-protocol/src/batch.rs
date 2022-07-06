@@ -156,6 +156,16 @@ impl<R> Batch<R> {
         self.header.decode(src, version)?;
         Ok(())
     }
+
+    /// Return the size of the batch header + records
+    pub fn batch_len(&self) -> usize {
+        self.len()
+    }
+
+    /// Return the size of the batch header + records
+    pub fn len(&self) -> usize {
+        self.batch_len as usize
+    }
 }
 
 impl TryFrom<Batch<RawRecords>> for Batch {
@@ -281,6 +291,7 @@ impl<T: Into<MemoryRecords>> From<T> for Batch {
 
         batch.records = records;
         let len = batch.records.len() as i32;
+        batch.batch_len += (BATCH_FILE_HEADER_SIZE as i32) + len;
         batch.header.last_offset_delta = if len > 0 { len - 1 } else { len };
         batch
     }
@@ -321,7 +332,7 @@ where
     R: BatchRecords,
 {
     fn write_size(&self, version: Version) -> usize {
-        BATCH_PREAMBLE_SIZE + BATCH_HEADER_SIZE + self.records.write_size(version)
+        BATCH_FILE_HEADER_SIZE + self.records.write_size(version)
     }
 
     fn encode<T>(&self, dest: &mut T, version: Version) -> Result<(), Error>
@@ -499,7 +510,10 @@ pub mod memory {
 
     impl From<MemoryBatch> for Batch<MemoryRecords> {
         fn from(p_batch: MemoryBatch) -> Self {
-            let mut batch = Self::default();
+            let mut batch = Self {
+                batch_len: p_batch.current_size_uncompressed as i32,
+                ..Default::default()
+            };
             let compression = p_batch.compression();
             let records = p_batch.records;
 

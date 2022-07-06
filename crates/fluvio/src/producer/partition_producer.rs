@@ -213,7 +213,7 @@ impl PartitionProducer {
 
         let mut batch_notifiers = vec![];
 
-        let mut flush_total_bytes = 0;
+        let mut client_stats_update = ClientStatsUpdate::default();
 
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
@@ -225,8 +225,18 @@ impl PartitionProducer {
 
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
+            // If we are collecting stats, then record
+            // the size of all batches about to be sent
             if self.client_stats.is_some() {
-                flush_total_bytes += raw_batch.batch_len;
+                // Type conversion for `quantities` crate
+                #[cfg(not(target_arch = "wasm32"))]
+                let scratch: AmountT = raw_batch.len() as f64;
+                #[cfg(target_arch = "wasm32")]
+                let scratch: AmountT = raw_batch.len() as f32;
+
+                let batch_bytes = Some(scratch * BYTE);
+
+                client_stats_update.bytes(batch_bytes);
             }
 
             partition_request.records.batches.push(raw_batch);
@@ -238,16 +248,15 @@ impl PartitionProducer {
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
 
-        let (response, stats_update) = if let Some(shared) = self.client_stats.as_ref() {
-            shared
+        let response = if let Some(shared) = self.client_stats.as_ref() {
+            let (response, send_latency) = shared
                 .load()
-                .measure_send_receive(&spu_socket, request)
-                .await?
+                .send_and_measure_latency(&spu_socket, request)
+                .await?;
+            client_stats_update += send_latency;
+            response
         } else {
-            (
-                spu_socket.send_receive(request).await?,
-                ClientStatsUpdate::default(),
-            )
+            spu_socket.send_receive(request).await?
         };
 
         let mut base_offset = 0;
@@ -268,22 +277,11 @@ impl PartitionProducer {
             }
         }
 
-        // Update stats
+        // Commit stats update
         if let Some(client_stats) = self.client_stats.as_ref() {
-            // Type conversion for `quantities` crate
-
-            #[cfg(not(target_arch = "wasm32"))]
-            let scratch: AmountT = flush_total_bytes as f64;
-            #[cfg(target_arch = "wasm32")]
-            let scratch: AmountT = flush_total_bytes as f32;
-
-            let flush_total_bytes = Some(scratch * BYTE);
-
             ClientStats::shared_update(
                 client_stats,
-                stats_update
-                    .bytes(flush_total_bytes)
-                    .offset(Some(base_offset as i32)),
+                client_stats_update.offset(Some(base_offset as i32)),
             );
         }
 

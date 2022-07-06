@@ -1,6 +1,7 @@
 use std::{
     time::{Duration, Instant},
 };
+use std::ops::{Add, AddAssign};
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use sysinfo::{self, PidExt};
@@ -123,7 +124,7 @@ impl ClientStats {
 
                     let mem_used = Some(scratch * KILOBYTE);
 
-                    let cpu_used_sample = proc.cpu_usage()  ;
+                    let cpu_used_sample = proc.cpu_usage();
                     //debug!("cpu {:#?}", cpu_used_sample);
 
                     let cpu_used = Some(cpu_used_sample / cpu_cores);
@@ -262,7 +263,7 @@ impl ClientStats {
     }
 
     /// Record the latency of a producer request
-    pub async fn measure_send_receive(
+    pub async fn send_and_measure_latency(
         &self,
         socket: &VersionedSerialSocket,
         request: ProduceRequest<RecordSet<RawRecords>>,
@@ -351,7 +352,7 @@ impl ClientStats {
 }
 
 /// Update builder for `ClientStats`
-#[derive(Debug, Clone, Default, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct ClientStatsUpdate {
     bytes: Option<DataVolume>,
     cpu: Option<f32>,
@@ -359,6 +360,52 @@ pub struct ClientStatsUpdate {
     mem: Option<DataVolume>,
     records: Option<u64>,
     offset: Option<i32>,
+}
+
+impl Add for ClientStatsUpdate {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        let bytes = match (self.bytes, other.bytes) {
+            (Some(a), Some(b)) => Some(a + b),
+            (opt_a, opt_b) => opt_a.or(opt_b),
+        };
+        let cpu = match (self.cpu, other.cpu) {
+            (Some(a), Some(b)) => Some(a + b),
+            (opt_a, opt_b) => opt_a.or(opt_b),
+        };
+        let latency = match (self.latency, other.latency) {
+            (Some(a), Some(b)) => Some(a + b),
+            (opt_a, opt_b) => opt_a.or(opt_b),
+        };
+        let mem = match (self.mem, other.mem) {
+            (Some(a), Some(b)) => Some(a + b),
+            (opt_a, opt_b) => opt_a.or(opt_b),
+        };
+        let records = match (self.records, other.records) {
+            (Some(a), Some(b)) => Some(a + b),
+            (opt_a, opt_b) => opt_a.or(opt_b),
+        };
+        let offset = match (self.offset, other.offset) {
+            (Some(a), Some(b)) => Some(a + b),
+            (opt_a, opt_b) => opt_a.or(opt_b),
+        };
+
+        Self {
+            bytes,
+            cpu,
+            latency,
+            mem,
+            records,
+            offset,
+        }
+    }
+}
+
+impl AddAssign for ClientStatsUpdate {
+    fn add_assign(&mut self, other: Self) {
+        *self = *self + other
+    }
 }
 
 impl ClientStatsUpdate {
