@@ -1,6 +1,6 @@
 [package]
 name = "fluvio-extension-common"
-version = "0.7.6"
+version = "0.8.0"
 edition = "2021"
 authors = ["Fluvio Contributors <team@fluvio.io>"]
 description = "Fluvio extension common"
@@ -26,5 +26,5 @@ futures-lite = { version = "1.7.0" }
 thiserror = "1.0.20"
 semver = { version = "1.0.0", features = ["serde"] }
 
-fluvio = { version = "0.12.0", path = "../fluvio", optional = true }
+fluvio = { version = "0.13.0", path = "../fluvio", optional = true }
 fluvio-package-index = { version = "0.6", path = "../fluvio-package-index" }

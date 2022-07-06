@@ -23,7 +23,7 @@ use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
-use crate::stats::{ClientStats, ClientStatsUpdate};
+use crate::stats::{ClientStatsUpdate, SharedClientStats};
 use std::time::Instant;
 
 use quantities::prelude::*;
@@ -38,7 +38,7 @@ pub(crate) struct PartitionProducer {
     batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
     batch_events: Arc<BatchEvents>,
     last_error: Arc<RwLock<Option<ProducerError>>>,
-    client_stats: Arc<RwLock<ClientStats>>,
+    client_stats: Option<SharedClientStats>,
 }
 
 impl PartitionProducer {
@@ -49,7 +49,7 @@ impl PartitionProducer {
         batches_lock: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         last_error: Arc<RwLock<Option<ProducerError>>>,
-        client_stats: Arc<RwLock<ClientStats>>,
+        maybe_client_stats: Option<SharedClientStats>,
     ) -> Self {
         Self {
             config,
@@ -58,7 +58,7 @@ impl PartitionProducer {
             batches_lock,
             batch_events,
             last_error,
-            client_stats,
+            client_stats: maybe_client_stats,
         }
     }
 
@@ -69,7 +69,7 @@ impl PartitionProducer {
         batches: Arc<Mutex<VecDeque<ProducerBatch>>>,
         batch_events: Arc<BatchEvents>,
         error: Arc<RwLock<Option<ProducerError>>>,
-        client_stats: Arc<RwLock<ClientStats>>,
+        maybe_client_stats: Option<SharedClientStats>,
     ) -> Arc<Self> {
         Arc::new(PartitionProducer::new(
             config,
@@ -78,7 +78,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             error,
-            client_stats,
+            maybe_client_stats,
         ))
     }
 
@@ -92,7 +92,7 @@ impl PartitionProducer {
         error: Arc<RwLock<Option<ProducerError>>>,
         end_event: Arc<StickyEvent>,
         flush_event: (Arc<EventHandler>, Arc<EventHandler>),
-        client_stats: Arc<RwLock<ClientStats>>,
+        maybe_client_stats: Option<SharedClientStats>,
     ) {
         let producer = PartitionProducer::shared(
             config,
@@ -101,7 +101,7 @@ impl PartitionProducer {
             batches,
             batch_events,
             error,
-            client_stats,
+            maybe_client_stats,
         );
         fluvio_future::task::spawn(async move {
             producer.run(end_event, flush_event).await;
@@ -184,7 +184,6 @@ impl PartitionProducer {
         Ok(partition_spec.leader)
     }
 
-    // This is where I want to add the instrumenting
     /// Flush all the batches that are full or have reached the linger time.
     /// If force is set to true, flush all batches regardless of linger time.
     pub(crate) async fn flush(&self, force: bool) -> Result<()> {
@@ -233,7 +232,9 @@ impl PartitionProducer {
 
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
 
-            flush_total_bytes += BATCH_FILE_HEADER_SIZE + raw_batch.records().0.len();
+            if self.client_stats.is_some() {
+                flush_total_bytes += BATCH_FILE_HEADER_SIZE + raw_batch.records().0.len();
+            }
 
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
@@ -244,7 +245,14 @@ impl PartitionProducer {
         request.timeout = self.config.timeout;
         request.topics.push(topic_request);
 
-        let (response, stats_update) = Self::measure_send_receive(&spu_socket, request).await?;
+        let (response, stats_update) = if self.client_stats.is_some() {
+            Self::measure_send_receive(&spu_socket, request).await?
+        } else {
+            (
+                spu_socket.send_receive(request).await?,
+                ClientStatsUpdate::default(),
+            )
+        };
 
         for (batch_notifier, response) in batch_notifiers.into_iter().zip(response.responses.iter())
         {
@@ -262,19 +270,33 @@ impl PartitionProducer {
                 return Err(FluvioError::from(ProducerError::from(fluvio_error)));
             }
 
-            // Type conversion for `quantities` crate
-
-            #[cfg(not(target_arch = "wasm32"))]
-            let scratch: AmountT = flush_total_bytes as f64;
-            #[cfg(target_arch = "wasm32")]
-            let scratch: AmountT = flush_total_bytes as f32;
-
-            let flush_total_bytes = Some(scratch * BYTE);
-
             // Update stats
-            let mut stats_handle = self.client_stats.write().await;
-            stats_handle.update(stats_update.bytes(flush_total_bytes));
-            drop(stats_handle);
+            if let Some(client_stats) = &self.client_stats {
+                // Type conversion for `quantities` crate
+
+                #[cfg(not(target_arch = "wasm32"))]
+                let scratch: AmountT = flush_total_bytes as f64;
+                #[cfg(target_arch = "wasm32")]
+                let scratch: AmountT = flush_total_bytes as f32;
+
+                let flush_total_bytes = Some(scratch * BYTE);
+
+                client_stats.rcu(|inner| {
+                    if let Some(s) = inner.clone() {
+                        let mut stats = *s;
+
+                        stats.update(
+                            stats_update
+                                .bytes(flush_total_bytes)
+                                .offset(Some(base_offset as i32)),
+                        );
+
+                        Some(Arc::new(stats))
+                    } else {
+                        None
+                    }
+                });
+            }
         }
 
         Ok(())

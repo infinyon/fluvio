@@ -31,6 +31,10 @@ fn default_isolation() -> Isolation {
     Isolation::default()
 }
 
+fn default_stats() -> bool {
+    false
+}
+
 /// Options used to adjust the behavior of the Producer.
 /// Create this struct with [`TopicProducerConfigBuilder`].
 ///
@@ -64,6 +68,10 @@ pub struct TopicProducerConfig {
     /// [`Isolation::ReadUncommitted`] just waits for the leader to accept the message.
     #[builder(default = "default_isolation()")]
     pub(crate) isolation: Isolation,
+
+    /// Collect resource and data transfer stats used by Fluvio producer
+    #[builder(default = "default_stats()")]
+    pub(crate) stats: bool,
 }
 
 impl Default for TopicProducerConfig {
@@ -75,6 +83,7 @@ impl Default for TopicProducerConfig {
             compression: None,
             timeout: default_timeout(),
             isolation: default_isolation(),
+            stats: default_stats(),
         }
     }
 }

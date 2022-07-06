@@ -2,7 +2,8 @@ use std::sync::Arc;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 use std::{io::Error as IoError, path::PathBuf};
-use std::io::ErrorKind;
+use std::io::{ErrorKind, self};
+use crossterm::tty::IsTty;
 use futures::future::join_all;
 use clap::Parser;
 use indicatif::ProgressBar;
@@ -12,7 +13,7 @@ use humantime::parse_duration;
 
 use fluvio::{
     Compression, Fluvio, FluvioError, TopicProducer, TopicProducerConfigBuilder, RecordKey,
-    ProduceOutput,
+    ProduceOutput, ClientStats,
 };
 use fluvio::dataplane::Isolation;
 use fluvio_types::print_cli_ok;
@@ -75,13 +76,9 @@ pub struct ProduceOpt {
     #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
 
-    /// Disable stats in progress bar
+    /// Display producer session statistics
     #[clap(long)]
-    pub no_stats: bool,
-
-    /// Disable progress bar
-    #[clap(long)]
-    pub disable_progressbar: bool,
+    pub stats: bool,
 }
 
 fn validate_key_separator(separator: &str) -> std::result::Result<(), String> {
@@ -129,6 +126,13 @@ impl ProduceOpt {
             config_builder
         };
 
+        // Stats
+        let config_builder = if self.stats {
+            config_builder.stats(self.stats)
+        } else {
+            config_builder
+        };
+
         let config = config_builder.build().map_err(FluvioError::from)?;
         let producer = Arc::new(
             fluvio
@@ -136,44 +140,26 @@ impl ProduceOpt {
                 .await?,
         );
 
-        //let pb = Arc::new(self.status_bar(producer.clone()).await);
+        let maybe_stats_bar = if io::stdout().is_tty() {
+            if self.stats {
+                let stats_bar = indicatif::ProgressBar::with_draw_target(
+                    100,
+                    indicatif::ProgressDrawTarget::stderr(),
+                );
+                stats_bar.set_style(indicatif::ProgressStyle::default_bar().template("{msg}"));
 
-        //let update_pb = pb.clone();
-        //let update_producer = producer.clone();
+                // Handle ctrl+c to print summary stats
+                init_ctrlc(producer.clone(), stats_bar.clone()).await?;
 
-        //fluvio_future::task::spawn(async move {
-        //    loop {
-        //        fluvio_future::timer::sleep(Duration::from_millis(25)).await;
-        //        update_pb.set_message(format!("{}", update_producer.stats().await));
-        //    }
-        //});
+                Some(stats_bar)
+            } else {
+                None
+            }
+        } else {
+            // No tty
+            None
+        };
 
-        //let progress_bar_thread = fluvio_future::task::spawn(async move {
-        //    let pb_2 = indicatif::ProgressBar::hidden();
-
-        //    let m = indicatif::MultiProgress::new();
-
-        //    let pb_1 = m.insert(0, indicatif::ProgressBar::new(100));
-        //    pb_1.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
-        //    pb_1.enable_steady_tick(1000);
-
-        //    //let pb_2 = m.insert(1, indicatif::ProgressBar::hidden());
-        //    let pb_2 = m.insert(1, indicatif::ProgressBar::new(100));
-        //    pb_2.set_style(indicatif::ProgressStyle::default_bar().template("{msg}"));
-        //    pb_2.set_message("Where am I?");
-
-        //    m.set_move_cursor(false);
-        //    m.join().unwrap();
-        //});
-
-        // Check on tty later
-        let stats_bar =
-            indicatif::ProgressBar::with_draw_target(100, indicatif::ProgressDrawTarget::stderr());
-        stats_bar.set_style(indicatif::ProgressStyle::default_bar().template("{msg}"));
-
-        self.init_ctrlc(producer.clone(), stats_bar.clone()).await?;
-
-        // TODO: This should still print a progress bar, just in case the file is large
         if self.raw {
             // Read all input and send as one record
             let buffer = match &self.file {
@@ -185,60 +171,52 @@ impl ProduceOpt {
                 }
             };
 
-            stats_bar.set_message(producer.stats().await.print_current_stats());
-            //stats_bar.tick();
             let produce_output = producer.send(RecordKey::NULL, buffer).await?;
-            stats_bar.set_message(producer.stats().await.print_current_stats());
-            //stats_bar.tick();
+
+            if self.stats {
+                if let (Some(stats_bar), Some(producer_stats)) =
+                    (&maybe_stats_bar, producer.stats().await)
+                {
+                    stats_bar.set_message(format_current_stats(producer_stats.snapshot()).await);
+                }
+            }
 
             produce_output.wait().await?;
         } else {
             // Read input line-by-line and send as individual records
-            self.produce_lines(&producer, &stats_bar).await?;
-            //self.produce_lines(&producer).await?;
+            self.produce_lines(&producer, &maybe_stats_bar).await?;
+        };
 
-            //let produce_fut = self.produce_lines(&producer);
-
-            //pin_mut!(progress_bar_thread);
-            //pin_mut!(produce_fut);
-
-            //let v = match future::select(progress_bar_thread, produce_fut).await {
-            //    Either::Left((_, _)) => "progress_bar", // `value1` is resolved from `future1`
-            //    // `_` represents `future2`
-            //    Either::Right((_, _)) => "producer", // `value2` is resolved from `future2`
-            //                                         // `_` represents `future1`
-            //};
-            //println!("{}", v);
+        if self.stats {
+            if let Some(stats_bar) = &maybe_stats_bar {
+                producer_summary(producer.clone(), stats_bar).await;
+            }
         }
 
         producer.flush().await?;
         if self.interactive_mode() {
             print_cli_ok!();
-            // I should print the client stats here
-            //stats_bar.set_message(producer.stats().await.print_current_stats());
-            //stats_bar.set_message(producer.stats().await.print_summary_stats());
         }
 
         Ok(())
     }
 
-    async fn produce_lines(&self, producer: &TopicProducer, stats_bar: &ProgressBar) -> Result<()> {
-        //async fn produce_lines(&self, producer: &TopicProducer) -> Result<()> {
+    async fn produce_lines(
+        &self,
+        producer: &TopicProducer,
+        maybe_stats_bar: &Option<ProgressBar>,
+    ) -> Result<()> {
         match &self.file {
             Some(path) => {
                 let reader = BufReader::new(File::open(path)?);
                 let mut produce_outputs = vec![];
                 for line in reader.lines().filter_map(|it| it.ok()) {
-                    let produce_output = self.produce_line(producer, &line, stats_bar).await?;
-                    //let produce_output = self.produce_line(producer, &line).await?;
+                    let produce_output =
+                        self.produce_line(producer, &line, maybe_stats_bar).await?;
 
                     if let Some(produce_output) = produce_output {
                         produce_outputs.push(produce_output);
                     }
-
-                    //if self.stats {
-                    //    println!("{}", producer.stats().await);
-                    //}
                 }
 
                 // ensure all records were properly sent
@@ -250,35 +228,23 @@ impl ProduceOpt {
                 .await
                 .into_iter()
                 .collect::<Result<Vec<_>, _>>()?;
-
-                //if self.stats {
-                //    println!("{}", producer.stats().await);
-                //}
             }
             None => {
                 let mut lines = BufReader::new(std::io::stdin()).lines();
                 if self.interactive_mode() {
                     eprint!("> ");
-                    //pb.println("> ");
                 }
                 while let Some(Ok(line)) = lines.next() {
-                    //let produce_output = self.produce_line(producer, &line, &pb).await?;
-                    let produce_output = self.produce_line(producer, &line, stats_bar).await?;
+                    let produce_output =
+                        self.produce_line(producer, &line, maybe_stats_bar).await?;
                     if let Some(produce_output) = produce_output {
                         // ensure it was properly sent
                         produce_output.wait().await?;
                     }
+
                     if self.interactive_mode() {
-                        //print_cli_ok!();
-                        //if self.stats {
-                        //    println!("{}", producer.stats().await);
-                        //}
+                        print_cli_ok!();
                         eprint!("> ");
-                        //pb.println("> ");
-                    } else {
-                        //if self.stats {
-                        //    println!("{}", producer.stats().await);
-                        //}
                     }
                 }
             }
@@ -291,7 +257,7 @@ impl ProduceOpt {
         &self,
         producer: &TopicProducer,
         line: &str,
-        stats_bar: &ProgressBar,
+        maybe_stats_bar: &Option<ProgressBar>,
     ) -> Result<Option<ProduceOutput>> {
         let produce_output = if let Some(separator) = &self.key_separator {
             self.produce_key_value(producer, line, separator).await?
@@ -299,16 +265,17 @@ impl ProduceOpt {
             Some(producer.send(RecordKey::NULL, line).await?)
         };
 
-        // If we're interactive, give the producer a moment to update
-        if self.interactive_mode() {
-            fluvio_future::timer::sleep(Duration::from_millis(100)).await;
+        if self.stats {
+            if let (Some(stats_bar), Some(producer_stats)) =
+                (maybe_stats_bar, producer.stats().await)
+            {
+                stats_bar.set_message(format_current_stats(producer_stats.snapshot()).await);
+
+                if self.interactive_mode() {
+                    stats_bar.println(line);
+                }
+            }
         }
-
-        stats_bar.set_message(producer.stats().await.print_current_stats());
-        //stats_bar.tick();
-        stats_bar.println(line);
-
-        //pb.update_message(format!("{}", producer.stats().await));
 
         Ok(produce_output)
     }
@@ -350,70 +317,56 @@ impl ProduceOpt {
             version: semver::Version::parse(env!("CARGO_PKG_VERSION")).unwrap(),
         }
     }
+}
 
-    //async fn update_stats(&self, producer: &TopicProducer) -> String {
-    //    format!("{}", producer.stats().await)
-    //}
+/// Return String with details the current stats
+async fn format_current_stats(client_stats: ClientStats) -> String {
+    format!(
+        "throughput: {:<15.3} latency: {:<15.3} memory: {:<10.3} CPU: {:<5.2}",
+        client_stats.throughput(),
+        client_stats.last_latency(),
+        client_stats.memory(),
+        client_stats.cpu()
+    )
+}
 
-    //// How am I going to update this bar w/ current stats?
-    //async fn status_bar(&self, producer: Arc<TopicProducer>) -> ProgressRenderer {
-    //    if io::stdout().is_tty() {
-    //        //pb.enable_steady_tick(100);
+/// Return String with a formatted summary of the current stats
+async fn format_summary_stats(client_stats: ClientStats) -> String {
+    format!(
+            "total throughput: {:<15.3} total data: {:<10.3} records transferred: {:<10} uptime: {:<10.3}",
+            client_stats.total_throughput(),
+            client_stats.total_bytes(),
+            client_stats.records(),
+            client_stats.uptime(),
+        )
+}
 
-    //        if !self.disable_progressbar {
-    //            let pb = if !self.no_stats {
-    //                let pb = indicatif::ProgressBar::new(100);
-    //                pb.set_style(
-    //                    indicatif::ProgressStyle::default_bar().template("{spinner} {msg}"),
-    //                );
-    //                //pb.set_message(format!("{}", producer.stats().await));
-
-    //                pb
-    //            } else {
-    //                let pb = indicatif::ProgressBar::new(1);
-    //                pb.set_style(indicatif::ProgressStyle::default_bar().template("{spinner}"));
-    //                pb
-    //            };
-
-    //            pb.enable_steady_tick(100);
-    //            pb.into()
-    //        } else {
-    //            indicatif::ProgressBar::hidden().into()
-    //        }
-    //    } else {
-    //        indicatif::ProgressBar::hidden().into()
-    //    }
-    //}
-
-    /// Initialize Ctrl-C event handler
-    async fn init_ctrlc(&self, producer: Arc<TopicProducer>, stats_bar: ProgressBar) -> Result<()> {
-        let result = ctrlc::set_handler(move || {
-            fluvio_future::task::run_block_on(async {
-                // The progress bar will render these in reverse order
-                stats_bar.set_message(producer.stats().await.print_summary_stats());
-                stats_bar.tick();
-                stats_bar.println(producer.stats().await.print_current_stats());
-                stats_bar.println(" ");
-                //stats_bar.println(producer.stats().await.print_current_stats());
-            });
-
-            debug!("detected control c, setting end");
-            std::process::exit(0);
+/// Initialize Ctrl-C event handler
+async fn init_ctrlc(producer: Arc<TopicProducer>, stats_bar: ProgressBar) -> Result<()> {
+    let result = ctrlc::set_handler(move || {
+        fluvio_future::task::run_block_on(async {
+            producer_summary(producer.clone(), &stats_bar).await;
         });
 
-        if let Err(err) = result {
-            return Err(IoError::new(
-                ErrorKind::InvalidData,
-                format!("CTRL-C handler can't be initialized {}", err),
-            )
-            .into());
-        }
-        Ok(())
-    }
+        debug!("detected control c, setting end");
+        std::process::exit(0);
+    });
 
-    //fn stats_bar(&self, producer: &TopicProducer) {
-    //    if io::stdout().is_tty() {
-    //        let pb = ProgressRenderer::default();
-    //    }
-    //}
+    if let Err(err) = result {
+        return Err(IoError::new(
+            ErrorKind::InvalidData,
+            format!("CTRL-C handler can't be initialized {}", err),
+        )
+        .into());
+    }
+    Ok(())
+}
+
+async fn producer_summary(producer: Arc<TopicProducer>, stats_bar: &ProgressBar) {
+    if let Some(producer_stats) = producer.stats().await {
+        // The progress bar will render these in reverse order
+        stats_bar.set_message(format_summary_stats(producer_stats.snapshot()).await);
+        stats_bar.println(format_current_stats(producer_stats.snapshot()).await);
+        stats_bar.println(" ");
+    }
 }

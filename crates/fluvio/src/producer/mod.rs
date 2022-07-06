@@ -29,7 +29,7 @@ use crate::FluvioError;
 use crate::spu::SpuPool;
 use crate::producer::accumulator::{RecordAccumulator, PushRecord};
 use crate::producer::partitioning::PartitionerConfig;
-use crate::stats::ClientStats;
+use crate::stats::{ClientStats, ClientStatsUpdate, SharedClientStats};
 
 use self::accumulator::{BatchHandler};
 pub use self::config::{
@@ -42,7 +42,6 @@ use self::partition_producer::PartitionProducer;
 pub use self::record::{FutureRecordMetadata, RecordMetadata};
 
 use crate::error::Result;
-use crate::stats::ClientStatsUpdate;
 
 /// An interface for producing events to a particular topic
 ///
@@ -69,7 +68,7 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        client_stats: Arc<RwLock<ClientStats>>,
+        maybe_client_stats: Option<SharedClientStats>,
     ) -> Self {
         let mut end_events = vec![];
         let mut flush_events = vec![];
@@ -89,7 +88,7 @@ impl ProducerPool {
                 error.clone(),
                 end_event.clone(),
                 flush_event.clone(),
-                client_stats.clone(),
+                maybe_client_stats.clone(),
             );
             errors.push(error);
             end_events.push(end_event);
@@ -107,14 +106,14 @@ impl ProducerPool {
         topic: String,
         spu_pool: Arc<SpuPool>,
         batches: Arc<HashMap<PartitionId, BatchHandler>>,
-        client_stats: Arc<RwLock<ClientStats>>,
+        maybe_client_stats: Option<SharedClientStats>,
     ) -> Arc<Self> {
         Arc::new(ProducerPool::new(
             config,
             topic,
             spu_pool,
             batches,
-            client_stats,
+            maybe_client_stats,
         ))
     }
 
@@ -166,9 +165,7 @@ struct InnerTopicProducer {
     spu_pool: Arc<SpuPool>,
     record_accumulator: RecordAccumulator,
     producer_pool: Arc<ProducerPool>,
-    client_stats: Arc<RwLock<ClientStats>>,
-    // Or perhaps ClientStats goes here, so I can track # records.
-    // I don't know how to keep track of flush though
+    client_stats: Option<SharedClientStats>,
 }
 
 impl InnerTopicProducer {
@@ -205,8 +202,18 @@ impl InnerTopicProducer {
             .await?;
 
         // Increase record count stat
-        let mut stats_handle = self.client_stats.write().await;
-        stats_handle.update(ClientStatsUpdate::new().records(Some(1)));
+        if let Some(client_stats) = &self.client_stats {
+            client_stats.rcu(|inner| {
+                if let Some(s) = inner.clone() {
+                    let mut stats = *s;
+
+                    stats.update(ClientStatsUpdate::new().records(Some(1)));
+                    Some(Arc::new(stats))
+                } else {
+                    None
+                }
+            });
+        }
 
         Ok(push_record)
     }
@@ -356,9 +363,17 @@ impl TopicProducer {
                 },
             };
 
-        let client_stats = ClientStats::new_shared();
-        // Update resource usage in background
-        ClientStats::start(client_stats.clone());
+        // Init client stat collection
+        let maybe_client_stats = if config.stats {
+            let client_stats = ClientStats::new_shared();
+
+            // Update resource usage in background
+            ClientStats::start(client_stats.clone());
+
+            Some(client_stats)
+        } else {
+            None
+        };
 
         let record_accumulator =
             RecordAccumulator::new(config.batch_size, partition_count, compression);
@@ -367,7 +382,7 @@ impl TopicProducer {
             topic.clone(),
             spu_pool.clone(),
             record_accumulator.batches(),
-            client_stats.clone(),
+            maybe_client_stats.clone(),
         );
 
         Ok(Self {
@@ -377,7 +392,7 @@ impl TopicProducer {
                 spu_pool,
                 producer_pool,
                 record_accumulator,
-                client_stats,
+                client_stats: maybe_client_stats,
             }),
             #[cfg(feature = "smartengine")]
             smartmodule_instance: Default::default(),
@@ -481,8 +496,13 @@ impl TopicProducer {
     }
 
     /// Return the stats from the last batch sent
-    pub async fn stats(&self) -> ClientStats {
-        let stats_handle = self.inner.client_stats.read().await;
-        stats_handle.snapshot()
+    pub async fn stats(&self) -> Option<ClientStats> {
+        if let Some(client_stats) = &self.inner.client_stats {
+            (*client_stats.load())
+                .as_ref()
+                .map(|stats_handle| stats_handle.snapshot())
+        } else {
+            None
+        }
     }
 }

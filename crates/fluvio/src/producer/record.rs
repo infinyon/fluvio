@@ -117,8 +117,6 @@ impl PartialFutureRecordMetadata {
 /// Used to wait the `RecordMetadata` of the record being sent.
 /// See `FutureRecordMetadata::wait`
 pub struct FutureRecordMetadata {
-    /// Sent timestamp
-    //pub(crate) datetime
     /// The partition the record was sent to
     pub(crate) partition_id: PartitionId,
     /// The offset of the record in the topic/partition.

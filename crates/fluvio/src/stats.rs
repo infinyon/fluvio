@@ -3,7 +3,6 @@ use std::{
 };
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
-use async_lock::RwLock;
 use sysinfo::{self, PidExt};
 use tracing::{debug, error};
 
@@ -19,13 +18,17 @@ use quantities::duration::{
 
 use crate::FluvioError;
 use sysinfo::{SystemExt, ProcessExt};
+use arc_swap::ArcSwapOption;
+
+pub type SharedClientStats = Arc<ArcSwapOption<ClientStats>>;
 
 // This struct is heavily utilizing
 // `quantities` crate for managing human readable unit conversions
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct ClientStats {
     start_time: Instant,
     pid: u64,
+    offset: i32,
     last_updated: DateTime<Utc>,
     last_latency: QuantDuration,
     last_bytes: DataVolume,
@@ -47,6 +50,7 @@ impl Default for ClientStats {
         ClientStats {
             start_time: Instant::now(),
             pid: pid.into(),
+            offset: 0,
             last_updated: Utc::now(),
             last_latency: AMNT_ZERO * SECOND,
             last_bytes: AMNT_ZERO * BYTE,
@@ -63,20 +67,22 @@ impl ClientStats {
         Self::default()
     }
 
-    pub fn new_shared() -> Arc<RwLock<Self>> {
-        Arc::new(RwLock::new(Self::new()))
+    pub fn new_shared() -> SharedClientStats {
+        Arc::new(ArcSwapOption::new(Some(Arc::new(Self::new()))))
     }
 
-    pub fn start(shared: Arc<RwLock<Self>>) {
+    /// Run system resource data sampling in the background
+    pub fn start(shared: SharedClientStats) {
         fluvio_future::task::spawn(async move {
-            if Self::run(shared).await.is_ok() {
+            if Self::system_resource_sampler(shared).await.is_ok() {
             } else {
                 error!("There was a non-fatal error gathering system stats");
             }
         });
     }
 
-    async fn run(shared: Arc<RwLock<Self>>) -> Result<(), FluvioError> {
+    /// Sample memory and cpu being used by the client
+    async fn system_resource_sampler(shared: SharedClientStats) -> Result<(), FluvioError> {
         let mut sysinfo = sysinfo::System::new();
         let pid = sysinfo::get_current_pid().map_err(|e| FluvioError::Other(e.to_string()))?;
         let cpu_cores = sysinfo
@@ -84,15 +90,16 @@ impl ClientStats {
             .ok_or_else(|| FluvioError::Other("Unable to get number of CPU cores".to_string()))?
             as f32;
 
+        // Warm up the resource probe
+        sysinfo.refresh_process(pid);
+
         use tokio::select;
-        const REFRESH_RATE_MILLIS: u64 = 100;
+        const REFRESH_RATE_MILLIS: u64 = 1000;
 
         let mut system_poll_time = Some(fluvio_future::timer::sleep(Duration::from_millis(0)));
 
         loop {
             select! {
-
-
                 _ = async { system_poll_time.as_mut().expect("unexpected failure").await }, if system_poll_time.is_some() => {
                     debug!("Updating Client resource usage");
                     sysinfo.refresh_process(pid);
@@ -117,13 +124,21 @@ impl ClientStats {
 
                     let cpu_used = Some(cpu_used_sample / cpu_cores);
 
-                    let stats_update = ClientStatsUpdate::new()
-                        .cpu(cpu_used)
-                        .mem(mem_used);
+                    shared.rcu(|inner| {
+                        if let Some(s) = inner.clone() {
+                            let mut stats = *s;
 
-                    let mut stats_handle = shared.write().await;
-                    stats_handle.update(stats_update);
-                    drop(stats_handle);
+                            stats.update(
+                                ClientStatsUpdate::new()
+                                .cpu(cpu_used)
+                                .mem(mem_used)
+                            );
+
+                            Some(Arc::new(stats))
+                        } else {
+                            None
+                        }
+                    });
 
                     system_poll_time = Some(fluvio_future::timer::sleep(Duration::from_millis(REFRESH_RATE_MILLIS)));
                 }
@@ -131,6 +146,7 @@ impl ClientStats {
         }
     }
 
+    /// Update the instance with values from `ClientStatsUpdate`
     pub fn update(&mut self, update: ClientStatsUpdate) {
         if let Some(bytes) = update.bytes {
             self.last_bytes = bytes;
@@ -153,35 +169,33 @@ impl ClientStats {
             self.num_records += records;
         }
 
+        if let Some(offset) = update.offset {
+            self.offset = offset;
+        }
+
         self.last_updated = Utc::now();
     }
 
-    pub fn snapshot(&self) -> ClientStats {
-        self.clone()
+    /// Returns the `ClientStats` with updates applied without modifying the underlying struct
+    pub fn update_dry_run(&self, update: ClientStatsUpdate) -> ClientStats {
+        let mut new = *self;
+        new.update(update);
+        new
     }
 
-    // TODO: Try to identify reasonable units, but offer ability to control unit
-    /// Return the throughput of the last batch transfer in units TBD
+    /// Return a clone of the current `ClientStats`
+    pub fn snapshot(&self) -> ClientStats {
+        *self
+    }
+
+    /// Return the throughput of the last batch transfer
     pub fn throughput(&self) -> DataThroughput {
-        let ref_value = self.last_bytes / self.last_latency;
+        Self::covert_to_largest_throughput_unit(self.last_bytes() / self.last_latency())
+    }
 
-        let convert_unit = if ref_value > (AMNT_ONE * TERABYTE_PER_SECOND) {
-            Some(TERABYTE_PER_SECOND)
-        } else if ref_value > (AMNT_ONE * GIGABYTE_PER_SECOND) {
-            Some(GIGABYTE_PER_SECOND)
-        } else if ref_value > (AMNT_ONE * MEGABYTE_PER_SECOND) {
-            Some(MEGABYTE_PER_SECOND)
-        } else if ref_value > (AMNT_ONE * KILOBYTE_PER_SECOND) {
-            Some(KILOBYTE_PER_SECOND)
-        } else {
-            None
-        };
-
-        if let Some(bigger_unit) = convert_unit {
-            ref_value.convert(bigger_unit)
-        } else {
-            ref_value
-        }
+    /// Return the throughput of the session
+    pub fn total_throughput(&self) -> DataThroughput {
+        Self::covert_to_largest_throughput_unit(self.total_bytes() / self.uptime())
     }
 
     /// Return the pid of the client
@@ -189,14 +203,9 @@ impl ClientStats {
         self.pid
     }
 
-    // TODO: Collect the topic, or otherwise figure out how we can return that value
-    pub fn topic(&self) -> String {
-        String::new()
-    }
-
-    // TODO: Same deal here, collect the offset or query for it
-    pub fn offset(&self) -> u64 {
-        0
+    /// Returns the offset last seen
+    pub fn offset(&self) -> i32 {
+        self.offset
     }
 
     /// Returns the last data transfer size in bytes
@@ -242,25 +251,6 @@ impl ClientStats {
         self.num_records
     }
 
-    pub fn print_current_stats(&self) -> String {
-        format!(
-            "throughput: {:.3}, latency: {:.3}, memory: {:.3}, CPU: {:.2}",
-            self.throughput(),
-            self.last_latency(),
-            self.memory(),
-            self.cpu()
-        )
-    }
-
-    pub fn print_summary_stats(&self) -> String {
-        format!(
-            "uptime: {:.3}, transferred: {} records, total data: {:.3}",
-            self.uptime(),
-            self.records(),
-            self.total_bytes(),
-        )
-    }
-
     fn convert_to_largest_time_unit(ref_value: QuantDuration) -> QuantDuration {
         let convert_unit = if ref_value > (AMNT_ONE * MINUTE) {
             Some(MINUTE)
@@ -304,35 +294,37 @@ impl ClientStats {
             ref_value
         }
     }
+
+    fn covert_to_largest_throughput_unit(ref_value: DataThroughput) -> DataThroughput {
+        let convert_unit = if ref_value > (AMNT_ONE * TERABYTE_PER_SECOND) {
+            Some(TERABYTE_PER_SECOND)
+        } else if ref_value > (AMNT_ONE * GIGABYTE_PER_SECOND) {
+            Some(GIGABYTE_PER_SECOND)
+        } else if ref_value > (AMNT_ONE * MEGABYTE_PER_SECOND) {
+            Some(MEGABYTE_PER_SECOND)
+        } else if ref_value > (AMNT_ONE * KILOBYTE_PER_SECOND) {
+            Some(KILOBYTE_PER_SECOND)
+        } else {
+            None
+        };
+
+        if let Some(bigger_unit) = convert_unit {
+            ref_value.convert(bigger_unit)
+        } else {
+            ref_value
+        }
+    }
 }
 
-//impl fmt::Display for ClientStats {
-//    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//        let throughput = self.throughput();
-//
-//        let report = json!({
-//            "pid" : self.pid(),
-//            "topic": self.topic(),
-//            "offset" : self.offset(),
-//            "last_transfer" : self.last_bytes().to_string(),
-//            "total_transfer" : self.total_bytes().to_string(),
-//            "throughput" : format!("{:.2} {}", throughput.amount(), throughput.unit()),
-//            "memory" : self.memory().to_string(),
-//            "cpu" : format!("{:.2}", self.cpu()),
-//        });
-//
-//        write!(f, "{}", report.to_string())
-//    }
-//}
-
-#[derive(Debug, Clone, Default)]
+/// Update builder for `ClientStats`
+#[derive(Debug, Clone, Default, Copy)]
 pub struct ClientStatsUpdate {
     bytes: Option<DataVolume>,
     cpu: Option<f32>,
     latency: Option<QuantDuration>,
     mem: Option<DataVolume>,
     records: Option<u64>,
-    // offset?
+    offset: Option<i32>,
 }
 
 impl ClientStatsUpdate {
@@ -341,38 +333,38 @@ impl ClientStatsUpdate {
     }
 
     pub fn latency(&self, latency: Option<QuantDuration>) -> Self {
-        let mut new = self.clone();
+        let mut new = *self;
         new.latency = latency;
         new
     }
 
     pub fn bytes(&self, bytes: Option<DataVolume>) -> Self {
-        let mut new = self.clone();
+        let mut new = *self;
         new.bytes = bytes;
         new
     }
 
     pub fn records(&self, records: Option<u64>) -> Self {
-        let mut new = self.clone();
+        let mut new = *self;
         new.records = records;
         new
     }
 
     pub fn mem(&self, mem: Option<DataVolume>) -> Self {
-        let mut new = self.clone();
+        let mut new = *self;
         new.mem = mem;
         new
     }
 
     pub fn cpu(&self, cpu: Option<f32>) -> Self {
-        let mut new = self.clone();
+        let mut new = *self;
         new.cpu = cpu;
         new
     }
-}
 
-//impl DerefMut for Arc<ClientStats> {
-//    fn deref_mut(&mut self) -> &mut Self::Target {
-//        &mut self
-//    }
-//}
+    pub fn offset(&self, offset: Option<i32>) -> Self {
+        let mut new = *self;
+        new.offset = offset;
+        new
+    }
+}
