@@ -20,33 +20,57 @@ use dataplane::batch::RawRecords;
 use crate::error::{Result, FluvioError};
 use sysinfo::{SystemExt, ProcessExt};
 
+/// Ordering used by `std::sync::atomic` operations
 pub(crate) const STATS_MEM_ORDER: Ordering = Ordering::Relaxed;
 
+/// Used for configuring the type of data to collect
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ClientStatsDataCollect {
+    /// Collect all available stats
     All,
+    /// Do not collect stats
     None,
-    Data,   // Throughput and Latency
-    System, // Memory and CPU
+    /// Collect measurements for throughput and latency
+    Data,
+    /// Collect measurements for CPU and memory usage
+    System,
 }
 
+/// Main struct for recording client stats
 #[derive(Debug)]
 pub struct ClientStats {
+    /// Start time when struct was created
+    /// This is Unix Epoch time, in nanoseconds
     start_time: AtomicI64,
+    /// PID of the client process
     pid: AtomicU32,
+    /// Offset from last batch seen
     offset: AtomicI32,
+    /// Last time any struct values were updated
+    /// This is Unix Epoch time, in nanoseconds
     last_updated: AtomicI64,
+    /// Time it took to complete last data transfer, in nanoseconds
     last_latency: AtomicU64,
+    /// Data volume of last data transfer, in bytes
     last_bytes: AtomicU64,
+    /// Total number of records processed since struct created
     num_records: AtomicU64,
+    /// Data volume of all data transferred, in bytes
     total_bytes: AtomicU64,
+    /// Last polled memory usage of client process, in kilobytes
     last_mem: AtomicU64,
+    /// Last polled CPU usage, adjusted for host system's # of CPU cores
+    /// Value is `u32` adjusted percentage, shifted 3 decimal places
+    /// ex. 12.345%  =>  12345
+    /// User of stats will need to account for this conversion
     last_cpu: AtomicU32,
+    /// Configuration of what data client is to collect
     stats_collect: ClientStatsDataCollect,
 }
 
+/// Helper function. Get Unix Epoch time for Utc timezone, in nanoseconds
 fn unix_timestamp_nanos() -> i64 {
-    Utc::now().timestamp()
+    Utc::now().timestamp_nanos()
 }
 
 impl Default for ClientStats {
@@ -77,6 +101,7 @@ impl Default for ClientStats {
 }
 
 impl ClientStats {
+    /// Create a new `ClientStats`. `stats_collect` selects the type of data to collect
     pub fn new(stats_collect: ClientStatsDataCollect) -> Self {
         Self {
             stats_collect,
@@ -84,8 +109,8 @@ impl ClientStats {
         }
     }
 
+    /// Create a new `ClientStats` wrapped in `Arc<T>`
     pub fn new_shared(stats_collect: ClientStatsDataCollect) -> Arc<ClientStats> {
-        //println!("Creating new shared stats: option: {:#?}", stats_collect);
         Arc::new(Self::new(stats_collect))
     }
 
@@ -101,19 +126,19 @@ impl ClientStats {
         }
     }
 
-    /// Return true if configured to collect data point type
+    /// Return true if `option` meets requirements to collect data type
     pub fn is_collect(&self, option: ClientStatsDataCollect) -> bool {
         self.stats_collect == ClientStatsDataCollect::All
             || (self.stats_collect != ClientStatsDataCollect::None)
                 && (self.stats_collect == option)
     }
 
-    /// Return the start time
+    /// Return the start time in nanoseconds
     pub fn start_time(&self) -> i64 {
         self.start_time.load(STATS_MEM_ORDER)
     }
 
-    /// Return the last updated time
+    /// Return the last updated time in nanoseconds
     pub fn last_updated(&self) -> i64 {
         self.last_updated.load(STATS_MEM_ORDER)
     }
@@ -124,6 +149,7 @@ impl ClientStats {
     }
 
     /// Sample memory and cpu being used by the client
+    /// Refresh process resource monitor every second
     async fn system_resource_sampler(stats: Arc<ClientStats>) -> Result<(), FluvioError> {
         let mut sysinfo = sysinfo::System::new();
         let pid = sysinfo::get_current_pid().map_err(|e| FluvioError::Other(e.to_string()))?;
@@ -151,20 +177,17 @@ impl ClientStats {
                         "Unable to read current process".to_string(),
                     ))?;
 
-                    // Take a cpu/memory sample here
+                    // Memory usage is reported in kilobytes
                     let mem_used_sample = proc.memory() + proc.virtual_memory();
-                    //println!("Raw memory {:#?}", mem_used_sample);
                     data_sample_update.set_mem(Some(mem_used_sample));
 
-                    let cpu_used_sample = proc.cpu_usage();
-                    //println!("Raw cpu: {:#?}", cpu_used_sample);
-                    //debug!("cpu {:#?}", cpu_used_sample);
-                    let cpu_convert = (cpu_used_sample / cpu_cores) * 100_000.0; // I want to keep 3 decimal places
-                    //println!("Convert to cores: {:#?}", (cpu_used_sample / cpu_cores));
-                    //println!("Convert to percentage : {:#?}", (cpu_used_sample / cpu_cores) * 100.0);
-                    //println!("Convert to percentage + 3 decimal (shifted): {:#?}", (cpu_convert) as u32);
-                    //println!("Convert to percentage shifted back : {:#?}", ((cpu_convert) as u32) as f32 / 1000.0 );
-                    data_sample_update.set_cpu(Some(cpu_convert as u32));
+                    // Cpu usage in percentage, adjusted for the # of cores
+                    let cpu_used_percent = proc.cpu_usage() / cpu_cores;
+
+                    // Store cpu percentage w/ 3 decimal places
+                    let cpu_shift = cpu_used_percent * 1_000.0;
+
+                    data_sample_update.set_cpu(Some(cpu_shift as u32));
 
                     stats.update(data_sample_update);
 
@@ -176,46 +199,33 @@ impl ClientStats {
 
     /// Update the instance with values from `ClientStatsUpdate`
     pub fn update(&self, update: ClientStatsUpdate) {
-        //println!("Gonna update the atomic struct with: {:#?}", update);
-
         if let Some(bytes) = update.bytes() {
-            //println!("Add bytes {bytes:#?}");
             self.last_bytes.fetch_add(bytes, STATS_MEM_ORDER);
             self.total_bytes.fetch_add(bytes, STATS_MEM_ORDER);
         }
 
-        // The value stored is percentage + 3 decimal places
-        // Divide by 1_000.0 to get CPU utilization
         if let Some(cpu) = update.cpu() {
-            //println!("store cpu {cpu:#?}");
             self.last_cpu.store(cpu, STATS_MEM_ORDER);
         }
 
         if let Some(latency) = update.latency() {
-            //println!("store latency {latency:#?}");
             self.last_latency.store(latency, STATS_MEM_ORDER);
         }
 
         if let Some(mem) = update.mem() {
-            //println!("store mem {mem:#?}");
             self.last_mem.store(mem, STATS_MEM_ORDER);
         }
 
         if let Some(records) = update.records() {
-            //println!("Add records {records:#?}");
             self.num_records.fetch_add(records, STATS_MEM_ORDER);
         }
 
         if let Some(offset) = update.offset() {
-            //println!("store offset {offset:#?}");
             self.offset.store(offset, STATS_MEM_ORDER);
         }
 
         let t = unix_timestamp_nanos();
-        //println!("store last_updated {t:#?}");
         self.last_updated.store(t, STATS_MEM_ORDER);
-        //self.last_updated
-        //    .store(unix_timestamp_nanos(), STATS_MEM_ORDER);
     }
 
     /// Return the current `ClientStats` as `ClientStatsDataPoint`
@@ -243,23 +253,24 @@ impl ClientStats {
         self.total_bytes.load(STATS_MEM_ORDER)
     }
 
-    /// Returns the latency of last transfer -> Duration {
+    /// Returns the latency of last transfer in nanoseconds
     pub fn last_latency(&self) -> u64 {
         self.last_latency.load(STATS_MEM_ORDER)
     }
 
-    /// Returns the last memory usage sample
+    /// Returns the last memory usage sample in kilobytes
     pub fn memory(&self) -> u64 {
         self.last_mem.load(STATS_MEM_ORDER)
     }
 
-    /// Returns the last cpu usage sample as a percentage (%) with 3 decimal places
-    /// Divide by 100_000.0 convert back
+    /// Returns the last cpu usage sample as an integer
+    /// Representing a percentage (%) with 3 decimal places
+    /// Divide by 1_000.0 convert to back to percentage
     pub fn cpu(&self) -> u64 {
-        self.total_bytes.load(STATS_MEM_ORDER)
+        self.last_cpu.load(STATS_MEM_ORDER).into()
     }
 
-    /// Returns the current uptime of the client
+    /// Returns the current uptime of the client in nanoseconds
     pub fn uptime(&self) -> i64 {
         unix_timestamp_nanos() - self.start_time.load(STATS_MEM_ORDER)
     }

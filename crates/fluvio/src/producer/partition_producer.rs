@@ -220,35 +220,15 @@ impl PartitionProducer {
             let notify = p_batch.notify.clone();
             let batch = p_batch.batch();
 
-            //println!("record len before convert: {}", batch.records_len());
-            //println!("batch len before convert: {}", batch.batch_len());
-
             let raw_batch: Batch<RawRecords> = batch.try_into()?;
-
-            //println!("record len after convert: {}", raw_batch.records_len());
-            //println!("batch len after convert: {}", raw_batch.batch_len());
 
             // If we are collecting stats, then record
             // the size of all batches about to be sent
             if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
-                //println!(
-                //    "Adding to batch from partition_producer: {:#?}",
-                //    raw_batch.batch_len()
-                //);
-                //println!("Checking unit convert: {:#?}", raw_batch.batch_len() as u64);
-                client_stats_update.set_bytes(Some(raw_batch.batch_len() as u64));
-
-                // This doesn't update from here, but it does earlier?
-                //println!(
-                //    "Adding to records from partition_producer: {:#?}",
-                //    raw_batch.records_len()
-                //);
-                client_stats_update.set_records(Some(raw_batch.records_len() as u64));
-
-                //println!("About to leave bytes and records: {client_stats_update:#?}");
+                client_stats_update += ClientStatsUpdate::default()
+                    .set_bytes(Some(raw_batch.batch_len() as u64))
+                    .set_records(Some(raw_batch.records_len() as u64));
             }
-
-            //println!("After bytes and records: {client_stats_update:#?}");
 
             partition_request.records.batches.push(raw_batch);
             batch_notifiers.push(notify);
@@ -265,7 +245,6 @@ impl PartitionProducer {
                 .send_and_measure_latency(&spu_socket, request)
                 .await?;
 
-            //println!("Should be adding latency to client_stats_update");
             client_stats_update += send_latency;
             response
         } else {
@@ -273,10 +252,14 @@ impl PartitionProducer {
         };
 
         let mut base_offset = 0;
-        for (batch_notifier, response) in batch_notifiers.into_iter().zip(response.responses.iter())
-        {
-            base_offset = response.partitions[0].base_offset;
-            let fluvio_error = response.partitions[0].error_code.clone();
+        for (batch_notifier, partition_response) in batch_notifiers.into_iter().zip(
+            response
+                .responses
+                .into_iter()
+                .flat_map(|response| response.partitions),
+        ) {
+            base_offset = partition_response.base_offset;
+            let fluvio_error = partition_response.error_code.clone();
 
             if let Err(_e) = batch_notifier
                 .send((base_offset, fluvio_error.clone()))

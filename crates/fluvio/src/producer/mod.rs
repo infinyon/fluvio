@@ -478,7 +478,7 @@ impl TopicProducer {
         self.inner.clear_errors().await;
     }
 
-    /// Return the stats from the last batch sent
+    /// Return a `ClientStatsDataPoint` to represent the current recorded client stats
     pub async fn stats(&self) -> Option<ClientStatsDataPoint> {
         if self.inner.client_stats.stats_collect() != ClientStatsDataCollect::None {
             Some(self.inner.client_stats.get_datapoint())
