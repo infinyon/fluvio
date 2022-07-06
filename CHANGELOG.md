@@ -2,6 +2,7 @@
 
 ## Platform Version 0.9.31 - UNRELEASED
 * Move stream publishers to connection-level context ([#2452](https://github.com/infinyon/fluvio/pull/2452))
+* Prefer ExternalIP to InternalIP if configured in kubernetes ([#2448](https://github.com/infinyon/fluvio/pull/2448)) 
 
 ## Platform Version 0.9.30 - 2022-06-29
 * Improve CLI error output when log_dir isn't writable ([#2425](https://github.com/infinyon/fluvio/pull/2425))
