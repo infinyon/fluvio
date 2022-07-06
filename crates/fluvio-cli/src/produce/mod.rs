@@ -309,6 +309,10 @@ impl ProduceOpt {
                         .await?;
 
                         if self.interactive_mode() {
+                            if let Some(file) = maybe_stats_file.as_mut() {
+                                file.flush()?;
+                            }
+
                             print_cli_ok!();
                             eprint!("> ");
                         }

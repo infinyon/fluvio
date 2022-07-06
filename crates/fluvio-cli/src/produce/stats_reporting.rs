@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use comfy_table::{Table, Row, Cell, CellAlignment};
-use fluvio::stats::{ClientStatsDataCollect, ClientStatsDataPoint};
+use fluvio::stats::{ClientStatsDataCollect, ClientStatsDataPoint, ClientStatsMetric};
 use indicatif::ProgressBar;
 use fluvio::TopicProducer;
 use crate::Result;
@@ -24,7 +24,12 @@ pub(crate) async fn start_csv_report(
             .open(stats_path)?,
     );
     if let Some(stats) = producer.stats().await {
-        write_line_to_file(Some(&mut stats_file), stats.csv_header()?.as_bytes())?;
+        write_line_to_file(
+            Some(&mut stats_file),
+            stats
+                .csv_header(&stats.stats_collect().to_metrics())?
+                .as_bytes(),
+        )?;
         stats_file.flush()?;
     }
     Ok(stats_file)
@@ -38,7 +43,8 @@ pub(crate) async fn write_csv_datapoint(
     maybe_stats_file: Option<&mut BufWriter<File>>,
 ) -> Result<String, CliError> {
     let datapoint = if let Some(datapoint_sample) = &producer.stats().await {
-        let datapoint = datapoint_sample.csv_datapoint()?;
+        let datapoint =
+            datapoint_sample.csv_datapoint(&datapoint_sample.stats_collect().to_metrics())?;
 
         if datapoint != *datapoint_check {
             write_line_to_file(maybe_stats_file, datapoint.as_bytes())?;
@@ -69,6 +75,12 @@ fn write_line_to_file(
 /// Resulting `String` is printed by `indicatif::ProgressBar`
 pub(crate) async fn format_current_stats(client_stats: ClientStatsDataPoint) -> String {
     //println!("Datapoint: {:#?}", client_stats);
+    //println!(
+    //    "T: {}",
+    //    client_stats
+    //        .get_format(ClientStatsMetric::LastThroughput)
+    //        .value_to_string()
+    //);
 
     let mut t = Table::new();
     t.load_preset(comfy_table::presets::NOTHING);
@@ -80,13 +92,21 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataPoint) -> 
     {
         r.add_cell(Cell::new("throughput").set_alignment(CellAlignment::Center))
             .add_cell(
-                Cell::new(format!("{:<15.3}", client_stats.throughput()))
-                    .set_alignment(CellAlignment::Right),
+                Cell::new(
+                    client_stats
+                        .get_format(ClientStatsMetric::LastThroughput)
+                        .value_to_string(),
+                )
+                .set_alignment(CellAlignment::Right),
             );
         r.add_cell(Cell::new("latency").set_alignment(CellAlignment::Center))
             .add_cell(
-                Cell::new(format!("{:<15.3}", client_stats.last_latency()))
-                    .set_alignment(CellAlignment::Right),
+                Cell::new(
+                    client_stats
+                        .get_format(ClientStatsMetric::LastLatency)
+                        .value_to_string(),
+                )
+                .set_alignment(CellAlignment::Right),
             );
     }
 
@@ -95,13 +115,21 @@ pub(crate) async fn format_current_stats(client_stats: ClientStatsDataPoint) -> 
     {
         r.add_cell(Cell::new("memory").set_alignment(CellAlignment::Center))
             .add_cell(
-                Cell::new(format!("{:<15.3}", client_stats.memory()))
-                    .set_alignment(CellAlignment::Right),
+                Cell::new(
+                    client_stats
+                        .get_format(ClientStatsMetric::Mem)
+                        .value_to_string(),
+                )
+                .set_alignment(CellAlignment::Right),
             );
-        r.add_cell(Cell::new("CPU").set_alignment(CellAlignment::Center))
+        r.add_cell(Cell::new("CPU %").set_alignment(CellAlignment::Center))
             .add_cell(
-                Cell::new(format!("{:<15.3}", client_stats.cpu()))
-                    .set_alignment(CellAlignment::Right),
+                Cell::new(
+                    client_stats
+                        .get_format(ClientStatsMetric::Cpu)
+                        .value_to_string(),
+                )
+                .set_alignment(CellAlignment::Right),
             );
     }
 
@@ -124,25 +152,41 @@ pub(crate) async fn format_summary_stats(client_stats: ClientStatsDataPoint) -> 
     {
         r.add_cell(Cell::new("total throughput").set_alignment(CellAlignment::Center))
             .add_cell(
-                Cell::new(format!("{:<15.3}", client_stats.total_throughput()))
-                    .set_alignment(CellAlignment::Right),
+                Cell::new(
+                    client_stats
+                        .get_format(ClientStatsMetric::Throughput)
+                        .value_to_string(),
+                )
+                .set_alignment(CellAlignment::Right),
             );
         r.add_cell(Cell::new("total data").set_alignment(CellAlignment::Center))
             .add_cell(
-                Cell::new(format!("{:<10.3}", client_stats.total_bytes()))
-                    .set_alignment(CellAlignment::Right),
+                Cell::new(
+                    client_stats
+                        .get_format(ClientStatsMetric::Bytes)
+                        .value_to_string(),
+                )
+                .set_alignment(CellAlignment::Right),
             );
         r.add_cell(Cell::new("records transferred").set_alignment(CellAlignment::Center))
             .add_cell(
-                Cell::new(format!("{:<10.3}", client_stats.records()))
-                    .set_alignment(CellAlignment::Right),
+                Cell::new(
+                    client_stats
+                        .get_format(ClientStatsMetric::Records)
+                        .value_to_string(),
+                )
+                .set_alignment(CellAlignment::Right),
             );
     }
 
     r.add_cell(Cell::new("uptime").set_alignment(CellAlignment::Center))
         .add_cell(
-            Cell::new(format!("{:<10.3}", client_stats.uptime()))
-                .set_alignment(CellAlignment::Right),
+            Cell::new(
+                client_stats
+                    .get_format(ClientStatsMetric::Uptime)
+                    .value_to_string(),
+            )
+            .set_alignment(CellAlignment::Right),
         );
 
     t.add_row(r);

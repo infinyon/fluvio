@@ -18,7 +18,7 @@ use super::ProducerError;
 use super::accumulator::{ProducerBatch, BatchEvents};
 use super::event::EventHandler;
 
-use crate::stats::{ClientStats, ClientStatsUpdate, ClientStatsDataCollect};
+use crate::stats::{ClientStats, ClientStatsUpdate, ClientStatsDataCollect, ClientStatsMetricRaw};
 
 /// Struct that is responsible for sending produce requests to the SPU in a given partition.
 pub(crate) struct PartitionProducer {
@@ -211,7 +211,9 @@ impl PartitionProducer {
         let mut batch_notifiers = vec![];
 
         let mut client_stats_update = ClientStatsUpdate::default();
+        let mut total_batch_len = 0;
 
+        client_stats_update.push(ClientStatsMetricRaw::Batches(batches_ready.len() as u64));
         for p_batch in batches_ready {
             let mut partition_request = DefaultPartitionRequest {
                 partition_index: self.replica.partition,
@@ -225,9 +227,10 @@ impl PartitionProducer {
             // If we are collecting stats, then record
             // the size of all batches about to be sent
             if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
-                client_stats_update += ClientStatsUpdate::default()
-                    .set_bytes(Some(raw_batch.batch_len() as u64))
-                    .set_records(Some(raw_batch.records_len() as u64));
+                total_batch_len += raw_batch.batch_len() as u64;
+                client_stats_update.push(ClientStatsMetricRaw::Bytes(raw_batch.batch_len() as u64));
+                client_stats_update
+                    .push(ClientStatsMetricRaw::Records(raw_batch.records_len() as u64));
             }
 
             partition_request.records.batches.push(raw_batch);
@@ -242,7 +245,7 @@ impl PartitionProducer {
         let response = if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
             let (response, send_latency) = self
                 .client_stats
-                .send_and_measure_latency(&spu_socket, request)
+                .send_and_measure_latency(&spu_socket, request, total_batch_len)
                 .await?;
 
             client_stats_update += send_latency;
@@ -275,8 +278,8 @@ impl PartitionProducer {
 
         // Commit stats update
         if self.client_stats.is_collect(ClientStatsDataCollect::Data) {
-            self.client_stats
-                .update(client_stats_update.set_offset(Some(base_offset as i32)))
+            client_stats_update.push(ClientStatsMetricRaw::Offset(base_offset as i32));
+            self.client_stats.update_batch(client_stats_update).await?
         }
 
         Ok(())

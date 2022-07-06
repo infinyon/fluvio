@@ -17,7 +17,7 @@ use tracing::instrument;
 mod accumulator;
 mod config;
 mod error;
-mod event;
+pub mod event;
 mod output;
 mod partitioning;
 mod record;
@@ -350,6 +350,11 @@ impl TopicProducer {
             };
 
         let client_stats = ClientStats::new_shared(config.stats_collect);
+
+        // start the histogram
+        if config.stats_collect != ClientStatsDataCollect::None {
+            ClientStats::start_stats_histogram(client_stats.clone());
+        };
 
         // Only start background system monitoring when requested
         if config.stats_collect == ClientStatsDataCollect::All
