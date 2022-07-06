@@ -4,6 +4,7 @@
 * Move stream publishers to connection-level context ([#2452](https://github.com/infinyon/fluvio/pull/2452))
 * Prefer ExternalIP to InternalIP if configured in kubernetes ([#2448](https://github.com/infinyon/fluvio/pull/2448))
 * Add `fluvio connector config <connector-name>`  ([#2464](https://github.com/infinyon/fluvio/pull/2464))
+* Add performance counters to producer ([#2424](https://github.com/infinyon/fluvio/issues/2424))
 
 ## Platform Version 0.9.30 - 2022-06-29
 * Improve CLI error output when log_dir isn't writable ([#2425](https://github.com/infinyon/fluvio/pull/2425))
@@ -13,7 +14,6 @@
 
 ## Platform Version 0.9.29 - 2022-06-27
 * Revert 0.9.28 updates to Connector yaml config ([#2436](https://github.com/infinyon/fluvio/pull/2436))
-* Add performance counters to producer ([#2424](https://github.com/infinyon/fluvio/issues/2424))
 
 ## Platform Version 0.9.28 - 2022-06-26
 * Upgrade to Wasmtime 0.37 ([#2400](https://github.com/infinyon/fluvio/pull/2400))
@@ -24,7 +24,7 @@
 * Add filter-map support to SmartProducer ([#2418](https://github.com/infinyon/fluvio/issues/2418))
 * Fix `wasi` functions binding relying on order ([#2428](https://github.com/infinyon/fluvio/pull/2428))
 * Add top level `producer` and `consumer` entries to connector yaml configurations. ([#2426](https://github.com/infinyon/fluvio/issues/2426))
-* Allow string, dictionaries and lists as options to `paramaters` section in connector yaml. ([#2426](https://github.com/infinyon/fluvio/issues/2426))
+* Allow string, dictionaries and lists as options to `parameters` section in connector yaml. ([#2426](https://github.com/infinyon/fluvio/issues/2426))
 
 ## Platform Version 0.9.27 - 2022-05-25
 * Support installing clusters on Google Kubernetes Engine ([#2364](https://github.com/infinyon/fluvio/issues/2364))

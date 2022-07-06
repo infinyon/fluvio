@@ -150,7 +150,7 @@ impl<R> Batch<R> {
     where
         T: Buf,
     {
-        trace!("decoding premable");
+        trace!("decoding preamble");
         self.base_offset.decode(src, version)?;
         self.batch_len.decode(src, version)?;
         self.header.decode(src, version)?;
@@ -159,7 +159,7 @@ impl<R> Batch<R> {
 
     /// Return the size of the batch header + records
     pub fn batch_len(&self) -> i32 {
-        (BATCH_FILE_HEADER_SIZE as i32) + self.batch_len
+        self.batch_len
     }
 }
 
@@ -221,10 +221,12 @@ impl Batch {
     /// add new record, this will update the offset to correct
     pub fn add_record(&mut self, record: Record) {
         self.add_records(&mut vec![record]);
+        self.batch_len = (BATCH_HEADER_SIZE + self.records.write_size(0)) as i32;
     }
 
     pub fn add_records(&mut self, records: &mut Vec<Record>) {
         self.records.append(records);
+        self.batch_len = (BATCH_HEADER_SIZE + self.records.write_size(0)) as i32;
         self.update_offset_deltas();
     }
 
@@ -286,7 +288,7 @@ impl<T: Into<MemoryRecords>> From<T> for Batch {
 
         batch.records = records;
         let len = batch.records.len() as i32;
-        batch.batch_len += (BATCH_FILE_HEADER_SIZE as i32) + len;
+        batch.batch_len = (BATCH_HEADER_SIZE + batch.records.write_size(0)) as i32;
         batch.header.last_offset_delta = if len > 0 { len - 1 } else { len };
         batch
     }
@@ -457,10 +459,10 @@ pub mod memory {
         }
 
         /// Add a record to the batch.
-        /// Return relative offset.
+        /// The value of `Offset` is relative to the `MemoryBatch` instance.
         pub fn push_record(&mut self, mut record: Record) -> Option<Offset> {
-            let relative_offset = self.records.len() as i64;
-            record.preamble.set_offset_delta(relative_offset as Offset);
+            let current_offset = self.offset() as i64;
+            record.preamble.set_offset_delta(current_offset as Offset);
 
             let timestamp_delta = self.elapsed();
             record.preamble.set_timestamp_delta(timestamp_delta);
@@ -480,7 +482,7 @@ pub mod memory {
 
             self.records.push(record);
 
-            Some(relative_offset)
+            Some(current_offset)
         }
 
         pub fn is_full(&self) -> bool {
@@ -501,18 +503,32 @@ pub mod memory {
                 }) as usize
                 + Batch::<RawRecords>::default().write_size(0)
         }
+
+        pub fn records_len(&self) -> usize {
+            self.records.len()
+        }
+
+        #[inline]
+        pub fn offset(&self) -> usize {
+            self.records_len()
+        }
+
+        pub fn current_size_uncompressed(&self) -> usize {
+            self.current_size_uncompressed
+        }
     }
 
     impl From<MemoryBatch> for Batch<MemoryRecords> {
         fn from(p_batch: MemoryBatch) -> Self {
             let mut batch = Self {
-                batch_len: p_batch.current_size_uncompressed as i32,
+                batch_len: (BATCH_HEADER_SIZE + p_batch.records.write_size(0)) as i32,
                 ..Default::default()
             };
             let compression = p_batch.compression();
             let records = p_batch.records;
 
             let len = records.len() as i32;
+            batch.set_base_offset(if len > 0 { len - 1 } else { len } as i64);
 
             let header = batch.get_mut_header();
             header.last_offset_delta = if len > 0 { len - 1 } else { len };
@@ -548,6 +564,9 @@ mod test {
     use crate::batch::Batch;
     use super::BatchHeader;
     use super::BATCH_HEADER_SIZE;
+
+    #[cfg(feature = "memory_batch")]
+    use super::memory::MemoryBatch;
 
     #[test]
     fn test_batch_size() {
@@ -845,6 +864,95 @@ mod test {
             (200..250).contains(&records_delta[2]),
             "records_delta[2]: {}",
             records_delta[2]
+        );
+    }
+
+    #[test]
+    fn test_batch_len() {
+        let mem_records = vec![Record::default(), Record::default(), Record::default()];
+
+        // Verify batch len is instantiated
+        let batch = Batch::from(mem_records.clone());
+
+        assert_eq!(
+            batch.batch_len(),
+            (BATCH_HEADER_SIZE + mem_records.write_size(0)) as i32
+        );
+
+        // Verify batch len is preserved during conversion
+        let batch_raw_records: Batch<RawRecords> = Batch::try_from(batch).unwrap();
+        assert_eq!(
+            batch_raw_records.batch_len(),
+            (BATCH_HEADER_SIZE + mem_records.write_size(0)) as i32
+        );
+
+        // Verify batch len is preserved during conversion
+        let batch: Batch = batch_raw_records.try_into().unwrap();
+        assert_eq!(
+            batch.batch_len(),
+            (BATCH_HEADER_SIZE + mem_records.write_size(0)) as i32
+        );
+
+        // Verify increase in batch len when we add records
+        let mut batch_mem_records: Batch<MemoryRecords> = Batch::new();
+        batch_mem_records.add_records(&mut mem_records.clone());
+        assert_eq!(
+            batch_mem_records.batch_len(),
+            (BATCH_HEADER_SIZE + mem_records.write_size(0)) as i32
+        );
+
+        batch_mem_records.add_record(Record::default());
+        assert_eq!(
+            batch_mem_records.batch_len(),
+            (BATCH_HEADER_SIZE + batch_mem_records.records.write_size(0)) as i32
+        );
+    }
+
+    #[cfg(feature = "memory_batch")]
+    #[test]
+    fn test_convert_memory_batch_to_batch() {
+        let num_records = 10;
+
+        let record_data = "I am test input".to_string().into_bytes();
+        let memory_batch_compression = Compression::Gzip;
+
+        // This MemoryBatch write limit is minimal value to pass test
+        let mut memory_batch = MemoryBatch::new(180, memory_batch_compression);
+
+        let mut offset = 0;
+
+        for _ in 0..num_records {
+            offset = memory_batch
+                .push_record(Record {
+                    value: RecordData::from(record_data.clone()),
+                    ..Default::default()
+                })
+                .expect("Offset should exist");
+        }
+
+        let memory_batch_records_len = memory_batch.records_len();
+        let memory_batch_size_uncompressed = memory_batch.current_size_uncompressed();
+
+        let batch: Batch<MemoryRecords> = memory_batch.into();
+
+        assert_eq!(
+            batch.get_base_offset(),
+            (memory_batch_records_len - 1) as i64
+        );
+
+        assert_eq!(batch.last_offset_delta(), offset as i32);
+        assert_eq!(batch.get_base_offset() as i32, batch.last_offset_delta());
+
+        assert_eq!(
+            batch.get_compression().expect("Compression should exist"),
+            memory_batch_compression
+        );
+
+        assert_eq!(batch.records_len(), memory_batch_records_len);
+
+        assert_eq!(
+            batch.batch_len(),
+            (BATCH_HEADER_SIZE + memory_batch_size_uncompressed) as i32
         );
     }
 }
