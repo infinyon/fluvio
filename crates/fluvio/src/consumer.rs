@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use async_lock::RwLock;
 use futures_util::stream::{Stream, select_all};
 use tracing::{debug, error, trace, instrument, info};
 use once_cell::sync::Lazy;
@@ -25,7 +24,6 @@ use dataplane::batch::Batch;
 use crate::FluvioError;
 use crate::offset::{Offset, fetch_offsets};
 use crate::spu::{SpuDirectory, SpuPool};
-use crate::stats::ClientStats;
 use derive_builder::Builder;
 
 pub use dataplane::record::ConsumerRecord as Record;
@@ -48,14 +46,6 @@ where
     P: SpuDirectory,
 {
     pub fn new(topic: String, partition: i32, pool: Arc<P>) -> Self {
-        Self {
-            topic,
-            partition,
-            pool,
-        }
-    }
-
-    pub fn new_w_stats(topic: String, partition: i32, pool: Arc<P>) -> Self {
         Self {
             topic,
             partition,
@@ -162,94 +152,26 @@ where
         offset: Offset,
         config: ConsumerConfig,
     ) -> Result<impl Stream<Item = Result<Record, ErrorCode>>, FluvioError> {
-        //let (sender, receiver) = channel();
-
-        //spawn(async move {
-        //    loop {
-        //        match receiver.recv() {
-        //            Ok(update) => {
-        //                let stats_handle = self.client_stats.write().await;
-        //                stats_handle.update(update);
-        //                drop(stats_handle);
-        //            }
-        //            Err(_) => {}
-        //        }
-        //
-        //});
-
-        //fn hacks(update: ClientStatsUpdate) {
-        //let hacks = move |update: ClientStatsUpdate| {
-        //    run_block_on(async {
-        //        let mut stats_handle = self.client_stats.write().await;
-        //        stats_handle.update(update);
-        //        drop(stats_handle);
-        //    });
-        //};
-
         let (stream, start_offset) = self
             .inner_stream_batches_with_config(offset, config)
             .await?;
-
         let partition = self.partition;
-
-        // How will I capture the number of records?
-
-        //let fut = stream.fold(vec![], |streams, result: Result<Batch, _>| async {
-        //    let partition = self.partition.clone();
-        //    let start_offset = start_offset.clone();
-
-        //    match result {
-        //        Err(e) => streams.push(Either::Right(once(err(e)))),
-        //        Ok(batch) => {
-        //            let records =
-        //                batch
-        //                    .into_consumer_records_iter(partition)
-        //                    .filter_map(|record| {
-        //                        if record.offset >= start_offset {
-        //                            Some(Ok(record))
-        //                        } else {
-        //                            None
-        //                        }
-        //                    });
-
-        //            streams.push(Either::Left(iter(records)))
-        //        }
-        //    }
-        //    streams
-        //});
-
-        //let flattened = fut.map(|x| x.into_iter()).into_stream();
-        //let flattened = fut.then(|x| async { x.into_iter().map(|y| y) });
-
-        let flattened = stream.flat_map(move |result: Result<Batch, _>| {
-            match result {
-                Err(e) => Either::Right(once(err(e))),
-                Ok(batch) => {
-                    // Start timer
-                    let records =
-                        batch
-                            .into_consumer_records_iter(partition)
-                            .filter_map(move |record| {
-                                if record.offset >= start_offset {
-                                    Some(Ok(record))
-                                } else {
-                                    None
-                                }
-                            });
-
-                    // End timer
-
-                    //let stats_handle = &self.client_stats.write().await;
-                    //drop(stats_handle);
-
-                    Either::Left(iter(records))
-                }
+        let flattened = stream.flat_map(move |result: Result<Batch, _>| match result {
+            Err(e) => Either::Right(once(err(e))),
+            Ok(batch) => {
+                let records =
+                    batch
+                        .into_consumer_records_iter(partition)
+                        .filter_map(move |record| {
+                            if record.offset >= start_offset {
+                                Some(Ok(record))
+                            } else {
+                                None
+                            }
+                        });
+                Either::Left(iter(records))
             }
         });
-
-        //let mut stats_handle = self.client_stats.write().await;
-        //stats_handle.update(ClientStatsUpdate::new().latency(Some(batch_latency)));
-        //drop(stats_handle);
 
         Ok(flattened)
     }
@@ -729,16 +651,11 @@ impl PartitionSelectionStrategy {
 pub struct MultiplePartitionConsumer {
     strategy: PartitionSelectionStrategy,
     pool: Arc<SpuPool>,
-    client_stats: Arc<RwLock<ClientStats>>,
 }
 
 impl MultiplePartitionConsumer {
     pub(crate) fn new(strategy: PartitionSelectionStrategy, pool: Arc<SpuPool>) -> Self {
-        Self {
-            strategy,
-            pool,
-            client_stats: ClientStats::new_shared(),
-        }
+        Self { strategy, pool }
     }
 
     /// Continuously streams events from a particular offset in the selected partitions
@@ -835,9 +752,7 @@ impl MultiplePartitionConsumer {
             .selection(self.pool.clone())
             .await?
             .into_iter()
-            .map(|(topic, partition)| {
-                PartitionConsumer::new_w_stats(topic, partition, self.pool.clone())
-            })
+            .map(|(topic, partition)| PartitionConsumer::new(topic, partition, self.pool.clone()))
             .collect::<Vec<_>>();
 
         let streams_future = consumers
@@ -849,12 +764,6 @@ impl MultiplePartitionConsumer {
         let streams = streams_result.into_iter().collect::<Result<Vec<_>, _>>()?;
 
         Ok(select_all(streams))
-    }
-
-    /// Return the stats from the last batch sent
-    pub async fn stats(&self) -> ClientStats {
-        let stats_handle = self.client_stats.read().await;
-        stats_handle.snapshot()
     }
 }
 

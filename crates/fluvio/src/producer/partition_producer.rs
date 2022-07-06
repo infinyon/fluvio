@@ -263,7 +263,12 @@ impl PartitionProducer {
             }
 
             // Type conversion for `quantities` crate
+
+            #[cfg(not(target_arch = "wasm32"))]
             let scratch: AmountT = flush_total_bytes as f64;
+            #[cfg(target_arch = "wasm32")]
+            let scratch: AmountT = flush_total_bytes as f32;
+
             let flush_total_bytes = Some(scratch * BYTE);
 
             // Update stats
@@ -284,7 +289,12 @@ impl PartitionProducer {
         let response = socket.send_receive(request).await?;
 
         let send_latency = send_start_time.elapsed();
+
+        #[cfg(not(target_arch = "wasm32"))]
         let scratch = send_latency.as_secs_f64();
+        #[cfg(target_arch = "wasm32")]
+        let scratch = send_latency.as_secs_f32();
+
         let send_latency = Some(scratch * SECOND);
 
         let stats_update = ClientStatsUpdate::new().latency(send_latency);

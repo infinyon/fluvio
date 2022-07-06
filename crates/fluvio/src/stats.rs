@@ -7,15 +7,21 @@ use async_lock::RwLock;
 use sysinfo::{self, PidExt};
 use tracing::{debug, error};
 
-use quantities::{prelude::*, AMNT_ZERO, datathroughput::DataThroughput};
-use quantities::datavolume::{DataVolume, BYTE, KILOBYTE};
-use quantities::duration::{Duration as QuantDuration, SECOND};
+use quantities::{prelude::*, AMNT_ZERO, AMNT_ONE};
+use quantities::datathroughput::{
+    DataThroughput, TERABYTE_PER_SECOND, GIGABYTE_PER_SECOND, MEGABYTE_PER_SECOND,
+    KILOBYTE_PER_SECOND,
+};
+use quantities::datavolume::{DataVolume, BYTE, KILOBYTE, MEGABYTE, GIGABYTE, TERABYTE};
+use quantities::duration::{
+    Duration as QuantDuration, MINUTE, SECOND, MILLISECOND, MICROSECOND, NANOSECOND,
+};
 
 use crate::FluvioError;
 use sysinfo::{SystemExt, ProcessExt};
 
 // This struct is heavily utilizing
-// `quantities` crate for managing unit conversions
+// `quantities` crate for managing human readable unit conversions
 #[derive(Debug, Clone)]
 pub struct ClientStats {
     start_time: Instant,
@@ -99,7 +105,11 @@ impl ClientStats {
                     let mem_used_sample = proc.memory() + proc.virtual_memory();
 
                     //debug!("memory {:#?}", mem_used_sample);
+                    #[cfg(not(target_arch = "wasm32"))]
                     let scratch = mem_used_sample as f64;
+                    #[cfg(target_arch = "wasm32")]
+                    let scratch = mem_used_sample as f32;
+
                     let mem_used = Some(scratch * KILOBYTE);
 
                     let cpu_used_sample = proc.cpu_usage()  ;
@@ -153,7 +163,25 @@ impl ClientStats {
     // TODO: Try to identify reasonable units, but offer ability to control unit
     /// Return the throughput of the last batch transfer in units TBD
     pub fn throughput(&self) -> DataThroughput {
-        self.last_bytes / self.last_latency
+        let ref_value = self.last_bytes / self.last_latency;
+
+        let convert_unit = if ref_value > (AMNT_ONE * TERABYTE_PER_SECOND) {
+            Some(TERABYTE_PER_SECOND)
+        } else if ref_value > (AMNT_ONE * GIGABYTE_PER_SECOND) {
+            Some(GIGABYTE_PER_SECOND)
+        } else if ref_value > (AMNT_ONE * MEGABYTE_PER_SECOND) {
+            Some(MEGABYTE_PER_SECOND)
+        } else if ref_value > (AMNT_ONE * KILOBYTE_PER_SECOND) {
+            Some(KILOBYTE_PER_SECOND)
+        } else {
+            None
+        };
+
+        if let Some(bigger_unit) = convert_unit {
+            ref_value.convert(bigger_unit)
+        } else {
+            ref_value
+        }
     }
 
     /// Return the pid of the client
@@ -172,23 +200,24 @@ impl ClientStats {
     }
 
     /// Returns the last data transfer size in bytes
-    pub fn last_bytes(&self) -> u64 {
-        self.last_bytes.amount() as u64
+    pub fn last_bytes(&self) -> DataVolume {
+        Self::convert_to_largest_data_unit(self.last_bytes)
     }
 
     /// Returns the accumulated data transfer size in bytes
-    pub fn total_bytes(&self) -> u64 {
-        self.total_bytes.amount() as u64
+    pub fn total_bytes(&self) -> DataVolume {
+        Self::convert_to_largest_data_unit(self.total_bytes)
     }
 
     /// Returns the latency of last transfer -> Duration {
     pub fn last_latency(&self) -> QuantDuration {
-        self.last_latency
+        Self::convert_to_largest_time_unit(self.last_latency)
     }
 
-    /// Returns the last memory usage sample in kilobytes
-    pub fn memory(&self) -> u64 {
-        self.last_mem.amount() as u64
+    /// Returns the last memory usage sample
+    pub fn memory(&self) -> DataVolume {
+        // We know this always starts in kilobytes
+        Self::convert_to_largest_data_unit(self.last_mem)
     }
 
     /// Returns the last cpu usage sample as a percentage (%)
@@ -199,8 +228,13 @@ impl ClientStats {
     /// Returns the current uptime of the client
     pub fn uptime(&self) -> QuantDuration {
         let uptime = self.start_time.elapsed();
+
+        #[cfg(not(target_arch = "wasm32"))]
         let scratch: AmountT = uptime.as_secs_f64();
-        scratch * SECOND
+        #[cfg(target_arch = "wasm32")]
+        let scratch: AmountT = uptime.as_secs_f32();
+
+        Self::convert_to_largest_time_unit(scratch * SECOND)
     }
 
     /// Returns the number of records transferred
@@ -210,7 +244,7 @@ impl ClientStats {
 
     pub fn print_current_stats(&self) -> String {
         format!(
-            "throughput: {:.2}, latency: {}, memory: {}, CPU: {:.2}",
+            "throughput: {:.3}, latency: {:.3}, memory: {:.3}, CPU: {:.2}",
             self.throughput(),
             self.last_latency(),
             self.memory(),
@@ -220,11 +254,55 @@ impl ClientStats {
 
     pub fn print_summary_stats(&self) -> String {
         format!(
-            "uptime: {}, transferred: {} records, total data: {}",
+            "uptime: {:.3}, transferred: {} records, total data: {:.3}",
             self.uptime(),
             self.records(),
             self.total_bytes(),
         )
+    }
+
+    fn convert_to_largest_time_unit(ref_value: QuantDuration) -> QuantDuration {
+        let convert_unit = if ref_value > (AMNT_ONE * MINUTE) {
+            Some(MINUTE)
+        } else if ref_value > (AMNT_ONE * SECOND) {
+            Some(SECOND)
+        } else if ref_value > (AMNT_ONE * MILLISECOND) {
+            Some(MILLISECOND)
+        } else if ref_value > (AMNT_ONE * MICROSECOND) {
+            Some(MICROSECOND)
+        } else if ref_value > (AMNT_ONE * NANOSECOND) {
+            Some(NANOSECOND)
+        } else {
+            None
+        };
+
+        if let Some(bigger_unit) = convert_unit {
+            ref_value.convert(bigger_unit)
+        } else {
+            ref_value
+        }
+    }
+
+    fn convert_to_largest_data_unit(ref_value: DataVolume) -> DataVolume {
+        let convert_unit = if ref_value > (AMNT_ONE * TERABYTE) {
+            Some(TERABYTE)
+        } else if ref_value > (AMNT_ONE * GIGABYTE) {
+            Some(GIGABYTE)
+        } else if ref_value > (AMNT_ONE * MEGABYTE) {
+            Some(MEGABYTE)
+        } else if ref_value > (AMNT_ONE * KILOBYTE) {
+            Some(KILOBYTE)
+        } else if ref_value > (AMNT_ONE * BYTE) {
+            Some(BYTE)
+        } else {
+            None
+        };
+
+        if let Some(bigger_unit) = convert_unit {
+            ref_value.convert(bigger_unit)
+        } else {
+            ref_value
+        }
     }
 }
 

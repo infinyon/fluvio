@@ -182,10 +182,6 @@ pub struct ConsumeOpt {
     /// read_uncommitted (ReadUncommitted) - consume all records accepted by leader.
     #[clap(long, parse(try_from_str = parse_isolation))]
     pub isolation: Option<Isolation>,
-
-    /// Print out client stats
-    #[clap(long)]
-    pub stats: bool,
 }
 
 fn parse_key_val(s: &str) -> Result<(String, String)> {
@@ -436,8 +432,6 @@ impl ConsumeOpt {
         // Without TTY, we panic when attempting to read from EventStream
         // In CI, we do not have a TTY, so we need this check to avoid reading EventStream
         // EventStream is only used by Tui+Crossterm to interact with table
-
-        // FIXME: The progress bar eats the last printed record. It needs to linefeed before updating
         if io::stdout().is_tty() {
             // This needs to know if it is a tty before opening this
             let mut user_input_reader = EventStream::new();
@@ -478,10 +472,6 @@ impl ConsumeOpt {
                                 &mut maybe_table_model,
                                 &pb,
                             );
-
-                            //if self.stats {
-                            //    pb.println(&format!("{:?}\n", consumer.stats().await));
-                            //}
 
                             if let Some(potential_offset) = maybe_potential_offset {
                                 if record.offset >= potential_offset {
@@ -535,10 +525,6 @@ impl ConsumeOpt {
                     &mut None,
                     &pb,
                 );
-
-                //if self.stats {
-                //    pb.println(&format!("{:?}\n", consumer.stats().await));
-                //}
 
                 if let Some(potential_offset) = maybe_potential_offset {
                     if record.offset >= potential_offset {
